@@ -1016,7 +1016,8 @@ SQL >
 NODE payment_events_raw
 SQL >
     %
-    SELECT e.id, e.amount, e.timestamp AS event_timestamp, e.subscription_id
+    SELECT
+        e.id, e.amount, e.timestamp AS event_timestamp, e.ingested_at AS ingested_at, e.subscription_id
     FROM system_events_by_org AS e
     WHERE
         e.name IN ('balance.order', 'balance.credit_order')
@@ -1039,7 +1040,10 @@ SQL >
 NODE latest_payment
 SQL >
     %
-    SELECT subscription_id, argMax(amount, event_timestamp) AS settlement_amount
+    SELECT
+        subscription_id,
+        argMax(amount, (event_timestamp, ingested_at)) AS settlement_amount,
+        argMaxIf(amount, (event_timestamp, ingested_at), amount != 0) AS nonzero_settlement_amount
     FROM payment_events_raw
     GROUP BY subscription_id
 
@@ -1053,18 +1057,38 @@ SQL >
         s.customer_id,
         CASE
             WHEN s.recurring_interval = 'year'
-            THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / (12 * s.recurring_interval_count)))
+            THEN
+                toInt64(
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        / (12 * s.recurring_interval_count)
+                    )
+                )
             WHEN s.recurring_interval = 'month'
-            THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / s.recurring_interval_count))
+            THEN
+                toInt64(
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        / s.recurring_interval_count
+                    )
+                )
             WHEN s.recurring_interval = 'week'
             THEN
                 toInt64(
-                    round(COALESCE(lp.settlement_amount, 0) * 52 / (12 * s.recurring_interval_count))
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        * 52
+                        / (12 * s.recurring_interval_count)
+                    )
                 )
             WHEN s.recurring_interval = 'day'
             THEN
                 toInt64(
-                    round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count))
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        * 365
+                        / (12 * s.recurring_interval_count)
+                    )
                 )
             ELSE toInt64(0)
         END AS monthly_amount
@@ -1281,7 +1305,10 @@ SQL >
         CASE
             WHEN COALESCE(mrr.active_subscriber_count, 0) > 0
             THEN
-                toInt64(round(COALESCE(mrr.monthly_recurring_revenue, 0) / mrr.active_subscriber_count))
+                intDiv(
+                    COALESCE(mrr.monthly_recurring_revenue, 0) + intDiv(mrr.active_subscriber_count, 2),
+                    mrr.active_subscriber_count
+                )
             ELSE 0
         END AS average_revenue_per_user,
         COALESCE(mrr.active_subscriptions, 0) AS active_subscriptions,

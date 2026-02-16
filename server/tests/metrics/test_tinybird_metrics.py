@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from unittest.mock import patch
@@ -55,6 +55,7 @@ SETTLEMENT_METRIC_SLUGS = [m.slug for m in METRICS_TINYBIRD_SETTLEMENT]
 @dataclass(frozen=True)
 class QueryCase:
     label: str
+    organization_key: str
     start_date: date
     end_date: date
     interval: TimeInterval
@@ -73,55 +74,565 @@ class CaseSnapshot:
 
 
 @dataclass
-class MetricsHarness:
-    organization_id: UUID
+class OrganizationContext:
+    organization: Organization
     product_ids: dict[str, UUID]
     customer_ids: dict[str, UUID]
+
+
+@dataclass
+class MetricsHarness:
+    organizations: dict[str, OrganizationContext]
     snapshots: dict[str, CaseSnapshot]
+
+
+@dataclass(frozen=True)
+class ProductScenario:
+    key: str
+    recurring_interval: SubscriptionRecurringInterval | None
+    price: int
+
+
+@dataclass(frozen=True)
+class OrderScenario:
+    product_key: str
+    ordered_at: datetime
+    amount: int
+    subscription_started_at: datetime | None = None
+    created_at: datetime | None = None
+    order_paid_at: datetime | None = None
+    balance_at: datetime | None = None
+    include_order_created_at_metadata: bool = True
+    include_order_paid: bool = True
+    include_balance: bool = True
+    include_balance_net_amount_metadata: bool = True
+    status: OrderStatus = OrderStatus.paid
+    refunded_amount: int = 0
+    applied_balance_amount: int = 0
+    platform_fee_amount: int = 0
+    payment_amount: int | None = None
+    include_balance_refund: bool = False
+    refund_at: datetime | None = None
+    extra_balance_refund_events: int = 0
+    include_balance_refund_reversal: bool = False
+    refund_reversal_at: datetime | None = None
+    include_balance_dispute: bool = False
+    dispute_at: datetime | None = None
+    dispute_amount: int | None = None
+    dispute_fee_amount: int = 0
+
+
+@dataclass(frozen=True)
+class SubscriptionScenario:
+    product_key: str
+    order_timestamps: tuple[datetime, ...]
+    amount: int
+    applied_balance_amount: int = 0
+    platform_fee_amount: int = 0
+    payment_amount: int | None = None
+    include_balance_net_amount_metadata: bool = True
+    canceled_at: datetime | None = None
+    ends_at: datetime | None = None
+    cancellation_reason: CustomerCancellationReason | None = None
+    canceled_event_ends_at: datetime | None = None
+    cancel_at_period_end: bool = False
+    revoked_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class UserCostEventScenario:
+    timestamp: datetime
+    amount: float
+    external_customer_id: str | None = None
+    include_customer_ref: bool = True
+
+
+@dataclass(frozen=True)
+class CustomerScenario:
+    key: str
+    external_id: str | None = None
+    subscriptions: tuple[SubscriptionScenario, ...] = ()
+    one_time_orders: tuple[OrderScenario, ...] = ()
+    user_events: tuple[UserCostEventScenario, ...] = ()
+
+
+@dataclass(frozen=True)
+class OrganizationScenario:
+    key: str
+    products: tuple[ProductScenario, ...]
+    customers: tuple[CustomerScenario, ...]
+
+
+def _dt(d: date, hour: int = 0, minute: int = 0) -> datetime:
+    return datetime(d.year, d.month, d.day, hour, minute, tzinfo=UTC)
+
+
+def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
+    customers: list[CustomerScenario] = [
+        CustomerScenario(
+            key="loyal_monthly",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(
+                        _dt(date(2024, 1, 1)),
+                        _dt(date(2024, 2, 1)),
+                        _dt(date(2024, 3, 1)),
+                        _dt(date(2024, 4, 1)),
+                        _dt(date(2024, 5, 1)),
+                        _dt(date(2024, 6, 1)),
+                    ),
+                    amount=MONTHLY_PRICE,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="yearly_subscriber",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="yearly",
+                    order_timestamps=(_dt(date(2024, 1, 1)),),
+                    amount=YEARLY_PRICE,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="one_time_buyer",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2024, 1, 10)),
+                    amount=ONE_TIME_PRICE,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2024, 4, 20)),
+                    amount=ONE_TIME_PRICE,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="monthly_plus_customer",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly_plus",
+                    order_timestamps=(
+                        _dt(date(2024, 4, 1)),
+                        _dt(date(2024, 5, 1)),
+                        _dt(date(2024, 6, 1)),
+                    ),
+                    amount=MONTHLY_PLUS_PRICE,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="external_match",
+            external_id="ext-boundary",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(
+                        _dt(date(2024, 1, 5)),
+                        _dt(date(2024, 2, 5)),
+                    ),
+                    amount=MONTHLY_PRICE,
+                ),
+            ),
+            user_events=(
+                UserCostEventScenario(
+                    timestamp=_dt(date(2024, 1, 15), 18, 25),
+                    amount=0.11,
+                    external_customer_id="ext-boundary",
+                    include_customer_ref=False,
+                ),
+                UserCostEventScenario(
+                    timestamp=_dt(date(2024, 1, 15), 18, 35),
+                    amount=0.22,
+                    external_customer_id="ext-boundary",
+                    include_customer_ref=False,
+                ),
+                UserCostEventScenario(
+                    timestamp=_dt(date(2024, 2, 10), 9, 0),
+                    amount=0.33,
+                    include_customer_ref=True,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="weekly_boundary_new_subscriptions",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(_dt(date(2026, 1, 26)),),
+                    amount=MONTHLY_PRICE,
+                ),
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(_dt(date(2026, 1, 28)),),
+                    amount=MONTHLY_PRICE,
+                ),
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(_dt(date(2026, 1, 31)),),
+                    amount=MONTHLY_PRICE,
+                ),
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(_dt(date(2026, 2, 1)),),
+                    amount=MONTHLY_PRICE,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="partial_window_churn",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(
+                        _dt(date(2026, 1, 1)),
+                        _dt(date(2026, 2, 1)),
+                    ),
+                    amount=MONTHLY_PRICE,
+                    canceled_at=_dt(date(2026, 1, 15)),
+                    ends_at=_dt(date(2026, 2, 20)),
+                    cancellation_reason=CustomerCancellationReason.too_expensive,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_order_paid_drift",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 4), 10, 41),
+                    created_at=_dt(date(2026, 2, 4), 10, 41),
+                    order_paid_at=_dt(date(2026, 2, 13), 12, 0),
+                    balance_at=_dt(date(2026, 2, 4), 10, 41),
+                    include_order_created_at_metadata=False,
+                    amount=1_000,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 4), 12, 41),
+                    amount=1_000,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 4), 14, 7),
+                    amount=2_000,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 13), 9, 22),
+                    amount=1_000,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 13), 11, 6),
+                    amount=1_000,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_revoked_after_cancel_at_period_end",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(datetime(2026, 1, 7, 21, 32, tzinfo=UTC),),
+                    amount=MONTHLY_PRICE,
+                    canceled_at=datetime(2026, 1, 7, 21, 35, tzinfo=UTC),
+                    ends_at=datetime(2026, 1, 7, 21, 42, tzinfo=UTC),
+                    cancellation_reason=CustomerCancellationReason.other,
+                    canceled_event_ends_at=datetime(2026, 2, 7, 21, 32, tzinfo=UTC),
+                    cancel_at_period_end=True,
+                    revoked_at=datetime(2026, 1, 7, 21, 42, 1, tzinfo=UTC),
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_trial_orders_without_balance",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 6), 20, 19),
+                    amount=0,
+                    include_balance=False,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 9), 7, 57),
+                    amount=0,
+                    include_balance=False,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 9), 14, 7),
+                    amount=0,
+                    include_balance=False,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 2, 11), 9, 45),
+                    amount=0,
+                    include_balance=False,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_balance_only_refunded_without_order_paid",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=datetime(2025, 10, 5, 7, 56, tzinfo=UTC),
+                    amount=3_500,
+                    status=OrderStatus.refunded,
+                    refunded_amount=3_500,
+                    platform_fee_amount=180,
+                    include_order_paid=False,
+                    include_balance=True,
+                    include_balance_refund=True,
+                    refund_at=datetime(2025, 10, 31, 17, 29, tzinfo=UTC),
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_duplicate_refund_with_reversal",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=datetime(2025, 12, 4, 10, 0, tzinfo=UTC),
+                    amount=3_500,
+                    status=OrderStatus.refunded,
+                    refunded_amount=3_500,
+                    platform_fee_amount=180,
+                    include_order_paid=True,
+                    include_balance=True,
+                    include_balance_refund=True,
+                    refund_at=datetime(2025, 12, 10, 12, 0, tzinfo=UTC),
+                    extra_balance_refund_events=1,
+                    include_balance_refund_reversal=True,
+                    refund_reversal_at=datetime(2025, 12, 11, 12, 0, tzinfo=UTC),
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_renewal_balance_without_net_amount",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="monthly",
+                    ordered_at=datetime(2025, 12, 17, 20, 33, tzinfo=UTC),
+                    amount=0,
+                    subscription_started_at=datetime(2025, 10, 17, 20, 33, tzinfo=UTC),
+                    applied_balance_amount=14_900,
+                    platform_fee_amount=2_211,
+                    payment_amount=14_900,
+                    include_balance_net_amount_metadata=False,
+                    include_balance_dispute=True,
+                    dispute_at=datetime(2026, 1, 20, 8, 27, tzinfo=UTC),
+                    dispute_amount=-14_900,
+                    dispute_fee_amount=1_500,
+                ),
+            ),
+        ),
+    ]
+
+    cancellation_reasons = (
+        CustomerCancellationReason.customer_service,
+        CustomerCancellationReason.low_quality,
+        CustomerCancellationReason.missing_features,
+        CustomerCancellationReason.switched_service,
+        CustomerCancellationReason.too_complex,
+        CustomerCancellationReason.too_expensive,
+        CustomerCancellationReason.unused,
+        CustomerCancellationReason.other,
+    )
+    for i, reason in enumerate(cancellation_reasons):
+        start_day = 2 + i
+        cancel_day = 10 + i
+        customers.append(
+            CustomerScenario(
+                key=f"cancel_{reason.value}",
+                subscriptions=(
+                    SubscriptionScenario(
+                        product_key="monthly",
+                        order_timestamps=(_dt(date(2024, 3, start_day)),),
+                        amount=MONTHLY_PRICE,
+                        canceled_at=_dt(date(2024, 3, cancel_day)),
+                        ends_at=_dt(date(2024, 4, 1)),
+                        cancellation_reason=reason,
+                    ),
+                ),
+            )
+        )
+
+    return tuple(customers)
+
+
+def _build_beta_customers() -> tuple[CustomerScenario, ...]:
+    return (
+        CustomerScenario(
+            key="beta_monthly_customer",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(
+                        _dt(date(2024, 1, 3)),
+                        _dt(date(2024, 2, 3)),
+                    ),
+                    amount=45_00,
+                    canceled_at=_dt(date(2024, 2, 15)),
+                    ends_at=_dt(date(2024, 3, 3)),
+                    cancellation_reason=CustomerCancellationReason.other,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="beta_one_time_buyer",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2024, 1, 3)),
+                    amount=500_00,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="beta_external",
+            external_id="beta-ext",
+            user_events=(
+                UserCostEventScenario(
+                    timestamp=_dt(date(2024, 1, 15), 12, 0),
+                    amount=2.0,
+                    external_customer_id="beta-ext",
+                    include_customer_ref=False,
+                ),
+            ),
+        ),
+    )
+
+
+def _build_gamma_customers() -> tuple[CustomerScenario, ...]:
+    return (
+        CustomerScenario(
+            key="gamma_one_time_buyer",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2024, 1, 5)),
+                    amount=20_00,
+                ),
+            ),
+        ),
+    )
+
+
+ORGANIZATION_SCENARIOS: tuple[OrganizationScenario, ...] = (
+    OrganizationScenario(
+        key="alpha",
+        products=(
+            ProductScenario(
+                key="monthly",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                price=MONTHLY_PRICE,
+            ),
+            ProductScenario(
+                key="monthly_plus",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                price=MONTHLY_PLUS_PRICE,
+            ),
+            ProductScenario(
+                key="yearly",
+                recurring_interval=SubscriptionRecurringInterval.year,
+                price=YEARLY_PRICE,
+            ),
+            ProductScenario(
+                key="one_time",
+                recurring_interval=None,
+                price=ONE_TIME_PRICE,
+            ),
+        ),
+        customers=_build_alpha_customers(),
+    ),
+    OrganizationScenario(
+        key="beta",
+        products=(
+            ProductScenario(
+                key="monthly",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                price=45_00,
+            ),
+            ProductScenario(key="one_time", recurring_interval=None, price=500_00),
+        ),
+        customers=_build_beta_customers(),
+    ),
+    OrganizationScenario(
+        key="gamma",
+        products=(
+            ProductScenario(key="one_time", recurring_interval=None, price=20_00),
+        ),
+        customers=_build_gamma_customers(),
+    ),
+)
 
 
 QUERY_CASES: tuple[QueryCase, ...] = (
     QueryCase(
-        label="monthly_h1",
+        label="alpha_monthly_h1",
+        organization_key="alpha",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 6, 30),
         interval=TimeInterval.month,
     ),
     QueryCase(
-        label="weekly_q1",
+        label="alpha_weekly_q1",
+        organization_key="alpha",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 3, 31),
         interval=TimeInterval.week,
     ),
     QueryCase(
-        label="daily_feb",
+        label="alpha_daily_feb",
+        organization_key="alpha",
         start_date=date(2024, 2, 1),
         end_date=date(2024, 2, 29),
         interval=TimeInterval.day,
     ),
     QueryCase(
-        label="monthly_recurring_filter",
+        label="alpha_monthly_recurring_filter",
+        organization_key="alpha",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 6, 30),
         interval=TimeInterval.month,
         billing_types=(ProductBillingType.recurring,),
     ),
     QueryCase(
-        label="monthly_product_filter",
+        label="alpha_monthly_product_filter",
+        organization_key="alpha",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 6, 30),
         interval=TimeInterval.month,
         product_keys=("monthly",),
     ),
     QueryCase(
-        label="daily_customer_filter",
+        label="alpha_monthly_h1_customer_filter",
+        organization_key="alpha",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 6, 30),
+        interval=TimeInterval.month,
+        customer_keys=("external_match",),
+        metrics=("active_user_by_event",),
+    ),
+    QueryCase(
+        label="alpha_daily_customer_filter",
+        organization_key="alpha",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 1, 31),
         interval=TimeInterval.day,
         customer_keys=("external_match",),
     ),
     QueryCase(
-        label="daily_half_hour_timezone_customer_filter",
+        label="alpha_daily_half_hour_timezone_customer_filter",
+        organization_key="alpha",
         start_date=date(2024, 1, 15),
         end_date=date(2024, 1, 16),
         interval=TimeInterval.day,
@@ -129,111 +640,26 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         customer_keys=("external_match",),
     ),
     QueryCase(
-        label="monthly_no_org_filter",
+        label="alpha_monthly_no_org_filter",
+        organization_key="alpha",
         start_date=date(2024, 1, 1),
         end_date=date(2024, 6, 30),
         interval=TimeInterval.month,
         include_organization_filter=False,
     ),
     QueryCase(
-        label="monthly_partial_month_karachi_customer",
+        label="alpha_monthly_partial_window_karachi",
+        organization_key="alpha",
         start_date=date(2025, 12, 30),
         end_date=date(2026, 2, 13),
         interval=TimeInterval.month,
         timezone="Asia/Karachi",
         customer_keys=("partial_window_churn",),
+        metrics=("churned_subscriptions",),
     ),
     QueryCase(
-        label="monthly_paris_orders_fallback",
-        start_date=date(2025, 8, 10),
-        end_date=date(2026, 2, 13),
-        interval=TimeInterval.month,
-        timezone="Europe/Paris",
-        metrics=("orders", "revenue", "cumulative_revenue"),
-    ),
-    QueryCase(
-        label="monthly_moscow_net_revenue_fallback",
-        start_date=date(2025, 12, 4),
-        end_date=date(2026, 2, 13),
-        interval=TimeInterval.month,
-        timezone="Europe/Moscow",
-        customer_keys=("moscow_net_missing_balance",),
-        metrics=(
-            "net_average_order_value",
-            "renewed_subscriptions_net_revenue",
-            "net_revenue",
-            "net_cumulative_revenue",
-        ),
-    ),
-    QueryCase(
-        label="monthly_canary_new_subscriptions_revenue_missing_balance",
-        start_date=date(2026, 3, 1),
-        end_date=date(2026, 4, 13),
-        interval=TimeInterval.month,
-        timezone="Atlantic/Canary",
-        product_keys=("monthly",),
-        customer_keys=("canary_new_subscriptions_missing_balance",),
-        metrics=("new_subscriptions_revenue",),
-    ),
-    QueryCase(
-        label="daily_jerusalem_renewed_missing_balance",
-        start_date=date(2026, 1, 13),
-        end_date=date(2026, 2, 13),
-        interval=TimeInterval.day,
-        timezone="Asia/Jerusalem",
-        metrics=(
-            "monthly_recurring_revenue",
-            "committed_monthly_recurring_revenue",
-            "active_subscriptions",
-            "new_subscriptions",
-            "committed_subscriptions",
-            "renewed_subscriptions",
-            "average_revenue_per_user",
-            "ltv",
-            "new_subscriptions_revenue",
-            "renewed_subscriptions_revenue",
-        ),
-    ),
-    QueryCase(
-        label="daily_calcutta_order_created_at_without_balance",
-        start_date=date(2026, 2, 1),
-        end_date=date(2026, 2, 3),
-        interval=TimeInterval.day,
-        timezone="Asia/Calcutta",
-        customer_keys=("delayed_created_at",),
-        metrics=("orders",),
-    ),
-    QueryCase(
-        label="daily_shanghai_delayed_order_paid_without_balance",
-        start_date=date(2026, 2, 13),
-        end_date=date(2026, 2, 14),
-        interval=TimeInterval.day,
-        timezone="Asia/Shanghai",
-        customer_keys=("shanghai_delayed_missing_balance",),
-        metrics=(
-            "orders",
-            "revenue",
-            "net_revenue",
-            "cumulative_revenue",
-            "net_cumulative_revenue",
-            "average_order_value",
-            "net_average_order_value",
-            "one_time_products",
-            "one_time_products_revenue",
-            "one_time_products_net_revenue",
-        ),
-    ),
-    QueryCase(
-        label="daily_berlin_refund_join_duplication",
-        start_date=date(2026, 1, 22),
-        end_date=date(2026, 1, 24),
-        interval=TimeInterval.day,
-        timezone="Europe/Berlin",
-        customer_keys=("refund_join_duplication",),
-        metrics=("renewed_subscriptions",),
-    ),
-    QueryCase(
-        label="weekly_stockholm_new_subscriptions_boundary",
+        label="alpha_weekly_stockholm_boundary",
+        organization_key="alpha",
         start_date=date(2026, 2, 1),
         end_date=date(2026, 2, 28),
         interval=TimeInterval.week,
@@ -242,64 +668,87 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("new_subscriptions",),
     ),
     QueryCase(
-        label="daily_stockholm_product_update_same_timestamp",
+        label="alpha_daily_stockholm_order_paid_timestamp_drift",
+        organization_key="alpha",
         start_date=date(2026, 2, 1),
-        end_date=date(2026, 2, 6),
+        end_date=date(2026, 2, 28),
         interval=TimeInterval.day,
         timezone="Europe/Stockholm",
-        product_keys=("monthly",),
-        customer_keys=("product_update_same_timestamp",),
-        metrics=(
-            "new_subscriptions",
-            "active_subscriptions",
-            "committed_subscriptions",
-        ),
+        metrics=("orders",),
     ),
     QueryCase(
-        label="daily_stockholm_missing_created_product_id",
+        label="alpha_daily_stockholm_trial_orders_without_balance",
+        organization_key="alpha",
         start_date=date(2026, 2, 1),
-        end_date=date(2026, 2, 6),
+        end_date=date(2026, 2, 28),
         interval=TimeInterval.day,
         timezone="Europe/Stockholm",
-        product_keys=("monthly",),
-        customer_keys=("missing_created_product_id",),
-        metrics=(
-            "new_subscriptions",
-            "active_subscriptions",
-            "committed_subscriptions",
-        ),
+        customer_keys=("stockholm_trial_orders_without_balance",),
+        metrics=("orders", "one_time_products"),
     ),
     QueryCase(
-        label="daily_amsterdam_canceled_replay_reason_drift",
-        start_date=date(2026, 1, 14),
-        end_date=date(2026, 2, 13),
+        label="alpha_daily_stockholm_balance_only_refunded_without_order_paid",
+        organization_key="alpha",
+        start_date=date(2025, 10, 1),
+        end_date=date(2025, 10, 31),
         interval=TimeInterval.day,
-        timezone="Europe/Amsterdam",
-        customer_keys=("amsterdam_canceled_replay",),
-        metrics=(
-            "canceled_subscriptions",
-            "canceled_subscriptions_other",
-            "canceled_subscriptions_low_quality",
-        ),
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_balance_only_refunded_without_order_paid",),
+        metrics=("orders", "one_time_products", "one_time_products_net_revenue"),
     ),
     QueryCase(
-        label="daily_ho_chi_minh_canceled_replay_reason_drift",
-        start_date=date(2026, 1, 14),
-        end_date=date(2026, 2, 13),
+        label="alpha_daily_stockholm_duplicate_refund_with_reversal",
+        organization_key="alpha",
+        start_date=date(2025, 12, 1),
+        end_date=date(2025, 12, 31),
         interval=TimeInterval.day,
-        timezone="Asia/Ho_Chi_Minh",
-        customer_keys=("ho_chi_minh_canceled_replay",),
-        metrics=(
-            "canceled_subscriptions",
-            "canceled_subscriptions_other",
-            "canceled_subscriptions_low_quality",
-        ),
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_duplicate_refund_with_reversal",),
+        metrics=("orders", "one_time_products", "one_time_products_net_revenue"),
+    ),
+    QueryCase(
+        label="alpha_daily_stockholm_renewal_balance_without_net_amount",
+        organization_key="alpha",
+        start_date=date(2025, 12, 17),
+        end_date=date(2026, 2, 18),
+        interval=TimeInterval.day,
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_renewal_balance_without_net_amount",),
+        metrics=("net_revenue", "renewed_subscriptions_net_revenue"),
+    ),
+    QueryCase(
+        label="alpha_daily_stockholm_revoked_after_cancel_at_period_end_drift",
+        organization_key="alpha",
+        start_date=date(2026, 1, 17),
+        end_date=date(2026, 2, 17),
+        interval=TimeInterval.day,
+        timezone="Europe/Stockholm",
+        metrics=("active_subscriptions", "committed_subscriptions"),
+    ),
+    QueryCase(
+        label="beta_monthly_q1",
+        organization_key="beta",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 3, 31),
+        interval=TimeInterval.month,
+    ),
+    QueryCase(
+        label="beta_daily_customer_filter",
+        organization_key="beta",
+        start_date=date(2024, 1, 15),
+        end_date=date(2024, 1, 15),
+        interval=TimeInterval.day,
+        customer_keys=("beta_external",),
+        metrics=("active_user_by_event", "costs"),
+    ),
+    QueryCase(
+        label="gamma_monthly_jan",
+        organization_key="gamma",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 1, 31),
+        interval=TimeInterval.month,
     ),
 )
-
-
-def _dt(d: date, hour: int = 0, minute: int = 0) -> datetime:
-    return datetime(d.year, d.month, d.day, hour, minute, tzinfo=UTC)
 
 
 def _number_or_zero(v: int | float | Decimal | None) -> int | float | Decimal:
@@ -379,9 +828,11 @@ async def _create_subscription_canceled_event(
     organization: Organization,
     customer: Customer,
     subscription: Subscription,
-    canceled_at: date,
-    ends_at: date,
+    *,
+    canceled_at: datetime,
+    ends_at: datetime,
     customer_cancellation_reason: str,
+    cancel_at_period_end: bool = False,
 ) -> Event:
     return await create_event(
         save_fixture,
@@ -389,12 +840,42 @@ async def _create_subscription_canceled_event(
         customer=customer,
         source=EventSource.system,
         name=SystemEvent.subscription_canceled.value,
-        timestamp=_dt(canceled_at),
+        timestamp=canceled_at,
         metadata={
             "subscription_id": str(subscription.id),
-            "canceled_at": _dt(canceled_at).isoformat(),
-            "ends_at": _dt(ends_at).isoformat(),
+            "canceled_at": canceled_at.isoformat(),
+            "ends_at": ends_at.isoformat(),
             "customer_cancellation_reason": customer_cancellation_reason,
+            "cancel_at_period_end": cancel_at_period_end,
+        },
+    )
+
+
+async def _create_subscription_revoked_event(
+    save_fixture: Any,
+    organization: Organization,
+    customer: Customer,
+    subscription: Subscription,
+    product: Product,
+    *,
+    revoked_at: datetime,
+) -> Event:
+    return await create_event(
+        save_fixture,
+        organization=organization,
+        customer=customer,
+        source=EventSource.system,
+        name=SystemEvent.subscription_revoked.value,
+        timestamp=revoked_at,
+        metadata={
+            "subscription_id": str(subscription.id),
+            "product_id": str(product.id),
+            "amount": subscription.amount,
+            "currency": subscription.currency,
+            "recurring_interval": product.recurring_interval.value
+            if product.recurring_interval
+            else None,
+            "recurring_interval_count": product.recurring_interval_count or 1,
         },
     )
 
@@ -405,25 +886,53 @@ async def _create_paid_order_events(
     customer: Customer,
     product: Product,
     *,
-    ordered_on: date,
+    ordered_at: datetime,
     amount: int,
     subscription: Subscription | None = None,
+    created_at: datetime | None = None,
+    order_paid_at: datetime | None = None,
+    balance_at: datetime | None = None,
+    include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
     include_balance: bool = True,
+    include_balance_net_amount_metadata: bool = True,
+    status: OrderStatus = OrderStatus.paid,
+    refunded_amount: int = 0,
+    applied_balance_amount: int = 0,
+    platform_fee_amount: int = 0,
+    payment_amount: int | None = None,
+    include_balance_refund: bool = False,
+    refund_at: datetime | None = None,
+    extra_balance_refund_events: int = 0,
+    include_balance_refund_reversal: bool = False,
+    refund_reversal_at: datetime | None = None,
+    include_balance_dispute: bool = False,
+    dispute_at: datetime | None = None,
+    dispute_amount: int | None = None,
+    dispute_fee_amount: int = 0,
 ) -> list[Event]:
+    order_created_at = created_at or ordered_at
+    order_paid_timestamp = order_paid_at or ordered_at
+    balance_timestamp = balance_at or ordered_at
+
     order = await create_order(
         save_fixture,
         customer=customer,
         product=product,
-        status=OrderStatus.paid,
+        status=status,
         subtotal_amount=amount,
-        created_at=_dt(ordered_on),
+        refunded_amount=refunded_amount,
+        applied_balance_amount=applied_balance_amount,
+        created_at=order_created_at,
         subscription=subscription,
     )
+    if platform_fee_amount:
+        order.platform_fee_amount = platform_fee_amount
+        await save_fixture(order)
     transaction = await create_payment_transaction(
         save_fixture,
         order=order,
-        amount=order.net_amount,
+        amount=payment_amount if payment_amount is not None else order.net_amount,
         tax_amount=order.tax_amount,
     )
 
@@ -436,17 +945,22 @@ async def _create_paid_order_events(
         "currency": "usd",
         "tax_amount": order.tax_amount,
     }
+    if include_order_created_at_metadata and order.created_at is not None:
+        common_metadata["order_created_at"] = order.created_at.isoformat()
     if subscription is not None:
         common_metadata["subscription_id"] = str(subscription.id)
 
     balance_metadata = {
         **common_metadata,
+        "amount": transaction.amount,
         "transaction_id": str(transaction.id),
-        "presentment_amount": order.net_amount,
+        "presentment_amount": transaction.presentment_amount,
         "presentment_currency": "usd",
-        "fee": 0,
-        "order_created_at": _dt(ordered_on).isoformat(),
+        "fee": order.platform_fee_amount,
     }
+    if not include_balance_net_amount_metadata:
+        balance_metadata.pop("net_amount", None)
+
     emitted_events: list[Event] = []
     if include_balance:
         balance_order = await create_event(
@@ -455,25 +969,356 @@ async def _create_paid_order_events(
             customer=customer,
             source=EventSource.system,
             name=SystemEvent.balance_order.value,
-            timestamp=_dt(ordered_on),
+            timestamp=balance_timestamp,
             metadata=balance_metadata,
         )
         emitted_events.append(balance_order)
-    if not include_order_paid:
-        return emitted_events
 
-    order_paid = await create_event(
+    if not include_order_paid:
+        if not include_balance_refund:
+            return emitted_events
+    else:
+        order_paid = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.order_paid.value,
+            timestamp=order_paid_timestamp,
+            metadata=common_metadata,
+        )
+        emitted_events.insert(0, order_paid)
+
+    if include_balance_refund:
+        assert refund_at is not None
+        refund_amount = refunded_amount or amount
+        refund_metadata: dict[str, Any] = {
+            "order_id": str(order.id),
+            "product_id": str(product.id),
+            "billing_type": product.billing_type.value,
+            "amount": -refund_amount,
+            "fee": 0,
+        }
+        if subscription is not None:
+            refund_metadata["subscription_id"] = str(subscription.id)
+        balance_refund = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.balance_refund.value,
+            timestamp=refund_at,
+            metadata=refund_metadata,
+        )
+        emitted_events.append(balance_refund)
+        for i in range(extra_balance_refund_events):
+            duplicate_refund = await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.balance_refund.value,
+                timestamp=refund_at + timedelta(seconds=i + 1),
+                metadata=refund_metadata,
+            )
+            emitted_events.append(duplicate_refund)
+        if include_balance_refund_reversal:
+            assert refund_reversal_at is not None
+            refund_reversal_metadata: dict[str, Any] = {
+                "order_id": str(order.id),
+                "product_id": str(product.id),
+                "billing_type": product.billing_type.value,
+                "amount": refund_amount,
+                "fee": 0,
+            }
+            if subscription is not None:
+                refund_reversal_metadata["subscription_id"] = str(subscription.id)
+            refund_reversal = await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.balance_refund_reversal.value,
+                timestamp=refund_reversal_at,
+                metadata=refund_reversal_metadata,
+            )
+            emitted_events.append(refund_reversal)
+
+    if include_balance_dispute:
+        assert dispute_at is not None
+        dispute_value = dispute_amount
+        if dispute_value is None:
+            if payment_amount is not None:
+                dispute_value = -payment_amount
+            else:
+                dispute_value = -amount
+        dispute_metadata: dict[str, Any] = {
+            "transaction_id": str(uuid4()),
+            "dispute_id": str(uuid4()),
+            "order_id": str(order.id),
+            "product_id": str(product.id),
+            "billing_type": product.billing_type.value,
+            "amount": dispute_value,
+            "currency": "usd",
+            "presentment_amount": dispute_value,
+            "presentment_currency": "usd",
+            "tax_amount": 0,
+            "fee": dispute_fee_amount,
+        }
+        if subscription is not None:
+            dispute_metadata["subscription_id"] = str(subscription.id)
+        balance_dispute = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.balance_dispute.value,
+            timestamp=dispute_at,
+            metadata=dispute_metadata,
+        )
+        emitted_events.append(balance_dispute)
+
+    return emitted_events
+
+
+async def _create_user_cost_event(
+    save_fixture: Any,
+    organization: Organization,
+    customer: Customer | None,
+    *,
+    timestamp: datetime,
+    amount: float,
+    external_customer_id: str | None,
+) -> Event:
+    return await create_event(
         save_fixture,
         organization=organization,
         customer=customer,
-        source=EventSource.system,
-        name=SystemEvent.order_paid.value,
-        timestamp=_dt(ordered_on),
-        metadata=common_metadata,
+        source=EventSource.user,
+        name="api.call",
+        timestamp=timestamp,
+        external_customer_id=external_customer_id,
+        metadata={"_cost": {"amount": amount, "currency": "usd"}},
     )
-    emitted_events.insert(0, order_paid)
 
-    return emitted_events
+
+async def _seed_customer_scenario(
+    save_fixture: Any,
+    organization: Organization,
+    products: dict[str, Product],
+    scenario: CustomerScenario,
+    *,
+    events: list[Event],
+) -> UUID:
+    customer = await create_customer(
+        save_fixture,
+        organization=organization,
+        email=f"{scenario.key}@example.com",
+        name=scenario.key,
+        external_id=scenario.external_id,
+        stripe_customer_id=f"cus_{scenario.key}",
+    )
+
+    for subscription_scenario in scenario.subscriptions:
+        assert subscription_scenario.order_timestamps
+        product = products[subscription_scenario.product_key]
+        started_at = subscription_scenario.order_timestamps[0]
+        canceled = subscription_scenario.canceled_at is not None
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled
+            if canceled
+            else SubscriptionStatus.active,
+            started_at=started_at,
+            cancel_at_period_end=subscription_scenario.cancel_at_period_end,
+            ended_at=subscription_scenario.ends_at if canceled else None,
+            ends_at=subscription_scenario.ends_at if canceled else None,
+        )
+        if canceled:
+            subscription.canceled_at = subscription_scenario.canceled_at
+            if subscription_scenario.cancellation_reason is not None:
+                subscription.customer_cancellation_reason = (
+                    subscription_scenario.cancellation_reason
+                )
+            await save_fixture(subscription)
+
+        events.append(
+            await _create_subscription_created_event(
+                save_fixture,
+                organization,
+                customer,
+                subscription,
+                product,
+            )
+        )
+
+        for ordered_at in subscription_scenario.order_timestamps:
+            events.extend(
+                await _create_paid_order_events(
+                    save_fixture,
+                    organization,
+                    customer,
+                    product,
+                    ordered_at=ordered_at,
+                    amount=subscription_scenario.amount,
+                    subscription=subscription,
+                    include_balance_net_amount_metadata=(
+                        subscription_scenario.include_balance_net_amount_metadata
+                    ),
+                    applied_balance_amount=subscription_scenario.applied_balance_amount,
+                    platform_fee_amount=subscription_scenario.platform_fee_amount,
+                    payment_amount=subscription_scenario.payment_amount,
+                )
+            )
+
+        if canceled:
+            assert subscription_scenario.canceled_at is not None
+            canceled_event_ends_at = (
+                subscription_scenario.canceled_event_ends_at
+                or subscription_scenario.ends_at
+            )
+            assert canceled_event_ends_at is not None
+            assert subscription_scenario.cancellation_reason is not None
+            events.append(
+                await _create_subscription_canceled_event(
+                    save_fixture,
+                    organization,
+                    customer,
+                    subscription,
+                    canceled_at=subscription_scenario.canceled_at,
+                    ends_at=canceled_event_ends_at,
+                    customer_cancellation_reason=(
+                        subscription_scenario.cancellation_reason.value
+                    ),
+                    cancel_at_period_end=subscription_scenario.cancel_at_period_end,
+                )
+            )
+            if subscription_scenario.revoked_at is not None:
+                events.append(
+                    await _create_subscription_revoked_event(
+                        save_fixture,
+                        organization,
+                        customer,
+                        subscription,
+                        product,
+                        revoked_at=subscription_scenario.revoked_at,
+                    )
+                )
+
+    for one_time_order in scenario.one_time_orders:
+        product = products[one_time_order.product_key]
+        one_time_order_subscription: Subscription | None = None
+        if one_time_order.subscription_started_at is not None:
+            one_time_order_subscription = await create_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                status=SubscriptionStatus.active,
+                started_at=one_time_order.subscription_started_at,
+            )
+            events.append(
+                await _create_subscription_created_event(
+                    save_fixture,
+                    organization,
+                    customer,
+                    one_time_order_subscription,
+                    product,
+                )
+            )
+        events.extend(
+            await _create_paid_order_events(
+                save_fixture,
+                organization,
+                customer,
+                product,
+                ordered_at=one_time_order.ordered_at,
+                amount=one_time_order.amount,
+                subscription=one_time_order_subscription,
+                created_at=one_time_order.created_at,
+                order_paid_at=one_time_order.order_paid_at,
+                balance_at=one_time_order.balance_at,
+                include_order_created_at_metadata=(
+                    one_time_order.include_order_created_at_metadata
+                ),
+                include_order_paid=one_time_order.include_order_paid,
+                include_balance=one_time_order.include_balance,
+                include_balance_net_amount_metadata=(
+                    one_time_order.include_balance_net_amount_metadata
+                ),
+                status=one_time_order.status,
+                refunded_amount=one_time_order.refunded_amount,
+                applied_balance_amount=one_time_order.applied_balance_amount,
+                platform_fee_amount=one_time_order.platform_fee_amount,
+                payment_amount=one_time_order.payment_amount,
+                include_balance_refund=one_time_order.include_balance_refund,
+                refund_at=one_time_order.refund_at,
+                extra_balance_refund_events=one_time_order.extra_balance_refund_events,
+                include_balance_refund_reversal=(
+                    one_time_order.include_balance_refund_reversal
+                ),
+                refund_reversal_at=one_time_order.refund_reversal_at,
+                include_balance_dispute=one_time_order.include_balance_dispute,
+                dispute_at=one_time_order.dispute_at,
+                dispute_amount=one_time_order.dispute_amount,
+                dispute_fee_amount=one_time_order.dispute_fee_amount,
+            )
+        )
+
+    for user_event in scenario.user_events:
+        events.append(
+            await _create_user_cost_event(
+                save_fixture,
+                organization,
+                customer if user_event.include_customer_ref else None,
+                timestamp=user_event.timestamp,
+                amount=user_event.amount,
+                external_customer_id=user_event.external_customer_id,
+            )
+        )
+
+    return customer.id
+
+
+async def _seed_organization_scenario(
+    save_fixture: Any,
+    scenario: OrganizationScenario,
+    *,
+    events: list[Event],
+) -> OrganizationContext:
+    organization = await create_organization(save_fixture)
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "tinybird_read": True,
+        "tinybird_compare": False,
+    }
+    await save_fixture(organization)
+
+    products: dict[str, Product] = {}
+    for product_scenario in scenario.products:
+        products[product_scenario.key] = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=product_scenario.recurring_interval,
+            prices=[(product_scenario.price, "usd")],
+        )
+
+    customer_ids: dict[str, UUID] = {}
+    for customer_scenario in scenario.customers:
+        customer_ids[customer_scenario.key] = await _seed_customer_scenario(
+            save_fixture,
+            organization,
+            products,
+            customer_scenario,
+            events=events,
+        )
+
+    return OrganizationContext(
+        organization=organization,
+        product_ids={k: v.id for k, v in products.items()},
+        customer_ids=customer_ids,
+    )
 
 
 async def _query_metrics(
@@ -537,6 +1382,7 @@ async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHar
 
     events: list[Event] = []
     snapshots: dict[str, CaseSnapshot] = {}
+    organizations: dict[str, OrganizationContext] = {}
 
     try:
         with (
@@ -544,1189 +1390,44 @@ async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHar
             patch.object(queries_tinybird, "tinybird_client", tinybird_client),
             patch.object(settings, "TINYBIRD_EVENTS_READ", True),
         ):
-            organization = await create_organization(save_fixture)
-            organization.feature_settings = {
-                **organization.feature_settings,
-                "tinybird_read": True,
-                "tinybird_compare": False,
-            }
-            await save_fixture(organization)
-
-            another_organization = await create_organization(save_fixture)
-
-            products = {
-                "monthly": await create_product(
+            for scenario in ORGANIZATION_SCENARIOS:
+                organizations[scenario.key] = await _seed_organization_scenario(
                     save_fixture,
-                    organization=organization,
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[(MONTHLY_PRICE, "usd")],
-                ),
-                "monthly_40": await create_product(
-                    save_fixture,
-                    organization=organization,
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[(40_00, "usd")],
-                ),
-                "monthly_plus": await create_product(
-                    save_fixture,
-                    organization=organization,
-                    recurring_interval=SubscriptionRecurringInterval.month,
-                    prices=[(MONTHLY_PLUS_PRICE, "usd")],
-                ),
-                "yearly": await create_product(
-                    save_fixture,
-                    organization=organization,
-                    recurring_interval=SubscriptionRecurringInterval.year,
-                    prices=[(YEARLY_PRICE, "usd")],
-                ),
-                "yearly_zero": await create_product(
-                    save_fixture,
-                    organization=organization,
-                    recurring_interval=SubscriptionRecurringInterval.year,
-                    prices=[(0, "usd")],
-                ),
-                "one_time": await create_product(
-                    save_fixture,
-                    organization=organization,
-                    recurring_interval=None,
-                    prices=[(ONE_TIME_PRICE, "usd")],
-                ),
-            }
-
-            customer_ids: dict[str, UUID] = {}
-
-            async def create_customer_with_data(
-                key: str,
-                *,
-                external_id: str | None = None,
-                subscriptions: list[dict[str, Any]] | None = None,
-                one_time_orders: list[date] | None = None,
-            ) -> None:
-                customer = await create_customer(
-                    save_fixture,
-                    organization=organization,
-                    email=f"{key}@example.com",
-                    name=key,
-                    external_id=external_id,
-                    stripe_customer_id=f"cus_{key}",
+                    scenario,
+                    events=events,
                 )
-                customer_ids[key] = customer.id
-
-                for subscription_data in subscriptions or []:
-                    product = products[subscription_data["product"]]
-                    subscription = await create_subscription(
-                        save_fixture,
-                        product=product,
-                        customer=customer,
-                        status=SubscriptionStatus.active,
-                        started_at=_dt(subscription_data["start"]),
-                        ended_at=(
-                            _dt(subscription_data["end"])
-                            if "end" in subscription_data
-                            else None
-                        ),
-                        ends_at=(
-                            _dt(subscription_data["end"])
-                            if "end" in subscription_data
-                            else None
-                        ),
-                    )
-                    if "cancel" in subscription_data:
-                        subscription.canceled_at = _dt(subscription_data["cancel"])
-                        subscription.customer_cancellation_reason = (
-                            CustomerCancellationReason(subscription_data["reason"])
-                        )
-                        await save_fixture(subscription)
-
-                    events.append(
-                        await _create_subscription_created_event(
-                            save_fixture,
-                            organization,
-                            customer,
-                            subscription,
-                            product,
-                        )
-                    )
-                    events.extend(
-                        await _create_paid_order_events(
-                            save_fixture,
-                            organization,
-                            customer,
-                            product,
-                            ordered_on=subscription_data["start"],
-                            amount=subscription_data["amount"],
-                            subscription=subscription,
-                        )
-                    )
-
-                    for renewal in subscription_data.get("renewals", []):
-                        events.extend(
-                            await _create_paid_order_events(
-                                save_fixture,
-                                organization,
-                                customer,
-                                product,
-                                ordered_on=renewal,
-                                amount=subscription_data["amount"],
-                                subscription=subscription,
-                            )
-                        )
-
-                    if "cancel" in subscription_data:
-                        events.append(
-                            await _create_subscription_canceled_event(
-                                save_fixture,
-                                organization,
-                                customer,
-                                subscription,
-                                canceled_at=subscription_data["cancel"],
-                                ends_at=subscription_data["end"],
-                                customer_cancellation_reason=subscription_data[
-                                    "reason"
-                                ],
-                            )
-                        )
-
-                for one_time_order_date in one_time_orders or []:
-                    events.extend(
-                        await _create_paid_order_events(
-                            save_fixture,
-                            organization,
-                            customer,
-                            products["one_time"],
-                            ordered_on=one_time_order_date,
-                            amount=ONE_TIME_PRICE,
-                        )
-                    )
-
-            await create_customer_with_data(
-                "loyal_monthly",
-                subscriptions=[
-                    {
-                        "product": "monthly",
-                        "start": date(2024, 1, 1),
-                        "renewals": [
-                            date(2024, 2, 1),
-                            date(2024, 3, 1),
-                            date(2024, 4, 1),
-                            date(2024, 5, 1),
-                            date(2024, 6, 1),
-                        ],
-                        "amount": MONTHLY_PRICE,
-                    }
-                ],
-            )
-            await create_customer_with_data(
-                "yearly_subscriber",
-                subscriptions=[
-                    {
-                        "product": "yearly",
-                        "start": date(2024, 1, 1),
-                        "amount": YEARLY_PRICE,
-                    }
-                ],
-            )
-            await create_customer_with_data(
-                "one_time_buyer",
-                one_time_orders=[date(2024, 1, 10), date(2024, 4, 20)],
-            )
-            await create_customer_with_data(
-                "monthly_plus_customer",
-                subscriptions=[
-                    {
-                        "product": "monthly_plus",
-                        "start": date(2024, 4, 1),
-                        "renewals": [date(2024, 5, 1), date(2024, 6, 1)],
-                        "amount": MONTHLY_PLUS_PRICE,
-                    }
-                ],
-            )
-            await create_customer_with_data(
-                "external_match",
-                external_id="ext-boundary",
-                subscriptions=[
-                    {
-                        "product": "monthly",
-                        "start": date(2024, 1, 5),
-                        "renewals": [date(2024, 2, 5)],
-                        "amount": MONTHLY_PRICE,
-                    }
-                ],
-            )
-            await create_customer_with_data(
-                "weekly_boundary_new_subscriptions",
-                subscriptions=[
-                    {
-                        "product": "monthly",
-                        "start": date(2026, 1, 26),
-                        "amount": MONTHLY_PRICE,
-                    },
-                    {
-                        "product": "monthly",
-                        "start": date(2026, 1, 28),
-                        "amount": MONTHLY_PRICE,
-                    },
-                    {
-                        "product": "monthly",
-                        "start": date(2026, 1, 31),
-                        "amount": MONTHLY_PRICE,
-                    },
-                    {
-                        "product": "monthly",
-                        "start": date(2026, 2, 1),
-                        "amount": MONTHLY_PRICE,
-                    },
-                ],
-            )
-            await create_customer_with_data(
-                "partial_window_churn",
-                subscriptions=[
-                    {
-                        "product": "monthly",
-                        "start": date(2026, 1, 1),
-                        "renewals": [date(2026, 2, 1)],
-                        "cancel": date(2026, 1, 15),
-                        "end": date(2026, 2, 20),
-                        "reason": "too_expensive",
-                        "amount": MONTHLY_PRICE,
-                    }
-                ],
-            )
-            product_update_tie_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="product-update-tie@example.com",
-                name="product_update_same_timestamp",
-                stripe_customer_id="cus_product_update_tie",
-            )
-            customer_ids["product_update_same_timestamp"] = (
-                product_update_tie_customer.id
-            )
-            product_update_tie_sub = await create_subscription(
-                save_fixture,
-                product=products["yearly_zero"],
-                customer=product_update_tie_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2026, 2, 3)),
-            )
-            tied_ts = _dt(date(2026, 2, 3), 9, 0)
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=product_update_tie_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.subscription_created.value,
-                    timestamp=tied_ts,
-                    metadata={
-                        "subscription_id": str(product_update_tie_sub.id),
-                        "product_id": str(products["monthly"].id),
-                        "customer_id": str(product_update_tie_customer.id),
-                        "started_at": product_update_tie_sub.started_at.isoformat()
-                        if product_update_tie_sub.started_at
-                        else None,
-                        "recurring_interval": SubscriptionRecurringInterval.month.value,
-                        "recurring_interval_count": 1,
-                    },
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=product_update_tie_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.subscription_product_updated.value,
-                    timestamp=tied_ts,
-                    metadata={
-                        "subscription_id": str(product_update_tie_sub.id),
-                        "old_product_id": str(products["monthly"].id),
-                        "new_product_id": str(products["yearly_zero"].id),
-                    },
-                )
-            )
-            missing_created_product_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="missing-created-product-id@example.com",
-                name="missing_created_product_id",
-                stripe_customer_id="cus_missing_created_product_id",
-            )
-            customer_ids["missing_created_product_id"] = (
-                missing_created_product_customer.id
-            )
-            missing_created_product_sub = await create_subscription(
-                save_fixture,
-                product=products["monthly"],
-                customer=missing_created_product_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2026, 2, 3)),
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=missing_created_product_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.subscription_created.value,
-                    timestamp=_dt(date(2026, 2, 3), 9, 0),
-                    metadata={
-                        "subscription_id": str(missing_created_product_sub.id),
-                        "customer_id": str(missing_created_product_customer.id),
-                        "started_at": missing_created_product_sub.started_at.isoformat()
-                        if missing_created_product_sub.started_at
-                        else None,
-                        "recurring_interval": SubscriptionRecurringInterval.month.value,
-                        "recurring_interval_count": 1,
-                    },
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    missing_created_product_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 2, 3),
-                    amount=MONTHLY_PRICE,
-                    subscription=missing_created_product_sub,
-                )
-            )
-            amsterdam_canceled_replay_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="amsterdam-canceled-replay@example.com",
-                name="amsterdam_canceled_replay",
-                stripe_customer_id="cus_amsterdam_canceled_replay",
-            )
-            customer_ids["amsterdam_canceled_replay"] = (
-                amsterdam_canceled_replay_customer.id
-            )
-
-            async def create_canceled_subscription_with_events(
-                *,
-                started_on: date = date(2026, 1, 1),
-                canceled_on: date,
-                reason: CustomerCancellationReason,
-                initial_event_reason: str | None = None,
-                replay_timestamp: datetime | None = None,
-                replay_canceled_at: datetime | None = None,
-                replay_ends_at: datetime | None = None,
-                replay_reason: str | None = None,
-                replay_include_canceled_at: bool = True,
-            ) -> None:
-                subscription = await create_subscription(
-                    save_fixture,
-                    product=products["monthly"],
-                    customer=amsterdam_canceled_replay_customer,
-                    status=SubscriptionStatus.active,
-                    started_at=_dt(started_on),
-                    ended_at=_dt(canceled_on),
-                    ends_at=_dt(canceled_on),
-                )
-                subscription.canceled_at = _dt(canceled_on)
-                subscription.customer_cancellation_reason = reason
-                await save_fixture(subscription)
-
-                events.append(
-                    await _create_subscription_created_event(
-                        save_fixture,
-                        organization,
-                        amsterdam_canceled_replay_customer,
-                        subscription,
-                        products["monthly"],
-                    )
-                )
-                events.extend(
-                    await _create_paid_order_events(
-                        save_fixture,
-                        organization,
-                        amsterdam_canceled_replay_customer,
-                        products["monthly"],
-                        ordered_on=started_on,
-                        amount=MONTHLY_PRICE,
-                        subscription=subscription,
-                    )
-                )
-
-                events.append(
-                    await _create_subscription_canceled_event(
-                        save_fixture,
-                        organization,
-                        amsterdam_canceled_replay_customer,
-                        subscription,
-                        canceled_at=canceled_on,
-                        ends_at=canceled_on,
-                        customer_cancellation_reason=(
-                            initial_event_reason
-                            if initial_event_reason is not None
-                            else reason.value
-                        ),
-                    )
-                )
-
-                if replay_timestamp is None:
-                    return
-
-                replay_metadata: dict[str, Any] = {
-                    "subscription_id": str(subscription.id),
-                    "customer_id": str(amsterdam_canceled_replay_customer.id),
-                    "ends_at": (replay_ends_at or _dt(canceled_on)).isoformat(),
-                    "customer_cancellation_reason": (
-                        replay_reason if replay_reason is not None else reason.value
-                    ),
-                }
-                if replay_include_canceled_at:
-                    replay_metadata["canceled_at"] = (
-                        replay_canceled_at.isoformat()
-                        if replay_canceled_at is not None
-                        else _dt(canceled_on).isoformat()
-                    )
-
-                events.append(
-                    await create_event(
-                        save_fixture,
-                        organization=organization,
-                        customer=amsterdam_canceled_replay_customer,
-                        source=EventSource.system,
-                        name=SystemEvent.subscription_canceled.value,
-                        timestamp=replay_timestamp,
-                        metadata=replay_metadata,
-                    )
-                )
-
-            await create_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 14),
-                reason=CustomerCancellationReason.other,
-                initial_event_reason=CustomerCancellationReason.low_quality.value,
-                replay_timestamp=_dt(date(2026, 1, 18), 10, 0),
-                replay_canceled_at=_dt(date(2026, 1, 14), 10, 0),
-                replay_ends_at=_dt(date(2026, 1, 14), 10, 0),
-                replay_reason="",
-            )
-            await create_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 14),
-                reason=CustomerCancellationReason.other,
-            )
-            await create_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 20),
-                reason=CustomerCancellationReason.other,
-            )
-            await create_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 20),
-                reason=CustomerCancellationReason.low_quality,
-                replay_timestamp=_dt(date(2026, 1, 25), 10, 0),
-                replay_canceled_at=_dt(date(2026, 1, 14), 10, 0),
-                replay_ends_at=_dt(date(2026, 1, 20), 10, 0),
-                replay_reason=CustomerCancellationReason.other.value,
-            )
-            await create_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 30),
-                reason=CustomerCancellationReason.other,
-                replay_timestamp=_dt(date(2026, 2, 1), 10, 0),
-                replay_canceled_at=_dt(date(2026, 1, 10), 10, 0),
-                replay_ends_at=_dt(date(2026, 1, 30), 10, 0),
-                replay_reason=CustomerCancellationReason.other.value,
-            )
-            await create_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 30),
-                reason=CustomerCancellationReason.other,
-            )
-            ho_chi_minh_canceled_replay_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="ho-chi-minh-canceled-replay@example.com",
-                name="ho_chi_minh_canceled_replay",
-                stripe_customer_id="cus_ho_chi_minh_canceled_replay",
-            )
-            customer_ids["ho_chi_minh_canceled_replay"] = (
-                ho_chi_minh_canceled_replay_customer.id
-            )
-
-            async def create_hcm_canceled_subscription_with_events(
-                *,
-                started_on: date = date(2026, 1, 1),
-                canceled_on: date,
-                reason: CustomerCancellationReason,
-                replay_timestamp: datetime | None = None,
-                replay_canceled_at: datetime | None = None,
-                replay_ends_at: datetime | None = None,
-                replay_reason: str | None = None,
-                replay_include_canceled_at: bool = True,
-            ) -> None:
-                subscription = await create_subscription(
-                    save_fixture,
-                    product=products["monthly"],
-                    customer=ho_chi_minh_canceled_replay_customer,
-                    status=SubscriptionStatus.active,
-                    started_at=_dt(started_on),
-                    ended_at=_dt(canceled_on),
-                    ends_at=_dt(canceled_on),
-                )
-                subscription.canceled_at = _dt(canceled_on)
-                subscription.customer_cancellation_reason = reason
-                await save_fixture(subscription)
-
-                events.append(
-                    await _create_subscription_created_event(
-                        save_fixture,
-                        organization,
-                        ho_chi_minh_canceled_replay_customer,
-                        subscription,
-                        products["monthly"],
-                    )
-                )
-                events.extend(
-                    await _create_paid_order_events(
-                        save_fixture,
-                        organization,
-                        ho_chi_minh_canceled_replay_customer,
-                        products["monthly"],
-                        ordered_on=started_on,
-                        amount=MONTHLY_PRICE,
-                        subscription=subscription,
-                    )
-                )
-
-                events.append(
-                    await _create_subscription_canceled_event(
-                        save_fixture,
-                        organization,
-                        ho_chi_minh_canceled_replay_customer,
-                        subscription,
-                        canceled_at=canceled_on,
-                        ends_at=canceled_on,
-                        customer_cancellation_reason=reason.value,
-                    )
-                )
-
-                if replay_timestamp is None:
-                    return
-
-                replay_metadata: dict[str, Any] = {
-                    "subscription_id": str(subscription.id),
-                    "customer_id": str(ho_chi_minh_canceled_replay_customer.id),
-                    "ends_at": (replay_ends_at or _dt(canceled_on)).isoformat(),
-                    "customer_cancellation_reason": (
-                        replay_reason if replay_reason is not None else reason.value
-                    ),
-                }
-                if replay_include_canceled_at:
-                    replay_metadata["canceled_at"] = (
-                        replay_canceled_at.isoformat()
-                        if replay_canceled_at is not None
-                        else _dt(canceled_on).isoformat()
-                    )
-
-                events.append(
-                    await create_event(
-                        save_fixture,
-                        organization=organization,
-                        customer=ho_chi_minh_canceled_replay_customer,
-                        source=EventSource.system,
-                        name=SystemEvent.subscription_canceled.value,
-                        timestamp=replay_timestamp,
-                        metadata=replay_metadata,
-                    )
-                )
-
-            await create_hcm_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 14),
-                reason=CustomerCancellationReason.other,
-            )
-            await create_hcm_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 14),
-                reason=CustomerCancellationReason.other,
-            )
-            await create_hcm_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 14),
-                reason=CustomerCancellationReason.low_quality,
-            )
-            await create_hcm_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 20),
-                reason=CustomerCancellationReason.other,
-            )
-            await create_hcm_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 20),
-                reason=CustomerCancellationReason.low_quality,
-                replay_timestamp=_dt(date(2026, 1, 25), 10, 0),
-                replay_canceled_at=_dt(date(2026, 1, 14), 10, 0),
-                replay_ends_at=_dt(date(2026, 1, 20), 10, 0),
-                replay_reason=CustomerCancellationReason.other.value,
-            )
-            await create_hcm_canceled_subscription_with_events(
-                canceled_on=date(2026, 1, 30),
-                reason=CustomerCancellationReason.other,
-                replay_timestamp=_dt(date(2026, 2, 1), 10, 0),
-                replay_canceled_at=_dt(date(2026, 1, 10), 10, 0),
-                replay_ends_at=_dt(date(2026, 1, 30), 10, 0),
-                replay_reason=CustomerCancellationReason.other.value,
-            )
-            await create_customer_with_data(
-                "missing_order_paid",
-                one_time_orders=[],
-            )
-            renewed_missing_balance_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="renewed-missing-balance@example.com",
-                name="renewed_missing_balance",
-                stripe_customer_id="cus_renewed_missing_balance",
-            )
-            customer_ids["renewed_missing_balance"] = (
-                renewed_missing_balance_customer.id
-            )
-            renewed_missing_balance_sub = await create_subscription(
-                save_fixture,
-                product=products["monthly"],
-                customer=renewed_missing_balance_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2026, 1, 20)),
-            )
-            events.append(
-                await _create_subscription_created_event(
-                    save_fixture,
-                    organization,
-                    renewed_missing_balance_customer,
-                    renewed_missing_balance_sub,
-                    products["monthly"],
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    renewed_missing_balance_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 1, 20),
-                    amount=MONTHLY_PRICE,
-                    subscription=renewed_missing_balance_sub,
-                )
-            )
-            for renewed_on in (date(2026, 2, 9), date(2026, 2, 10), date(2026, 2, 12)):
-                events.extend(
-                    await _create_paid_order_events(
-                        save_fixture,
-                        organization,
-                        renewed_missing_balance_customer,
-                        products["monthly"],
-                        ordered_on=renewed_on,
-                        amount=MONTHLY_PRICE,
-                        subscription=renewed_missing_balance_sub,
-                        include_balance=False,
-                    )
-                )
-            delayed_created_at_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="delayed-created-at@example.com",
-                name="delayed_created_at",
-                stripe_customer_id="cus_delayed_created_at",
-            )
-            customer_ids["delayed_created_at"] = delayed_created_at_customer.id
-            delayed_created_order = await create_order(
-                save_fixture,
-                customer=delayed_created_at_customer,
-                product=products["one_time"],
-                status=OrderStatus.paid,
-                subtotal_amount=ONE_TIME_PRICE,
-                created_at=_dt(date(2026, 2, 1)),
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=delayed_created_at_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.order_paid.value,
-                    timestamp=_dt(date(2026, 2, 2)),
-                    metadata={
-                        "order_id": str(delayed_created_order.id),
-                        "order_created_at": _dt(date(2026, 2, 1)).isoformat(),
-                        "product_id": str(products["one_time"].id),
-                        "billing_type": ProductBillingType.one_time.value,
-                        "amount": delayed_created_order.net_amount,
-                        "net_amount": delayed_created_order.net_amount,
-                        "currency": "usd",
-                        "tax_amount": delayed_created_order.tax_amount,
-                    },
-                )
-            )
-            refund_dup_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="refund-duplication@example.com",
-                name="refund_join_duplication",
-                stripe_customer_id="cus_refund_join_duplication",
-            )
-            customer_ids["refund_join_duplication"] = refund_dup_customer.id
-            refund_dup_subscription = await create_subscription(
-                save_fixture,
-                product=products["monthly"],
-                customer=refund_dup_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2026, 1, 1)),
-            )
-            events.append(
-                await _create_subscription_created_event(
-                    save_fixture,
-                    organization,
-                    refund_dup_customer,
-                    refund_dup_subscription,
-                    products["monthly"],
-                )
-            )
-            refund_dup_order = await create_order(
-                save_fixture,
-                customer=refund_dup_customer,
-                product=products["monthly"],
-                status=OrderStatus.paid,
-                subtotal_amount=MONTHLY_PRICE,
-                created_at=_dt(date(2026, 1, 22)),
-                subscription=refund_dup_subscription,
-            )
-            refund_dup_transaction = await create_payment_transaction(
-                save_fixture,
-                order=refund_dup_order,
-                amount=refund_dup_order.net_amount,
-                tax_amount=refund_dup_order.tax_amount,
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=refund_dup_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.order_paid.value,
-                    timestamp=_dt(date(2026, 1, 23)),
-                    metadata={
-                        "order_id": str(refund_dup_order.id),
-                        "product_id": str(products["monthly"].id),
-                        "billing_type": ProductBillingType.recurring.value,
-                        "amount": refund_dup_order.net_amount,
-                        "net_amount": refund_dup_order.net_amount,
-                        "currency": "usd",
-                        "tax_amount": refund_dup_order.tax_amount,
-                        "subscription_id": str(refund_dup_subscription.id),
-                    },
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=refund_dup_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.balance_order.value,
-                    timestamp=_dt(date(2026, 1, 23)),
-                    metadata={
-                        "transaction_id": str(refund_dup_transaction.id),
-                        "order_id": str(refund_dup_order.id),
-                        "order_created_at": _dt(date(2026, 1, 22)).isoformat(),
-                        "product_id": str(products["monthly"].id),
-                        "subscription_id": str(refund_dup_subscription.id),
-                        "amount": refund_dup_order.net_amount,
-                        "net_amount": refund_dup_order.net_amount,
-                        "currency": "usd",
-                        "presentment_amount": refund_dup_order.net_amount,
-                        "presentment_currency": "usd",
-                        "tax_amount": refund_dup_order.tax_amount,
-                        "fee": 0,
-                    },
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=refund_dup_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.balance_refund.value,
-                    timestamp=_dt(date(2026, 1, 24)),
-                    metadata={
-                        "transaction_id": str(refund_dup_transaction.id),
-                        "refund_id": str(uuid4()),
-                        "order_id": str(refund_dup_order.id),
-                        "subscription_id": str(refund_dup_subscription.id),
-                        "amount": -refund_dup_order.net_amount,
-                        "currency": "usd",
-                        "presentment_amount": -refund_dup_order.net_amount,
-                        "presentment_currency": "usd",
-                        "tax_amount": 0,
-                        "fee": 0,
-                    },
-                )
-            )
-
-            cancellation_reasons = [
-                "customer_service",
-                "low_quality",
-                "missing_features",
-                "switched_service",
-                "too_complex",
-                "too_expensive",
-                "unused",
-                "other",
-            ]
-            for i, reason in enumerate(cancellation_reasons):
-                start_day = 2 + i
-                cancel_day = 10 + i
-                await create_customer_with_data(
-                    f"cancel_{reason}",
-                    subscriptions=[
-                        {
-                            "product": "monthly",
-                            "start": date(2024, 3, start_day),
-                            "cancel": date(2024, 3, cancel_day),
-                            "end": date(2024, 4, 1),
-                            "reason": reason,
-                            "amount": MONTHLY_PRICE,
-                        }
-                    ],
-                )
-
-            external_match_customer = await session.get(
-                Customer, customer_ids["external_match"]
-            )
-            assert external_match_customer is not None
-
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    source=EventSource.user,
-                    name="api.call",
-                    timestamp=_dt(date(2024, 1, 15), 18, 25),
-                    external_customer_id="ext-boundary",
-                    metadata={"_cost": {"amount": 0.11, "currency": "usd"}},
-                )
-            )
-
-            missing_order_paid_customer = await session.get(
-                Customer, customer_ids["missing_order_paid"]
-            )
-            assert missing_order_paid_customer is not None
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    missing_order_paid_customer,
-                    products["one_time"],
-                    ordered_on=date(2025, 10, 10),
-                    amount=ONE_TIME_PRICE,
-                    include_order_paid=False,
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    missing_order_paid_customer,
-                    products["one_time"],
-                    ordered_on=date(2025, 10, 20),
-                    amount=ONE_TIME_PRICE,
-                    include_order_paid=False,
-                )
-            )
-            moscow_net_missing_balance_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="moscow-net-missing-balance@example.com",
-                name="moscow_net_missing_balance",
-                stripe_customer_id="cus_moscow_net_missing_balance",
-            )
-            customer_ids["moscow_net_missing_balance"] = (
-                moscow_net_missing_balance_customer.id
-            )
-            moscow_net_missing_balance_subscription = await create_subscription(
-                save_fixture,
-                product=products["monthly_40"],
-                customer=moscow_net_missing_balance_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2025, 12, 10)),
-            )
-            events.append(
-                await _create_subscription_created_event(
-                    save_fixture,
-                    organization,
-                    moscow_net_missing_balance_customer,
-                    moscow_net_missing_balance_subscription,
-                    products["monthly_40"],
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    moscow_net_missing_balance_customer,
-                    products["monthly_40"],
-                    ordered_on=date(2025, 12, 10),
-                    amount=40_00,
-                    subscription=moscow_net_missing_balance_subscription,
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    moscow_net_missing_balance_customer,
-                    products["monthly_40"],
-                    ordered_on=date(2026, 1, 10),
-                    amount=40_00,
-                    subscription=moscow_net_missing_balance_subscription,
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    moscow_net_missing_balance_customer,
-                    products["monthly_40"],
-                    ordered_on=date(2026, 2, 11),
-                    amount=40_00,
-                    subscription=moscow_net_missing_balance_subscription,
-                    include_balance=False,
-                )
-            )
-            canary_new_subscriptions_missing_balance_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="canary-new-subscriptions-missing-balance@example.com",
-                name="canary_new_subscriptions_missing_balance",
-                stripe_customer_id="cus_canary_new_subscriptions_missing_balance",
-            )
-            customer_ids["canary_new_subscriptions_missing_balance"] = (
-                canary_new_subscriptions_missing_balance_customer.id
-            )
-            canary_march_subscription = await create_subscription(
-                save_fixture,
-                product=products["monthly"],
-                customer=canary_new_subscriptions_missing_balance_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2026, 3, 1)),
-            )
-            events.append(
-                await _create_subscription_created_event(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    canary_march_subscription,
-                    products["monthly"],
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 3, 1),
-                    amount=1_999,
-                    subscription=canary_march_subscription,
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 3, 12),
-                    amount=1_999,
-                    subscription=canary_march_subscription,
-                    include_balance=False,
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 3, 28),
-                    amount=1_999,
-                    subscription=canary_march_subscription,
-                    include_balance=False,
-                )
-            )
-            canary_april_subscription = await create_subscription(
-                save_fixture,
-                product=products["monthly"],
-                customer=canary_new_subscriptions_missing_balance_customer,
-                status=SubscriptionStatus.active,
-                started_at=_dt(date(2026, 4, 1)),
-            )
-            events.append(
-                await _create_subscription_created_event(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    canary_april_subscription,
-                    products["monthly"],
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 4, 1),
-                    amount=1_999,
-                    subscription=canary_april_subscription,
-                    include_balance=False,
-                )
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    organization,
-                    canary_new_subscriptions_missing_balance_customer,
-                    products["monthly"],
-                    ordered_on=date(2026, 4, 11),
-                    amount=1_999,
-                    subscription=canary_april_subscription,
-                    include_balance=False,
-                )
-            )
-            shanghai_delayed_missing_balance_customer = await create_customer(
-                save_fixture,
-                organization=organization,
-                email="shanghai-delayed-missing-balance@example.com",
-                name="shanghai_delayed_missing_balance",
-                stripe_customer_id="cus_shanghai_delayed_missing_balance",
-            )
-            customer_ids["shanghai_delayed_missing_balance"] = (
-                shanghai_delayed_missing_balance_customer.id
-            )
-            shanghai_order_created_at = _dt(date(2026, 2, 13), 15, 59)
-            shanghai_delayed_order = await create_order(
-                save_fixture,
-                customer=shanghai_delayed_missing_balance_customer,
-                product=products["one_time"],
-                status=OrderStatus.paid,
-                subtotal_amount=799,
-                created_at=shanghai_order_created_at,
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    customer=shanghai_delayed_missing_balance_customer,
-                    source=EventSource.system,
-                    name=SystemEvent.order_paid.value,
-                    timestamp=_dt(date(2026, 2, 16), 0, 15),
-                    metadata={
-                        "order_id": str(shanghai_delayed_order.id),
-                        "order_created_at": shanghai_order_created_at.isoformat(),
-                        "product_id": str(products["one_time"].id),
-                        "billing_type": ProductBillingType.one_time.value,
-                        "amount": shanghai_delayed_order.net_amount,
-                        "net_amount": shanghai_delayed_order.net_amount,
-                        "currency": "usd",
-                        "tax_amount": shanghai_delayed_order.tax_amount,
-                    },
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    source=EventSource.user,
-                    name="api.call",
-                    timestamp=_dt(date(2024, 1, 15), 18, 35),
-                    external_customer_id="ext-boundary",
-                    metadata={"_cost": {"amount": 0.22, "currency": "usd"}},
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    source=EventSource.user,
-                    name="api.call",
-                    timestamp=_dt(date(2024, 2, 10), 9, 0),
-                    customer=external_match_customer,
-                    metadata={"_cost": {"amount": 0.33, "currency": "usd"}},
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=organization,
-                    source=EventSource.user,
-                    name="api.call",
-                    timestamp=_dt(date(2024, 2, 11), 12, 0),
-                    external_customer_id="ext-no-match",
-                    metadata={"_cost": {"amount": 0.44, "currency": "usd"}},
-                )
-            )
-
-            other_customer = await create_customer(
-                save_fixture,
-                organization=another_organization,
-                email="other-org@example.com",
-                name="other_org_customer",
-                stripe_customer_id="cus_other_org",
-            )
-            other_product = await create_product(
-                save_fixture,
-                organization=another_organization,
-                recurring_interval=None,
-                prices=[(500_00, "usd")],
-            )
-            events.extend(
-                await _create_paid_order_events(
-                    save_fixture,
-                    another_organization,
-                    other_customer,
-                    other_product,
-                    ordered_on=date(2024, 1, 3),
-                    amount=500_00,
-                )
-            )
-            events.append(
-                await create_event(
-                    save_fixture,
-                    organization=another_organization,
-                    source=EventSource.user,
-                    name="api.call",
-                    timestamp=_dt(date(2024, 1, 15), 12, 0),
-                    metadata={"_cost": {"amount": 2.0, "currency": "usd"}},
-                )
-            )
 
             tinybird_events = [_event_to_tinybird(event) for event in events]
             await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-            auth_subject = AuthSubject(organization, {Scope.metrics_read}, None)
             for case in QUERY_CASES:
+                org_context = organizations[case.organization_key]
+                auth_subject = AuthSubject(
+                    org_context.organization,
+                    {Scope.metrics_read},
+                    None,
+                )
                 pg = await _query_metrics(
                     session,
                     auth_subject,
-                    organization,
+                    org_context.organization,
                     case,
                     tinybird_read=False,
-                    product_ids={k: v.id for k, v in products.items()},
-                    customer_ids=customer_ids,
+                    product_ids=org_context.product_ids,
+                    customer_ids=org_context.customer_ids,
                 )
                 tb = await _query_metrics(
                     session,
                     auth_subject,
-                    organization,
+                    org_context.organization,
                     case,
                     tinybird_read=True,
-                    product_ids={k: v.id for k, v in products.items()},
-                    customer_ids=customer_ids,
+                    product_ids=org_context.product_ids,
+                    customer_ids=org_context.customer_ids,
                 )
                 snapshots[case.label] = CaseSnapshot(pg=pg, tinybird=tb)
 
-            return MetricsHarness(
-                organization_id=organization.id,
-                product_ids={k: v.id for k, v in products.items()},
-                customer_ids=customer_ids,
-                snapshots=snapshots,
-            )
+            return MetricsHarness(organizations=organizations, snapshots=snapshots)
     finally:
         await session.close()
         await engine.dispose()
@@ -1754,7 +1455,7 @@ class TestTinybirdMetrics:
     def test_dataset_has_signal_for_reason_metrics(
         self, metrics_harness: MetricsHarness
     ) -> None:
-        snapshot = metrics_harness.snapshots["monthly_h1"].pg
+        snapshot = metrics_harness.snapshots["alpha_monthly_h1"].pg
         for slug in (
             "canceled_subscriptions_customer_service",
             "canceled_subscriptions_low_quality",
@@ -1771,7 +1472,7 @@ class TestTinybirdMetrics:
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
-            "daily_half_hour_timezone_customer_filter"
+            "alpha_daily_half_hour_timezone_customer_filter"
         ].pg
         assert len(snapshot.periods) == 2
 
@@ -1789,7 +1490,7 @@ class TestTinybirdMetrics:
     def test_partial_month_end_excludes_future_churn(
         self, metrics_harness: MetricsHarness
     ) -> None:
-        snapshot = metrics_harness.snapshots["monthly_partial_month_karachi_customer"]
+        snapshot = metrics_harness.snapshots["alpha_monthly_partial_window_karachi"]
         assert len(snapshot.pg.periods) == 3
         feb_pg = snapshot.pg.periods[2]
         feb_tb = snapshot.tinybird.periods[2]
@@ -1797,252 +1498,10 @@ class TestTinybirdMetrics:
         assert feb_pg.churned_subscriptions == 0
         assert feb_tb.churned_subscriptions == 0
 
-    def test_orders_fallback_when_order_paid_missing(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots["monthly_paris_orders_fallback"]
-        assert len(snapshot.pg.periods) >= 3
-        oct_pg = snapshot.pg.periods[2]
-        oct_tb = snapshot.tinybird.periods[2]
-
-        assert oct_pg.orders == 2
-        assert oct_tb.orders == 2
-        assert oct_pg.revenue == 20_000
-        assert oct_tb.revenue == 20_000
-
-    def test_net_revenue_fallback_when_balance_event_missing(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots["monthly_moscow_net_revenue_fallback"]
-        moscow = ZoneInfo("Europe/Moscow")
-        feb_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(moscow).date() == date(2026, 2, 1)
-        )
-        feb_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(moscow).date() == date(2026, 2, 1)
-        )
-
-        assert feb_pg.net_revenue == 4_000
-        assert feb_pg.renewed_subscriptions_net_revenue == 4_000
-        assert feb_pg.net_average_order_value == 4_000
-        assert feb_pg.net_cumulative_revenue == 12_000
-        assert feb_pg.net_revenue == feb_tb.net_revenue
-        assert (
-            feb_pg.renewed_subscriptions_net_revenue
-            == feb_tb.renewed_subscriptions_net_revenue
-        )
-        assert feb_pg.net_average_order_value == feb_tb.net_average_order_value
-        assert feb_pg.net_cumulative_revenue == feb_tb.net_cumulative_revenue
-
-    def test_new_subscriptions_revenue_fallback_when_balance_event_missing(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots[
-            "monthly_canary_new_subscriptions_revenue_missing_balance"
-        ]
-        canary = ZoneInfo("Atlantic/Canary")
-        march_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(canary).date() == date(2026, 3, 1)
-        )
-        march_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(canary).date() == date(2026, 3, 1)
-        )
-        april_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(canary).date() == date(2026, 4, 1)
-        )
-        april_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(canary).date() == date(2026, 4, 1)
-        )
-
-        assert march_pg.new_subscriptions_revenue == 5_997
-        assert april_pg.new_subscriptions_revenue == 3_998
-        assert march_pg.new_subscriptions_revenue == march_tb.new_subscriptions_revenue
-        assert april_pg.new_subscriptions_revenue == april_tb.new_subscriptions_revenue
-
-    def test_renewed_subscriptions_when_balance_event_missing(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots["daily_jerusalem_renewed_missing_balance"]
-        expected_counts = {
-            date(2026, 2, 9): 1,
-            date(2026, 2, 10): 1,
-            date(2026, 2, 12): 1,
-        }
-        for target_day, expected_count in expected_counts.items():
-            pg_period = next(
-                p
-                for p in snapshot.pg.periods
-                if p.timestamp.astimezone(ZoneInfo("Asia/Jerusalem")).date()
-                == target_day
-            )
-            tb_period = next(
-                p
-                for p in snapshot.tinybird.periods
-                if p.timestamp.astimezone(ZoneInfo("Asia/Jerusalem")).date()
-                == target_day
-            )
-            assert pg_period.renewed_subscriptions == expected_count
-            assert pg_period.renewed_subscriptions == tb_period.renewed_subscriptions
-
-    def test_order_paid_uses_order_created_at_without_balance(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots[
-            "daily_calcutta_order_created_at_without_balance"
-        ]
-        calcutta = ZoneInfo("Asia/Calcutta")
-        feb_1_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(calcutta).date() == date(2026, 2, 1)
-        )
-        feb_1_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(calcutta).date() == date(2026, 2, 1)
-        )
-        feb_2_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(calcutta).date() == date(2026, 2, 2)
-        )
-        feb_2_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(calcutta).date() == date(2026, 2, 2)
-        )
-
-        assert feb_1_pg.orders == 1
-        assert feb_2_pg.orders == 0
-        assert feb_1_pg.orders == feb_1_tb.orders
-        assert feb_2_pg.orders == feb_2_tb.orders
-
-    def test_order_paid_delayed_beyond_buffer_uses_order_created_at_without_balance(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots[
-            "daily_shanghai_delayed_order_paid_without_balance"
-        ]
-        shanghai = ZoneInfo("Asia/Shanghai")
-        feb_13_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 13)
-        )
-        feb_13_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 13)
-        )
-        feb_14_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 14)
-        )
-        feb_14_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 14)
-        )
-
-        assert feb_13_pg.orders == 1
-        assert feb_13_pg.revenue == 799
-        assert feb_13_pg.net_revenue == 799
-        assert feb_13_pg.cumulative_revenue == 799
-        assert feb_13_pg.net_cumulative_revenue == 799
-        assert feb_13_pg.average_order_value == 799
-        assert feb_13_pg.net_average_order_value == 799
-        assert feb_13_pg.one_time_products == 1
-        assert feb_13_pg.one_time_products_revenue == 799
-        assert feb_13_pg.one_time_products_net_revenue == 799
-        assert feb_13_pg.orders == feb_13_tb.orders
-        assert feb_13_pg.revenue == feb_13_tb.revenue
-        assert feb_13_pg.net_revenue == feb_13_tb.net_revenue
-        assert feb_13_pg.cumulative_revenue == feb_13_tb.cumulative_revenue
-        assert feb_13_pg.net_cumulative_revenue == feb_13_tb.net_cumulative_revenue
-        assert feb_13_pg.average_order_value == feb_13_tb.average_order_value
-        assert feb_13_pg.net_average_order_value == feb_13_tb.net_average_order_value
-        assert feb_13_pg.one_time_products == feb_13_tb.one_time_products
-        assert (
-            feb_13_pg.one_time_products_revenue == feb_13_tb.one_time_products_revenue
-        )
-        assert (
-            feb_13_pg.one_time_products_net_revenue
-            == feb_13_tb.one_time_products_net_revenue
-        )
-
-        assert feb_14_pg.orders == 0
-        assert feb_14_pg.revenue == 0
-        assert feb_14_pg.net_revenue == 0
-        assert feb_14_pg.cumulative_revenue == 799
-        assert feb_14_pg.net_cumulative_revenue == 799
-        assert feb_14_pg.one_time_products == 0
-        assert feb_14_pg.one_time_products_revenue == 0
-        assert feb_14_pg.one_time_products_net_revenue == 0
-        assert feb_14_pg.cumulative_revenue == feb_14_tb.cumulative_revenue
-        assert feb_14_pg.net_cumulative_revenue == feb_14_tb.net_cumulative_revenue
-
-    def test_refund_balance_row_does_not_duplicate_renewed_subscriptions(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots["daily_berlin_refund_join_duplication"]
-        berlin = ZoneInfo("Europe/Berlin")
-        jan_22_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(berlin).date() == date(2026, 1, 22)
-        )
-        jan_22_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(berlin).date() == date(2026, 1, 22)
-        )
-        jan_23_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(berlin).date() == date(2026, 1, 23)
-        )
-        jan_23_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(berlin).date() == date(2026, 1, 23)
-        )
-        jan_24_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(berlin).date() == date(2026, 1, 24)
-        )
-        jan_24_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(berlin).date() == date(2026, 1, 24)
-        )
-
-        assert jan_22_pg.renewed_subscriptions == 1
-        assert jan_23_pg.renewed_subscriptions == 0
-        assert jan_24_pg.renewed_subscriptions == 0
-        assert jan_22_pg.renewed_subscriptions == jan_22_tb.renewed_subscriptions
-        assert jan_23_pg.renewed_subscriptions == jan_23_tb.renewed_subscriptions
-        assert jan_24_pg.renewed_subscriptions == jan_24_tb.renewed_subscriptions
-
     def test_new_subscriptions_counts_full_first_week_at_range_boundary(
         self, metrics_harness: MetricsHarness
     ) -> None:
-        snapshot = metrics_harness.snapshots[
-            "weekly_stockholm_new_subscriptions_boundary"
-        ]
+        snapshot = metrics_harness.snapshots["alpha_weekly_stockholm_boundary"]
         stockholm = ZoneInfo("Europe/Stockholm")
         week_start_pg = next(
             p
@@ -2058,176 +1517,213 @@ class TestTinybirdMetrics:
         assert week_start_pg.new_subscriptions == 4
         assert week_start_pg.new_subscriptions == week_start_tb.new_subscriptions
 
-    def test_product_filter_uses_latest_subscription_product_update(
+    def test_order_paid_timestamp_drift_matches_order_created_day(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
-            "daily_stockholm_product_update_same_timestamp"
+            "alpha_daily_stockholm_order_paid_timestamp_drift"
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
-        feb_3_pg = next(
+
+        feb_4_pg = next(
             p
             for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 3)
+            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 4)
         )
-        feb_3_tb = next(
+        feb_4_tb = next(
             p
             for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 3)
+            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 4)
+        )
+        feb_13_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 13)
+        )
+        feb_13_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 13)
         )
 
-        assert feb_3_pg.new_subscriptions == 0
-        assert feb_3_pg.active_subscriptions == 0
-        assert feb_3_pg.committed_subscriptions == 0
-        assert feb_3_pg.new_subscriptions == feb_3_tb.new_subscriptions
-        assert feb_3_pg.active_subscriptions == feb_3_tb.active_subscriptions
-        assert feb_3_pg.committed_subscriptions == feb_3_tb.committed_subscriptions
+        assert feb_4_pg.orders == 3
+        assert feb_13_pg.orders == 2
+        assert feb_4_tb.orders == 3
+        assert feb_13_tb.orders == 2
 
-    def test_product_filter_works_when_subscription_created_product_id_missing(
+    def test_revoked_after_cancel_at_period_end_does_not_stay_active(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
-            "daily_stockholm_missing_created_product_id"
+            "alpha_daily_stockholm_revoked_after_cancel_at_period_end_drift"
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
-        feb_3_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 3)
-        )
-        feb_3_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 3)
-        )
 
-        assert feb_3_pg.new_subscriptions == 1
-        assert feb_3_pg.active_subscriptions == 1
-        assert feb_3_pg.committed_subscriptions == 1
-        assert feb_3_pg.new_subscriptions == feb_3_tb.new_subscriptions
-        assert feb_3_pg.active_subscriptions == feb_3_tb.active_subscriptions
-        assert feb_3_pg.committed_subscriptions == feb_3_tb.committed_subscriptions
+        def period_for(day: int, periods: list[Any]) -> Any:
+            return next(
+                p
+                for p in periods
+                if p.timestamp.astimezone(stockholm).date() == date(2026, 1, day)
+            )
 
-    def test_canceled_subscriptions_replay_keeps_reason_and_day_alignment(
+        for day in (17, 18, 19, 20):
+            pg = period_for(day, snapshot.pg.periods)
+            tb = period_for(day, snapshot.tinybird.periods)
+            assert tb.active_subscriptions == pg.active_subscriptions
+            assert tb.committed_subscriptions == pg.committed_subscriptions
+
+    def test_trial_orders_without_balance_are_counted(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
-            "daily_amsterdam_canceled_replay_reason_drift"
+            "alpha_daily_stockholm_trial_orders_without_balance"
         ]
-        amsterdam = ZoneInfo("Europe/Amsterdam")
+        stockholm = ZoneInfo("Europe/Stockholm")
 
-        jan_14_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(amsterdam).date() == date(2026, 1, 14)
-        )
-        jan_14_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(amsterdam).date() == date(2026, 1, 14)
-        )
-        jan_20_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(amsterdam).date() == date(2026, 1, 20)
-        )
-        jan_20_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(amsterdam).date() == date(2026, 1, 20)
-        )
-        jan_30_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(amsterdam).date() == date(2026, 1, 30)
-        )
-        jan_30_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(amsterdam).date() == date(2026, 1, 30)
-        )
+        def period_for(day: int, periods: list[Any]) -> Any:
+            return next(
+                p
+                for p in periods
+                if p.timestamp.astimezone(stockholm).date() == date(2026, 2, day)
+            )
 
-        assert jan_14_pg.canceled_subscriptions == 2
-        assert jan_14_pg.canceled_subscriptions_other == 2
-        assert jan_20_pg.canceled_subscriptions == 2
-        assert jan_20_pg.canceled_subscriptions_low_quality == 1
-        assert jan_30_pg.canceled_subscriptions == 2
-        assert jan_30_pg.canceled_subscriptions_other == 2
+        for day, expected_orders in ((6, 1), (9, 2), (11, 1)):
+            pg = period_for(day, snapshot.pg.periods)
+            tb = period_for(day, snapshot.tinybird.periods)
+            assert pg.orders == expected_orders
+            assert pg.one_time_products == expected_orders
+            assert tb.orders == expected_orders
+            assert tb.one_time_products == expected_orders
 
-        assert jan_14_pg.canceled_subscriptions == jan_14_tb.canceled_subscriptions
-        assert (
-            jan_14_pg.canceled_subscriptions_other
-            == jan_14_tb.canceled_subscriptions_other
-        )
-        assert jan_20_pg.canceled_subscriptions == jan_20_tb.canceled_subscriptions
-        assert (
-            jan_20_pg.canceled_subscriptions_low_quality
-            == jan_20_tb.canceled_subscriptions_low_quality
-        )
-        assert jan_30_pg.canceled_subscriptions == jan_30_tb.canceled_subscriptions
-        assert (
-            jan_30_pg.canceled_subscriptions_other
-            == jan_30_tb.canceled_subscriptions_other
-        )
-
-    def test_canceled_subscriptions_replay_ho_chi_minh_reason_and_day_alignment(
+    def test_balance_only_refunded_without_order_paid_is_included(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
-            "daily_ho_chi_minh_canceled_replay_reason_drift"
+            "alpha_daily_stockholm_balance_only_refunded_without_order_paid"
         ]
-        ho_chi_minh = ZoneInfo("Asia/Ho_Chi_Minh")
+        stockholm = ZoneInfo("Europe/Stockholm")
 
-        jan_14_pg = next(
+        oct_5_pg = next(
             p
             for p in snapshot.pg.periods
-            if p.timestamp.astimezone(ho_chi_minh).date() == date(2026, 1, 14)
+            if p.timestamp.astimezone(stockholm).date() == date(2025, 10, 5)
         )
-        jan_14_tb = next(
+        oct_5_tb = next(
             p
             for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(ho_chi_minh).date() == date(2026, 1, 14)
-        )
-        jan_20_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(ho_chi_minh).date() == date(2026, 1, 20)
-        )
-        jan_20_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(ho_chi_minh).date() == date(2026, 1, 20)
-        )
-        jan_30_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(ho_chi_minh).date() == date(2026, 1, 30)
-        )
-        jan_30_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(ho_chi_minh).date() == date(2026, 1, 30)
+            if p.timestamp.astimezone(stockholm).date() == date(2025, 10, 5)
         )
 
-        assert jan_14_pg.canceled_subscriptions == 3
-        assert jan_14_pg.canceled_subscriptions_other == 2
-        assert jan_20_pg.canceled_subscriptions == 2
-        assert jan_20_pg.canceled_subscriptions_low_quality == 1
-        assert jan_30_pg.canceled_subscriptions == 1
-        assert jan_30_pg.canceled_subscriptions_other == 1
+        assert oct_5_pg.orders == 1
+        assert oct_5_pg.one_time_products == 1
+        assert oct_5_pg.one_time_products_net_revenue == -180
 
-        assert jan_14_pg.canceled_subscriptions == jan_14_tb.canceled_subscriptions
-        assert (
-            jan_14_pg.canceled_subscriptions_other
-            == jan_14_tb.canceled_subscriptions_other
+        assert oct_5_tb.orders == 1
+        assert oct_5_tb.one_time_products == 1
+        assert oct_5_tb.one_time_products_net_revenue == -180
+
+    def test_duplicate_refund_with_reversal_keeps_pg_parity(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_stockholm_duplicate_refund_with_reversal"
+        ]
+        stockholm = ZoneInfo("Europe/Stockholm")
+
+        dec_4_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 4)
         )
-        assert jan_20_pg.canceled_subscriptions == jan_20_tb.canceled_subscriptions
-        assert (
-            jan_20_pg.canceled_subscriptions_low_quality
-            == jan_20_tb.canceled_subscriptions_low_quality
+        dec_4_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 4)
         )
-        assert jan_30_pg.canceled_subscriptions == jan_30_tb.canceled_subscriptions
+
+        assert dec_4_pg.orders == 1
+        assert dec_4_pg.one_time_products == 1
+        assert dec_4_pg.one_time_products_net_revenue == -180
+        assert dec_4_tb.orders == dec_4_pg.orders
+        assert dec_4_tb.one_time_products == dec_4_pg.one_time_products
         assert (
-            jan_30_pg.canceled_subscriptions_other
-            == jan_30_tb.canceled_subscriptions_other
+            dec_4_tb.one_time_products_net_revenue
+            == dec_4_pg.one_time_products_net_revenue
         )
+
+    def test_renewal_balance_without_net_amount_uses_dispute_adjustment(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_stockholm_renewal_balance_without_net_amount"
+        ]
+        stockholm = ZoneInfo("Europe/Stockholm")
+
+        dec_17_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 17)
+        )
+        dec_17_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 17)
+        )
+
+        assert dec_17_pg.net_revenue == -2211
+        assert dec_17_pg.renewed_subscriptions_net_revenue == -2211
+        assert dec_17_tb.net_revenue == dec_17_pg.net_revenue
+        assert (
+            dec_17_tb.renewed_subscriptions_net_revenue
+            == dec_17_pg.renewed_subscriptions_net_revenue
+        )
+
+    def test_org_filter_disabled_matches_org_subject_scope(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        org_filtered = metrics_harness.snapshots["alpha_monthly_h1"]
+        no_org_filter = metrics_harness.snapshots["alpha_monthly_no_org_filter"]
+
+        for metric_slug in (
+            "orders",
+            "revenue",
+            "new_subscriptions",
+            "active_user_by_event",
+        ):
+            _assert_metric_parity(
+                metric_slug,
+                org_filtered.pg,
+                no_org_filter.pg,
+                case_label=f"pg_{metric_slug}",
+            )
+            _assert_metric_parity(
+                metric_slug,
+                org_filtered.tinybird,
+                no_org_filter.tinybird,
+                case_label=f"tb_{metric_slug}",
+            )
+
+    def test_multiple_organizations_have_distinct_totals(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        alpha = metrics_harness.snapshots["alpha_monthly_h1"].pg.totals
+        beta = metrics_harness.snapshots["beta_monthly_q1"].pg.totals
+
+        assert (alpha.orders or 0) > 0
+        assert (beta.orders or 0) > 0
+        assert alpha.orders != beta.orders
+        assert alpha.revenue != beta.revenue
+
+    def test_beta_external_customer_filter_costs(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots["beta_daily_customer_filter"]
+        assert len(snapshot.pg.periods) == 1
+
+        pg_period = snapshot.pg.periods[0]
+        tb_period = snapshot.tinybird.periods[0]
+
+        assert pg_period.active_user_by_event == 1
+        assert float(pg_period.costs or 0) == pytest.approx(2.0)
+        assert pg_period.active_user_by_event == tb_period.active_user_by_event
+        assert float(tb_period.costs or 0) == pytest.approx(2.0)

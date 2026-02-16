@@ -1,0 +1,119 @@
+DESCRIPTION >
+    Common interval generation for metrics pipes.
+
+NODE day_intervals
+SQL >
+    %
+    WITH
+        toStartOfDay(
+            toDateTime(
+                {{ String(start_dt, '2024-01-01 00:00:00', description="Start datetime") }},
+                {{ String(tz, 'UTC', description="Timezone") }}
+            )
+        ) AS start,
+        toStartOfDay(
+            toDateTime(
+                {{ String(end_dt, '2024-01-02 00:00:00', description="End datetime") }},
+                {{ String(tz, 'UTC') }}
+            )
+        ) AS
+    end,
+    dateDiff('day', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(x -> toDateTime(start + toIntervalDay(x), {{ String(tz, 'UTC') }}), range(0, diff))
+        ) AS interval
+
+NODE week_intervals
+SQL >
+    %
+    WITH
+        toStartOfWeek(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
+        ) AS start,
+        toStartOfWeek(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
+        ) AS
+    end,
+    dateDiff('week', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalWeek(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE month_intervals
+SQL >
+    %
+    WITH
+        toStartOfMonth(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfMonth(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('month', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalMonth(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE year_intervals
+SQL >
+    %
+    WITH
+        toStartOfYear(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfYear(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('year', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalYear(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE selected_intervals
+SQL >
+    %
+    SELECT interval
+    FROM
+        {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
+        {% elif interval == 'week' %} week_intervals
+        {% elif interval == 'month' %} month_intervals
+        {% elif interval == 'year' %} year_intervals
+        {% else %} day_intervals
+        {% end %}

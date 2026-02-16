@@ -1,110 +1,11 @@
 DESCRIPTION >
     Costs metrics endpoint: costs, active_users.
     Call in parallel with metrics_events and metrics_mrr for best performance.
-
-NODE day_intervals
-SQL >
-    %
-    WITH
-        toStartOfDay(
-            toDateTime(
-                {{ String(start_dt, '2024-01-01 00:00:00', description="Start datetime") }},
-                {{ String(tz, 'UTC', description="Timezone") }}
-            )
-        ) AS start,
-        toStartOfDay(
-            toDateTime(
-                {{ String(end_dt, '2024-01-02 00:00:00', description="End datetime") }},
-                {{ String(tz, 'UTC') }}
-            )
-        ) AS
-    end,
-    dateDiff('day', start, end
-    ) + 1 AS diff
-    SELECT
-        arrayJoin(
-            arrayMap(x -> toDateTime(start + toIntervalDay(x), {{ String(tz, 'UTC') }}), range(0, diff))
-        ) AS interval
-
-NODE week_intervals
-SQL >
-    %
-    WITH
-        toStartOfWeek(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
-        ) AS start,
-        toStartOfWeek(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
-        ) AS
-    end,
-    dateDiff('week', start, end
-    ) + 1 AS diff
-    SELECT
-        arrayJoin(
-            arrayMap(
-                x -> toDateTime(start + toIntervalWeek(x), {{ String(tz, 'UTC') }}), range(0, diff)
-            )
-        ) AS interval
-
-NODE month_intervals
-SQL >
-    %
-    WITH
-        toStartOfMonth(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        ) AS start,
-        toStartOfMonth(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
-        ) AS
-    end,
-    dateDiff('month', start, end
-    ) + 1 AS diff
-    SELECT
-        arrayJoin(
-            arrayMap(
-                x -> toDateTime(start + toIntervalMonth(x), {{ String(tz, 'UTC') }}), range(0, diff)
-            )
-        ) AS interval
-
-NODE year_intervals
-SQL >
-    %
-    WITH
-        toStartOfYear(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        ) AS start,
-        toStartOfYear(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
-        ) AS
-    end,
-    dateDiff('year', start, end
-    ) + 1 AS diff
-    SELECT
-        arrayJoin(
-            arrayMap(
-                x -> toDateTime(start + toIntervalYear(x), {{ String(tz, 'UTC') }}), range(0, diff)
-            )
-        ) AS interval
-
-NODE hour_intervals
-SQL >
-    %
-    WITH
-        toStartOfHour(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        ) AS start,
-        toStartOfHour(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
-        ) AS
-    end,
-    dateDiff('hour', start, end
-    ) + 1 AS diff
-    SELECT
-        arrayJoin(
-            arrayMap(
-                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
-            )
-        ) AS interval
+    Supplies the following metrics:
+    - costs
+    - cumulative_costs
+    - active_user_by_event
+    - -costs_per_user-
 
 NODE all_events_raw
 SQL >
@@ -263,14 +164,7 @@ SQL >
     SELECT
         w.interval AS timestamp,
         countDistinct(au.customer_id) + countDistinct(au.external_customer_id) AS active_user_by_event
-    FROM
-        {% if not defined(interval) or interval == 'day' %} day_intervals
-        {% elif interval == 'hour' %} hour_intervals
-        {% elif interval == 'week' %} week_intervals
-        {% elif interval == 'month' %} month_intervals
-        {% elif interval == 'year' %} year_intervals
-        {% else %} day_intervals
-        {% end %} w
+    FROM intervals w
     LEFT JOIN
         active_users_raw au
         ON {% if not defined(interval) or interval == 'day' %}
@@ -295,14 +189,7 @@ SQL >
         w.interval AS timestamp,
         COALESCE(de.costs, 0) AS costs,
         COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs
-    FROM
-        {% if not defined(interval) or interval == 'day' %} day_intervals
-        {% elif interval == 'hour' %} hour_intervals
-        {% elif interval == 'week' %} week_intervals
-        {% elif interval == 'month' %} month_intervals
-        {% elif interval == 'year' %} year_intervals
-        {% else %} day_intervals
-        {% end %} w
+    FROM intervals w
     LEFT JOIN costs_daily de ON de.day = w.interval
     CROSS JOIN costs_baseline b
     ORDER BY w.interval

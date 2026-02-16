@@ -1,4 +1,3 @@
-import React from 'react'
 import { SectionLayout } from './SectionLayout'
 
 const traits = [
@@ -27,14 +26,12 @@ const traits = [
 export function VoiceSection() {
   return (
     <SectionLayout label="07 / Voice & Tone">
-      <div className="flex max-w-2xl flex-col gap-10">
-        <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-16">
+        <div className="flex flex-col gap-24">
           {traits.map((item) => (
-            <div key={item.trait} className="flex gap-8">
-              <span className="w-28 shrink-0 text-lg font-semibold">
-                {item.trait}
-              </span>
-              <p className="text-base leading-relaxed text-neutral-500">
+            <div key={item.trait} className="grid grid-cols-2 gap-48">
+              <span className="text-9xl font-light">{item.trait}</span>
+              <p className="dark:text-polar-500 max-w-xl text-2xl leading-relaxed text-neutral-500">
                 {item.description}
               </p>
             </div>

@@ -2,7 +2,6 @@
 
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
-import LabeledSeparator from '@polar-sh/ui/components/atoms/LabeledSeparator'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'
@@ -93,24 +92,29 @@ const Login = ({
         />
         <GoogleLoginButton {...loginProps} />
         <AppleLoginButton {...loginProps} />
-        <LabeledSeparator label="Or" />
+        <div className="flex w-full flex-row items-center gap-6">
+          <div className="dark:border-polar-700 grow border-t border-gray-200"></div>
+          <div className="text-sm text-gray-500">or</div>
+          <div className="dark:border-polar-700 grow border-t border-gray-200"></div>
+        </div>
         <LoginCodeForm {...loginProps} />
       </div>
-      <div className="dark:text-polar-500 mt-6 text-center text-xs text-gray-400">
-        By using Polar you agree to our{' '}
+      <div className="dark:text-polar-500 mt-6 text-center text-xs text-balance text-gray-400">
+        By using Polar, you agree to our{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
           href="https://polar.sh/legal/terms"
         >
           Terms of Service
         </a>{' '}
-        and{' '}
+        &amp;{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
           href="https://polar.sh/legal/privacy"
         >
           Privacy Policy
         </a>
+        .
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 'use client'
 
+import { DitherSection } from '@/components/Brand/DitherSection'
 import {
   ColorsSection,
   CoverSection,
@@ -10,11 +11,12 @@ import {
   SpacingSection,
   TypographySection,
   VoiceSection,
-} from '../../components/Brand'
+} from '../../../components/Brand'
 
 const sectionComponents = [
   { id: 'cover', Component: CoverSection },
   { id: 'mission', Component: MissionSection },
+  { id: 'dither', Component: DitherSection },
   { id: 'logo', Component: LogoSection },
   { id: 'colors', Component: ColorsSection },
   { id: 'typography', Component: TypographySection },
@@ -26,7 +28,7 @@ const sectionComponents = [
 
 export default function BrandPage() {
   return (
-    <div className="dark:bg-polar-950 h-screen bg-white text-black dark:text-white">
+    <div className="dark:bg-polar-950 bg-white text-black dark:text-white">
       <div className="flex h-full w-max flex-col">
         {sectionComponents.map((section, i) => (
           <section
@@ -34,9 +36,6 @@ export default function BrandPage() {
             className="relative h-screen w-screen shrink-0"
           >
             <section.Component />
-            {i < sectionComponents.length - 1 && (
-              <div className="absolute top-16 right-0 bottom-16 w-px" />
-            )}
           </section>
         ))}
       </div>

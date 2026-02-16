@@ -247,7 +247,11 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         timezone="Europe/Stockholm",
         product_keys=("monthly",),
         customer_keys=("product_update_same_timestamp",),
-        metrics=("new_subscriptions", "active_subscriptions", "committed_subscriptions"),
+        metrics=(
+            "new_subscriptions",
+            "active_subscriptions",
+            "committed_subscriptions",
+        ),
     ),
     QueryCase(
         label="daily_stockholm_missing_created_product_id",
@@ -257,7 +261,11 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         timezone="Europe/Stockholm",
         product_keys=("monthly",),
         customer_keys=("missing_created_product_id",),
-        metrics=("new_subscriptions", "active_subscriptions", "committed_subscriptions"),
+        metrics=(
+            "new_subscriptions",
+            "active_subscriptions",
+            "committed_subscriptions",
+        ),
     ),
     QueryCase(
         label="daily_amsterdam_canceled_replay_reason_drift",
@@ -312,7 +320,9 @@ def _assert_metric_parity(
     metric_slug: str, pg: MetricsResponse, tb: MetricsResponse, *, case_label: str
 ) -> None:
     assert len(pg.periods) == len(tb.periods), f"[{case_label}] period length mismatch"
-    for i, (pg_period, tb_period) in enumerate(zip(pg.periods, tb.periods, strict=True)):
+    for i, (pg_period, tb_period) in enumerate(
+        zip(pg.periods, tb.periods, strict=True)
+    ):
         assert pg_period.timestamp == tb_period.timestamp
         pg_value = _number_or_zero(getattr(pg_period, metric_slug, None))
         tb_value = _number_or_zero(getattr(tb_period, metric_slug, None))
@@ -496,15 +506,15 @@ async def _query_metrics(
         product_id=selected_product_ids or None,
         billing_type=list(case.billing_types) or None,
         customer_id=selected_customer_ids or None,
-        metrics=list(case.metrics) if case.metrics is not None else SETTLEMENT_METRIC_SLUGS,
+        metrics=list(case.metrics)
+        if case.metrics is not None
+        else SETTLEMENT_METRIC_SLUGS,
         now=FIXED_NOW,
     )
 
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def metrics_harness(
-    worker_id: str, tinybird_workspace: str
-) -> MetricsHarness:
+async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHarness:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),
         application_name=f"test_{worker_id}_metrics_harness",
@@ -669,7 +679,9 @@ async def metrics_harness(
                                 subscription,
                                 canceled_at=subscription_data["cancel"],
                                 ends_at=subscription_data["end"],
-                                customer_cancellation_reason=subscription_data["reason"],
+                                customer_cancellation_reason=subscription_data[
+                                    "reason"
+                                ],
                             )
                         )
 
@@ -785,7 +797,9 @@ async def metrics_harness(
                 name="product_update_same_timestamp",
                 stripe_customer_id="cus_product_update_tie",
             )
-            customer_ids["product_update_same_timestamp"] = product_update_tie_customer.id
+            customer_ids["product_update_same_timestamp"] = (
+                product_update_tie_customer.id
+            )
             product_update_tie_sub = await create_subscription(
                 save_fixture,
                 product=products["yearly_zero"],
@@ -836,7 +850,9 @@ async def metrics_harness(
                 name="missing_created_product_id",
                 stripe_customer_id="cus_missing_created_product_id",
             )
-            customer_ids["missing_created_product_id"] = missing_created_product_customer.id
+            customer_ids["missing_created_product_id"] = (
+                missing_created_product_customer.id
+            )
             missing_created_product_sub = await create_subscription(
                 save_fixture,
                 product=products["monthly"],
@@ -881,7 +897,9 @@ async def metrics_harness(
                 name="amsterdam_canceled_replay",
                 stripe_customer_id="cus_amsterdam_canceled_replay",
             )
-            customer_ids["amsterdam_canceled_replay"] = amsterdam_canceled_replay_customer.id
+            customer_ids["amsterdam_canceled_replay"] = (
+                amsterdam_canceled_replay_customer.id
+            )
 
             async def create_canceled_subscription_with_events(
                 *,
@@ -1153,7 +1171,9 @@ async def metrics_harness(
                 name="renewed_missing_balance",
                 stripe_customer_id="cus_renewed_missing_balance",
             )
-            customer_ids["renewed_missing_balance"] = renewed_missing_balance_customer.id
+            customer_ids["renewed_missing_balance"] = (
+                renewed_missing_balance_customer.id
+            )
             renewed_missing_balance_sub = await create_subscription(
                 save_fixture,
                 product=products["monthly"],
@@ -1363,7 +1383,9 @@ async def metrics_harness(
                     ],
                 )
 
-            external_match_customer = await session.get(Customer, customer_ids["external_match"])
+            external_match_customer = await session.get(
+                Customer, customer_ids["external_match"]
+            )
             assert external_match_customer is not None
 
             events.append(
@@ -1709,7 +1731,7 @@ async def metrics_harness(
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-class TestSettlementMetricsHarness:
+class TestTinybirdMetrics:
     @pytest.mark.parametrize("metric_slug", SETTLEMENT_METRIC_SLUGS)
     def test_metric_parity_across_cases(
         self,
@@ -1860,12 +1882,14 @@ class TestSettlementMetricsHarness:
             pg_period = next(
                 p
                 for p in snapshot.pg.periods
-                if p.timestamp.astimezone(ZoneInfo("Asia/Jerusalem")).date() == target_day
+                if p.timestamp.astimezone(ZoneInfo("Asia/Jerusalem")).date()
+                == target_day
             )
             tb_period = next(
                 p
                 for p in snapshot.tinybird.periods
-                if p.timestamp.astimezone(ZoneInfo("Asia/Jerusalem")).date() == target_day
+                if p.timestamp.astimezone(ZoneInfo("Asia/Jerusalem")).date()
+                == target_day
             )
             assert pg_period.renewed_subscriptions == expected_count
             assert pg_period.renewed_subscriptions == tb_period.renewed_subscriptions
@@ -2060,7 +2084,9 @@ class TestSettlementMetricsHarness:
     def test_product_filter_works_when_subscription_created_product_id_missing(
         self, metrics_harness: MetricsHarness
     ) -> None:
-        snapshot = metrics_harness.snapshots["daily_stockholm_missing_created_product_id"]
+        snapshot = metrics_harness.snapshots[
+            "daily_stockholm_missing_created_product_id"
+        ]
         stockholm = ZoneInfo("Europe/Stockholm")
         feb_3_pg = next(
             p

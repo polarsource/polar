@@ -21,7 +21,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "turbo": "^2.7.6"
+    "turbo": "^2.8.9"
   },
   "resolutions": {
     "sharp": "0.33.3"
@@ -35,7 +35,7 @@
       "openapi-typescript@7.10.1": "patches/openapi-typescript@7.10.1.patch"
     }
   },
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@10.29.3",
   "manypkg": {
     "ignoredRules": [
       "INTERNAL_MISMATCH"

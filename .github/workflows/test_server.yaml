@@ -295,4 +295,4 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n auto --no-cov
+        run: uv run pytest -n auto --dist=loadgroup --no-cov

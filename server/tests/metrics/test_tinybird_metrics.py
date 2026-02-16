@@ -41,6 +41,8 @@ from tests.fixtures.random_objects import (
 )
 from tests.fixtures.tinybird import tinybird_available
 
+pytestmark = pytest.mark.xdist_group(name="tinybird")
+
 MONTHLY_PRICE = 50_00
 MONTHLY_PLUS_PRICE = 80_00
 YEARLY_PRICE = 600_00

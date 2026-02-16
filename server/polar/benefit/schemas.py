@@ -13,6 +13,9 @@ from polar.benefit.strategies.github_repository.properties import (
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
 )
+from polar.benefit.strategies.feature_flag.properties import (
+    BenefitGrantFeatureFlagProperties,
+)
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )
@@ -53,6 +56,11 @@ from .strategies.license_keys.schemas import (
     BenefitLicenseKeysCreate,
     BenefitLicenseKeysUpdate,
 )
+from .strategies.feature_flag.schemas import (
+    BenefitFeatureFlag,
+    BenefitFeatureFlagCreate,
+    BenefitFeatureFlagUpdate,
+)
 from .strategies.meter_credit.schemas import (
     BenefitMeterCredit,
     BenefitMeterCreditCreate,
@@ -75,7 +83,8 @@ BenefitCreate = Annotated[
     | BenefitGitHubRepositoryCreate
     | BenefitDownloadablesCreate
     | BenefitLicenseKeysCreate
-    | BenefitMeterCreditCreate,
+    | BenefitMeterCreditCreate
+    | BenefitFeatureFlagCreate,
     Discriminator("type"),
     SetSchemaReference("BenefitCreate"),
 ]
@@ -88,6 +97,7 @@ BenefitUpdate = (
     | BenefitDownloadablesUpdate
     | BenefitLicenseKeysUpdate
     | BenefitMeterCreditUpdate
+    | BenefitFeatureFlagUpdate
 )
 
 
@@ -97,7 +107,8 @@ Benefit = Annotated[
     | BenefitGitHubRepository
     | BenefitDownloadables
     | BenefitLicenseKeys
-    | BenefitMeterCredit,
+    | BenefitMeterCredit
+    | BenefitFeatureFlag,
     Discriminator("type"),
     SetSchemaReference("Benefit"),
     MergeJSONSchema({"title": "Benefit"}),
@@ -111,6 +122,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.downloadables: BenefitDownloadables,
     BenefitType.license_keys: BenefitLicenseKeys,
     BenefitType.meter_credit: BenefitMeterCredit,
+    BenefitType.feature_flag: BenefitFeatureFlag,
 }
 
 
@@ -162,13 +174,20 @@ class BenefitGrantMeterCreditWebhook(BenefitGrantWebhookBase):
     previous_properties: BenefitGrantMeterCreditProperties | None = None
 
 
+class BenefitGrantFeatureFlagWebhook(BenefitGrantWebhookBase):
+    benefit: BenefitFeatureFlag
+    properties: BenefitGrantFeatureFlagProperties
+    previous_properties: BenefitGrantFeatureFlagProperties | None = None
+
+
 BenefitGrantWebhook = Annotated[
     BenefitGrantDiscordWebhook
     | BenefitGrantCustomWebhook
     | BenefitGrantGitHubRepositoryWebhook
     | BenefitGrantDownloadablesWebhook
     | BenefitGrantLicenseKeysWebhook
-    | BenefitGrantMeterCreditWebhook,
+    | BenefitGrantMeterCreditWebhook
+    | BenefitGrantFeatureFlagWebhook,
     SetSchemaReference("BenefitGrantWebhook"),
     MergeJSONSchema({"title": "BenefitGrantWebhook"}),
     ClassName("BenefitGrantWebhook"),

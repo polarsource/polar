@@ -209,6 +209,7 @@ export default {
     downloadables: 'Bestandsdownloads',
     custom: 'Aangepast',
     meter_credit: 'Verbruikstegoeden',
+    feature_flag: 'Feature Flag',
   },
   ordinal: {
     zero: 'de',

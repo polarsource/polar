@@ -211,6 +211,7 @@ export default {
     downloadables: 'Fichiers',
     custom: 'Personnalisé',
     meter_credit: 'Crédits prépayés',
+    feature_flag: 'Feature Flag',
   },
   ordinal: {
     zero: 'e',

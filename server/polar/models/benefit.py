@@ -33,6 +33,7 @@ class BenefitType(StrEnum):
     downloadables = "downloadables"
     license_keys = "license_keys"
     meter_credit = "meter_credit"
+    feature_flag = "feature_flag"
 
     def get_display_name(self) -> str:
         return {
@@ -42,6 +43,7 @@ class BenefitType(StrEnum):
             BenefitType.downloadables: "Downloadables",
             BenefitType.license_keys: "License Keys",
             BenefitType.meter_credit: "Meter Credit",
+            BenefitType.feature_flag: "Feature Flag",
         }[self]
 
     def is_tax_applicable(self) -> bool:
@@ -53,6 +55,7 @@ class BenefitType(StrEnum):
                 BenefitType.downloadables: True,
                 BenefitType.license_keys: True,
                 BenefitType.meter_credit: True,
+                BenefitType.feature_flag: False,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:

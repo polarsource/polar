@@ -115,6 +115,7 @@ export const BenefitForm = ({
       {type === 'meter_credit' && (
         <MeterCreditBenefitForm organization={organization} />
       )}
+      {type === 'feature_flag' && <FeatureFlagBenefitForm />}
     </>
   )
 }
@@ -153,6 +154,85 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
         }}
       />
     </>
+  )
+}
+
+export const FeatureFlagBenefitForm = () => {
+  const { control } =
+    useFormContext<schemas['BenefitFeatureFlagCreate']>()
+
+  return (
+    <FormField
+      control={control}
+      name="properties.metadata"
+      defaultValue={{}}
+      render={({ field }) => {
+        const entries = Object.entries(field.value || {})
+        return (
+          <FormItem>
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Metadata</FormLabel>
+            </div>
+            <div className="flex flex-col gap-2">
+              {entries.map(([key, value], index) => (
+                <div key={index} className="flex flex-row gap-2">
+                  <Input
+                    placeholder="Key (e.g. role)"
+                    value={key}
+                    onChange={(e) => {
+                      const newEntries = [...entries]
+                      newEntries[index] = [e.target.value, value]
+                      field.onChange(Object.fromEntries(newEntries))
+                    }}
+                  />
+                  <Input
+                    placeholder="Value (e.g. premium)"
+                    value={value}
+                    onChange={(e) => {
+                      const newEntries = [...entries]
+                      newEntries[index] = [key, e.target.value]
+                      field.onChange(Object.fromEntries(newEntries))
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const newEntries = entries.filter(
+                        (_, i) => i !== index,
+                      )
+                      field.onChange(Object.fromEntries(newEntries))
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="self-start"
+                onClick={() => {
+                  field.onChange({
+                    ...(field.value || {}),
+                    '': '',
+                  })
+                }}
+              >
+                Add Metadata
+              </Button>
+            </div>
+            <FormDescription>
+              Key-value pairs that will be available via API and webhooks when
+              this benefit is granted.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }
 

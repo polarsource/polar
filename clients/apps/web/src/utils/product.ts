@@ -3,35 +3,6 @@ import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
-export const hasIntervals = (
-  product: schemas['CheckoutProduct'],
-): [boolean, boolean, boolean, boolean, boolean] => {
-  const hasDayInterval = product.prices.some(
-    (price) => price.type === 'recurring' && price.recurring_interval === 'day',
-  )
-  const hasWeekInterval = product.prices.some(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'week',
-  )
-  const hasMonthInterval = product.prices.some(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'month',
-  )
-  const hasYearInterval = product.prices.some(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'year',
-  )
-  const hasBothIntervals = hasMonthInterval && hasYearInterval
-
-  return [
-    hasDayInterval,
-    hasWeekInterval,
-    hasMonthInterval,
-    hasYearInterval,
-    hasBothIntervals,
-  ]
-}
-
 export const isLegacyRecurringPrice = (
   price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
 ): price is schemas['LegacyRecurringProductPrice'] => 'legacy' in price

@@ -34,6 +34,7 @@ class Properties(TypedDict, total=False):
     productCreated: bool
     userPatCreated: bool
     webhooksCreated: bool
+    lastOrderAt: int
 
     accountType: AccountType
 

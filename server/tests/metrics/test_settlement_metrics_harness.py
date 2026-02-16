@@ -164,6 +164,16 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         ),
     ),
     QueryCase(
+        label="monthly_canary_new_subscriptions_revenue_missing_balance",
+        start_date=date(2026, 3, 1),
+        end_date=date(2026, 4, 13),
+        interval=TimeInterval.month,
+        timezone="Atlantic/Canary",
+        product_keys=("monthly",),
+        customer_keys=("canary_new_subscriptions_missing_balance",),
+        metrics=("new_subscriptions_revenue",),
+    ),
+    QueryCase(
         label="daily_jerusalem_renewed_missing_balance",
         start_date=date(2026, 1, 13),
         end_date=date(2026, 2, 13),
@@ -1454,6 +1464,107 @@ async def metrics_harness(
                     include_balance=False,
                 )
             )
+            canary_new_subscriptions_missing_balance_customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email="canary-new-subscriptions-missing-balance@example.com",
+                name="canary_new_subscriptions_missing_balance",
+                stripe_customer_id="cus_canary_new_subscriptions_missing_balance",
+            )
+            customer_ids["canary_new_subscriptions_missing_balance"] = (
+                canary_new_subscriptions_missing_balance_customer.id
+            )
+            canary_march_subscription = await create_subscription(
+                save_fixture,
+                product=products["monthly"],
+                customer=canary_new_subscriptions_missing_balance_customer,
+                status=SubscriptionStatus.active,
+                started_at=_dt(date(2026, 3, 1)),
+            )
+            events.append(
+                await _create_subscription_created_event(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    canary_march_subscription,
+                    products["monthly"],
+                )
+            )
+            events.extend(
+                await _create_paid_order_events(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    products["monthly"],
+                    ordered_on=date(2026, 3, 1),
+                    amount=1_999,
+                    subscription=canary_march_subscription,
+                )
+            )
+            events.extend(
+                await _create_paid_order_events(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    products["monthly"],
+                    ordered_on=date(2026, 3, 12),
+                    amount=1_999,
+                    subscription=canary_march_subscription,
+                    include_balance=False,
+                )
+            )
+            events.extend(
+                await _create_paid_order_events(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    products["monthly"],
+                    ordered_on=date(2026, 3, 28),
+                    amount=1_999,
+                    subscription=canary_march_subscription,
+                    include_balance=False,
+                )
+            )
+            canary_april_subscription = await create_subscription(
+                save_fixture,
+                product=products["monthly"],
+                customer=canary_new_subscriptions_missing_balance_customer,
+                status=SubscriptionStatus.active,
+                started_at=_dt(date(2026, 4, 1)),
+            )
+            events.append(
+                await _create_subscription_created_event(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    canary_april_subscription,
+                    products["monthly"],
+                )
+            )
+            events.extend(
+                await _create_paid_order_events(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    products["monthly"],
+                    ordered_on=date(2026, 4, 1),
+                    amount=1_999,
+                    subscription=canary_april_subscription,
+                    include_balance=False,
+                )
+            )
+            events.extend(
+                await _create_paid_order_events(
+                    save_fixture,
+                    organization,
+                    canary_new_subscriptions_missing_balance_customer,
+                    products["monthly"],
+                    ordered_on=date(2026, 4, 11),
+                    amount=1_999,
+                    subscription=canary_april_subscription,
+                    include_balance=False,
+                )
+            )
             shanghai_delayed_missing_balance_customer = await create_customer(
                 save_fixture,
                 organization=organization,
@@ -1702,6 +1813,39 @@ class TestSettlementMetricsHarness:
         )
         assert feb_pg.net_average_order_value == feb_tb.net_average_order_value
         assert feb_pg.net_cumulative_revenue == feb_tb.net_cumulative_revenue
+
+    def test_new_subscriptions_revenue_fallback_when_balance_event_missing(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "monthly_canary_new_subscriptions_revenue_missing_balance"
+        ]
+        canary = ZoneInfo("Atlantic/Canary")
+        march_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(canary).date() == date(2026, 3, 1)
+        )
+        march_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(canary).date() == date(2026, 3, 1)
+        )
+        april_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(canary).date() == date(2026, 4, 1)
+        )
+        april_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(canary).date() == date(2026, 4, 1)
+        )
+
+        assert march_pg.new_subscriptions_revenue == 5_997
+        assert april_pg.new_subscriptions_revenue == 3_998
+        assert march_pg.new_subscriptions_revenue == march_tb.new_subscriptions_revenue
+        assert april_pg.new_subscriptions_revenue == april_tb.new_subscriptions_revenue
 
     def test_renewed_subscriptions_when_balance_event_missing(
         self, metrics_harness: MetricsHarness

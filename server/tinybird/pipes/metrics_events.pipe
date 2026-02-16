@@ -570,6 +570,16 @@ SQL >
                     op.revenue_amount,
                     op.subscription_id IS NOT NULL
                     AND op.sub_started_at IS NOT NULL
+                    AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
                     AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
                     AND op.has_balance_order = 0
                 ),
@@ -582,6 +592,16 @@ SQL >
                 AND op.sub_started_at IS NOT NULL
                 AND toStartOfHour(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
             ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfHour(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
             COALESCE(
                 sumIf(
                     op.revenue_amount,
@@ -604,6 +624,16 @@ SQL >
                     op.revenue_amount,
                     op.subscription_id IS NOT NULL
                     AND op.sub_started_at IS NOT NULL
+                    AND toStartOfWeek(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }}), 1) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
                     AND toStartOfWeek(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
                     AND op.has_balance_order = 0
                 ),
@@ -616,6 +646,16 @@ SQL >
                 AND op.sub_started_at IS NOT NULL
                 AND toStartOfMonth(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
             ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfMonth(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
             COALESCE(
                 sumIf(
                     op.revenue_amount,
@@ -638,6 +678,16 @@ SQL >
                     op.revenue_amount,
                     op.subscription_id IS NOT NULL
                     AND op.sub_started_at IS NOT NULL
+                    AND toStartOfYear(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
                     AND toStartOfYear(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
                     AND op.has_balance_order = 0
                 ),
@@ -650,6 +700,16 @@ SQL >
                 AND op.sub_started_at IS NOT NULL
                 AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
             ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
             COALESCE(
                 sumIf(
                     op.revenue_amount,
@@ -1173,8 +1233,10 @@ SQL >
         COALESCE(db.one_time_products_net_revenue, 0)
         + COALESCE(op.missing_balance_one_time_products_revenue, 0) AS one_time_products_net_revenue,
         COALESCE(sc.new_subscriptions, 0) AS new_subscriptions,
-        COALESCE(db.new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
-        COALESCE(db.new_subscriptions_net_revenue, 0) AS new_subscriptions_net_revenue,
+        COALESCE(db.new_subscriptions_revenue, 0)
+        + COALESCE(op.missing_balance_new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
+        COALESCE(db.new_subscriptions_net_revenue, 0)
+        + COALESCE(op.missing_balance_new_subscriptions_revenue, 0) AS new_subscriptions_net_revenue,
         greatest(
             COALESCE(op.renewed_subscriptions, 0), COALESCE(db.renewed_subscriptions, 0)
         ) AS renewed_subscriptions,

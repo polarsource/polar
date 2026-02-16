@@ -3,10 +3,7 @@ import { schemas } from '@polar-sh/client'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
-  product:
-    | schemas['Product']
-    | schemas['ProductStorefront']
-    | schemas['CheckoutProduct']
+  product: schemas['Product'] | schemas['CheckoutProduct']
   currency: string
 }
 

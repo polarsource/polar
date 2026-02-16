@@ -18,10 +18,4 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  checkout_wallet_payment: {
-    description:
-      'Optimized checkout for wallet payments (Apple Pay, Google Pay)',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
 } as const

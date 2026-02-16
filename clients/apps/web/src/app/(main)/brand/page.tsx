@@ -1,6 +1,8 @@
 'use client'
 
 import { DitherSection } from '@/components/Brand/DitherSection'
+import { useTheme } from 'next-themes'
+import { useMemo } from 'react'
 import {
   ColorsSection,
   CoverSection,
@@ -26,11 +28,23 @@ const sectionComponents = [
   { id: 'end', Component: EndSection },
 ]
 
+const dotCursor = (fill: string) =>
+  `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='12' cy='12' r='10' fill='${fill}'/></svg>") 12 12, auto`
+
 export default function BrandPage() {
+  const { resolvedTheme } = useTheme()
+  const cursor = useMemo(
+    () => dotCursor(resolvedTheme === 'dark' ? 'white' : 'black'),
+    [resolvedTheme],
+  )
+
   return (
-    <div className="dark:bg-polar-950 bg-white text-black dark:text-white">
+    <div
+      className="dark:bg-polar-950 bg-white text-black dark:text-white"
+      style={{ cursor }}
+    >
       <div className="flex h-full w-max flex-col">
-        {sectionComponents.map((section, i) => (
+        {sectionComponents.map((section) => (
           <section
             key={section.id}
             className="relative h-screen w-screen shrink-0"

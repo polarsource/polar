@@ -5,6 +5,7 @@ export function LogoSection() {
   return (
     <SectionLayout
       label="02 / Logo"
+      className="flex-1"
       footer={
         <div className="flex items-center gap-8 text-xs text-neutral-400">
           <span>Minimum size: 24px</span>
@@ -12,22 +13,27 @@ export function LogoSection() {
         </div>
       }
     >
-      <div className="flex flex-col items-center gap-12">
-        <div className="flex items-center gap-16">
-          <div className="flex h-40 w-40 items-center justify-center rounded-3xl border border-neutral-200">
-            <PolarLogotype logoVariant="icon" size={100} />
-          </div>
-          <div className="flex h-40 w-40 items-center justify-center rounded-3xl bg-black">
-            <PolarLogotype
-              logoVariant="icon"
-              logoClassName="text-white"
-              size={100}
-            />
-          </div>
+      <div className="grid h-full w-full flex-1 grid-cols-2 grid-rows-2 gap-8">
+        <div className="flex items-center justify-center bg-white">
+          <PolarLogotype logoVariant="icon" logoClassName="!text-black" size={100} />
         </div>
-        <p className="max-w-md text-center text-sm leading-relaxed text-neutral-400">
-          Use the Polar logotype with generous clear space.
-        </p>
+        <div className="flex items-center justify-center bg-black">
+          <PolarLogotype
+            logoVariant="icon"
+            logoClassName="text-white"
+            size={100}
+          />
+        </div>
+        <div className="flex items-center justify-center bg-white">
+          <PolarLogotype logoVariant="logotype" logoClassName="!text-black" size={120} />
+        </div>
+        <div className="flex items-center justify-center bg-black">
+          <PolarLogotype
+            logoVariant="logotype"
+            logoClassName="text-white"
+            size={120}
+          />
+        </div>
       </div>
     </SectionLayout>
   )

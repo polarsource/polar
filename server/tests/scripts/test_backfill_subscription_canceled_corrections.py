@@ -74,6 +74,75 @@ class TestBackfillSubscriptionCanceledCorrections:
         assert result["affected_subscriptions"] == 0
         assert result["corrective_events_inserted"] == 0
 
+    async def test_handles_null_cancellation_reason_without_crashing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=datetime(2026, 1, 1, tzinfo=UTC),
+            cancel_at_period_end=True,
+        )
+        subscription.canceled_at = datetime(2026, 1, 20, 10, 0, tzinfo=UTC)
+        subscription.ends_at = datetime(2026, 2, 1, 10, 0, tzinfo=UTC)
+        subscription.customer_cancellation_reason = None
+        await save_fixture(subscription)
+
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.subscription_canceled.value,
+            timestamp=datetime(2026, 1, 20, 10, 45, tzinfo=UTC),
+            metadata={
+                "subscription_id": str(subscription.id),
+                "canceled_at": datetime(2026, 1, 20, 10, 45, tzinfo=UTC).isoformat(),
+                "customer_cancellation_reason": "unused",
+            },
+        )
+
+        result = await run_backfill(
+            subscription_batch_size=10,
+            insert_batch_size=10,
+            rate_limit_delay=0,
+            ingest_tinybird=False,
+            session=session,
+        )
+
+        assert result["affected_subscriptions"] == 1
+        assert result["corrective_events_inserted"] == 1
+
+        events = (
+            (
+                await session.execute(
+                    select(Event).where(
+                        Event.name == SystemEvent.subscription_canceled,
+                        Event.source == EventSource.system,
+                        Event.user_metadata["subscription_id"].as_string()
+                        == str(subscription.id),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        corrected_event = next(
+            event
+            for event in events
+            if event.user_metadata.get("canceled_at")
+            == subscription.canceled_at.isoformat()
+        )
+        assert "customer_cancellation_reason" not in corrected_event.user_metadata
+
     async def test_adds_corrective_event_when_canceled_hour_differs_same_day(
         self,
         save_fixture: SaveFixture,

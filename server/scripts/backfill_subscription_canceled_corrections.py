@@ -88,10 +88,9 @@ def _build_canceled_metadata(
         canceled_at=subscription.canceled_at.isoformat(),
     )
 
-    if subscription.customer_cancellation_reason is not None:
-        metadata["customer_cancellation_reason"] = (
-            subscription.customer_cancellation_reason.value
-        )
+    reason = subscription.customer_cancellation_reason
+    if reason is not None:
+        metadata["customer_cancellation_reason"] = _reason_bucket(reason)
     if subscription.customer_cancellation_comment is not None:
         metadata["customer_cancellation_comment"] = (
             subscription.customer_cancellation_comment

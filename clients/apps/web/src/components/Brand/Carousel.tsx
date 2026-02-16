@@ -5,16 +5,15 @@ import { PolarLogotype } from '../Layout/Public/PolarLogotype'
 import { SectionLayout } from './SectionLayout'
 
 const words = [
-  'Payments',
+  'Billing',
   'Subscriptions',
-  'Donations',
-  'Licensing',
-  'Products',
   'Checkouts',
+  'Usage Billing',
+  'LLM Compatible',
   'Benefits',
   'Webhooks',
   'Analytics',
-  'Storefronts',
+  'Customers',
 ]
 
 // Ease-in-out cubic
@@ -22,7 +21,7 @@ function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
-const POSITIONS_PER_CIRCLE = 16 * words.length
+const POSITIONS_PER_CIRCLE = 10 * words.length
 const POSITION_ANGLE = (2 * Math.PI) / POSITIONS_PER_CIRCLE
 // Each step advances by exactly 1 word position so the next word lands at center
 const STEP_ANGLE = POSITION_ANGLE
@@ -123,7 +122,7 @@ export function CarouselSection() {
           opacity,
         }}
       >
-        <span className="text-4xl font-light text-black dark:text-white">
+        <span className="text-5xl font-light text-black dark:text-white">
           {words[wordIndex]}
         </span>
       </div>,

@@ -220,6 +220,7 @@ export default {
     downloadables: 'Fájlletöltések',
     custom: 'Egyedi',
     meter_credit: 'Használat alapú kreditek',
+    feature_flag: 'Feature Flag',
   },
   ordinal: {
     zero: '.',

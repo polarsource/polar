@@ -9,6 +9,7 @@ from .base import (
 from .custom.properties import BenefitGrantCustomProperties
 from .discord.properties import BenefitGrantDiscordProperties
 from .downloadables.properties import BenefitGrantDownloadablesProperties
+from .feature_flag.properties import BenefitGrantFeatureFlagProperties
 from .github_repository.properties import BenefitGrantGitHubRepositoryProperties
 from .license_keys.properties import BenefitGrantLicenseKeysProperties
 
@@ -18,6 +19,7 @@ BenefitGrantProperties = (
     | BenefitGrantDownloadablesProperties
     | BenefitGrantLicenseKeysProperties
     | BenefitGrantCustomProperties
+    | BenefitGrantFeatureFlagProperties
 )
 
 __all__ = [

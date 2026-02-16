@@ -238,6 +238,7 @@ export default {
     downloadables: 'File Downloads',
     custom: 'Custom',
     meter_credit: 'Meter Credits',
+    feature_flag: 'Feature Flag',
   },
   ordinal: {
     zero: {

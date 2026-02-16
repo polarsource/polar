@@ -222,6 +222,7 @@ export default {
     downloadables: 'Descargas de archivos',
     custom: 'Personalizado',
     meter_credit: 'Créditos de consumo',
+    feature_flag: 'Feature Flag',
   },
   ordinal: {
     zero: 'º',

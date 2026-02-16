@@ -551,6 +551,22 @@ class TestUpdate:
             )
             await session.flush()
 
+    async def test_existing_email_with_external_id(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        """Regression: duplicate email + external_id check must not trigger
+        an autoflush IntegrityError (should raise validation error instead)."""
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(email=customer_second.email, external_id="new-ext-id"),
+            )
+            await session.flush()
+
     @pytest.mark.parametrize(
         "email",
         [

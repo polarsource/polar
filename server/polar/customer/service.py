@@ -221,10 +221,11 @@ class CustomerService:
         repository = CustomerRepository.from_session(session)
 
         errors: list[ValidationError] = []
-        if (
+        email_changed = (
             customer_update.email is not None
             and customer.email.lower() != customer_update.email.lower()
-        ):
+        )
+        if email_changed:
             already_exists = await repository.get_by_email_and_organization(
                 customer_update.email, customer.organization_id
             )
@@ -237,9 +238,6 @@ class CustomerService:
                         "input": customer_update.email,
                     }
                 )
-
-            customer.email = customer_update.email
-            customer.email_verified = False
 
         # Prevent setting billing address to null
         if (
@@ -308,12 +306,42 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        return await repository.update(
-            customer,
-            update_dict=customer_update.model_dump(
-                exclude={"email"}, exclude_unset=True, by_alias=True
-            ),
-        )
+        if email_changed:
+            customer.email = customer_update.email
+            customer.email_verified = False
+
+        try:
+            return await repository.update(
+                customer,
+                update_dict=customer_update.model_dump(
+                    exclude={"email"}, exclude_unset=True, by_alias=True
+                ),
+            )
+        except IntegrityError as e:
+            error_str = str(e)
+            if "ix_customers_organization_id_email_case_insensitive" in error_str:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "email"),
+                            "msg": "A customer with this email address already exists.",
+                            "input": customer_update.email,
+                        }
+                    ]
+                ) from e
+            if "customers_organization_id_external_id_key" in error_str:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "A customer with this external ID already exists.",
+                            "input": getattr(customer_update, "external_id", None),
+                        }
+                    ]
+                ) from e
+            raise
 
     async def delete(
         self,

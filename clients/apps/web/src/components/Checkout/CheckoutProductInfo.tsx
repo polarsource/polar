@@ -29,7 +29,7 @@ const CheckoutProductInfo = ({
 }: CheckoutProductInfoProps) => {
   const isTreatment = pricingPositionExperiment === 'treatment'
   const firstImage = product.medias[0]?.publicUrl
-  const remainingImages = product.medias.slice(1).map((m) => m.publicUrl)
+  const additionalImages = product.medias.slice(1)
 
   if (isTreatment) {
     return (
@@ -37,11 +37,35 @@ const CheckoutProductInfo = ({
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-center gap-x-4">
             {firstImage && (
-              <img
-                src={firstImage}
-                alt={product.name}
-                className="h-[70px] w-[70px] rounded-lg object-cover"
-              />
+              <Dialog>
+                <DialogTrigger asChild disabled={additionalImages.length === 0}>
+                  <button
+                    className={`relative h-[70px] w-[70px] flex-shrink-0 ${additionalImages.length > 0 ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    <img
+                      src={firstImage}
+                      alt={product.name}
+                      className="h-[70px] w-[70px] rounded-lg object-cover"
+                    />
+                    {additionalImages.length > 0 && (
+                      <span className="absolute right-1 bottom-1 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white">
+                        +{additionalImages.length}
+                      </span>
+                    )}
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="dark:bg-polar-900 max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>{product.name}</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Product images
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Slideshow
+                    images={product.medias.map((m) => m.publicUrl)}
+                  />
+                </DialogContent>
+              </Dialog>
             )}
             <div className="flex flex-col gap-y-1">
               <div className="flex flex-row items-center gap-x-2">
@@ -53,13 +77,20 @@ const CheckoutProductInfo = ({
                 {product.description && (
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button className="dark:text-polar-500 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-polar-300">
+                      <button className="dark:text-polar-500 dark:hover:text-polar-300 cursor-pointer text-gray-400 hover:text-gray-600">
                         <InfoOutlined className="h-5 w-5" fontSize="inherit" />
                       </button>
                     </DialogTrigger>
                     <DialogContent
                       className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto"
-                      style={{ '--tw-enter-translate-x': '0', '--tw-enter-translate-y': '0', '--tw-exit-translate-x': '0', '--tw-exit-translate-y': '0' } as React.CSSProperties}
+                      style={
+                        {
+                          '--tw-enter-translate-x': '0',
+                          '--tw-enter-translate-y': '0',
+                          '--tw-exit-translate-x': '0',
+                          '--tw-exit-translate-y': '0',
+                        } as React.CSSProperties
+                      }
                     >
                       <DialogHeader>
                         <DialogTitle>{product.name}</DialogTitle>
@@ -78,9 +109,6 @@ const CheckoutProductInfo = ({
               </div>
             </div>
           </div>
-          {remainingImages.length > 0 && (
-            <Slideshow images={remainingImages} />
-          )}
         </div>
       </div>
     )

@@ -1,4 +1,4 @@
-import { Heading, Link, Preview, Section, Text } from '@react-email/components'
+import { Heading, Preview, Section } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
@@ -31,17 +31,7 @@ export function SubscriptionRevoked({
       <Section className="my-4 text-center">
         <Button href={url}>View subscription</Button>
       </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
-        <Text className="m-0 text-xs text-gray-600">
-          If you're having trouble with the button above, copy & paste the URL
-          below into your web browser.
-        </Text>
-        <Text className="mt-2 mb-0 text-xs">
-          <Link href={url} className="break-all text-blue-600 underline">
-            {url}
-          </Link>
-        </Text>
-      </Section>
+
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

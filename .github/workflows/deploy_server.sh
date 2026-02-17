@@ -126,37 +126,62 @@ deploy_servers() {
   echo "✅ ${services} deployments completed successfully!"
 }
 
+# Parse playwright configuration
+PLAYWRIGHT_DIGEST="${5:-}"
+PLAYWRIGHT_WORKER_IDS="${6:-}"
+PLAYWRIGHT_SERVERS=()
+PLAYWRIGHT_IMG=""
+if [[ -n "$PLAYWRIGHT_DIGEST" && -n "$PLAYWRIGHT_WORKER_IDS" ]]; then
+  PLAYWRIGHT_IMG="ghcr.io/polarsource/polar-playwright@${PLAYWRIGHT_DIGEST}"
+  IFS=',' read -ra PLAYWRIGHT_SERVERS <<< "$PLAYWRIGHT_WORKER_IDS"
+fi
+
 # Deploy based on migration status
 if [ "$HAS_MIGRATIONS" = "true" ]; then
-  echo "📋 Deploying sequentially (migrations detected)"
+  echo "📋 Deploying API first (migrations detected), then workers in parallel"
 
   # Deploy API first (runs migrations via preDeployCommand)
   api_server=("$API_SERVICE_ID")
   deploy_servers api_server "API" "environment"
 
-  # Deploy workers after API completes
+  # Deploy workers and playwright workers in parallel
+  pids=()
+
   if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
-    deploy_servers WORKER_SERVERS "workers" "environment"
+    deploy_servers WORKER_SERVERS "workers" "environment" &
+    pids+=($!)
   fi
+
+  if [ ${#PLAYWRIGHT_SERVERS[@]} -gt 0 ]; then
+    deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG" &
+    pids+=($!)
+  fi
+
+  for pid in "${pids[@]}"; do
+    wait "$pid" || exit 1
+  done
 else
   echo "📋 Deploying all services in parallel"
 
-  # Deploy all services in parallel
+  # Deploy API + regular workers
   if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
     all_servers=("$API_SERVICE_ID" "${WORKER_SERVERS[@]}")
   else
     all_servers=("$API_SERVICE_ID")
   fi
-  deploy_servers all_servers "All" "environment"
-fi
 
-# Deploy playwright workers if configured
-PLAYWRIGHT_DIGEST="${5:-}"
-PLAYWRIGHT_WORKER_IDS="${6:-}"
-if [[ -n "$PLAYWRIGHT_DIGEST" && -n "$PLAYWRIGHT_WORKER_IDS" ]]; then
-  PLAYWRIGHT_IMG="ghcr.io/polarsource/polar-playwright@${PLAYWRIGHT_DIGEST}"
-  IFS=',' read -ra PLAYWRIGHT_SERVERS <<< "$PLAYWRIGHT_WORKER_IDS"
-  deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG"
+  pids=()
+  deploy_servers all_servers "All" "environment" &
+  pids+=($!)
+
+  if [ ${#PLAYWRIGHT_SERVERS[@]} -gt 0 ]; then
+    deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG" &
+    pids+=($!)
+  fi
+
+  for pid in "${pids[@]}"; do
+    wait "$pid" || exit 1
+  done
 fi
 
 echo "🎉 Deployment completed successfully!"

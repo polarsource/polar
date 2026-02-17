@@ -3,14 +3,14 @@ import { SectionLayout } from './SectionLayout'
 export function TypographySection() {
   return (
     <SectionLayout label="04 / Typography">
-      <div className="grid h-full grid-cols-[320px_1fr] gap-16">
+      <div className="grid h-full grid-cols-4 gap-32">
         {/* Left column — description */}
         <div className="flex flex-col justify-between">
           <div className="flex flex-col gap-6">
             <h2 className="text-2xl font-semibold tracking-tight">
               Typeface System
             </h2>
-            <p className="dark:text-polar-500 leading-relaxed text-neutral-500">
+            <p className="dark:text-polar-500 text-lg leading-relaxed text-neutral-500">
               <a
                 href="https://rsms.me/inter/"
                 target="_blank"
@@ -28,7 +28,7 @@ export function TypographySection() {
         </div>
 
         {/* Right column — specimen area */}
-        <div className="dark:bg-polar-900 flex flex-col justify-between overflow-hidden bg-neutral-50 p-12">
+        <div className="dark:bg-polar-900 col-span-3 flex flex-col justify-between overflow-hidden bg-neutral-50 p-12">
           <div className="flex flex-col gap-y-8">
             <span className="text-[clamp(80px,10vw,140px)] leading-[0.9] font-light tracking-tighter">
               Inter

@@ -120,6 +120,17 @@ print(count)
     fi
 fi
 
+# Install Playwright browsers for worker (needed for website scraping)
+PLAYWRIGHT_MARKER="/root/.cache/ms-playwright/.installed"
+if [[ "${1:-api}" == "worker" ]] && [[ ! -f "$PLAYWRIGHT_MARKER" ]]; then
+    echo "Installing Playwright browsers..."
+    uv run playwright install --with-deps chromium
+    touch "$PLAYWRIGHT_MARKER"
+    echo "Playwright browsers installed"
+elif [[ "${1:-api}" == "worker" ]]; then
+    echo "Playwright browsers already installed"
+fi
+
 # Start the requested service
 case "${1:-api}" in
     api)

@@ -14,6 +14,7 @@ from .collectors import (
     collect_metrics_data,
     collect_organization_data,
     collect_products_data,
+    collect_website_data,
 )
 from .repository import OrganizationReviewRepository
 from .schemas import AgentReviewResult, DataSnapshot
@@ -128,11 +129,35 @@ async def _collect_data(
     )
     account_data = collect_account_data(account)
 
+    # Website content (async I/O, non-fatal)
+    website_data = None
+    if organization.website:
+        log.debug(
+            "organization_review.website_collector.start",
+            organization_id=str(organization.id),
+            website_url=organization.website,
+        )
+        try:
+            website_data = await collect_website_data(organization.website)
+            log.debug(
+                "organization_review.website_collector.complete",
+                organization_id=str(organization.id),
+                pages_scraped=website_data.total_pages_succeeded,
+                scrape_error=website_data.scrape_error,
+            )
+        except Exception as e:
+            log.warning(
+                "organization_review.website_collector.failed",
+                organization_id=str(organization.id),
+                error=str(e),
+            )
+
     return DataSnapshot(
         organization=org_data,
         products=products_data,
         account=account_data,
         metrics=metrics_data,
         history=history_data,
+        website=website_data,
         collected_at=datetime.now(UTC),
     )

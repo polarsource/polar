@@ -42,6 +42,11 @@ Cross-reference the products listed on Polar with the organization's stated busi
 and pricing. Look for mismatches that suggest disguised prohibited businesses, \
 unreasonably priced products, or low-quality offerings.
 
+If website content is available, cross-reference what the organization claims in their \
+application with what their website actually shows. Look for mismatches between stated \
+business and actual content, signs of prohibited businesses, placeholder or empty \
+websites, and pricing discrepancies between website and Polar listings.
+
 ### 3. Identity & Trust
 Evaluate the identity verification status, account completeness, and social presence. \
 Unverified identity is a yellow flag, not an automatic denial. Consider the overall \
@@ -188,6 +193,22 @@ class ReviewAnalyzer:
                         else:
                             price_strs.append(str(pr.get("amount_type", "unknown")))
                     parts.append(f"  Prices: {', '.join(price_strs)}")
+
+        # Website Content
+        if snapshot.website:
+            parts.append("\n## Website Content")
+            if snapshot.website.scrape_error:
+                parts.append(
+                    f"Website scrape failed: {snapshot.website.scrape_error}"
+                )
+            elif snapshot.website.summary:
+                parts.append(
+                    f"Source: {snapshot.website.base_url} "
+                    f"({snapshot.website.total_pages_succeeded} page(s) scraped)"
+                )
+                parts.append(snapshot.website.summary)
+            elif not snapshot.website.pages:
+                parts.append("No pages could be scraped from the website.")
 
         # Account & Identity
         parts.append("\n## Account & Identity")

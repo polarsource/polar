@@ -258,7 +258,7 @@ class NumeralTaxService(TaxServiceProtocol):
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            log.debug("Numeral tax record error: %s", e.response.text)
+            log.warning("Numeral tax record error: %s", e.response.text)
             raise TaxRecordError() from e
 
         transaction: NumeralTaxTransactionResponse = response.json()

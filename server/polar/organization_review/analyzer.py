@@ -197,16 +197,16 @@ class ReviewAnalyzer:
         # Website Content
         if snapshot.website:
             parts.append("\n## Website Content")
+            parts.append(
+                f"Source: {snapshot.website.base_url} "
+                f"({snapshot.website.total_pages_succeeded} page(s) scraped)"
+            )
             if snapshot.website.scrape_error:
-                parts.append(f"Website scrape failed: {snapshot.website.scrape_error}")
-            elif snapshot.website.summary:
-                parts.append(
-                    f"Source: {snapshot.website.base_url} "
-                    f"({snapshot.website.total_pages_succeeded} page(s) scraped)"
-                )
+                parts.append(f"Scrape error: {snapshot.website.scrape_error}")
+            if snapshot.website.summary:
                 parts.append(snapshot.website.summary)
-            elif not snapshot.website.pages:
-                parts.append("No pages could be scraped from the website.")
+            elif not snapshot.website.pages and not snapshot.website.scrape_error:
+                parts.append("No content could be extracted from the website.")
 
         # Account & Identity
         parts.append("\n## Account & Identity")

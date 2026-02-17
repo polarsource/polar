@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
@@ -20,23 +22,71 @@ MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 3_000
 PAGE_TIMEOUT_MS = 10_000
 
-# JS: extract internal nav/header/footer links as "text -> href" pairs.
-EXTRACT_LINKS_JS = """
+# JS: extract internal links from navigation areas, CTAs, and main content.
+_EXTRACT_LINKS_JS = """
 () => {
-    const selectors = ['nav a', 'header a', 'footer a'];
     const results = [];
     const seen = new Set();
-    for (const sel of selectors) {
-        for (const a of document.querySelectorAll(sel)) {
-            const href = a.href;
-            const text = a.textContent.trim();
-            if (href && !seen.has(href) && text) {
-                seen.add(href);
-                results.push(text + ' -> ' + href);
-            }
+
+    function addLink(a) {
+        const href = a.href;
+        const text = (a.textContent || '').trim().substring(0, 80);
+        if (href && !seen.has(href) && text && !href.startsWith('javascript:')) {
+            seen.add(href);
+            results.push(text + ' -> ' + href);
         }
     }
-    return results.slice(0, 20);
+
+    // Nav, header, footer, sidebar, ARIA navigation
+    const navSelectors = [
+        'nav a', 'header a', 'footer a', 'aside a',
+        '[role="navigation"] a', '[role="menu"] a', '[role="menubar"] a',
+    ];
+    for (const sel of navSelectors) {
+        for (const a of document.querySelectorAll(sel)) addLink(a);
+    }
+
+    // CTA-style links in main content
+    for (const a of document.querySelectorAll('main a, [role="main"] a, #content a, .content a')) {
+        addLink(a);
+    }
+
+    // Remaining top-level links
+    for (const a of document.querySelectorAll('a[href]')) {
+        if (results.length >= 40) break;
+        addLink(a);
+    }
+
+    return results.slice(0, 40);
+}
+"""
+
+# JS: extract meta description, Open Graph tags, and JSON-LD structured data.
+_EXTRACT_METADATA_JS = """
+() => {
+    const result = {};
+
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) result.description = (desc.content || '').substring(0, 300);
+
+    const ogTags = {};
+    for (const meta of document.querySelectorAll('meta[property^="og:"]')) {
+        const key = meta.getAttribute('property').replace('og:', '');
+        if (['title', 'description', 'type', 'site_name'].includes(key)) {
+            ogTags[key] = (meta.content || '').substring(0, 200);
+        }
+    }
+    if (Object.keys(ogTags).length > 0) result.og = ogTags;
+
+    const jsonld = document.querySelector('script[type="application/ld+json"]');
+    if (jsonld) {
+        try {
+            const data = JSON.parse(jsonld.textContent);
+            result.jsonld = JSON.stringify(data).substring(0, 1000);
+        } catch {}
+    }
+
+    return result;
 }
 """
 
@@ -47,8 +97,8 @@ navigate and read web pages. Your job is to explore the site and produce a conci
 ## Instructions
 
 1. Use the `visit_page` tool with the homepage URL provided in the user message.
-2. Based on the content and links returned, decide which pages are most relevant \
-(pricing, about, products, features, FAQ).
+2. Based on the extracted content, metadata, and available links, decide which pages are \
+most relevant (pricing, about, products, features, FAQ).
 3. Visit up to 5 pages total. Stop early if you have enough information.
 4. After exploring, produce your final summary as your response.
 
@@ -91,7 +141,8 @@ _website_agent: Agent[BrowserDeps, str] = Agent(
 @_website_agent.tool
 async def visit_page(ctx: RunContext[BrowserDeps], url: str) -> str:
     """Navigate to a URL, extract the main text content, and return it along with \
-available navigation links. Only same-domain URLs are allowed. Max 5 pages."""
+page metadata and available navigation links. Only same-domain URLs are allowed. \
+Max 5 pages."""
     deps = ctx.deps
     if deps.pages_navigated >= MAX_PAGES:
         return "Page limit reached. Produce your summary now."
@@ -111,7 +162,10 @@ available navigation links. Only same-domain URLs are allowed. Max 5 pages."""
 
     deps.pages_navigated += 1
 
-    # Extract content: get rendered HTML, then use trafilatura for clean extraction
+    # Brief wait for JS rendering
+    await deps.page.wait_for_timeout(1_000)
+
+    # Extract content via trafilatura
     try:
         html = await deps.page.content()
         content = trafilatura.extract(html, output_format="markdown") or ""
@@ -120,6 +174,12 @@ available navigation links. Only same-domain URLs are allowed. Max 5 pages."""
 
     title = await deps.page.title() or None
     current_url = deps.page.url
+
+    # Extract page metadata (meta description, OG tags, JSON-LD)
+    try:
+        metadata = await deps.page.evaluate(_EXTRACT_METADATA_JS)
+    except Exception:
+        metadata = {}
 
     truncated = len(content) > MAX_CHARS_PER_PAGE
     if truncated:
@@ -134,16 +194,27 @@ available navigation links. Only same-domain URLs are allowed. Max 5 pages."""
         )
     )
 
-    # Extract links
+    # Extract links for the agent to choose from
     try:
-        links = await deps.page.evaluate(EXTRACT_LINKS_JS)
+        links = await deps.page.evaluate(_EXTRACT_LINKS_JS)
     except Exception:
         links = []
 
-    # Build combined response
+    # Build response
     parts: list[str] = []
     parts.append(f"Page: {title or 'Untitled'} ({current_url})")
     parts.append(f"Pages visited: {deps.pages_navigated}/{MAX_PAGES}")
+
+    if metadata.get("description"):
+        parts.append(f"Meta description: {metadata['description']}")
+    if metadata.get("og"):
+        og = metadata["og"]
+        og_parts = [f"{k}: {v}" for k, v in og.items() if v]
+        if og_parts:
+            parts.append(f"Open Graph: {'; '.join(og_parts)}")
+    if metadata.get("jsonld"):
+        parts.append(f"Structured data: {metadata['jsonld']}")
+
     parts.append("")
     parts.append(content if content else "(empty page)")
     if truncated:
@@ -172,6 +243,7 @@ async def collect_website_data(website_url: str) -> WebsiteData:
         )
         result.pages = pages
         result.total_pages_succeeded = len(pages)
+        result.total_pages_attempted = max(len(pages), 1)
         result.summary = summary
     except TimeoutError:
         log.warning(

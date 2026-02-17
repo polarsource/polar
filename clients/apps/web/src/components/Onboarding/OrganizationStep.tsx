@@ -145,6 +145,7 @@ export const OrganizationStep = ({
       return
     }
 
+    await revalidate(`organizations:${organization.slug}`)
     await revalidate(`users:${currentUser?.id}:organizations`, {
       expire: 0,
     })

@@ -9,8 +9,7 @@ import {
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
@@ -27,7 +26,6 @@ const CheckoutSeatSelector = ({
 }: CheckoutSeatSelectorProps) => {
   const t = useTranslations(locale)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [autoCorrectAttempted, setAutoCorrectAttempted] = useState(false)
@@ -63,6 +61,10 @@ const CheckoutSeatSelector = ({
     checkout.seats !== null &&
     checkout.seats !== undefined &&
     checkout.seats < minimumSeats
+
+  useEffect(() => {
+    setInputValue(displaySeats.toString())
+  }, [displaySeats])
 
   const netAmount = checkout.netAmount || 0
   const currency = productPrice.priceCurrency
@@ -109,6 +111,9 @@ const CheckoutSeatSelector = ({
 
   const handleInputBlur = () => {
     const newSeats = parseInt(inputValue, 10)
+
+    console.log(newSeats)
+
     if (
       !isNaN(newSeats) &&
       newSeats >= minimumSeats &&
@@ -117,26 +122,16 @@ const CheckoutSeatSelector = ({
     ) {
       handleUpdateSeats(newSeats)
     }
-    setIsEditing(false)
-    setInputValue('')
   }
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.key === 'Escape') {
       e.currentTarget.blur()
-    } else if (e.key === 'Escape') {
-      setIsEditing(false)
-      setInputValue('')
     }
   }
 
-  const handleSeatClick = () => {
-    setIsEditing(true)
-    setInputValue(displaySeats.toString())
-  }
-
   // Build seat limit description
-  const getSeatLimitText = () => {
+  const seatLimitText = useMemo(() => {
     if (minimumSeats > 1 && hasMaximumLimit) {
       return t('checkout.seats.seatRange', {
         min: String(minimumSeats),
@@ -148,9 +143,7 @@ const CheckoutSeatSelector = ({
       return t('checkout.seats.maximumSeats', { max: String(maximumSeats) })
     }
     return null
-  }
-
-  const seatLimitText = getSeatLimitText()
+  }, [minimumSeats, hasMaximumLimit, maximumSeats, t])
 
   return (
     <div className="flex flex-col gap-6">
@@ -174,8 +167,8 @@ const CheckoutSeatSelector = ({
             variant="ghost"
             size="icon"
             onClick={() => handleUpdateSeats(displaySeats - 1)}
-            disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
-            className="h-10 w-10 rounded-full disabled:opacity-40"
+            disabled={displaySeats <= minimumSeats || isUpdating}
+            className="dark:hover:bg-polar-800 dark:hover:border-polar-800 dark:border-polar-700 h-10 w-10 rounded-full border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
             aria-label={t('checkout.seats.decreaseSeats')}
           >
             <svg
@@ -183,46 +176,31 @@ const CheckoutSeatSelector = ({
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={2.5}
+              strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
             </svg>
           </Button>
-          {isEditing ? (
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={inputValue}
-              onChange={handleInputChange}
-              onBlur={handleInputBlur}
-              onKeyDown={handleInputKeyDown}
-              autoFocus
-              min={minimumSeats}
-              max={hasMaximumLimit ? maximumSeats : undefined}
-              className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={handleSeatClick}
-              disabled={isUpdating}
-              className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
-              aria-label={t('checkout.seats.editSeatCount')}
-              title={t('checkout.seats.clickToEdit')}
-            >
-              <span>{displaySeats}</span>
-            </button>
-          )}
+          <input
+            type="text"
+            inputMode="numeric"
+            disabled={isUpdating}
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            min={minimumSeats}
+            max={hasMaximumLimit ? maximumSeats : undefined}
+            className="dark:hover:bg-polar-800 group dark:border-polar-700 relative max-w-24 min-w-14 rounded-xl border-gray-200 px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:ring-offset-2 focus-visible:outline-none dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+          />
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleUpdateSeats(displaySeats + 1)}
             disabled={
-              (hasMaximumLimit && displaySeats >= maximumSeats) ||
-              isUpdating ||
-              isEditing
+              (hasMaximumLimit && displaySeats >= maximumSeats) || isUpdating
             }
-            className="h-10 w-10 rounded-full disabled:opacity-40"
+            className="dark:hover:bg-polar-800 dark:hover:border-polar-800 dark:border-polar-700 h-10 w-10 rounded-full border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
             aria-label={t('checkout.seats.increaseSeats')}
           >
             <svg
@@ -230,7 +208,7 @@ const CheckoutSeatSelector = ({
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              strokeWidth={2.5}
+              strokeWidth={2}
             >
               <path
                 strokeLinecap="round"

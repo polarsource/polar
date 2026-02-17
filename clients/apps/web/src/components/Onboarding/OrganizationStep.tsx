@@ -17,9 +17,9 @@ import {
   FormDescription,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Label } from '@polar-sh/ui/components/ui/label'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -210,8 +210,8 @@ export const OrganizationStep = ({
                     }}
                     render={({ field }) => (
                       <FormItem className="w-full">
+                        <FormLabel htmlFor="name">Organization Name</FormLabel>
                         <FormControl className="flex w-full flex-col gap-y-4">
-                          <Label htmlFor="name">Organization Name</Label>
                           <Input {...field} placeholder="Acme Inc." />
                         </FormControl>
                         <FormMessage />
@@ -227,8 +227,8 @@ export const OrganizationStep = ({
                     }}
                     render={({ field }) => (
                       <FormItem className="w-full">
+                        <FormLabel htmlFor="slug">Organization Slug</FormLabel>
                         <FormControl className="flex w-full flex-col gap-y-4">
-                          <Label htmlFor="slug">Organization Slug</Label>
                           <Input
                             type="text"
                             {...field}
@@ -253,10 +253,10 @@ export const OrganizationStep = ({
                       }}
                       render={({ field }) => (
                         <FormItem className="w-full">
+                          <FormLabel htmlFor="default_presentment_currency">
+                            Default Payment Currency
+                          </FormLabel>
                           <FormControl className="flex w-full flex-col gap-y-4">
-                            <Label htmlFor="default_presentment_currency">
-                              Default Payment Currency
-                            </Label>
                             <CurrencySelector
                               value={
                                 field.value as schemas['PresentmentCurrency']

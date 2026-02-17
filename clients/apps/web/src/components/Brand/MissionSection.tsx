@@ -11,9 +11,9 @@ export function MissionSection() {
       <div className="dark:bg-polar-900 flex h-full w-full flex-col items-center justify-center gap-8 bg-gray-100">
         <Vortex
           className="h-full w-full"
-          colorA="#0000ff"
+          colorA="#000000"
           colorB="#000000"
-          darkColorA="#0000ff"
+          darkColorA="#0e0e0e"
           darkColorB="#ffffff"
           pixelSize={3}
         >

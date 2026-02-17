@@ -30,7 +30,9 @@ export function VoiceSection() {
         <div className="flex flex-col gap-24">
           {traits.map((item) => (
             <div key={item.trait} className="grid grid-cols-2 gap-48">
-              <span className="text-9xl font-light">{item.trait}</span>
+              <span className="text-9xl font-light tracking-tighter">
+                {item.trait}
+              </span>
               <p className="dark:text-polar-500 max-w-xl text-2xl leading-relaxed text-neutral-500">
                 {item.description}
               </p>

@@ -70,6 +70,16 @@ class Settings(BaseSettings):
     PROMETHEUS_REMOTE_WRITE_PASSWORD: str | None = None
     PROMETHEUS_REMOTE_WRITE_INTERVAL: Annotated[int, Ge(1)] = 15  # seconds
 
+    # Grafana Cloud Query API (for reading metrics)
+    GRAFANA_CLOUD_PROMETHEUS_QUERY_URL: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_QUERY_USER: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY: str | None = None
+
+    # SLO Report
+    SLO_REPORT_SLACK_BOT_TOKEN: str | None = None
+    SLO_REPORT_SLACK_CHANNEL: str | None = None
+    SLO_REPORT_ENABLED: bool = True
+
     WEBHOOK_MAX_RETRIES: int = 10
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)

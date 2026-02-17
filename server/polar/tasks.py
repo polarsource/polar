@@ -16,6 +16,7 @@ from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
+from polar.observability.slo_report import tasks as slo_report
 from polar.order import tasks as order
 from polar.organization import tasks as organization
 from polar.organization_access_token import tasks as organization_access_token
@@ -53,6 +54,7 @@ __all__ = [
     "payout",
     "personal_access_token",
     "processor_transaction",
+    "slo_report",
     "stripe",
     "subscription",
     "transaction",

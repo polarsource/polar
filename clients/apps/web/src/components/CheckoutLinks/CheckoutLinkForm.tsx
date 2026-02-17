@@ -324,7 +324,8 @@ export const CheckoutLinkForm = ({
                   />
                 </FormControl>
                 <FormDescription className="text-xs">
-                  When set, a back button will be shown in the checkout to return to this URL.
+                  When set, a back button will be shown in the checkout to
+                  return to this URL.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

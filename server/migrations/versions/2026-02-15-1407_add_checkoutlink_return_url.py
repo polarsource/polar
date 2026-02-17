@@ -17,6 +17,7 @@ down_revision = "a1c2d3e4f567"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
+
 def upgrade() -> None:
     op.add_column("checkout_links", sa.Column("return_url", sa.String(), nullable=True))
 

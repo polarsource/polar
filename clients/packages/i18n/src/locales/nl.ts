@@ -193,6 +193,18 @@ export default {
       getFree: 'Gratis verkrijgen',
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
+    seats: {
+      perSeat: '{price} per gebruiker',
+      numberOfSeats: 'Aantal gebruikers',
+      decreaseSeats: 'Aantal gebruikers verlagen',
+      increaseSeats: 'Aantal gebruikers verhogen',
+      editSeatCount: 'Klik om aantal gebruikers te wijzigen',
+      clickToEdit: 'Klik om te wijzigen',
+      seatRange: '{min} - {max} gebruikers',
+      minimumSeats: 'Minimaal {min} gebruikers',
+      maximumSeats: 'Maximaal {max} gebruikers',
+      updateFailed: 'Aantal gebruikers bijwerken mislukt',
+    },
   },
   intervals: {
     short: {

@@ -145,7 +145,17 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.seats.perSeat": "{price} per seat",
+    "checkout.seats.numberOfSeats": "Number of seats",
+    "checkout.seats.decreaseSeats": "Decrease number of seats",
+    "checkout.seats.increaseSeats": "Increase number of seats",
+    "checkout.seats.editSeatCount": "Click to edit seat count",
+    "checkout.seats.clickToEdit": "Click to edit",
+    "checkout.seats.seatRange": "{min} - {max} seats",
+    "checkout.seats.minimumSeats": "Minimum {min} seats",
+    "checkout.seats.maximumSeats": "Maximum {max} seats",
+    "checkout.seats.updateFailed": "Failed to update seats"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -293,7 +303,17 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.seats.perSeat": "{price} per seat",
+    "checkout.seats.numberOfSeats": "Number of seats",
+    "checkout.seats.decreaseSeats": "Decrease number of seats",
+    "checkout.seats.increaseSeats": "Increase number of seats",
+    "checkout.seats.editSeatCount": "Click to edit seat count",
+    "checkout.seats.clickToEdit": "Click to edit",
+    "checkout.seats.seatRange": "{min} - {max} seats",
+    "checkout.seats.minimumSeats": "Minimum {min} seats",
+    "checkout.seats.maximumSeats": "Maximum {max} seats",
+    "checkout.seats.updateFailed": "Failed to update seats"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -441,7 +461,17 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.seats.perSeat": "{price} per seat",
+    "checkout.seats.numberOfSeats": "Number of seats",
+    "checkout.seats.decreaseSeats": "Decrease number of seats",
+    "checkout.seats.increaseSeats": "Increase number of seats",
+    "checkout.seats.editSeatCount": "Click to edit seat count",
+    "checkout.seats.clickToEdit": "Click to edit",
+    "checkout.seats.seatRange": "{min} - {max} seats",
+    "checkout.seats.minimumSeats": "Minimum {min} seats",
+    "checkout.seats.maximumSeats": "Maximum {max} seats",
+    "checkout.seats.updateFailed": "Failed to update seats"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -589,7 +619,17 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.seats.perSeat": "{price} per seat",
+    "checkout.seats.numberOfSeats": "Number of seats",
+    "checkout.seats.decreaseSeats": "Decrease number of seats",
+    "checkout.seats.increaseSeats": "Increase number of seats",
+    "checkout.seats.editSeatCount": "Click to edit seat count",
+    "checkout.seats.clickToEdit": "Click to edit",
+    "checkout.seats.seatRange": "{min} - {max} seats",
+    "checkout.seats.minimumSeats": "Minimum {min} seats",
+    "checkout.seats.maximumSeats": "Maximum {max} seats",
+    "checkout.seats.updateFailed": "Failed to update seats"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -737,7 +777,17 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.seats.perSeat": "{price} per seat",
+    "checkout.seats.numberOfSeats": "Number of seats",
+    "checkout.seats.decreaseSeats": "Decrease number of seats",
+    "checkout.seats.increaseSeats": "Increase number of seats",
+    "checkout.seats.editSeatCount": "Click to edit seat count",
+    "checkout.seats.clickToEdit": "Click to edit",
+    "checkout.seats.seatRange": "{min} - {max} seats",
+    "checkout.seats.minimumSeats": "Minimum {min} seats",
+    "checkout.seats.maximumSeats": "Maximum {max} seats",
+    "checkout.seats.updateFailed": "Failed to update seats"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -884,6 +934,16 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.seats.perSeat": "{price} per seat",
+    "checkout.seats.numberOfSeats": "Number of seats",
+    "checkout.seats.decreaseSeats": "Decrease number of seats",
+    "checkout.seats.increaseSeats": "Increase number of seats",
+    "checkout.seats.editSeatCount": "Click to edit seat count",
+    "checkout.seats.clickToEdit": "Click to edit",
+    "checkout.seats.seatRange": "{min} - {max} seats",
+    "checkout.seats.minimumSeats": "Minimum {min} seats",
+    "checkout.seats.maximumSeats": "Maximum {max} seats",
+    "checkout.seats.updateFailed": "Failed to update seats"
   }
 }

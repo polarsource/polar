@@ -1,7 +1,11 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import type { AcceptedLocale } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -19,8 +23,9 @@ export interface CheckoutSeatSelectorProps {
 const CheckoutSeatSelector = ({
   checkout,
   update,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: CheckoutSeatSelectorProps) => {
+  const t = useTranslations(locale)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
@@ -31,7 +36,7 @@ const CheckoutSeatSelector = ({
     if (err instanceof HTTPValidationError && err.detail?.[0]?.msg) {
       return err.detail[0].msg
     }
-    return 'Failed to update seats'
+    return t('checkout.seats.updateFailed')
   }
 
   // Check if the product has seat-based pricing
@@ -133,11 +138,14 @@ const CheckoutSeatSelector = ({
   // Build seat limit description
   const getSeatLimitText = () => {
     if (minimumSeats > 1 && hasMaximumLimit) {
-      return `${minimumSeats} - ${maximumSeats} seats`
+      return t('checkout.seats.seatRange', {
+        min: String(minimumSeats),
+        max: String(maximumSeats),
+      })
     } else if (minimumSeats > 1) {
-      return `Minimum ${minimumSeats} seats`
+      return t('checkout.seats.minimumSeats', { min: String(minimumSeats) })
     } else if (hasMaximumLimit) {
-      return `Maximum ${maximumSeats} seats`
+      return t('checkout.seats.maximumSeats', { max: String(maximumSeats) })
     }
     return null
   }
@@ -152,13 +160,15 @@ const CheckoutSeatSelector = ({
           {formatCurrency('compact', locale)(netAmount, currency)}
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
-          {formatCurrency('compact', locale)(pricePerSeat, currency)} per seat
+          {t('checkout.seats.perSeat', {
+            price: formatCurrency('compact', locale)(pricePerSeat, currency),
+          })}
         </p>
       </div>
 
       {/* Seat Selector */}
       <div className="flex flex-col gap-2">
-        <label className="text-lg">Number of seats</label>
+        <label className="text-lg">{t('checkout.seats.numberOfSeats')}</label>
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -166,7 +176,7 @@ const CheckoutSeatSelector = ({
             onClick={() => handleUpdateSeats(displaySeats - 1)}
             disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
             className="h-10 w-10 rounded-full disabled:opacity-40"
-            aria-label="Decrease seats"
+            aria-label={t('checkout.seats.decreaseSeats')}
           >
             <svg
               className="h-5 w-5"
@@ -197,8 +207,8 @@ const CheckoutSeatSelector = ({
               onClick={handleSeatClick}
               disabled={isUpdating}
               className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
-              aria-label="Click to edit seat count"
-              title="Click to edit"
+              aria-label={t('checkout.seats.editSeatCount')}
+              title={t('checkout.seats.clickToEdit')}
             >
               <span>{displaySeats}</span>
             </button>
@@ -213,7 +223,7 @@ const CheckoutSeatSelector = ({
               isEditing
             }
             className="h-10 w-10 rounded-full disabled:opacity-40"
-            aria-label="Increase seats"
+            aria-label={t('checkout.seats.increaseSeats')}
           >
             <svg
               className="h-5 w-5"

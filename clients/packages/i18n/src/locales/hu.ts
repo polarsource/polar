@@ -191,6 +191,18 @@ export default {
       getFree: 'Ingyen megkapom',
       paymentsUnavailable: 'A fizetések jelenleg nem elérhetők',
     },
+    seats: {
+      perSeat: '{price} / felhasználó',
+      numberOfSeats: 'Felhasználók száma',
+      decreaseSeats: 'Felhasználók számának csökkentése',
+      increaseSeats: 'Felhasználók számának növelése',
+      editSeatCount: 'Kattintson a felhasználók számának módosításához',
+      clickToEdit: 'Kattintson a módosításhoz',
+      seatRange: '{min} - {max} felhasználó',
+      minimumSeats: 'Minimum {min} felhasználó',
+      maximumSeats: 'Maximum {max} felhasználó',
+      updateFailed: 'Nem sikerült frissíteni a felhasználók számát',
+    },
   },
   intervals: {
     short: {

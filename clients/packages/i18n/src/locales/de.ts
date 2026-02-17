@@ -197,6 +197,18 @@ export default {
       getFree: 'Kostenlos erhalten',
       paymentsUnavailable: 'Zahlungen sind derzeit nicht verfügbar',
     },
+    seats: {
+      perSeat: '{price} pro Lizenz',
+      numberOfSeats: 'Anzahl der Lizenzen',
+      decreaseSeats: 'Anzahl der Lizenzen verringern',
+      increaseSeats: 'Anzahl der Lizenzen erhöhen',
+      editSeatCount: 'Klicken, um Anzahl der Lizenzen zu bearbeiten',
+      clickToEdit: 'Zum Bearbeiten klicken',
+      seatRange: '{min} – {max} Lizenzen',
+      minimumSeats: 'Mindestens {min} Lizenzen',
+      maximumSeats: 'Maximal {max} Lizenzen',
+      updateFailed: 'Lizenzen konnten nicht aktualisiert werden',
+    },
   },
   intervals: {
     short: {

@@ -195,6 +195,18 @@ export default {
       getFree: 'Obtenir gratuitement',
       paymentsUnavailable: 'Les paiements sont actuellement indisponibles',
     },
+    seats: {
+      perSeat: '{price} par utilisateur',
+      numberOfSeats: "Nombre d'utilisateurs",
+      decreaseSeats: "Diminuer le nombre d'utilisateurs",
+      increaseSeats: "Augmenter le nombre d'utilisateurs",
+      editSeatCount: "Cliquer pour modifier le nombre d'utilisateurs",
+      clickToEdit: 'Cliquer pour modifier',
+      seatRange: '{min} - {max} utilisateurs',
+      minimumSeats: 'Minimum {min} utilisateurs',
+      maximumSeats: 'Maximum {max} utilisateurs',
+      updateFailed: "Impossible de mettre à jour le nombre d'utilisateurs",
+    },
   },
   intervals: {
     short: {

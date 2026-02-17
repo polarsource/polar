@@ -190,6 +190,18 @@ export default {
       getFree: 'Skaffa gratis',
       paymentsUnavailable: 'Betalningar är för närvarande otillgängliga',
     },
+    seats: {
+      perSeat: '{price} per licens',
+      numberOfSeats: 'Antal licenser',
+      decreaseSeats: 'Minska antal licenser',
+      increaseSeats: 'Öka antal licenser',
+      editSeatCount: 'Klicka för att ändra antal licenser',
+      clickToEdit: 'Klicka för att ändra',
+      seatRange: '{min}–{max} licenser',
+      minimumSeats: 'Minst {min} licenser',
+      maximumSeats: 'Max {max} licenser',
+      updateFailed: 'Kunde inte uppdatera licenser',
+    },
   },
   intervals: {
     short: {

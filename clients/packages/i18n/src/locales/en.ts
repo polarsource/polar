@@ -134,6 +134,26 @@ export default {
     card: {
       included: 'Included',
     },
+    seats: {
+      perSeat: {
+        value: '{price} per seat',
+        _llmContext:
+          'Text indicating the price per seat in a seat-based pricing model. Use a natural replacement for "seat" in the target language. It may be more common to use "user" or "license" instead of "seat". For example, in Dutch you might use "{price} per gebruiker" (per user) instead of "per seat".',
+      },
+      numberOfSeats: {
+        value: 'Number of seats',
+        _llmContext:
+          'Label for the input where the customer specifies how many seats/users/licenses they want to purchase in a seat-based pricing model.',
+      },
+      decreaseSeats: 'Decrease number of seats',
+      increaseSeats: 'Increase number of seats',
+      editSeatCount: 'Click to edit seat count',
+      clickToEdit: 'Click to edit',
+      seatRange: '{min} - {max} seats',
+      minimumSeats: 'Minimum {min} seats',
+      maximumSeats: 'Maximum {max} seats',
+      updateFailed: 'Failed to update seats',
+    },
     benefits: {
       moreBenefits: {
         _mode: 'plural',

@@ -14,12 +14,14 @@ export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
   update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   locale?: AcceptedLocale
+  compact?: boolean
 }
 
 const CheckoutSeatSelector = ({
   checkout,
   update,
   locale,
+  compact = false,
 }: CheckoutSeatSelectorProps) => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -143,6 +145,97 @@ const CheckoutSeatSelector = ({
   }
 
   const seatLimitText = getSeatLimitText()
+
+  if (compact) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium dark:text-white">Seats</span>
+            <span className="dark:text-polar-500 text-xs text-gray-500">
+              {formatCurrency('compact', locale)(pricePerSeat, currency)} per
+              seat
+            </span>
+          </div>
+          <div className="dark:border-polar-700 flex items-center gap-0 rounded-xl border border-gray-200">
+            <button
+              type="button"
+              onClick={() => handleUpdateSeats(displaySeats - 1)}
+              disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
+              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-9 w-9 cursor-pointer items-center justify-center rounded-l-xl leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Decrease seats"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M3 7h8" />
+              </svg>
+            </button>
+            {isEditing ? (
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={inputValue}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                onKeyDown={handleInputKeyDown}
+                autoFocus
+                min={minimumSeats}
+                max={hasMaximumLimit ? maximumSeats : undefined}
+                className="h-9 w-14 cursor-text rounded-none border-x border-y-0 px-1 text-center text-sm font-medium tabular-nums"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={handleSeatClick}
+                disabled={isUpdating}
+                className="dark:border-polar-700 dark:hover:bg-polar-800 h-9 w-14 cursor-pointer border-x border-gray-200 text-center text-sm font-medium tabular-nums transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Click to edit seat count"
+                title="Click to edit"
+              >
+                {displaySeats}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleUpdateSeats(displaySeats + 1)}
+              disabled={
+                (hasMaximumLimit && displaySeats >= maximumSeats) ||
+                isUpdating ||
+                isEditing
+              }
+              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-9 w-9 cursor-pointer items-center justify-center rounded-r-xl leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Increase seats"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M7 3v8M3 7h8" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        {seatLimitText && (
+          <p className="dark:text-polar-400 text-xs text-gray-500">
+            {seatLimitText}
+          </p>
+        )}
+        {error && (
+          <p className="text-destructive-foreground text-sm">{error}</p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">

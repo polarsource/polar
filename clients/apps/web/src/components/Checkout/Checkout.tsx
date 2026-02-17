@@ -11,6 +11,7 @@ import {
   CheckoutPricingBreakdown,
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
+  CheckoutSeatSelector,
 } from '@polar-sh/checkout/components'
 import {
   hasProductCheckout,
@@ -65,11 +66,9 @@ const Checkout = ({
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
-  // const { variant: pricingPositionExperiment } = useExperiment(
-  //   'checkout_pricing_position',
-  // )
-
-  const pricingPositionExperiment = 'treatment'
+  const { variant: pricingPositionExperiment } = useExperiment(
+    'checkout_pricing_position',
+  )
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -246,7 +245,6 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
-          pricingPositionExperiment={pricingPositionExperiment}
         />
       </ShadowBox>
     )
@@ -276,63 +274,88 @@ const Checkout = ({
           </div>
         </div>
       )}
-      <ShadowBoxOnMd className={`md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent ${pricingPositionExperiment === 'treatment' ? 'md:overflow-clip' : 'md:overflow-hidden'}`}>
+      <ShadowBoxOnMd
+        className={`md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent ${pricingPositionExperiment === 'treatment' ? 'md:overflow-clip' : 'md:overflow-hidden'}`}
+      >
         <div className="md:dark:bg-polar-950 md:bg-gray-50 md:p-12">
-          <div className={`flex flex-col gap-y-8 ${pricingPositionExperiment === 'treatment' ? 'md:sticky md:top-8' : ''}`}>
-          {pricingPositionExperiment !== 'treatment' && checkout.returnUrl && (
-            <Link
-              href={checkout.returnUrl}
-              className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
-            >
-              <ArrowBackOutlined fontSize="inherit" />
-              <span>Back to {checkout.organization.name}</span>
-            </Link>
-          )}
-          {hasProductCheckout(checkout) && (
-            <>
-              <CheckoutProductInfo
-                organization={checkout.organization}
-                product={checkout.product}
-                pricingPositionExperiment={pricingPositionExperiment}
-              />
-              {pricingPositionExperiment === 'treatment' && (
-                <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
-                  <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
-                  <CheckoutDiscountInput checkout={checkout} update={update} />
-                </ShadowBox>
+          <div
+            className={`flex flex-col gap-y-8 ${pricingPositionExperiment === 'treatment' ? 'md:sticky md:top-8' : ''}`}
+          >
+            {pricingPositionExperiment !== 'treatment' &&
+              checkout.returnUrl && (
+                <Link
+                  href={checkout.returnUrl}
+                  className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
+                >
+                  <ArrowBackOutlined fontSize="inherit" />
+                  <span>Back to {checkout.organization.name}</span>
+                </Link>
               )}
-              <CheckoutProductSwitcher
-                checkout={checkout}
-                update={
-                  update as (
-                    data: CheckoutUpdatePublic,
-                  ) => Promise<ProductCheckoutPublic>
-                }
-                themePreset={themePreset}
-                locale={locale}
-                pricingPositionExperiment={pricingPositionExperiment}
-              />
-              {checkout.productPrice.amountType === 'custom' && (
-                <CheckoutPWYWForm
+            {hasProductCheckout(checkout) && (
+              <>
+                <CheckoutProductInfo
+                  organization={checkout.organization}
+                  product={checkout.product}
+                  pricingPositionExperiment={pricingPositionExperiment}
+                />
+                <CheckoutProductSwitcher
                   checkout={checkout}
-                  update={update}
-                  productPrice={checkout.productPrice as ProductPriceCustom}
+                  update={
+                    update as (
+                      data: CheckoutUpdatePublic,
+                    ) => Promise<ProductCheckoutPublic>
+                  }
                   themePreset={themePreset}
                   locale={locale}
+                  pricingPositionExperiment={pricingPositionExperiment}
                 />
-              )}
-              <CheckoutCard
-                checkout={checkout}
-                update={
-                  update as (
-                    data: CheckoutUpdatePublic,
-                  ) => Promise<ProductCheckoutPublic>
-                }
-                locale={locale}
-                pricingPositionExperiment={pricingPositionExperiment}
-              />
-            </>
-          )}
+                {checkout.productPrice.amountType === 'custom' && (
+                  <CheckoutPWYWForm
+                    checkout={checkout}
+                    update={update}
+                    productPrice={checkout.productPrice as ProductPriceCustom}
+                    themePreset={themePreset}
+                    locale={locale}
+                  />
+                )}
+                {pricingPositionExperiment === 'treatment' &&
+                  !checkout.isFreeProductPrice && (
+                    <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
+                      {checkout.productPrice.amountType === 'seat_based' && (
+                        <CheckoutSeatSelector
+                          checkout={checkout}
+                          update={
+                            update as (
+                              data: CheckoutUpdatePublic,
+                            ) => Promise<ProductCheckoutPublic>
+                          }
+                          locale={locale}
+                          compact
+                        />
+                      )}
+                      <CheckoutPricingBreakdown
+                        checkout={checkout}
+                        locale={locale}
+                      />
+                      <CheckoutDiscountInput
+                        checkout={checkout}
+                        update={update}
+                        locale={locale}
+                      />
+                    </ShadowBox>
+                  )}
+                <CheckoutCard
+                  checkout={checkout}
+                  update={
+                    update as (
+                      data: CheckoutUpdatePublic,
+                    ) => Promise<ProductCheckoutPublic>
+                  }
+                  locale={locale}
+                  pricingPositionExperiment={pricingPositionExperiment}
+                />
+              </>
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-y-8 md:p-12">

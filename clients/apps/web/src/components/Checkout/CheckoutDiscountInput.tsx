@@ -1,10 +1,15 @@
 'use client'
 
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -29,26 +34,37 @@ const XIcon = ({ className }: { className?: string }) => {
 interface CheckoutDiscountInputProps {
   checkout: CheckoutPublic
   update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  locale?: AcceptedLocale
 }
 
 export const CheckoutDiscountInput = ({
   checkout,
   update,
+  locale = DEFAULT_LOCALE,
 }: CheckoutDiscountInputProps) => {
+  const t = useTranslations(locale)
   const [discountCode, setDiscountCode] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const hasDiscount = !!checkout.discount
+
+  // Sync local state when discount is applied/removed externally
+  useEffect(() => {
+    if (hasDiscount) {
+      setDiscountCode('')
+      setError(null)
+    }
+  }, [hasDiscount])
 
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return
     setError(null)
     try {
       await update({ discountCode })
-    } catch (e) {
-      setError('Invalid discount code')
+    } catch {
+      setError(t('checkout.form.fieldRequired'))
     }
-  }, [update, discountCode])
+  }, [update, discountCode, t])
 
   const removeDiscountCode = useCallback(async () => {
     setError(null)
@@ -65,7 +81,10 @@ export const CheckoutDiscountInput = ({
   return (
     <div className="flex flex-col gap-1">
       <label className="flex flex-row items-center justify-between text-sm">
-        <span>Discount code</span>
+        <span>{t('checkout.form.discountCode')}</span>
+        <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
+          {t('checkout.form.optional')}
+        </span>
       </label>
       <div className="relative">
         <Input
@@ -79,7 +98,6 @@ export const CheckoutDiscountInput = ({
             e.preventDefault()
             addDiscountCode()
           }}
-          placeholder="Enter code"
         />
         <div className="absolute inset-y-0 right-1 z-10 flex items-center">
           {!hasDiscount && discountCode && (
@@ -89,7 +107,7 @@ export const CheckoutDiscountInput = ({
               size="sm"
               onClick={addDiscountCode}
             >
-              Apply
+              {t('checkout.form.apply')}
             </Button>
           )}
           {hasDiscount && (

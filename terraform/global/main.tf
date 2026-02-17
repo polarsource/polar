@@ -124,34 +124,34 @@ resource "tfe_variable" "tfc_aws_run_role_arn" {
   variable_set_id = tfe_variable_set.global.id
 }
 
-resource "tfe_variable" "prometheus_remote_write_url" {
-  key             = "prometheus_remote_write_url"
+resource "tfe_variable" "grafana_cloud_prometheus_url" {
+  key             = "grafana_cloud_prometheus_url"
   category        = "terraform"
-  description     = "Prometheus Remote Write URL"
+  description     = "Grafana Cloud Prometheus base URL (e.g. https://prometheus-prod-XX.grafana.net)"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
 
-resource "tfe_variable" "prometheus_remote_write_username" {
-  key             = "prometheus_remote_write_username"
+resource "tfe_variable" "grafana_cloud_prometheus_username" {
+  key             = "grafana_cloud_prometheus_username"
   category        = "terraform"
-  description     = "Prometheus Remote Write Username"
+  description     = "Grafana Cloud Prometheus username (numeric stack ID)"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
 
-resource "tfe_variable" "prometheus_remote_write_password" {
-  key             = "prometheus_remote_write_password"
+resource "tfe_variable" "grafana_cloud_prometheus_password" {
+  key             = "grafana_cloud_prometheus_password"
   category        = "terraform"
-  description     = "Prometheus Remote Write Password"
+  description     = "Grafana Cloud Prometheus write API key"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
 
-resource "tfe_variable" "prometheus_remote_write_interval" {
-  key             = "prometheus_remote_write_interval"
+resource "tfe_variable" "grafana_cloud_prometheus_write_interval" {
+  key             = "grafana_cloud_prometheus_write_interval"
   category        = "terraform"
-  description     = "How often to write metrics to Prometheus"
+  description     = "How often to write metrics to Prometheus (seconds)"
   sensitive       = false
   variable_set_id = tfe_variable_set.global.id
   value           = 60

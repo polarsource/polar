@@ -211,26 +211,26 @@ variable "apple_key_value" {
   sensitive   = true
 }
 
-variable "prometheus_remote_write_url" {
-  description = "Prometheus Remote Write URL"
+variable "grafana_cloud_prometheus_url" {
+  description = "Grafana Cloud Prometheus base URL"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_username" {
-  description = "Prometheus Remote Write Username"
+variable "grafana_cloud_prometheus_username" {
+  description = "Grafana Cloud Prometheus username (numeric stack ID)"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_password" {
-  description = "Prometheus Remote Write Password"
+variable "grafana_cloud_prometheus_password" {
+  description = "Grafana Cloud Prometheus write API key"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_interval" {
-  description = "Prometheus Remote Write Interval"
+variable "grafana_cloud_prometheus_write_interval" {
+  description = "Grafana Cloud Prometheus write interval (seconds)"
   type        = number
   sensitive   = false
 }

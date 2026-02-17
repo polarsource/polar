@@ -226,7 +226,7 @@ variable "apple_secrets" {
 }
 
 variable "prometheus_config" {
-  description = "Prometheus and Grafana Cloud configuration"
+  description = "Grafana Cloud Prometheus configuration (url is the base, e.g. https://prometheus-prod-XX.grafana.net)"
   type = object({
     url       = string
     username  = string

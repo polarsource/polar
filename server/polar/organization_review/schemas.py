@@ -80,6 +80,24 @@ class HistoryData(Schema):
     has_blocked_orgs: bool = False
 
 
+class WebsitePage(Schema):
+    url: str
+    title: str | None = None
+    content: str = Field(default="", description="Extracted text content")
+    content_truncated: bool = False
+
+
+class WebsiteData(Schema):
+    base_url: str
+    pages: list[WebsitePage] = Field(default_factory=list)
+    summary: str | None = Field(
+        default=None, description="AI-generated summary of website content"
+    )
+    scrape_error: str | None = None
+    total_pages_attempted: int = 0
+    total_pages_succeeded: int = 0
+
+
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
@@ -88,6 +106,7 @@ class DataSnapshot(Schema):
     account: AccountData
     metrics: PaymentMetrics
     history: HistoryData
+    website: WebsiteData | None = None
     collected_at: datetime
 
 

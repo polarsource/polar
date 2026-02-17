@@ -1,7 +1,7 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { organization } from '../preview'
 import type { schemas } from '../types'
@@ -18,7 +18,7 @@ export function SeatInvitation({
       <Preview>
         You've been invited to access {product_name} by {organization.name}
       </Preview>
-      <IntroWithHi>
+      <Intro>
         {billing_manager_email} has invited you to access{' '}
         <span className="font-bold">{product_name}</span> from{' '}
         <span className="font-bold">{organization.name}</span>.
@@ -31,7 +31,7 @@ export function SeatInvitation({
         <span className="text-sm text-gray-600">
           This invitation expires in 24 hours.
         </span>
-      </IntroWithHi>
+      </Intro>
       <Section className="text-center">
         <Button href={claim_url}>Claim Your Seat</Button>
       </Section>

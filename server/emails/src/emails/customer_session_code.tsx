@@ -1,6 +1,6 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import FooterCustomer from '../components/FooterCustomer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import OTPCode from '../components/OTPCode'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { organization } from '../preview'
@@ -16,12 +16,12 @@ export function CustomerSessionCode({
   return (
     <WrapperOrganization organization={organization}>
       <Preview>Your code to access your {organization.name} purchases</Preview>
-      <IntroWithHi>
+      <Intro>
         Use the code below to access your purchases from {organization.name}.{' '}
         <span className="font-bold">
           This code will expire in {code_lifetime_minutes} minutes.
         </span>
-      </IntroWithHi>
+      </Intro>
       <OTPCode code={code} />
       <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
         <Text className="m-0 text-xs text-gray-600">

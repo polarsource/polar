@@ -1,15 +1,9 @@
-import {
-  Heading,
-  Hr,
-  Link,
-  Preview,
-  Section,
-  Text,
-} from '@react-email/components'
+import { Hr, Link, Preview, Section, Text } from '@react-email/components'
 import Benefits from '../components/Benefits'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import Intro from '../components/Intro'
 import OrderSummary from '../components/OrderSummary'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
@@ -26,15 +20,10 @@ export function SubscriptionUpdated({
   return (
     <WrapperOrganization organization={organization}>
       <Preview>Your subscription has been updated to {product.name}</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Your subscription has been updated
-        </Heading>
-        <BodyText>
-          Your subscription has been successfully changed to{' '}
-          <span className="font-bold">{product.name}</span>.
-        </BodyText>
-      </Section>
+      <Intro headline="Your subscription has been updated">
+        Your subscription has been successfully changed to{' '}
+        <span className="font-bold">{product.name}</span>.
+      </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
         <Button href={url}>View my subscription</Button>

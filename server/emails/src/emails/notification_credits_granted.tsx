@@ -1,7 +1,7 @@
 import { Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Footer from '../components/Footer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
@@ -14,10 +14,10 @@ export function NotificationCreditsGranted({
       <Preview>
         {organization_name} has received {formatted_amount} in fee credits
       </Preview>
-      <IntroWithHi>
+      <Intro>
         Great news! <strong>{organization_name}</strong> has received{' '}
         <strong>{formatted_amount}</strong> in fee credits!
-      </IntroWithHi>
+      </Intro>
       <BodyText>
         These credits will be automatically applied to reduce your transaction
         fees on future orders. You can view your credit balance and usage

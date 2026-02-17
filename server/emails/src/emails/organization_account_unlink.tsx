@@ -1,7 +1,7 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Footer from '../components/Footer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
@@ -15,13 +15,13 @@ export function OrganizationAccountUnlink({
       <Preview>
         Important: Organization Account Update for {organization_kept_name}
       </Preview>
-      <IntroWithHi>
+      <Intro>
         We'd like to inform you that some of your Stripe payout accounts
         associated with organizations in Polar have been detached. This update
         was made as part of our ongoing efforts to enhance security and ensure
         compliance, as sharing the same Stripe account across multiple
         organizations will no longer be permitted going forward.
-      </IntroWithHi>
+      </Intro>
       <Section>
         <BodyText>
           Your organization{' '}

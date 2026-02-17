@@ -1,7 +1,7 @@
 import { Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
@@ -14,10 +14,10 @@ export function OrganizationInvite({
   return (
     <WrapperPolar>
       <Preview>You've been added to {organization_name} on Polar</Preview>
-      <IntroWithHi>
+      <Intro>
         {inviter_email} has added you to{' '}
         <span className="font-bold">{organization_name}</span> on Polar.
-      </IntroWithHi>
+      </Intro>
       <Section>
         <Text>
           As a member of {organization_name} you're now able to manage{' '}

@@ -2,7 +2,7 @@ import { Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
@@ -18,11 +18,11 @@ export function WebhookEndpointDisabled({
         Webhook endpoint disabled for {organization.name} due to continuous
         failures
       </Preview>
-      <IntroWithHi>
+      <Intro>
         We've automatically disabled a webhook endpoint for{' '}
         <span className="font-bold">{organization.name}</span> due to continuous
         delivery failures.
-      </IntroWithHi>
+      </Intro>
       <Section>
         <Text>
           After multiple consecutive failed delivery attempts, we've disabled

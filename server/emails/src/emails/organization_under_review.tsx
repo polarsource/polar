@@ -2,7 +2,7 @@ import { Preview, Section } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
@@ -16,10 +16,10 @@ export function OrganizationUnderReview({
         Your organization is under review - a standard part of our onboarding
         process
       </Preview>
-      <IntroWithHi>
+      <Intro>
         Your organization <strong>{organization.name}</strong> is currently
         under review as part of our standard onboarding process.
-      </IntroWithHi>
+      </Intro>
       <Section>
         <BodyText>
           This is a completely normal step that all organizations go through

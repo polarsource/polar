@@ -2,7 +2,7 @@ import { Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import IntroWithHi from '../components/IntroWithHi'
+import Intro from '../components/Intro'
 import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
@@ -13,10 +13,10 @@ export function NotificationCreateAccount({
   return (
     <WrapperPolar>
       <Preview>Your Polar account is being reviewed</Preview>
-      <IntroWithHi>
+      <Intro>
         Now that you got your first payment to {organization_name}, you should
         create a payout account in order to receive your funds.
-      </IntroWithHi>
+      </Intro>
       <BodyText>
         This operation only takes a few minutes and allows you to receive your
         money immediately.

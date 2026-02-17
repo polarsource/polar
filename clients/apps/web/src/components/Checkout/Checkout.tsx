@@ -86,7 +86,7 @@ const Checkout = ({
     })
   }, [checkout.clientSecret])
 
-  const themePreset = getThemePreset(checkout.organization.slug, theme)
+  const themePreset = getThemePreset(theme)
 
   // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(

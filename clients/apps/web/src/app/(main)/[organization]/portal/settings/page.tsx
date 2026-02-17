@@ -58,15 +58,11 @@ export default async function Page(props: {
   const params = await props.params
   const token = customer_session_token ?? member_session_token
   const api = await getServerSideAPI(token)
-  const { organization } = await getOrganizationOrNotFound(
-    api,
-    params.organization,
-    searchParams,
-  )
+
+  await getOrganizationOrNotFound(api, params.organization, searchParams)
 
   return (
     <CustomerPortalSettings
-      organization={organization}
       customerSessionToken={token}
       setupIntentParams={
         searchParams.setup_intent_client_secret && searchParams.setup_intent

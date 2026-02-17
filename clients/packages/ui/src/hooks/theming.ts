@@ -6,9 +6,7 @@ export interface ThemingPresetProps {
   stripe: StripeThemingPresetProps
 }
 
-export const useThemePreset = (
-  theme?: 'light' | 'dark',
-): ThemingPresetProps => {
+export const getThemePreset = (theme: 'light' | 'dark') => {
   const inputBoxShadow =
     theme === 'dark'
       ? 'none'
@@ -88,13 +86,4 @@ export const useThemePreset = (
       },
     },
   }
-}
-
-// Deprecation helper, `useThemePreset` should not be used as it triggers hooks linter rules
-// but it's not a hook (`use` prefix is reserved)
-export const getThemePreset = (
-  preset: ThemePreset | (string & {}),
-  theme?: 'light' | 'dark',
-) => {
-  return useThemePreset(theme)
 }

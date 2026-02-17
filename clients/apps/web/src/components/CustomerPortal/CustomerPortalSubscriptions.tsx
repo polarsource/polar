@@ -63,17 +63,13 @@ interface SubscriptionsOverviewProps {
 }
 
 export const InactiveSubscriptionsOverview = ({
-  organization,
   subscriptions,
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
   const router = useRouter()
   const theme = useTheme()
-  const themingPreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
+  const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
   const [selectedSubscription, setSelectedSubscription] = useState<
     schemas['CustomerSubscription'] | null

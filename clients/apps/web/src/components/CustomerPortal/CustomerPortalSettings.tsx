@@ -3,7 +3,6 @@
 import revalidate from '@/app/actions'
 import { useCustomerPaymentMethods } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
 import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
@@ -18,7 +17,6 @@ import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
 
 interface CustomerPortalSettingsProps {
-  organization: schemas['CustomerOrganization']
   customerSessionToken?: string
   setupIntentParams?: {
     setup_intent_client_secret: string
@@ -29,16 +27,12 @@ interface CustomerPortalSettingsProps {
 export const CustomerPortalSettings = ({
   customerSessionToken,
   setupIntentParams,
-  organization,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
 
   const theme = useTheme()
-  const themePreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
+  const themePreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
   const {
     isShown: isAddPaymentMethodModalOpen,

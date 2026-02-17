@@ -1,15 +1,8 @@
-import {
-  Heading,
-  Hr,
-  Link,
-  Preview,
-  Section,
-  Text,
-} from '@react-email/components'
+import { Hr, Link, Preview, Section, Text } from '@react-email/components'
 import Benefits from '../components/Benefits'
-import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import { Intro } from '../components/Intro'
 import OrderSummary from '../components/OrderSummary'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
@@ -25,15 +18,11 @@ export function OrderConfirmation({
   return (
     <WrapperOrganization organization={organization}>
       <Preview>Thank you for your order of {order.description}!</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Thank you for your order!
-        </Heading>
-        <BodyText>
-          Your order of <span className="font-bold">{order.description}</span>{' '}
-          is now processed.
-        </BodyText>
-      </Section>
+      <Intro headline="Thank you for your order!">
+        You&rsquo;re all set! Your order of{' '}
+        <span className="font-bold">{order.description}</span> has been
+        processed.
+      </Intro>
       {product && (
         <>
           {product.benefits.length > 0 && (

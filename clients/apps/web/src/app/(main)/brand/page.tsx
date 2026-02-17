@@ -1,6 +1,5 @@
 'use client'
 
-import { DitherSection } from '@/components/Brand/DitherSection'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import {
@@ -17,7 +16,6 @@ import {
 const sectionComponents = [
   { id: 'cover', Component: CoverSection },
   { id: 'mission', Component: MissionSection },
-  { id: 'dither', Component: DitherSection },
   { id: 'logo', Component: LogoSection },
   { id: 'colors', Component: ColorsSection },
   { id: 'typography', Component: TypographySection },

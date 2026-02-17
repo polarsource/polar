@@ -51,9 +51,7 @@ class GrafanaCloudPrometheusClient:
             timeout=httpx.Timeout(30.0, connect=10.0),
         )
 
-    async def query(
-        self, promql: str, time: datetime | None = None
-    ) -> dict[str, Any]:
+    async def query(self, promql: str, time: datetime | None = None) -> dict[str, Any]:
         """Execute an instant query at a single point in time."""
         params: dict[str, str] = {"query": promql}
         if time:

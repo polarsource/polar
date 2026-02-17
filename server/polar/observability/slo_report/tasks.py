@@ -21,9 +21,7 @@ log: Logger = structlog.get_logger()
 SLACK_API_URL = "https://slack.com/api/chat.postMessage"
 
 
-async def _send_slack_message(
-    payload: SlackPayload, token: str, channel: str
-) -> None:
+async def _send_slack_message(payload: SlackPayload, token: str, channel: str) -> None:
     """Send message to Slack via chat.postMessage API."""
     async with httpx.AsyncClient() as client:
         response = await client.post(

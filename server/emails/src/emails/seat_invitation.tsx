@@ -33,7 +33,7 @@ export function SeatInvitation({
         </span>
       </Intro>
       <Section className="text-center">
-        <Button href={claim_url}>Claim Your Seat</Button>
+        <Button href={claim_url}>Claim seat</Button>
       </Section>
 
       <FooterCustomer organization={organization} email={email} />

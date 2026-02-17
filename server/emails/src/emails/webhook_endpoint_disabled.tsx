@@ -47,7 +47,7 @@ export function WebhookEndpointDisabled({
         </ul>
       </Section>
       <Section className="text-center">
-        <Button href={dashboard_url}>Go to Webhooks Dashboard</Button>
+        <Button href={dashboard_url}>Manage webhooks</Button>
       </Section>
       <Footer email={email} />
     </WrapperPolar>

@@ -30,7 +30,7 @@ export function SubscriptionConfirmation({
       </Section>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
-        <Button href={url}>Access my purchase</Button>
+        <Button href={url}>Access purchase</Button>
       </Section>
       <Hr />
       <OrderSummary order={order} />

@@ -58,7 +58,7 @@ export function SubscriptionCancellation({
         <BenefitsSection benefits={product.benefits} />
       </Section>
       <Section className="my-8 text-center">
-        <Button href={url}>Manage my subscription</Button>
+        <Button href={url}>Manage subscription</Button>
       </Section>
 
       <FooterCustomer organization={organization} email={email} />

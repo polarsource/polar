@@ -21,7 +21,7 @@ export function NotificationCreateAccount({
         This operation only takes a few minutes and allows you to receive your
         money immediately.
       </BodyText>
-      <Button href={url}>Create my payout account</Button>
+      <Button href={url}>Create payout account</Button>
 
       <Footer email={null} />
     </WrapperPolar>

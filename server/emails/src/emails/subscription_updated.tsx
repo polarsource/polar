@@ -26,7 +26,7 @@ export function SubscriptionUpdated({
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
-        <Button href={url}>View my subscription</Button>
+        <Button href={url}>View subscription</Button>
       </Section>
       <Hr />
       {order ? (

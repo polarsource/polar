@@ -22,7 +22,7 @@ export function EmailUpdate({
       </Intro>
 
       <Section className="my-8 text-center">
-        <Button href={url}>Update my email</Button>
+        <Button href={url}>Update email</Button>
       </Section>
 
       <Footer email={email} />

@@ -29,7 +29,7 @@ export function OrderConfirmation({
             <Benefits benefits={product.benefits} />
           )}
           <Section className="my-8 text-center">
-            <Button href={url}>Access my purchase</Button>
+            <Button href={url}>Access purchase</Button>
           </Section>
         </>
       )}

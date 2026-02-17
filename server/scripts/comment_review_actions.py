@@ -78,7 +78,9 @@ async def get_review_threads(
     created_at_filter: DatetimeFilter | None = None
     if older_than_days is not None:
         cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
-        cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%S.") + f"{cutoff.microsecond // 1000:03d}Z"
+        cutoff_str = (
+            cutoff.strftime("%Y-%m-%dT%H:%M:%S.") + f"{cutoff.microsecond // 1000:03d}Z"
+        )
         created_at_filter = DatetimeFilter(before=cutoff_str)
         log.info(
             "Filtering threads older than",

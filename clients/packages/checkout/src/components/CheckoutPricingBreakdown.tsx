@@ -10,9 +10,9 @@ import { formatDate } from '@polar-sh/i18n/formatters/date'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { PropsWithChildren, useMemo } from 'react'
 import { hasProductCheckout } from '../guards'
+import { getDiscountDisplay } from '../utils/discount'
 import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
 import { unreachable } from '../utils/unreachable'
-import { getDiscountDisplay } from '../utils/discount'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
@@ -196,34 +196,36 @@ const CheckoutPricingBreakdown = ({
         <span>{t('checkout.pricing.free')}</span>
       )}
       {(checkout.trialEnd ||
-        (checkout.activeTrialInterval && checkout.activeTrialIntervalCount)) && (
+        (checkout.activeTrialInterval &&
+          checkout.activeTrialIntervalCount)) && (
         <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
-          {checkout.activeTrialInterval && checkout.activeTrialIntervalCount && (
-            <DetailRow
-              emphasis
-              title={
-                checkout.activeTrialInterval === 'year'
-                  ? t('checkout.trial.duration.years', {
-                      count: checkout.activeTrialIntervalCount,
-                    })
-                  : checkout.activeTrialInterval === 'month'
-                    ? t('checkout.trial.duration.months', {
+          {checkout.activeTrialInterval &&
+            checkout.activeTrialIntervalCount && (
+              <DetailRow
+                emphasis
+                title={
+                  checkout.activeTrialInterval === 'year'
+                    ? t('checkout.trial.duration.years', {
                         count: checkout.activeTrialIntervalCount,
                       })
-                    : checkout.activeTrialInterval === 'week'
-                      ? t('checkout.trial.duration.weeks', {
+                    : checkout.activeTrialInterval === 'month'
+                      ? t('checkout.trial.duration.months', {
                           count: checkout.activeTrialIntervalCount,
                         })
-                      : t('checkout.trial.duration.days', {
-                          count: checkout.activeTrialIntervalCount,
-                        })
-              }
-            >
-              <span>{t('checkout.pricing.free')}</span>
-            </DetailRow>
-          )}
+                      : checkout.activeTrialInterval === 'week'
+                        ? t('checkout.trial.duration.weeks', {
+                            count: checkout.activeTrialIntervalCount,
+                          })
+                        : t('checkout.trial.duration.days', {
+                            count: checkout.activeTrialIntervalCount,
+                          })
+                }
+              >
+                <span>{t('checkout.pricing.free')}</span>
+              </DetailRow>
+            )}
           {checkout.trialEnd && (
-            <span className="dark:text-polar-500 text-gray-500 text-sm">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
               {t('checkout.trial.ends', {
                 endDate: formatDate(checkout.trialEnd, locale),
               })}

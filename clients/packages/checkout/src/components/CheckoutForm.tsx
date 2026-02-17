@@ -110,7 +110,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
-  pricingPositionExperiment?: "treatment" | "control"
+  pricingPositionExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
 }
 
@@ -752,62 +752,64 @@ const BaseCheckoutForm = ({
                   )}
                 </>
               )}
-              {checkout.allowDiscountCodes && checkout.isDiscountApplicable && pricingPositionExperiment !== 'treatment' && (
-                <FormField
-                  control={control}
-                  name="discountCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex flex-row items-center justify-between">
-                        <div>{t('checkout.form.discountCode')}</div>
-                        <div className="dark:text-polar-500 text-xs font-normal text-gray-500">
-                          {t('checkout.form.optional')}
-                        </div>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            autoComplete="off"
-                            {...field}
-                            value={field.value || ''}
-                            disabled={checkoutDiscounted}
-                            onKeyDown={(e) => {
-                              if (e.key !== 'Enter') return
-
-                              e.preventDefault()
-                              addDiscountCode()
-                            }}
-                          />
-                          <div className="absolute inset-y-0 right-1 z-10 flex items-center">
-                            {!checkoutDiscounted && discountCode && (
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={addDiscountCode}
-                              >
-                                {t('checkout.form.apply')}
-                              </Button>
-                            )}
-                            {checkoutDiscounted && (
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={removeDiscountCode}
-                              >
-                                <XIcon className="h-4 w-4" />
-                              </Button>
-                            )}
+              {checkout.allowDiscountCodes &&
+                checkout.isDiscountApplicable &&
+                pricingPositionExperiment !== 'treatment' && (
+                  <FormField
+                    control={control}
+                    name="discountCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex flex-row items-center justify-between">
+                          <div>{t('checkout.form.discountCode')}</div>
+                          <div className="dark:text-polar-500 text-xs font-normal text-gray-500">
+                            {t('checkout.form.optional')}
                           </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type="text"
+                              autoComplete="off"
+                              {...field}
+                              value={field.value || ''}
+                              disabled={checkoutDiscounted}
+                              onKeyDown={(e) => {
+                                if (e.key !== 'Enter') return
+
+                                e.preventDefault()
+                                addDiscountCode()
+                              }}
+                            />
+                            <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                              {!checkoutDiscounted && discountCode && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={addDiscountCode}
+                                >
+                                  {t('checkout.form.apply')}
+                                </Button>
+                              )}
+                              {checkoutDiscounted && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={removeDiscountCode}
+                                >
+                                  <XIcon className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               {checkout.attachedCustomFields &&
                 checkout.attachedCustomFields.map(
                   ({ customField, required }) => (
@@ -832,127 +834,132 @@ const BaseCheckoutForm = ({
                   ),
                 )}
             </div>
-            {!checkout.isFreeProductPrice && pricingPositionExperiment !== 'treatment' && (
-              <div className="flex flex-col gap-y-2">
-                {checkout.currency ? (
-                  <>
-                    <DetailRow title={t('checkout.pricing.subtotal')}>
-                      <AmountLabel
-                        amount={checkout.amount}
-                        currency={checkout.currency}
-                        interval={interval}
-                        intervalCount={intervalCount}
-                        mode="standard"
-                        locale={locale}
-                      />
-                    </DetailRow>
-
-                    {checkout.discount && (
-                      <>
-                        <DetailRow
-                          title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
-                        >
-                          {formatCurrency('standard', locale)(
-                            -checkout.discountAmount,
-                            checkout.currency,
-                          )}
-                        </DetailRow>
-                        <DetailRow title={t('checkout.pricing.taxableAmount')}>
-                          {formatCurrency('standard', locale)(
-                            checkout.netAmount,
-                            checkout.currency,
-                          )}
-                        </DetailRow>
-                      </>
-                    )}
-
-                    <DetailRow title={t('checkout.pricing.taxes')}>
-                      {checkout.taxAmount !== null
-                        ? formatCurrency('standard', locale)(
-                            checkout.taxAmount,
-                            checkout.currency,
-                          )
-                        : '—'}
-                    </DetailRow>
-
-                    <DetailRow title={totalLabel} emphasis>
-                      <div className="flex flex-col items-end gap-y-1">
+            {!checkout.isFreeProductPrice &&
+              pricingPositionExperiment !== 'treatment' && (
+                <div className="flex flex-col gap-y-2">
+                  {checkout.currency ? (
+                    <>
+                      <DetailRow title={t('checkout.pricing.subtotal')}>
                         <AmountLabel
-                          amount={checkout.totalAmount}
+                          amount={checkout.amount}
                           currency={checkout.currency}
                           interval={interval}
                           intervalCount={intervalCount}
                           mode="standard"
                           locale={locale}
                         />
-                        {formattedDiscountDuration && (
-                          <span className="text-xs font-normal text-gray-500">
-                            {formattedDiscountDuration}
-                          </span>
-                        )}
-                      </div>
-                    </DetailRow>
-                    {meteredPrices.length > 0 && (
-                      <DetailRow
-                        title={t('checkout.pricing.additionalMeteredUsage')}
-                        emphasis
-                      />
-                    )}
-                    {meteredPrices.map((meteredPrice) => (
-                      <DetailRow
-                        title={meteredPrice.meter.name}
-                        key={meteredPrice.id}
-                      >
-                        <MeteredPriceLabel
-                          price={meteredPrice}
-                          locale={locale}
-                        />
                       </DetailRow>
-                    ))}
-                  </>
-                ) : (
-                  <span>{t('checkout.pricing.free')}</span>
-                )}
-                {(checkout.trialEnd ||
-                  (checkout.activeTrialInterval &&
-                    checkout.activeTrialIntervalCount)) && (
-                  <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
-                    {checkout.activeTrialInterval &&
-                      checkout.activeTrialIntervalCount && (
+
+                      {checkout.discount && (
+                        <>
+                          <DetailRow
+                            title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
+                          >
+                            {formatCurrency('standard', locale)(
+                              -checkout.discountAmount,
+                              checkout.currency,
+                            )}
+                          </DetailRow>
+                          <DetailRow
+                            title={t('checkout.pricing.taxableAmount')}
+                          >
+                            {formatCurrency('standard', locale)(
+                              checkout.netAmount,
+                              checkout.currency,
+                            )}
+                          </DetailRow>
+                        </>
+                      )}
+
+                      <DetailRow title={t('checkout.pricing.taxes')}>
+                        {checkout.taxAmount !== null
+                          ? formatCurrency('standard', locale)(
+                              checkout.taxAmount,
+                              checkout.currency,
+                            )
+                          : '—'}
+                      </DetailRow>
+
+                      <DetailRow title={totalLabel} emphasis>
+                        <div className="flex flex-col items-end gap-y-1">
+                          <AmountLabel
+                            amount={checkout.totalAmount}
+                            currency={checkout.currency}
+                            interval={interval}
+                            intervalCount={intervalCount}
+                            mode="standard"
+                            locale={locale}
+                          />
+                          {formattedDiscountDuration && (
+                            <span className="text-xs font-normal text-gray-500">
+                              {formattedDiscountDuration}
+                            </span>
+                          )}
+                        </div>
+                      </DetailRow>
+                      {meteredPrices.length > 0 && (
                         <DetailRow
+                          title={t('checkout.pricing.additionalMeteredUsage')}
                           emphasis
-                          title={
-                            checkout.activeTrialInterval === 'year'
-                              ? t('checkout.trial.duration.years', {
-                                  count: checkout.activeTrialIntervalCount,
-                                })
-                              : checkout.activeTrialInterval === 'month'
-                                ? t('checkout.trial.duration.months', {
+                        />
+                      )}
+                      {meteredPrices.map((meteredPrice) => (
+                        <DetailRow
+                          title={meteredPrice.meter.name}
+                          key={meteredPrice.id}
+                        >
+                          <MeteredPriceLabel
+                            price={meteredPrice}
+                            locale={locale}
+                          />
+                        </DetailRow>
+                      ))}
+                    </>
+                  ) : (
+                    <span>{t('checkout.pricing.free')}</span>
+                  )}
+                  {(checkout.trialEnd ||
+                    (checkout.activeTrialInterval &&
+                      checkout.activeTrialIntervalCount)) && (
+                    <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
+                      {checkout.activeTrialInterval &&
+                        checkout.activeTrialIntervalCount && (
+                          <DetailRow
+                            emphasis
+                            title={
+                              checkout.activeTrialInterval === 'year'
+                                ? t('checkout.trial.duration.years', {
                                     count: checkout.activeTrialIntervalCount,
                                   })
-                                : checkout.activeTrialInterval === 'week'
-                                  ? t('checkout.trial.duration.weeks', {
+                                : checkout.activeTrialInterval === 'month'
+                                  ? t('checkout.trial.duration.months', {
                                       count: checkout.activeTrialIntervalCount,
                                     })
-                                  : t('checkout.trial.duration.days', {
-                                      count: checkout.activeTrialIntervalCount,
-                                    })
-                          }
-                        >
-                          <span>{t('checkout.pricing.free')}</span>
-                        </DetailRow>
+                                  : checkout.activeTrialInterval === 'week'
+                                    ? t('checkout.trial.duration.weeks', {
+                                        count:
+                                          checkout.activeTrialIntervalCount,
+                                      })
+                                    : t('checkout.trial.duration.days', {
+                                        count:
+                                          checkout.activeTrialIntervalCount,
+                                      })
+                            }
+                          >
+                            <span>{t('checkout.pricing.free')}</span>
+                          </DetailRow>
+                        )}
+                      {checkout.trialEnd && (
+                        <span className="dark:text-polar-500 text-gray-500:w text-sm">
+                          {t('checkout.trial.ends', {
+                            endDate: formatDate(checkout.trialEnd, locale),
+                          })}
+                        </span>
                       )}
-                    {checkout.trialEnd && (
-                      <span className="dark:text-polar-500 text-gray-500:w text-sm">
-                        {t('checkout.trial.ends', {
-                          endDate: formatDate(checkout.trialEnd, locale),
-                        })}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                    </div>
+                  )}
+                </div>
+              )}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
               <Button
                 type="submit"
@@ -1014,7 +1021,7 @@ interface CheckoutFormProps {
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
-  pricingPositionExperiment?: "treatment" | "control"
+  pricingPositionExperiment?: 'treatment' | 'control'
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

@@ -109,10 +109,8 @@ const FRAGMENT_SHADER = `
     float threshold = bayer8(pixelCoord) + 0.02;
     float dithered = step(threshold, luminance);
 
-    // Discard transparent pixels entirely
-    if (dithered < 0.5) discard;
-
-    gl_FragColor = vec4(u_colorB, 1.0);
+    vec3 color = mix(u_colorA, u_colorB, dithered);
+    gl_FragColor = vec4(color, 1.0);
   }
 `
 

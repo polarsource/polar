@@ -58,6 +58,7 @@ dependencies = [
   "countryinfo>=0.1.2",
   "clickhouse-connect>=0.8.0",
   "playwright>=1.50.0",
+  "trafilatura>=2.0.0",
 ]
 
 [dependency-groups]

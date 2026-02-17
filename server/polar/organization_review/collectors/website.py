@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 import structlog
+import trafilatura
 from playwright.async_api import Page, async_playwright
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -18,53 +19,6 @@ OVERALL_TIMEOUT_S = 90
 MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 3_000
 PAGE_TIMEOUT_MS = 10_000
-
-# JS: extract text content preferring <main> over <body>,
-# preserving heading/list structure as markdown-like text.
-EXTRACT_CONTENT_JS = """
-() => {
-    const root = document.querySelector('main') || document.body;
-    if (!root) return '';
-
-    const blocks = [];
-    const walk = (node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent.trim();
-            if (text) blocks.push(text);
-            return;
-        }
-        if (node.nodeType !== Node.ELEMENT_NODE) return;
-        const tag = node.tagName.toLowerCase();
-
-        if (['script', 'style', 'noscript', 'svg', 'iframe'].includes(tag)) return;
-        if (root === document.body && ['nav', 'footer', 'header'].includes(tag)) return;
-
-        if (/^h[1-6]$/.test(tag)) {
-            const level = parseInt(tag[1]);
-            const text = node.textContent.trim();
-            if (text) blocks.push('\\n' + '#'.repeat(level) + ' ' + text + '\\n');
-            return;
-        }
-        if (tag === 'li') {
-            const text = node.textContent.trim();
-            if (text) blocks.push('- ' + text);
-            return;
-        }
-        if (['p', 'div', 'section', 'article'].includes(tag)) {
-            for (const child of node.childNodes) walk(child);
-            blocks.push('');
-            return;
-        }
-        for (const child of node.childNodes) walk(child);
-    };
-    walk(root);
-
-    return blocks
-        .join('\\n')
-        .replace(/\\n{3,}/g, '\\n\\n')
-        .trim();
-}
-"""
 
 # JS: extract internal nav/header/footer links as "text -> href" pairs.
 EXTRACT_LINKS_JS = """
@@ -157,9 +111,10 @@ available navigation links. Only same-domain URLs are allowed. Max 5 pages."""
 
     deps.pages_navigated += 1
 
-    # Extract content
+    # Extract content: get rendered HTML, then use trafilatura for clean extraction
     try:
-        content = await deps.page.evaluate(EXTRACT_CONTENT_JS)
+        html = await deps.page.content()
+        content = trafilatura.extract(html, output_format="markdown") or ""
     except Exception:
         content = ""
 

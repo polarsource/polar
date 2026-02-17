@@ -75,35 +75,30 @@ const FRAGMENT_SHADER = `
 
     float t = u_time * 0.15;
 
-    // Domain warping — distort space before spirals
-    float warp1 = sin(r * 12.0 - t * 3.0) * 0.15;
-    warp1 += sin(r * 20.0 + t * 1.5) * 0.08;
-    float warp2 = cos(r * 8.0 + t * 0.9 + angle * 2.0) * 0.1;
-    float warp3 = sin(r * 15.0 - t * 2.2 + angle) * 0.06;
+    // Logarithmic spiral: angle = a + b * ln(r)
+    // Using log(r) gives a true vortex/whirlpool shape
+    float logR = log(max(r, 0.001));
 
-    // Layer 1: tight spiral arms
-    float spiral1 = angle + r * 6.0 - t * 2.0;
-    float arms1 = sin(spiral1 * 3.0 + warp1) * 0.5 + 0.5;
+    // Subtle domain warp — just enough organic distortion
+    float warp = sin(r * 10.0 - t * 2.5) * 0.12;
 
-    // Layer 2: counter-rotating wide spiral
-    float spiral2 = angle - r * 4.0 + t * 1.3;
-    float arms2 = sin(spiral2 * 2.0 + warp1 + warp2) * 0.5 + 0.5;
+    // Primary vortex arms — logarithmic spiral with 3 arms
+    float spiral = angle + logR * 2.5 - t * 1.8;
+    float arms = sin(spiral * 3.0 + warp) * 0.5 + 0.5;
+    arms = pow(arms, 0.5);
 
-    // Layer 3: fine detail spiral at different frequency
-    float spiral3 = angle + r * 10.0 - t * 0.8 + 1.5;
-    float arms3 = sin(spiral3 * 5.0 + warp3) * 0.5 + 0.5;
+    // Secondary structure — subtle counter-rotation for depth
+    float spiral2 = angle - logR * 1.8 + t * 0.9;
+    float arms2 = sin(spiral2 * 2.0) * 0.5 + 0.5;
 
-    // Layer 4: slow broad wave
-    float spiral4 = angle - r * 2.5 + t * 0.5 + 3.0;
-    float arms4 = sin(spiral4 * 1.5 + warp2) * 0.5 + 0.5;
+    // Blend — primary dominates
+    float luminance = arms * 0.75 + arms2 * 0.25;
 
-    // Layer 5: very fine grain texture
-    float grain = sin(angle * 8.0 + r * 25.0 - t * 1.8) * 0.5 + 0.5;
+    // Contrast
+    luminance = smoothstep(0.2, 0.8, luminance);
 
-    float luminance = arms1 * 0.3 + arms2 * 0.25 + arms3 * 0.15 + arms4 * 0.2 + grain * 0.1;
-
-    // Fade to dark at center — large void for hero content
-    float centerFade = smoothstep(0.5, 0.9, rNorm);
+    // Fade to dark at center
+    float centerFade = smoothstep(0.5, 0.85, rNorm);
     luminance *= centerFade;
 
     // Slight fade at far edges

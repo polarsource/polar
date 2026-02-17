@@ -30,10 +30,13 @@ import asyncio
 import dataclasses
 import re
 import sys
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import httpx
 import structlog
-from plain_client import Plain, ReplyToThreadInput, ThreadsFilter
+from plain_client import Plain, ReplyToThreadInput, ThreadsFilter, ThreadStatus
+from plain_client.input_types import DatetimeFilter
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
@@ -44,12 +47,14 @@ from polar.models import Customer, Order, Organization, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.postgres import AsyncSession, create_async_engine
 
-GUIDELINES_URL = "https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines"
+GUIDELINES_URL = (
+    "https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines"
+)
 
 log = structlog.get_logger()
 
 REVIEW_LABEL_TYPE_ID = "lt_01JFG7F4N67FN3MAWK06FJ8FPG"
-SLUG_PATTERN = re.compile(r"The organization `(\S+)`")
+SLUG_PATTERN = re.compile(r"The organization `?(\S+?)`? should be reviewed")
 
 
 @dataclasses.dataclass
@@ -64,14 +69,25 @@ class OrgIssues:
 
 async def get_review_threads(
     plain: Plain,
+    older_than_days: int | None = None,
 ) -> list[dict[str, str]]:
     """Paginate all Plain threads with the review label, filtering to Initial Account Review."""
     threads: list[dict[str, str]] = []
     cursor: str | None = None
 
+    created_at_filter: DatetimeFilter | None = None
+    if older_than_days is not None:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
+        created_at_filter = DatetimeFilter(before=cutoff.isoformat())
+        log.info("Filtering threads older than", days=older_than_days, before=cutoff.isoformat())
+
     while True:
-        kwargs: dict = dict(
-            filters=ThreadsFilter(label_type_ids=[REVIEW_LABEL_TYPE_ID]),
+        kwargs: dict[str, Any] = dict(
+            filters=ThreadsFilter(
+                label_type_ids=[REVIEW_LABEL_TYPE_ID],
+                statuses=[ThreadStatus.TODO, ThreadStatus.SNOOZED],
+                created_at=created_at_filter,
+            ),
             first=50,
         )
         if cursor is not None:
@@ -86,10 +102,9 @@ async def get_review_threads(
             preview = thread.preview_text or ""
             match = SLUG_PATTERN.search(preview)
             if not match:
-                log.warning(
-                    "Could not extract slug from thread",
+                log.info(
+                    "Skipping thread (preview does not contain org slug — likely already replied to)",
                     thread_id=thread.id,
-                    preview_text=preview,
                 )
                 continue
             threads.append({"thread_id": thread.id, "slug": match.group(1)})
@@ -101,9 +116,7 @@ async def get_review_threads(
     return threads
 
 
-async def check_org_issues(
-    session: AsyncSession, slug: str
-) -> OrgIssues | None:
+async def check_org_issues(session: AsyncSession, slug: str) -> OrgIssues | None:
     """Check an organization for actionable issues. Returns None if org not found."""
     issues = OrgIssues()
 
@@ -131,7 +144,7 @@ async def check_org_issues(
     if org.account is not None:
         admin_stmt = select(User).where(User.id == org.account.admin_id)
         admin_result = await session.execute(admin_stmt)
-        admin = admin_result.scalar_one_or_none()
+        admin = admin_result.unique().scalar_one_or_none()
         if admin is not None and not admin.identity_verified:
             issues.admin_not_verified = True
             issues.admin_verification_status = admin.identity_verification_status
@@ -219,7 +232,9 @@ def build_comment(slug: str, issues: OrgIssues) -> str:
     return "\n".join(lines)
 
 
-async def process_threads(dry_run: bool = True, limit: int = 1) -> None:
+async def process_threads(
+    dry_run: bool = True, limit: int = 1, older_than_days: int | None = None
+) -> None:
     engine = create_async_engine("script")
     AsyncSessionMaker = create_async_sessionmaker(engine)
 
@@ -230,7 +245,7 @@ async def process_threads(dry_run: bool = True, limit: int = 1) -> None:
             "https://core-api.uk.plain.com/graphql/v1", http_client=http_client
         ) as plain:
             log.info("Fetching Initial Account Review threads from Plain...")
-            threads = await get_review_threads(plain)
+            threads = await get_review_threads(plain, older_than_days=older_than_days)
             log.info("Found threads", count=len(threads))
 
             threads_limited = threads[:limit] if limit > 0 else threads
@@ -325,6 +340,12 @@ def main() -> None:
         default=1,
         help="Maximum number of threads to process (default: 1, use 0 for unlimited)",
     )
+    parser.add_argument(
+        "--older-than-days",
+        type=int,
+        default=None,
+        help="Only process threads created more than N days ago",
+    )
     args = parser.parse_args()
 
     dry_run = not args.execute
@@ -346,11 +367,18 @@ def main() -> None:
     log.info(
         "Processing settings",
         limit=args.limit if args.limit > 0 else "unlimited",
+        older_than_days=args.older_than_days or "any",
         dry_run=dry_run,
     )
 
     try:
-        asyncio.run(process_threads(dry_run=dry_run, limit=args.limit))
+        asyncio.run(
+            process_threads(
+                dry_run=dry_run,
+                limit=args.limit,
+                older_than_days=args.older_than_days,
+            )
+        )
     except KeyboardInterrupt:
         log.info("Interrupted by user")
         sys.exit(1)

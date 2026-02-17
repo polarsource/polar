@@ -1,9 +1,7 @@
-export type ThemePreset = 'polar' | 'midday'
-
-export type StripeThemingPresetProps = Record<string, unknown>
+import { type Appearance } from '@stripe/stripe-js'
 
 export interface ThemingPresetProps {
-  stripe: StripeThemingPresetProps
+  stripe: Appearance
 }
 
 export const getThemePreset = (theme: 'light' | 'dark') => {
@@ -85,5 +83,5 @@ export const getThemePreset = (theme: 'light' | 'dark') => {
         colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
       },
     },
-  }
+  } satisfies ThemingPresetProps
 }

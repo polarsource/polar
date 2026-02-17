@@ -122,7 +122,7 @@ export function CarouselSection() {
           opacity,
         }}
       >
-        <span className="text-5xl font-light text-black dark:text-white">
+        <span className="text-5xl text-black dark:text-white">
           {words[wordIndex]}
         </span>
       </div>,
@@ -139,7 +139,9 @@ export function CarouselSection() {
             size={320}
           />
         </div>
-        <div className="relative h-full overflow-hidden">{items}</div>
+        <div className="relative h-full overflow-hidden dark:font-light">
+          {items}
+        </div>
       </div>
     </SectionLayout>
   )

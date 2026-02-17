@@ -198,9 +198,7 @@ class ReviewAnalyzer:
         if snapshot.website:
             parts.append("\n## Website Content")
             if snapshot.website.scrape_error:
-                parts.append(
-                    f"Website scrape failed: {snapshot.website.scrape_error}"
-                )
+                parts.append(f"Website scrape failed: {snapshot.website.scrape_error}")
             elif snapshot.website.summary:
                 parts.append(
                     f"Source: {snapshot.website.base_url} "

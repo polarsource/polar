@@ -176,7 +176,7 @@ def get_broker() -> dramatiq.Broker:
             min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
         ),
         middleware.AgeLimit(),
-        middleware.TimeLimit(),
+        middleware.TimeLimit(time_limit=60_000),
         middleware.CurrentMessage(),
     ]
 

@@ -226,13 +226,26 @@ variable "apple_secrets" {
 }
 
 variable "prometheus_config" {
-  description = "Prometheus Remote Write configuration"
+  description = "Prometheus and Grafana Cloud configuration"
   type = object({
-    url      = string
-    username = string
-    password = string
-    interval = number
+    url       = string
+    username  = string
+    password  = string
+    interval  = number
+    query_url = optional(string)
+    query_key = optional(string)
   })
+  sensitive = true
+}
+
+variable "slo_report_config" {
+  description = "SLO report Slack configuration (optional)"
+  type = object({
+    slack_bot_token = string
+    slack_channel   = string
+    enabled         = optional(bool, true)
+  })
+  default   = null
   sensitive = true
 }
 

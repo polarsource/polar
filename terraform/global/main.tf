@@ -157,6 +157,38 @@ resource "tfe_variable" "prometheus_remote_write_interval" {
   value           = 60
 }
 
+resource "tfe_variable" "grafana_cloud_prometheus_query_url" {
+  key             = "grafana_cloud_prometheus_query_url"
+  category        = "terraform"
+  description     = "Grafana Cloud Prometheus Query URL (read-only endpoint)"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "grafana_cloud_prometheus_query_key" {
+  key             = "grafana_cloud_prometheus_query_key"
+  category        = "terraform"
+  description     = "Grafana Cloud Prometheus Query API Key (read-only)"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "slo_report_slack_bot_token" {
+  key             = "slo_report_slack_bot_token"
+  category        = "terraform"
+  description     = "Slack Bot Token for SLO weekly reports"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "slo_report_slack_channel" {
+  key             = "slo_report_slack_channel"
+  category        = "terraform"
+  description     = "Slack channel ID for SLO weekly reports"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.global.id
+}
+
 resource "tfe_variable" "cloudflare_api_token" {
   key             = "CLOUDFLARE_API_TOKEN"
   category        = "env"

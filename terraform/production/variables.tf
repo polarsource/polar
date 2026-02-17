@@ -301,6 +301,31 @@ variable "prometheus_remote_write_interval" {
   sensitive   = false
 }
 
+variable "grafana_cloud_prometheus_query_url" {
+  description = "Grafana Cloud Prometheus Query URL"
+  type        = string
+  sensitive   = true
+}
+
+variable "grafana_cloud_prometheus_query_key" {
+  description = "Grafana Cloud Prometheus Query API Key (read-only)"
+  type        = string
+  sensitive   = true
+}
+
+# SLO Report
+variable "slo_report_slack_bot_token" {
+  description = "Slack Bot Token for SLO reports"
+  type        = string
+  sensitive   = true
+}
+
+variable "slo_report_slack_channel" {
+  description = "Slack channel ID for SLO reports"
+  type        = string
+  sensitive   = false
+}
+
 # ChargebackStop Webhook Secret
 variable "backend_chargebackstop_webhook_secret_production" {
   description = "ChargebackStop Webhook Secret for production"

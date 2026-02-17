@@ -232,7 +232,6 @@ variable "prometheus_config" {
     username  = string
     password  = string
     interval  = number
-    query_url = optional(string)
     query_key = optional(string)
   })
   sensitive = true

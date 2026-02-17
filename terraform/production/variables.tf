@@ -301,12 +301,6 @@ variable "prometheus_remote_write_interval" {
   sensitive   = false
 }
 
-variable "grafana_cloud_prometheus_query_url" {
-  description = "Grafana Cloud Prometheus Query URL"
-  type        = string
-  sensitive   = true
-}
-
 variable "grafana_cloud_prometheus_query_key" {
   description = "Grafana Cloud Prometheus Query API Key (read-only)"
   type        = string

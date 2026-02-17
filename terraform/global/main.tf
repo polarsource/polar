@@ -157,14 +157,6 @@ resource "tfe_variable" "prometheus_remote_write_interval" {
   value           = 60
 }
 
-resource "tfe_variable" "grafana_cloud_prometheus_query_url" {
-  key             = "grafana_cloud_prometheus_query_url"
-  category        = "terraform"
-  description     = "Grafana Cloud Prometheus Query URL (read-only endpoint)"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.global.id
-}
-
 resource "tfe_variable" "grafana_cloud_prometheus_query_key" {
   key             = "grafana_cloud_prometheus_query_key"
   category        = "terraform"

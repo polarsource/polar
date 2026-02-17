@@ -273,7 +273,6 @@ module "production" {
     username  = var.prometheus_remote_write_username
     password  = var.prometheus_remote_write_password
     interval  = var.prometheus_remote_write_interval
-    query_url = var.grafana_cloud_prometheus_query_url
     query_key = var.grafana_cloud_prometheus_query_key
   }
 

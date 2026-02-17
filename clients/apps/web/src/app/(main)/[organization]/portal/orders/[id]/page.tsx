@@ -92,11 +92,5 @@ export default async function Page(props: {
     throw error
   }
 
-  return (
-    <OrdersPage
-      organization={organization}
-      order={order}
-      customerSessionToken={token as string}
-    />
-  )
+  return <OrdersPage order={order} customerSessionToken={token as string} />
 }

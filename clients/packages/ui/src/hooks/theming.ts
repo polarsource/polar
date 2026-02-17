@@ -1,14 +1,10 @@
-export type ThemePreset = 'polar' | 'midday'
-
-export type StripeThemingPresetProps = Record<string, unknown>
+import { type Appearance } from '@stripe/stripe-js'
 
 export interface ThemingPresetProps {
-  stripe: StripeThemingPresetProps
+  stripe: Appearance
 }
 
-export const useThemePreset = (
-  theme?: 'light' | 'dark',
-): ThemingPresetProps => {
+export const getThemePreset = (theme: 'light' | 'dark') => {
   const inputBoxShadow =
     theme === 'dark'
       ? 'none'
@@ -87,14 +83,5 @@ export const useThemePreset = (
         colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
       },
     },
-  }
-}
-
-// Deprecation helper, `useThemePreset` should not be used as it triggers hooks linter rules
-// but it's not a hook (`use` prefix is reserved)
-export const getThemePreset = (
-  preset: ThemePreset | (string & {}),
-  theme?: 'light' | 'dark',
-) => {
-  return useThemePreset(theme)
+  } satisfies ThemingPresetProps
 }

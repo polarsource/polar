@@ -30,10 +30,7 @@ export const CustomerPortalOrders = ({
   >(null)
 
   const theme = useTheme()
-  const themingPreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
+  const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
   const {
     isShown: isOrderModalOpen,

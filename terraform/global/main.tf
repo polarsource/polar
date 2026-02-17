@@ -124,6 +124,26 @@ resource "tfe_variable" "tfc_aws_run_role_arn" {
   variable_set_id = tfe_variable_set.global.id
 }
 
+moved {
+  from = tfe_variable.prometheus_remote_write_url
+  to   = tfe_variable.grafana_cloud_prometheus_url
+}
+
+moved {
+  from = tfe_variable.prometheus_remote_write_username
+  to   = tfe_variable.grafana_cloud_prometheus_username
+}
+
+moved {
+  from = tfe_variable.prometheus_remote_write_password
+  to   = tfe_variable.grafana_cloud_prometheus_password
+}
+
+moved {
+  from = tfe_variable.prometheus_remote_write_interval
+  to   = tfe_variable.grafana_cloud_prometheus_write_interval
+}
+
 resource "tfe_variable" "grafana_cloud_prometheus_url" {
   key             = "grafana_cloud_prometheus_url"
   category        = "terraform"

@@ -575,7 +575,7 @@ async def approve_organization(
     """Approve an organization with optional threshold."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -613,7 +613,7 @@ async def run_review_agent(
 ) -> HXRedirectResponse:
     """Trigger the organization review agent as a background task."""
     repository = OrganizationRepository.from_session(session)
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -642,7 +642,7 @@ async def deny_dialog(
     """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -704,7 +704,7 @@ async def approve_denied_dialog(
     """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -790,7 +790,7 @@ async def unblock_approve_dialog(
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -879,7 +879,7 @@ async def block_dialog(
     """Block organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -955,7 +955,7 @@ async def edit_organization(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1052,7 +1052,7 @@ async def edit_details(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1133,7 +1133,7 @@ async def edit_order_settings(
     """Edit organization order settings."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1235,7 +1235,7 @@ async def edit_socials(
 
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1385,7 +1385,7 @@ async def edit_features(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1504,7 +1504,7 @@ async def add_note(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1574,7 +1574,7 @@ async def edit_note(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1728,7 +1728,7 @@ async def make_admin(
     """Make a user an admin of the organization."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1766,7 +1766,7 @@ async def remove_member(
     """Remove a member from the organization."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1802,7 +1802,7 @@ async def delete_dialog(
     """Delete organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1869,7 +1869,7 @@ async def setup_account(
     """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 

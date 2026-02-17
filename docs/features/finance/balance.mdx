@@ -6,11 +6,14 @@ description: "Monitor your Polar balance without hidden fees"
 
 You can see your available balance for payout at any time under your `Finance` page.
 
-Polar Balance
---------------------
-
-<img className="block dark:hidden" src="/assets/features/finance/balance/overview.light.jpeg" />
-<img className="hidden dark:block" src="/assets/features/finance/balance/overview.dark.jpeg" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/finance/balance/overview.light.jpeg"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/finance/balance/overview.dark.jpeg"
+/>
 
 Your balance is all the earnings minus:
 
@@ -21,7 +24,12 @@ All historic transactions are available in chronological order along with their 
 
 Note: Upon [payout (withdrawal)](/features/finance/payouts), Stripe incurs additional fees that will be deducted before the final payout of the balance.
 
-### Payouts in ISK, HUF, TWD, or UGX
+## Multiple payment currencies orders and settlement
+
+When customers purchase your products in currencies other than USD, Polar automatically converts these amounts to USD (the settlement currency) for your account balance. This conversion ensures that all transactions are consolidated into a single currency for easier financial management and payout processing.
+
+The conversion process uses current exchange rates at the time of the transaction, and the converted USD amount is what appears in your account balance and is available for payout.
+
+## Payouts in ISK, HUF, TWD, or UGX
 
 For accounts using Icelandic króna (ISK), Hungarian forint (HUF), New Taiwan dollar (TWD), or Ugandan shilling (UGX), Stripe requires payout amounts to be in whole currency units. This means any fractional amount (less than 1 ISK/HUF/TWD/UGX) will remain in your balance and be included in your next payout.
-

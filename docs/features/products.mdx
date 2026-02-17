@@ -35,8 +35,9 @@ Determine how you want to charge your customers for this product.
 <Steps>
   <Step title="Billing cycle">
     * **One-time purchase** Customer is charged once and gets access to the product forever.
-    * **Monthly** Customer is charged every month.
-    * **Yearly** Customer is charged every year.
+    * **Recurring** Customer is charged on a recurring basis with flexible intervals:
+      - Daily, Weekly, Monthly, Yearly (basic intervals)
+      - Custom intervals like "Every 2 weeks", "Every 3 months", etc.
   </Step>
   <Step title="Pricing type">
     * **Fixed price** Set a fixed price for the product.
@@ -49,10 +50,46 @@ Determine how you want to charge your customers for this product.
     For pay what you want products, you can set a minimum amount and a default amount that will be preset on checkout.
 
   </Step>
+  <Step title="Multiple payment currencies">
+    <Info>
+    **Private Beta Feature**
+
+    Multiple payment currencies is currently available as a private beta feature. Contact support to enable this for your organization.
+    </Info>
+
+    Products can now be created in several currencies, allowing customers to purchase in their local currency:
+
+    - **Default Payment Currency**: Your organization has a default payment currency that serves as the fallback.
+    - **Additional Currencies**: You can add more currencies from the available options.
+    - **Consistent Price Structure**: The price structure (price type, metered prices) must be exactly the same across all currencies.
+
+    When enabled, customers will see prices in their preferred currency during checkout. Polar automatically determines the best currency for each customer based on their geographical location. If the detected currency is available for the product, it will be used. Otherwise, the system falls back to your organization's default payment currency.
+
+    <Accordion title="Available Payment Currencies">
+
+    The following currencies are currently supported for multiple payment currencies:
+
+    | Currency Code | Currency Name |
+    |---------------|---------------|
+    | USD | US Dollar |
+    | EUR | Euro |
+    | GBP | British Pound |
+    | CAD | Canadian Dollar |
+    | AUD | Australian Dollar |
+    | JPY | Japanese Yen |
+    | CHF | Swiss Franc |
+    | SEK | Swedish Krona |
+    | INR | Indian Rupee |
+    | BRL | Brazilian Real |
+
+    </Accordion>
+
+  </Step>
 </Steps>
 
 <Info>
-  Billing cycle and pricing type cannot be changed after the product is created.
+  Billing cycle, pricing type, and recurring interval cannot be changed after
+  the product is created.
 </Info>
 
 <Info>

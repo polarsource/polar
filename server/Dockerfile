@@ -45,7 +45,7 @@ RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN \
   echo "${EXPECTED_SHA256}  /data/country_asn.mmdb" | sha256sum -c -
 
 # Stage 4: Final production image
-FROM --platform=$BUILDPLATFORM python:3.14-slim
+FROM --platform=$BUILDPLATFORM python:3.14-slim AS production
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0
@@ -89,3 +89,8 @@ ARG RELEASE_VERSION
 ENV RELEASE_VERSION=${RELEASE_VERSION}
 
 CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000"]
+
+# Stage 5: Playwright image (for browser automation workers)
+FROM production AS playwright
+
+RUN uv run playwright install --with-deps chromium

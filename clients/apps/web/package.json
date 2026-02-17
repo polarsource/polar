@@ -12,8 +12,7 @@
     "lint": "pnpm format:check && pnpm lint:only",
     "lint:changed": "eslint $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(js|jsx|ts|tsx)$')",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "analyze": "ANALYZE=true next build"
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": "=24"
@@ -97,7 +96,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^16.1.6",
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/big.js": "^6.2.2",
@@ -121,11 +119,5 @@
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
-  },
-  "nextBundleAnalysis": {
-    "budget": 358400,
-    "budgetPercentIncreaseRed": 20,
-    "minimumChangeThreshold": 100,
-    "showDetails": true
   }
 }

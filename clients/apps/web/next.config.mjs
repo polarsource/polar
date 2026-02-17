@@ -1,5 +1,4 @@
 /* global process */
-import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
@@ -531,13 +530,6 @@ const createConfig = async () => {
     // https://vercel.com/docs/cron-jobs
     automaticVercelMonitors: true,
   })
-
-  if (process.env.ANALYZE === 'true') {
-    const withBundleAnalyzer = bundleAnalyzer({
-      enabled: true,
-    })
-    conf = withBundleAnalyzer(conf)
-  }
 
   return conf
 }

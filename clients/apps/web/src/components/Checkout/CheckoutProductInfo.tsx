@@ -61,9 +61,7 @@ const CheckoutProductInfo = ({
                       Product images
                     </DialogDescription>
                   </DialogHeader>
-                  <Slideshow
-                    images={product.medias.map((m) => m.publicUrl)}
-                  />
+                  <Slideshow images={product.medias.map((m) => m.publicUrl)} />
                 </DialogContent>
               </Dialog>
             )}

@@ -24,9 +24,7 @@ const _getOrganizationBySlug = async (
     }
   }
 
-  const data = await unwrap(
-    api.GET('/v1/organizations/', requestOptions),
-  )
+  const data = await unwrap(api.GET('/v1/organizations/', requestOptions))
   return data.items[0]
 }
 

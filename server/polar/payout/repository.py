@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, false
+from sqlalchemy import Select, exists, false, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -17,8 +17,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.utils import utc_now
-from polar.models import Account, Payout, Transaction
-from polar.models.payout import PayoutStatus
+from polar.models import Account, Payout, PayoutAttempt, Transaction
 from polar.payout.sorting import PayoutSortProperty
 
 
@@ -35,34 +34,22 @@ class PayoutRepository(
         statement = self.get_base_statement().where(Payout.account_id == account)
         return await self.count(statement)
 
-    async def get_by_processor_id(
-        self,
-        processor: AccountType,
-        processor_id: str,
-        *,
-        options: Options = (),
-    ) -> Payout | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Payout.processor == processor,
-                Payout.processor_id == processor_id,
-            )
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_all_stripe_pending(
         self, delay: timedelta = settings.ACCOUNT_PAYOUT_DELAY
     ) -> Sequence[Payout]:
+        """
+        Get all payouts that have no attempts yet and are ready to be triggered.
+        """
         statement = (
             self.get_base_statement()
             .distinct(Payout.account_id)
             .where(
                 Payout.processor == AccountType.stripe,
-                Payout.status == PayoutStatus.pending,
-                Payout.processor_id.is_(None),
                 Payout.created_at < utc_now() - delay,
+                # Only include payouts that have no attempts yet
+                ~exists(
+                    select(PayoutAttempt).where(PayoutAttempt.payout_id == Payout.id)
+                ),
             )
             .order_by(Payout.account_id.asc(), Payout.created_at.asc())
         )
@@ -111,7 +98,20 @@ class PayoutRepository(
                 return Payout.fees_amount
             case PayoutSortProperty.status:
                 return Payout.status
-            case PayoutSortProperty.paid_at:
-                return Payout.paid_at
             case PayoutSortProperty.account_id:
                 return Payout.account_id
+
+
+class PayoutAttemptRepository(RepositoryBase[PayoutAttempt]):
+    model = PayoutAttempt
+
+    async def get_by_processor_id(
+        self,
+        processor: AccountType,
+        processor_id: str,
+    ) -> PayoutAttempt | None:
+        statement = self.get_base_statement().where(
+            PayoutAttempt.processor == processor,
+            PayoutAttempt.processor_id == processor_id,
+        )
+        return await self.get_one_or_none(statement)

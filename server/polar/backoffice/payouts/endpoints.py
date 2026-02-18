@@ -5,12 +5,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from tagflow import classes, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Payout
+from polar.models import Payout, PayoutAttempt
 from polar.models.payout import PayoutStatus
 from polar.payout.repository import PayoutRepository
 from polar.payout.sorting import ListSorting, PayoutSortProperty
@@ -81,7 +81,11 @@ async def list(
             query_lower = query.lower()
             statement = statement.where(
                 or_(
-                    func.lower(Payout.processor_id).ilike(f"%{query_lower}%"),
+                    Payout.id.in_(
+                        select(PayoutAttempt.payout_id).where(
+                            PayoutAttempt.processor_id.ilike("%{query_lower}%")
+                        )
+                    ),
                     func.lower(Payout.invoice_number).ilike(f"%{query_lower}%"),
                 )
             )
@@ -147,9 +151,7 @@ async def list(
                 datatable.DatatableDateTimeColumn(
                     "created_at", "Created At", sorting=PayoutSortProperty.created_at
                 ),
-                datatable.DatatableDateTimeColumn(
-                    "paid_at", "Paid At", sorting=PayoutSortProperty.paid_at
-                ),
+                datatable.DatatableDateTimeColumn("paid_at", "Paid At"),
             ).render(request, items, sorting=sorting):
                 pass
 

@@ -11,7 +11,6 @@ class PayoutSortProperty(StrEnum):
     amount = "amount"
     fees_amount = "fees_amount"
     status = "status"
-    paid_at = "paid_at"
     account_id = "account_id"
 
 

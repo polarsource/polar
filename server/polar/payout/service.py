@@ -20,8 +20,9 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import Account, Payout
+from polar.models import Account, Payout, PayoutAttempt
 from polar.models.payout import PayoutStatus
+from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.transaction.repository import (
@@ -38,7 +39,7 @@ from polar.transaction.service.platform_fee import (
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
-from .repository import PayoutRepository
+from .repository import PayoutAttemptRepository, PayoutRepository
 from .schemas import PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
 from .sorting import PayoutSortProperty
 
@@ -111,7 +112,7 @@ class PendingPayoutCreation(PayoutError):
         super().__init__(message, 409)
 
 
-class PayoutDoesNotExist(PayoutError):
+class PayoutAttemptDoesNotExist(PayoutError):
     def __init__(self, payout_id: str) -> None:
         self.payout_id = payout_id
         message = (
@@ -277,6 +278,7 @@ class PayoutService:
                     invoice_number=await self._get_next_invoice_number(
                         session, account
                     ),
+                    attempts=[],
                 )
             )
             transaction = await payout_transaction_service.create(
@@ -376,21 +378,33 @@ class PayoutService:
 
     async def update_from_stripe(
         self, session: AsyncSession, stripe_payout: stripe_lib.Payout
-    ) -> Payout:
-        repository = PayoutRepository.from_session(session)
-        payout = await repository.get_by_processor_id(
+    ) -> PayoutAttempt:
+        """Update payout attempt status from Stripe webhook."""
+        attempt_repository = PayoutAttemptRepository.from_session(session)
+
+        attempt = await attempt_repository.get_by_processor_id(
             AccountType.stripe, stripe_payout.id
         )
-        if payout is None:
-            raise PayoutDoesNotExist(stripe_payout.id)
+        if attempt is None:
+            raise PayoutAttemptDoesNotExist(stripe_payout.id)
 
-        status = PayoutStatus.from_stripe(stripe_payout.status)
+        status = PayoutAttemptStatus.from_stripe(stripe_payout.status)
         update_dict: dict[str, Any] = {"status": status}
-        if status == PayoutStatus.succeeded and stripe_payout.arrival_date is not None:
+
+        if status == PayoutAttemptStatus.failed and stripe_payout.failure_code:
+            update_dict["failed_reason"] = stripe_payout.failure_code
+            if stripe_payout.failure_message:
+                update_dict["failed_reason"] += f": {stripe_payout.failure_message}"
+
+        if (
+            status == PayoutAttemptStatus.succeeded
+            and stripe_payout.arrival_date is not None
+        ):
             update_dict["paid_at"] = datetime.datetime.fromtimestamp(
                 stripe_payout.arrival_date, datetime.UTC
             )
-        return await repository.update(payout, update_dict=update_dict)
+
+        return await attempt_repository.update(attempt, update_dict=update_dict)
 
     async def trigger_stripe_payouts(self, session: AsyncSession) -> None:
         """
@@ -409,26 +423,38 @@ class PayoutService:
 
     async def trigger_stripe_payout(
         self, session: AsyncSession, payout: Payout
-    ) -> Payout:
-        if payout.processor_id is not None:
-            raise PayoutAlreadyTriggered(payout)
-
+    ) -> PayoutAttempt:
+        """
+        Trigger a Stripe payout for the given payout.
+        Creates a new payout attempt if none exists yet.
+        """
         account = payout.account
         assert account.stripe_id is not None
+
         _, balance = await stripe_service.retrieve_balance(account.stripe_id)
 
         if balance < payout.account_amount:
             log.info(
-                (
-                    "The Stripe Connect account doesn't have enough balance "
-                    "to make the payout yet"
-                ),
+                "The Stripe Connect account doesn't have enough balance to make the payout yet",
                 payout_id=str(payout.id),
                 account_id=str(account.id),
                 balance=balance,
                 payout_amount=payout.account_amount,
             )
-            return payout
+            raise InsufficientBalance(account, balance)
+
+        # Create a new payout attempt
+        attempt_repository = PayoutAttemptRepository.from_session(session)
+        attempt = await attempt_repository.create(
+            PayoutAttempt(
+                payout=payout,
+                processor=account.account_type,
+                amount=payout.account_amount,
+                currency=payout.account_currency,
+                status=PayoutAttemptStatus.pending,
+            ),
+            flush=True,
+        )
 
         # Trigger a payout on the Stripe Connect account
         stripe_payout = await stripe_service.create_payout(
@@ -437,12 +463,12 @@ class PayoutService:
             currency=payout.account_currency,
             metadata={
                 "payout_id": str(payout.id),
+                "payout_attempt_id": str(attempt.id),
             },
         )
 
-        repository = PayoutRepository.from_session(session)
-        return await repository.update(
-            payout,
+        return await attempt_repository.update(
+            attempt,
             update_dict={"processor_id": stripe_payout.id},
         )
 

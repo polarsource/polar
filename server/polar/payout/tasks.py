@@ -10,7 +10,7 @@ from polar.logging import Logger
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .repository import PayoutRepository
-from .service import PayoutAlreadyTriggered
+from .service import InsufficientBalance, PayoutAlreadyTriggered
 from .service import payout as payout_service
 
 log: Logger = structlog.get_logger()
@@ -62,6 +62,10 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
 
         try:
             await payout_service.trigger_stripe_payout(session, payout)
+        except InsufficientBalance:
+            # Swallow it, since it's likely the money not having arrived in the Stripe account yet.
+            # The payout will be triggered again later.
+            pass
         except PayoutAlreadyTriggered:
             # Swallow it, since it's likely a task that's being retried
             # while the payout has already been triggered.

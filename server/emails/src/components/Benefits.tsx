@@ -1,6 +1,6 @@
 import { Heading, Markdown, Section } from '@react-email/components'
 import { schemas } from '../types'
-import { Check, Download, Gauge, GitHub, Key } from './Icons'
+import { Check, Discord, Download, Gauge, GitHub, Key } from './Icons'
 
 const BenefitIcon = ({
   benefit: { type },
@@ -14,6 +14,8 @@ const BenefitIcon = ({
   switch (type) {
     case 'github_repository':
       return <GitHub width={width} height={height} />
+    case 'discord':
+      return <Discord width={width} height={height} />
     case 'downloadables':
       return <Download width={width} height={height} />
     case 'license_keys':
@@ -30,7 +32,7 @@ const Benefit = ({ benefit }: { benefit: schemas['Benefit'] }) => {
   return (
     <Section className="mb-[12px] rounded-lg border border-solid border-gray-200 p-[12px]">
       <div className="mr-[32px] inline-flex items-start">
-        <div className="bg-brand mr-[18px] flex h-[12px] w-[12px] shrink-0 items-center justify-center rounded-full p-[6px] text-[12px] leading-none font-semibold text-white">
+        <div className="bg-brand mr-[18px] flex h-[12px] w-[12px] shrink-0 items-center justify-center rounded-full p-[5px] text-[12px] leading-none font-semibold text-white">
           <BenefitIcon benefit={benefit} width={12} height={12} />
         </div>
         <div>

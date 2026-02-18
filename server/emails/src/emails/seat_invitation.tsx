@@ -1,4 +1,4 @@
-import { Preview, Section, Text } from '@react-email/components'
+import { Preview, Text } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import Intro from '../components/Intro'
@@ -16,20 +16,20 @@ export function SeatInvitation({
   return (
     <WrapperOrganization organization={organization}>
       <Preview>
-        You&rsquo;ve been invited to access {product_name} from{' '}
-        {organization.name}
+        You&rsquo;re invited to {product_name} from {organization.name}
       </Preview>
-      <Intro>
+
+      <Intro headline={`You're invited to join ${product_name}`}>
         {billing_manager_email} has invited you to{' '}
-        <span className="font-medium">{product_name}</span>. Claim your seat to
-        get started.
+        <span className="font-medium">{product_name}</span>.
+        Claim&nbsp;your&nbsp;seat&nbsp;to&nbsp;get&nbsp;started.
       </Intro>
-      <Text className="text-sm text-gray-600">
+
+      <Button href={claim_url}>Claim seat</Button>
+
+      <Text className="my-8 text-center text-sm text-gray-500">
         This invitation expires in 24 hours.
       </Text>
-      <Section className="text-center">
-        <Button href={claim_url}>Claim seat</Button>
-      </Section>
 
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>

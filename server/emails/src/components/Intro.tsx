@@ -1,4 +1,4 @@
-import { Heading, Section, Text } from '@react-email/components'
+import { Heading, Text } from '@react-email/components'
 import { PropsWithChildren } from 'react'
 
 interface IntroProps {
@@ -7,10 +7,10 @@ interface IntroProps {
 
 export function Intro({ headline, children }: PropsWithChildren<IntroProps>) {
   return (
-    <Section>
+    <>
       {headline && <Heading className="text-lg font-bold">{headline}</Heading>}
       {children && <Text className="text-base">{children}</Text>}
-    </Section>
+    </>
   )
 }
 

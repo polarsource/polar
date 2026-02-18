@@ -17,8 +17,8 @@ export function SubscriptionRevoked({
     <WrapperOrganization organization={organization}>
       <Preview>Your {product.name} subscription has ended</Preview>
       <Intro headline="Your subscription has ended">
-        Your <span className="font-bold">{product.name}</span> subscription has
-        ended. If you&rsquo;d like to resubscribe, you can do so anytime.
+        Your <span className="font-medium">{product.name}</span> subscription
+        has ended. If you&rsquo;d like to resubscribe, you can do so anytime.
       </Intro>
       <Section className="my-4 text-center">
         <Button href={url}>View subscription</Button>

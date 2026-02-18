@@ -17,12 +17,11 @@ export function SubscriptionCycledAfterTrial({
 }: schemas['SubscriptionCycledAfterTrialProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>
-        Your {product.name} trial ended — your subscription is now active
-      </Preview>
+      <Preview>Your {product.name} trial ended</Preview>
       <Intro headline="Your trial has ended">
-        Your <span className="font-bold">{product.name}</span> trial is over and
-        your subscription is now active. Here&rsquo;s your first receipt.
+        Your <span className="font-medium">{product.name}</span> trial is over
+        and your subscription is now active. We've attached your first invoice
+        for your records.
       </Intro>
       <Section className="my-8 text-center">
         <Button href={url}>Manage subscription</Button>

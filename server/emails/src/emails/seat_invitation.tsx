@@ -20,10 +20,9 @@ export function SeatInvitation({
         {organization.name}
       </Preview>
       <Intro>
-        {billing_manager_email} has invited you to access{' '}
-        <span className="font-bold">{product_name}</span> from{' '}
-        <span className="font-bold">{organization.name}</span>. Claim your seat
-        to get started.
+        {billing_manager_email} has invited you to{' '}
+        <span className="font-medium">{product_name}</span>. Claim your seat to
+        get started.
       </Intro>
       <Text className="text-sm text-gray-600">
         This invitation expires in 24 hours.

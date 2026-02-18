@@ -19,8 +19,8 @@ export function SubscriptionCycled({
     <WrapperOrganization organization={organization}>
       <Preview>Your {product.name} subscription renewed</Preview>
       <Intro headline="Your subscription renewed">
-        Your <span className="font-bold">{product.name}</span> subscription has
-        just renewed. Here&rsquo;s your receipt.
+        Your <span className="font-medium">{product.name}</span> subscription
+        has just renewed. Your invoice is attached.
       </Intro>
       <Section className="my-8 text-center">
         <Button href={url}>Manage subscription</Button>

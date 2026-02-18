@@ -23,14 +23,14 @@ export function SubscriptionPastDue({
 
       <Intro headline="We couldn&rsquo;t process your payment">
         We tried to charge your payment method for your{' '}
-        <span className="font-bold">{product.name}</span> subscription, but it
+        <span className="font-medium">{product.name}</span> subscription, but it
         didn&rsquo;t go through. This can happen for a number of reasons, like
         an expired card or a temporary bank hold.
       </Intro>
 
       <BodyText>
         Until the payment goes through, your access to{' '}
-        <span className="font-bold">{product.name}</span> won&rsquo;t be
+        <span className="font-medium">{product.name}</span> won&rsquo;t be
         available.
       </BodyText>
 

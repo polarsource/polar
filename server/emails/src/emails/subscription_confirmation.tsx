@@ -18,10 +18,11 @@ export function SubscriptionConfirmation({
 }: schemas['SubscriptionConfirmationProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Your {product.name} subscription is active</Preview>
-      <Intro headline="Your subscription is active">
-        You&rsquo;re now subscribed to{' '}
-        <span className="font-bold">{product.name}</span>.
+      <Preview>You're now subscribed to {product.name}</Preview>
+      <Intro headline={`You're now subscribed to ${product.name}`}>
+        Thank you for subscribing to{' '}
+        <strong className="font-medium">{product.name}</strong>. Your invoice is
+        attached.
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
@@ -29,7 +30,6 @@ export function SubscriptionConfirmation({
       </Section>
       <Hr />
       <OrderSummary order={order} />
-
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

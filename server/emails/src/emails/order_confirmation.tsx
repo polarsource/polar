@@ -17,13 +17,11 @@ export function OrderConfirmation({
 }: schemas['OrderConfirmationProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>
-        Your {order.description} from {organization.name}
-      </Preview>
-      <Intro headline="Your payment was successful">
-        You&rsquo;ve purchased{' '}
-        <span className="font-bold">{order.description}</span> from{' '}
-        {organization.name}.
+      <Preview>Your {order.description} purchase</Preview>
+      <Intro headline="Thank you for your purchase!">
+        Thank you for purchasing{' '}
+        <span className="font-medium">{order.description}</span>. Your invoice
+        is attached.
       </Intro>
       {product && (
         <>

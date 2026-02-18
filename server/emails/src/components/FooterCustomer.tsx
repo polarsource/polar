@@ -9,7 +9,7 @@ const FooterCustomer = ({
   email: string
 }) => (
   <>
-    <Hr />
+    <Hr className="mt-8" />
     <Section className="text-center">
       <Text className="text-xs text-gray-400">
         This email was sent to{' '}

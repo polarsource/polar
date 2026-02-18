@@ -1,4 +1,4 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Link, Preview, Text } from '@react-email/components'
 import FooterCustomer from '../components/FooterCustomer'
 import Intro from '../components/Intro'
 import OTPCode from '../components/OTPCode'
@@ -17,20 +17,20 @@ export function CustomerSessionCode({
     <WrapperOrganization organization={organization}>
       <Preview>Your verification code for {organization.name}</Preview>
       <Intro>
-        Here&rsquo;s your code to access your purchases from {organization.name}
-        . It&nbsp;expires&nbsp;in&nbsp;{code_lifetime_minutes}&nbsp;minutes.
+        You can use the following code to access your purchases on the{' '}
+        <Link href={url} className="text-blue-500 underline">
+          {organization.name} Customer Portal
+        </Link>
+        .
       </Intro>
+
       <OTPCode code={code} />
-      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
-        <Text className="m-0 text-xs text-gray-600">
-          Enter this code at the following URL:
-        </Text>
-        <Text className="mt-2 mb-0 text-xs">
-          <Link href={url} className="break-all text-blue-600 underline">
-            {url}
-          </Link>
-        </Text>
-      </Section>
+
+      <Text className="mt-2 text-center text-sm text-gray-500">
+        This&nbsp;code&nbsp;expires&nbsp;in&nbsp;
+        {code_lifetime_minutes}
+        &nbsp;minutes.
+      </Text>
 
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>

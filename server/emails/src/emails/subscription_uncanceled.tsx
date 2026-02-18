@@ -18,7 +18,8 @@ export function SubscriptionUncanceled({
       <Preview>Your {product.name} subscription is no longer canceled</Preview>
 
       <Intro headline="Your subscription is no longer canceled">
-        Your {product.name} subscription will continue as normal.
+        Your <strong className="font-medium">{product.name}</strong>{' '}
+        subscription will continue as normal.
       </Intro>
 
       <Section className="mt-2 mb-8 text-center">

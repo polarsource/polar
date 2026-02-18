@@ -26,15 +26,14 @@ export function SubscriptionCancellation({
         Your subscription to {product.name} will end on {endDate}
       </Preview>
       <Intro headline="Your subscription has been canceled">
-        Your subscription to <span className="font-bold">{product.name}</span>{' '}
-        has been canceled. You&rsquo;ll still have full access until{' '}
-        <span className="font-bold">{endDate}</span>.
+        Your subscription to <span className="font-medium">{product.name}</span>{' '}
+        has been canceled. You&rsquo;ll still have full access until {endDate}.
       </Intro>
       <BodyText>
         If you&rsquo;d like to continue, you can renew anytime before then.
       </BodyText>
       <Section className="my-8 text-center">
-        <Button href={url}>Manage subscription</Button>
+        <Button href={url}>Renew subscription</Button>
       </Section>
 
       <FooterCustomer organization={organization} email={email} />

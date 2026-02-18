@@ -1654,7 +1654,7 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Export Subscriptions
+     * Export Orders
      * @description Export orders as a CSV file.
      *
      *     **Scopes**: `orders:read`
@@ -4169,7 +4169,7 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get Csv
+     * Export Payout as CSV
      * @description **Scopes**: `payouts:read`
      */
     get: operations['payouts:get_csv']
@@ -28697,6 +28697,7 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+          'text/csv': string
         }
       }
       /** @description Validation Error */
@@ -30304,6 +30305,7 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+          'text/csv': string
         }
       }
       /** @description Validation Error */
@@ -33152,6 +33154,7 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+          'text/csv': string
         }
       }
       /** @description Validation Error */
@@ -38474,6 +38477,7 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+          'text/csv': string
         }
       }
       /** @description Validation Error */

@@ -2,7 +2,7 @@ import { SectionLayout } from './SectionLayout'
 
 export function TypographySection() {
   return (
-    <SectionLayout label="04 / Typography">
+    <SectionLayout label="Typography">
       <div className="grid h-full grid-cols-4 gap-32">
         {/* Left column — description */}
         <div className="flex flex-col justify-between">

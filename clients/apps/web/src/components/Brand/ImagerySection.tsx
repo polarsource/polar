@@ -3,7 +3,7 @@ import { SectionLayout } from './SectionLayout'
 
 export function ImagerySection() {
   return (
-    <SectionLayout label="06 / Imagery & Iconography">
+    <SectionLayout label="Imagery & Iconography">
       <div className="flex flex-col gap-8">
         <div className="flex gap-6">
           {Array.from({ length: 3 }).map((_, i) => (

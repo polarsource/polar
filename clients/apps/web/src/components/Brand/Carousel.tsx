@@ -130,7 +130,7 @@ export function CarouselSection() {
   }
 
   return (
-    <SectionLayout label="08 / Product Carousel">
+    <SectionLayout label="Product Carousel">
       <div className="dark:bg-polar-900 relative grid h-[700px] grid-cols-2 items-center bg-neutral-100">
         <div className="flex items-center justify-center">
           <PolarLogotype

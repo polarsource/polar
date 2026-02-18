@@ -70,7 +70,7 @@ function GradientCell({
 
 export function ColorsSection() {
   return (
-    <SectionLayout label="03 / Color Palette">
+    <SectionLayout label="Color Palette">
       <div className="flex flex-col gap-10">
         <div className="flex max-w-md flex-col gap-3">
           <h3 className="text-sm font-semibold">Color Palette</h3>

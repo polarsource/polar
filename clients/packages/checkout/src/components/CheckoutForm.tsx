@@ -173,6 +173,22 @@ const BaseCheckoutForm = ({
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
   const discountCode = watch('discountCode')
+  const addDiscountCode = useCallback(async () => {
+    if (!discountCode) {
+      return
+    }
+    clearErrors('discountCode')
+    try {
+      await update({ discountCode: discountCode })
+    } catch {}
+  }, [update, discountCode, clearErrors])
+  const removeDiscountCode = useCallback(async () => {
+    clearErrors('discountCode')
+    try {
+      await update({ discountCode: null })
+      resetField('discountCode')
+    } catch {}
+  }, [update, clearErrors, resetField])
 
   useEffect(() => {
     if (!discountCode && !checkout.discount) {
@@ -237,6 +253,8 @@ const BaseCheckoutForm = ({
     })
   }
 
+  const checkoutDiscounted = !!checkout.discount
+  const [isAddingDiscount, setIsAddingDiscount] = useState(false)
   const validTaxID = !!checkout.customerTaxId
 
   // Make sure to clear the discount code field if the discount is removed by the API
@@ -736,6 +754,75 @@ const BaseCheckoutForm = ({
                   )}
                 </>
               )}
+              {checkout.allowDiscountCodes &&
+                checkout.isDiscountApplicable && (
+                  <>
+                    {isAddingDiscount || checkoutDiscounted ? (
+                      <FormField
+                        control={control}
+                        name="discountCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="text"
+                                  autoComplete="off"
+                                  {...field}
+                                  placeholder={t('checkout.form.discountCode')}
+                                  value={field.value || ''}
+                                  autoFocus
+                                  disabled={checkoutDiscounted}
+                                  onKeyDown={(e) => {
+                                    if (e.key !== 'Enter') return
+
+                                    e.preventDefault()
+                                    addDiscountCode()
+                                  }}
+                                  onBlur={() => {
+                                    if (!field.value && !checkoutDiscounted) {
+                                      setIsAddingDiscount(false)
+                                    }
+                                  }}
+                                />
+                                <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                                  {!checkoutDiscounted && discountCode && (
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={addDiscountCode}
+                                    >
+                                      {t('checkout.form.apply')}
+                                    </Button>
+                                  )}
+                                  {checkoutDiscounted && (
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={removeDiscountCode}
+                                    >
+                                      <XIcon className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <button
+                        className="h-10 cursor-pointer rounded-lg border-gray-50 bg-gray-50 px-3 text-left text-gray-500 hover:border-gray-100 hover:bg-gray-100 hover:text-gray-600 md:text-sm"
+                        onClick={() => setIsAddingDiscount(true)}
+                      >
+                        Add a discount code
+                      </button>
+                    )}
+                  </>
+                )}
               {checkout.attachedCustomFields &&
                 checkout.attachedCustomFields.map(
                   ({ customField, required }) => (

@@ -1,7 +1,7 @@
 """Add CheckoutLink.return_url
 
 Revision ID: a13077e7c985
-Revises: a1c2d3e4f567
+Revises: 07d3ab839aee
 Create Date: 2026-02-15 14:07:07.845083
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a13077e7c985"
-down_revision = "a1c2d3e4f567"
+down_revision = "07d3ab839aee"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -82,6 +82,7 @@ export const CheckoutLinkForm = ({
         allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
         require_billing_address: checkoutLink.require_billing_address ?? false,
         success_url: checkoutLink.success_url ?? '',
+        return_url: checkoutLink.return_url ?? '',
         discount_id: checkoutLink.discount_id ?? '',
       }
     }
@@ -93,6 +94,7 @@ export const CheckoutLinkForm = ({
       allow_discount_codes: true,
       require_billing_address: false,
       success_url: '',
+      return_url: '',
       discount_id: '',
     }
   }, [checkoutLink, productIds])
@@ -172,6 +174,7 @@ export const CheckoutLinkForm = ({
         ...data,
         discount_id: data.discount_id || null,
         success_url: data.success_url || null,
+        return_url: data.return_url || null,
         metadata: data.metadata.reduce(
           (acc, { key, value }) => ({ ...acc, [key]: value }),
           {},
@@ -302,6 +305,27 @@ export const CheckoutLinkForm = ({
                     {'{'}CHECKOUT_ID{'}'}
                   </code>{' '}
                   to receive the Checkout ID on success.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="return_url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Return URL</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="https://example.com/return"
+                    {...field}
+                    value={field.value || ''}
+                  />
+                </FormControl>
+                <FormDescription className="text-xs">
+                  When set, a back button will be shown in the checkout to
+                  return to this URL.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

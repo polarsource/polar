@@ -48,7 +48,6 @@ export const CheckoutDiscountInput = ({
 
   const hasDiscount = !!checkout.discount
 
-  // Sync local state when discount is applied/removed externally
   useEffect(() => {
     if (hasDiscount) {
       setDiscountCode('')

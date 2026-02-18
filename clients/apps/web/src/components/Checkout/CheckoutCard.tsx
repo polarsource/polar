@@ -34,7 +34,6 @@ export const CheckoutCard = ({
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
   const isTreatment = pricingPositionExperiment === 'treatment'
 
-  // In treatment mode, pricing and seats are shown in the breakdown card above
   if (isTreatment) {
     return null
   }

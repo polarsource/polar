@@ -39,12 +39,9 @@ export default function BrandPage() {
       className="dark:bg-polar-950 bg-white text-black dark:text-white"
       style={{ cursor }}
     >
-      <div className="flex h-full w-max flex-col">
+      <div className="flex flex-col">
         {sectionComponents.map((section) => (
-          <section
-            key={section.id}
-            className="relative h-screen w-screen shrink-0"
-          >
+          <section key={section.id}>
             <section.Component />
           </section>
         ))}

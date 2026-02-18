@@ -1,4 +1,6 @@
 export const VORTEX_GLSL = `
+  uniform vec2 u_contentSize;
+
   float computeLuminance(vec2 uv, float aspect, float time) {
     vec2 d = uv - vec2(0.5, 0.5);
     d.x *= aspect;
@@ -21,7 +23,9 @@ export const VORTEX_GLSL = `
     float luminance = arms * 0.75 + arms2 * 0.25;
     luminance = smoothstep(0.2, 0.8, luminance);
 
-    float centerFade = smoothstep(0.5, 0.85, rNorm);
+    vec2 d2 = (uv - 0.5) / (u_contentSize * 0.5 + 0.05);
+    float rContent = length(d2);
+    float centerFade = smoothstep(1.2, 2.16, rContent);
     luminance *= centerFade;
 
     float edgeFade = 1.0 - smoothstep(0.85, 1.1, rNorm);

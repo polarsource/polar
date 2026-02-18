@@ -188,9 +188,8 @@ resource "render_env_group" "slo_report" {
   environment_id = var.render_environment_id
   name           = "slo-report-${var.environment}"
   env_vars = {
-    POLAR_SLO_REPORT_SLACK_BOT_TOKEN = { value = var.slo_report_config.slack_bot_token }
-    POLAR_SLO_REPORT_SLACK_CHANNEL   = { value = var.slo_report_config.slack_channel }
-    POLAR_SLO_REPORT_ENABLED         = { value = tostring(var.slo_report_config.enabled) }
+    POLAR_SLACK_BOT_TOKEN = { value = var.slo_report_config.slack_bot_token }
+    POLAR_SLACK_CHANNEL   = { value = var.slo_report_config.slack_channel }
   }
 }
 

@@ -57,8 +57,8 @@ async def slo_report_send_weekly() -> None:
         log.info("slo_report_disabled")
         return
 
-    bot_token = settings.SLO_REPORT_SLACK_BOT_TOKEN
-    channel = settings.SLO_REPORT_SLACK_CHANNEL
+    bot_token = settings.SLACK_BOT_TOKEN
+    channel = settings.SLACK_CHANNEL
     if not bot_token or not channel:
         log.warning("slo_report_slack_not_configured")
         return

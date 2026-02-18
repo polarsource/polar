@@ -242,7 +242,6 @@ variable "slo_report_config" {
   type = object({
     slack_bot_token = string
     slack_channel   = string
-    enabled         = optional(bool, true)
   })
   default   = null
   sensitive = true

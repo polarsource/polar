@@ -73,9 +73,11 @@ class Settings(BaseSettings):
     GRAFANA_CLOUD_PROMETHEUS_QUERY_USER: str | None = None
     GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY: str | None = None
 
+    # Slack
+    SLACK_BOT_TOKEN: str | None = None
+    SLACK_CHANNEL: str | None = None
+
     # SLO Report
-    SLO_REPORT_SLACK_BOT_TOKEN: str | None = None
-    SLO_REPORT_SLACK_CHANNEL: str | None = None
     SLO_REPORT_ENABLED: bool = True
 
     WEBHOOK_MAX_RETRIES: int = 10

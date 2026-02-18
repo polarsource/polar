@@ -1,6 +1,7 @@
 'use client'
 
 import { useExperiment } from '@/experiments/client'
+import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -68,6 +69,7 @@ const Checkout = ({
 
   const { variant: pricingPositionExperiment } = useExperiment(
     'checkout_pricing_position',
+    { trackExposure: !embed },
   )
 
   const openedTrackedRef = useRef(false)
@@ -79,7 +81,7 @@ const Checkout = ({
 
     const cookies = document.cookie.split(';')
     const distinctIdCookie = cookies.find((c) =>
-      c.trim().startsWith('polar_distinct_id='),
+      c.trim().startsWith(`${DISTINCT_ID_COOKIE}=`),
     )
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
@@ -93,7 +95,7 @@ const Checkout = ({
     ).catch(() => {
       // Silently ignore - don't affect checkout experience
     })
-  }, [checkout.clientSecret])
+  }, [checkout.clientSecret, posthog])
 
   const themePreset = getThemePreset(theme)
 

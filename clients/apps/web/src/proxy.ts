@@ -3,13 +3,11 @@ import { nanoid } from 'nanoid'
 import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import { COOKIE_MAX_AGE, DISTINCT_ID_COOKIE } from './experiments/constants'
 import { createServerSideAPI } from './utils/client'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
-
-const DISTINCT_ID_COOKIE = 'polar_distinct_id'
-const DISTINCT_ID_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
 const AUTHENTICATED_ROUTES = [
   new RegExp('^/start(/.*)?'),
@@ -197,7 +195,7 @@ export async function proxy(request: NextRequest) {
 
   if (isNewDistinctId) {
     response.cookies.set(DISTINCT_ID_COOKIE, distinctId, {
-      maxAge: DISTINCT_ID_COOKIE_MAX_AGE,
+      maxAge: COOKIE_MAX_AGE,
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

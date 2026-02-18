@@ -26,6 +26,15 @@ export const WAVES_GLSL = `
     float stripe3 = sin(wx * 16.0 + 0.8) * 0.5 + 0.5;
 
     // Blend stripes with varying weights
-    return stripe * 0.55 + stripe2 * 0.3 + stripe3 * 0.15;
+    float luminance = stripe * 0.55 + stripe2 * 0.3 + stripe3 * 0.15;
+
+    // Center fade (radial)
+    vec2 d = uv - vec2(0.5, 0.5);
+    d.x *= aspect;
+    float rNorm = length(d) / (aspect * 0.5);
+    float centerFade = smoothstep(0.3, 0.85, rNorm);
+    luminance *= centerFade;
+
+    return luminance;
   }
 `

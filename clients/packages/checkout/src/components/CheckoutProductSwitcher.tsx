@@ -26,6 +26,7 @@ interface CheckoutProductSwitcherProps {
   disabled?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
+  pricingPositionExperiment?: 'treatment' | 'control'
 }
 
 const CheckoutProductSwitcher = ({
@@ -33,8 +34,10 @@ const CheckoutProductSwitcher = ({
   update,
   themePreset,
   locale = DEFAULT_LOCALE,
+  pricingPositionExperiment,
 }: CheckoutProductSwitcherProps) => {
   const t = useTranslations(locale)
+  const isTreatment = pricingPositionExperiment === 'treatment'
 
   const {
     product: selectedProduct,
@@ -92,6 +95,72 @@ const CheckoutProductSwitcher = ({
     }
 
     return t('checkout.productSwitcher.oneTimePurchase')
+  }
+
+  // Compact horizontal layout for treatment group
+  if (isTreatment) {
+    return (
+      <RadioGroup
+        value={`${selectedProduct.id}:${selectedPrice.id}`}
+        onValueChange={selectProduct}
+        className="grid grid-cols-2 gap-2"
+      >
+        {products.map((product) =>
+          hasLegacyRecurringPrices(prices[product.id]) ? (
+            <Fragment key={product.id}>
+              {prices[product.id].map((price) => (
+                <label
+                  key={price.id}
+                  className={cn(
+                    `dark:md:bg-polar-950 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors hover:border-blue-500 md:bg-white dark:hover:border-blue-500`,
+                    price.id === selectedPrice.id
+                      ? 'border-blue-500 dark:border-blue-500'
+                      : 'dark:border-polar-700 border-gray-200',
+                  )}
+                  htmlFor={`product-${price.id}`}
+                >
+                  <RadioGroupItem
+                    value={`${product.id}:${price.id}`}
+                    id={`product-${price.id}`}
+                    className="sr-only"
+                  />
+                  <span className="text-sm font-medium">{product.name}</span>
+                  <ProductPriceLabel product={product} price={price} />
+                  <span className="dark:text-polar-500 text-xs text-gray-500">
+                    {getDescription(product, price)}
+                  </span>
+                </label>
+              ))}
+            </Fragment>
+          ) : (
+            <label
+              key={product.id}
+              className={cn(
+                `dark:md:bg-polar-950 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors hover:border-blue-500 md:bg-white dark:hover:border-blue-500`,
+                product.id === selectedProduct.id
+                  ? 'border-blue-500 dark:border-blue-500'
+                  : 'dark:border-polar-700 border-gray-200',
+              )}
+              htmlFor={`product-${product.id}`}
+            >
+              <RadioGroupItem
+                value={`${product.id}:${prices[product.id][0].id}`}
+                id={`product-${product.id}`}
+                className="sr-only"
+              />
+              <span className="text-sm font-medium">{product.name}</span>
+              <ProductPriceLabel
+                product={product}
+                price={prices[product.id][0]}
+              />
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                {getDescription(product, prices[product.id][0])}
+              </span>
+            </label>
+          ),
+        )}
+      </RadioGroup>
+    )
   }
 
   return (

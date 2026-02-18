@@ -3,16 +3,16 @@ import { PhyllotaxisSunflower } from './PhyllotaxisSunflower'
 
 export function CoverSection() {
   return (
-    <div className="flex h-screen w-full flex-col justify-between p-16">
+    <div className="flex h-screen w-full flex-col justify-between p-8 md:p-16">
       <div className="flex items-start justify-between">
         <span className="font-medium">Polar Software Inc</span>
         <span className="font-medium">{new Date().getFullYear()}</span>
       </div>
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center overflow-hidden">
         <PhyllotaxisSunflower size={800} />
       </div>
       <div className="flex items-end justify-between">
-        <h1 className="text-8xl font-light tracking-tight">
+        <h1 className="text-5xl font-light tracking-tight md:text-8xl">
           Brand
           <br />
           Guidelines

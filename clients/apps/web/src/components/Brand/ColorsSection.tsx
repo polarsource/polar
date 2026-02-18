@@ -82,7 +82,7 @@ export function ColorsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 grid-rows-[1fr_auto_auto] overflow-hidden border border-neutral-200">
+        <div className="grid grid-cols-1 grid-rows-[1fr_auto_auto] overflow-hidden border border-neutral-200 sm:grid-cols-3">
           {/* Row 1 — tall swatches */}
           <ColorCell name="White" hex="#FFFFFF" className="min-h-72" />
           <ColorCell name="Ash" hex="#999999" className="min-h-72" />

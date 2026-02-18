@@ -27,13 +27,13 @@ export function VoiceSection() {
   return (
     <SectionLayout label="Voice & Tone">
       <div className="flex flex-col gap-16">
-        <div className="flex flex-col gap-24">
+        <div className="flex flex-col gap-12 md:gap-24">
           {traits.map((item) => (
-            <div key={item.trait} className="grid grid-cols-2 gap-48">
-              <span className="text-9xl font-light tracking-tighter">
+            <div key={item.trait} className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-48">
+              <span className="text-5xl font-light tracking-tighter md:text-9xl">
                 {item.trait}
               </span>
-              <p className="dark:text-polar-500 max-w-xl text-2xl leading-relaxed text-neutral-500">
+              <p className="dark:text-polar-500 max-w-xl text-base leading-relaxed text-neutral-500 md:text-2xl">
                 {item.description}
               </p>
             </div>

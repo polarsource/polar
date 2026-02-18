@@ -82,10 +82,9 @@ const VS = /* glsl */ `
     clip.y = -clip.y;
     gl_Position = vec4(clip, 0.0, 1.0);
 
-    // Blend point size smoothly from circle size → ASCII size as alpha rises
     float circSz = max(2.0, a_rad * 2.0);
     float asciiSz = ${ASCII_PT}.0;
-    float sz = mix(circSz, asciiSz, smoothstep(0.0, 1.0, a_alpha));
+    float sz = a_char < 0.0 ? circSz : asciiSz;
     gl_PointSize = min(256.0, sz * u_dpr);
 
     v_char  = a_char;
@@ -261,7 +260,6 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
             const disp = ease * maxDisp
             tx = base.x + (dx / dist) * disp
             ty = base.y + (dy / dist) * disp
-            tr = base.r + ease * 4
           }
         }
 

@@ -154,7 +154,7 @@ Do not return Markdown formatting or code fences.
 
 const getConversationalSystemPrompt = (currency: string) => {
   const currencyCode = currency.toUpperCase()
-  
+
   return `
 ${sharedSystemPrompt}
 
@@ -457,7 +457,8 @@ based on the conversation history whether you're done.
 
   let streamStarted = false
 
-  const conversationalSystemPrompt = getConversationalSystemPrompt(defaultCurrency)
+  const conversationalSystemPrompt =
+    getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
     // Gemini 2.5 Flash for quick & cheap responses, Sonnet 4.5 for better tool usage

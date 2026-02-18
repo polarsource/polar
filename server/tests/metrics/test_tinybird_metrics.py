@@ -98,9 +98,14 @@ class OrderScenario:
     product_key: str
     ordered_at: datetime
     amount: int
+    applied_balance_amount: int = 0
+    emit_balance_credit_order: bool = False
     created_at: datetime | None = None
     order_paid_at: datetime | None = None
     balance_at: datetime | None = None
+    balance_amount: int | None = None
+    balance_net_amount: int | None = None
+    balance_exchange_rate: float | None = None
     include_order_created_at_metadata: bool = True
     include_order_paid: bool = True
     include_balance: bool = True
@@ -119,6 +124,7 @@ class SubscriptionScenario:
     product_key: str
     order_timestamps: tuple[datetime, ...]
     amount: int
+    orders: tuple[OrderScenario, ...] = ()
     canceled_at: datetime | None = None
     ends_at: datetime | None = None
     cancellation_reason: CustomerCancellationReason | None = None
@@ -400,6 +406,83 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                     extra_balance_refund_events=1,
                     include_balance_refund_reversal=True,
                     refund_reversal_at=datetime(2025, 12, 11, 12, 0, tzinfo=UTC),
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_applied_balance_partial",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 1, 22), 10, 0),
+                    amount=14_000,
+                    applied_balance_amount=3_000,
+                    balance_amount=10_000,
+                    balance_net_amount=10_000,
+                    balance_exchange_rate=2.0,
+                    platform_fee_amount=500,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_applied_balance_full",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 1, 23), 11, 0),
+                    amount=0,
+                    applied_balance_amount=7_000,
+                    balance_amount=7_000,
+                    balance_net_amount=7_000,
+                    balance_exchange_rate=1.25,
+                    platform_fee_amount=350,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_credit_order_uses_previous_balance_order_fx",
+            one_time_orders=(
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2025, 12, 10), 10, 0),
+                    amount=1_000,
+                    balance_amount=2_000,
+                    balance_net_amount=2_000,
+                    balance_exchange_rate=2.0,
+                ),
+                OrderScenario(
+                    product_key="one_time",
+                    ordered_at=_dt(date(2026, 1, 24), 9, 0),
+                    amount=5_000,
+                    applied_balance_amount=1_000,
+                    emit_balance_credit_order=True,
+                    balance_amount=7_000,
+                    balance_net_amount=7_000,
+                    platform_fee_amount=200,
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="stockholm_renewed_negative_applied_balance_credit_order",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(),
+                    amount=MONTHLY_PRICE,
+                    orders=(
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2025, 10, 17), 10, 0),
+                            amount=14_900,
+                        ),
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2025, 11, 17), 20, 44),
+                            amount=14_900,
+                            applied_balance_amount=-14_900,
+                            emit_balance_credit_order=True,
+                        ),
+                    ),
                 ),
             ),
         ),
@@ -685,6 +768,46 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("active_subscriptions", "committed_subscriptions"),
     ),
     QueryCase(
+        label="alpha_daily_stockholm_applied_balance_partial",
+        organization_key="alpha",
+        start_date=date(2026, 1, 22),
+        end_date=date(2026, 1, 22),
+        interval=TimeInterval.day,
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_applied_balance_partial",),
+        metrics=("orders", "net_revenue", "one_time_products_net_revenue"),
+    ),
+    QueryCase(
+        label="alpha_daily_stockholm_applied_balance_full",
+        organization_key="alpha",
+        start_date=date(2026, 1, 23),
+        end_date=date(2026, 1, 23),
+        interval=TimeInterval.day,
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_applied_balance_full",),
+        metrics=("orders", "net_revenue", "one_time_products_net_revenue"),
+    ),
+    QueryCase(
+        label="alpha_daily_stockholm_credit_order_previous_balance_fx",
+        organization_key="alpha",
+        start_date=date(2026, 1, 24),
+        end_date=date(2026, 1, 24),
+        interval=TimeInterval.day,
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_credit_order_uses_previous_balance_order_fx",),
+        metrics=("orders", "net_revenue", "one_time_products_net_revenue"),
+    ),
+    QueryCase(
+        label="alpha_daily_stockholm_renewed_negative_applied_balance_credit_order",
+        organization_key="alpha",
+        start_date=date(2025, 11, 17),
+        end_date=date(2025, 11, 17),
+        interval=TimeInterval.day,
+        timezone="Europe/Stockholm",
+        customer_keys=("stockholm_renewed_negative_applied_balance_credit_order",),
+        metrics=("renewed_subscriptions", "renewed_subscriptions_net_revenue"),
+    ),
+    QueryCase(
         label="beta_monthly_q1",
         organization_key="beta",
         start_date=date(2024, 1, 1),
@@ -847,10 +970,15 @@ async def _create_paid_order_events(
     *,
     ordered_at: datetime,
     amount: int,
+    applied_balance_amount: int = 0,
+    emit_balance_credit_order: bool = False,
     subscription: Subscription | None = None,
     created_at: datetime | None = None,
     order_paid_at: datetime | None = None,
     balance_at: datetime | None = None,
+    balance_amount: int | None = None,
+    balance_net_amount: int | None = None,
+    balance_exchange_rate: float | None = None,
     include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
     include_balance: bool = True,
@@ -873,6 +1001,7 @@ async def _create_paid_order_events(
         product=product,
         status=status,
         subtotal_amount=amount,
+        applied_balance_amount=applied_balance_amount,
         refunded_amount=refunded_amount,
         created_at=order_created_at,
         subscription=subscription,
@@ -895,19 +1024,32 @@ async def _create_paid_order_events(
         "net_amount": order.net_amount,
         "currency": "usd",
         "tax_amount": order.tax_amount,
+        "applied_balance_amount": order.applied_balance_amount,
+        "platform_fee": order.platform_fee_amount,
     }
     if include_order_created_at_metadata and order.created_at is not None:
         common_metadata["order_created_at"] = order.created_at.isoformat()
     if subscription is not None:
         common_metadata["subscription_id"] = str(subscription.id)
 
+    balance_amount_value = (
+        balance_amount if balance_amount is not None else order.net_amount
+    )
+    balance_net_amount_value = (
+        balance_net_amount if balance_net_amount is not None else balance_amount_value
+    )
     balance_metadata = {
         **common_metadata,
-        "transaction_id": str(transaction.id),
-        "presentment_amount": order.net_amount,
-        "presentment_currency": "usd",
+        "amount": balance_amount_value,
+        "net_amount": balance_net_amount_value,
         "fee": order.platform_fee_amount,
     }
+    if not emit_balance_credit_order:
+        balance_metadata["transaction_id"] = str(transaction.id)
+        balance_metadata["presentment_amount"] = balance_amount_value
+        balance_metadata["presentment_currency"] = "usd"
+    if balance_exchange_rate is not None:
+        balance_metadata["exchange_rate"] = balance_exchange_rate
 
     emitted_events: list[Event] = []
     if include_balance:
@@ -916,7 +1058,11 @@ async def _create_paid_order_events(
             organization=organization,
             customer=customer,
             source=EventSource.system,
-            name=SystemEvent.balance_order.value,
+            name=(
+                SystemEvent.balance_credit_order.value
+                if emit_balance_credit_order
+                else SystemEvent.balance_order.value
+            ),
             timestamp=balance_timestamp,
             metadata=balance_metadata,
         )
@@ -1034,9 +1180,21 @@ async def _seed_customer_scenario(
     )
 
     for subscription_scenario in scenario.subscriptions:
-        assert subscription_scenario.order_timestamps
+        if subscription_scenario.orders:
+            subscription_orders = subscription_scenario.orders
+        else:
+            assert subscription_scenario.order_timestamps
+            subscription_orders = tuple(
+                OrderScenario(
+                    product_key=subscription_scenario.product_key,
+                    ordered_at=ordered_at,
+                    amount=subscription_scenario.amount,
+                )
+                for ordered_at in subscription_scenario.order_timestamps
+            )
+
         product = products[subscription_scenario.product_key]
-        started_at = subscription_scenario.order_timestamps[0]
+        started_at = subscription_orders[0].ordered_at
         canceled = subscription_scenario.canceled_at is not None
         subscription = await create_subscription(
             save_fixture,
@@ -1068,15 +1226,41 @@ async def _seed_customer_scenario(
             )
         )
 
-        for ordered_at in subscription_scenario.order_timestamps:
+        for subscription_order in subscription_orders:
+            assert subscription_order.product_key == subscription_scenario.product_key
             events.extend(
                 await _create_paid_order_events(
                     save_fixture,
                     organization,
                     customer,
                     product,
-                    ordered_at=ordered_at,
-                    amount=subscription_scenario.amount,
+                    ordered_at=subscription_order.ordered_at,
+                    amount=subscription_order.amount,
+                    applied_balance_amount=subscription_order.applied_balance_amount,
+                    emit_balance_credit_order=subscription_order.emit_balance_credit_order,
+                    created_at=subscription_order.created_at,
+                    order_paid_at=subscription_order.order_paid_at,
+                    balance_at=subscription_order.balance_at,
+                    balance_amount=subscription_order.balance_amount,
+                    balance_net_amount=subscription_order.balance_net_amount,
+                    balance_exchange_rate=subscription_order.balance_exchange_rate,
+                    include_order_created_at_metadata=(
+                        subscription_order.include_order_created_at_metadata
+                    ),
+                    include_order_paid=subscription_order.include_order_paid,
+                    include_balance=subscription_order.include_balance,
+                    status=subscription_order.status,
+                    refunded_amount=subscription_order.refunded_amount,
+                    platform_fee_amount=subscription_order.platform_fee_amount,
+                    include_balance_refund=subscription_order.include_balance_refund,
+                    refund_at=subscription_order.refund_at,
+                    extra_balance_refund_events=(
+                        subscription_order.extra_balance_refund_events
+                    ),
+                    include_balance_refund_reversal=(
+                        subscription_order.include_balance_refund_reversal
+                    ),
+                    refund_reversal_at=subscription_order.refund_reversal_at,
                     subscription=subscription,
                 )
             )
@@ -1125,9 +1309,14 @@ async def _seed_customer_scenario(
                 product,
                 ordered_at=one_time_order.ordered_at,
                 amount=one_time_order.amount,
+                applied_balance_amount=one_time_order.applied_balance_amount,
+                emit_balance_credit_order=one_time_order.emit_balance_credit_order,
                 created_at=one_time_order.created_at,
                 order_paid_at=one_time_order.order_paid_at,
                 balance_at=one_time_order.balance_at,
+                balance_amount=one_time_order.balance_amount,
+                balance_net_amount=one_time_order.balance_net_amount,
+                balance_exchange_rate=one_time_order.balance_exchange_rate,
                 include_order_created_at_metadata=(
                     one_time_order.include_order_created_at_metadata
                 ),
@@ -1529,6 +1718,70 @@ class TestTinybirdMetrics:
         assert (
             dec_4_tb.one_time_products_net_revenue
             == dec_4_pg.one_time_products_net_revenue
+        )
+
+    def test_applied_balance_partial_reduces_revenue_with_fx(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_stockholm_applied_balance_partial"
+        ]
+        pg = snapshot.pg.periods[0]
+        tb = snapshot.tinybird.periods[0]
+
+        assert pg.orders == 1
+        assert pg.net_revenue == 13_500
+        assert pg.one_time_products_net_revenue == 13_500
+        assert tb.orders == pg.orders
+        assert tb.net_revenue == pg.net_revenue
+        assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue
+
+    def test_applied_balance_full_reduces_revenue_to_zero(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_stockholm_applied_balance_full"
+        ]
+        pg = snapshot.pg.periods[0]
+        tb = snapshot.tinybird.periods[0]
+
+        assert pg.orders == 1
+        assert pg.net_revenue == -350
+        assert pg.one_time_products_net_revenue == -350
+        assert tb.orders == pg.orders
+        assert tb.net_revenue == pg.net_revenue
+        assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue
+
+    def test_balance_credit_order_uses_previous_balance_order_fx(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_stockholm_credit_order_previous_balance_fx"
+        ]
+        pg = snapshot.pg.periods[0]
+        tb = snapshot.tinybird.periods[0]
+
+        assert pg.orders == 1
+        assert pg.net_revenue == 4_800
+        assert pg.one_time_products_net_revenue == 4_800
+        assert tb.orders == pg.orders
+        assert tb.net_revenue == pg.net_revenue
+        assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue
+
+    def test_renewed_credit_order_with_negative_applied_balance_matches_pg(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "alpha_daily_stockholm_renewed_negative_applied_balance_credit_order"
+        ]
+        pg = snapshot.pg.periods[0]
+        tb = snapshot.tinybird.periods[0]
+
+        assert pg.renewed_subscriptions == 1
+        assert pg.renewed_subscriptions_net_revenue == 14_900
+        assert tb.renewed_subscriptions == pg.renewed_subscriptions
+        assert (
+            tb.renewed_subscriptions_net_revenue == pg.renewed_subscriptions_net_revenue
         )
 
     def test_org_filter_disabled_matches_org_subject_scope(

@@ -98,7 +98,15 @@ async def list(
     )
 
 
-@router.get("/export", summary="Export Subscriptions")
+@router.get(
+    "/export",
+    summary="Export Orders",
+    responses={
+        200: {
+            "content": {"text/csv": {"schema": {"type": "string"}}},
+        },
+    },
+)
 async def export(
     auth_subject: auth.OrdersRead,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(

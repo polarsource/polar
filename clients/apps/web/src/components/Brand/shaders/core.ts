@@ -173,8 +173,11 @@ export function createRenderLoop(options: RenderLoopOptions): () => void {
 
   const startTime = performance.now()
   let rafId = 0
+  let visible = false
 
   const render = () => {
+    if (!visible) return
+
     const time = (performance.now() - startTime) / 1000
 
     gl.clear(gl.COLOR_BUFFER_BIT)
@@ -191,11 +194,23 @@ export function createRenderLoop(options: RenderLoopOptions): () => void {
     rafId = requestAnimationFrame(render)
   }
 
-  rafId = requestAnimationFrame(render)
+  const visibilityObserver = new IntersectionObserver(
+    ([entry]) => {
+      const wasVisible = visible
+      visible = entry.isIntersecting
+      if (visible && !wasVisible) {
+        rafId = requestAnimationFrame(render)
+      }
+    },
+    { threshold: 0 },
+  )
+  visibilityObserver.observe(canvas)
 
   return () => {
+    visible = false
     cancelAnimationFrame(rafId)
     observer.disconnect()
+    visibilityObserver.disconnect()
     mql.removeEventListener('change', onColorSchemeChange)
     gl.deleteProgram(handles.program)
     gl.deleteBuffer(positionBuffer)

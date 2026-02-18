@@ -270,12 +270,12 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
         if _pusher_thread is not None:
             return True
 
-        url = settings.PROMETHEUS_REMOTE_WRITE_URL
+        url = settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_URL
         if not url:
             log.info("prometheus_remote_write_disabled", reason="no URL configured")
             return False
 
-        if settings.PROMETHEUS_REMOTE_WRITE_INTERVAL <= 0:
+        if settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL <= 0:
             log.error(
                 "prometheus_remote_write_invalid_config",
                 reason="interval must be positive",
@@ -304,9 +304,9 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
             target=_run_push_loop,
             args=(
                 url,
-                settings.PROMETHEUS_REMOTE_WRITE_USERNAME,
-                settings.PROMETHEUS_REMOTE_WRITE_PASSWORD,
-                settings.PROMETHEUS_REMOTE_WRITE_INTERVAL,
+                settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME,
+                settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_PASSWORD,
+                settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL,
                 _shutdown_event,
                 include_queue_metrics,
             ),
@@ -318,7 +318,7 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
         log.info(
             "prometheus_remote_write_started",
             url=url,
-            interval=settings.PROMETHEUS_REMOTE_WRITE_INTERVAL,
+            interval=settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL,
         )
         return True
 

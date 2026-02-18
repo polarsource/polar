@@ -64,13 +64,11 @@ class Settings(BaseSettings):
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
     WORKER_PROMETHEUS_DIR: Path = Path(tempfile.gettempdir()) / "prometheus_multiproc"
 
-    # Prometheus Remote Write (for pushing metrics to Prometheus or Grafana Cloud)
-    PROMETHEUS_REMOTE_WRITE_URL: str | None = None
-    PROMETHEUS_REMOTE_WRITE_USERNAME: str | None = None
-    PROMETHEUS_REMOTE_WRITE_PASSWORD: str | None = None
-    PROMETHEUS_REMOTE_WRITE_INTERVAL: Annotated[int, Ge(1)] = 15  # seconds
-
-    # Grafana Cloud Query API (for reading metrics)
+    # Grafana Cloud Prometheus
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_URL: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_PASSWORD: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL: Annotated[int, Ge(1)] = 60  # seconds
     GRAFANA_CLOUD_PROMETHEUS_QUERY_URL: str | None = None
     GRAFANA_CLOUD_PROMETHEUS_QUERY_USER: str | None = None
     GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY: str | None = None

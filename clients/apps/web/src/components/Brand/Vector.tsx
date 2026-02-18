@@ -259,7 +259,9 @@ export function Vector({
 		) => {
 			e.preventDefault()
 			e.stopPropagation()
-			setSelected({ pathIndex, commandIndex })
+			if (field === 'anchor') {
+				setSelected({ pathIndex, commandIndex })
+			}
 			const pt = getSVGPoint(e.clientX, e.clientY)
 			const cmd = paths[pathIndex].commands[commandIndex]
 
@@ -306,17 +308,68 @@ export function Vector({
 				const newY = dragging.origY + dy
 
 				if (dragging.field === 'anchor' && cmd.type !== 'Z') {
+					const adx = newX - cmd.x
+					const ady = newY - cmd.y
 					cmd.x = newX
 					cmd.y = newY
+					// Translate control points on this command that attach to the endpoint
+					if (cmd.type === 'C') {
+						cmd.x2 += adx
+						cmd.y2 += ady
+					}
+					if (cmd.type === 'Q') {
+						cmd.x1 += adx
+						cmd.y1 += ady
+					}
+					next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
+					// Translate cp1 on the next command (outgoing handle from this vertex)
+					const cmds = next[dragging.pathIndex].commands
+					const ni = dragging.commandIndex + 1
+					if (ni < cmds.length) {
+						const nextCmd = { ...cmds[ni] }
+						if (nextCmd.type === 'C' || nextCmd.type === 'Q') {
+							nextCmd.x1 += adx
+							nextCmd.y1 += ady
+							cmds[ni] = nextCmd
+						}
+					}
 				} else if (
 					dragging.field === 'cp1' &&
 					(cmd.type === 'C' || cmd.type === 'Q')
 				) {
 					cmd.x1 = newX
 					cmd.y1 = newY
+					next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
+					// Mirror: move the incoming handle (cp2 of previous command) opposite
+					const prevCi = dragging.commandIndex - 1
+					const cmds = next[dragging.pathIndex].commands
+					if (prevCi >= 0) {
+						const prevCmd = { ...cmds[prevCi] }
+						if (prevCmd.type === 'C') {
+							const ax = prevCmd.x
+							const ay = prevCmd.y
+							prevCmd.x2 = ax - (newX - ax)
+							prevCmd.y2 = ay - (newY - ay)
+							cmds[prevCi] = prevCmd
+						}
+					}
 				} else if (dragging.field === 'cp2' && cmd.type === 'C') {
 					cmd.x2 = newX
 					cmd.y2 = newY
+					next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
+					// Mirror: move the outgoing handle (cp1 of next command) opposite
+					const nextCi = dragging.commandIndex + 1
+					const cmds = next[dragging.pathIndex].commands
+					if (nextCi < cmds.length) {
+						const nextCmd = { ...cmds[nextCi] }
+						if (nextCmd.type === 'C' || nextCmd.type === 'Q') {
+							const ax = cmd.x
+							const ay = cmd.y
+							nextCmd.x1 = ax - (newX - ax)
+							nextCmd.y1 = ay - (newY - ay)
+							cmds[nextCi] = nextCmd
+						}
+					}
 				}
 
 				next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
@@ -326,8 +379,11 @@ export function Vector({
 		[dragging, getSVGPoint],
 	)
 
+	const skipNextClick = useRef(false)
+
 	const handleMouseUp = useCallback(() => {
 		if (dragging) {
+			skipNextClick.current = true
 			setDragging(null)
 			onChange?.(serializeToSVG(paths, viewBox, svg))
 		}
@@ -393,6 +449,10 @@ export function Vector({
 	}, [paths, handleMouseDown, anchorSize, anchorHalf, strokeW, handleStroke, handleFill])
 
 	// Control point handles for the selected vertex only
+	// A vertex at command[ci] has:
+	//   - incoming handle: cp2 (x2,y2) of command[ci] if it's a C
+	//   - outgoing handle: cp1 (x1,y1) of command[ci+1] if it's a C/Q
+	// These form a line through the vertex that the user can drag from either side.
 	const controlHandles = useMemo(() => {
 		if (!selected) return null
 
@@ -402,55 +462,26 @@ export function Vector({
 		const cmd = path.commands[ci]
 		if (!cmd || cmd.type === 'Z') return null
 
-		// Find previous endpoint for guide lines
-		let prevX = 0
-		let prevY = 0
-		for (let i = 0; i < ci; i++) {
-			const c = path.commands[i]
-			if (c.type !== 'Z') {
-				prevX = c.x
-				prevY = c.y
-			}
-		}
-
+		const anchorX = cmd.x
+		const anchorY = cmd.y
 		const elements: React.ReactElement[] = []
 
+		// Incoming handle: cp2 of current command
 		if (cmd.type === 'C') {
 			elements.push(
 				<line
-					key={`g1-${pi}-${ci}`}
-					x1={prevX}
-					y1={prevY}
-					x2={cmd.x1}
-					y2={cmd.y1}
-					stroke={guideStroke}
-					strokeWidth={strokeW * 0.5}
-					strokeDasharray={`${dashLen} ${dashLen}`}
-					pointerEvents="none"
-				/>,
-				<line
-					key={`g2-${pi}-${ci}`}
-					x1={cmd.x2}
-					y1={cmd.y2}
-					x2={cmd.x}
-					y2={cmd.y}
+					key={`gi-${pi}-${ci}`}
+					x1={anchorX}
+					y1={anchorY}
+					x2={cmd.x2}
+					y2={cmd.y2}
 					stroke={guideStroke}
 					strokeWidth={strokeW * 0.5}
 					strokeDasharray={`${dashLen} ${dashLen}`}
 					pointerEvents="none"
 				/>,
 				<circle
-					key={`cp1-${pi}-${ci}`}
-					cx={cmd.x1}
-					cy={cmd.y1}
-					r={cpRadius}
-					fill={handleFill}
-					stroke={handleStroke}
-					strokeWidth={strokeW}
-					onMouseDown={(e) => handleMouseDown(e, pi, ci, 'cp1')}
-				/>,
-				<circle
-					key={`cp2-${pi}-${ci}`}
+					key={`cpi-${pi}-${ci}`}
 					cx={cmd.x2}
 					cy={cmd.y2}
 					r={cpRadius}
@@ -460,39 +491,33 @@ export function Vector({
 					onMouseDown={(e) => handleMouseDown(e, pi, ci, 'cp2')}
 				/>,
 			)
-		} else if (cmd.type === 'Q') {
+		}
+
+		// Outgoing handle: cp1 of next command
+		const ni = ci + 1
+		const nextCmd = ni < path.commands.length ? path.commands[ni] : null
+		if (nextCmd && (nextCmd.type === 'C' || nextCmd.type === 'Q')) {
 			elements.push(
 				<line
-					key={`g1-${pi}-${ci}`}
-					x1={prevX}
-					y1={prevY}
-					x2={cmd.x1}
-					y2={cmd.y1}
-					stroke={guideStroke}
-					strokeWidth={strokeW * 0.5}
-					strokeDasharray={`${dashLen} ${dashLen}`}
-					pointerEvents="none"
-				/>,
-				<line
-					key={`g2-${pi}-${ci}`}
-					x1={cmd.x1}
-					y1={cmd.y1}
-					x2={cmd.x}
-					y2={cmd.y}
+					key={`go-${pi}-${ni}`}
+					x1={anchorX}
+					y1={anchorY}
+					x2={nextCmd.x1}
+					y2={nextCmd.y1}
 					stroke={guideStroke}
 					strokeWidth={strokeW * 0.5}
 					strokeDasharray={`${dashLen} ${dashLen}`}
 					pointerEvents="none"
 				/>,
 				<circle
-					key={`cp1-${pi}-${ci}`}
-					cx={cmd.x1}
-					cy={cmd.y1}
+					key={`cpo-${pi}-${ni}`}
+					cx={nextCmd.x1}
+					cy={nextCmd.y1}
 					r={cpRadius}
 					fill={handleFill}
 					stroke={handleStroke}
 					strokeWidth={strokeW}
-					onMouseDown={(e) => handleMouseDown(e, pi, ci, 'cp1')}
+					onMouseDown={(e) => handleMouseDown(e, pi, ni, 'cp1')}
 				/>,
 			)
 		}
@@ -504,6 +529,10 @@ export function Vector({
 	const handleSvgClick = useCallback(
 		(e: React.MouseEvent) => {
 			if (dragging) return
+			if (skipNextClick.current) {
+				skipNextClick.current = false
+				return
+			}
 			const pt = getSVGPoint(e.clientX, e.clientY)
 			const threshold = vbSize * 0.05
 
@@ -550,6 +579,7 @@ export function Vector({
 					key={i}
 					d={serializeCommands(path.commands)}
 					{...path.attrs}
+					fill={isDark ? '#2a2a2a' : '#e5e5e5'}
 				/>
 			))}
 			{controlHandles}

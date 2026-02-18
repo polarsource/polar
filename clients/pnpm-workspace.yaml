@@ -16,3 +16,5 @@ onlyBuiltDependencies:
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@polar-sh/sdk'
+  - 'tailwindcss'
+  - '@tailwindcss/*'

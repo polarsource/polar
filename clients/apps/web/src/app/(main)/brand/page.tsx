@@ -8,6 +8,7 @@ import {
   EndSection,
   LogoSection,
   MissionSection,
+  PillarsSection,
   TypographySection,
   VoiceSection,
 } from '../../../components/Brand'
@@ -17,6 +18,7 @@ const sectionComponents = [
   { id: 'mission', Component: MissionSection },
   { id: 'logo', Component: LogoSection },
   { id: 'colors', Component: ColorsSection },
+  { id: 'pillars', Component: PillarsSection },
   { id: 'typography', Component: TypographySection },
   { id: 'voice', Component: VoiceSection },
   { id: 'carousel', Component: CarouselSection },

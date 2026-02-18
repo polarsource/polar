@@ -4,6 +4,7 @@ import { FILM_GRAIN_GLSL, HASH_GLSL } from '../glsl'
 export interface PixelEffectOptions {
   pixelSize?: number
   gap?: number
+  colorMode?: boolean
   colorA?: string
   colorB?: string
   darkColorA?: string
@@ -14,6 +15,7 @@ export function pixelEffect(options: PixelEffectOptions = {}): Effect {
   const {
     pixelSize = 8,
     gap = 2,
+    colorMode = false,
     colorA,
     colorB,
     darkColorA,
@@ -26,7 +28,9 @@ export function pixelEffect(options: PixelEffectOptions = {}): Effect {
     darkColorA,
     darkColorB,
     buildShader(geometryGlsl: string): string {
-      return buildPixelShader(geometryGlsl)
+      return colorMode
+        ? buildColorPixelShader(geometryGlsl)
+        : buildPixelShader(geometryGlsl)
     },
     init(gl: WebGLRenderingContext, program: WebGLProgram): EffectInstance {
       const locs = getPixelUniformLocations(gl, program)
@@ -76,6 +80,47 @@ function buildPixelShader(geometryGlsl: string): string {
 
       // Film grain
       color += filmGrain(gl_FragCoord.xy, u_time);
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `
+}
+
+function buildColorPixelShader(geometryGlsl: string): string {
+  return `
+    precision highp float;
+
+    uniform vec2 u_resolution;
+    uniform float u_time;
+    uniform float u_pixelSize;
+    uniform float u_gap;
+    uniform vec3 u_colorA;
+    uniform vec3 u_colorB;
+
+    ${HASH_GLSL}
+    ${FILM_GRAIN_GLSL}
+    ${geometryGlsl}
+
+    void main() {
+      float cellSize = u_pixelSize + u_gap;
+      vec2 cell = floor(gl_FragCoord.xy / cellSize);
+
+      // Position within cell
+      vec2 localPos = mod(gl_FragCoord.xy, cellSize);
+
+      // Gap pixels use colorA
+      if (localPos.x >= u_pixelSize || localPos.y >= u_pixelSize) {
+        gl_FragColor = vec4(u_colorA, 1.0);
+        return;
+      }
+
+      // Sample geometry color at cell center
+      vec2 uv = (cell + 0.5) * cellSize / u_resolution;
+      float aspect = u_resolution.x / u_resolution.y;
+      vec3 color = computeColor(uv, aspect, u_time);
+
+      // Subtle film grain
+      color += filmGrain(gl_FragCoord.xy, u_time) * 0.6;
 
       gl_FragColor = vec4(color, 1.0);
     }

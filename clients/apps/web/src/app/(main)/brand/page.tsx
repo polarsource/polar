@@ -5,6 +5,7 @@ import {
   ColorsSection,
   CoverSection,
   EndSection,
+  ExperimentsSection,
   LogoSection,
   MissionSection,
   PillarsSection,
@@ -20,6 +21,7 @@ const sectionComponents = [
   { id: 'pillars', Component: PillarsSection },
   { id: 'typography', Component: TypographySection },
   { id: 'voice', Component: VoiceSection },
+  { id: 'experiments', Component: ExperimentsSection },
   { id: 'end', Component: EndSection },
 ]
 

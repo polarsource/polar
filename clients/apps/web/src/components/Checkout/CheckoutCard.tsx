@@ -13,13 +13,11 @@ import {
 } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-
 export interface CheckoutCardProps {
   checkout: ProductCheckoutPublic
   update?: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   locale?: AcceptedLocale
-  pricingPositionExperiment?: 'treatment' | 'control'
 }
 
 export const CheckoutCard = ({
@@ -27,16 +25,10 @@ export const CheckoutCard = ({
   update,
   disabled,
   locale = DEFAULT_LOCALE,
-  pricingPositionExperiment,
 }: CheckoutCardProps) => {
   const t = useTranslations(locale)
   const { product, productPrice } = checkout
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
-  const isTreatment = pricingPositionExperiment === 'treatment'
-
-  if (isTreatment) {
-    return null
-  }
 
   return (
     <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs">
@@ -55,7 +47,7 @@ export const CheckoutCard = ({
         />
       )}
 
-      {product.benefits.length > 0 && (
+      {product.benefits.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h1 className="font-medium dark:text-white">
             {t('checkout.card.included')}
@@ -68,6 +60,8 @@ export const CheckoutCard = ({
             />
           </div>
         </div>
+      ) : (
+        <></>
       )}
     </ShadowBox>
   )

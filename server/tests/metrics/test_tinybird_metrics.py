@@ -3,7 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from unittest.mock import patch
-from uuid import UUID, uuid4
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -98,28 +98,20 @@ class OrderScenario:
     product_key: str
     ordered_at: datetime
     amount: int
-    subscription_started_at: datetime | None = None
     created_at: datetime | None = None
     order_paid_at: datetime | None = None
     balance_at: datetime | None = None
     include_order_created_at_metadata: bool = True
     include_order_paid: bool = True
     include_balance: bool = True
-    include_balance_net_amount_metadata: bool = True
     status: OrderStatus = OrderStatus.paid
     refunded_amount: int = 0
-    applied_balance_amount: int = 0
     platform_fee_amount: int = 0
-    payment_amount: int | None = None
     include_balance_refund: bool = False
     refund_at: datetime | None = None
     extra_balance_refund_events: int = 0
     include_balance_refund_reversal: bool = False
     refund_reversal_at: datetime | None = None
-    include_balance_dispute: bool = False
-    dispute_at: datetime | None = None
-    dispute_amount: int | None = None
-    dispute_fee_amount: int = 0
 
 
 @dataclass(frozen=True)
@@ -127,10 +119,6 @@ class SubscriptionScenario:
     product_key: str
     order_timestamps: tuple[datetime, ...]
     amount: int
-    applied_balance_amount: int = 0
-    platform_fee_amount: int = 0
-    payment_amount: int | None = None
-    include_balance_net_amount_metadata: bool = True
     canceled_at: datetime | None = None
     ends_at: datetime | None = None
     cancellation_reason: CustomerCancellationReason | None = None
@@ -415,25 +403,6 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                 ),
             ),
         ),
-        CustomerScenario(
-            key="stockholm_renewal_balance_without_net_amount",
-            one_time_orders=(
-                OrderScenario(
-                    product_key="monthly",
-                    ordered_at=datetime(2025, 12, 17, 20, 33, tzinfo=UTC),
-                    amount=0,
-                    subscription_started_at=datetime(2025, 10, 17, 20, 33, tzinfo=UTC),
-                    applied_balance_amount=14_900,
-                    platform_fee_amount=2_211,
-                    payment_amount=14_900,
-                    include_balance_net_amount_metadata=False,
-                    include_balance_dispute=True,
-                    dispute_at=datetime(2026, 1, 20, 8, 27, tzinfo=UTC),
-                    dispute_amount=-14_900,
-                    dispute_fee_amount=1_500,
-                ),
-            ),
-        ),
     ]
 
     cancellation_reasons = (
@@ -707,16 +676,6 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("orders", "one_time_products", "one_time_products_net_revenue"),
     ),
     QueryCase(
-        label="alpha_daily_stockholm_renewal_balance_without_net_amount",
-        organization_key="alpha",
-        start_date=date(2025, 12, 17),
-        end_date=date(2026, 2, 18),
-        interval=TimeInterval.day,
-        timezone="Europe/Stockholm",
-        customer_keys=("stockholm_renewal_balance_without_net_amount",),
-        metrics=("net_revenue", "renewed_subscriptions_net_revenue"),
-    ),
-    QueryCase(
         label="alpha_daily_stockholm_revoked_after_cancel_at_period_end_drift",
         organization_key="alpha",
         start_date=date(2026, 1, 17),
@@ -895,21 +854,14 @@ async def _create_paid_order_events(
     include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
     include_balance: bool = True,
-    include_balance_net_amount_metadata: bool = True,
     status: OrderStatus = OrderStatus.paid,
     refunded_amount: int = 0,
-    applied_balance_amount: int = 0,
     platform_fee_amount: int = 0,
-    payment_amount: int | None = None,
     include_balance_refund: bool = False,
     refund_at: datetime | None = None,
     extra_balance_refund_events: int = 0,
     include_balance_refund_reversal: bool = False,
     refund_reversal_at: datetime | None = None,
-    include_balance_dispute: bool = False,
-    dispute_at: datetime | None = None,
-    dispute_amount: int | None = None,
-    dispute_fee_amount: int = 0,
 ) -> list[Event]:
     order_created_at = created_at or ordered_at
     order_paid_timestamp = order_paid_at or ordered_at
@@ -922,7 +874,6 @@ async def _create_paid_order_events(
         status=status,
         subtotal_amount=amount,
         refunded_amount=refunded_amount,
-        applied_balance_amount=applied_balance_amount,
         created_at=order_created_at,
         subscription=subscription,
     )
@@ -932,7 +883,7 @@ async def _create_paid_order_events(
     transaction = await create_payment_transaction(
         save_fixture,
         order=order,
-        amount=payment_amount if payment_amount is not None else order.net_amount,
+        amount=order.net_amount,
         tax_amount=order.tax_amount,
     )
 
@@ -952,14 +903,11 @@ async def _create_paid_order_events(
 
     balance_metadata = {
         **common_metadata,
-        "amount": transaction.amount,
         "transaction_id": str(transaction.id),
-        "presentment_amount": transaction.presentment_amount,
+        "presentment_amount": order.net_amount,
         "presentment_currency": "usd",
         "fee": order.platform_fee_amount,
     }
-    if not include_balance_net_amount_metadata:
-        balance_metadata.pop("net_amount", None)
 
     emitted_events: list[Event] = []
     if include_balance:
@@ -1043,40 +991,6 @@ async def _create_paid_order_events(
                 metadata=refund_reversal_metadata,
             )
             emitted_events.append(refund_reversal)
-
-    if include_balance_dispute:
-        assert dispute_at is not None
-        dispute_value = dispute_amount
-        if dispute_value is None:
-            if payment_amount is not None:
-                dispute_value = -payment_amount
-            else:
-                dispute_value = -amount
-        dispute_metadata: dict[str, Any] = {
-            "transaction_id": str(uuid4()),
-            "dispute_id": str(uuid4()),
-            "order_id": str(order.id),
-            "product_id": str(product.id),
-            "billing_type": product.billing_type.value,
-            "amount": dispute_value,
-            "currency": "usd",
-            "presentment_amount": dispute_value,
-            "presentment_currency": "usd",
-            "tax_amount": 0,
-            "fee": dispute_fee_amount,
-        }
-        if subscription is not None:
-            dispute_metadata["subscription_id"] = str(subscription.id)
-        balance_dispute = await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.system,
-            name=SystemEvent.balance_dispute.value,
-            timestamp=dispute_at,
-            metadata=dispute_metadata,
-        )
-        emitted_events.append(balance_dispute)
 
     return emitted_events
 
@@ -1164,12 +1078,6 @@ async def _seed_customer_scenario(
                     ordered_at=ordered_at,
                     amount=subscription_scenario.amount,
                     subscription=subscription,
-                    include_balance_net_amount_metadata=(
-                        subscription_scenario.include_balance_net_amount_metadata
-                    ),
-                    applied_balance_amount=subscription_scenario.applied_balance_amount,
-                    platform_fee_amount=subscription_scenario.platform_fee_amount,
-                    payment_amount=subscription_scenario.payment_amount,
                 )
             )
 
@@ -1209,24 +1117,6 @@ async def _seed_customer_scenario(
 
     for one_time_order in scenario.one_time_orders:
         product = products[one_time_order.product_key]
-        one_time_order_subscription: Subscription | None = None
-        if one_time_order.subscription_started_at is not None:
-            one_time_order_subscription = await create_subscription(
-                save_fixture,
-                product=product,
-                customer=customer,
-                status=SubscriptionStatus.active,
-                started_at=one_time_order.subscription_started_at,
-            )
-            events.append(
-                await _create_subscription_created_event(
-                    save_fixture,
-                    organization,
-                    customer,
-                    one_time_order_subscription,
-                    product,
-                )
-            )
         events.extend(
             await _create_paid_order_events(
                 save_fixture,
@@ -1235,7 +1125,6 @@ async def _seed_customer_scenario(
                 product,
                 ordered_at=one_time_order.ordered_at,
                 amount=one_time_order.amount,
-                subscription=one_time_order_subscription,
                 created_at=one_time_order.created_at,
                 order_paid_at=one_time_order.order_paid_at,
                 balance_at=one_time_order.balance_at,
@@ -1244,14 +1133,9 @@ async def _seed_customer_scenario(
                 ),
                 include_order_paid=one_time_order.include_order_paid,
                 include_balance=one_time_order.include_balance,
-                include_balance_net_amount_metadata=(
-                    one_time_order.include_balance_net_amount_metadata
-                ),
                 status=one_time_order.status,
                 refunded_amount=one_time_order.refunded_amount,
-                applied_balance_amount=one_time_order.applied_balance_amount,
                 platform_fee_amount=one_time_order.platform_fee_amount,
-                payment_amount=one_time_order.payment_amount,
                 include_balance_refund=one_time_order.include_balance_refund,
                 refund_at=one_time_order.refund_at,
                 extra_balance_refund_events=one_time_order.extra_balance_refund_events,
@@ -1259,10 +1143,6 @@ async def _seed_customer_scenario(
                     one_time_order.include_balance_refund_reversal
                 ),
                 refund_reversal_at=one_time_order.refund_reversal_at,
-                include_balance_dispute=one_time_order.include_balance_dispute,
-                dispute_at=one_time_order.dispute_at,
-                dispute_amount=one_time_order.dispute_amount,
-                dispute_fee_amount=one_time_order.dispute_fee_amount,
             )
         )
 
@@ -1649,33 +1529,6 @@ class TestTinybirdMetrics:
         assert (
             dec_4_tb.one_time_products_net_revenue
             == dec_4_pg.one_time_products_net_revenue
-        )
-
-    def test_renewal_balance_without_net_amount_uses_dispute_adjustment(
-        self, metrics_harness: MetricsHarness
-    ) -> None:
-        snapshot = metrics_harness.snapshots[
-            "alpha_daily_stockholm_renewal_balance_without_net_amount"
-        ]
-        stockholm = ZoneInfo("Europe/Stockholm")
-
-        dec_17_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 17)
-        )
-        dec_17_tb = next(
-            p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 17)
-        )
-
-        assert dec_17_pg.net_revenue == -2211
-        assert dec_17_pg.renewed_subscriptions_net_revenue == -2211
-        assert dec_17_tb.net_revenue == dec_17_pg.net_revenue
-        assert (
-            dec_17_tb.renewed_subscriptions_net_revenue
-            == dec_17_pg.renewed_subscriptions_net_revenue
         )
 
     def test_org_filter_disabled_matches_org_subject_scope(

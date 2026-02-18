@@ -42,6 +42,6 @@ export const BAYER8_GLSL = `
 
 export const FILM_GRAIN_GLSL = `
   float filmGrain(vec2 fragCoord, float time) {
-    return (hash(fragCoord + fract(time * 0.7)) * 2.0 - 1.0) * 0.15;
+    return (hash(fragCoord + fract(time * 0.7)) * 2.0 - 1.0) * 0.24;
   }
 `

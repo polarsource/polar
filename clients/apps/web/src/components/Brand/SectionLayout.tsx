@@ -15,14 +15,12 @@ export function SectionLayout({
   return (
     <div
       className={twMerge(
-        'flex h-screen w-screen flex-col justify-between gap-y-16 p-16',
+        'flex min-h-screen w-screen flex-col justify-between gap-y-24 p-16',
         className,
       )}
     >
       {label ? (
-        <span className="dark:text-polar-500 text-3xl text-neutral-500">
-          {label}
-        </span>
+        <span className="text-7xl tracking-tighter">{label}</span>
       ) : (
         <div />
       )}

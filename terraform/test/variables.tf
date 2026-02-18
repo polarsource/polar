@@ -235,11 +235,7 @@ variable "grafana_cloud_prometheus_password" {
   sensitive   = true
 }
 
-variable "grafana_cloud_prometheus_write_interval" {
-  description = "Grafana Cloud Prometheus write interval (seconds)"
-  type        = number
-  sensitive   = false
-}
+
 
 variable "numeral_api_key" {
   description = "Numeral API Key"

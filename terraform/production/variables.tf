@@ -295,12 +295,6 @@ variable "grafana_cloud_prometheus_password" {
   sensitive   = true
 }
 
-variable "grafana_cloud_prometheus_write_interval" {
-  description = "Grafana Cloud Prometheus write interval (seconds)"
-  type        = number
-  sensitive   = false
-}
-
 variable "grafana_cloud_prometheus_query_key" {
   description = "Grafana Cloud Prometheus query API key (read-only)"
   type        = string

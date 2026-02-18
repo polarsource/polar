@@ -229,11 +229,7 @@ variable "grafana_cloud_prometheus_password" {
   sensitive   = true
 }
 
-variable "grafana_cloud_prometheus_write_interval" {
-  description = "Grafana Cloud Prometheus write interval (seconds)"
-  type        = number
-  sensitive   = false
-}
+
 
 # Logfire
 variable "logfire_token_server" {

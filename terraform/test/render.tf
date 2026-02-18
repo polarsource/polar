@@ -229,7 +229,6 @@ module "test" {
     url      = var.grafana_cloud_prometheus_url
     username = var.grafana_cloud_prometheus_username
     password = var.grafana_cloud_prometheus_password
-    interval = var.grafana_cloud_prometheus_write_interval
   }
 
   tinybird_config = {

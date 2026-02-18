@@ -124,26 +124,6 @@ resource "tfe_variable" "tfc_aws_run_role_arn" {
   variable_set_id = tfe_variable_set.global.id
 }
 
-moved {
-  from = tfe_variable.prometheus_remote_write_url
-  to   = tfe_variable.grafana_cloud_prometheus_url
-}
-
-moved {
-  from = tfe_variable.prometheus_remote_write_username
-  to   = tfe_variable.grafana_cloud_prometheus_username
-}
-
-moved {
-  from = tfe_variable.prometheus_remote_write_password
-  to   = tfe_variable.grafana_cloud_prometheus_password
-}
-
-moved {
-  from = tfe_variable.prometheus_remote_write_interval
-  to   = tfe_variable.grafana_cloud_prometheus_write_interval
-}
-
 resource "tfe_variable" "grafana_cloud_prometheus_url" {
   key             = "grafana_cloud_prometheus_url"
   category        = "terraform"
@@ -166,15 +146,6 @@ resource "tfe_variable" "grafana_cloud_prometheus_password" {
   description     = "Grafana Cloud Prometheus write API key"
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
-}
-
-resource "tfe_variable" "grafana_cloud_prometheus_write_interval" {
-  key             = "grafana_cloud_prometheus_write_interval"
-  category        = "terraform"
-  description     = "How often to write metrics to Prometheus (seconds)"
-  sensitive       = false
-  variable_set_id = tfe_variable_set.global.id
-  value           = 60
 }
 
 resource "tfe_variable" "grafana_cloud_prometheus_query_key" {

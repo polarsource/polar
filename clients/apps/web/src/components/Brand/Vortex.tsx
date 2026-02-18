@@ -21,6 +21,18 @@ const FRAGMENT_SHADER = `
   uniform vec3 u_colorA;
   uniform vec3 u_colorB;
 
+  // Film grain noise
+  float hash(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+  }
+
+  float grain(vec2 uv, float t) {
+    float n = hash(uv + fract(t * 0.7));
+    return n * 2.0 - 1.0;
+  }
+
   // 8x8 Bayer matrix
   float bayer8(vec2 p) {
     ivec2 ip = ivec2(mod(p, 8.0));
@@ -110,6 +122,11 @@ const FRAGMENT_SHADER = `
     float dithered = step(threshold, luminance);
 
     vec3 color = mix(u_colorA, u_colorB, dithered);
+
+    // Film grain overlay
+    float g = grain(gl_FragCoord.xy, u_time) * 0.15;
+    color += g;
+
     gl_FragColor = vec4(color, 1.0);
   }
 `

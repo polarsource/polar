@@ -26,11 +26,11 @@ export function getExperimentNames(): ExperimentName[] {
 
 export function isOrgOptedOut<T extends ExperimentName>(
   experimentName: T,
-  orgSlug?: string,
+  orgId?: string,
 ): boolean {
-  if (!orgSlug) return false
+  if (!orgId) return false
   const experiment = experiments[experimentName] as ExperimentDefinition<
     readonly string[]
   >
-  return experiment.optOutOrgSlugs?.includes(orgSlug) ?? false
+  return experiment.optOutOrgIds?.includes(orgId) ?? false
 }

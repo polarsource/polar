@@ -16,9 +16,9 @@ const ClientPage = ({
   locale: AcceptedLocale
 }) => {
   const { checkout } = useCheckout()
-
+  console.log('id', checkout.organization.id)
   return (
-    <ExperimentProvider orgSlug={checkout.organization.slug}>
+    <ExperimentProvider orgId={checkout.organization.id}>
       <CheckoutLayout checkout={checkout} embed={embed} theme={theme}>
         <Checkout embed={embed} theme={theme} locale={locale} />
       </CheckoutLayout>

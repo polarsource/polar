@@ -24,6 +24,6 @@ export const experiments = {
     description: 'Show detailed pricing breakdown on the left side of checkout',
     variants: ['control', 'treatment'],
     defaultVariant: 'control',
-    optOutOrgSlugs: ['polarsource'],
+    optOutOrgIds: [],
   },
 } as const satisfies Record<string, ExperimentDefinition<readonly string[]>>

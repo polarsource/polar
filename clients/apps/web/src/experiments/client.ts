@@ -12,20 +12,20 @@ import {
 
 export interface UseExperimentOptions {
   trackExposure?: boolean
-  orgSlug?: string
+  orgId?: string
 }
 
 export function useExperiment<T extends ExperimentName>(
   experimentName: T,
   options?: UseExperimentOptions,
 ): ExperimentResult<T> {
-  const { trackExposure = true, orgSlug: optionsOrgSlug } = options ?? {}
+  const { trackExposure = true, orgId: optionsOrgId } = options ?? {}
   const posthog = usePostHog()
   const hasTracked = useRef(false)
-  const { experiments, orgSlug: contextOrgSlug } = useExperimentContext()
+  const { experiments, orgId: contextOrgId } = useExperimentContext()
 
-  const orgSlug = optionsOrgSlug ?? contextOrgSlug
-  const isOptedOut = isOrgOptedOut(experimentName, orgSlug)
+  const orgId = optionsOrgId ?? contextOrgId
+  const isOptedOut = isOrgOptedOut(experimentName, orgId)
 
   const variant = isOptedOut
     ? getDefaultVariant(experimentName)

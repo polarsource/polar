@@ -2,7 +2,7 @@ export interface ExperimentDefinition<V extends readonly string[]> {
   description: string
   variants: V
   defaultVariant: V[number]
-  optOutOrgSlugs?: readonly string[]
+  optOutOrgIds?: readonly string[]
 }
 
 export type ExperimentRegistry = Record<

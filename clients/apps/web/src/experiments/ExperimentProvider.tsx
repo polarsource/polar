@@ -9,7 +9,7 @@ type ExperimentVariants = {
 
 interface ExperimentContextValue {
   experiments: ExperimentVariants
-  orgSlug?: string
+  orgId?: string
 }
 
 const ExperimentContext = createContext<ExperimentContextValue>({
@@ -19,22 +19,22 @@ const ExperimentContext = createContext<ExperimentContextValue>({
 interface ExperimentProviderProps {
   children: ReactNode
   experiments?: ExperimentVariants
-  orgSlug?: string
+  orgId?: string
 }
 
 export function ExperimentProvider({
   children,
   experiments,
-  orgSlug,
+  orgId,
 }: ExperimentProviderProps) {
   const parent = useContext(ExperimentContext)
 
   const value = useMemo(
     () => ({
       experiments: experiments ?? parent.experiments,
-      orgSlug: orgSlug ?? parent.orgSlug,
+      orgId: orgId ?? parent.orgId,
     }),
-    [experiments, orgSlug, parent.experiments, parent.orgSlug],
+    [experiments, orgId, parent.experiments, parent.orgId],
   )
 
   return (

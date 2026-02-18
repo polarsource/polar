@@ -424,6 +424,7 @@ SQL >
                 * IF(be.exchange_rate IS NULL OR be.exchange_rate = 0, 1, be.exchange_rate)
             )
         ) AS settlement_revenue_amount,
+        if(be.net_amount IS NULL, 1, 0) AS apply_applied_balance_deduction,
         IF(
             be.exchange_rate IS NULL OR be.exchange_rate = 0, 1, be.exchange_rate
         ) AS settlement_exchange_rate,
@@ -536,6 +537,7 @@ SQL >
         be.subscription_id,
         be.effective_ts,
         be.settlement_revenue_amount,
+        be.apply_applied_balance_deduction,
         COALESCE(
             multiIf(
                 be.name = 'balance.credit_order',
@@ -559,6 +561,7 @@ SQL >
     SELECT
         be.order_id,
         argMax(be.settlement_revenue_amount, be.rank_key) AS settlement_revenue_amount,
+        argMax(be.apply_applied_balance_deduction, be.rank_key) AS apply_applied_balance_deduction,
         argMax(be.settlement_exchange_rate, be.rank_key) AS settlement_exchange_rate,
         argMax(be.fee, be.rank_key) AS fee
     FROM balance_amount_by_order_candidates_with_fx AS be
@@ -660,7 +663,8 @@ SQL >
         op.sub_started_at AS sub_started_at,
         (
             COALESCE(ba.settlement_revenue_amount, 0) - if(
-                isNull (ba.settlement_revenue_amount),
+                isNull (ba.settlement_revenue_amount)
+                OR COALESCE(ba.apply_applied_balance_deduction, 0) = 0,
                 0,
                 toInt64(
                     round(
@@ -672,7 +676,8 @@ SQL >
         ) AS revenue_amount,
         (
             COALESCE(ba.settlement_revenue_amount, 0) - if(
-                isNull (ba.settlement_revenue_amount),
+                isNull (ba.settlement_revenue_amount)
+                OR COALESCE(ba.apply_applied_balance_deduction, 0) = 0,
                 0,
                 toInt64(
                     round(

@@ -73,7 +73,7 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
         return {
           x: dot.x + nx * displacement,
           y: dot.y + ny * displacement,
-          r: dot.r + ease * 1.2,
+          r: dot.r + ease * 4,
         }
       })
     },

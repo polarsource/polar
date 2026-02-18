@@ -50,6 +50,7 @@ from .organization_review import OrganizationReview
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
+from .payout_attempt import PayoutAttempt
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
@@ -143,6 +144,7 @@ __all__ = [
     "Payment",
     "PaymentMethod",
     "Payout",
+    "PayoutAttempt",
     "PersonalAccessToken",
     "Pledge",
     "PledgeTransaction",

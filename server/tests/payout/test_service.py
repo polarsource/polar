@@ -13,7 +13,7 @@ from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Organization, Transaction, User
-from polar.models.payout import PayoutStatus
+from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.transaction import TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
@@ -253,16 +253,25 @@ class TestTriggerStripePayouts:
             save_fixture,
             account=account_1,
             created_at=utc_now() - datetime.timedelta(days=14),
+            attempts=[],
         )
         payout_2 = await create_payout(
             save_fixture,
             account=account_1,
             created_at=utc_now() - datetime.timedelta(days=7),
+            attempts=[],
         )
         payout_3 = await create_payout(
             save_fixture,
             account=account_2,
             created_at=utc_now() - datetime.timedelta(days=7),
+            attempts=[],
+        )
+        payout_4 = await create_payout(
+            save_fixture,
+            account=account_2,
+            created_at=utc_now() - datetime.timedelta(days=7),
+            attempts=[PayoutAttemptStatus.succeeded],
         )
 
         await payout_service.trigger_stripe_payouts(session)
@@ -392,8 +401,6 @@ class TestTriggerInvoiceGeneration:
     ) -> None:
         account = await create_account(save_fixture, organization, user)
         payout = await create_payout(save_fixture, account=account)
-        # Set invoice path
-        payout.status = PayoutStatus.succeeded
         payout.invoice_path = "some/path/to/invoice.pdf"
         await save_fixture(payout)
 
@@ -411,7 +418,7 @@ class TestTriggerInvoiceGeneration:
     ) -> None:
         account = await create_account(save_fixture, organization, user)
         payout = await create_payout(
-            save_fixture, account=account, status=PayoutStatus.pending
+            save_fixture, account=account, attempts=[PayoutAttemptStatus.pending]
         )
 
         with pytest.raises(PayoutNotSucceeded):
@@ -429,7 +436,6 @@ class TestTriggerInvoiceGeneration:
         account = await create_account(save_fixture, organization, user)
 
         payout = await create_payout(save_fixture, account=account)
-        payout.status = PayoutStatus.succeeded
         await save_fixture(payout)
 
         with pytest.raises(MissingInvoiceBillingDetails):
@@ -459,12 +465,10 @@ class TestTriggerInvoiceGeneration:
             account=account,
             invoice_number=invoice_number,
         )
-        payout1.status = PayoutStatus.succeeded
         await save_fixture(payout1)
 
         # Create second payout
         payout2 = await create_payout(save_fixture, account=account)
-        payout2.status = PayoutStatus.succeeded
         await save_fixture(payout2)
 
         # Try to set the same invoice number on the second payout
@@ -491,9 +495,7 @@ class TestTriggerInvoiceGeneration:
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
         )
 
-        payout = await create_payout(
-            save_fixture, account=account, status=PayoutStatus.succeeded
-        )
+        payout = await create_payout(save_fixture, account=account)
 
         # Test with custom invoice number
         custom_invoice_number = "CUSTOM-INVOICE-123"
@@ -531,7 +533,6 @@ class TestTriggerInvoiceGeneration:
             save_fixture,
             account=account,
             invoice_number=original_invoice_number,
-            status=PayoutStatus.succeeded,
         )
 
         # Test without providing a custom invoice number

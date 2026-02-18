@@ -1,10 +1,12 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import UUID4, AliasPath, Field
 
 from polar.enums import AccountType
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.payout import PayoutStatus
+from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.transaction.schemas import TransactionEmbedded
 
 
@@ -17,6 +19,17 @@ class PayoutEstimate(Schema):
     gross_amount: int
     fees_amount: int
     net_amount: int
+
+
+class PayoutAttempt(IDSchema, TimestampedSchema):
+    payout_id: UUID
+    processor: AccountType
+    processor_id: str | None
+    status: PayoutAttemptStatus
+    amount: int
+    currency: str
+    failed_reason: str | None
+    paid_at: datetime | None
 
 
 class Payout(IDSchema, TimestampedSchema):
@@ -36,6 +49,8 @@ class Payout(IDSchema, TimestampedSchema):
 
     transaction_id: UUID4 = Field(validation_alias=AliasPath("transaction", "id"))
     fees_transactions: list[TransactionEmbedded]
+
+    attempts: list[PayoutAttempt]
 
 
 class PayoutGenerateInvoice(Schema):

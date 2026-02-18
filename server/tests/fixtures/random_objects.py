@@ -51,6 +51,7 @@ from polar.models import (
     Payment,
     PaymentMethod,
     Payout,
+    PayoutAttempt,
     Product,
     ProductBenefit,
     ProductCustomField,
@@ -107,7 +108,7 @@ from polar.models.member import MemberRole
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
-from polar.models.payout import PayoutStatus
+from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
@@ -1988,7 +1989,6 @@ async def create_payout(
     *,
     account: Account,
     transaction: Transaction | None = None,
-    status: PayoutStatus = PayoutStatus.pending,
     amount: int = 1000,
     fees_amount: int = 0,
     currency: str = "usd",
@@ -1996,11 +1996,11 @@ async def create_payout(
     account_amount: int = 1000,
     created_at: datetime | None = None,
     invoice_number: str | None = None,
+    attempts: list[PayoutAttemptStatus] = [PayoutAttemptStatus.succeeded],
 ) -> Payout:
     payout = Payout(
         created_at=created_at,
         account=account,
-        status=status,
         processor=account.account_type,
         currency=currency,
         amount=amount,
@@ -2009,8 +2009,20 @@ async def create_payout(
         account_amount=account_amount,
         transaction=transaction,
         invoice_number=invoice_number or rstr("POLAR-"),
+        attempts=[
+            PayoutAttempt(
+                processor_id=rstr("PAYOUT_ATTEMPT_PROCESSOR_ID"),
+                processor=account.account_type,
+                status=status,
+                amount=amount,
+                currency=currency,
+                failed_reason=None,
+            )
+            for status in attempts
+        ],
     )
     await save_fixture(payout)
+
     return payout
 
 

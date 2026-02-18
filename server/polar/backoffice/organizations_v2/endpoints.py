@@ -621,9 +621,8 @@ async def run_review_agent(
 
     return HXRedirectResponse(
         request,
-        str(
-            request.url_for("organizations-v2:detail", organization_id=organization_id)
-        ),
+        str(request.url_for("organizations-v2:detail", organization_id=organization_id))
+        + "?section=review",
         303,
     )
 

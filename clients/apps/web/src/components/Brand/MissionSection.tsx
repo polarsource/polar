@@ -38,9 +38,7 @@ export function MissionSection() {
                 <br />
                 Automatically.
               </h3>
-              <span className="font-louize text-xl italic md:text-4xl">
-                polar.sh
-              </span>
+              <span className="font-louize text-xl md:text-4xl">polar.sh</span>
             </div>
           </ShaderCanvas>
           <ShaderCanvas
@@ -55,9 +53,7 @@ export function MissionSection() {
                 <br />
                 So you don't have to.
               </h3>
-              <span className="font-louize text-xl italic md:text-4xl">
-                polar.sh
-              </span>
+              <span className="font-louize text-xl md:text-4xl">polar.sh</span>
             </div>
           </ShaderCanvas>
         </div>

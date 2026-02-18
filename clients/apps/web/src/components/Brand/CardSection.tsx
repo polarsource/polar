@@ -56,7 +56,7 @@ export function CardSection() {
                 <br />
                 We run it on autopilot.
               </h3>
-              <span className="font-louize text-3xl italic">polar.sh</span>
+              <span className="font-louize text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
           <ShaderCanvas
@@ -71,7 +71,7 @@ export function CardSection() {
                 <br />
                 Automatically.
               </h3>
-              <span className="font-louize text-3xl italic">polar.sh</span>
+              <span className="font-louize text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
           <ShaderCanvas
@@ -86,7 +86,7 @@ export function CardSection() {
                 <br />
                 So you don't have to.
               </h3>
-              <span className="font-louize text-3xl italic">polar.sh</span>
+              <span className="font-louize text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
         </div>

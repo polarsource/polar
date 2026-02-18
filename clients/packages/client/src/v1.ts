@@ -21621,7 +21621,51 @@ export interface components {
       transaction_id: string
       /** Fees Transactions */
       fees_transactions: components['schemas']['TransactionEmbedded'][]
+      /** Attempts */
+      attempts: components['schemas']['PayoutAttempt'][]
     }
+    /** PayoutAttempt */
+    PayoutAttempt: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Payout Id
+       * Format: uuid
+       */
+      payout_id: string
+      processor: components['schemas']['AccountType']
+      /** Processor Id */
+      processor_id: string | null
+      status: components['schemas']['PayoutAttemptStatus']
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Failed Reason */
+      failed_reason: string | null
+      /** Paid At */
+      paid_at: string | null
+    }
+    /**
+     * PayoutAttemptStatus
+     * @enum {string}
+     */
+    PayoutAttemptStatus: 'pending' | 'in_transit' | 'succeeded' | 'failed'
     /** PayoutCreate */
     PayoutCreate: {
       /**
@@ -21667,15 +21711,13 @@ export interface components {
       | '-fees_amount'
       | 'status'
       | '-status'
-      | 'paid_at'
-      | '-paid_at'
       | 'account_id'
       | '-account_id'
     /**
      * PayoutStatus
      * @enum {string}
      */
-    PayoutStatus: 'pending' | 'in_transit' | 'succeeded'
+    PayoutStatus: 'pending' | 'in_transit' | 'succeeded' | 'failed'
     /** PersonalAccessToken */
     PersonalAccessToken: {
       /**
@@ -43346,6 +43388,9 @@ export const paymentSortPropertyValues: ReadonlyArray<
 export const paymentStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentStatus']
 > = ['pending', 'succeeded', 'failed']
+export const payoutAttemptStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PayoutAttemptStatus']
+> = ['pending', 'in_transit', 'succeeded', 'failed']
 export const payoutSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutSortProperty']
 > = [
@@ -43357,14 +43402,12 @@ export const payoutSortPropertyValues: ReadonlyArray<
   '-fees_amount',
   'status',
   '-status',
-  'paid_at',
-  '-paid_at',
   'account_id',
   '-account_id',
 ]
 export const payoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutStatus']
-> = ['pending', 'in_transit', 'succeeded']
+> = ['pending', 'in_transit', 'succeeded', 'failed']
 export const platformFeeTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PlatformFeeType']
 > = [

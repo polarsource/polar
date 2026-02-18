@@ -3,7 +3,7 @@
 
 import { DynamicToolUIPart } from 'ai'
 import { useState } from 'react'
-import LogoIcon from '../Brand/LogoIcon'
+import LogoIcon from '../Brand/logos/LogoIcon'
 
 function ensureJSONArgument<T>(callback: (a: T | undefined) => string) {
   return (arg: T | string) => {

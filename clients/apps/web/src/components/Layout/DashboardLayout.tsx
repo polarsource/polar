@@ -1,6 +1,6 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/LogoIcon'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { useAuth } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'

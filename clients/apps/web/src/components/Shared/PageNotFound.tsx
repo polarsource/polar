@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import LogoType from '../Brand/LogoType'
+import LogoType from '../Brand/logos/LogoType'
 
 const PageNotFound = () => {
   return (

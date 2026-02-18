@@ -9812,6 +9812,11 @@ export interface components {
        */
       success_url: string | null
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url: string | null
+      /**
        * Label
        * @description Optional label to distinguish links internally
        */
@@ -9921,6 +9926,11 @@ export interface components {
        */
       success_url?: string | null
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
        * Product Id
        * Format: uuid4
        */
@@ -9991,6 +10001,11 @@ export interface components {
        */
       success_url?: string | null
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
        * Product Price Id
        * Format: uuid4
        */
@@ -10058,6 +10073,11 @@ export interface components {
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
       success_url?: string | null
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
       /**
        * Products
        * @description List of products that will be available to select at checkout.
@@ -10219,6 +10239,11 @@ export interface components {
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
       success_url?: string | null
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
     }
     /** CheckoutOrganization */
     CheckoutOrganization: {

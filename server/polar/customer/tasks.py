@@ -24,7 +24,19 @@ class CustomerDoesNotExist(CustomerTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="customer.webhook", priority=TaskPriority.MEDIUM)
+def _customer_webhook_debounce_key(
+    event_type: CustomerWebhookEventType, customer_id: uuid.UUID
+) -> str:
+    return f"customer.webhook:{event_type}:{customer_id}"
+
+
+@actor(
+    actor_name="customer.webhook",
+    priority=TaskPriority.MEDIUM,
+    debounce_key=_customer_webhook_debounce_key,
+    debounce_min_threshold=1,
+    debounce_max_threshold=5,
+)
 async def customer_webhook(
     event_type: CustomerWebhookEventType, customer_id: uuid.UUID
 ) -> None:

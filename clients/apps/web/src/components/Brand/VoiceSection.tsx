@@ -25,7 +25,7 @@ const traits = [
 
 export function VoiceSection() {
   return (
-    <SectionLayout label="07 / Voice & Tone">
+    <SectionLayout label="Voice & Tone">
       <div className="flex flex-col gap-16">
         <div className="flex flex-col gap-24">
           {traits.map((item) => (

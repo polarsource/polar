@@ -49,7 +49,7 @@ const pillars = [
 
 export function PillarsSection() {
   return (
-    <SectionLayout label="06 / Pillars">
+    <SectionLayout label="Pillars">
       <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-3">
         {pillars.map((p) => (
           <div key={p.id} className="relative">

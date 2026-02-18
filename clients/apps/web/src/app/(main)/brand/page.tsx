@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import {
-  CarouselSection,
   ColorsSection,
   CoverSection,
   EndSection,
@@ -21,7 +20,6 @@ const sectionComponents = [
   { id: 'pillars', Component: PillarsSection },
   { id: 'typography', Component: TypographySection },
   { id: 'voice', Component: VoiceSection },
-  { id: 'carousel', Component: CarouselSection },
   { id: 'end', Component: EndSection },
 ]
 

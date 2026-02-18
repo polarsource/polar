@@ -25,7 +25,7 @@ export function LogoSection() {
   }, [])
 
   return (
-    <SectionLayout label="02 / Logo">
+    <SectionLayout label="Logo">
       <div className="grid h-full w-full flex-1 grid-cols-1 gap-8 xl:grid-cols-3">
         <div className="dark:bg-polar-900 flex aspect-square h-full items-center justify-center bg-neutral-100">
           <PolarLogotype

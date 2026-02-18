@@ -12,7 +12,7 @@ const radiusTokens = [
 
 export function SpacingSection() {
   return (
-    <SectionLayout label="05 / Spacing & Grid">
+    <SectionLayout label="Spacing & Grid">
       <div className="flex flex-col gap-10">
         <div className="flex flex-col gap-4">
           <span className="text-sm font-medium text-neutral-500">

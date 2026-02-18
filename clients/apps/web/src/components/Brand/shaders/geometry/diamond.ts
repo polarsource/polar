@@ -9,7 +9,7 @@ export const DIAMOND_GLSL = `
     float d = abs(p.x) + abs(p.y);
 
     // Expanding repeating diamond rings
-    float rings = fract(d * 8.0 - t);
+    float rings = fract(d * 5.0 - t);
 
     // Thin outlines
     float outline = smoothstep(0.0, 0.25, rings) * (1.0 - smoothstep(0.75, 1.0, rings));

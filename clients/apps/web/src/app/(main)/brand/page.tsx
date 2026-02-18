@@ -1,9 +1,7 @@
 'use client'
 
-import { useTheme } from 'next-themes'
-import { useMemo } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import {
-  CardSection,
   CarouselSection,
   ColorsSection,
   CoverSection,
@@ -17,7 +15,6 @@ import {
 const sectionComponents = [
   { id: 'cover', Component: CoverSection },
   { id: 'mission', Component: MissionSection },
-  { id: 'cards', Component: CardSection },
   { id: 'logo', Component: LogoSection },
   { id: 'colors', Component: ColorsSection },
   { id: 'typography', Component: TypographySection },
@@ -26,21 +23,40 @@ const sectionComponents = [
   { id: 'end', Component: EndSection },
 ]
 
-const dotCursor = (fill: string) =>
-  `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='12' cy='12' r='10' fill='${fill}'/></svg>") 12 12, auto`
-
 export default function BrandPage() {
-  const { resolvedTheme } = useTheme()
-  const cursor = useMemo(
-    () => dotCursor(resolvedTheme === 'dark' ? 'white' : 'black'),
-    [resolvedTheme],
-  )
+  const cursorRef = useRef<HTMLDivElement>(null)
+
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    if (cursorRef.current) {
+      cursorRef.current.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`
+    }
+  }, [])
+
+  const onMouseLeave = useCallback(() => {
+    if (cursorRef.current) cursorRef.current.style.opacity = '0'
+  }, [])
+
+  const onMouseEnter = useCallback(() => {
+    if (cursorRef.current) cursorRef.current.style.opacity = '1'
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('mousemove', onMouseMove)
+    document.documentElement.addEventListener('mouseleave', onMouseLeave)
+    document.documentElement.addEventListener('mouseenter', onMouseEnter)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      document.documentElement.removeEventListener('mouseleave', onMouseLeave)
+      document.documentElement.removeEventListener('mouseenter', onMouseEnter)
+    }
+  }, [onMouseMove, onMouseLeave, onMouseEnter])
 
   return (
-    <div
-      className="dark:bg-polar-950 bg-white text-black dark:text-white"
-      style={{ cursor }}
-    >
+    <div className="dark:bg-polar-950 cursor-none bg-white text-black dark:text-white">
+      <div
+        ref={cursorRef}
+        className="pointer-events-none fixed top-0 left-0 z-50 -ml-2 -mt-2 h-4 w-4 rounded-full bg-white mix-blend-difference"
+      />
       <div className="flex flex-col">
         {sectionComponents.map((section) => (
           <section key={section.id}>

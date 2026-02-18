@@ -16,10 +16,10 @@ export const CIRCLES_GLSL = `
     float d = length(rp) * warp;
 
     // Expanding repeating rings
-    float rings = fract(d * 4.0 - t);
+    float rings = fract(d * 8.0 - t);
 
     // Thin outlines
-    float outline = smoothstep(0.0, 0.06, rings) * (1.0 - smoothstep(0.94, 1.0, rings));
+    float outline = smoothstep(0.0, 0.1, rings) * (1.0 - smoothstep(0.9, 1.0, rings));
     float luminance = 1.0 - outline;
 
     // Center fade (radial, content-aware)

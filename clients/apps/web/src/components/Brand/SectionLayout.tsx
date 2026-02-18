@@ -20,7 +20,9 @@ export function SectionLayout({
       )}
     >
       {label ? (
-        <span className="text-7xl tracking-tighter">{label}</span>
+        <span className="text-7xl tracking-tighter dark:font-light">
+          {label}
+        </span>
       ) : (
         <div />
       )}

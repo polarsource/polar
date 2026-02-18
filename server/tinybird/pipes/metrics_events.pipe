@@ -285,9 +285,13 @@ SQL >
     SELECT
         e.id,
         e.name,
+        e.customer_id,
         e.amount,
         e.net_amount,
         e.fee,
+        e.currency,
+        e.presentment_amount,
+        e.presentment_currency,
         e.exchange_rate,
         e.subscription_id,
         e.timestamp AS event_timestamp,
@@ -333,6 +337,7 @@ SQL >
         op.order_id AS order_id,
         op.timestamp AS event_timestamp,
         op.subscription_id AS subscription_id,
+        COALESCE(op.applied_balance_amount, 0) AS applied_balance_amount,
         op.timestamp AS source_timestamp,
         op.ingested_at AS source_ingested_at
     FROM system_events_by_org AS op
@@ -390,6 +395,9 @@ SQL >
             op.subscription_id, tuple(op.source_timestamp, op.source_ingested_at)
         ) AS subscription_id,
         argMax(
+            op.applied_balance_amount, tuple(op.source_timestamp, op.source_ingested_at)
+        ) AS applied_balance_amount,
+        argMax(
             COALESCE(ss.started_at, sfpo.first_paid_order_ts),
             tuple(op.source_timestamp, op.source_ingested_at)
         ) AS sub_started_at
@@ -403,7 +411,12 @@ SQL >
     %
     SELECT
         be.order_id,
+        be.name,
         be.subscription_id,
+        be.amount,
+        be.net_amount,
+        be.presentment_amount,
+        be.exchange_rate,
         be.event_timestamp AS effective_ts,
         toInt64(
             round(
@@ -411,6 +424,9 @@ SQL >
                 * IF(be.exchange_rate IS NULL OR be.exchange_rate = 0, 1, be.exchange_rate)
             )
         ) AS settlement_revenue_amount,
+        IF(
+            be.exchange_rate IS NULL OR be.exchange_rate = 0, 1, be.exchange_rate
+        ) AS settlement_exchange_rate,
         COALESCE(be.fee, 0) AS fee,
         tuple(
             if(be.name = 'balance.order', 2, 1),
@@ -440,28 +456,126 @@ SQL >
             )
         {% end %}
 
+NODE balance_order_fx_source
+SQL >
+    %
+    SELECT
+        be.order_id,
+        be.customer_id,
+        be.subscription_id,
+        be.currency,
+        be.event_timestamp AS source_ts,
+        multiIf(
+            be.exchange_rate IS NOT NULL AND be.exchange_rate != 0,
+            toFloat64(be.exchange_rate),
+            be.presentment_amount IS NOT NULL AND be.presentment_amount != 0,
+            toFloat64(be.amount) / toFloat64(be.presentment_amount),
+            NULL
+        ) AS source_fx
+    FROM balance_events_raw AS be
+    WHERE
+        be.order_id IS NOT NULL AND be.name = 'balance.order'
+        {% if defined(product_ids) and product_ids != '' %}
+            AND be.product_id IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
+        {% end %}
+        {% if defined(billing_types) and billing_types != '' %}
+            AND be.billing_type IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{ String(billing_types, description="Comma-separated billing types") }}
+                        )
+                    )
+            )
+        {% end %}
+
+NODE credit_order_fx_by_order
+SQL >
+    %
+    SELECT
+        c.order_id,
+        argMax(
+            s.source_fx,
+            tuple(
+                if(c.subscription_id IS NOT NULL AND s.subscription_id = c.subscription_id, 1, 0),
+                s.source_ts
+            )
+        ) AS credit_effective_fx
+    FROM balance_events_raw AS c
+    INNER JOIN
+        balance_order_fx_source AS s
+        ON s.customer_id = c.customer_id
+        AND s.currency = c.currency
+        AND s.source_ts < c.event_timestamp
+        AND s.order_id != c.order_id
+    WHERE
+        c.order_id IS NOT NULL AND c.name = 'balance.credit_order'
+        {% if defined(product_ids) and product_ids != '' %}
+            AND c.product_id IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
+        {% end %}
+        {% if defined(billing_types) and billing_types != '' %}
+            AND c.billing_type IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{ String(billing_types, description="Comma-separated billing types") }}
+                        )
+                    )
+            )
+        {% end %}
+    GROUP BY c.order_id
+
+NODE balance_amount_by_order_candidates_with_fx
+SQL >
+    %
+    SELECT
+        be.order_id,
+        be.name,
+        be.subscription_id,
+        be.effective_ts,
+        be.settlement_revenue_amount,
+        COALESCE(
+            multiIf(
+                be.name = 'balance.credit_order',
+                cfx.credit_effective_fx,
+                be.exchange_rate IS NOT NULL AND be.exchange_rate != 0,
+                toFloat64(be.exchange_rate),
+                be.presentment_amount IS NOT NULL AND be.presentment_amount != 0,
+                toFloat64(be.amount) / toFloat64(be.presentment_amount),
+                NULL
+            ),
+            1.0
+        ) AS settlement_exchange_rate,
+        be.fee,
+        be.rank_key
+    FROM balance_amount_by_order_candidates AS be
+    LEFT JOIN credit_order_fx_by_order cfx ON cfx.order_id = be.order_id
+
 NODE balance_amount_by_order
 SQL >
     %
     SELECT
         be.order_id,
         argMax(be.settlement_revenue_amount, be.rank_key) AS settlement_revenue_amount,
+        argMax(be.settlement_exchange_rate, be.rank_key) AS settlement_exchange_rate,
         argMax(be.fee, be.rank_key) AS fee
-    FROM balance_amount_by_order_candidates AS be
+    FROM balance_amount_by_order_candidates_with_fx AS be
     GROUP BY be.order_id
 
 NODE balance_timestamp_by_order
 SQL >
     %
     SELECT be.order_id, argMax(be.effective_ts, be.rank_key) AS balance_effective_ts
-    FROM balance_amount_by_order_candidates AS be
+    FROM balance_amount_by_order_candidates_with_fx AS be
     GROUP BY be.order_id
 
 NODE balance_subscription_by_order
 SQL >
     %
     SELECT be.order_id, argMax(be.subscription_id, be.rank_key) AS subscription_id
-    FROM balance_amount_by_order_candidates AS be
+    FROM balance_amount_by_order_candidates_with_fx AS be
     GROUP BY be.order_id
 
 NODE refund_net_by_order
@@ -507,6 +621,7 @@ SQL >
         op.order_id AS order_id,
         op.event_timestamp AS order_paid_timestamp,
         op.subscription_id AS subscription_id,
+        op.applied_balance_amount AS applied_balance_amount,
         op.sub_started_at AS sub_started_at,
         bt.balance_effective_ts AS balance_effective_ts
     FROM order_paid_spine AS op
@@ -517,6 +632,7 @@ SQL >
         ba.order_id AS order_id,
         CAST(NULL, 'Nullable(DateTime64(3))') AS order_paid_timestamp,
         bs.subscription_id AS subscription_id,
+        CAST(NULL, 'Nullable(Int64)') AS applied_balance_amount,
         ss.started_at AS sub_started_at,
         bt.balance_effective_ts AS balance_effective_ts
     FROM balance_amount_by_order AS ba
@@ -542,8 +658,31 @@ SQL >
         ) AS event_timestamp,
         op.subscription_id AS subscription_id,
         op.sub_started_at AS sub_started_at,
-        COALESCE(ba.settlement_revenue_amount, 0) AS revenue_amount,
-        COALESCE(ba.settlement_revenue_amount - ba.fee, 0) AS net_revenue_before_refunds_amount,
+        (
+            COALESCE(ba.settlement_revenue_amount, 0) - if(
+                isNull (ba.settlement_revenue_amount),
+                0,
+                toInt64(
+                    round(
+                        greatest(COALESCE(op.applied_balance_amount, 0), 0)
+                        * COALESCE(ba.settlement_exchange_rate, 1)
+                    )
+                )
+            )
+        ) AS revenue_amount,
+        (
+            COALESCE(ba.settlement_revenue_amount, 0) - if(
+                isNull (ba.settlement_revenue_amount),
+                0,
+                toInt64(
+                    round(
+                        greatest(COALESCE(op.applied_balance_amount, 0), 0)
+                        * COALESCE(ba.settlement_exchange_rate, 1)
+                    )
+                )
+            )
+            - COALESCE(ba.fee, 0)
+        ) AS net_revenue_before_refunds_amount,
         COALESCE(rf.refund_net_amount, 0) AS refund_net_amount
     FROM order_spine AS op
     LEFT JOIN balance_amount_by_order ba ON op.order_id = ba.order_id

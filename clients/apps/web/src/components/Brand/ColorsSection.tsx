@@ -1,69 +1,97 @@
 import { SectionLayout } from './SectionLayout'
 
-function hexToRgb(hex: string): [number, number, number] {
+function isLight(hex: string): boolean {
   const v = parseInt(hex.replace('#', ''), 16)
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255]
+  const r = (v >> 16) & 255
+  const g = (v >> 8) & 255
+  const b = v & 255
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140
 }
 
-function ColorCell({
-  name,
-  hex,
-  className = '',
-  textLight,
-}: {
+interface ColorEntry {
   name: string
   hex: string
-  className?: string
-  textLight?: boolean
-}) {
-  const [r, g, b] = hexToRgb(hex)
-  const text = textLight ? 'text-neutral-400' : 'text-neutral-600'
-
-  return (
-    <div
-      className={`flex flex-col justify-end p-5 ${className}`}
-      style={{ backgroundColor: hex }}
-    >
-      <span className={`text-xs font-medium ${text}`}>{name}</span>
-      <div className={`mt-1 flex gap-3 text-xs ${text}`}>
-        <span>
-          <span className="font-medium">HEX</span>&ensp;{hex}
-        </span>
-      </div>
-      <div className={`flex gap-3 text-xs ${text}`}>
-        <span>
-          <span className="font-medium">R</span> {r}
-        </span>
-        <span>
-          <span className="font-medium">G</span> {g}
-        </span>
-        <span>
-          <span className="font-medium">B</span> {b}
-        </span>
-      </div>
-    </div>
-  )
+  // hsl source kept for reference, not displayed
+  oklch: [number, number, number] // L%  C  H
+  flex: number
+  note?: string
 }
 
-function GradientCell({
-  name,
-  from,
-  to,
-}: {
-  name: string
-  from: string
-  to: string
-}) {
+// Monochromatic scale — all at hsl(233, 5%, L%), i.e. oklch hue ≈ 270°
+// One accent: same hue, saturation lifted to distinguish it as the brand accent.
+const COLORS: ColorEntry[] = [
+  {
+    name: 'Night',
+    hex: '#070708',
+    oklch: [0.1291, 0.0026, 286.03],
+    flex: 3,
+  },
+  {
+    name: 'Snow',
+    hex: '#F5F6FA',
+    oklch: [0.9735, 0.0054, 274.97],
+    flex: 3,
+  },
+  {
+    name: 'Ash',
+    hex: '#1D1E22',
+    oklch: [0.2357, 0.0078, 274.61],
+    flex: 1,
+  },
+  {
+    name: 'Stone',
+    hex: '#7E8090',
+    oklch: [0.6036, 0.0243, 279.99],
+    flex: 1,
+  },
+  {
+    name: 'Mist',
+    hex: '#C7C8CE',
+    oklch: [0.8338, 0.0084, 278.61],
+    flex: 1,
+  },
+  {
+    // Same hue (270°), chroma lifted to ~0.09 — the faint
+    // luminescence of aurora light on the polar horizon.
+    name: 'Ether',
+    hex: '#7B8FD4',
+    oklch: [62, 0.09, 270],
+    flex: 1,
+    note: 'accent',
+  },
+]
+
+function ColorColumn({ color }: { color: ColorEntry }) {
+  const light = isLight(color.hex)
+  const fg = light ? '#000000' : '#ffffff'
+  const fgMuted = light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'
+  const [l, c, h] = color.oklch
+
   return (
     <div
-      className="flex flex-col justify-end p-5"
-      style={{
-        background: `linear-gradient(135deg, ${from}, ${to})`,
-      }}
+      className="flex min-h-screen flex-col"
+      style={{ flex: color.flex, backgroundColor: color.hex, color: fg }}
     >
-      <span className="text-xs font-medium text-neutral-400">
-        {name}&ensp;{from}&ensp;{to}
-      </span>
+      {/* Name — vertically centred */}
+      <div className="flex flex-1 items-center p-8 md:p-10">
+        <span className="text-sm font-medium tracking-tight md:text-base">
+          {color.name}
+        </span>
+      </div>
+
+      {/* Values — bottom */}
+      <div className="flex flex-col gap-3 p-8 font-mono text-xs leading-snug md:p-10">
+        <div>
+          <div style={{ color: fgMuted }}>HEX</div>
+          <div>{color.hex}</div>
+        </div>
+        <div>
+          <div style={{ color: fgMuted }}>OKLCH</div>
+          <div className="whitespace-nowrap">
+            {l}% {c} {h}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -71,38 +99,10 @@ function GradientCell({
 export function ColorsSection() {
   return (
     <SectionLayout label="Color Palette">
-      <div className="flex flex-col gap-10">
-        <div className="flex max-w-md flex-col gap-3">
-          <h3 className="text-sm font-semibold">Color Palette</h3>
-          <p className="text-sm leading-relaxed text-neutral-500">
-            The palette is predominantly greyscale: black and white define the
-            space, with sparing use of grey tones in typography and UI. This
-            contrast sharpens focus and highlights core content, while keeping
-            visual noise to a minimum.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 grid-rows-[1fr_auto_auto] overflow-hidden border border-neutral-200 sm:grid-cols-3">
-          {/* Row 1 — tall swatches */}
-          <ColorCell name="White" hex="#FFFFFF" className="min-h-72" />
-          <ColorCell name="Ash" hex="#999999" className="min-h-72" />
-          <ColorCell
-            name="Black"
-            hex="#000000"
-            className="min-h-72"
-            textLight
-          />
-
-          {/* Row 2 */}
-          <ColorCell name="Mist" hex="#F2F2F2" />
-          <ColorCell name="Slate" hex="#666666" textLight />
-          <GradientCell name="Gradient 01" from="#262626" to="#303030" />
-
-          {/* Row 3 */}
-          <ColorCell name="Stone" hex="#D9D9D9" />
-          <ColorCell name="Charcoal" hex="#404040" textLight />
-          <GradientCell name="Gradient 02" from="#000000" to="#1F1F1F" />
-        </div>
+      <div className="dark:border-polar-700 flex w-full flex-col overflow-hidden rounded-sm border border-neutral-200 md:flex-row">
+        {COLORS.map((color) => (
+          <ColorColumn key={color.name} color={color} />
+        ))}
       </div>
     </SectionLayout>
   )

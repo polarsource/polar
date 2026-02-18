@@ -7,7 +7,7 @@ from polar.event.service import event as event_service
 from polar.event.system import CustomerUpdatedFields, SystemEvent, build_system_event
 from polar.exceptions import PolarTaskError
 from polar.models import Customer
-from polar.models.webhook_endpoint import CustomerWebhookEventType
+from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 from .repository import CustomerRepository
@@ -26,7 +26,9 @@ class CustomerDoesNotExist(CustomerTaskError):
 
 def _customer_webhook_debounce_key(
     event_type: CustomerWebhookEventType, customer_id: uuid.UUID
-) -> str:
+) -> str | None:
+    if event_type != WebhookEventType.customer_state_changed:
+        return None
     return f"customer.webhook:{event_type}:{customer_id}"
 
 

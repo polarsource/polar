@@ -47,9 +47,13 @@ You can select one or **several** products. With several products, customers wil
 
 #### Discount
 
-You can disable discount codes, if you wish to prevent customers from using them.
+You can preset a discount on the Checkout Link: it will be **automatically applied** when the customer lands on the checkout page — no action needed from the customer. This is particularly useful for running promotions or offering special pricing through specific links.
 
-You can also preset a discount: it'll be automatically applied when the customer lands on the checkout page.
+If **Allow discount codes** is enabled, customers can still manually enter other discount codes during checkout, even when a discount is preset.
+
+<Tip>
+  Discounts without a code can only be applied through Checkout Link presets or the [Checkout API](/features/checkout/session). Learn more about creating and managing discounts in the [Discounts documentation](/features/discounts).
+</Tip>
 
 #### Metadata
 
@@ -92,7 +96,9 @@ You can prefill the checkout fields with the following query parameters:
 </ParamField>
 
 <ParamField path="discount_code" type="string">
-  Prefill discount code
+  Prefill the discount code field in the checkout form. The code will be pre-populated in the input field so the customer can see it. This only works with discounts that have a code set — see [Discounts](/features/discounts).
+
+  This is different from presetting a discount in the Checkout Link settings: a preset discount is silently and automatically applied, whereas `discount_code` simply pre-populates the code input field.
 </ParamField>
 
 <ParamField path="amount" type="string">

@@ -1341,6 +1341,7 @@ class OrderService:
             "order_confirmation",
             "subscription_confirmation",
             "subscription_cycled",
+            "subscription_cycled_after_trial",
             "subscription_updated",
         ]
         subject_template: str
@@ -1365,12 +1366,18 @@ class OrderService:
                     "id": "{subscription}",
                     "email": "{email}",
                 }
-            case (
-                OrderBillingReasonInternal.subscription_cycle
-                | OrderBillingReasonInternal.subscription_cycle_after_trial
-            ):
+            case OrderBillingReasonInternal.subscription_cycle:
                 template_name = "subscription_cycled"
                 subject_template = "Your {description} subscription has been renewed"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
+            case OrderBillingReasonInternal.subscription_cycle_after_trial:
+                template_name = "subscription_cycled_after_trial"
+                subject_template = "Your {description} subscription is now active"
                 url_path_template = "/{organization}/portal"
                 url_params = {
                     "customer_session_token": "{token}",

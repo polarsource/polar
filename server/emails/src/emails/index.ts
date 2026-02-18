@@ -18,6 +18,7 @@ import { SeatInvitation } from './seat_invitation'
 import { SubscriptionCancellation } from './subscription_cancellation'
 import { SubscriptionConfirmation } from './subscription_confirmation'
 import { SubscriptionCycled } from './subscription_cycled'
+import { SubscriptionCycledAfterTrial } from './subscription_cycled_after_trial'
 import { SubscriptionPastDue } from './subscription_past_due'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
@@ -41,6 +42,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_cancellation: SubscriptionCancellation,
   subscription_confirmation: SubscriptionConfirmation,
   subscription_cycled: SubscriptionCycled,
+  subscription_cycled_after_trial: SubscriptionCycledAfterTrial,
   subscription_past_due: SubscriptionPastDue,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,

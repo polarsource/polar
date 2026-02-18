@@ -21025,6 +21025,8 @@ export interface components {
       subscription_confirmation: boolean
       /** Subscription Cycled */
       subscription_cycled: boolean
+      /** Subscription Cycled After Trial */
+      subscription_cycled_after_trial: boolean
       /** Subscription Past Due */
       subscription_past_due: boolean
       /** Subscription Revoked */

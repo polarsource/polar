@@ -34,6 +34,7 @@ class EmailTemplate(StrEnum):
     subscription_cancellation = "subscription_cancellation"
     subscription_confirmation = "subscription_confirmation"
     subscription_cycled = "subscription_cycled"
+    subscription_cycled_after_trial = "subscription_cycled_after_trial"
     subscription_past_due = "subscription_past_due"
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
@@ -248,6 +249,17 @@ class SubscriptionCycledEmail(BaseModel):
     props: SubscriptionCycledProps
 
 
+class SubscriptionCycledAfterTrialProps(SubscriptionPropsBase):
+    order: OrderEmail
+
+
+class SubscriptionCycledAfterTrialEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_cycled_after_trial] = (
+        EmailTemplate.subscription_cycled_after_trial
+    )
+    props: SubscriptionCycledAfterTrialProps
+
+
 class SubscriptionPastDueProps(SubscriptionPropsBase):
     payment_url: str | None = None
 
@@ -360,6 +372,7 @@ Email = Annotated[
     | SubscriptionCancellationEmail
     | SubscriptionConfirmationEmail
     | SubscriptionCycledEmail
+    | SubscriptionCycledAfterTrialEmail
     | SubscriptionPastDueEmail
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail

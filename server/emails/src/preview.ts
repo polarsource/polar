@@ -69,6 +69,7 @@ export const order: DeepPartial<schemas['OrderEmail']> = {
   status: 'paid',
   paid: true,
   invoice_number: 'INV-2024-001',
+  description: 'Bacon Pro',
   created_at: '2024-01-15T10:30:00Z',
   subtotal_amount: 9900, // $99.00
   discount_amount: 1000, // $10.00 discount

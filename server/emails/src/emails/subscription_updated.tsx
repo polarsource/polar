@@ -19,9 +19,9 @@ export function SubscriptionUpdated({
 }: schemas['SubscriptionUpdatedProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Your subscription has been updated to {product.name}</Preview>
-      <Intro headline="Your subscription has been updated">
-        Your subscription has been successfully changed to{' '}
+      <Preview>You&rsquo;re now subscribed to {product.name}</Preview>
+      <Intro headline="Your subscription is updated">
+        You&rsquo;re now subscribed to{' '}
         <span className="font-bold">{product.name}</span>.
       </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
@@ -31,21 +31,17 @@ export function SubscriptionUpdated({
       <Hr />
       {order ? (
         <>
-          <Section>
-            <BodyText>
-              The changes take effect immediately. The pro-rated amount has been
-              charged to your account as part of this update.
-            </BodyText>
-          </Section>
+          <BodyText>
+            This change takes effect immediately. Here&rsquo;s the updated
+            billing summary.
+          </BodyText>
           <OrderSummary order={order} />
         </>
       ) : (
-        <Section>
-          <BodyText>
-            The changes take effect immediately. The pro-rated amount will be
-            reflected on your next billing cycle.
-          </BodyText>
-        </Section>
+        <BodyText>
+          This change takes effect immediately. Any difference in price will be
+          reflected on your next billing cycle.
+        </BodyText>
       )}
 
       <FooterCustomer organization={organization} email={email} />

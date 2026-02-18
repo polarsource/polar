@@ -15,12 +15,10 @@ export function CustomerSessionCode({
 }: schemas['CustomerSessionCodeProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Your code to access your {organization.name} purchases</Preview>
+      <Preview>Your verification code for {organization.name}</Preview>
       <Intro>
-        Use the code below to access your purchases from {organization.name}.{' '}
-        <span className="font-bold">
-          This code will expire in {code_lifetime_minutes} minutes.
-        </span>
+        Here&rsquo;s your code to access your purchases from {organization.name}
+        . It&nbsp;expires&nbsp;in&nbsp;{code_lifetime_minutes}&nbsp;minutes.
       </Intro>
       <OTPCode code={code} />
       <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
@@ -33,6 +31,7 @@ export function CustomerSessionCode({
           </Link>
         </Text>
       </Section>
+
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

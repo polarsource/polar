@@ -1,29 +1,11 @@
-import { Heading, Preview, Section } from '@react-email/components'
+import { Preview, Section } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import Intro from '../components/Intro'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
-
-function BenefitsSection({ benefits }: { benefits: any[] }) {
-  // Only render if there are actual benefits to display
-  if (benefits.length === 0) {
-    return null
-  }
-  return (
-    <>
-      <BodyText>
-        Meanwhile, you will continue to have access to the following benefits:
-      </BodyText>
-      <ul className="list-disc space-y-1 pl-6">
-        {benefits.map((benefit, index) => (
-          <li key={index}>{benefit.description}</li>
-        ))}
-      </ul>
-    </>
-  )
-}
 
 export function SubscriptionCancellation({
   email,
@@ -40,23 +22,17 @@ export function SubscriptionCancellation({
 
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Your subscription to {product.name} has been canceled</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Your subscription has been canceled
-        </Heading>
-        <BodyText>
-          We're sorry to see you go! Your subscription to{' '}
-          <span className="font-bold">{product.name}</span> will remain active
-          until <span className="font-bold">{endDate}</span>, after which it
-          will be canceled.
-        </BodyText>
-        <BodyText>
-          If you change your mind, you can renew your subscription anytime
-          before the end date.
-        </BodyText>
-        <BenefitsSection benefits={product.benefits} />
-      </Section>
+      <Preview>
+        Your subscription to {product.name} will end on {endDate}
+      </Preview>
+      <Intro headline="Your subscription has been canceled">
+        Your subscription to <span className="font-bold">{product.name}</span>{' '}
+        has been canceled. You&rsquo;ll still have full access until{' '}
+        <span className="font-bold">{endDate}</span>.
+      </Intro>
+      <BodyText>
+        If you&rsquo;d like to continue, you can renew anytime before then.
+      </BodyText>
       <Section className="my-8 text-center">
         <Button href={url}>Manage subscription</Button>
       </Section>

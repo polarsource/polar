@@ -1,7 +1,7 @@
-import { Heading, Preview, Section } from '@react-email/components'
-import BodyText from '../components/BodyText'
+import { Preview, Section } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import Intro from '../components/Intro'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
@@ -15,17 +15,13 @@ export function SubscriptionUncanceled({
 }: schemas['SubscriptionUncanceledProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Your subscription to {product.name} is now uncanceled</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Your subscription is now uncanceled
-        </Heading>
-        <BodyText>
-          Your subscription to <span className="font-bold">{product.name}</span>{' '}
-          is no longer canceled.
-        </BodyText>
-      </Section>
-      <Section className="my-8 text-center">
+      <Preview>Your {product.name} subscription is no longer canceled</Preview>
+
+      <Intro headline="Your subscription is no longer canceled">
+        Your {product.name} subscription will continue as normal.
+      </Intro>
+
+      <Section className="mt-2 mb-8 text-center">
         <Button href={url}>Manage subscription</Button>
       </Section>
 

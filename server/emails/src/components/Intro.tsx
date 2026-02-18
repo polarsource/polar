@@ -9,7 +9,7 @@ export function Intro({ headline, children }: PropsWithChildren<IntroProps>) {
   return (
     <Section>
       {headline && <Heading className="text-lg font-bold">{headline}</Heading>}
-      <Text className="text-base">{children}</Text>
+      {children && <Text className="text-base">{children}</Text>}
     </Section>
   )
 }

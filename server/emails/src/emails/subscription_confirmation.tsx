@@ -1,8 +1,8 @@
-import { Heading, Hr, Preview, Section } from '@react-email/components'
+import { Hr, Preview, Section } from '@react-email/components'
 import Benefits from '../components/Benefits'
-import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import Intro from '../components/Intro'
 import OrderSummary from '../components/OrderSummary'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
@@ -18,16 +18,11 @@ export function SubscriptionConfirmation({
 }: schemas['SubscriptionConfirmationProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Thank you for your subscription to {product.name}!</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Thank you for your subscription!
-        </Heading>
-        <BodyText>
-          Your subscription to <span className="font-bold">{product.name}</span>{' '}
-          is now active.
-        </BodyText>
-      </Section>
+      <Preview>Your {product.name} subscription is active</Preview>
+      <Intro headline="Your subscription is active">
+        You&rsquo;re now subscribed to{' '}
+        <span className="font-bold">{product.name}</span>.
+      </Intro>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
         <Button href={url}>Access purchase</Button>

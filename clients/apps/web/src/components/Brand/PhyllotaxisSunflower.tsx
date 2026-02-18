@@ -1,11 +1,11 @@
 'use client'
 
 import { useTheme } from 'next-themes'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { buildAtlas } from './shaders/pass/ascii'
 
 const GOLDEN_ANGLE = 137.508 * (Math.PI / 180)
-const LERP = 0.06
+const LERP = 0.03
 const ALPHA_LERP = 0.2
 const CHARS = '.;:-~+<>1742356890$€£%#@'
 const N_CHARS = CHARS.length
@@ -122,23 +122,46 @@ const FS = /* glsl */ `
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
+export function PhyllotaxisSunflower() {
   const { resolvedTheme } = useTheme()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mouseRef = useRef<{ x: number; y: number } | null>(null)
   const darkRef = useRef(resolvedTheme === 'dark')
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null)
 
   useEffect(() => {
     darkRef.current = resolvedTheme === 'dark'
   }, [resolvedTheme])
 
+  // Measure canvas via ResizeObserver
   useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0) {
+        setDims((prev) => {
+          const w = Math.round(width)
+          const h = Math.round(height)
+          if (prev && prev.w === w && prev.h === h) return prev
+          return { w, h }
+        })
+      }
+    })
+    ro.observe(canvas)
+    return () => ro.disconnect()
+  }, [])
+
+  // WebGL setup — re-runs whenever dims change
+  useEffect(() => {
+    if (!dims) return
+    const { w, h } = dims
     const canvas = canvasRef.current
     if (!canvas) return
 
     const dpr = window.devicePixelRatio || 1
-    canvas.width = size * dpr
-    canvas.height = size * dpr
+    canvas.width = w * dpr
+    canvas.height = h * dpr
 
     const glRaw = canvas.getContext('webgl', {
       alpha: true,
@@ -165,7 +188,7 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
     const uAtlas = gl.getUniformLocation(prog, 'u_atlas')
     const uNChars = gl.getUniformLocation(prog, 'u_nChars')
 
-    gl.uniform2f(uRes, size, size)
+    gl.uniform2f(uRes, w, h)
     gl.uniform1f(uDpr, dpr)
     gl.uniform1i(uAtlas, 0)
     gl.uniform1f(uNChars, N_CHARS)
@@ -189,19 +212,19 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
     // ── Phyllotaxis dots ──────────────────────────────────────────────────────
-    const cx = size / 2
-    const cy = size / 2
-    // Extra padding so repelled dots never clip: maxDisp = size*0.08, ASCII_PT/2 ≈ 11px
-    const maxR = size / 2 - size * 0.15
-    const baseDots = generatePhyllotaxis(300, size / 37.5, cx, cy).filter(
+    const cx = w / 2
+    const cy = h / 2
+    const minDim = Math.min(w, h)
+    const maxR = minDim / 2 - minDim * 0.15
+    const baseDots = generatePhyllotaxis(300, minDim / 37.5, cx, cy).filter(
       (d) => Math.hypot(d.x - cx, d.y - cy) <= maxR,
     )
     const N = baseDots.length
     const dots: Dot[] = baseDots.map((d) => ({ ...d }))
 
     // Per-dot ASCII fade state
-    const charAlphas = new Float32Array(N) // current lerped alpha (0..1)
-    const lastCharIdx = new Int32Array(N).fill(-1) // last assigned char, kept for fade-out
+    const charAlphas = new Float32Array(N)
+    const lastCharIdx = new Int32Array(N).fill(-1)
 
     // ── VBO: x, y, radius, charIndex, charAlpha (5 floats × N) ───────────────
     const STRIDE = 5
@@ -221,8 +244,8 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
     gl.enableVertexAttribArray(aAlpha)
     gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, B, 16)
 
-    const influenceR = size * 2
-    const maxDisp = size * 0.08
+    const influenceR = minDim
+    const maxDisp = minDim * 0.15
 
     // ── Render loop ───────────────────────────────────────────────────────────
     let rafId = 0
@@ -263,11 +286,21 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
           }
         }
 
-        dots[i].x += (tx - dots[i].x) * LERP
-        dots[i].y += (ty - dots[i].y) * LERP
+        const mx = ASCII_PT
+        const my = ASCII_PT
+        tx = Math.max(mx, Math.min(w - mx, tx))
+        ty = Math.max(my, Math.min(h - my, ty))
+
+        dots[i].x = Math.max(
+          mx,
+          Math.min(w - mx, dots[i].x + (tx - dots[i].x) * LERP),
+        )
+        dots[i].y = Math.max(
+          my,
+          Math.min(h - my, dots[i].y + (ty - dots[i].y) * LERP),
+        )
         dots[i].r += (tr - dots[i].r) * LERP
 
-        // Update char alpha and remember last assigned char for smooth fade-out
         const inZone = charMap.has(i)
         if (inZone) lastCharIdx[i] = charMap.get(i) as number
         const targetAlpha = inZone ? 1 : 0
@@ -280,8 +313,6 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
         data[o] = dots[i].x
         data[o + 1] = dots[i].y
         data[o + 2] = dots[i].r
-        // Use lastCharIdx while alpha > 0 so the char is visible during fade-out;
-        // fall back to -1 (circle) only once fully faded
         data[o + 3] = charAlphas[i] > 0.02 ? lastCharIdx[i] : -1
         data[o + 4] = charAlphas[i]
       }
@@ -306,19 +337,16 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
       gl.deleteTexture(atlasTex)
       gl.deleteProgram(prog)
     }
-  }, [size])
+  }, [dims])
 
-  const onMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const rect = canvasRef.current?.getBoundingClientRect()
-      if (!rect) return
-      mouseRef.current = {
-        x: (e.clientX - rect.left) * (size / rect.width),
-        y: (e.clientY - rect.top) * (size / rect.height),
-      }
-    },
-    [size],
-  )
+  const onMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    mouseRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    }
+  }, [])
 
   const onLeave = useCallback(() => {
     mouseRef.current = null
@@ -327,8 +355,7 @@ export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: size, height: size }}
-      className="max-w-full cursor-none"
+      className="h-full w-full cursor-none"
       onMouseMove={onMove}
       onMouseLeave={onLeave}
     />

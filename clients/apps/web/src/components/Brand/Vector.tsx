@@ -521,8 +521,8 @@ export function Vector({
 		}
 	}, [])
 
-	const handleFill = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'
-	const guideStroke = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'
+	const handleFill = isDark ? '#808080' : '#999999'
+	const guideStroke = isDark ? '#4d4d4d' : '#cccccc'
 
 	// Compute handle sizes relative to viewBox
 	const vbParts = viewBox.split(/\s+/).map(Number)
@@ -635,11 +635,9 @@ export function Vector({
 		return elements.length > 0 ? elements : null
 	}, [paths, focused, handleMouseDown, handleSize, handleHalf, strokeW, handleFill, guideStroke])
 
-	// Start marquee on mousedown on empty SVG space
+	// Start marquee on mousedown on SVG background or path shapes (handles stopPropagation so they won't reach here)
 	const handleSvgMouseDown = useCallback(
 		(e: React.MouseEvent) => {
-			// Only start marquee if clicking on the SVG background (not a handle)
-			if ((e.target as Element).tagName !== 'svg') return
 			e.preventDefault()
 			const pt = getSVGPoint(e.clientX, e.clientY)
 			setMarquee({ startX: pt.x, startY: pt.y, currentX: pt.x, currentY: pt.y })

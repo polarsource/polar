@@ -1,3 +1,5 @@
+import type { ExperimentDefinition } from './types'
+
 /**
  * All active experiments
  *
@@ -10,17 +12,18 @@
 export const experiments = {
   test_experiment: {
     description: 'Test experiment',
-    variants: ['control', 'treatment'] as const,
+    variants: ['control', 'treatment'],
     defaultVariant: 'control',
   },
   onboarding_flow_v1: {
     description: 'Test onboarding flow variations',
-    variants: ['control', 'treatment'] as const,
+    variants: ['control', 'treatment'],
     defaultVariant: 'control',
   },
   checkout_pricing_position: {
     description: 'Show detailed pricing breakdown on the left side of checkout',
-    variants: ['control', 'treatment'] as const,
+    variants: ['control', 'treatment'],
     defaultVariant: 'control',
+    optOutOrgIds: [],
   },
-} as const
+} as const satisfies Record<string, ExperimentDefinition<readonly string[]>>

@@ -1,17 +1,7 @@
 import { experiments } from './experiments'
-
+import type { ExperimentDefinition } from './types'
+export type { ExperimentDefinition, ExperimentRegistry } from './types'
 export { experiments }
-
-export interface ExperimentDefinition<V extends readonly string[]> {
-  description: string
-  variants: V
-  defaultVariant: V[number]
-}
-
-export type ExperimentRegistry = Record<
-  string,
-  ExperimentDefinition<readonly string[]>
->
 
 export type ExperimentName = keyof typeof experiments
 
@@ -32,4 +22,15 @@ export function getDefaultVariant<T extends ExperimentName>(
 
 export function getExperimentNames(): ExperimentName[] {
   return Object.keys(experiments) as ExperimentName[]
+}
+
+export function isOrgOptedOut<T extends ExperimentName>(
+  experimentName: T,
+  orgId?: string,
+): boolean {
+  if (!orgId) return false
+  const experiment = experiments[experimentName] as ExperimentDefinition<
+    readonly string[]
+  >
+  return experiment.optOutOrgIds?.includes(orgId) ?? false
 }

@@ -7,25 +7,35 @@ import {
   type ExperimentName,
   type ExperimentResult,
   getDefaultVariant,
+  isOrgOptedOut,
 } from './index'
 
 export interface UseExperimentOptions {
   trackExposure?: boolean
+  orgId?: string
 }
 
 export function useExperiment<T extends ExperimentName>(
   experimentName: T,
   options?: UseExperimentOptions,
 ): ExperimentResult<T> {
-  const { trackExposure = true } = options ?? {}
+  const { trackExposure = true, orgId: optionsOrgId } = options ?? {}
   const posthog = usePostHog()
   const hasTracked = useRef(false)
-  const experiments = useExperimentContext()
+  const { experiments, orgId: contextOrgId } = useExperimentContext()
 
-  const variant =
-    experiments[experimentName] ?? getDefaultVariant(experimentName)
+  const orgId = optionsOrgId ?? contextOrgId
+  const isOptedOut = isOrgOptedOut(experimentName, orgId)
+
+  const variant = isOptedOut
+    ? getDefaultVariant(experimentName)
+    : (experiments[experimentName] ?? getDefaultVariant(experimentName))
 
   useEffect(() => {
+    if (isOptedOut) {
+      return
+    }
+
     if (!trackExposure || hasTracked.current) {
       return
     }
@@ -36,7 +46,7 @@ export function useExperiment<T extends ExperimentName>(
       $feature_flag: experimentName,
       $feature_flag_response: variant,
     })
-  }, [experimentName, variant, trackExposure, posthog])
+  }, [experimentName, variant, trackExposure, isOptedOut, posthog])
 
   return useMemo(
     () => ({

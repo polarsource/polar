@@ -7,5 +7,4 @@ SCHEMA >
     `last_seen` AggregateFunction(max, DateTime64(3))
 
 ENGINE AggregatingMergeTree
-ENGINE_SETTINGS index_granularity=128
 ENGINE_SORTING_KEY organization_id, name, source

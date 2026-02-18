@@ -190,6 +190,41 @@ def _metric_values_match(pg_val: int | float, tb_val: int | float) -> bool:
     return False
 
 
+def _truncate_to_interval(timestamp: datetime, interval: TimeInterval) -> datetime:
+    if interval == TimeInterval.hour:
+        return timestamp.replace(minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.day:
+        return timestamp.replace(hour=0, minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.week:
+        start = timestamp - timedelta(days=timestamp.weekday())
+        return start.replace(hour=0, minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.month:
+        return timestamp.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.year:
+        return timestamp.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+    return timestamp
+
+
+def _is_current_period(
+    period_timestamp: datetime,
+    *,
+    timezone: ZoneInfo,
+    interval: TimeInterval,
+    now: datetime,
+) -> bool:
+    period_local = (
+        period_timestamp.replace(tzinfo=timezone)
+        if period_timestamp.tzinfo is None
+        else period_timestamp.astimezone(timezone)
+    )
+    now_local = now.astimezone(timezone)
+    return _truncate_to_interval(period_local, interval) == _truncate_to_interval(
+        now_local, interval
+    )
+
+
 class MetricsService:
     async def _get_tinybird_enabled_org(
         self,
@@ -327,6 +362,10 @@ class MetricsService:
         organization_id: uuid.UUID,
         pg_response: MetricsResponse,
         tb_response: MetricsResponse,
+        *,
+        interval: TimeInterval,
+        timezone: ZoneInfo,
+        now: datetime,
     ) -> None:
         tb_slugs = {m.slug for m in METRICS_TINYBIRD_SETTLEMENT}
         mismatches: list[dict[str, object]] = []
@@ -335,6 +374,11 @@ class MetricsService:
         for i, (pg_period, tb_period) in enumerate(
             zip(pg_response.periods, tb_response.periods)
         ):
+            if _is_current_period(
+                pg_period.timestamp, interval=interval, timezone=timezone, now=now
+            ):
+                continue
+
             for slug in tb_slugs:
                 pg_val = getattr(pg_period, slug, None)
                 tb_val = getattr(tb_period, slug, None)
@@ -481,6 +525,9 @@ class MetricsService:
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
         # Determine which queries to run based on metrics
+        now_dt = now or datetime.now(tz=timezone)
+
+        # Determine which queries to run based on metrics
         required_queries = _get_required_queries(metrics)
         filtered_query_fns = _get_filtered_queries(required_queries)
         filtered_metrics_sql = _get_filtered_metrics(metrics)
@@ -501,7 +548,7 @@ class MetricsService:
                     interval,
                     auth_subject,
                     filtered_metrics_sql,
-                    now or datetime.now(tz=timezone),
+                    now_dt,
                     bounds=(original_start_timestamp, original_end_timestamp),
                     organization_id=organization_id,
                     product_id=product_id,
@@ -643,7 +690,7 @@ class MetricsService:
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 metrics=metrics,
-                now=now,
+                now=now_dt,
             )
         except Exception as e:
             log.error(
@@ -654,7 +701,14 @@ class MetricsService:
             return pg_response
 
         if tinybird_compare:
-            self._log_tinybird_comparison(org.id, pg_response, tb_response)
+            self._log_tinybird_comparison(
+                org.id,
+                pg_response,
+                tb_response,
+                interval=interval,
+                timezone=timezone,
+                now=now_dt,
+            )
             return pg_response
 
         if tinybird_read:

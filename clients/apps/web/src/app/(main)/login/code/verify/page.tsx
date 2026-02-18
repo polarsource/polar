@@ -1,4 +1,4 @@
-import LogoIcon from '@/components/Brand/LogoIcon'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { Metadata } from 'next'
 import VerifyPage from './VerifyPage'
 

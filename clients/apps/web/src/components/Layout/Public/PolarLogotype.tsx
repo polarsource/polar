@@ -1,7 +1,7 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/LogoIcon'
-import LogoType from '@/components/Brand/LogoType'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
+import LogoType from '@/components/Brand/logos/LogoType'
 
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import {

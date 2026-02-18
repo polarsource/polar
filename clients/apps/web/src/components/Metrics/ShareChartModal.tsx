@@ -9,7 +9,7 @@ import {
 import domtoimage from 'dom-to-image'
 import { useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import LogoType from '../Brand/LogoType'
+import LogoType from '../Brand/logos/LogoType'
 import { toast } from '../Toast/use-toast'
 import MetricChartBox from './MetricChartBox'
 

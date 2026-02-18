@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 
 import { FadeUp } from '@/components/Animated/FadeUp'
-import LogoIcon from '@/components/Brand/LogoIcon'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { AssistantStep } from '@/components/Onboarding/AssistantStep'
 import { ProductStep } from '@/components/Onboarding/ProductStep'
 import { useOnboardingTracking } from '@/hooks/onboarding'

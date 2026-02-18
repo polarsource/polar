@@ -204,6 +204,12 @@ class AccountSection:
                                     ):
                                         text("Delete")
 
+                                    with tag.a(
+                                        href=f"{request.url_for('payouts:list')}?query={account.id}",
+                                        classes="btn btn-secondary btn-sm",
+                                    ):
+                                        text("View Payouts")
+
                 else:
                     # No account
                     with tag.div(classes="text-center py-8"):

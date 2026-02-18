@@ -18,6 +18,8 @@ export function ShaderCanvas({
   children?: React.ReactNode
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const contentSizeRef = useRef<[number, number]>([0, 0])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -37,6 +39,28 @@ export function ShaderCanvas({
     const { gl, program } = handles
 
     const instance = effect.init(gl, program)
+
+    const contentSizeLoc = gl.getUniformLocation(program, 'u_contentSize')
+
+    // Observe content size
+    const contentEl = contentRef.current
+    let contentObserver: ResizeObserver | null = null
+    if (contentEl) {
+      const updateContentSize = () => {
+        const cw = canvas.clientWidth
+        const ch = canvas.clientHeight
+        if (cw > 0 && ch > 0) {
+          contentSizeRef.current = [
+            contentEl.clientWidth / cw,
+            contentEl.clientHeight / ch,
+          ]
+        }
+      }
+      updateContentSize()
+      contentObserver = new ResizeObserver(updateContentSize)
+      contentObserver.observe(contentEl)
+      contentObserver.observe(canvas)
+    }
 
     // Image texture — loaded async, bound to TEXTURE1
     let imageTexture: WebGLTexture | null = null
@@ -72,6 +96,13 @@ export function ShaderCanvas({
           gl.uniform1i(geometryTextureLoc, 1)
         }
 
+        // Pass content size to shader
+        gl.uniform2f(
+          contentSizeLoc,
+          contentSizeRef.current[0],
+          contentSizeRef.current[1],
+        )
+
         instance.draw(gl, canvas, time, colors)
       },
     })
@@ -79,6 +110,7 @@ export function ShaderCanvas({
     return () => {
       cancelled = true
       cleanup()
+      contentObserver?.disconnect()
       instance.cleanup?.()
       if (imageTexture) gl.deleteTexture(imageTexture)
     }
@@ -89,7 +121,7 @@ export function ShaderCanvas({
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
       {children && (
         <div className="relative z-10 flex h-full w-full items-center justify-center">
-          {children}
+          <div ref={contentRef}>{children}</div>
         </div>
       )}
     </div>

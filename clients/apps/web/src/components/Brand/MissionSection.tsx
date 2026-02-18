@@ -24,39 +24,46 @@ const ditherWave = ditherEffect({
 
 export function MissionSection() {
   return (
-    <SectionLayout label="01 / Mission" className="relative h-full w-full">
-      <div className="dark:bg-polar-900 flex h-full w-full flex-col gap-y-16 bg-gray-100">
-        <ShaderCanvas
-          geometry={VORTEX_GLSL}
-          effect={asciiVortex}
-          className="h-full w-full"
-        >
-          <div className="flex flex-col items-center gap-12">
-            <PolarLogotype logoVariant="icon" size={80} />
-            <h2 className="w-full max-w-5xl text-center text-7xl leading-tight tracking-tight text-pretty dark:font-light">
-              Your AI moves fast.
-              <br />
-              So should your billing.
-            </h2>
-            <span className="font-[Louize] text-4xl italic">polar.sh</span>
-          </div>
-        </ShaderCanvas>
-        <ShaderCanvas
-          geometry={WAVES_GLSL}
-          effect={ditherWave}
-          className="h-full w-full"
-        >
-          <div className="flex flex-col items-center gap-12">
-            <PolarLogotype logoVariant="icon" size={80} />
-            <h2 className="w-full max-w-5xl text-center text-7xl leading-tight tracking-tight text-pretty dark:font-light">
-              Your AI moves fast.
-              <br />
-              So should your billing.
-            </h2>
-            <span className="font-[Louize] text-4xl italic">polar.sh</span>
-          </div>
-        </ShaderCanvas>
-      </div>
-    </SectionLayout>
+    <>
+      <SectionLayout label="01 / Mission">
+        <div className="dark:bg-polar-900 flex h-full w-full flex-col gap-y-16 bg-gray-100">
+          <ShaderCanvas
+            geometry={VORTEX_GLSL}
+            effect={asciiVortex}
+            className="py-64"
+          >
+            <div className="flex flex-col items-center gap-12">
+              <PolarLogotype logoVariant="icon" size={80} />
+              <h2 className="w-full max-w-5xl text-center text-7xl leading-tight tracking-tight text-pretty dark:font-light">
+                Your AI moves fast.
+                <br />
+                So should your billing.
+              </h2>
+              <span className="font-[Louize] text-4xl italic">polar.sh</span>
+            </div>
+          </ShaderCanvas>
+        </div>
+      </SectionLayout>
+
+      <SectionLayout label="02 / Banner">
+        <div className="dark:bg-polar-900 flex h-full w-full flex-col gap-y-16 bg-gray-100">
+          <ShaderCanvas
+            geometry={WAVES_GLSL}
+            effect={ditherWave}
+            className="py-64"
+          >
+            <div className="flex flex-col items-center gap-12 py-12">
+              <PolarLogotype logoVariant="icon" size={80} />
+              <h2 className="w-full max-w-5xl text-center text-7xl leading-tight tracking-tight text-pretty dark:font-light">
+                Usage billing keeping you up?
+                <br />
+                Polar runs it on autopilot.
+              </h2>
+              <span className="font-[Louize] text-4xl italic">polar.sh</span>
+            </div>
+          </ShaderCanvas>
+        </div>
+      </SectionLayout>
+    </>
   )
 }

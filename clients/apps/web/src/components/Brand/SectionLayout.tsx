@@ -15,7 +15,8 @@ export function SectionLayout({
   return (
     <div
       className={twMerge(
-        'flex h-full w-full flex-col justify-between gap-y-16 p-16',
+        'flex h-screen w-screen flex-col justify-between gap-y-16 p-16',
+        className,
       )}
     >
       {label ? (
@@ -25,7 +26,7 @@ export function SectionLayout({
       ) : (
         <div />
       )}
-      <div className={twMerge('flex flex-col', className)}>{children}</div>
+      <div className={twMerge('flex flex-col')}>{children}</div>
       {footer ?? <div />}
     </div>
   )

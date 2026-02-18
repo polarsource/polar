@@ -3,6 +3,7 @@
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import {
+  CardSection,
   CarouselSection,
   ColorsSection,
   CoverSection,
@@ -16,6 +17,7 @@ import {
 const sectionComponents = [
   { id: 'cover', Component: CoverSection },
   { id: 'mission', Component: MissionSection },
+  { id: 'cards', Component: CardSection },
   { id: 'logo', Component: LogoSection },
   { id: 'colors', Component: ColorsSection },
   { id: 'typography', Component: TypographySection },

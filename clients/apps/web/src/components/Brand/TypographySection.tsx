@@ -3,7 +3,7 @@ import { SectionLayout } from './SectionLayout'
 export function TypographySection() {
   return (
     <SectionLayout label="Typography">
-      <div className="grid h-full grid-cols-4 gap-32">
+      <div className="grid h-full grid-cols-1 gap-8 md:grid-cols-4 md:gap-32">
         {/* Left column — description */}
         <div className="flex flex-col justify-between">
           <div className="flex flex-col gap-6">
@@ -28,7 +28,7 @@ export function TypographySection() {
         </div>
 
         {/* Right column — specimen area */}
-        <div className="dark:bg-polar-900 col-span-3 flex flex-col justify-between overflow-hidden bg-neutral-50 p-12">
+        <div className="dark:bg-polar-900 col-span-1 flex flex-col justify-between overflow-hidden bg-neutral-50 p-6 md:col-span-3 md:p-12">
           <div className="flex flex-col gap-y-8">
             <span className="text-[clamp(80px,10vw,140px)] leading-[0.9] font-light tracking-tighter">
               Inter

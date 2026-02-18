@@ -25,20 +25,20 @@ export function MissionSection() {
   return (
     <SectionLayout className="h-fit">
       <div className="flex h-full w-full flex-col">
-        <div className="grid grid-cols-2 gap-24">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-24">
           <ShaderCanvas
             geometry={CIRCLES_GLSL}
             effect={ditherCircles}
             className="aspect-square"
           >
-            <div className="flex flex-col items-center gap-12">
+            <div className="flex flex-col items-center gap-8 md:gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
-              <h3 className="text-center text-5xl leading-tight tracking-tighter text-pretty dark:font-light">
+              <h3 className="text-center text-3xl leading-tight tracking-tighter text-pretty md:text-5xl dark:font-light">
                 From prompt to revenue.
                 <br />
                 Automatically.
               </h3>
-              <span className="font-[Louize] text-3xl italic">polar.sh</span>
+              <span className="font-[Louize] text-xl italic md:text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
           <ShaderCanvas
@@ -46,14 +46,14 @@ export function MissionSection() {
             effect={ditherCaustics}
             className="aspect-square"
           >
-            <div className="flex flex-col items-center gap-12">
+            <div className="flex flex-col items-center gap-8 md:gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
-              <h3 className="text-center text-5xl leading-tight tracking-tighter text-pretty dark:font-light">
+              <h3 className="text-center text-3xl leading-tight tracking-tighter text-pretty md:text-5xl dark:font-light">
                 We count tokens.
                 <br />
                 So you don't have to.
               </h3>
-              <span className="font-[Louize] text-3xl italic">polar.sh</span>
+              <span className="font-[Louize] text-xl italic md:text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
         </div>

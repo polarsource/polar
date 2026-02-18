@@ -139,7 +139,7 @@ export default function ClientPage({
         if (isPayout(original)) {
           return (
             <div className="flex flex-row items-center">
-              <PayoutStatus status={original.status} />
+              <PayoutStatus payout={original} />
             </div>
           )
         }

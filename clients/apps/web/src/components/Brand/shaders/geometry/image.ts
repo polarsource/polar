@@ -2,7 +2,8 @@ export const IMAGE_GLSL = `
   uniform sampler2D u_geometryTexture;
 
   float computeLuminance(vec2 uv, float aspect, float time) {
-    vec3 rgb = texture2D(u_geometryTexture, uv).rgb;
+    vec2 flipped = vec2(uv.x, 1.0 - uv.y);
+    vec3 rgb = texture2D(u_geometryTexture, flipped).rgb;
     return dot(rgb, vec3(0.299, 0.587, 0.114));
   }
 `

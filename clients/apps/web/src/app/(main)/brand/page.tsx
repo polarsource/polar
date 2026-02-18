@@ -19,6 +19,9 @@ const LOGO_ICON_SVG = `<svg width="29" height="29" viewBox="0 0 29 29" fill="non
   <path fill-rule="evenodd" clip-rule="evenodd" d="M13.8537 24.7382C16.5062 25.0215 19.1534 20.5972 19.7664 14.8563C20.3794 9.1155 18.7261 4.23202 16.0736 3.94879C13.4211 3.66556 10.7739 8.08983 10.1609 13.8307C9.54788 19.5715 11.2012 24.455 13.8537 24.7382ZM15.0953 22.9906C17.015 22.9603 18.5101 19.0742 18.4349 14.3108C18.3596 9.54747 16.7424 5.71058 14.8228 5.7409C12.9032 5.77123 11.408 9.6573 11.4833 14.4207C11.5585 19.184 13.1757 23.0209 15.0953 22.9906Z" fill="currentColor"/>
 </svg>`
 
+// Shared ref so VectorSection can hide the brand page cursor
+const brandCursorRef = { current: null as HTMLDivElement | null }
+
 function VectorSection() {
   const [svgData, setSvgData] = useState(LOGO_ICON_SVG)
   return (
@@ -28,7 +31,17 @@ function VectorSection() {
         Drag anchor points (squares) and control points (circles) to edit the
         logo
       </p>
-      <Vector svg={svgData} width={400} height={400} onChange={setSvgData} />
+      <div
+        className="cursor-auto"
+        onMouseEnter={() => {
+          if (brandCursorRef.current) brandCursorRef.current.style.opacity = '0'
+        }}
+        onMouseLeave={() => {
+          if (brandCursorRef.current) brandCursorRef.current.style.opacity = '1'
+        }}
+      >
+        <Vector svg={svgData} width={400} height={400} onChange={setSvgData} />
+      </div>
     </div>
   )
 }
@@ -47,6 +60,11 @@ const sectionComponents = [
 
 export default function BrandPage() {
   const cursorRef = useRef<HTMLDivElement>(null)
+
+  // Sync module-level ref so VectorSection can access it
+  useEffect(() => {
+    brandCursorRef.current = cursorRef.current
+  })
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (cursorRef.current) {

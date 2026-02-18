@@ -224,9 +224,21 @@ export function Vector({
 	const [paths, setPaths] = useState<ParsedPath[]>([])
 	const [viewBox, setViewBox] = useState('0 0 100 100')
 	const [dragging, setDragging] = useState<DragState | null>(null)
-	const [selected, setSelected] = useState<{
+	// Set of "pi:ci" keys for multi-selected vertices
+	const [selection, setSelection] = useState<Set<string>>(new Set())
+	const selectionRef = useRef<Set<string>>(selection)
+	selectionRef.current = selection
+	// The last-clicked vertex, used to show control handles
+	const [focused, setFocused] = useState<{
 		pathIndex: number
 		commandIndex: number
+	} | null>(null)
+	// Marquee drag-select
+	const [marquee, setMarquee] = useState<{
+		startX: number
+		startY: number
+		currentX: number
+		currentY: number
 	} | null>(null)
 
 	useEffect(() => {
@@ -260,7 +272,22 @@ export function Vector({
 			e.preventDefault()
 			e.stopPropagation()
 			if (field === 'anchor') {
-				setSelected({ pathIndex, commandIndex })
+				const key = `${pathIndex}:${commandIndex}`
+				if (e.shiftKey) {
+					setSelection((prev) => {
+						const next = new Set(prev)
+						if (next.has(key)) {
+							next.delete(key)
+						} else {
+							next.add(key)
+						}
+						return next
+					})
+				} else if (!selectionRef.current.has(key)) {
+					// Only reset selection if clicking an unselected vertex
+					setSelection(new Set([key]))
+				}
+				setFocused({ pathIndex, commandIndex })
 			}
 			const pt = getSVGPoint(e.clientX, e.clientY)
 			const cmd = paths[pathIndex].commands[commandIndex]
@@ -291,58 +318,103 @@ export function Vector({
 		[getSVGPoint, paths],
 	)
 
-	const handleMouseMove = useCallback(
-		(e: React.MouseEvent) => {
-			if (!dragging) return
+	const skipNextClick = useRef(false)
+	const draggingRef = useRef(dragging)
+	draggingRef.current = dragging
+	const marqueeRef = useRef(marquee)
+	marqueeRef.current = marquee
+	const pathsRef = useRef(paths)
+	pathsRef.current = paths
+	const onChangeRef = useRef(onChange)
+	onChangeRef.current = onChange
+
+	// Window-level mousemove/mouseup for drag and marquee so they work outside the SVG
+	useEffect(() => {
+		const onMouseMove = (e: MouseEvent) => {
+			const currentDragging = draggingRef.current
+			const currentMarquee = marqueeRef.current
+
+			if (currentMarquee) {
+				const pt = getSVGPoint(e.clientX, e.clientY)
+				setMarquee((prev) =>
+					prev ? { ...prev, currentX: pt.x, currentY: pt.y } : null,
+				)
+				// Realtime selection update
+				const x1 = Math.min(currentMarquee.startX, pt.x)
+				const y1 = Math.min(currentMarquee.startY, pt.y)
+				const x2 = Math.max(currentMarquee.startX, pt.x)
+				const y2 = Math.max(currentMarquee.startY, pt.y)
+				const newKeys = new Set<string>()
+				pathsRef.current.forEach((path, pi) => {
+					path.commands.forEach((cmd, ci) => {
+						if (cmd.type === 'Z') return
+						if (cmd.x >= x1 && cmd.x <= x2 && cmd.y >= y1 && cmd.y <= y2) {
+							newKeys.add(`${pi}:${ci}`)
+						}
+					})
+				})
+				setSelection(newKeys)
+				return
+			}
+
+			if (!currentDragging) return
 			const pt = getSVGPoint(e.clientX, e.clientY)
-			const dx = pt.x - dragging.startX
-			const dy = pt.y - dragging.startY
+			const dx = pt.x - currentDragging.startX
+			const dy = pt.y - currentDragging.startY
 
 			setPaths((prev) => {
 				const next = prev.map((p) => ({
 					...p,
 					commands: [...p.commands],
 				}))
-				const cmd = { ...next[dragging.pathIndex].commands[dragging.commandIndex] }
-				const newX = dragging.origX + dx
-				const newY = dragging.origY + dy
+				const cmd = { ...next[currentDragging.pathIndex].commands[currentDragging.commandIndex] }
+				const newX = currentDragging.origX + dx
+				const newY = currentDragging.origY + dy
 
-				if (dragging.field === 'anchor' && cmd.type !== 'Z') {
+				if (currentDragging.field === 'anchor' && cmd.type !== 'Z') {
 					const adx = newX - cmd.x
 					const ady = newY - cmd.y
-					cmd.x = newX
-					cmd.y = newY
-					// Translate control points on this command that attach to the endpoint
-					if (cmd.type === 'C') {
-						cmd.x2 += adx
-						cmd.y2 += ady
-					}
-					if (cmd.type === 'Q') {
-						cmd.x1 += adx
-						cmd.y1 += ady
-					}
-					next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
-					// Translate cp1 on the next command (outgoing handle from this vertex)
-					const cmds = next[dragging.pathIndex].commands
-					const ni = dragging.commandIndex + 1
-					if (ni < cmds.length) {
-						const nextCmd = { ...cmds[ni] }
-						if (nextCmd.type === 'C' || nextCmd.type === 'Q') {
-							nextCmd.x1 += adx
-							nextCmd.y1 += ady
-							cmds[ni] = nextCmd
+
+					const moveVertex = (pi: number, ci: number, tdx: number, tdy: number) => {
+						const c = { ...next[pi].commands[ci] }
+						if (c.type === 'Z') return
+						c.x += tdx
+						c.y += tdy
+						if (c.type === 'C') {
+							c.x2 += tdx
+							c.y2 += tdy
+						}
+						if (c.type === 'Q') {
+							c.x1 += tdx
+							c.y1 += tdy
+						}
+						next[pi].commands[ci] = c
+						const nci = ci + 1
+						if (nci < next[pi].commands.length) {
+							const nc = { ...next[pi].commands[nci] }
+							if (nc.type === 'C' || nc.type === 'Q') {
+								nc.x1 += tdx
+								nc.y1 += tdy
+								next[pi].commands[nci] = nc
+							}
 						}
 					}
+
+					for (const key of selectionRef.current) {
+						const [spi, sci] = key.split(':').map(Number)
+						if (spi === currentDragging.pathIndex && sci === currentDragging.commandIndex) continue
+						moveVertex(spi, sci, adx, ady)
+					}
+					moveVertex(currentDragging.pathIndex, currentDragging.commandIndex, adx, ady)
 				} else if (
-					dragging.field === 'cp1' &&
+					currentDragging.field === 'cp1' &&
 					(cmd.type === 'C' || cmd.type === 'Q')
 				) {
 					cmd.x1 = newX
 					cmd.y1 = newY
-					next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
-					// Mirror: move the incoming handle (cp2 of previous command) opposite
-					const prevCi = dragging.commandIndex - 1
-					const cmds = next[dragging.pathIndex].commands
+					next[currentDragging.pathIndex].commands[currentDragging.commandIndex] = cmd
+					const prevCi = currentDragging.commandIndex - 1
+					const cmds = next[currentDragging.pathIndex].commands
 					if (prevCi >= 0) {
 						const prevCmd = { ...cmds[prevCi] }
 						if (prevCmd.type === 'C') {
@@ -353,13 +425,12 @@ export function Vector({
 							cmds[prevCi] = prevCmd
 						}
 					}
-				} else if (dragging.field === 'cp2' && cmd.type === 'C') {
+				} else if (currentDragging.field === 'cp2' && cmd.type === 'C') {
 					cmd.x2 = newX
 					cmd.y2 = newY
-					next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
-					// Mirror: move the outgoing handle (cp1 of next command) opposite
-					const nextCi = dragging.commandIndex + 1
-					const cmds = next[dragging.pathIndex].commands
+					next[currentDragging.pathIndex].commands[currentDragging.commandIndex] = cmd
+					const nextCi = currentDragging.commandIndex + 1
+					const cmds = next[currentDragging.pathIndex].commands
 					if (nextCi < cmds.length) {
 						const nextCmd = { ...cmds[nextCi] }
 						if (nextCmd.type === 'C' || nextCmd.type === 'Q') {
@@ -372,22 +443,61 @@ export function Vector({
 					}
 				}
 
-				next[dragging.pathIndex].commands[dragging.commandIndex] = cmd
 				return next
 			})
-		},
-		[dragging, getSVGPoint],
-	)
-
-	const skipNextClick = useRef(false)
-
-	const handleMouseUp = useCallback(() => {
-		if (dragging) {
-			skipNextClick.current = true
-			setDragging(null)
-			onChange?.(serializeToSVG(paths, viewBox, svg))
 		}
-	}, [dragging, onChange, paths, viewBox, svg])
+
+		const onMouseUp = () => {
+			const currentMarquee = marqueeRef.current
+			if (currentMarquee) {
+				const x1 = Math.min(currentMarquee.startX, currentMarquee.currentX)
+				const y1 = Math.min(currentMarquee.startY, currentMarquee.currentY)
+				const x2 = Math.max(currentMarquee.startX, currentMarquee.currentX)
+				const y2 = Math.max(currentMarquee.startY, currentMarquee.currentY)
+
+				const newKeys = new Set<string>()
+				// Read paths from ref to avoid stale closure
+				const el = svgRef.current
+				if (el) {
+					setPaths((currentPaths) => {
+						currentPaths.forEach((path, pi) => {
+							path.commands.forEach((cmd, ci) => {
+								if (cmd.type === 'Z') return
+								if (cmd.x >= x1 && cmd.x <= x2 && cmd.y >= y1 && cmd.y <= y2) {
+									newKeys.add(`${pi}:${ci}`)
+								}
+							})
+						})
+						if (newKeys.size > 0) {
+							setSelection((prev) => {
+								const next = new Set(prev)
+								for (const key of newKeys) next.add(key)
+								return next
+							})
+						}
+						return currentPaths // no mutation
+					})
+				}
+
+				setMarquee(null)
+				skipNextClick.current = true
+				return
+			}
+
+			if (draggingRef.current) {
+				skipNextClick.current = true
+				setDragging(null)
+				onChangeRef.current?.(serializeToSVG(pathsRef.current, viewBox, svg))
+			}
+		}
+
+		window.addEventListener('mousemove', onMouseMove)
+		window.addEventListener('mouseup', onMouseUp)
+		return () => {
+			window.removeEventListener('mousemove', onMouseMove)
+			window.removeEventListener('mouseup', onMouseUp)
+		}
+	}, [getSVGPoint])
 
 	// Detect dark mode
 	const [isDark, setIsDark] = useState(false)
@@ -411,18 +521,20 @@ export function Vector({
 		}
 	}, [])
 
-	const handleStroke = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)'
-	const handleFill = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'
-	const guideStroke = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'
+	const handleFill = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'
+	const guideStroke = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'
 
 	// Compute handle sizes relative to viewBox
 	const vbParts = viewBox.split(/\s+/).map(Number)
 	const vbSize = Math.max(vbParts[2] ?? 100, vbParts[3] ?? 100)
-	const anchorSize = vbSize * 0.025
+	const anchorSize = vbSize * 0.015
 	const anchorHalf = anchorSize / 2
-	const cpRadius = vbSize * 0.018
-	const strokeW = vbSize * 0.005
+	const handleSize = vbSize * 0.012
+	const handleHalf = handleSize / 2
+	const strokeW = vbSize * 0.0025
 	const dashLen = vbSize * 0.015
+
+	const selectedFill = isDark ? '#ffffff' : '#000000'
 
 	// Anchor points for all vertices (always visible)
 	const anchors = useMemo(() => {
@@ -430,6 +542,7 @@ export function Vector({
 		paths.forEach((path, pi) => {
 			path.commands.forEach((cmd, ci) => {
 				if (cmd.type === 'Z') return
+				const isSelected = selection.has(`${pi}:${ci}`)
 				elements.push(
 					<rect
 						key={`a-${pi}-${ci}`}
@@ -437,16 +550,17 @@ export function Vector({
 						y={cmd.y - anchorHalf}
 						width={anchorSize}
 						height={anchorSize}
-						fill={handleFill}
-						stroke={handleStroke}
-						strokeWidth={strokeW}
+						fill={isSelected ? selectedFill : 'none'}
+						stroke={isSelected ? 'none' : handleFill}
+						strokeWidth={isSelected ? 0 : strokeW}
+						pointerEvents="all"
 						onMouseDown={(e) => handleMouseDown(e, pi, ci, 'anchor')}
 					/>,
 				)
 			})
 		})
 		return elements
-	}, [paths, handleMouseDown, anchorSize, anchorHalf, strokeW, handleStroke, handleFill])
+	}, [paths, selection, handleMouseDown, anchorSize, anchorHalf, strokeW, handleFill, selectedFill])
 
 	// Control point handles for the selected vertex only
 	// A vertex at command[ci] has:
@@ -454,9 +568,9 @@ export function Vector({
 	//   - outgoing handle: cp1 (x1,y1) of command[ci+1] if it's a C/Q
 	// These form a line through the vertex that the user can drag from either side.
 	const controlHandles = useMemo(() => {
-		if (!selected) return null
+		if (!focused) return null
 
-		const { pathIndex: pi, commandIndex: ci } = selected
+		const { pathIndex: pi, commandIndex: ci } = focused
 		const path = paths[pi]
 		if (!path) return null
 		const cmd = path.commands[ci]
@@ -476,18 +590,16 @@ export function Vector({
 					x2={cmd.x2}
 					y2={cmd.y2}
 					stroke={guideStroke}
-					strokeWidth={strokeW * 0.5}
-					strokeDasharray={`${dashLen} ${dashLen}`}
+					strokeWidth={strokeW * 1.5}
 					pointerEvents="none"
 				/>,
-				<circle
+				<rect
 					key={`cpi-${pi}-${ci}`}
-					cx={cmd.x2}
-					cy={cmd.y2}
-					r={cpRadius}
+					x={cmd.x2 - handleHalf}
+					y={cmd.y2 - handleHalf}
+					width={handleSize}
+					height={handleSize}
 					fill={handleFill}
-					stroke={handleStroke}
-					strokeWidth={strokeW}
 					onMouseDown={(e) => handleMouseDown(e, pi, ci, 'cp2')}
 				/>,
 			)
@@ -505,27 +617,41 @@ export function Vector({
 					x2={nextCmd.x1}
 					y2={nextCmd.y1}
 					stroke={guideStroke}
-					strokeWidth={strokeW * 0.5}
-					strokeDasharray={`${dashLen} ${dashLen}`}
+					strokeWidth={strokeW * 1.5}
 					pointerEvents="none"
 				/>,
-				<circle
+				<rect
 					key={`cpo-${pi}-${ni}`}
-					cx={nextCmd.x1}
-					cy={nextCmd.y1}
-					r={cpRadius}
+					x={nextCmd.x1 - handleHalf}
+					y={nextCmd.y1 - handleHalf}
+					width={handleSize}
+					height={handleSize}
 					fill={handleFill}
-					stroke={handleStroke}
-					strokeWidth={strokeW}
 					onMouseDown={(e) => handleMouseDown(e, pi, ni, 'cp1')}
 				/>,
 			)
 		}
 
 		return elements.length > 0 ? elements : null
-	}, [paths, selected, handleMouseDown, cpRadius, strokeW, dashLen, handleStroke, handleFill, guideStroke])
+	}, [paths, focused, handleMouseDown, handleSize, handleHalf, strokeW, handleFill, guideStroke])
 
-	// Hit-test click on SVG background to select nearest anchor, or deselect
+	// Start marquee on mousedown on empty SVG space
+	const handleSvgMouseDown = useCallback(
+		(e: React.MouseEvent) => {
+			// Only start marquee if clicking on the SVG background (not a handle)
+			if ((e.target as Element).tagName !== 'svg') return
+			e.preventDefault()
+			const pt = getSVGPoint(e.clientX, e.clientY)
+			setMarquee({ startX: pt.x, startY: pt.y, currentX: pt.x, currentY: pt.y })
+			if (!e.shiftKey) {
+				setSelection(new Set())
+				setFocused(null)
+			}
+		},
+		[getSVGPoint],
+	)
+
+	// Click handler for single vertex selection (only when not marquee dragging)
 	const handleSvgClick = useCallback(
 		(e: React.MouseEvent) => {
 			if (dragging) return
@@ -554,9 +680,24 @@ export function Vector({
 			})
 
 			if (bestPi >= 0) {
-				setSelected({ pathIndex: bestPi, commandIndex: bestCi })
+				const key = `${bestPi}:${bestCi}`
+				if (e.shiftKey) {
+					setSelection((prev) => {
+						const next = new Set(prev)
+						if (next.has(key)) {
+							next.delete(key)
+						} else {
+							next.add(key)
+						}
+						return next
+					})
+				} else {
+					setSelection(new Set([key]))
+				}
+				setFocused({ pathIndex: bestPi, commandIndex: bestCi })
 			} else {
-				setSelected(null)
+				setSelection(new Set())
+				setFocused(null)
 			}
 		},
 		[dragging, getSVGPoint, paths, vbSize],
@@ -569,9 +710,9 @@ export function Vector({
 			width={width}
 			height={height}
 			className={className}
-			onMouseMove={handleMouseMove}
-			onMouseUp={handleMouseUp}
-			onMouseLeave={handleMouseUp}
+			onMouseDown={handleSvgMouseDown}
+
+
 			onClick={handleSvgClick}
 		>
 			{paths.map((path, i) => (
@@ -584,6 +725,20 @@ export function Vector({
 			))}
 			{controlHandles}
 			{anchors}
+			{marquee && (
+				<rect
+					x={Math.min(marquee.startX, marquee.currentX)}
+					y={Math.min(marquee.startY, marquee.currentY)}
+					width={Math.abs(marquee.currentX - marquee.startX)}
+					height={Math.abs(marquee.currentY - marquee.startY)}
+					fill={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}
+					stroke={guideStroke}
+					strokeWidth={strokeW * 0.5}
+
+
+					pointerEvents="none"
+				/>
+			)}
 		</svg>
 	)
 }

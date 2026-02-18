@@ -97,7 +97,11 @@ async def create(
     return await payout_service.create(session, locker, account=account)
 
 
-@router.get("/{id}/csv")
+@router.get(
+    "/{id}/csv",
+    summary="Export Payout as CSV",
+    responses={200: {"content": {"text/csv": {"schema": {"type": "string"}}}}},
+)
 async def get_csv(
     id: UUID4,
     auth_subject: payouts_auth.PayoutsRead,

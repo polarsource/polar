@@ -133,13 +133,14 @@ const CheckoutPricingBreakdown = ({
               interval={interval}
               intervalCount={intervalCount}
               mode="standard"
+              locale={locale}
             />
           </DetailRow>
 
           {checkout.discount && (
             <>
               <DetailRow
-                title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount)})` : ''}`}
+                title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
               >
                 {formatCurrency('standard', locale)(
                   -checkout.discountAmount,
@@ -172,6 +173,7 @@ const CheckoutPricingBreakdown = ({
                 interval={interval}
                 intervalCount={intervalCount}
                 mode="standard"
+                locale={locale}
               />
               {formattedDiscountDuration && (
                 <span className="text-xs font-normal text-gray-500">
@@ -188,7 +190,7 @@ const CheckoutPricingBreakdown = ({
           )}
           {meteredPrices.map((meteredPrice) => (
             <DetailRow title={meteredPrice.meter.name} key={meteredPrice.id}>
-              <MeteredPriceLabel price={meteredPrice} />
+              <MeteredPriceLabel price={meteredPrice} locale={locale} />
             </DetailRow>
           ))}
         </>

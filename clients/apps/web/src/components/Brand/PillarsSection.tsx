@@ -12,8 +12,8 @@ const PIXEL = 24
 const pillarA = pixelEffect({
   pixelSize: PIXEL,
   gap: 0,
-  colorA: '#0a0a0a',
-  colorB: '#ffffff',
+  colorA: '#f2f2f2',
+  colorB: '#000000',
   darkColorA: '#0a0a0a',
   darkColorB: '#ffffff',
 })
@@ -21,8 +21,8 @@ const pillarA = pixelEffect({
 const pillarB = pixelEffect({
   pixelSize: PIXEL,
   gap: 0,
-  colorA: '#0a0a0a',
-  colorB: '#d9d9d9',
+  colorA: '#f2f2f2',
+  colorB: '#333333',
   darkColorA: '#0a0a0a',
   darkColorB: '#d9d9d9',
 })
@@ -30,8 +30,8 @@ const pillarB = pixelEffect({
 const pillarC = pixelEffect({
   pixelSize: PIXEL,
   gap: 0,
-  colorA: '#0a0a0a',
-  colorB: '#ffffff',
+  colorA: '#f2f2f2',
+  colorB: '#000000',
   darkColorA: '#0a0a0a',
   darkColorB: '#ffffff',
 })
@@ -59,18 +59,17 @@ export function PillarsSection() {
               className="aspect-square"
             />
             <div
-              className="absolute z-10 flex items-end"
+              className="dark:bg-[#0a0a0a] absolute z-10 flex items-end bg-[#f2f2f2]"
               style={{
                 bottom: PIXEL * 2,
                 left: PIXEL * 2,
                 right: PIXEL * 2,
                 height: PIXEL * 3,
                 padding: PIXEL,
-                backgroundColor: '#0a0a0a',
               }}
             >
               <span
-                className="font-mono tracking-widest text-white"
+                className="font-mono tracking-widest text-black dark:text-white"
                 style={{ lineHeight: `${PIXEL}px` }}
               >
                 {p.label}

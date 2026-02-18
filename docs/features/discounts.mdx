@@ -51,4 +51,18 @@ The percentage discount to apply to the product or subscription.
 
 ## Apply a discount
 
-Discounts can be applied to a Checkout Link or a Checkout Session.
+### Auto-apply via Checkout Link
+
+When creating a [Checkout Link](/features/checkout/links), you can preset a discount that will be automatically applied when customers land on the checkout page. This is useful for promotional campaigns or special offers where you want to guarantee the discount is applied without requiring customers to enter a code.
+
+<Info>
+Discounts without a code can only be auto-applied through Checkout Links or the API.
+</Info>
+
+### Prefill via query parameter
+
+You can pass a `discount_code` query parameter to any Checkout Link URL to prefill a discount code in the checkout form. Note that this only prefills the field—customers will still see the code and it will be visible in the form.
+
+### Apply via API
+
+When creating a Checkout Session via the API, you can specify a discount to apply programmatically. See the [Checkout API documentation](/features/checkout/session) for details.

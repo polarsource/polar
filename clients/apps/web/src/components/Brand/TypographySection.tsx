@@ -1,3 +1,4 @@
+import { Headline } from '../Orbit'
 import { SectionLayout } from './SectionLayout'
 
 export function TypographySection() {
@@ -7,9 +8,7 @@ export function TypographySection() {
         {/* Left column — description */}
         <div className="flex flex-col justify-between">
           <div className="flex flex-col gap-6">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Typeface System
-            </h2>
+            <Headline as="h2" text="Typeface System" />
             <p className="dark:text-polar-500 text-lg leading-relaxed text-neutral-500">
               <a
                 href="https://rsms.me/inter/"

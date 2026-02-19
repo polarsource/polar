@@ -49,6 +49,8 @@ def upgrade() -> None:
         UPDATE payout_attempts SET id = id
         """
     )
+    op.execute("""UPDATE payouts SET status = 'pending' WHERE status IS NULL""")
+
     op.alter_column("payouts", "status", nullable=False)
 
     op.create_index(op.f("ix_payouts_status"), "payouts", ["status"], unique=False)

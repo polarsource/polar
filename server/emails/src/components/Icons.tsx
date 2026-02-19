@@ -11,6 +11,23 @@ export const Check = ({ width, height }: { width: number; height: number }) => {
   )
 }
 
+export const Discord = ({
+  width,
+  height,
+}: {
+  width: number
+  height: number
+}) => {
+  return (
+    <Img
+      src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/benefit-icons/discord.png"
+      alt="Discord"
+      width={width}
+      height={height}
+    />
+  )
+}
+
 export const GitHub = ({
   width,
   height,

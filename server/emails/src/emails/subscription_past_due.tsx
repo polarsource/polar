@@ -1,7 +1,8 @@
-import { Heading, Link, Preview, Section, Text } from '@react-email/components'
+import { Link, Preview, Section } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import { Intro } from '../components/Intro'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
@@ -16,41 +17,42 @@ export function SubscriptionPastDue({
 }: schemas['SubscriptionPastDueProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Your {product.name} subscription payment is past due</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Your subscription payment is past due
-        </Heading>
-        <BodyText>
-          We were unable to process your payment for your{' '}
-          <span className="font-bold">{product.name}</span> subscription. Your
-          subscription is now past due and access to benefits has been
-          temporarily suspended.
-        </BodyText>
-        <BodyText>
-          To restore access to your subscription benefits, please update your
-          payment method and complete the payment.
-        </BodyText>
-      </Section>
-      {payment_url && (
+      <Preview>
+        Action needed: update your payment method for {product.name}
+      </Preview>
+
+      <Intro headline="We couldn&rsquo;t process your payment">
+        We tried to charge your payment method for your{' '}
+        <span className="font-medium">{product.name}</span> subscription, but it
+        didn&rsquo;t go through. This can happen for a number of reasons, like
+        an expired card or a temporary bank hold.
+      </Intro>
+
+      <BodyText>
+        Until the payment goes through, your access to{' '}
+        <span className="font-medium">{product.name}</span> won&rsquo;t be
+        available.
+      </BodyText>
+
+      {payment_url ? (
+        <>
+          <Section className="my-8 text-center">
+            <Button href={payment_url}>Update payment method</Button>
+          </Section>
+          <BodyText>
+            You can also{' '}
+            <Link href={url} className="text-blue-600 underline">
+              manage your subscription
+            </Link>
+            .
+          </BodyText>
+        </>
+      ) : (
         <Section className="my-8 text-center">
-          <Button href={payment_url}>Complete Payment</Button>
+          <Button href={url}>Manage subscription</Button>
         </Section>
       )}
-      <Section className="my-8 text-center">
-        <Button href={url}>Manage my subscription</Button>
-      </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
-        <Text className="m-0 text-xs text-gray-600">
-          If you're having trouble with the button above, copy & paste the URL
-          below into your web browser.
-        </Text>
-        <Text className="mt-2 mb-0 text-xs">
-          <Link href={url} className="break-all text-blue-600 underline">
-            {url}
-          </Link>
-        </Text>
-      </Section>
+
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

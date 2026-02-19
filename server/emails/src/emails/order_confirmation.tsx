@@ -1,15 +1,8 @@
-import {
-  Heading,
-  Hr,
-  Link,
-  Preview,
-  Section,
-  Text,
-} from '@react-email/components'
+import { Hr, Preview, Section } from '@react-email/components'
 import Benefits from '../components/Benefits'
-import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
+import { Intro } from '../components/Intro'
 import OrderSummary from '../components/OrderSummary'
 import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
@@ -24,39 +17,25 @@ export function OrderConfirmation({
 }: schemas['OrderConfirmationProps']) {
   return (
     <WrapperOrganization organization={organization}>
-      <Preview>Thank you for your order of {order.description}!</Preview>
-      <Section>
-        <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Thank you for your order!
-        </Heading>
-        <BodyText>
-          Your order of <span className="font-bold">{order.description}</span>{' '}
-          is now processed.
-        </BodyText>
-      </Section>
+      <Preview>Your {order.description} purchase</Preview>
+      <Intro headline="Thank you for your purchase!">
+        Thank you for purchasing{' '}
+        <span className="font-medium">{order.description}</span>. Your invoice
+        is attached.
+      </Intro>
       {product && (
         <>
           {product.benefits.length > 0 && (
             <Benefits benefits={product.benefits} />
           )}
           <Section className="my-8 text-center">
-            <Button href={url}>Access my purchase</Button>
+            <Button href={url}>Access purchase</Button>
           </Section>
         </>
       )}
       <Hr />
       <OrderSummary order={order} />
-      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
-        <Text className="m-0 text-xs text-gray-600">
-          If you're having trouble with the button above, copy & paste the URL
-          below into your web browser.
-        </Text>
-        <Text className="mt-2 mb-0 text-xs">
-          <Link href={url} className="break-all text-blue-600 underline">
-            {url}
-          </Link>
-        </Text>
-      </Section>
+
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )

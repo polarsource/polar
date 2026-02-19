@@ -14,6 +14,7 @@ from polar.logging import Logger
 from polar.models import Customer, Order, Refund, Transaction
 from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
+from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.transaction.repository import (
     PaymentTransactionRepository,
@@ -57,23 +58,6 @@ class RefundTransactionDoesNotExistError(RefundTransactionError):
 
 
 class RefundTransactionService(BaseTransactionService):
-    async def _resolve_order(
-        self,
-        session: AsyncSession,
-        *,
-        refund: Refund,
-        payment_transaction: Transaction,
-    ) -> Order | None:
-        if payment_transaction.order is not None:
-            return payment_transaction.order
-
-        if refund.order_id is None:
-            return None
-
-        statement = select(Order).where(Order.id == refund.order_id)
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
     async def create(self, session: AsyncSession, refund: Refund) -> Transaction:
         if not refund.succeeded:
             raise NotSucceededRefundError(refund)
@@ -448,6 +432,23 @@ class RefundTransactionService(BaseTransactionService):
                 transactions, key=lambda t: t.balance_correlation_key
             )
         ]
+
+    async def _resolve_order(
+        self,
+        session: AsyncSession,
+        *,
+        refund: Refund,
+        payment_transaction: Transaction,
+    ) -> Order | None:
+        if payment_transaction.order is not None:
+            return payment_transaction.order
+
+        if refund.order_id is None:
+            return None
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(refund.order_id)
+        return order
 
 
 refund_transaction = RefundTransactionService(Transaction)

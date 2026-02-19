@@ -6,11 +6,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import func, or_, select
-from tagflow import classes, tag, text
+from sqlalchemy.orm import joinedload
+from tagflow import attr, classes, tag, text
 
+from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Payout, PayoutAttempt
+from polar.models import Account, Organization, Payout, PayoutAttempt
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout.repository import PayoutRepository
@@ -55,6 +57,27 @@ class PayoutStatusListItem(description_list.DescriptionListAttrItem[Payout]):
         return None
 
 
+class PayoutAccountProcessorIdListItem(description_list.DescriptionListItem[Payout]):
+    def __init__(self) -> None:
+        super().__init__("processor_id")
+
+    def render(self, request: Request, item: Payout) -> Generator[None] | None:
+        account = item.account
+        if account.stripe_id and account.account_type == AccountType.stripe:
+            with tag.a(
+                href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}",
+                classes="link flex flex-row gap-1 items-center",
+            ):
+                attr("target", "_blank")
+                attr("rel", "noopener noreferrer")
+                text(account.stripe_id)
+                with tag.div(classes="icon-external-link"):
+                    pass
+        elif account.stripe_id:
+            text(account.stripe_id)
+        return None
+
+
 @contextlib.contextmanager
 def payout_attempt_status_badge(status: PayoutAttemptStatus) -> Generator[None]:
     with tag.div(classes="badge"):
@@ -80,6 +103,32 @@ class PayoutAttemptStatusColumn(
         return None
 
 
+class PayoutAttemptProcessorIdColumn(
+    datatable.DatatableAttrColumn[PayoutAttempt, PayoutSortProperty]
+):
+    def __init__(self) -> None:
+        super().__init__("processor_id", "Processor ID", clipboard=True)
+
+    def render(self, request: Request, item: PayoutAttempt) -> Generator[None] | None:
+        if item.processor_id is None:
+            text("N/A")
+            return None
+
+        if item.processor == AccountType.stripe:
+            with tag.a(
+                href=f"https://dashboard.stripe.com/payouts/{item.processor_id}",
+                classes="link flex flex-row gap-1 items-center",
+            ):
+                attr("target", "_blank")
+                attr("rel", "noopener noreferrer")
+                text(item.processor_id)
+                with tag.div(classes="icon-external-link"):
+                    pass
+        else:
+            text(item.processor_id)
+        return None
+
+
 @router.get("/", name="payouts:list")
 async def list(
     request: Request,
@@ -99,12 +148,22 @@ async def list(
     # Apply query filter - search across multiple fields
     if query is not None:
         try:
-            # Try to parse as UUID first (could be payout ID or account ID)
+            # Try to parse as UUID first (could be payout ID, account ID, or organization ID)
             query_uuid = uuid.UUID(query)
             statement = statement.where(
                 or_(
                     Payout.id == query_uuid,
                     Payout.account_id == query_uuid,
+                    # Search by organization ID via account relationship
+                    Payout.account_id.in_(
+                        select(Account.id).where(
+                            Account.id.in_(
+                                select(Organization.account_id).where(
+                                    Organization.id == query_uuid
+                                )
+                            )
+                        )
+                    ),
                 )
             )
         except ValueError:
@@ -114,7 +173,7 @@ async def list(
                 or_(
                     Payout.id.in_(
                         select(PayoutAttempt.payout_id).where(
-                            PayoutAttempt.processor_id.ilike("%{query_lower}%")
+                            PayoutAttempt.processor_id.ilike(f"%{query_lower}%")
                         )
                     ),
                     func.lower(Payout.invoice_number).ilike(f"%{query_lower}%"),
@@ -146,7 +205,7 @@ async def list(
                     with input.search(
                         "query",
                         query,
-                        placeholder="Search by ID, account ID, processor ID, or invoice number...",
+                        placeholder="Search by ID, account ID, organization ID, processor ID, or invoice number...",
                     ):
                         pass
                     with input.select(
@@ -198,7 +257,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = PayoutRepository.from_session(session)
-    payout = await repository.get_by_id(id)
+    payout = await repository.get_by_id(id, options=(joinedload(Payout.account),))
 
     if payout is None:
         raise HTTPException(status_code=404)
@@ -225,9 +284,6 @@ async def get(
                         description_list.DescriptionListAttrItem(
                             "id", "ID", clipboard=True
                         ),
-                        description_list.DescriptionListAttrItem(
-                            "account_id", "Account ID"
-                        ),
                         PayoutStatusListItem("status", "Status"),
                         description_list.DescriptionListCurrencyItem(
                             "amount", "Amount"
@@ -253,12 +309,29 @@ async def get(
                     ).render(request, payout):
                         pass
 
+            # Account details
+            with tag.div(classes="card card-border w-full shadow-sm"):
+                with tag.div(classes="card-body"):
+                    with tag.h2(classes="card-title"):
+                        text("Account Details")
+
+                    with description_list.DescriptionList[Payout](
+                        description_list.DescriptionListAttrItem(
+                            "account.account_type", "Account Processor"
+                        ),
+                        PayoutAccountProcessorIdListItem(),
+                    ).render(request, payout):
+                        pass
+
             with tag.div():
                 with tag.div(classes="flex items-center justify-between mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text(f"Payout Attempts ({len(payout.attempts)})")
 
-                    if payout.status == PayoutStatus.failed:
+                    if (
+                        payout.status == PayoutStatus.failed
+                        or len(payout.attempts) == 0
+                    ):
                         with tag.div(classes="flex justify-end"):
                             with tag.button(
                                 classes="btn btn-primary",
@@ -272,9 +345,7 @@ async def get(
                 with datatable.Datatable[PayoutAttempt, PayoutSortProperty](
                     datatable.DatatableAttrColumn("id", "Attempt ID", clipboard=True),
                     PayoutAttemptStatusColumn("status", "Status"),
-                    datatable.DatatableAttrColumn(
-                        "processor_id", "Processor ID", clipboard=True
-                    ),
+                    PayoutAttemptProcessorIdColumn(),
                     datatable.DatatableCurrencyColumn("amount", "Amount"),
                     datatable.DatatableDateTimeColumn("created_at", "Created At"),
                     datatable.DatatableDateTimeColumn("paid_at", "Paid At"),

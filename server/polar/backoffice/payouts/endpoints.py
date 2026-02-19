@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import joinedload
 from tagflow import attr, classes, tag, text
 
 from polar.enums import AccountType
@@ -433,8 +433,8 @@ async def cancel(
         options=(
             joinedload(Payout.account),
             joinedload(Payout.transactions).options(
-                contains_eager(Transaction.account),
-                contains_eager(Transaction.payout),
+                joinedload(Transaction.account),
+                joinedload(Transaction.payout),
             ),
         ),
     )

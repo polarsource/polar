@@ -13,7 +13,12 @@ export function CoverSection() {
         <PhyllotaxisSunflower />
       </div>
       <div className="flex items-end justify-between">
-        <Headline as="h1" className="tracking-tight" text={['Brand', 'Guidelines']} />
+        <Headline
+          animate
+          as="h1"
+          className="tracking-tight"
+          text={['Brand', 'Guidelines']}
+        />
         <span>
           <ArrowDownward />
         </span>

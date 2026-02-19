@@ -1,3 +1,5 @@
 export { BarChart } from './BarChart'
 export type { BarChartItem } from './BarChart'
+export { Button } from './Button'
+export type { ButtonProps } from './Button'
 export { Headline } from './Headline'

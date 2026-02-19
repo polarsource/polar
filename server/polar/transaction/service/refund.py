@@ -11,7 +11,7 @@ from polar.event.system import BalanceRefundMetadata, SystemEvent, build_system_
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import polar_round
 from polar.logging import Logger
-from polar.models import Customer, Refund, Transaction
+from polar.models import Customer, Order, Refund, Transaction
 from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
@@ -57,6 +57,23 @@ class RefundTransactionDoesNotExistError(RefundTransactionError):
 
 
 class RefundTransactionService(BaseTransactionService):
+    async def _resolve_order(
+        self,
+        session: AsyncSession,
+        *,
+        refund: Refund,
+        payment_transaction: Transaction,
+    ) -> Order | None:
+        if payment_transaction.order is not None:
+            return payment_transaction.order
+
+        if refund.order_id is None:
+            return None
+
+        statement = select(Order).where(Order.id == refund.order_id)
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def create(self, session: AsyncSession, refund: Refund) -> Transaction:
         if not refund.succeeded:
             raise NotSucceededRefundError(refund)
@@ -91,6 +108,11 @@ class RefundTransactionService(BaseTransactionService):
             ),
         )
         assert payment_transaction is not None
+        order = await self._resolve_order(
+            session,
+            refund=refund,
+            payment_transaction=payment_transaction,
+        )
 
         refund_transaction = Transaction(
             type=TransactionType.refund,
@@ -114,7 +136,7 @@ class RefundTransactionService(BaseTransactionService):
             payment_user_id=payment_transaction.payment_user_id,
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
-            order_id=payment_transaction.order_id,
+            order_id=order.id if order is not None else payment_transaction.order_id,
         )
 
         # Compute and link fees
@@ -133,7 +155,6 @@ class RefundTransactionService(BaseTransactionService):
 
         try:
             customer = payment_transaction.payment_customer
-            order = payment_transaction.order
             if customer is not None:
                 organization = customer.organization
                 assert refund_transaction.presentment_amount is not None
@@ -194,6 +215,11 @@ class RefundTransactionService(BaseTransactionService):
             ),
         )
         assert payment_transaction is not None
+        order = await self._resolve_order(
+            session,
+            refund=refund,
+            payment_transaction=payment_transaction,
+        )
 
         refund_reversal_transaction = Transaction(
             type=TransactionType.refund_reversal,
@@ -221,14 +247,13 @@ class RefundTransactionService(BaseTransactionService):
             payment_user_id=payment_transaction.payment_user_id,
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
-            order_id=payment_transaction.order_id,
+            order_id=order.id if order is not None else payment_transaction.order_id,
         )
         session.add(refund_reversal_transaction)
         await session.flush()
 
         try:
             customer = payment_transaction.payment_customer
-            order = payment_transaction.order
             if customer is not None:
                 organization = customer.organization
                 metadata: BalanceRefundMetadata = {

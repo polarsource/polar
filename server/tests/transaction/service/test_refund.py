@@ -273,6 +273,49 @@ class TestCreate:
 
         create_refund_fees_mock.assert_awaited_once()
 
+    async def test_valid_uses_refund_order_when_payment_transaction_is_not_linked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        create_refund_fees_mock: AsyncMock,
+    ) -> None:
+        charge = build_stripe_charge()
+        refund, order, _ = await create_order_and_refund(
+            save_fixture, customer, subtotal_amount=charge.amount
+        )
+        balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
+        stripe_service_mock.get_balance_transaction.return_value = balance_transaction
+
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=charge.amount,
+            account_currency=charge.currency,
+            account_amount=charge.amount,
+            tax_amount=0,
+            charge_id=charge.id,
+            payment_customer=customer,
+        )
+        await save_fixture(payment_transaction)
+
+        refund_transaction = await refund_transaction_service.create(session, refund)
+
+        assert refund_transaction.order_id == order.id
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.balance_refund)
+        balance_refund_event = next(
+            event
+            for event in events
+            if event.user_metadata.get("transaction_id") == str(refund_transaction.id)
+        )
+        assert balance_refund_event.user_metadata["order_id"] == str(order.id)
+
+        create_refund_fees_mock.assert_awaited_once()
+
     async def test_valid_different_settlement_currency(
         self,
         session: AsyncSession,

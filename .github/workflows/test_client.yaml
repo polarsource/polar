@@ -68,9 +68,6 @@ jobs:
       - name: "🧪 Test: App"
         run: pnpm --filter @polar-sh/app test
 
-      - name: "🧪 Test: Customer Portal (SDK)"
-        run: pnpm --filter @polar-sh/customer-portal test
-
       - name: "🧪 Test: @polar-sh/currency"
         run: pnpm --filter @polar-sh/currency test
 

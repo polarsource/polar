@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart, Headline } from '@/components/Orbit'
+import { BarChart, Button, Headline } from '@/components/Orbit'
 
 export default function OrbitPage() {
   return (
@@ -127,6 +127,50 @@ export default function OrbitPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Button component */}
+        <div className="flex flex-col gap-16 p-8 md:gap-32 md:p-16">
+          <div className="flex flex-col gap-2">
+            <span className="dark:text-polar-500 text-sm text-neutral-400">
+              Button
+            </span>
+            <div className="dark:border-polar-800 border-t border-neutral-200" />
+          </div>
+
+          {(
+            [
+              ['default', 'Primary action'],
+              ['secondary', 'Secondary action'],
+              ['outline', 'Outline'],
+              ['ghost', 'Ghost'],
+              ['destructive', 'Destructive'],
+              ['link', 'Link'],
+            ] as const
+          ).map(([variant, label]) => (
+            <div
+              key={variant}
+              className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16"
+            >
+              <div className="flex flex-col gap-2">
+                <span className="dark:text-polar-500 text-sm text-neutral-500">
+                  {variant}
+                </span>
+              </div>
+              <div className="col-span-3 flex flex-row items-center gap-4">
+                <Button variant={variant} size="lg">
+                  {label}
+                </Button>
+                <Button variant={variant}>{label}</Button>
+                <Button variant={variant} size="sm">
+                  {label}
+                </Button>
+                <Button variant={variant} loading>
+                  Loading
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* BarChart component */}

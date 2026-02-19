@@ -52,7 +52,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
@@ -67,10 +66,6 @@ from .schemas import (
 
 log = structlog.get_logger(__name__)
 
-GUIDELINES_URL = (
-    "https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines"
-)
-
 
 @dataclasses.dataclass
 class OrgIssues:
@@ -78,8 +73,6 @@ class OrgIssues:
     missing_socials: bool = False
     admin_not_verified: bool = False
     admin_verification_status: str = ""
-    test_order_count: int = 0
-    test_order_total: str = ""
 
 
 class PlainServiceError(PolarError): ...
@@ -233,7 +226,7 @@ class PlainService:
                 organization.status == OrganizationStatus.INITIAL_REVIEW
                 and thread_result.thread is not None
             ):
-                issues = await self._check_org_issues(session, organization, admin)
+                issues = self._check_org_issues(organization, admin)
                 message = self._build_review_message(organization.slug, issues)
                 reply_result = await plain.reply_to_thread(
                     ReplyToThreadInput(
@@ -1463,9 +1456,8 @@ class PlainService:
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
 
-    async def _check_org_issues(
+    def _check_org_issues(
         self,
-        session: AsyncSession,
         organization: Organization,
         admin: User,
     ) -> OrgIssues:
@@ -1481,35 +1473,6 @@ class PlainService:
         if not admin.identity_verified:
             issues.admin_not_verified = True
             issues.admin_verification_status = admin.identity_verification_status
-
-        # Check for non-refunded test orders (customer email matches an org member email)
-        member_emails_stmt = (
-            select(func.lower(User.email))
-            .join(UserOrganization, UserOrganization.user_id == User.id)
-            .where(UserOrganization.organization_id == organization.id)
-        )
-        member_emails_result = await session.execute(member_emails_stmt)
-        member_emails = set(member_emails_result.scalars().all())
-
-        if member_emails:
-            test_orders_stmt = (
-                select(Order)
-                .join(Customer, Customer.id == Order.customer_id)
-                .where(
-                    Customer.organization_id == organization.id,
-                    func.lower(Customer.email).in_(member_emails),
-                    Order.status == OrderStatus.paid,
-                    Order.net_amount > 0,
-                )
-            )
-            test_orders_result = await session.execute(test_orders_stmt)
-            test_orders = test_orders_result.scalars().all()
-
-            if test_orders:
-                total = sum(o.net_amount for o in test_orders)
-                currency = test_orders[0].currency
-                issues.test_order_count = len(test_orders)
-                issues.test_order_total = format_currency(total, currency)
 
         return issues
 
@@ -1542,15 +1505,6 @@ class PlainService:
         lines.append(
             f"{item_num}. Can you share a 100% discount code that I can test the payment flow with?"
         )
-        item_num += 1
-
-        if issues.test_order_count > 0:
-            lines.append(
-                f"{item_num}. Could you please refund all the test sales "
-                "(by going to Sales > Orders > [Particular Order] > Scroll and click Refund order) "
-                f"as per our guidelines - {GUIDELINES_URL}?"
-            )
-            item_num += 1
 
         return "\n".join(lines)
 

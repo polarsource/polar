@@ -309,7 +309,7 @@ resource "cloudflare_dns_record" "api" {
   name    = "api.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = true
+  proxied = false
   ttl     = 1
 }
 
@@ -327,7 +327,7 @@ resource "cloudflare_dns_record" "buy" {
   name    = "buy.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = true
+  proxied = false
   ttl     = 1
 }
 
@@ -345,6 +345,6 @@ resource "cloudflare_dns_record" "worker" {
   name    = "worker.polar.sh"
   type    = "CNAME"
   content = replace(module.production.worker_urls["worker"], "https://", "")
-  proxied = true
+  proxied = false
   ttl     = 1
 }

@@ -269,10 +269,15 @@ module "production" {
   }
 
   prometheus_config = {
-    url      = var.prometheus_remote_write_url
-    username = var.prometheus_remote_write_username
-    password = var.prometheus_remote_write_password
-    interval = var.prometheus_remote_write_interval
+    url       = var.grafana_cloud_prometheus_url
+    username  = var.grafana_cloud_prometheus_username
+    password  = var.grafana_cloud_prometheus_password
+    query_key = var.grafana_cloud_prometheus_query_key
+  }
+
+  slo_report_config = {
+    slack_bot_token = var.slo_report_slack_bot_token
+    slack_channel   = var.slo_report_slack_channel
   }
 
   tinybird_config = {

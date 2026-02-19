@@ -168,11 +168,28 @@ resource "render_env_group" "prometheus" {
   count          = var.prometheus_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "prometheus-${var.environment}"
+  env_vars = merge(
+    {
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_URL      = { value = "${var.prometheus_config.url}/api/prom/push" }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME = { value = var.prometheus_config.username }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_PASSWORD = { value = var.prometheus_config.password }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = { value = var.prometheus_config.interval }
+    },
+    var.prometheus_config.query_key != null ? {
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_URL  = { value = "${var.prometheus_config.url}/api/prom" }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_USER = { value = var.prometheus_config.username }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY  = { value = var.prometheus_config.query_key }
+    } : {}
+  )
+}
+
+resource "render_env_group" "slo_report" {
+  count          = var.slo_report_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "slo-report-${var.environment}"
   env_vars = {
-    POLAR_PROMETHEUS_REMOTE_WRITE_URL      = { value = var.prometheus_config.url }
-    POLAR_PROMETHEUS_REMOTE_WRITE_USERNAME = { value = var.prometheus_config.username }
-    POLAR_PROMETHEUS_REMOTE_WRITE_PASSWORD = { value = var.prometheus_config.password }
-    POLAR_PROMETHEUS_REMOTE_WRITE_INTERVAL = { value = var.prometheus_config.interval }
+    POLAR_SLACK_BOT_TOKEN = { value = var.slo_report_config.slack_bot_token }
+    POLAR_SLACK_CHANNEL   = { value = var.slo_report_config.slack_channel }
   }
 }
 
@@ -375,6 +392,12 @@ resource "render_env_group_link" "apple" {
 resource "render_env_group_link" "prometheus" {
   count        = var.prometheus_config != null ? 1 : 0
   env_group_id = render_env_group.prometheus[0].id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "slo_report" {
+  count        = var.slo_report_config != null ? 1 : 0
+  env_group_id = render_env_group.slo_report[0].id
   service_ids  = local.all_service_ids
 }
 

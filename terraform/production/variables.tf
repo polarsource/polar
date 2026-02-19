@@ -276,28 +276,41 @@ variable "backend_app_review_otp_code" {
   sensitive   = true
 }
 
-# Prometheus Remote Write (shared across environments)
-variable "prometheus_remote_write_url" {
-  description = "Prometheus Remote Write URL"
+# Grafana Cloud Prometheus (shared across environments)
+variable "grafana_cloud_prometheus_url" {
+  description = "Grafana Cloud Prometheus base URL"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_username" {
-  description = "Prometheus Remote Write Username"
+variable "grafana_cloud_prometheus_username" {
+  description = "Grafana Cloud Prometheus username (numeric stack ID)"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_password" {
-  description = "Prometheus Remote Write Password"
+variable "grafana_cloud_prometheus_password" {
+  description = "Grafana Cloud Prometheus write API key"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_interval" {
-  description = "Prometheus Remote Write Interval"
-  type        = number
+variable "grafana_cloud_prometheus_query_key" {
+  description = "Grafana Cloud Prometheus query API key (read-only)"
+  type        = string
+  sensitive   = true
+}
+
+# SLO Report
+variable "slo_report_slack_bot_token" {
+  description = "Slack Bot Token for SLO reports"
+  type        = string
+  sensitive   = true
+}
+
+variable "slo_report_slack_channel" {
+  description = "Slack channel ID for SLO reports"
+  type        = string
   sensitive   = false
 }
 

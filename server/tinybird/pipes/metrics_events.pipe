@@ -29,51 +29,6 @@ DESCRIPTION >
     - canceled_subscriptions_other
     Held balances are not counted toward revenue related metrics.
 
-NODE subscription_latest_product
-SQL >
-    %
-    SELECT
-        e.subscription_id,
-        argMax(
-            COALESCE(e.new_product_id, e.product_id),
-            (
-                e.timestamp,
-                e.ingested_at,
-                multiIf(
-                    e.name = 'subscription.product_updated', 3, e.name = 'subscription.created', 2, 1
-                )
-            )
-        ) AS latest_product_id
-    FROM system_events_by_org AS e
-    WHERE
-        e.subscription_id IS NOT NULL
-        AND COALESCE(e.new_product_id, e.product_id) IS NOT NULL
-        AND e.name IN (
-            'subscription.created',
-            'subscription.product_updated',
-            'order.paid',
-            'balance.order',
-            'balance.credit_order'
-        )
-        AND e.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(
-                            ',',
-                            {{
-                                String(
-                                    org_ids,
-                                    '00000000-0000-0000-0000-000000000000',
-                                    description="Comma-separated organization UUIDs",
-                                )
-                            }}
-                        )
-                    )
-                )
-        )
-    GROUP BY e.subscription_id
-
 NODE sub_state
 SQL >
     %
@@ -81,9 +36,8 @@ SQL >
         ss.subscription_id,
         minMerge(ss.started_at) AS started_at,
         argMaxMerge(ss.ends_at) AS ends_at,
-        COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) AS product_id
+        argMaxMerge(ss.product_id) AS product_id
     FROM subscription_state AS ss
-    LEFT JOIN subscription_latest_product slp ON ss.subscription_id = slp.subscription_id
     WHERE
         ss.organization_id IN (
             SELECT
@@ -102,10 +56,10 @@ SQL >
                     )
                 )
         )
-    GROUP BY ss.subscription_id, slp.latest_product_id
+    GROUP BY ss.subscription_id
     {% if defined(product_ids) and product_ids != '' %}
         HAVING
-            COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) IN (
+            argMaxMerge(ss.product_id) IN (
                 SELECT
                     toUUIDOrNull(
                         arrayJoin(

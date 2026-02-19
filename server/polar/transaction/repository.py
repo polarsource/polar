@@ -139,3 +139,18 @@ class PayoutTransactionRepository(TransactionRepository):
             .get_base_statement(include_deleted=include_deleted)
             .where(Transaction.type == TransactionType.payout)
         )
+
+
+class PayoutReversalTransactionRepository(TransactionRepository):
+    async def get_by_payout_id(self, payout_id: UUID) -> Transaction | None:
+        statement = self.get_base_statement().where(Transaction.payout_id == payout_id)
+        return await self.get_one_or_none(statement)
+
+    def get_base_statement(
+        self, *, include_deleted: bool = False
+    ) -> Select[tuple[Transaction]]:
+        return (
+            super()
+            .get_base_statement(include_deleted=include_deleted)
+            .where(Transaction.type == TransactionType.payout_reversal)
+        )

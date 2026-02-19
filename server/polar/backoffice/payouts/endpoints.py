@@ -6,16 +6,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, classes, tag, text
 
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Account, Organization, Payout, PayoutAttempt
+from polar.models import Account, Organization, Payout, PayoutAttempt, Transaction
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout.repository import PayoutRepository
+from polar.payout.service import payout as payout_service
 from polar.payout.sorting import ListSorting, PayoutSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
@@ -38,6 +39,8 @@ def payout_status_badge(status: PayoutStatus) -> Generator[None]:
             case PayoutStatus.failed:
                 classes("badge-error")
             case PayoutStatus.pending:
+                classes("badge-neutral")
+            case PayoutStatus.canceled:
                 classes("badge-neutral")
         text(status.value.replace("_", " ").title())
     yield
@@ -328,11 +331,11 @@ async def get(
                     with tag.h2(classes="text-2xl font-bold"):
                         text(f"Payout Attempts ({len(payout.attempts)})")
 
-                    if (
-                        payout.status == PayoutStatus.failed
-                        or len(payout.attempts) == 0
-                    ):
-                        with tag.div(classes="flex justify-end"):
+                    with tag.div(classes="flex justify-end gap-2"):
+                        if (
+                            payout.status == PayoutStatus.failed
+                            or len(payout.attempts) == 0
+                        ):
                             with tag.button(
                                 classes="btn btn-primary",
                                 hx_get=str(
@@ -341,6 +344,15 @@ async def get(
                                 hx_target="#modal",
                             ):
                                 text("Retry Payout")
+                        if payout.status.is_cancelable():
+                            with tag.button(
+                                classes="btn btn-error",
+                                hx_get=str(
+                                    request.url_for("payouts:cancel", id=payout.id)
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Cancel Payout")
 
                 with datatable.Datatable[PayoutAttempt, PayoutSortProperty](
                     datatable.DatatableAttrColumn("id", "Attempt ID", clipboard=True),
@@ -407,3 +419,61 @@ async def retry(
                         hx_target="#modal",
                     ):
                         text("Retry")
+
+
+@router.api_route("/{id}/cancel", name="payouts:cancel", methods=["GET", "POST"])
+async def cancel(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    repository = PayoutRepository.from_session(session)
+    payout = await repository.get_by_id(
+        id,
+        options=(
+            joinedload(Payout.account),
+            joinedload(Payout.transactions).options(
+                contains_eager(Transaction.account),
+                contains_eager(Transaction.payout),
+            ),
+        ),
+    )
+
+    if payout is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        await payout_service.cancel(session, payout)
+        await add_toast(request, f"Payout {payout.id} canceled", variant="success")
+
+        # Close the modal and refresh the page
+        with tag.div(hx_redirect=str(request.url_for("payouts:get", id=payout.id))):
+            pass
+        return
+
+    # GET method - show confirmation modal
+    with modal(f"Cancel Payout {payout.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(f"Are you sure you want to cancel payout {payout.id}?")
+
+            with tag.p():
+                text("This will:")
+            with tag.ul(classes="list-disc list-inside"):
+                with tag.li():
+                    text("Reverse the money to the account balance")
+                with tag.li():
+                    text("Mark the payout as canceled")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url_for("payouts:cancel", id=payout.id)),
+                        hx_target="#modal",
+                    ):
+                        text("Cancel")

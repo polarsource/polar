@@ -1,5 +1,6 @@
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Headline } from '../Orbit'
 
 export function SectionLayout({
   label,
@@ -19,13 +20,7 @@ export function SectionLayout({
         className,
       )}
     >
-      {label ? (
-        <span className="text-4xl tracking-tighter md:text-7xl dark:font-light">
-          {label}
-        </span>
-      ) : (
-        <div />
-      )}
+      {label ? <Headline as="h1" text={label} /> : <div />}
       <div className={twMerge('flex flex-col')}>{children}</div>
       {footer ?? <div />}
     </div>

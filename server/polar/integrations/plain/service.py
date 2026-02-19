@@ -227,7 +227,9 @@ class PlainService:
                 and thread_result.thread is not None
             ):
                 issues = self._check_org_issues(organization, admin)
-                message = self._build_review_message(organization.slug, issues)
+                message = self._build_review_message(
+                    organization.name or organization.slug, issues
+                )
                 reply_result = await plain.reply_to_thread(
                     ReplyToThreadInput(
                         thread_id=thread_result.thread.id,
@@ -1476,35 +1478,57 @@ class PlainService:
 
         return issues
 
-    def _build_review_message(self, slug: str, issues: OrgIssues) -> str:
+    def _build_review_message(self, organization_name: str, issues: OrgIssues) -> str:
         """Build a friendly numbered message adapted to the org's specific issues."""
         lines: list[str] = [
-            "Thank you so much for submitting the form about you, your business & intended use case with Polar.",
-            "However, we have some follow-up questions/requirements for our review:",
+            f"Your organization **{organization_name}** is currently under review as part of our standard onboarding process.",
+            "",
+            "This is a completely normal step that all organizations go through when joining Polar. As a Merchant of Record, we need to ensure compliance with our acceptable use policies and verify account information.",
+            "",
+            "We'll review your account and may reach out if we need any additional information. Reviews are typically completed within 3 business days, though they can take up to 7 days depending on complexity and timing.",
+            "",
+            "During this review period, you can continue setting up your products and integrate Polar. We'll notify you as soon as the review is complete.",
+            "",
+            "Read more about our review process: https://polar.sh/docs/merchant-of-record/account-reviews",
             "",
         ]
 
-        item_num = 1
+        has_action_items = issues.missing_website or issues.missing_socials
 
-        if issues.missing_website:
+        if has_action_items:
             lines.append(
-                f"{item_num}. Can you please add your product's URL to the org settings in Polar dashboard? "
-                "You can add or change this by navigating to Settings > General and changing the field named 'Website'."
+                "In the meantime, we have some follow-up requirements for our review:"
             )
-            item_num += 1
+            lines.append("")
 
-        if issues.missing_socials:
+            item_num = 1
+
+            if issues.missing_website:
+                lines.append(
+                    f"{item_num}. Can you please add your product's URL to the org settings in Polar dashboard? "
+                    "You can add or change this by navigating to Settings > General and changing the field named 'Website'."
+                )
+                item_num += 1
+
+            if issues.missing_socials:
+                lines.append(
+                    f"{item_num}. Can you please add your personal social links (not the product's) to the org settings in Polar dashboard? "
+                    "We associate with the merchant to make sure we know who's behind what. "
+                    "In the past, people have used stolen emails to act on behalf of stores that don't even know what's happening in their name."
+                )
+                item_num += 1
+
+            # Always ask for a discount code to test the payment flow
             lines.append(
-                f"{item_num}. Can you please add your personal social links (not the product's) to the org settings in Polar dashboard? "
-                "We associate with the merchant to make sure we know who's behind what. "
-                "In the past, people have used stolen emails to act on behalf of stores that don't even know what's happening in their name."
+                f"{item_num}. Can you share a 100% discount code that I can test the payment flow with?"
             )
-            item_num += 1
+        else:
+            lines.append(
+                "In the meantime, can you share a 100% discount code that I can test the payment flow with?"
+            )
 
-        # Always ask for a discount code to test the payment flow
-        lines.append(
-            f"{item_num}. Can you share a 100% discount code that I can test the payment flow with?"
-        )
+        lines.append("")
+        lines.append("If you have any questions, feel free to reply to this message.")
 
         return "\n".join(lines)
 

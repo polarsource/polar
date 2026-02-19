@@ -20,7 +20,7 @@ export function SectionLayout({
         className,
       )}
     >
-      {label ? <Headline as="h1" text={label} /> : <div />}
+      {label ? <Headline as="h1" animate text={label} /> : <div />}
       <div className={twMerge('flex flex-col')}>{children}</div>
       {footer ?? <div />}
     </div>

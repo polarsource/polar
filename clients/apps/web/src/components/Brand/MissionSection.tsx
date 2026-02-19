@@ -1,3 +1,4 @@
+import { Headline } from '../Orbit'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
 import { SectionLayout } from './SectionLayout'
 import { ShaderCanvas } from './ShaderCanvas'
@@ -33,11 +34,7 @@ export function MissionSection() {
           >
             <div className="flex flex-col items-center gap-8 md:gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
-              <h3 className="text-center text-3xl leading-tight tracking-tighter text-pretty md:text-5xl dark:font-light">
-                From prompt to revenue.
-                <br />
-                Automatically.
-              </h3>
+              <Headline as="h3" className="text-center text-pretty" text={['From prompt to revenue.', 'Automatically.']} />
               <span className="font-louize text-xl md:text-4xl">polar.sh</span>
             </div>
           </ShaderCanvas>
@@ -48,11 +45,7 @@ export function MissionSection() {
           >
             <div className="flex flex-col items-center gap-8 md:gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
-              <h3 className="text-center text-3xl leading-tight tracking-tighter text-pretty md:text-5xl dark:font-light">
-                We count tokens.
-                <br />
-                So you don't have to.
-              </h3>
+              <Headline as="h3" className="text-center text-pretty" text={["We count tokens.", "So you don't have to."]} />
               <span className="font-louize text-xl md:text-4xl">polar.sh</span>
             </div>
           </ShaderCanvas>

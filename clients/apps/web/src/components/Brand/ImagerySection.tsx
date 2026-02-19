@@ -1,4 +1,3 @@
-import React from 'react'
 import { SectionLayout } from './SectionLayout'
 
 export function ImagerySection() {
@@ -18,8 +17,9 @@ export function ImagerySection() {
           ))}
         </div>
         <p className="max-w-md text-sm leading-relaxed text-neutral-400">
-          Use clean, minimal imagery that emphasizes developer tools, interfaces,
-          and abstract geometric patterns. Avoid stock photography with people.
+          Use clean, minimal imagery that emphasizes developer tools,
+          interfaces, and abstract geometric patterns. Avoid stock photography
+          with people.
         </p>
       </div>
     </SectionLayout>

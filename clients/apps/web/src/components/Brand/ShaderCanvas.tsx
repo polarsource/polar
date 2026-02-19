@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { setupWebGL, createRenderLoop, type Effect } from './shaders/core'
+import { createRenderLoop, setupWebGL, type Effect } from './shaders/core'
 import { IMAGE_GLSL, loadImageTexture } from './shaders/geometry/image'
 
 export type GeometrySource = string | { image: string }

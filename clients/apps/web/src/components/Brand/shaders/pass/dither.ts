@@ -1,5 +1,5 @@
-import { HASH_GLSL, BAYER8_GLSL, FILM_GRAIN_GLSL } from '../glsl'
 import type { Effect, EffectInstance } from '../core'
+import { BAYER8_GLSL, FILM_GRAIN_GLSL, HASH_GLSL } from '../glsl'
 
 export interface DitherShaderOptions {
   filmGrain?: boolean
@@ -16,7 +16,14 @@ export interface DitherEffectOptions {
 }
 
 export function ditherEffect(options: DitherEffectOptions = {}): Effect {
-  const { pixelSize = 4, thresholdBias = 0.02, colorA, colorB, darkColorA, darkColorB } = options
+  const {
+    pixelSize = 4,
+    thresholdBias = 0.02,
+    colorA,
+    colorB,
+    darkColorA,
+    darkColorB,
+  } = options
 
   return {
     colorA,

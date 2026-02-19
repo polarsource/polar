@@ -1,6 +1,6 @@
 import { GeistMono } from 'geist/font/mono'
-import { HASH_GLSL, FILM_GRAIN_GLSL } from '../glsl'
 import type { Effect, EffectInstance } from '../core'
+import { FILM_GRAIN_GLSL, HASH_GLSL } from '../glsl'
 
 export interface AsciiEffectOptions {
   cellSize?: number
@@ -37,7 +37,14 @@ export function asciiEffect(options: AsciiEffectOptions = {}): Effect {
       const texture = gl.createTexture()!
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, texture)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, atlas.canvas)
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        atlas.canvas,
+      )
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
@@ -45,7 +52,17 @@ export function asciiEffect(options: AsciiEffectOptions = {}): Effect {
 
       return {
         draw(gl, canvas, time, colors) {
-          setupAsciiUniforms(gl, locs, canvas, time, colors, atlas, texture, cellSize, characters.length)
+          setupAsciiUniforms(
+            gl,
+            locs,
+            canvas,
+            time,
+            colors,
+            atlas,
+            texture,
+            cellSize,
+            characters.length,
+          )
         },
         cleanup() {
           gl.deleteTexture(texture)

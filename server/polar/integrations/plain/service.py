@@ -1,6 +1,7 @@
 # pyright: reportCallIssue=false
 import asyncio
 import contextlib
+import dataclasses
 import uuid
 from collections.abc import AsyncIterator, Coroutine
 from typing import Any
@@ -28,6 +29,7 @@ from plain_client import (
     CustomerIdentifierInput,
     EmailAddressInput,
     Plain,
+    ReplyToThreadInput,
     ThreadsFilter,
     ThreadStatus,
     UpsertCustomerIdentifierInput,
@@ -50,6 +52,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
@@ -63,6 +66,20 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
+
+GUIDELINES_URL = (
+    "https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines"
+)
+
+
+@dataclasses.dataclass
+class OrgIssues:
+    missing_website: bool = False
+    missing_socials: bool = False
+    admin_not_verified: bool = False
+    admin_verification_status: str = ""
+    test_order_count: int = 0
+    test_order_total: str = ""
 
 
 class PlainServiceError(PolarError): ...
@@ -210,6 +227,28 @@ class PlainService:
                 raise AccountReviewThreadCreationError(
                     organization.account.id, thread_result.error.message
                 )
+
+            # For initial reviews, send the review action checklist as an outbound reply
+            if (
+                organization.status == OrganizationStatus.INITIAL_REVIEW
+                and thread_result.thread is not None
+            ):
+                issues = await self._check_org_issues(session, organization, admin)
+                message = self._build_review_message(organization.slug, issues)
+                reply_result = await plain.reply_to_thread(
+                    ReplyToThreadInput(
+                        thread_id=thread_result.thread.id,
+                        text_content=message,
+                        markdown_content=message,
+                    )
+                )
+                if reply_result.error is not None:
+                    log.error(
+                        "Failed to post review action message",
+                        thread_id=thread_result.thread.id,
+                        slug=organization.slug,
+                        error=reply_result.error.message,
+                    )
 
     async def create_appeal_review_thread(
         self,
@@ -1423,6 +1462,97 @@ class PlainService:
                     nr_threads += 1
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
+
+    async def _check_org_issues(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        admin: User,
+    ) -> OrgIssues:
+        """Check an organization for actionable issues."""
+        issues = OrgIssues()
+
+        if not organization.website:
+            issues.missing_website = True
+
+        if not organization.socials:
+            issues.missing_socials = True
+
+        if not admin.identity_verified:
+            issues.admin_not_verified = True
+            issues.admin_verification_status = admin.identity_verification_status
+
+        # Check for non-refunded test orders (customer email matches an org member email)
+        member_emails_stmt = (
+            select(func.lower(User.email))
+            .join(UserOrganization, UserOrganization.user_id == User.id)
+            .where(UserOrganization.organization_id == organization.id)
+        )
+        member_emails_result = await session.execute(member_emails_stmt)
+        member_emails = set(member_emails_result.scalars().all())
+
+        if member_emails:
+            test_orders_stmt = (
+                select(Order)
+                .join(Customer, Customer.id == Order.customer_id)
+                .where(
+                    Customer.organization_id == organization.id,
+                    func.lower(Customer.email).in_(member_emails),
+                    Order.status == OrderStatus.paid,
+                    Order.net_amount > 0,
+                )
+            )
+            test_orders_result = await session.execute(test_orders_stmt)
+            test_orders = test_orders_result.scalars().all()
+
+            if test_orders:
+                total = sum(o.net_amount for o in test_orders)
+                currency = test_orders[0].currency
+                issues.test_order_count = len(test_orders)
+                issues.test_order_total = format_currency(total, currency)
+
+        return issues
+
+    def _build_review_message(self, slug: str, issues: OrgIssues) -> str:
+        """Build a friendly numbered message adapted to the org's specific issues."""
+        lines: list[str] = [
+            "Thank you so much for submitting the form about you, your business & intended use case with Polar.",
+            "However, we have some follow-up questions/requirements for our review:",
+            "",
+        ]
+
+        item_num = 1
+
+        if issues.missing_website:
+            lines.append(
+                f"{item_num}. Can you please add your product's URL to the org settings in Polar dashboard? "
+                "You can add or change this by navigating to Settings > General and changing the field named 'Website'."
+            )
+            item_num += 1
+
+        if issues.missing_socials:
+            lines.append(
+                f"{item_num}. Can you please add your personal social links (not the product's) to the org settings in Polar dashboard? "
+                "We associate with the merchant to make sure we know who's behind what. "
+                "In the past, people have used stolen emails to act on behalf of stores that don't even know what's happening in their name."
+            )
+            item_num += 1
+
+        # Always ask for a discount code to test the payment flow
+        lines.append(
+            f"{item_num}. Can you share a 100% discount code that I can test the payment flow with?"
+        )
+        item_num += 1
+
+        if issues.test_order_count > 0:
+            lines.append(
+                f"{item_num}. Could you please refund all the test sales "
+                "(by going to Sales > Orders > [Particular Order] > Scroll and click Refund order) "
+                f"as per our guidelines - {GUIDELINES_URL}?"
+            )
+            item_num += 1
+
+        return "\n".join(lines)
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:

@@ -29,7 +29,10 @@ export function VoiceSection() {
       <div className="flex flex-col gap-16">
         <div className="flex flex-col gap-12 md:gap-24">
           {traits.map((item) => (
-            <div key={item.trait} className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-48">
+            <div
+              key={item.trait}
+              className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-48"
+            >
               <span className="text-5xl font-light tracking-tighter md:text-9xl">
                 {item.trait}
               </span>

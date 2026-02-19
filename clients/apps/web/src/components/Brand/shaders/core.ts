@@ -107,7 +107,12 @@ export interface ColorDefaults {
 }
 
 export interface EffectInstance {
-  draw(gl: WebGLRenderingContext, canvas: HTMLCanvasElement, time: number, colors: { a: number[]; b: number[] }): void
+  draw(
+    gl: WebGLRenderingContext,
+    canvas: HTMLCanvasElement,
+    time: number,
+    colors: { a: number[]; b: number[] },
+  ): void
   cleanup?(): void
 }
 
@@ -129,7 +134,11 @@ export interface RenderLoopOptions {
   darkColorA?: string
   darkColorB?: string
   colorDefaults?: ColorDefaults
-  draw: (gl: WebGLRenderingContext, time: number, colors: { a: number[]; b: number[] }) => void
+  draw: (
+    gl: WebGLRenderingContext,
+    time: number,
+    colors: { a: number[]; b: number[] },
+  ) => void
 }
 
 export function createRenderLoop(options: RenderLoopOptions): () => void {
@@ -157,7 +166,8 @@ export function createRenderLoop(options: RenderLoopOptions): () => void {
   const mql = window.matchMedia('(prefers-color-scheme: dark)')
   updateColors(mql.matches)
 
-  const onColorSchemeChange = (e: MediaQueryListEvent) => updateColors(e.matches)
+  const onColorSchemeChange = (e: MediaQueryListEvent) =>
+    updateColors(e.matches)
   mql.addEventListener('change', onColorSchemeChange)
 
   const resize = () => {

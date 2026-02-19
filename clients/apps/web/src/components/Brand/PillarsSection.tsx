@@ -59,7 +59,7 @@ export function PillarsSection() {
               className="aspect-square"
             />
             <div
-              className="dark:bg-[#0a0a0a] absolute z-10 flex items-end bg-[#f2f2f2]"
+              className="absolute z-10 flex items-end bg-[#f2f2f2] dark:bg-[#0a0a0a]"
               style={{
                 bottom: PIXEL * 2,
                 left: PIXEL * 2,

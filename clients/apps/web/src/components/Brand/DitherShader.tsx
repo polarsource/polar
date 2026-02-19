@@ -1,9 +1,17 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
-import { setupWebGL, createRenderLoop, type ColorDefaults } from './shaders/core'
+import { useEffect, useRef } from 'react'
+import {
+  createRenderLoop,
+  setupWebGL,
+  type ColorDefaults,
+} from './shaders/core'
 import { WAVES_GLSL } from './shaders/geometry/waves'
-import { buildDitherShader, getDitherUniformLocations, setupDitherUniforms } from './shaders/pass/dither'
+import {
+  buildDitherShader,
+  getDitherUniformLocations,
+  setupDitherUniforms,
+} from './shaders/pass/dither'
 
 export function DitherShader({
   className,

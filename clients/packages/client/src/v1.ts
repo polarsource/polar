@@ -21742,7 +21742,7 @@ export interface components {
      * PayoutStatus
      * @enum {string}
      */
-    PayoutStatus: 'pending' | 'in_transit' | 'succeeded' | 'failed'
+    PayoutStatus: 'pending' | 'in_transit' | 'succeeded' | 'failed' | 'canceled'
     /** PersonalAccessToken */
     PersonalAccessToken: {
       /**
@@ -25305,6 +25305,7 @@ export interface components {
       | 'dispute_reversal'
       | 'balance'
       | 'payout'
+      | 'payout_reversal'
     /** TransactionsBalance */
     TransactionsBalance: {
       /** Currency */
@@ -43436,7 +43437,7 @@ export const payoutSortPropertyValues: ReadonlyArray<
 ]
 export const payoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutStatus']
-> = ['pending', 'in_transit', 'succeeded', 'failed']
+> = ['pending', 'in_transit', 'succeeded', 'failed', 'canceled']
 export const platformFeeTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PlatformFeeType']
 > = [
@@ -43917,6 +43918,7 @@ export const transactionTypeValues: ReadonlyArray<
   'dispute_reversal',
   'balance',
   'payout',
+  'payout_reversal',
 ]
 export const trialIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TrialInterval']

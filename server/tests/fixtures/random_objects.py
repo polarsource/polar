@@ -2010,7 +2010,7 @@ async def create_payout(
         fees_amount=fees_amount,
         account_currency=account_currency,
         account_amount=account_amount,
-        transaction=transaction,
+        transactions=[transaction] if transaction else [],
         invoice_number=invoice_number or rstr("POLAR-"),
         attempts=[
             PayoutAttempt(

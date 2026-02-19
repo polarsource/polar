@@ -27,6 +27,7 @@ from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.transaction.repository import (
+    PayoutReversalTransactionRepository,
     PayoutTransactionRepository,
     TransactionRepository,
 )
@@ -160,6 +161,15 @@ class PayoutAlreadyTriggered(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
         message = f"Payout {payout.id} has already been triggered."
+        super().__init__(message)
+
+
+class PayoutNotCancelable(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            f"Payout {payout.id} cannot be canceled because of its current status."
+        )
         super().__init__(message)
 
 
@@ -487,6 +497,39 @@ class PayoutService:
         return await attempt_repository.update(
             attempt,
             update_dict={"processor_id": stripe_payout.id},
+        )
+
+    async def cancel(self, session: AsyncSession, payout: Payout) -> Payout:
+        if not payout.status.is_cancelable():
+            raise PayoutNotCancelable(payout)
+
+        payout_transaction = payout.transaction
+        payout_reversal_transaction = await payout_transaction_service.reverse(
+            session, payout_transaction
+        )
+
+        if (
+            payout.processor == AccountType.stripe
+            and payout_transaction.transfer_id is not None
+        ):
+            stripe_reversal = await stripe_service.reverse_transfer(
+                payout_transaction.transfer_id,
+                metadata={
+                    "payout_id": str(payout.id),
+                    "payout_reversal_transaction": str(payout_reversal_transaction.id),
+                },
+            )
+            payout_reversal_transaction_repository = (
+                PayoutReversalTransactionRepository.from_session(session)
+            )
+            await payout_reversal_transaction_repository.update(
+                payout_reversal_transaction,
+                update_dict={"transfer_reversal_id": stripe_reversal.id},
+            )
+
+        repository = PayoutRepository.from_session(session)
+        return await repository.update(
+            payout, update_dict={"status": PayoutStatus.canceled}
         )
 
     async def trigger_invoice_generation(

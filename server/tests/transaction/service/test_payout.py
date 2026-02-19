@@ -3,7 +3,7 @@ from functools import partial
 import pytest
 
 from polar.models import Account, Organization, Payout, Transaction, User
-from polar.models.transaction import Processor
+from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
@@ -91,3 +91,61 @@ class TestCreate:
             len(transaction.account_incurred_transactions)
             == len(transaction.incurred_transactions) / 2
         )
+
+
+@pytest.mark.asyncio
+class TestReverse:
+    async def test_stripe(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        payout, _ = await create_payout(save_fixture, session, account=account)
+
+        payout_transaction = Transaction(
+            type=TransactionType.payout,
+            account=account,
+            processor=Processor.stripe,
+            currency=payout.currency,
+            amount=payout.amount,
+            account_currency=payout.account_currency,
+            account_amount=payout.account_amount,
+            tax_amount=0,
+            pledge=None,
+            issue_reward=None,
+            order=None,
+            paid_transactions=[],
+            incurred_transactions=[],
+            account_incurred_transactions=[],
+            payout=payout,
+        )
+        await save_fixture(payout_transaction)
+
+        transaction = await payout_transaction_service.reverse(
+            session, payout_transaction
+        )
+
+        assert transaction.type == TransactionType.payout_reversal
+        assert transaction.account == account
+        assert transaction.processor == Processor.stripe
+        assert transaction.payout == payout
+        assert transaction.currency == payout.currency
+        assert transaction.amount == -payout.amount
+        assert transaction.account_currency == payout.account_currency
+        assert transaction.account_amount == -payout.account_amount
+        assert transaction.transfer_reversal_id is None
+
+        assert payout_transaction.payout == payout

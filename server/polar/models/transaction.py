@@ -54,6 +54,8 @@ class TransactionType(StrEnum):
     """Money flow between Polar and a user's account."""
     payout = "payout"
     """Money paid to the user's bank account."""
+    payout_reversal = "payout_reversal"
+    """A payout is reversed back to Polar (totally or partially)."""
 
 
 class ProcessorFeeType(StrEnum):
@@ -427,7 +429,7 @@ class Transaction(RecordModel):
 
     @declared_attr
     def payout(cls) -> Mapped["Payout | None"]:
-        return relationship("Payout", lazy="raise", back_populates="transaction")
+        return relationship("Payout", lazy="raise", back_populates="transactions")
 
     @declared_attr
     def balance_transactions(cls) -> Mapped[list["Transaction"]]:

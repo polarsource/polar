@@ -15,6 +15,7 @@ from sqlalchemy.sql.sqltypes import BigInteger
 from polar.enums import AccountType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.models.transaction import TransactionType
 
 from .payout_attempt import PayoutAttempt, PayoutAttemptStatus
 
@@ -29,6 +30,10 @@ class PayoutStatus(StrEnum):
     succeeded = "succeeded"
     failed = "failed"
     canceled = "canceled"
+
+    def is_cancelable(self) -> bool:
+        """Whether a payout with this status can be canceled."""
+        return self in {PayoutStatus.pending, PayoutStatus.failed}
 
 
 class Payout(RecordModel):
@@ -78,14 +83,13 @@ class Payout(RecordModel):
     Might be `None` if not yet created.
     """
 
-    transaction: Mapped["Transaction"] = relationship(
+    transactions: Mapped[list["Transaction"]] = relationship(
         "Transaction",
         back_populates="payout",
         lazy="raise",
-        uselist=False,
         foreign_keys="Transaction.payout_id",
     )
-    """Transaction associated with this payout."""
+    """Transactions associated with this payout."""
 
     attempts: Mapped[list["PayoutAttempt"]] = relationship(
         "PayoutAttempt",
@@ -94,6 +98,14 @@ class Payout(RecordModel):
         order_by="PayoutAttempt.created_at.asc()",
     )
     """Payout attempts associated with this payout."""
+
+    @property
+    def transaction(self) -> "Transaction":
+        return next(
+            transaction
+            for transaction in self.transactions
+            if transaction.type == TransactionType.payout
+        )
 
     @property
     def gross_amount(self) -> int:

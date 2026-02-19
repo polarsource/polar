@@ -23,6 +23,9 @@ if TYPE_CHECKING:
     from stripe.params._setup_intent_create_params import SetupIntentCreateParams
     from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
     from stripe.params._transfer_create_params import TransferCreateParams
+    from stripe.params._transfer_create_reversal_params import (
+        TransferCreateReversalParams,
+    )
     from stripe.params._transfer_modify_params import TransferModifyParams
     from stripe.params.tax._calculation_create_params import CalculationCreateParams
     from stripe.params.tax._transaction_create_reversal_params import (
@@ -182,6 +185,22 @@ class StripeService:
             "metadata": metadata,
         }
         return await stripe_lib.Transfer.modify_async(id, **update_params)
+
+    async def reverse_transfer(
+        self,
+        id: str,
+        *,
+        amount: int | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> stripe_lib.Reversal:
+        reverse_params: TransferCreateReversalParams = {
+            "metadata": metadata or {},
+            "idempotency_key": f"polar:transfer_reverse:{id}",
+        }
+        if amount is not None:
+            reverse_params["amount"] = amount
+
+        return await stripe_lib.Transfer.create_reversal_async(id, **reverse_params)
 
     async def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return await stripe_lib.Customer.retrieve_async(customer_id)

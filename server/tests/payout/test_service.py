@@ -13,7 +13,7 @@ from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Organization, Transaction, User
-from polar.models.payout_attempt import PayoutAttemptStatus
+from polar.models.payout import PayoutStatus
 from polar.models.transaction import TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
@@ -253,25 +253,28 @@ class TestTriggerStripePayouts:
             save_fixture,
             account=account_1,
             created_at=utc_now() - datetime.timedelta(days=14),
+            status=PayoutStatus.pending,
             attempts=[],
         )
         payout_2 = await create_payout(
             save_fixture,
             account=account_1,
             created_at=utc_now() - datetime.timedelta(days=7),
+            status=PayoutStatus.pending,
             attempts=[],
         )
         payout_3 = await create_payout(
             save_fixture,
             account=account_2,
             created_at=utc_now() - datetime.timedelta(days=7),
+            status=PayoutStatus.pending,
             attempts=[],
         )
         payout_4 = await create_payout(
             save_fixture,
             account=account_2,
             created_at=utc_now() - datetime.timedelta(days=7),
-            attempts=[PayoutAttemptStatus.succeeded],
+            status=PayoutStatus.succeeded,
         )
 
         await payout_service.trigger_stripe_payouts(session)
@@ -418,7 +421,10 @@ class TestTriggerInvoiceGeneration:
     ) -> None:
         account = await create_account(save_fixture, organization, user)
         payout = await create_payout(
-            save_fixture, account=account, attempts=[PayoutAttemptStatus.pending]
+            save_fixture,
+            account=account,
+            status=PayoutStatus.pending,
+            attempts=[],
         )
 
         with pytest.raises(PayoutNotSucceeded):

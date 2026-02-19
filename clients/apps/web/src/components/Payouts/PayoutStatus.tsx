@@ -14,6 +14,7 @@ export const PayoutStatusDisplayTitle: Record<schemas['PayoutStatus'], string> =
     pending: 'Pending',
     failed: 'Failed',
     in_transit: 'In Transit',
+    canceled: 'Canceled',
   }
 
 export const PayoutStatusDisplayColor: Record<schemas['PayoutStatus'], string> =
@@ -22,6 +23,7 @@ export const PayoutStatusDisplayColor: Record<schemas['PayoutStatus'], string> =
     pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
     failed: 'bg-red-100 text-red-500 dark:bg-red-950',
     in_transit: 'bg-blue-100 text-blue-500 dark:bg-blue-950',
+    canceled: 'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400',
   }
 
 export const PayoutStatus = ({

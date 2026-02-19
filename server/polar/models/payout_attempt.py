@@ -3,6 +3,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -67,3 +70,94 @@ class PayoutAttempt(RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
     """Date and time when this payout attempt was paid."""
+
+
+payout_status_update_function = PGFunction(
+    schema="public",
+    signature="payout_status_update()",
+    definition="""
+    RETURNS trigger AS $$
+    DECLARE
+        has_succeeded BOOLEAN;
+        has_attempts BOOLEAN;
+        all_failed BOOLEAN;
+        latest_status TEXT;
+        new_status TEXT;
+        current_status TEXT;
+    BEGIN
+        -- Don't update canceled payouts
+        SELECT status INTO current_status
+        FROM payouts
+        WHERE id = NEW.payout_id;
+
+        IF current_status = 'canceled' THEN
+            RETURN NEW;
+        END IF;
+
+        -- Check if any attempt succeeded
+        SELECT EXISTS(
+            SELECT 1 FROM payout_attempts
+            WHERE payout_id = NEW.payout_id
+            AND status = 'succeeded'
+        ) INTO has_succeeded;
+
+        -- Check if there are any attempts
+        SELECT EXISTS(
+            SELECT 1 FROM payout_attempts
+            WHERE payout_id = NEW.payout_id
+        ) INTO has_attempts;
+
+        -- Get the latest attempt's status
+        SELECT status INTO latest_status
+        FROM payout_attempts
+        WHERE payout_id = NEW.payout_id
+        ORDER BY created_at DESC
+        LIMIT 1;
+
+        -- Check if all attempts failed
+        SELECT has_attempts AND NOT EXISTS(
+            SELECT 1 FROM payout_attempts
+            WHERE payout_id = NEW.payout_id
+            AND status != 'failed'
+        ) INTO all_failed;
+
+        -- Determine new status
+        IF has_succeeded THEN
+            new_status := 'succeeded';
+        ELSIF NOT has_attempts THEN
+            new_status := 'pending';
+        ELSIF latest_status = 'in_transit' THEN
+            new_status := 'in_transit';
+        ELSIF all_failed THEN
+            new_status := 'failed';
+        ELSE
+            new_status := 'pending';
+        END IF;
+
+        -- Update the payout status
+        UPDATE payouts
+        SET status = new_status
+        WHERE id = NEW.payout_id;
+
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+payout_status_update_trigger = PGTrigger(
+    schema="public",
+    signature="payout_status_update_trigger",
+    on_entity="payout_attempts",
+    definition="""
+    AFTER INSERT OR UPDATE ON payout_attempts
+    FOR EACH ROW EXECUTE FUNCTION payout_status_update();
+    """,
+)
+
+register_entities(
+    (
+        payout_status_update_function,
+        payout_status_update_trigger,
+    )
+)

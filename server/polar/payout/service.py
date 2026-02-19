@@ -3,6 +3,7 @@ import uuid
 from collections.abc import AsyncIterable, Sequence
 from typing import Any, cast
 
+import sentry_sdk
 import stripe as stripe_lib
 import structlog
 
@@ -457,15 +458,31 @@ class PayoutService:
         )
 
         # Trigger a payout on the Stripe Connect account
-        stripe_payout = await stripe_service.create_payout(
-            stripe_account=account.stripe_id,
-            amount=payout.account_amount,
-            currency=payout.account_currency,
-            metadata={
-                "payout_id": str(payout.id),
-                "payout_attempt_id": str(attempt.id),
-            },
-        )
+        try:
+            stripe_payout = await stripe_service.create_payout(
+                stripe_account=account.stripe_id,
+                amount=payout.account_amount,
+                currency=payout.account_currency,
+                metadata={
+                    "payout_id": str(payout.id),
+                    "payout_attempt_id": str(attempt.id),
+                },
+            )
+        except stripe_lib.InvalidRequestError as e:
+            # Capture exception in Sentry for debugging purposes
+            sentry_sdk.capture_exception(
+                e,
+                extras={"payout_id": str(payout.id)},
+            )
+            # Do not raise an error here: we know it happens often, because Stripe
+            # has many hidden rules on payout creation that we cannot control.
+            return await attempt_repository.update(
+                attempt,
+                update_dict={
+                    "status": PayoutAttemptStatus.failed,
+                    "failed_reason": str(e),
+                },
+            )
 
         return await attempt_repository.update(
             attempt,

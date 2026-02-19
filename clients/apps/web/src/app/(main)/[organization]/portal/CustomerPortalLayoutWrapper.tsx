@@ -1,8 +1,8 @@
 'use client'
 
+import { CustomerPortalProvider } from '@/components/CustomerPortal/CustomerPortalProvider'
 import { schemas } from '@polar-sh/client'
-import { CustomerPortalProvider } from '@polar-sh/customer-portal/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 interface CustomerPortalLayoutWrapperProps {
   organization: schemas['CustomerOrganization']
@@ -14,7 +14,6 @@ export function CustomerPortalLayoutWrapper({
   children,
 }: CustomerPortalLayoutWrapperProps) {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const token =
     searchParams.get('customer_session_token') ??
     searchParams.get('member_session_token') ??
@@ -26,9 +25,6 @@ export function CustomerPortalLayoutWrapper({
       organizationId={organization.id}
       organizationSlug={organization.slug}
       baseUrl={process.env.NEXT_PUBLIC_API_URL}
-      onUnauthorized={() => {
-        router.push(`/${organization.slug}/portal/request`)
-      }}
     >
       {children}
     </CustomerPortalProvider>

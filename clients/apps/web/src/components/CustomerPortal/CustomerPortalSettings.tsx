@@ -2,8 +2,8 @@
 
 import revalidate from '@/app/actions'
 import { useCustomerPaymentMethods } from '@/hooks/queries'
+import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
-import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'

@@ -7,10 +7,10 @@ import { twMerge } from 'tailwind-merge'
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'span'
 
 const defaultSizes: Record<HeadingTag, string> = {
-  h1: 'text-5xl md:text-8xl font-light tracking-tighter leading-tighter!',
-  h2: 'text-4xl md:text-5xl tracking-tighter leading-tight!',
-  h3: 'text-3xl md:text-5xl tracking-tighter leading-tight!',
-  h4: 'text-2xl md:text-3xl tracking-tighter leading-tight!',
+  h1: 'text-5xl md:text-8xl font-light tracking-tight leading-tighter!',
+  h2: 'text-4xl md:text-5xl tracking-tight leading-tight!',
+  h3: 'text-3xl md:text-5xl tracking-tight leading-tight!',
+  h4: 'text-2xl md:text-3xl tracking-tight leading-tight!',
   h5: 'text-xl md:text-2xl tracking-tight leading-tight!',
   h6: 'text-lg md:text-xl tracking-tight leading-tight!',
   span: 'font-medium leading-tight!',
@@ -48,7 +48,7 @@ type HeadlineProps<T extends HeadingTag = 'h2'> = {
   animate?: boolean
 } & Omit<React.ComponentPropsWithoutRef<T>, 'size' | 'children'>
 
-export function Headline<T extends HeadingTag = 'h2'>({
+export function Headline<T extends HeadingTag>({
   as,
   text,
   size,
@@ -65,7 +65,7 @@ export function Headline<T extends HeadingTag = 'h2'>({
   const isInView = useInView(ref, { once: true, amount: 0 })
 
   const sharedClassName = twMerge(
-    'text-black dark:text-white',
+    'text-black dark:text-white font-display',
     sizeClass,
     className,
   )

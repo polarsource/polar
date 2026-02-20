@@ -1,6 +1,7 @@
 'use client'
 
 import { Headline, Input } from '@/components/Orbit'
+import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
   {
@@ -44,25 +45,15 @@ const props = [
 export default function InputPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <span className="dark:text-polar-500 text-sm text-neutral-400">
-          Component
-        </span>
-        <Headline as="h1" text="Input" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          A unified input primitive with no rounded corners. Covers standard
-          HTML input types, multi-line textarea, and a currency mode that
-          handles decimal conversion, keyboard stepping, and zero-decimal
-          currencies automatically.
-        </p>
-      </div>
+      <OrbitPageHeader
+        label="Component"
+        title="Input"
+        description="A unified input primitive with no rounded corners. Covers standard HTML input types, multi-line textarea, and a currency mode that handles decimal conversion, keyboard stepping, and zero-decimal currencies automatically."
+      />
 
       {/* Standard types */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Standard types" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Standard types" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {(
             [
@@ -90,10 +81,7 @@ export default function InputPage() {
 
       {/* Prefix / suffix slots */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Prefix & Suffix" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Prefix & Suffix" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
@@ -132,15 +120,10 @@ export default function InputPage() {
 
       {/* Currency */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Currency" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-          <p className="dark:text-polar-400 text-sm text-neutral-600">
-            Values are stored and emitted in smallest currency units (cents for
-            USD, whole units for JPY). Arrow keys step by{' '}
-            <code className="font-mono">step</code> (default 0.1).
-          </p>
-        </div>
+        <OrbitSectionHeader
+          title="Currency"
+          description={<>Values are stored and emitted in smallest currency units (cents for USD, whole units for JPY). Arrow keys step by{' '}<code className="font-mono">step</code> (default 0.1).</>}
+        />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {(
             [
@@ -167,10 +150,7 @@ export default function InputPage() {
 
       {/* Textarea */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Textarea" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Textarea" />
         <div className="grid grid-cols-5 items-start gap-8">
           <div className="col-span-2">
             <Headline as="h6" text="Multiline" />
@@ -190,10 +170,7 @@ export default function InputPage() {
 
       {/* States */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="States" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="States" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
@@ -220,10 +197,7 @@ export default function InputPage() {
 
       {/* Props */}
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Props" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Props" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">

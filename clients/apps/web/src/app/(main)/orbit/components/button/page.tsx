@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, Headline } from '@/components/Orbit'
+import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
   { variant: 'primary', label: 'Default', desc: 'Primary actions. Use once per view.' },
@@ -21,24 +22,15 @@ const props = [
 export default function ButtonPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <span className="dark:text-polar-500 text-sm text-neutral-400">
-          Component
-        </span>
-        <Headline as="h1" text="Button" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          The primary interactive element. Four semantic variants, three sizes,
-          and a built-in loading state. Always renders as a native{' '}
-          <code className="font-mono text-sm">{'<button>'}</code>.
-        </p>
-      </div>
+      <OrbitPageHeader
+        label="Component"
+        title="Button"
+        description={<>The primary interactive element. Four semantic variants, three sizes, and a built-in loading state. Always renders as a native{' '}<code className="font-mono text-sm">{'<button>'}</code>.</>}
+      />
 
       {/* Variants */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Variants" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Variants" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
             <div key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
@@ -67,10 +59,7 @@ export default function ButtonPage() {
 
       {/* Sizes */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Sizes" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Sizes" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {(
             [
@@ -100,10 +89,7 @@ export default function ButtonPage() {
 
       {/* Props */}
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Props" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Props" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">

@@ -1295,6 +1295,12 @@ class TestIngested:
         customer: Customer,
         customer_second: Customer,
     ) -> None:
+        deleted_customer = await create_customer(
+            save_fixture, organization=organization
+        )
+        deleted_customer.set_deleted_at()
+        await save_fixture(deleted_customer)
+
         events = [
             await create_event(
                 save_fixture,
@@ -1317,6 +1323,12 @@ class TestIngested:
             await create_event(
                 save_fixture,
                 external_customer_id="UNLINKED_EXTERNAL_CUSTOMER_ID",
+                organization=organization,
+                source=EventSource.user,
+            ),
+            await create_event(
+                save_fixture,
+                customer=deleted_customer,
                 organization=organization,
                 source=EventSource.user,
             ),

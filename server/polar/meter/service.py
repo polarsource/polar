@@ -284,7 +284,9 @@ class MeterService:
             clauses.append(Customer.external_id.in_(external_customer_ids))
 
         if clauses:
-            statement = customer_repository.get_base_statement().where(or_(*clauses))
+            statement = customer_repository.get_base_statement().where(
+                Customer.is_deleted.is_(False), or_(*clauses)
+            )
             async for customer in customer_repository.stream(statement):
                 enqueue_job("customer_meter.update_customer", customer.id)
 

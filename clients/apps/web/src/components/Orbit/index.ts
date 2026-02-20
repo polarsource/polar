@@ -15,6 +15,8 @@ export type { ButtonProps } from './Button'
 export { Card, CardContent, CardFooter, CardHeader } from './Card'
 export { Headline } from './Headline'
 export { Input } from './Input'
+export { Status } from './Status'
+export type { StatusProps, StatusVariant, StatusSize } from './Status'
 export type {
   CurrencyInputProps,
   InputProps,

@@ -64,35 +64,148 @@ const colorTokens = [
 ]
 
 const typeScaleTokens = [
-  { level: 'h1', mobile: '3rem / 48px', desktop: '6rem / 96px', weight: '300', tracking: '−0.04em' },
-  { level: 'h2', mobile: '2.25rem / 36px', desktop: '3rem / 48px', weight: '400', tracking: '−0.04em' },
-  { level: 'h3', mobile: '1.875rem / 30px', desktop: '3rem / 48px', weight: '400', tracking: '−0.04em' },
-  { level: 'h4', mobile: '1.5rem / 24px', desktop: '1.875rem / 30px', weight: '400', tracking: '−0.04em' },
-  { level: 'h5', mobile: '1.25rem / 20px', desktop: '1.5rem / 24px', weight: '400', tracking: '−0.04em' },
-  { level: 'h6', mobile: '1.125rem / 18px', desktop: '1.25rem / 20px', weight: '400', tracking: '−0.04em' },
+  {
+    level: 'h1',
+    mobile: '3rem / 48px',
+    desktop: '6rem / 96px',
+    weight: '300',
+    tracking: '−0.04em',
+  },
+  {
+    level: 'h2',
+    mobile: '2.25rem / 36px',
+    desktop: '3rem / 48px',
+    weight: '400',
+    tracking: '−0.04em',
+  },
+  {
+    level: 'h3',
+    mobile: '1.875rem / 30px',
+    desktop: '3rem / 48px',
+    weight: '400',
+    tracking: '−0.04em',
+  },
+  {
+    level: 'h4',
+    mobile: '1.5rem / 24px',
+    desktop: '1.875rem / 30px',
+    weight: '400',
+    tracking: '−0.04em',
+  },
+  {
+    level: 'h5',
+    mobile: '1.25rem / 20px',
+    desktop: '1.5rem / 24px',
+    weight: '400',
+    tracking: '−0.04em',
+  },
+  {
+    level: 'h6',
+    mobile: '1.125rem / 18px',
+    desktop: '1.25rem / 20px',
+    weight: '400',
+    tracking: '−0.04em',
+  },
 ]
 
 const motionTokens = [
-  { token: '--orbit-ease-expressive', value: 'cubic-bezier(0.7, 0, 0.3, 1)', usage: 'Headline reveal, BarChart scale' },
-  { token: '--orbit-ease-fade', value: 'ease-out', usage: 'Opacity overlays, hover transitions' },
-  { token: '--orbit-ease-instant', value: 'linear', usage: 'Button opacity, 50ms interactions' },
-  { token: '--orbit-duration-display', value: '1.7s', usage: 'Headline curtain reveal per line' },
-  { token: '--orbit-duration-structural', value: '1.4s', usage: 'BarChart bar scale animation' },
-  { token: '--orbit-duration-fade', value: '0.4s', usage: 'Opacity fades, content overlays' },
-  { token: '--orbit-duration-instant', value: '50ms', usage: 'Button hover opacity' },
-  { token: '--orbit-stagger', value: '0.2s ÷ n', usage: 'Per-element delay in staggered sequences' },
+  {
+    token: '--orbit-ease-expressive',
+    value: 'cubic-bezier(0.7, 0, 0.3, 1)',
+    usage: 'Headline reveal, BarChart scale',
+  },
+  {
+    token: '--orbit-ease-fade',
+    value: 'ease-out',
+    usage: 'Opacity overlays, hover transitions',
+  },
+  {
+    token: '--orbit-ease-instant',
+    value: 'linear',
+    usage: 'Button opacity, 50ms interactions',
+  },
+  {
+    token: '--orbit-duration-display',
+    value: '1.7s',
+    usage: 'Headline curtain reveal per line',
+  },
+  {
+    token: '--orbit-duration-structural',
+    value: '1.4s',
+    usage: 'BarChart bar scale animation',
+  },
+  {
+    token: '--orbit-duration-fade',
+    value: '0.4s',
+    usage: 'Opacity fades, content overlays',
+  },
+  {
+    token: '--orbit-duration-instant',
+    value: '50ms',
+    usage: 'Button hover opacity',
+  },
+  {
+    token: '--orbit-stagger',
+    value: '0.2s ÷ n',
+    usage: 'Per-element delay in staggered sequences',
+  },
 ]
 
 const spacingTokens = [
-  { token: '--orbit-space-1', px: '8px', rem: '0.5rem', usage: 'Icon gaps, tight padding' },
-  { token: '--orbit-space-2', px: '16px', rem: '1rem', usage: 'Component inner padding' },
-  { token: '--orbit-space-3', px: '24px', rem: '1.5rem', usage: 'Card padding' },
-  { token: '--orbit-space-4', px: '32px', rem: '2rem', usage: 'Section internal gap' },
-  { token: '--orbit-space-6', px: '48px', rem: '3rem', usage: 'Component section gap' },
-  { token: '--orbit-space-8', px: '64px', rem: '4rem', usage: 'Page padding — mobile' },
-  { token: '--orbit-space-12', px: '96px', rem: '6rem', usage: 'Section spacing — mobile' },
-  { token: '--orbit-space-16', px: '128px', rem: '8rem', usage: 'Page padding — desktop' },
-  { token: '--orbit-space-32', px: '256px', rem: '16rem', usage: 'Section spacing — desktop' },
+  {
+    token: '--orbit-space-1',
+    px: '8px',
+    rem: '0.5rem',
+    usage: 'Icon gaps, tight padding',
+  },
+  {
+    token: '--orbit-space-2',
+    px: '16px',
+    rem: '1rem',
+    usage: 'Component inner padding',
+  },
+  {
+    token: '--orbit-space-3',
+    px: '24px',
+    rem: '1.5rem',
+    usage: 'Card padding',
+  },
+  {
+    token: '--orbit-space-4',
+    px: '32px',
+    rem: '2rem',
+    usage: 'Section internal gap',
+  },
+  {
+    token: '--orbit-space-6',
+    px: '48px',
+    rem: '3rem',
+    usage: 'Component section gap',
+  },
+  {
+    token: '--orbit-space-8',
+    px: '64px',
+    rem: '4rem',
+    usage: 'Page padding — mobile',
+  },
+  {
+    token: '--orbit-space-12',
+    px: '96px',
+    rem: '6rem',
+    usage: 'Section spacing — mobile',
+  },
+  {
+    token: '--orbit-space-16',
+    px: '128px',
+    rem: '8rem',
+    usage: 'Page padding — desktop',
+  },
+  {
+    token: '--orbit-space-32',
+    px: '256px',
+    rem: '16rem',
+    usage: 'Section spacing — desktop',
+  },
 ]
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -100,7 +213,7 @@ const spacingTokens = [
 function TableHeader({ cols }: { cols: string[] }) {
   return (
     <div
-      className="dark:border-polar-800 dark:text-polar-500 grid border-b border-neutral-200 pb-2 text-[10px] uppercase tracking-widest text-neutral-400"
+      className="dark:border-polar-800 dark:text-polar-500 grid border-b border-neutral-200 pb-2 text-[10px] tracking-widest text-neutral-400 uppercase"
       style={{ gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
     >
       {cols.map((col) => (
@@ -153,65 +266,93 @@ export default function TokensPage() {
       {/* Color */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <Headline as="h3" text="Color" />
+          <Headline as="h4" text="Color" />
           <div className="dark:border-polar-800 border-t border-neutral-200" />
         </div>
         <TableHeader cols={['Token', 'Light', 'Dark', 'Usage']} />
-        {colorTokens.map(({ token, light, lightLabel, dark, darkLabel, usage }) => (
-          <TableRow
-            key={token}
-            cols={4}
-            cells={[
-              <Mono key="token">{token}</Mono>,
-              <span key="light" className="flex items-center gap-2">
-                <Swatch color={light} />
-                <span className="dark:text-polar-400 text-xs text-neutral-500">
-                  {lightLabel}
-                </span>
-              </span>,
-              <span key="dark" className="flex items-center gap-2">
-                <Swatch color={dark} />
-                <span className="dark:text-polar-400 text-xs text-neutral-500">
-                  {darkLabel}
-                </span>
-              </span>,
-              <span key="usage" className="dark:text-polar-400 text-xs text-neutral-500">
-                {usage}
-              </span>,
-            ]}
-          />
-        ))}
+        {colorTokens.map(
+          ({ token, light, lightLabel, dark, darkLabel, usage }) => (
+            <TableRow
+              key={token}
+              cols={4}
+              cells={[
+                <Mono key="token">{token}</Mono>,
+                <span key="light" className="flex items-center gap-2">
+                  <Swatch color={light} />
+                  <span className="dark:text-polar-400 text-xs text-neutral-500">
+                    {lightLabel}
+                  </span>
+                </span>,
+                <span key="dark" className="flex items-center gap-2">
+                  <Swatch color={dark} />
+                  <span className="dark:text-polar-400 text-xs text-neutral-500">
+                    {darkLabel}
+                  </span>
+                </span>,
+                <span
+                  key="usage"
+                  className="dark:text-polar-400 text-xs text-neutral-500"
+                >
+                  {usage}
+                </span>,
+              ]}
+            />
+          ),
+        )}
       </div>
 
       {/* Type scale */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <Headline as="h3" text="Type Scale" />
+          <Headline as="h4" text="Type Scale" />
           <div className="dark:border-polar-800 border-t border-neutral-200" />
         </div>
-        <TableHeader cols={['Level', 'Mobile', 'Desktop', 'Weight', 'Tracking']} />
+        <TableHeader
+          cols={['Level', 'Mobile', 'Desktop', 'Weight', 'Tracking']}
+        />
         {typeScaleTokens.map(({ level, mobile, desktop, weight, tracking }) => (
           <TableRow
             key={level}
             cols={5}
             cells={[
               <Mono key="level">{level}</Mono>,
-              <span key="mobile" className="dark:text-polar-400 text-xs text-neutral-500">{mobile}</span>,
-              <span key="desktop" className="dark:text-polar-400 text-xs text-neutral-500">{desktop}</span>,
-              <span key="weight" className="dark:text-polar-400 text-xs text-neutral-500">{weight}</span>,
-              <span key="tracking" className="dark:text-polar-400 text-xs text-neutral-500">{tracking}</span>,
+              <span
+                key="mobile"
+                className="dark:text-polar-400 text-xs text-neutral-500"
+              >
+                {mobile}
+              </span>,
+              <span
+                key="desktop"
+                className="dark:text-polar-400 text-xs text-neutral-500"
+              >
+                {desktop}
+              </span>,
+              <span
+                key="weight"
+                className="dark:text-polar-400 text-xs text-neutral-500"
+              >
+                {weight}
+              </span>,
+              <span
+                key="tracking"
+                className="dark:text-polar-400 text-xs text-neutral-500"
+              >
+                {tracking}
+              </span>,
             ]}
           />
         ))}
         <p className="dark:text-polar-500 text-xs text-neutral-400">
-          All heading levels use font-feature-settings: &apos;ss07&apos; 1, &apos;ss08&apos; 1, &apos;zero&apos; 1, &apos;liga&apos; 0
+          All heading levels use font-feature-settings: &apos;ss07&apos; 1,
+          &apos;ss08&apos; 1, &apos;zero&apos; 1, &apos;liga&apos; 0
         </p>
       </div>
 
       {/* Motion */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <Headline as="h3" text="Motion" />
+          <Headline as="h4" text="Motion" />
           <div className="dark:border-polar-800 border-t border-neutral-200" />
         </div>
         <TableHeader cols={['Token', 'Value', 'Usage']} />
@@ -222,7 +363,10 @@ export default function TokensPage() {
             cells={[
               <Mono key="token">{token}</Mono>,
               <Mono key="value">{value}</Mono>,
-              <span key="usage" className="dark:text-polar-400 text-xs text-neutral-500">
+              <span
+                key="usage"
+                className="dark:text-polar-400 text-xs text-neutral-500"
+              >
                 {usage}
               </span>,
             ]}
@@ -233,7 +377,7 @@ export default function TokensPage() {
       {/* Spacing */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <Headline as="h3" text="Spacing" />
+          <Headline as="h4" text="Spacing" />
           <div className="dark:border-polar-800 border-t border-neutral-200" />
           <p className="dark:text-polar-400 text-sm text-neutral-600">
             All spacing follows a base-8 grid. Use these values exclusively.

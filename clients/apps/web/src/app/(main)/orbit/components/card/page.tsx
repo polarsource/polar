@@ -6,30 +6,20 @@ import {
   CardHeader,
   Headline,
 } from '@/components/Orbit'
+import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 export default function CardPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <span className="dark:text-polar-500 text-sm text-neutral-400">
-          Component
-        </span>
-        <Headline as="h1" text="Card" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          A surface for grouping related content. Composed of three optional
-          sub-components — <code className="font-mono text-sm">CardHeader</code>
-          , <code className="font-mono text-sm">CardContent</code>, and{' '}
-          <code className="font-mono text-sm">CardFooter</code> — each separated
-          by a dividing border.
-        </p>
-      </div>
+      <OrbitPageHeader
+        label="Component"
+        title="Card"
+        description={<>A surface for grouping related content. Composed of three optional sub-components — <code className="font-mono text-sm">CardHeader</code>, <code className="font-mono text-sm">CardContent</code>, and{' '}<code className="font-mono text-sm">CardFooter</code> — each separated by a dividing border.</>}
+      />
 
       {/* Demos */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Variants" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Variants" />
 
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {/* Full */}
@@ -134,10 +124,7 @@ export default function CardPage() {
 
       {/* With actions */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="With actions" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="With actions" />
 
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {/* Single primary action in footer */}
@@ -261,10 +248,7 @@ export default function CardPage() {
 
       {/* API */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="API" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="API" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {[
             {

@@ -92,6 +92,11 @@ export default async function Page(props: {
     }),
 
     api.GET('/v1/customer-portal/seats/subscriptions', {
+      params: {
+        query: {
+          limit: 100,
+        },
+      },
       ...cacheConfig,
     }),
   ])
@@ -118,7 +123,7 @@ export default async function Page(props: {
       organization={organization}
       products={products}
       subscriptions={subscriptions}
-      claimedSubscriptions={claimedSubscriptions ?? []}
+      claimedSubscriptions={claimedSubscriptions!}
       customerSessionToken={token as string}
     />
   )

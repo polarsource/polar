@@ -184,7 +184,7 @@ export const CustomerPortalTeam = ({
     }
   }
 
-  const membersList = members ?? []
+  const membersList = members?.items ?? []
   const memberToRemoveData = membersList.find((m) => m.id === memberToRemove)
   const otherMembers = membersList.filter((m) => m.id !== currentMemberId)
 

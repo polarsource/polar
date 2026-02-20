@@ -18438,6 +18438,12 @@ export interface components {
       items: components['schemas']['CustomerPaymentMethod'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[CustomerPortalMember] */
+    ListResource_CustomerPortalMember_: {
+      /** Items */
+      items: components['schemas']['CustomerPortalMember'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[CustomerSubscription] */
     ListResource_CustomerSubscription_: {
       /** Items */
@@ -34388,7 +34394,12 @@ export interface operations {
   }
   'customer_portal:seats:list_claimed_subscriptions': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
       header?: never
       path?: never
       cookie?: never
@@ -34401,7 +34412,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerSubscription'][]
+          'application/json': components['schemas']['ListResource_CustomerSubscription_']
         }
       }
       /** @description Authentication required */
@@ -34410,6 +34421,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
       }
     }
   }
@@ -34861,7 +34881,12 @@ export interface operations {
   }
   'customer_portal:members:list_members': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
       header?: never
       path?: never
       cookie?: never
@@ -34874,7 +34899,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerPortalMember'][]
+          'application/json': components['schemas']['ListResource_CustomerPortalMember_']
         }
       }
       /** @description Authentication required */
@@ -34890,6 +34915,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
       }
     }
   }

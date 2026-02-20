@@ -2,6 +2,7 @@
 import asyncio
 import contextlib
 import dataclasses
+import random
 import uuid
 from collections.abc import AsyncIterator, Coroutine
 from typing import Any
@@ -25,6 +26,7 @@ from plain_client import (
     ComponentTextColor,
     ComponentTextInput,
     ComponentTextSize,
+    CreateThreadAssignedToInput,
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
@@ -65,6 +67,11 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
+
+SUPPORT_AGENT_IDS: list[str] = [
+    "u_01K8JEAC8BS0ED0KBCGHYCHA70",  # Isac
+    "u_01K0RC6SY9Q8KSVNAYGD7EY6M5",  # Rishi
+]
 
 
 @dataclasses.dataclass
@@ -189,11 +196,19 @@ class PlainService:
                 case _:
                     raise ValueError("Organization is not under review")
 
+            should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
+            assigned_to = (
+                CreateThreadAssignedToInput(user_id=random.choice(SUPPORT_AGENT_IDS))
+                if should_send_email
+                else None
+            )
+
             thread_result = await plain.create_thread(
                 CreateThreadInput(
                     customer_identifier=customer_identifier,
                     title=title,
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
+                    assigned_to=assigned_to,
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
@@ -222,10 +237,7 @@ class PlainService:
                 )
 
             # For initial reviews, send the review action checklist as an outbound reply
-            if (
-                organization.status == OrganizationStatus.INITIAL_REVIEW
-                and thread_result.thread is not None
-            ):
+            if should_send_email and thread_result.thread is not None:
                 issues = self._check_org_issues(organization, admin)
                 message = self._build_review_message(
                     organization.name or organization.slug, issues

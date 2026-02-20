@@ -11,8 +11,8 @@ const defaultSizes: Record<HeadingTag, string> = {
   h2: 'text-4xl md:text-5xl tracking-tighter leading-tight!',
   h3: 'text-3xl md:text-5xl tracking-tighter leading-tight!',
   h4: 'text-2xl md:text-3xl tracking-tighter leading-tight!',
-  h5: 'text-xl md:text-2xl tracking-tighter leading-tight!',
-  h6: 'text-lg md:text-xl tracking-tighter leading-tight!',
+  h5: 'text-xl md:text-2xl tracking-tight leading-tight!',
+  h6: 'text-lg md:text-xl tracking-tight leading-tight!',
   span: 'font-medium leading-tight!',
 }
 

@@ -581,7 +581,12 @@ export const useResendSeatInvitation = (api: Client) =>
 export const useCustomerClaimedSubscriptions = (api: Client) =>
   useQuery({
     queryKey: ['customer_claimed_subscriptions'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/seats/subscriptions')),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/seats/subscriptions', {
+          params: { query: { limit: 100 } },
+        }),
+      ),
     retry: defaultRetry,
   })
 
@@ -605,7 +610,12 @@ const extractApiErrorMessage = (
 export const useCustomerPortalMembers = (api: Client) =>
   useQuery({
     queryKey: ['customer_portal_members'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/members')),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/members', {
+          params: { query: { limit: 100 } },
+        }),
+      ),
     retry: defaultRetry,
   })
 

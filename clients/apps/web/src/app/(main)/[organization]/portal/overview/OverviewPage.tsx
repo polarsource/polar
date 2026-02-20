@@ -14,7 +14,7 @@ const ClientPage = ({
   organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['ListResource_CustomerSubscription_']
-  claimedSubscriptions: schemas['CustomerSubscription'][]
+  claimedSubscriptions: schemas['ListResource_CustomerSubscription_']
   customerSessionToken: string
 }) => {
   return (
@@ -23,7 +23,7 @@ const ClientPage = ({
         organization={organization}
         products={products}
         subscriptions={subscriptions.items ?? []}
-        claimedSubscriptions={claimedSubscriptions}
+        claimedSubscriptions={claimedSubscriptions.items ?? []}
         customerSessionToken={customerSessionToken}
       />
     </NuqsAdapter>

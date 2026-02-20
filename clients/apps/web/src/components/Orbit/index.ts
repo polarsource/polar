@@ -1,4 +1,14 @@
 export { BarChart } from './BarChart'
+export {
+  DataTable,
+  DataTableColumnHeader,
+} from './DataTable'
+export type {
+  DataTableColumnDef,
+  DataTablePaginationState,
+  DataTableSortingState,
+  ReactQueryLoading,
+} from './DataTable'
 export type { BarChartItem } from './BarChart'
 export { Button } from './Button'
 export type { ButtonProps } from './Button'

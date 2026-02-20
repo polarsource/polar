@@ -1,217 +1,105 @@
-'use client'
+import { Headline } from '@/components/Orbit'
+import Link from 'next/link'
 
-import { BarChart, Button, Headline } from '@/components/Orbit'
+const principles = [
+  {
+    title: 'Intentional',
+    description:
+      'Every visual decision is deliberate. Orbit avoids decoration without purpose — spacing, type, and color all carry meaning.',
+  },
+  {
+    title: 'Expressive',
+    description:
+      'Motion and typography are primary communication tools. When something moves, it tells a story about what changed and why.',
+  },
+  {
+    title: 'Composable',
+    description:
+      'Primitives over monoliths. Components combine freely to form complex interfaces without fighting each other.',
+  },
+  {
+    title: 'Accessible',
+    description:
+      'WCAG 2.1 AA compliance by default. Accessibility is part of the component contract, not an afterthought.',
+  },
+]
 
-export default function OrbitPage() {
+const links = [
+  {
+    label: 'Guidelines',
+    href: '/orbit/guidelines',
+    desc: 'Motion, typography, color, and spacing rules',
+  },
+  {
+    label: 'Design Tokens',
+    href: '/orbit/tokens',
+    desc: 'The raw values behind every decision',
+  },
+  {
+    label: 'Headline',
+    href: '/orbit/components/headline',
+    desc: 'Display typography with curtain animation',
+  },
+  {
+    label: 'Button',
+    href: '/orbit/components/button',
+    desc: 'Interactive element with four variants',
+  },
+  {
+    label: 'BarChart',
+    href: '/orbit/components/barchart',
+    desc: 'Animated comparative data visualization',
+  },
+]
+
+export default function OrbitOverviewPage() {
   return (
-    <div className="dark:bg-polar-950 min-h-screen bg-white text-black dark:text-white">
-      <div className="flex flex-col">
-        {/* Cover */}
-        <div className="flex min-h-screen flex-col justify-between p-8 md:p-16">
-          <div className="flex items-start justify-between">
-            <span className="font-medium">Polar Software Inc</span>
-            <span className="font-medium">Orbit</span>
-          </div>
-          <div className="flex flex-col gap-4">
-            <Headline animate as="h1" text={['Orbit', 'Design System']} />
-          </div>
+    <div className="flex flex-col gap-20">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <span className="dark:text-polar-500 text-sm text-neutral-400">
+            v0.1 — Polar Software Inc
+          </span>
+          <Headline animate as="h1" text="Orbit" />
         </div>
+        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
+          The design system powering Polar's products. A shared language of
+          components, tokens, and patterns for building expressive, accessible
+          interfaces.
+        </p>
+      </div>
 
-        {/* Headline component */}
-        <div className="flex flex-col gap-16 p-8 md:gap-32 md:p-16">
-          <div className="flex flex-col gap-2">
-            <span className="dark:text-polar-500 text-sm text-neutral-400">
-              Headline
-            </span>
-            <div className="dark:border-polar-800 border-t border-neutral-200" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                h1
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                text-5xl → text-8xl
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline animate as="h1" text="The quick brown fox" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                h2
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                text-4xl → text-5xl
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline animate as="h2" text="The quick brown fox" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                h3
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                text-3xl → text-5xl
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline animate as="h3" text="The quick brown fox" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                h4
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                text-2xl → text-3xl
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline animate as="h4" text="The quick brown fox" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                h5
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                text-xl → text-2xl
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline animate as="h5" text="The quick brown fox" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                h6
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                text-lg → text-xl
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline animate as="h6" text="The quick brown fox" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                multiline
-              </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                staggered
-              </span>
-            </div>
-            <div className="col-span-3">
-              <Headline
-                animate
-                as="h2"
-                text={['The quick', 'brown fox', 'jumps over']}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Button component */}
-        <div className="flex flex-col gap-16 p-8 md:gap-32 md:p-16">
-          <div className="flex flex-col gap-2">
-            <span className="dark:text-polar-500 text-sm text-neutral-400">
-              Button
-            </span>
-            <div className="dark:border-polar-800 border-t border-neutral-200" />
-          </div>
-
-          {(
-            [
-              ['default', 'Primary action'],
-              ['secondary', 'Secondary action'],
-              ['outline', 'Outline'],
-              ['ghost', 'Ghost'],
-              ['destructive', 'Destructive'],
-              ['link', 'Link'],
-            ] as const
-          ).map(([variant, label]) => (
-            <div
-              key={variant}
-              className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16"
-            >
-              <div className="flex flex-col gap-2">
-                <span className="dark:text-polar-500 text-sm text-neutral-500">
-                  {variant}
-                </span>
+      <div className="flex flex-col gap-6">
+        <Headline as="h5" text="Design Principles" />
+        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+          {principles.map(({ title, description }) => (
+            <div key={title} className="grid grid-cols-5 gap-8 py-5">
+              <div className="col-span-2">
+                <Headline as="h6" text={title} />
               </div>
-              <div className="col-span-3 flex flex-row items-center gap-4">
-                <Button variant={variant} size="lg">
-                  {label}
-                </Button>
-                <Button variant={variant}>{label}</Button>
-                <Button variant={variant} size="sm">
-                  {label}
-                </Button>
-                <Button variant={variant} loading>
-                  Loading
-                </Button>
-              </div>
+              <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
+                {description}
+              </p>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* BarChart component */}
-        <div className="flex flex-col gap-16 p-8 md:gap-32 md:p-16">
-          <div className="flex flex-col gap-2">
-            <span className="dark:text-polar-500 text-sm text-neutral-400">
-              BarChart
-            </span>
-            <div className="dark:border-polar-800 border-t border-neutral-200" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 md:gap-16">
-            <div className="flex flex-col gap-2">
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                animated
+      <div className="flex flex-col gap-6">
+        <Headline as="h5" text="What's inside" />
+        <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
+          {links.map(({ label, href, desc }) => (
+            <Link
+              key={href}
+              href={href}
+              className="dark:bg-polar-950 dark:hover:bg-polar-900 flex flex-col gap-1 bg-white p-5 transition-colors hover:bg-neutral-50"
+            >
+              <Headline as="h6" text={label} />
+              <span className="dark:text-polar-500 text-xs text-neutral-500">
+                {desc}
               </span>
-              <span className="dark:text-polar-500 text-sm text-neutral-500">
-                3 bars
-              </span>
-            </div>
-            <div className="col-span-3 h-96">
-              <BarChart
-                animated
-                data={[
-                  { label: 'Checkout Conversion', value: 0 },
-                  { label: 'Retained Subscriptions', value: 59 },
-                  { label: 'Customer Satisfaction', value: 81 },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between p-8 md:p-16">
-          <span className="dark:text-polar-500 text-sm text-neutral-400">
-            Orbit — Polar Software Inc
-          </span>
-          <span className="dark:text-polar-500 text-sm text-neutral-400">
-            {new Date().getFullYear()}
-          </span>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

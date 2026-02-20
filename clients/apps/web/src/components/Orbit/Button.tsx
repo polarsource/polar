@@ -3,19 +3,16 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const buttonVariants = cva(
-  'relative inline-flex cursor-pointer select-none items-center justify-center whitespace-nowrap font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'relative inline-flex cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-lg font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default:
+        primary:
           'text-white dark:text-black dark:bg-white bg-black transition-opacity duration-50 hover:opacity-85',
         destructive:
           'bg-red-500 text-white hover:bg-red-400 dark:bg-red-600 dark:hover:bg-red-500',
-        outline:
-          'border border-gray-100 bg-transparent text-black hover:border-gray-200 hover:bg-gray-200 dark:border-polar-700 dark:bg-transparent dark:text-white dark:hover:bg-polar-700',
         secondary:
           'bg-gray-100 text-black hover:bg-gray-200 dark:border-white/5 dark:bg-polar-700 dark:text-white dark:hover:bg-polar-600',
-        link: 'bg-transparent text-blue-400 underline-offset-4 hover:bg-transparent hover:underline',
         ghost:
           'bg-transparent text-black hover:bg-gray-200 dark:bg-transparent dark:text-white dark:hover:bg-polar-700',
       },
@@ -27,7 +24,7 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: 'primary',
       size: 'default',
     },
   },

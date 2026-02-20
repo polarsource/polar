@@ -180,7 +180,7 @@ function DontCard({
           </svg>
         </div>
       </div>
-      <span className="dark:text-polar-500 text-lg text-neutral-500">
+      <span className="dark:text-polar-500 text-sm text-neutral-500">
         {label}
       </span>
     </div>
@@ -271,7 +271,7 @@ export function LogoSection() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <DontCard label="Don't stretch or distort">
                 <div style={{ transform: 'scaleY(1.6)' }}>
                   <PolarLogotype
@@ -366,7 +366,7 @@ export function LogoSection() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <DontCard label="Don't stretch or distort">
                 <div style={{ transform: 'scaleX(1.6)' }}>
                   <PolarLogotype

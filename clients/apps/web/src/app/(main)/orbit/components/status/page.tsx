@@ -1,0 +1,135 @@
+import { Status } from '@/components/Orbit'
+import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
+
+const variants = [
+  { variant: 'neutral', label: 'Neutral', desc: 'Default. Informational states with no semantic weight.' },
+  { variant: 'success', label: 'Success', desc: 'Positive outcomes — completed, active, paid.' },
+  { variant: 'warning', label: 'Warning', desc: 'Requires attention — pending, expiring, degraded.' },
+  { variant: 'error', label: 'Error', desc: 'Failed or blocked states — declined, expired, failed.' },
+  { variant: 'info', label: 'Info', desc: 'Neutral informational context — processing, scheduled.' },
+] as const
+
+const props = [
+  { name: 'status', type: 'string', default: '—', desc: 'The label text rendered inside the badge.' },
+  { name: 'variant', type: "'neutral' | 'success' | 'warning' | 'error' | 'info'", default: "'neutral'", desc: 'Color and semantic intent.' },
+  { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: 'Controls padding and font size.' },
+  { name: 'className', type: 'string', default: '—', desc: 'Additional classes merged via twMerge.' },
+]
+
+export default function StatusPage() {
+  return (
+    <div className="flex flex-col gap-20">
+      <OrbitPageHeader
+        label="Component"
+        title="Status"
+        description="A compact badge for communicating state at a glance. Five semantic variants cover the full range of system states without reaching for color decoratively."
+      />
+
+      {/* Variants */}
+      <div className="flex flex-col gap-8">
+        <OrbitSectionHeader title="Variants" />
+        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+          {variants.map(({ variant, label, desc }) => (
+            <div key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
+              <div className="col-span-2 flex flex-col gap-1">
+                <span className="text-sm font-medium text-black dark:text-white">
+                  {label}
+                </span>
+                <span className="dark:text-polar-500 text-xs text-neutral-400">
+                  {desc}
+                </span>
+              </div>
+              <div className="col-span-3 flex flex-row items-center gap-3">
+                {variant === 'neutral' && <>
+                  <Status variant={variant} status="Draft" />
+                  <Status variant={variant} status="Archived" />
+                  <Status variant={variant} size="sm" status="On hold" />
+                </>}
+                {variant === 'success' && <>
+                  <Status variant={variant} status="Paid" />
+                  <Status variant={variant} status="Active" />
+                  <Status variant={variant} size="sm" status="Refunded" />
+                </>}
+                {variant === 'warning' && <>
+                  <Status variant={variant} status="Past due" />
+                  <Status variant={variant} status="Expiring" />
+                  <Status variant={variant} size="sm" status="Retrying" />
+                </>}
+                {variant === 'error' && <>
+                  <Status variant={variant} status="Failed" />
+                  <Status variant={variant} status="Declined" />
+                  <Status variant={variant} size="sm" status="Cancelled" />
+                </>}
+                {variant === 'info' && <>
+                  <Status variant={variant} status="Processing" />
+                  <Status variant={variant} status="Scheduled" />
+                  <Status variant={variant} size="sm" status="Pending" />
+                </>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sizes */}
+      <div className="flex flex-col gap-8">
+        <OrbitSectionHeader title="Sizes" />
+        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2 flex flex-col gap-1">
+              <span className="text-sm font-medium text-black dark:text-white">
+                Medium
+              </span>
+              <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                size="md"
+              </span>
+            </div>
+            <div className="col-span-3 flex flex-row items-center gap-3">
+              <Status status="Paid" variant="success" size="md" />
+              <Status status="Past due" variant="warning" size="md" />
+              <Status status="Declined" variant="error" size="md" />
+            </div>
+          </div>
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2 flex flex-col gap-1">
+              <span className="text-sm font-medium text-black dark:text-white">
+                Small
+              </span>
+              <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                size="sm"
+              </span>
+            </div>
+            <div className="col-span-3 flex flex-row items-center gap-3">
+              <Status status="Paid" variant="success" size="sm" />
+              <Status status="Past due" variant="warning" size="sm" />
+              <Status status="Declined" variant="error" size="sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Props */}
+      <div className="flex flex-col gap-6">
+        <OrbitSectionHeader title="Props" />
+        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+          {props.map(({ name, type, default: def, desc }) => (
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+                {name}
+              </code>
+              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+                {type}
+              </code>
+              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                {def}
+              </code>
+              <span className="dark:text-polar-400 text-xs text-neutral-500">
+                {desc}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

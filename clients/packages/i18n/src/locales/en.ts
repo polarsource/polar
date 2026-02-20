@@ -15,7 +15,10 @@ export default {
       email: 'Email',
       cardholderName: 'Cardholder name',
       purchasingAsBusiness: "I'm purchasing as a business",
+      addBusinessDetails: 'Add business details',
+      removeBusinessDetails: 'Remove business details',
       businessName: 'Business name',
+      billingDetails: 'Billing Details',
       billingAddress: {
         label: 'Billing address',
         line1: {

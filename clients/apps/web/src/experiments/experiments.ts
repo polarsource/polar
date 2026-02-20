@@ -29,4 +29,10 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  checkout_business_checkbox: {
+    description:
+      'Redesign business checkbox: subtle styling below billing address with grouped billing details box',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

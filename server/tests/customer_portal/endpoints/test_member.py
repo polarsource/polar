@@ -90,7 +90,7 @@ class TestListMembers:
 
         response = await client.get("/v1/customer-portal/members")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["items"]
         assert len(data) == 3  # owner + billing_manager + member
 
     @pytest.mark.auth(MEMBER_BILLING_MANAGER_AUTH_SUBJECT)
@@ -457,7 +457,7 @@ class TestUpdateMember:
         # Verify the old owner was demoted
         response = await client.get("/v1/customer-portal/members")
         assert response.status_code == 200
-        members = response.json()
+        members = response.json()["items"]
         old_owner = next(m for m in members if m["id"] == str(member_owner.id))
         new_owner = next(m for m in members if m["id"] == str(member2.id))
         assert old_owner["role"] == "billing_manager"

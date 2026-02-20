@@ -473,7 +473,7 @@ class TestListClaimedSubscriptions:
         response = await client.get("/v1/customer-portal/seats/subscriptions")
         assert response.status_code == 200
         data = response.json()
-        assert data == []
+        assert data["items"] == []
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_only_claimed_seats_returned(
@@ -519,7 +519,7 @@ class TestListClaimedSubscriptions:
 
         response = await client.get("/v1/customer-portal/seats/subscriptions")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["items"]
         assert len(data) == 1
         assert data[0]["id"] == str(subscription.id)
         assert data[0]["product"]["name"] == product.name
@@ -552,7 +552,7 @@ class TestListClaimedSubscriptions:
 
         response = await client.get("/v1/customer-portal/seats/subscriptions")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["items"]
         # Should be empty because customer owns the subscription, not claiming a seat
         assert len(data) == 0
 
@@ -593,7 +593,7 @@ class TestListClaimedSubscriptions:
 
         response = await client.get("/v1/customer-portal/seats/subscriptions")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["items"]
         assert len(data) == 0
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
@@ -654,7 +654,7 @@ class TestListClaimedSubscriptions:
 
         response = await client.get("/v1/customer-portal/seats/subscriptions")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["items"]
         assert len(data) == 2
 
         subscription_ids = {item["id"] for item in data}

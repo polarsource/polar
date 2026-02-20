@@ -300,13 +300,10 @@ SQL >
         argMaxMerge(ofs.balance_name) AS balance_name,
         argMaxMerge(ofs.balance_effective_ts) AS balance_effective_ts,
         argMaxMerge(ofs.balance_subscription_id) AS balance_subscription_id,
-        argMaxMerge(ofs.balance_customer_id) AS balance_customer_id,
-        argMaxMerge(ofs.balance_currency) AS balance_currency,
         argMaxMerge(ofs.settlement_revenue_amount) AS settlement_revenue_amount,
         argMaxMerge(ofs.apply_applied_balance_deduction) AS apply_applied_balance_deduction,
         argMaxMerge(ofs.balance_exchange_rate) AS balance_exchange_rate,
         argMaxMerge(ofs.balance_fee) AS balance_fee,
-        argMaxMerge(ofs.balance_order_source_fx) AS balance_order_source_fx,
         sumMerge(ofs.refund_net_amount) AS refund_net_amount
     FROM order_facts_state AS ofs
     WHERE
@@ -425,37 +422,7 @@ SQL >
         c.balance_fee,
         c.refund_net_amount
     FROM order_facts AS c
-    LEFT JOIN
-        (
-            SELECT
-                c.organization_id,
-                c.order_id,
-                argMax(
-                    s.balance_order_source_fx,
-                    tuple(
-                        if(
-                            c.balance_subscription_id IS NOT NULL
-                            AND s.balance_subscription_id = c.balance_subscription_id,
-                            1,
-                            0
-                        ),
-                        s.balance_effective_ts
-                    )
-                ) AS credit_effective_fx
-            FROM order_facts AS c
-            INNER JOIN
-                order_facts AS s
-                ON s.organization_id = c.organization_id
-                AND s.balance_name = 'balance.order'
-                AND s.balance_customer_id = c.balance_customer_id
-                AND s.balance_currency = c.balance_currency
-                AND s.balance_effective_ts < c.balance_effective_ts
-                AND s.order_id != c.order_id
-            WHERE c.balance_name = 'balance.credit_order'
-            GROUP BY c.organization_id, c.order_id
-        ) AS cfx
-        ON c.organization_id = cfx.organization_id
-        AND c.order_id = cfx.order_id
+    LEFT JOIN credit_order_fx_by_order cfx ON cfx.order_id = c.order_id
 
 NODE subscription_first_paid_order
 SQL >

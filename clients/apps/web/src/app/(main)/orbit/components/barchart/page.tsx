@@ -1,4 +1,5 @@
 import { BarChart, Headline } from '@/components/Orbit'
+import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
   { name: 'data', type: 'BarChartItem[]', default: '—', desc: 'Array of { label, value } objects. Values are relative to each other.' },
@@ -9,25 +10,15 @@ const props = [
 export default function BarChartPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <span className="dark:text-polar-500 text-sm text-neutral-400">
-          Component
-        </span>
-        <Headline as="h1" text="BarChart" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          A comparative data visualization with proportional bars. Bar heights
-          are relative to the highest value and always fill the container.
-          Colors are dynamically computed from a neutral lightness curve,
-          adapting automatically to light and dark mode.
-        </p>
-      </div>
+      <OrbitPageHeader
+        label="Component"
+        title="BarChart"
+        description="A comparative data visualization with proportional bars. Bar heights are relative to the highest value and always fill the container. Colors are dynamically computed from a neutral lightness curve, adapting automatically to light and dark mode."
+      />
 
       {/* Demo */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Demo" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Demo" />
         <div className="h-96">
           <BarChart
             animated
@@ -42,10 +33,7 @@ export default function BarChartPage() {
 
       {/* Behavior notes */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Behavior" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Behavior" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {[
             {
@@ -83,10 +71,7 @@ export default function BarChartPage() {
 
       {/* Props */}
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Props" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Props" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">

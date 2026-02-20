@@ -1,5 +1,6 @@
 import { Headline } from '@/components/Orbit'
 import type { ReactNode } from 'react'
+import { OrbitPageHeader } from '../OrbitPageHeader'
 
 // ─── Token data ────────────────────────────────────────────────────────────────
 
@@ -144,14 +145,10 @@ function Mono({ children }: { children: ReactNode }) {
 export default function TokensPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <Headline as="h1" text="Design Tokens" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          The raw values that underpin every visual decision in Orbit. Tokens
-          are the single source of truth for color, typography, motion, and
-          spacing.
-        </p>
-      </div>
+      <OrbitPageHeader
+        title="Design Tokens"
+        description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
+      />
 
       {/* Color */}
       <div className="flex flex-col gap-6">

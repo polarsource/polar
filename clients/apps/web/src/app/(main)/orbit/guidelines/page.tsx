@@ -1,4 +1,5 @@
 import { Headline } from '@/components/Orbit'
+import { OrbitPageHeader } from '../OrbitPageHeader'
 
 const sections = [
   {
@@ -116,13 +117,10 @@ const sections = [
 export default function GuidelinesPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <Headline as="h1" text="Guidelines" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          Principles and rules for how Orbit components behave, and how to use
-          them effectively in product contexts.
-        </p>
-      </div>
+      <OrbitPageHeader
+        title="Guidelines"
+        description="Principles and rules for how Orbit components behave, and how to use them effectively in product contexts."
+      />
 
       {sections.map(({ title, subsections }) => (
         <div key={title} className="flex flex-col gap-10">

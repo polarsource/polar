@@ -93,9 +93,20 @@ const inter = localFont({
   variable: '--sans',
 })
 
+const interDisplay = localFont({
+  src: [
+    { path: '../fonts/InterDisplay-Light.woff2', weight: '300' },
+    { path: '../fonts/Inter-Regular.woff2', weight: '400' },
+    { path: '../fonts/Inter-Medium.woff2', weight: '500' },
+    { path: '../fonts/Inter-Semibold.woff2', weight: '600' },
+  ],
+  display: 'swap',
+  variable: '--display',
+})
+
 const louize = localFont({
   src: '../fonts/Louize-Italic-205TF.otf',
-  variable: '--font-louize',
+  variable: '--louize',
 })
 
 export default async function RootLayout({
@@ -130,7 +141,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`antialiased ${inter.className} ${louize.variable} ${GeistMono.variable}`}
+      className={`antialiased ${inter.variable} ${interDisplay.variable} ${louize.variable} ${GeistMono.variable}`}
     >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (

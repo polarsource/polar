@@ -1,4 +1,5 @@
 import { Headline } from '@/components/Orbit'
+import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const levels = [
   { tag: 'h1', size: '3rem → 6rem', weight: '300' },
@@ -20,24 +21,15 @@ const props = [
 export default function HeadlinePage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-4">
-        <span className="dark:text-polar-500 text-sm text-neutral-400">
-          Component
-        </span>
-        <Headline as="h1" text="Headline" />
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          Display typography component for all heading levels. Supports a
-          curtain-reveal animation that fires once on viewport entry, with
-          staggered lines for multi-line content.
-        </p>
-      </div>
+      <OrbitPageHeader
+        label="Component"
+        title="Headline"
+        description="Display typography component for all heading levels. Supports a curtain-reveal animation that fires once on viewport entry, with staggered lines for multi-line content."
+      />
 
       {/* Type scale demo */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Type Scale" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Type Scale" />
         {levels.map(({ tag, size, weight }) => (
           <div key={tag} className="grid grid-cols-5 items-baseline gap-8">
             <div className="flex flex-col gap-0.5">
@@ -60,10 +52,7 @@ export default function HeadlinePage() {
 
       {/* Animated multiline */}
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Multiline Stagger" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Multiline Stagger" />
         <div className="grid grid-cols-5 gap-8">
           <div className="flex flex-col gap-0.5">
             <span className="dark:text-polar-500 text-xs text-neutral-400">
@@ -85,10 +74,7 @@ export default function HeadlinePage() {
 
       {/* Props */}
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <Headline as="h4" text="Props" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+        <OrbitSectionHeader title="Props" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">

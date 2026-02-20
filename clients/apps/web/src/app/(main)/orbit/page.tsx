@@ -1,5 +1,6 @@
 import { Headline } from '@/components/Orbit'
 import Link from 'next/link'
+import { OrbitPageHeader } from './OrbitPageHeader'
 
 const principles = [
   {
@@ -55,19 +56,11 @@ const links = [
 export default function OrbitOverviewPage() {
   return (
     <div className="flex flex-col gap-20">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <span className="dark:text-polar-500 text-sm text-neutral-400">
-            v0.1 — Polar Software Inc
-          </span>
-          <Headline animate as="h1" text="Orbit" />
-        </div>
-        <p className="dark:text-polar-400 max-w-lg text-base leading-relaxed text-neutral-600">
-          The design system powering Polar's products. A shared language of
-          components, tokens, and patterns for building expressive, accessible
-          interfaces.
-        </p>
-      </div>
+      <OrbitPageHeader
+        label="v0.1 — Polar Software Inc"
+        title="Orbit"
+        description="The design system powering Polar's products. A shared language of components, tokens, and patterns for building expressive, accessible interfaces."
+      />
 
       <div className="flex flex-col gap-6">
         <Headline as="h5" text="Design Principles" />

@@ -16,9 +16,10 @@
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
   --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
 
-  --font-sans: var(--font-geist-sans), sans-serif;
+  --font-sans: var(--sans), sans-serif;
+  --font-display: var(--display), sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
-  --font-louize: var(--font-louize), serif;
+  --font-louize: var(--louize), serif;
 
   --text-xxs: 0.65rem;
 

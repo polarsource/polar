@@ -1,6 +1,7 @@
 # pyright: reportCallIssue=false
 import asyncio
 import contextlib
+import dataclasses
 import uuid
 from collections.abc import AsyncIterator, Coroutine
 from typing import Any
@@ -28,6 +29,7 @@ from plain_client import (
     CustomerIdentifierInput,
     EmailAddressInput,
     Plain,
+    ReplyToThreadInput,
     ThreadsFilter,
     ThreadStatus,
     UpsertCustomerIdentifierInput,
@@ -63,6 +65,14 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
+
+
+@dataclasses.dataclass
+class OrgIssues:
+    missing_website: bool = False
+    missing_socials: bool = False
+    admin_not_verified: bool = False
+    admin_verification_status: str = ""
 
 
 class PlainServiceError(PolarError): ...
@@ -210,6 +220,30 @@ class PlainService:
                 raise AccountReviewThreadCreationError(
                     organization.account.id, thread_result.error.message
                 )
+
+            # For initial reviews, send the review action checklist as an outbound reply
+            if (
+                organization.status == OrganizationStatus.INITIAL_REVIEW
+                and thread_result.thread is not None
+            ):
+                issues = self._check_org_issues(organization, admin)
+                message = self._build_review_message(
+                    organization.name or organization.slug, issues
+                )
+                reply_result = await plain.reply_to_thread(
+                    ReplyToThreadInput(
+                        thread_id=thread_result.thread.id,
+                        text_content=message,
+                        markdown_content=message,
+                    )
+                )
+                if reply_result.error is not None:
+                    log.error(
+                        "Failed to post review action message",
+                        thread_id=thread_result.thread.id,
+                        slug=organization.slug,
+                        error=reply_result.error.message,
+                    )
 
     async def create_appeal_review_thread(
         self,
@@ -1423,6 +1457,70 @@ class PlainService:
                     nr_threads += 1
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
+
+    def _check_org_issues(
+        self,
+        organization: Organization,
+        admin: User,
+    ) -> OrgIssues:
+        """Check an organization for actionable issues."""
+        issues = OrgIssues()
+
+        if not organization.website:
+            issues.missing_website = True
+
+        if not organization.socials:
+            issues.missing_socials = True
+
+        if not admin.identity_verified:
+            issues.admin_not_verified = True
+            issues.admin_verification_status = admin.identity_verification_status
+
+        return issues
+
+    def _build_review_message(self, organization_name: str, issues: OrgIssues) -> str:
+        """Build a friendly numbered message adapted to the org's specific issues."""
+        lines: list[str] = [
+            f"Your organization **{organization_name}** is currently under review as part of our standard onboarding process.",
+            "",
+            "This is a completely normal step that all organizations go through when joining Polar. As a Merchant of Record, we need to ensure compliance with our acceptable use policies and verify account information.",
+            "",
+            "We'll review your account and may reach out if we need any additional information. Reviews are typically completed within 3 business days, though they can take up to 7 days depending on complexity and timing.",
+            "",
+            "During this review period, you can continue setting up your products and integrate Polar. We'll notify you as soon as the review is complete.",
+            "",
+            "Read more about our review process: https://polar.sh/docs/merchant-of-record/account-reviews",
+            "",
+        ]
+
+        has_action_items = issues.missing_website or issues.missing_socials
+
+        if has_action_items:
+            lines.append(
+                "In the meantime, we have some follow-up requirements for our review:"
+            )
+            lines.append("")
+
+            item_num = 1
+
+            if issues.missing_website:
+                lines.append(
+                    f"{item_num}. Can you please add the URL of your product to your organization settings? "
+                    "You can do this by navigating to Settings -> General and changing the field named 'Website'."
+                )
+                item_num += 1
+
+            if issues.missing_socials:
+                lines.append(
+                    f"{item_num}. Can you please add your personal social links (not the product's) to your organization settings? "
+                    "You can do this by navigating to Settings -> General and adding them under 'Social links'. "
+                    "We will never display these purposely. We use this to double-check your identity to avoid people impersonating businesses they do not own."
+                )
+
+        lines.append("")
+        lines.append("If you have any questions, feel free to reply to this message.")
+
+        return "\n".join(lines)
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:

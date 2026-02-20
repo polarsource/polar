@@ -53,7 +53,6 @@ class TestOrganizationUnderReview:
     async def test_existing_organization(
         self,
         mocker: MockerFixture,
-        enqueue_email_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -69,21 +68,14 @@ class TestOrganizationUnderReview:
         create_organization_review_thread_mock = mocker.patch(
             "polar.organization.tasks.plain_service.create_organization_review_thread"
         )
-        get_admin_user_mock = mocker.patch(
-            "polar.organization.tasks.OrganizationRepository.get_admin_user",
-            return_value=user,
-        )
 
         await organization_under_review(organization.id)
 
-        enqueue_email_mock.assert_called_once()
         create_organization_review_thread_mock.assert_called_once()
-        get_admin_user_mock.assert_called_once()
 
     async def test_existing_organization_with_account(
         self,
         mocker: MockerFixture,
-        enqueue_email_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -101,16 +93,10 @@ class TestOrganizationUnderReview:
         create_organization_review_thread_mock = mocker.patch(
             "polar.organization.tasks.plain_service.create_organization_review_thread"
         )
-        get_admin_user_mock = mocker.patch(
-            "polar.organization.tasks.OrganizationRepository.get_admin_user",
-            return_value=user,
-        )
 
         await organization_under_review(organization.id)
 
-        enqueue_email_mock.assert_called_once()
         create_organization_review_thread_mock.assert_called_once()
-        get_admin_user_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

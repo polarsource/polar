@@ -10,8 +10,6 @@ from polar.email.react import render_email_template
 from polar.email.schemas import (
     OrganizationReviewedEmail,
     OrganizationReviewedProps,
-    OrganizationUnderReviewEmail,
-    OrganizationUnderReviewProps,
 )
 from polar.email.sender import enqueue_email
 from polar.exceptions import PolarTaskError
@@ -23,7 +21,6 @@ from polar.models import Customer, CustomerSeat, Organization
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
-from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
@@ -108,20 +105,9 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
 
         await plain_service.create_organization_review_thread(session, organization)
 
-        # Send an email for the initial review
-        if organization.status == OrganizationStatus.INITIAL_REVIEW:
-            admin_user = await repository.get_admin_user(session, organization)
-            if admin_user:
-                email = OrganizationUnderReviewEmail(
-                    props=OrganizationUnderReviewProps.model_validate(
-                        {"email": admin_user.email, "organization": organization}
-                    )
-                )
-                enqueue_email(
-                    to_email_addr=admin_user.email,
-                    subject="Your organization is under review",
-                    html_content=render_email_template(email),
-                )
+        # We used to send an email manually too for initial reviews,
+        # but we rely on Plain to do that now.
+        # PR: https://github.com/polarsource/polar/pull/9633
 
 
 @actor(actor_name="organization.reviewed", priority=TaskPriority.LOW)

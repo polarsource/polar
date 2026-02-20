@@ -1,5 +1,6 @@
 'use client'
 
+import { Headline } from '@/components/Orbit/Headline'
 import {
   Sidebar,
   SidebarContent,
@@ -8,7 +9,6 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-import { Headline } from '@/components/Orbit/Headline'
 
 const nav = [
   {

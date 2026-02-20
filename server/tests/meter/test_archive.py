@@ -15,6 +15,8 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_customer,
+    create_event,
     create_product,
 )
 
@@ -149,7 +151,11 @@ class TestMeterArchive:
         organization: Organization,
         auth_subject: AuthSubject[Organization],
     ) -> None:
-        from tests.fixtures.random_objects import create_event
+        deleted_customer = await create_customer(
+            save_fixture, organization=organization
+        )
+        deleted_customer.set_deleted_at()
+        await save_fixture(deleted_customer)
 
         # Create an event that matches the meter for this customer
         # (default name="TEST_EVENT" matches the default meter filter)
@@ -157,6 +163,13 @@ class TestMeterArchive:
             save_fixture,
             organization=organization,
             customer=customer,
+        )
+
+        # Create an event for the deleted customer that matches the meter - should be ignored
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=deleted_customer,
         )
 
         # First archive the meter

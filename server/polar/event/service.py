@@ -764,7 +764,7 @@ class EventService:
         organization_ids_for_revops: set[uuid.UUID] = set()
         for event in events:
             organization_ids.add(event.organization_id)
-            if event.customer:
+            if event.customer and event.customer.deleted_at is None:
                 customers.add(event.customer)
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)

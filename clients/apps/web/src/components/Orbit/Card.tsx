@@ -15,7 +15,7 @@ export function Card({
   return (
     <div
       className={twMerge(
-        'flex flex-col rounded-2xl bg-neutral-50 dark:bg-polar-900',
+        'dark:bg-polar-900 flex flex-col rounded-2xl bg-neutral-50',
         padding,
         gap,
         className,

@@ -67,7 +67,7 @@ function TableRow({
   return (
     <tr
       className={twMerge(
-        'dark:border-polar-800 dark:hover:bg-polar-900 border-b border-neutral-100 transition-colors hover:bg-neutral-50 data-[state=selected]:bg-neutral-100 dark:data-[state=selected]:bg-polar-800',
+        'dark:border-polar-800 dark:hover:bg-polar-900 dark:data-[state=selected]:bg-polar-800 border-b border-neutral-100 transition-colors hover:bg-neutral-50 data-[state=selected]:bg-neutral-100',
         className,
       )}
       {...props}
@@ -96,10 +96,7 @@ function TableCell({
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={twMerge(
-        'px-4 py-3 text-sm align-middle',
-        className,
-      )}
+      className={twMerge('px-4 py-3 align-middle text-sm', className)}
       {...props}
     />
   )
@@ -124,7 +121,7 @@ export function DataTableColumnHeader<TData, TValue>({
     <button
       type="button"
       className={twMerge(
-        'flex cursor-pointer items-center gap-1.5 bg-transparent border-0 p-0 text-xs font-medium tracking-tight text-neutral-500 dark:text-polar-500 hover:opacity-70 transition-opacity duration-150',
+        'dark:text-polar-500 flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-xs font-medium tracking-tight text-neutral-500 transition-opacity duration-150 hover:opacity-70',
         className,
       )}
       onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
@@ -234,7 +231,10 @@ export interface ReactQueryLoading {
   fetchStatus: string
 }
 
-export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<TData, TValue>
+export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
+  TData,
+  TValue
+>
 export type DataTablePaginationState = PaginationState
 export type DataTableSortingState = SortingState
 
@@ -348,7 +348,10 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {calcLoading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   Loading…
                 </TableCell>
               </TableRow>
@@ -400,7 +403,10 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results
                 </TableCell>
               </TableRow>

@@ -38,7 +38,7 @@ const sections = [
       {
         heading: 'Tracking',
         content:
-          'All headings use tracking-tighter (−0.04em letter-spacing). This is a fixed rule — it is part of Orbit\'s typographic identity. Body text uses default tracking. Never apply tight tracking to body copy or labels.',
+          "All headings use tracking-tighter (−0.04em letter-spacing). This is a fixed rule — it is part of Orbit's typographic identity. Body text uses default tracking. Never apply tight tracking to body copy or labels.",
       },
       {
         heading: 'Ligatures',

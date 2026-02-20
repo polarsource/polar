@@ -1505,27 +1505,17 @@ class PlainService:
 
             if issues.missing_website:
                 lines.append(
-                    f"{item_num}. Can you please add your product's URL to the org settings in Polar dashboard? "
-                    "You can add or change this by navigating to Settings > General and changing the field named 'Website'."
+                    f"{item_num}. Can you please add the URL of your product to your organization settings? "
+                    "You can do this by navigating to Settings -> General and changing the field named 'Website'."
                 )
                 item_num += 1
 
             if issues.missing_socials:
                 lines.append(
-                    f"{item_num}. Can you please add your personal social links (not the product's) to the org settings in Polar dashboard? "
-                    "We associate with the merchant to make sure we know who's behind what. "
-                    "In the past, people have used stolen emails to act on behalf of stores that don't even know what's happening in their name."
+                    f"{item_num}. Can you please add your personal social links (not the product's) to your organization settings? "
+                    "You can do this by navigating to Settings -> General and adding them under 'Social links'. "
+                    "We will never display these purposely. We use this to double-check your identity to avoid people impersonating businesses they do not own."
                 )
-                item_num += 1
-
-            # Always ask for a discount code to test the payment flow
-            lines.append(
-                f"{item_num}. Can you share a 100% discount code that I can test the payment flow with?"
-            )
-        else:
-            lines.append(
-                "In the meantime, can you share a 100% discount code that I can test the payment flow with?"
-            )
 
         lines.append("")
         lines.append("If you have any questions, feel free to reply to this message.")

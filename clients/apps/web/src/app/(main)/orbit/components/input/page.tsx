@@ -32,7 +32,7 @@ const props = [
     name: 'value',
     type: 'number | null',
     default: '—',
-    desc: "Currency mode: value in smallest currency unit (cents for USD). onChange receives the same unit.",
+    desc: 'Currency mode: value in smallest currency unit (cents for USD). onChange receives the same unit.',
   },
   {
     name: 'step',
@@ -64,7 +64,10 @@ export default function InputPage() {
               { label: 'Search', type: 'search', placeholder: 'Search…' },
             ] as const
           ).map(({ label, type, placeholder }) => (
-            <div key={type} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div
+              key={type}
+              className="grid grid-cols-5 items-center gap-8 py-6"
+            >
               <div className="col-span-2">
                 <Headline as="h6" text={label} />
                 <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
@@ -91,7 +94,11 @@ export default function InputPage() {
               </span>
             </div>
             <div className="col-span-3 flex flex-col gap-3">
-              <Input type="text" prefix="https://" placeholder="yourdomain.com" />
+              <Input
+                type="text"
+                prefix="https://"
+                placeholder="yourdomain.com"
+              />
               <Input type="number" prefix="px" placeholder="16" />
             </div>
           </div>
@@ -122,17 +129,30 @@ export default function InputPage() {
       <div className="flex flex-col gap-8">
         <OrbitSectionHeader
           title="Currency"
-          description={<>Values are stored and emitted in smallest currency units (cents for USD, whole units for JPY). Arrow keys step by{' '}<code className="font-mono">step</code> (default 0.1).</>}
+          description={
+            <>
+              Values are stored and emitted in smallest currency units (cents
+              for USD, whole units for JPY). Arrow keys step by{' '}
+              <code className="font-mono">step</code> (default 0.1).
+            </>
+          }
         />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {(
             [
               { currency: 'USD', placeholder: 1000, label: 'Decimal — USD' },
               { currency: 'EUR', placeholder: 1000, label: 'Decimal — EUR' },
-              { currency: 'JPY', placeholder: 1000, label: 'Zero-decimal — JPY' },
+              {
+                currency: 'JPY',
+                placeholder: 1000,
+                label: 'Zero-decimal — JPY',
+              },
             ] as const
           ).map(({ currency, placeholder, label }) => (
-            <div key={currency} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div
+              key={currency}
+              className="grid grid-cols-5 items-center gap-8 py-6"
+            >
               <div className="col-span-2">
                 <Headline as="h6" text={label} />
               </div>
@@ -159,11 +179,7 @@ export default function InputPage() {
             </span>
           </div>
           <div className="col-span-3">
-            <Input
-              type="textarea"
-              placeholder="Write something…"
-              rows={4}
-            />
+            <Input type="textarea" placeholder="Write something…" rows={4} />
           </div>
         </div>
       </div>
@@ -185,11 +201,7 @@ export default function InputPage() {
               <Headline as="h6" text="With value" />
             </div>
             <div className="col-span-3">
-              <Input
-                type="text"
-                defaultValue="Polar Software Inc"
-                readOnly
-              />
+              <Input type="text" defaultValue="Polar Software Inc" readOnly />
             </div>
           </div>
         </div>

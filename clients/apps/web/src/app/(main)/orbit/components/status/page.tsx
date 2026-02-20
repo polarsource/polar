@@ -2,18 +2,58 @@ import { Status } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
-  { variant: 'neutral', label: 'Neutral', desc: 'Default. Informational states with no semantic weight.' },
-  { variant: 'success', label: 'Success', desc: 'Positive outcomes — completed, active, paid.' },
-  { variant: 'warning', label: 'Warning', desc: 'Requires attention — pending, expiring, degraded.' },
-  { variant: 'error', label: 'Error', desc: 'Failed or blocked states — declined, expired, failed.' },
-  { variant: 'info', label: 'Info', desc: 'Neutral informational context — processing, scheduled.' },
+  {
+    variant: 'neutral',
+    label: 'Neutral',
+    desc: 'Default. Informational states with no semantic weight.',
+  },
+  {
+    variant: 'success',
+    label: 'Success',
+    desc: 'Positive outcomes — completed, active, paid.',
+  },
+  {
+    variant: 'warning',
+    label: 'Warning',
+    desc: 'Requires attention — pending, expiring, degraded.',
+  },
+  {
+    variant: 'error',
+    label: 'Error',
+    desc: 'Failed or blocked states — declined, expired, failed.',
+  },
+  {
+    variant: 'info',
+    label: 'Info',
+    desc: 'Neutral informational context — processing, scheduled.',
+  },
 ] as const
 
 const props = [
-  { name: 'status', type: 'string', default: '—', desc: 'The label text rendered inside the badge.' },
-  { name: 'variant', type: "'neutral' | 'success' | 'warning' | 'error' | 'info'", default: "'neutral'", desc: 'Color and semantic intent.' },
-  { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: 'Controls padding and font size.' },
-  { name: 'className', type: 'string', default: '—', desc: 'Additional classes merged via twMerge.' },
+  {
+    name: 'status',
+    type: 'string',
+    default: '—',
+    desc: 'The label text rendered inside the badge.',
+  },
+  {
+    name: 'variant',
+    type: "'neutral' | 'success' | 'warning' | 'error' | 'info'",
+    default: "'neutral'",
+    desc: 'Color and semantic intent.',
+  },
+  {
+    name: 'size',
+    type: "'sm' | 'md'",
+    default: "'md'",
+    desc: 'Controls padding and font size.',
+  },
+  {
+    name: 'className',
+    type: 'string',
+    default: '—',
+    desc: 'Additional classes merged via twMerge.',
+  },
 ]
 
 export default function StatusPage() {
@@ -30,7 +70,10 @@ export default function StatusPage() {
         <OrbitSectionHeader title="Variants" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
-            <div key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div
+              key={variant}
+              className="grid grid-cols-5 items-center gap-8 py-6"
+            >
               <div className="col-span-2 flex flex-col gap-1">
                 <span className="text-sm font-medium text-black dark:text-white">
                   {label}
@@ -40,31 +83,41 @@ export default function StatusPage() {
                 </span>
               </div>
               <div className="col-span-3 flex flex-row items-center gap-3">
-                {variant === 'neutral' && <>
-                  <Status variant={variant} status="Draft" />
-                  <Status variant={variant} status="Archived" />
-                  <Status variant={variant} size="sm" status="On hold" />
-                </>}
-                {variant === 'success' && <>
-                  <Status variant={variant} status="Paid" />
-                  <Status variant={variant} status="Active" />
-                  <Status variant={variant} size="sm" status="Refunded" />
-                </>}
-                {variant === 'warning' && <>
-                  <Status variant={variant} status="Past due" />
-                  <Status variant={variant} status="Expiring" />
-                  <Status variant={variant} size="sm" status="Retrying" />
-                </>}
-                {variant === 'error' && <>
-                  <Status variant={variant} status="Failed" />
-                  <Status variant={variant} status="Declined" />
-                  <Status variant={variant} size="sm" status="Cancelled" />
-                </>}
-                {variant === 'info' && <>
-                  <Status variant={variant} status="Processing" />
-                  <Status variant={variant} status="Scheduled" />
-                  <Status variant={variant} size="sm" status="Pending" />
-                </>}
+                {variant === 'neutral' && (
+                  <>
+                    <Status variant={variant} status="Draft" />
+                    <Status variant={variant} status="Archived" />
+                    <Status variant={variant} size="sm" status="On hold" />
+                  </>
+                )}
+                {variant === 'success' && (
+                  <>
+                    <Status variant={variant} status="Paid" />
+                    <Status variant={variant} status="Active" />
+                    <Status variant={variant} size="sm" status="Refunded" />
+                  </>
+                )}
+                {variant === 'warning' && (
+                  <>
+                    <Status variant={variant} status="Past due" />
+                    <Status variant={variant} status="Expiring" />
+                    <Status variant={variant} size="sm" status="Retrying" />
+                  </>
+                )}
+                {variant === 'error' && (
+                  <>
+                    <Status variant={variant} status="Failed" />
+                    <Status variant={variant} status="Declined" />
+                    <Status variant={variant} size="sm" status="Cancelled" />
+                  </>
+                )}
+                {variant === 'info' && (
+                  <>
+                    <Status variant={variant} status="Processing" />
+                    <Status variant={variant} status="Scheduled" />
+                    <Status variant={variant} size="sm" status="Pending" />
+                  </>
+                )}
               </div>
             </div>
           ))}

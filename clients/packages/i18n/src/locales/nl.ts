@@ -4,6 +4,12 @@ export default {
       poweredBy: 'Mogelijk gemaakt door',
       merchantOfRecord:
         'Deze bestelling wordt verwerkt door onze online wederverkoper & Merchant of Record, Polar, die ook bestelgerelateerde vragen en terugbetalingen afhandelt.',
+      mandateSubscriptionTrial:
+        'Door op "Proefperiode starten" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om het hierboven weergegeven bedrag aan het einde van uw proefperiode en op elke volgende factuurdatum in rekening te brengen via uw geselecteerde betaalmethode, totdat u opzegt. U kunt op elk moment vóór het einde van uw proefperiode opzeggen om kosten te voorkomen.',
+      mandateSubscription:
+        'Door op "Nu abonneren" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om direct het hierboven weergegeven bedrag in rekening te brengen via uw geselecteerde betaalmethode en hetzelfde bedrag op elke volgende factuurdatum in rekening te brengen, totdat u opzegt.',
+      mandateOneTime:
+        'Door op "Nu betalen" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om het hierboven weergegeven bedrag in rekening te brengen via uw geselecteerde betaalmethode. Dit is een eenmalige betaling.',
     },
     form: {
       email: 'E-mailadres',

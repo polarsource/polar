@@ -2,6 +2,7 @@
 import asyncio
 import contextlib
 import dataclasses
+import random
 import uuid
 from collections.abc import AsyncIterator, Coroutine
 from typing import Any
@@ -25,6 +26,7 @@ from plain_client import (
     ComponentTextColor,
     ComponentTextInput,
     ComponentTextSize,
+    CreateThreadAssignedToInput,
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
@@ -65,6 +67,11 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
+
+SUPPORT_AGENT_IDS: list[str] = [
+    "u_01K8JEAC8BS0ED0KBCGHYCHA70",  # Isac
+    "u_01K0RC6SY9Q8KSVNAYGD7EY6M5",  # Rishi
+]
 
 
 @dataclasses.dataclass
@@ -189,11 +196,19 @@ class PlainService:
                 case _:
                     raise ValueError("Organization is not under review")
 
+            should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
+            assigned_to = (
+                CreateThreadAssignedToInput(user_id=random.choice(SUPPORT_AGENT_IDS))
+                if should_send_email
+                else None
+            )
+
             thread_result = await plain.create_thread(
                 CreateThreadInput(
                     customer_identifier=customer_identifier,
                     title=title,
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
+                    assigned_to=assigned_to,
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
@@ -222,10 +237,7 @@ class PlainService:
                 )
 
             # For initial reviews, send the review action checklist as an outbound reply
-            if (
-                organization.status == OrganizationStatus.INITIAL_REVIEW
-                and thread_result.thread is not None
-            ):
+            if should_send_email and thread_result.thread is not None:
                 issues = self._check_org_issues(organization, admin)
                 message = self._build_review_message(
                     organization.name or organization.slug, issues
@@ -1481,44 +1493,62 @@ class PlainService:
     def _build_review_message(self, organization_name: str, issues: OrgIssues) -> str:
         """Build a friendly numbered message adapted to the org's specific issues."""
         lines: list[str] = [
-            f"Your organization **{organization_name}** is currently under review as part of our standard onboarding process.",
+            f"Welcome to Polar! Your organization {organization_name} is currently being reviewed. "
+            "This is a standard step all new organizations go through so we can verify account details and ensure compliance with our policies.",
             "",
-            "This is a completely normal step that all organizations go through when joining Polar. As a Merchant of Record, we need to ensure compliance with our acceptable use policies and verify account information.",
-            "",
-            "We'll review your account and may reach out if we need any additional information. Reviews are typically completed within 3 business days, though they can take up to 7 days depending on complexity and timing.",
-            "",
-            "During this review period, you can continue setting up your products and integrate Polar. We'll notify you as soon as the review is complete.",
-            "",
-            "Read more about our review process: https://polar.sh/docs/merchant-of-record/account-reviews",
+            "Reviews typically take up to 3 business days (occasionally up to 7). "
+            "You can keep using Polar in the mean time to set up your products and integration.",
             "",
         ]
 
-        has_action_items = issues.missing_website or issues.missing_socials
+        has_action_items = (
+            issues.missing_website
+            or issues.missing_socials
+            or issues.admin_not_verified
+        )
 
         if has_action_items:
-            lines.append(
-                "In the meantime, we have some follow-up requirements for our review:"
-            )
-            lines.append("")
-
             item_num = 1
 
             if issues.missing_website:
                 lines.append(
-                    f"{item_num}. Can you please add the URL of your product to your organization settings? "
-                    "You can do this by navigating to Settings -> General and changing the field named 'Website'."
+                    f"{item_num}. Please add your product's URL under Settings → General → Website."
                 )
                 item_num += 1
 
             if issues.missing_socials:
                 lines.append(
-                    f"{item_num}. Can you please add your personal social links (not the product's) to your organization settings? "
-                    "You can do this by navigating to Settings -> General and adding them under 'Social links'. "
-                    "We will never display these purposely. We use this to double-check your identity to avoid people impersonating businesses they do not own."
+                    f"{item_num}. Please add your personal social links (not your product's) under Settings → General → Social links. "
+                    "These are never displayed publicly. We only use them to verify your identity to avoid people impersonating businesses they do not own."
+                )
+                item_num += 1
+
+            if issues.admin_not_verified:
+                lines.append(
+                    f"{item_num}. Verify your identity under Finance → Payout account. "
+                    "You'll need an ID document (driver's license, ID, passport, ...) and your phone. "
+                    "It's fully secure and only takes a few minutes."
                 )
 
+            lines.append("")
+
+        if has_action_items:
+            lines.append(
+                "Once you've completed these steps, please reply to this email and we'll finalize your review."
+            )
+        else:
+            lines.append(
+                "We'll let you know as soon as you're all set, or if we need anything from you."
+            )
         lines.append("")
-        lines.append("If you have any questions, feel free to reply to this message.")
+        lines.append(
+            "You can learn more about our review process on our website: "
+            "https://polar.sh/docs/merchant-of-record/account-reviews. "
+            "Any other questions? Just reply to this message."
+        )
+        lines.append("")
+        lines.append("Cheers,")
+        lines.append("The customer success team at Polar")
 
         return "\n".join(lines)
 

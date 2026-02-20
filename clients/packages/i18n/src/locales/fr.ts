@@ -32,6 +32,9 @@ export default {
       optional: 'Facultatif',
       apply: 'Valider',
       fieldRequired: 'Ce champ est obligatoire',
+      addBusinessDetails: "Ajouter les informations de l'entreprise",
+      removeBusinessDetails: "Supprimer les informations de l'entreprise",
+      billingDetails: 'Coordonnées de facturation',
     },
     pricing: {
       subtotal: 'Sous-total',

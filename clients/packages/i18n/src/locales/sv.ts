@@ -32,6 +32,9 @@ export default {
       optional: 'Valfritt',
       apply: 'Lägg till',
       fieldRequired: 'Detta fält är obligatoriskt',
+      addBusinessDetails: 'Lägg till företagsuppgifter',
+      removeBusinessDetails: 'Ta bort företagsuppgifter',
+      billingDetails: 'Faktureringsuppgifter',
     },
     pricing: {
       subtotal: 'Delsumma',

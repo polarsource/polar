@@ -32,6 +32,9 @@ export default {
       optional: 'Optioneel',
       apply: 'Toepassen',
       fieldRequired: 'Dit veld is verplicht',
+      addBusinessDetails: 'Bedrijfsgegevens toevoegen',
+      removeBusinessDetails: 'Bedrijfsgegevens verwijderen',
+      billingDetails: 'Factuurgegevens',
     },
     pricing: {
       subtotal: 'Subtotaal',

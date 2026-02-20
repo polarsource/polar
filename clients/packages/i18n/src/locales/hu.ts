@@ -32,6 +32,9 @@ export default {
       optional: 'Opcionális',
       apply: 'Alkalmaz',
       fieldRequired: 'Ez a mező kötelező',
+      addBusinessDetails: 'Céges adatok hozzáadása',
+      removeBusinessDetails: 'Céges adatok eltávolítása',
+      billingDetails: 'Számlázási adatok',
     },
     pricing: {
       subtotal: 'Részösszeg',

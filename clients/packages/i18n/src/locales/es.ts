@@ -32,6 +32,9 @@ export default {
       optional: 'Opcional',
       apply: 'Aplicar',
       fieldRequired: 'Este campo es obligatorio',
+      addBusinessDetails: 'Añadir datos de empresa',
+      removeBusinessDetails: 'Eliminar datos de empresa',
+      billingDetails: 'Datos de facturación',
     },
     pricing: {
       subtotal: 'Subtotal',

@@ -32,6 +32,9 @@ export default {
       optional: 'Optional',
       apply: 'Anwenden',
       fieldRequired: 'Dieses Feld ist erforderlich',
+      addBusinessDetails: 'Firmendaten hinzufügen',
+      removeBusinessDetails: 'Firmendaten entfernen',
+      billingDetails: 'Rechnungsdetails',
     },
     pricing: {
       subtotal: 'Zwischensumme',

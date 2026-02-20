@@ -224,7 +224,7 @@ class Settings(BaseSettings):
 
     # OpenAI
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "o4-mini-2025-04-16"
+    OPENAI_MODEL: str = "gpt-5.2-2025-12-11"
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""

@@ -7,6 +7,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.logging import Logger, generate_correlation_id
+from polar.operational_errors import handle_operational_error
 from polar.worker import JobQueueManager
 
 
@@ -104,3 +105,15 @@ class SandboxResponseHeaderMiddleware:
             await send(message)
 
         await self.app(scope, receive, send_wrapper)
+
+
+class OperationalErrorMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await self.app(scope, receive, send)
+        except Exception as exc:
+            handle_operational_error(exc)
+            raise

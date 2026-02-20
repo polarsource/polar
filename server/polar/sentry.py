@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import sentry_sdk
 from dramatiq import get_broker
@@ -17,6 +18,9 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
+
+if TYPE_CHECKING:
+    from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
 
@@ -36,6 +40,13 @@ class DramatiqIntegration(_DramatiqIntegration):
         broker.add_middleware(SentryMiddleware(), before=first_middleware)
 
 
+def before_send(event: Event, hint: Hint) -> Event | None:
+    tags = event.get("tags", {})
+    if tags and tags.get("is_operational_error") == "true":
+        return None
+    return event
+
+
 def configure_sentry() -> None:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
@@ -46,6 +57,7 @@ def configure_sentry() -> None:
         environment=settings.ENV,
         default_integrations=False,
         auto_enabling_integrations=False,
+        before_send=before_send,
         integrations=[
             AtexitIntegration(),
             ExcepthookIntegration(),

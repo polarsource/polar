@@ -108,8 +108,6 @@ Your final response must cover:
 - **Business description**: What the company does, core product/service
 - **Products & pricing**: What they sell and at what price points (if visible)
 - **Target audience**: Who the product is for
-- **Red flags**: Anything suspicious — placeholder content, mismatched claims, \
-prohibited content, signs the site is fake/misleading, or empty pages
 
 Keep it factual and under 500 words. Skip sections with no relevant info.
 """

@@ -1,11 +1,8 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import {
-  getTranslationLocale,
-  useTranslations,
-  type AcceptedLocale,
-} from '@polar-sh/i18n'
+import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
+import { convertLocaleToStripeElementLocale } from '../utils/locale'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
@@ -1087,7 +1084,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
-        locale: locale ? getTranslationLocale(locale) : undefined,
+        locale: locale ? convertLocaleToStripeElementLocale(locale) : undefined,
         customerSessionClientSecret: (
           checkout.paymentProcessorMetadata as {
             customer_session_client_secret?: string

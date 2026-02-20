@@ -30,7 +30,10 @@ const lineVariants = {
   hidden: { y: '130%' },
   visible: {
     y: 0,
-    transition: { duration: 1.7, ease: [0.7, 0, 0.3, 1] as [number, number, number, number] },
+    transition: {
+      duration: 1.7,
+      ease: [0.7, 0, 0.3, 1] as [number, number, number, number],
+    },
   },
 }
 

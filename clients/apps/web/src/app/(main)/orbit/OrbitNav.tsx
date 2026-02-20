@@ -8,7 +8,7 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-import { Headline } from './Headline'
+import { Headline } from '@/components/Orbit/Headline'
 
 const nav = [
   {

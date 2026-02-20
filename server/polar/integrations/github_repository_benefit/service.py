@@ -68,6 +68,14 @@ class GitHubRepositoryBenefitNoAccess(GitHubError):
         super().__init__(message, 401)
 
 
+class GitHubRepositoryInstallationError(GitHubError):
+    def __init__(self) -> None:
+        message = (
+            "An error occurred while accessing the GitHub repository installation."
+        )
+        super().__init__(message, 401)
+
+
 class GitHubRepositoryBenefitUserService:
     async def create_oauth_account(
         self, session: AsyncSession, user: User, oauth2_token_data: OAuth2Token
@@ -338,30 +346,15 @@ class GitHubRepositoryBenefitUserService:
 
     async def get_repository_installation(
         self, *, owner: str, name: str
-    ) -> "types.Installation | None":
+    ) -> "types.Installation":
         with github.get_app_client() as app_client:
-            repo_install = await app_client.rest.apps.async_get_repo_installation(
-                owner, name
-            )
-            if repo_install.status_code == 200:
+            try:
+                repo_install = await app_client.rest.apps.async_get_repo_installation(
+                    owner, name
+                )
                 return repo_install.parsed_data
-            return None
-
-    async def user_has_access_to_repository(
-        self, oauth: OAuthAccount, *, owner: str, name: str
-    ) -> bool:
-        installation = await self.get_repository_installation(owner=owner, name=name)
-        if not installation:
-            raise GitHubRepositoryBenefitNoAccess()
-
-        all_user_installations = await self.list_user_installations(oauth)
-
-        all_installation_ids = [i.id for i in all_user_installations]
-
-        if installation.id in all_installation_ids:
-            return True
-
-        return False
+            except RequestFailed as e:
+                raise GitHubRepositoryInstallationError() from e
 
 
 github_repository_benefit_user_service = GitHubRepositoryBenefitUserService()

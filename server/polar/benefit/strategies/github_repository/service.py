@@ -13,6 +13,7 @@ from githubkit.exception import (
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.integrations.github import client as github
 from polar.integrations.github_repository_benefit.service import (
+    GitHubRepositoryInstallationError,
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
@@ -284,36 +285,32 @@ class BenefitGitHubRepositoryService(
                 ]
             )
 
-        # check that use has access to the app installed on this repository
-        has_access = (
-            await github_repository_benefit_user_service.user_has_access_to_repository(
-                oauth, owner=repository_owner, name=repository_name
-            )
-        )
-
-        if not has_access:
-            raise BenefitPropertiesValidationError(
-                [
-                    {
-                        "type": "no_repository_acccess",
-                        "msg": "You don't have access to this repository.",
-                        "loc": ("repository_name",),
-                        "input": repository_name,
-                    }
-                ]
-            )
-
-        installation = (
-            await github_repository_benefit_user_service.get_repository_installation(
+        try:
+            installation = await github_repository_benefit_user_service.get_repository_installation(
                 owner=repository_owner, name=repository_name
             )
-        )
-        if not installation:
+        except GitHubRepositoryInstallationError as e:
             raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "no_repository_installation_found",
                         "msg": "Could not find a installation for this repository.",
+                        "loc": ("repository_name",),
+                        "input": repository_name,
+                    }
+                ]
+            ) from e
+
+        # Check the user has access to the app installed on this repository
+        all_user_installations = (
+            await github_repository_benefit_user_service.list_user_installations(oauth)
+        )
+        if installation.id not in {i.id for i in all_user_installations}:
+            raise BenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "no_repository_acccess",
+                        "msg": "You don't have access to this repository.",
                         "loc": ("repository_name",),
                         "input": repository_name,
                     }
@@ -368,11 +365,14 @@ class BenefitGitHubRepositoryService(
         properties = self._get_properties(benefit)
         repository_owner = properties["repository_owner"]
         repository_name = properties["repository_name"]
-        installation = (
-            await github_repository_benefit_user_service.get_repository_installation(
+        try:
+            installation = await github_repository_benefit_user_service.get_repository_installation(
                 owner=repository_owner, name=repository_name
             )
-        )
-        assert installation is not None
+        except GitHubRepositoryInstallationError as e:
+            raise BenefitActionRequiredError(
+                "The benefit has no longer access to the repository. "
+                "Please check that the GitHub App is still installed on the repository."
+            ) from e
         async with github.get_app_installation_client(installation.id) as client:
             yield client

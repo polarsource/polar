@@ -1,4 +1,4 @@
-import { OrbitNav } from '@/components/Orbit/OrbitNav'
+import { OrbitNav } from './OrbitNav'
 import {
   SidebarInset,
   SidebarProvider,

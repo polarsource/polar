@@ -1463,11 +1463,17 @@ class OrderService:
         self, session: AsyncSession, product: Product
     ) -> None:
         # Skip seat-based orders - benefits are granted when seats are claimed
-        base_statement = select(Order).where(
-            Order.product_id == product.id,
-            Order.is_deleted.is_(False),
-            Order.subscription_id.is_(None),
-            Order.seats.is_(None),
+        base_statement = (
+            select(Order)
+            .join(Order.customer)
+            .where(
+                Order.product_id == product.id,
+                Order.is_deleted.is_(False),
+                Order.subscription_id.is_(None),
+                Order.seats.is_(None),
+                Customer.is_deleted.is_(False),
+            )
+            .options(joinedload(Order.customer))
         )
 
         count_result = await session.execute(

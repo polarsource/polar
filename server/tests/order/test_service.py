@@ -3746,3 +3746,139 @@ class TestOnOrderPaidCustomerTypeUpgrade:
         # Customer should be upgraded to team
         await session.refresh(customer)
         assert customer.type == CustomerType.team
+
+
+@pytest.mark.asyncio
+class TestUpdateProductBenefitsGrants:
+    async def test_enqueues_jobs_for_one_time_orders(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that jobs are enqueued for one-time orders"""
+        customer1 = await create_customer(save_fixture, organization=organization)
+        customer2 = await create_customer(
+            save_fixture, organization=organization, email="customer2@example.com"
+        )
+
+        order1 = await create_order(
+            save_fixture, product=product, customer=customer1, subscription=None
+        )
+        order2 = await create_order(
+            save_fixture, product=product, customer=customer2, subscription=None
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer1.id,
+            product_id=product.id,
+            order_id=order1.id,
+            delay=ANY,
+        )
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer2.id,
+            product_id=product.id,
+            order_id=order2.id,
+            delay=ANY,
+        )
+
+    async def test_skips_subscription_orders(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that subscription orders are skipped"""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_skips_seat_based_orders(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that seat-based orders are skipped"""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=None,
+        )
+        order.seats = 5
+        await save_fixture(order)
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_skips_soft_deleted_customers(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that orders with soft-deleted customers are not processed"""
+        # Create active customer with order
+        active_customer = await create_customer(
+            save_fixture, organization=organization, email="active@example.com"
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=active_customer,
+            subscription=None,
+        )
+
+        # Create soft-deleted customer with order
+        deleted_customer = await create_customer(
+            save_fixture, organization=organization, email="deleted@example.com"
+        )
+        deleted_customer.set_deleted_at()
+        await save_fixture(deleted_customer)
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=deleted_customer,
+            subscription=None,
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        # Only one job should be enqueued for the active customer
+        assert enqueue_job_mock.call_count == 1
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=active_customer.id,
+            product_id=product.id,
+            order_id=ANY,
+            delay=ANY,
+        )

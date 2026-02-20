@@ -3569,3 +3569,48 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             subscription_id=subscription.id,
             delay=None,
         )
+
+
+@pytest.mark.asyncio
+class TestCancelCustomer:
+    async def test_basic(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that cancel_customer does not enqueue benefit grants for revocation.
+
+        Benefits should be revoked through benefit.revoke_customer instead,
+        which is called separately by the customer deletion flow.
+        """
+        # Create one active subscription for the customer
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        # Cancel all customer subscriptions
+        await subscription_service.cancel_customer(session, customer.id)
+
+        # Verify subscription was canceled
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.canceled_at is not None
+        assert subscription.ended_at is not None
+
+        # Verify that benefit grants were NOT enqueued
+        # The enqueue_job_mock should not have been called with "benefit.enqueue_benefits_grants"
+        # Benefits should be revoked separately through benefit.revoke_customer
+        benefit_grant_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "benefit.enqueue_benefits_grants"
+        ]
+        assert len(benefit_grant_calls) == 0, (
+            "Expected no calls to 'benefit.enqueue_benefits_grants', "
+            f"but found {len(benefit_grant_calls)} call(s)"
+        )

@@ -23,7 +23,7 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 from .repository import OrganizationRepository
 
@@ -104,6 +104,8 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         await plain_service.create_organization_review_thread(session, organization)
+
+        enqueue_job("organization_review.run_agent", organization_id=organization_id)
 
         # We used to send an email manually too for initial reviews,
         # but we rely on Plain to do that now.

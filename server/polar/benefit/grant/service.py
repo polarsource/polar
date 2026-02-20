@@ -9,6 +9,7 @@ from dramatiq import group
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.strategies import BenefitRetriableError
 from polar.customer.repository import CustomerRepository
 from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
@@ -25,7 +26,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job
+from polar.worker import can_retry, enqueue_job
 
 from ..registry import get_benefit_strategy
 from ..strategies import (
@@ -649,15 +650,28 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
-        properties = await benefit_strategy.revoke(
-            benefit,
-            customer,
-            grant.properties,
-            attempt=attempt,
-            member=member,
-        )
+        try:
+            properties = await benefit_strategy.revoke(
+                benefit,
+                customer,
+                grant.properties,
+                attempt=attempt,
+                member=member,
+            )
+            grant.properties = properties
+        except BenefitRetriableError as e:
+            if can_retry():
+                raise
+            log.warning(
+                (
+                    "Retriable error encountered while deleting benefit grant. "
+                    "Stopping retries and marking grant as revoked"
+                ),
+                error=str(e),
+                defer_seconds=e.defer_seconds,
+                benefit_grant_id=str(grant.id),
+            )
 
-        grant.properties = properties
         grant.set_revoked()
 
         session.add(grant)

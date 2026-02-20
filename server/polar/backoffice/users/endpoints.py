@@ -306,7 +306,7 @@ async def get(
                             r.url_for("organizations:delete", id=i.organization_id)
                         ),
                         target="#modal",
-                        hidden=lambda _, i: i.organization.deleted_at is not None,
+                        hidden=lambda _, i: i.organization.is_deleted,
                     ),
                 ),
             ).render(request, user_orgs):
@@ -359,7 +359,7 @@ async def get(
         active_oauth_result = await session.execute(
             select(OAuthAccount).where(
                 OAuthAccount.user_id == user.id,
-                OAuthAccount.deleted_at.is_(None),
+                OAuthAccount.is_deleted.is_(False),
             )
         )
         active_oauth_accounts = active_oauth_result.scalars().all()
@@ -367,7 +367,7 @@ async def get(
         deleted_oauth_result = await session.execute(
             select(OAuthAccount).where(
                 OAuthAccount.user_id == user.id,
-                OAuthAccount.deleted_at.is_not(None),
+                OAuthAccount.is_deleted.is_(True),
             )
         )
         deleted_oauth_accounts = deleted_oauth_result.scalars().all()

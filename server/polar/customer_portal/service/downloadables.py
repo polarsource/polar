@@ -122,7 +122,7 @@ class DownloadableService(
                 Downloadable.customer_id == customer.id,
                 Downloadable.benefit_id == benefit_id,
                 Downloadable.status == DownloadableStatus.granted,
-                Downloadable.deleted_at.is_(None),
+                Downloadable.is_deleted.is_(False),
             )
             .values(
                 status=DownloadableStatus.revoked,
@@ -231,11 +231,11 @@ class DownloadableService(
             .options(contains_eager(Downloadable.file))
             .where(
                 Downloadable.status == DownloadableStatus.granted,
-                Downloadable.deleted_at.is_(None),
-                File.deleted_at.is_(None),
+                Downloadable.is_deleted.is_(False),
+                File.is_deleted.is_(False),
                 File.is_uploaded == True,  # noqa
                 File.is_enabled == True,  # noqa
-                Benefit.deleted_at.is_(None),
+                Benefit.is_deleted.is_(False),
                 Downloadable.customer_id == get_customer_id(auth_subject),
             )
             .order_by(Downloadable.created_at.desc())

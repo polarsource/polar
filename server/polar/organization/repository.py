@@ -96,7 +96,7 @@ class OrganizationRepository(
             .join(UserOrganization)
             .where(
                 UserOrganization.user_id == user,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
                 Organization.blocked_at.is_(None),
             )
         )
@@ -149,7 +149,7 @@ class OrganizationRepository(
                 Organization.id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -172,7 +172,7 @@ class OrganizationRepository(
             .join(Account, Account.admin_id == User.id)
             .where(
                 Account.id == organization.account_id,
-                User.deleted_at.is_(None),
+                User.is_deleted.is_(False),
             )
         )
         result = await session.execute(statement)
@@ -221,6 +221,6 @@ class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
     ) -> OrganizationReview | None:
         statement = self.get_base_statement().where(
             OrganizationReview.organization_id == organization_id,
-            OrganizationReview.deleted_at.is_(None),
+            OrganizationReview.is_deleted.is_(False),
         )
         return await self.get_one_or_none(statement)

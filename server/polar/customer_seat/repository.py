@@ -351,7 +351,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         if is_user(auth_subject):
             user_org_ids = select(UserOrganization.organization_id).where(
                 UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
             statement = statement.where(Product.organization_id.in_(user_org_ids))
         elif is_organization(auth_subject):

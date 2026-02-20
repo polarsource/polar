@@ -246,7 +246,7 @@ class MetricsService:
                 Organization.id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == auth_subject.subject.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 ),
             )
@@ -665,7 +665,7 @@ class MetricsService:
             product_stmt = select(Product.id).where(
                 Product.organization_id == org.id,
                 Product.billing_type.in_(billing_type),
-                Product.deleted_at.is_(None),
+                Product.is_deleted.is_(False),
             )
             billing_type_product_ids = list(await session.scalars(product_stmt))
             if product_id is not None:

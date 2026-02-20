@@ -209,7 +209,7 @@ class MeterService:
                 Product.is_archived.is_(False),
                 ProductPriceMeteredUnit.meter_id == meter.id,
                 ProductPriceMeteredUnit.is_archived.is_(False),
-                ProductPriceMeteredUnit.deleted_at.is_(None),
+                ProductPriceMeteredUnit.is_deleted.is_(False),
             )
         )
 
@@ -230,7 +230,7 @@ class MeterService:
             select(func.count(Benefit.id)).where(
                 Benefit.type == "meter_credit",
                 Benefit.properties["meter_id"].as_string() == str(meter.id),
-                Benefit.deleted_at.is_(None),
+                Benefit.is_deleted.is_(False),
             )
         )
 

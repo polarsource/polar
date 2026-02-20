@@ -2224,7 +2224,7 @@ class SubscriptionService:
         self, session: AsyncSession, product: Product
     ) -> None:
         base_statement = select(Subscription).where(
-            Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
+            Subscription.product_id == product.id, Subscription.is_deleted.is_(False)
         )
 
         count_result = await session.execute(
@@ -2403,7 +2403,7 @@ class SubscriptionService:
             BenefitGrant.subscription_id == subscription.id,
             BenefitGrant.benefit_id.not_in(subscription_tier_benefits_statement),
             BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
+            BenefitGrant.is_deleted.is_(False),
         )
 
         result = await session.execute(statement)

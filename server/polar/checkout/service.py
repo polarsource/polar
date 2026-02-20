@@ -2352,7 +2352,7 @@ class CheckoutService:
                 Customer, onclause=Customer.id == Subscription.customer_id
             ).where(
                 func.lower(Customer.email) == checkout.customer_email.lower(),
-                Customer.deleted_at.is_(None),
+                Customer.is_deleted.is_(False),
             )
 
         result = await session.execute(statement)

@@ -54,7 +54,7 @@ class OrganizationReviewRepository(
             select(OrganizationAgentReview)
             .where(
                 OrganizationAgentReview.organization_id == organization_id,
-                OrganizationAgentReview.deleted_at.is_(None),
+                OrganizationAgentReview.is_deleted.is_(False),
             )
             .order_by(OrganizationAgentReview.reviewed_at.desc())
             .limit(1)
@@ -65,7 +65,7 @@ class OrganizationReviewRepository(
     async def get_account_with_admin(self, account_id: UUID) -> Account | None:
         statement = (
             select(Account)
-            .where(Account.id == account_id, Account.deleted_at.is_(None))
+            .where(Account.id == account_id, Account.is_deleted.is_(False))
             .options(joinedload(Account.admin))
         )
         result = await self.session.execute(statement)
@@ -76,7 +76,7 @@ class OrganizationReviewRepository(
             select(Product)
             .where(
                 Product.organization_id == organization_id,
-                Product.deleted_at.is_(None),
+                Product.is_deleted.is_(False),
             )
             .options(selectinload(Product.prices))
         )
@@ -96,7 +96,7 @@ class OrganizationReviewRepository(
             ),
         ).where(
             Payment.organization_id == organization_id,
-            Payment.deleted_at.is_(None),
+            Payment.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         row = result.one()
@@ -107,7 +107,7 @@ class OrganizationReviewRepository(
             Payment.organization_id == organization_id,
             Payment.status == PaymentStatus.succeeded,
             Payment.risk_score.is_not(None),
-            Payment.deleted_at.is_(None),
+            Payment.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         return [row[0] for row in result.all()]
@@ -120,7 +120,7 @@ class OrganizationReviewRepository(
         ).where(
             Refund.organization_id == organization_id,
             Refund.status == RefundStatus.succeeded,
-            Refund.deleted_at.is_(None),
+            Refund.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         row = result.one()
@@ -135,10 +135,10 @@ class OrganizationReviewRepository(
             Dispute.payment_id.in_(
                 select(Payment.id).where(
                     Payment.organization_id == organization_id,
-                    Payment.deleted_at.is_(None),
+                    Payment.is_deleted.is_(False),
                 )
             ),
-            Dispute.deleted_at.is_(None),
+            Dispute.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         row = result.one()
@@ -161,7 +161,7 @@ class OrganizationReviewRepository(
             .where(
                 UserOrganization.user_id == user_id,
                 Organization.id != exclude_organization_id,
-                Organization.deleted_at.is_(None),
+                Organization.is_deleted.is_(False),
             )
             .options(joinedload(Organization.review))
         )

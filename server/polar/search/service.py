@@ -97,7 +97,7 @@ class SearchService:
             .where(
                 Organization.id == organization_id,
                 UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
         )
 
@@ -169,7 +169,7 @@ class SearchService:
             literal(None).cast(String).label("status"),
         ).where(
             Product.organization_id.in_(organization_subquery),
-            Product.deleted_at.is_(None),
+            Product.is_deleted.is_(False),
         )
 
         if query_uuid:
@@ -203,7 +203,7 @@ class SearchService:
             literal(None).cast(String).label("status"),
         ).where(
             Customer.organization_id.in_(organization_subquery),
-            Customer.deleted_at.is_(None),
+            Customer.is_deleted.is_(False),
         )
 
         if query_uuid:
@@ -253,7 +253,7 @@ class SearchService:
             .join(Product, Order.product_id == Product.id)
             .where(
                 Customer.organization_id.in_(organization_subquery),
-                Order.deleted_at.is_(None),
+                Order.is_deleted.is_(False),
             )
         )
 
@@ -303,7 +303,7 @@ class SearchService:
             .join(Product, Subscription.product_id == Product.id)
             .where(
                 Customer.organization_id.in_(organization_subquery),
-                Subscription.deleted_at.is_(None),
+                Subscription.is_deleted.is_(False),
             )
         )
 

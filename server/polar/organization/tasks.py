@@ -266,11 +266,11 @@ async def _backfill_owner_members(
             Member,
             (Customer.id == Member.customer_id)
             & (Member.role == MemberRole.owner)
-            & (Member.deleted_at.is_(None)),
+            & (Member.is_deleted.is_(False)),
         )
         .where(
             Customer.organization_id == organization.id,
-            Customer.deleted_at.is_(None),
+            Customer.is_deleted.is_(False),
             Member.id.is_(None),
         )
     )
@@ -535,7 +535,7 @@ async def _backfill_benefit_grants(
         .where(
             Customer.organization_id == organization.id,
             BenefitGrant.member_id.is_(None),
-            BenefitGrant.deleted_at.is_(None),
+            BenefitGrant.is_deleted.is_(False),
         )
     )
     results = await session.stream_scalars(
@@ -709,7 +709,7 @@ async def _cleanup_orphaned_seat_customers(
     count = 0
     for customer_id in orphaned_customer_ids:
         customer = await customer_repo.get_by_id(customer_id)
-        if customer is None or customer.deleted_at is not None:
+        if customer is None or customer.is_deleted:
             continue
 
         # Check if customer has any subscriptions

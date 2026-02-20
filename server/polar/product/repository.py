@@ -87,7 +87,7 @@ class ProductRepository(
                 Product.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -107,7 +107,7 @@ class ProductRepository(
         """Count products for an organization with optional archived filter."""
         statement = sql.select(sql.func.count(Product.id)).where(
             Product.organization_id == organization_id,
-            Product.deleted_at.is_(None),
+            Product.is_deleted.is_(False),
         )
 
         if is_archived is not None:
@@ -227,7 +227,7 @@ class ProductPriceRepository(
                 Product.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

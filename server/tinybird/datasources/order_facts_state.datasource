@@ -1,0 +1,24 @@
+SCHEMA >
+    `organization_id` UUID,
+    `order_id` UUID,
+    `customer_id` AggregateFunction(argMax, Nullable(UUID), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `external_customer_id` AggregateFunction(argMax, Nullable(String), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `product_id` AggregateFunction(argMax, Nullable(UUID), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `billing_type` AggregateFunction(argMax, Nullable(String), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `order_paid_timestamp` AggregateFunction(argMax, Nullable(DateTime64(3)), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `order_paid_subscription_id` AggregateFunction(argMax, Nullable(UUID), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `applied_balance_amount` AggregateFunction(argMax, Nullable(Int64), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `balance_name` AggregateFunction(argMax, Nullable(String), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_effective_ts` AggregateFunction(argMax, Nullable(DateTime64(3)), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_subscription_id` AggregateFunction(argMax, Nullable(UUID), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_customer_id` AggregateFunction(argMax, Nullable(UUID), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_currency` AggregateFunction(argMax, Nullable(String), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `settlement_revenue_amount` AggregateFunction(argMax, Nullable(Int64), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `apply_applied_balance_deduction` AggregateFunction(argMax, Nullable(UInt8), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_exchange_rate` AggregateFunction(argMax, Nullable(Float64), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_fee` AggregateFunction(argMax, Nullable(Int64), Tuple(Int8, DateTime64(3), Nullable(Int64))),
+    `balance_order_source_fx` AggregateFunction(argMax, Nullable(Float64), Tuple(UInt8, DateTime64(3), DateTime64(3))),
+    `refund_net_amount` AggregateFunction(sum, Int64)
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, order_id

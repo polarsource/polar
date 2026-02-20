@@ -8,6 +8,7 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
+import { Headline } from './Headline'
 
 const nav = [
   {
@@ -30,6 +31,7 @@ const nav = [
       { label: 'Input', href: '/orbit/components/input' },
       { label: 'BarChart', href: '/orbit/components/barchart' },
       { label: 'DataTable', href: '/orbit/components/datatable' },
+      { label: 'Status', href: '/orbit/components/status' },
     ],
   },
 ]
@@ -38,15 +40,10 @@ export function OrbitNav() {
   const pathname = usePathname()
 
   return (
-    <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="px-8 pb-0 pt-10">
-        <Link href="/orbit" className="flex flex-col gap-0.5">
-          <span className="dark:text-polar-500 text-[10px] uppercase tracking-widest text-neutral-400">
-            Polar Software Inc
-          </span>
-          <span className="text-lg font-light tracking-tighter text-black dark:text-white">
-            Orbit
-          </span>
+    <Sidebar className="border-none" collapsible="offcanvas">
+      <SidebarHeader className="px-8 pt-10 pb-0">
+        <Link href="/orbit" className="flex flex-col gap-1">
+          <Headline as="h6" text="Orbit" />
         </Link>
       </SidebarHeader>
 
@@ -54,7 +51,7 @@ export function OrbitNav() {
         <nav className="flex flex-col gap-7">
           {nav.map(({ section, items }) => (
             <div key={section} className="flex flex-col gap-0.5">
-              <span className="dark:text-polar-500 pb-2.5 text-[10px] uppercase tracking-widest text-neutral-400">
+              <span className="dark:text-polar-500 pb-2.5 text-xs text-neutral-500">
                 {section}
               </span>
               {items.map(({ label, href }) => {

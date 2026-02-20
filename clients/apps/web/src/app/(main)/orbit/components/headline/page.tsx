@@ -44,30 +44,45 @@ export default function HeadlinePage() {
               </span>
             </div>
             <div className="col-span-4">
-              <Headline animate as={tag} text="The quick brown fox" />
+              <Headline as={tag} text="The quick brown fox" />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Animated multiline */}
+      {/* Animated */}
       <div className="flex flex-col gap-8">
-        <OrbitSectionHeader title="Multiline Stagger" />
-        <div className="grid grid-cols-5 gap-8">
-          <div className="flex flex-col gap-0.5">
-            <span className="dark:text-polar-500 text-xs text-neutral-400">
-              Array text
-            </span>
-            <span className="dark:text-polar-500 text-xs text-neutral-400">
-              Stagger: 0.2s ÷ n
-            </span>
+        <OrbitSectionHeader
+          title="Animated"
+          description="Set animate to trigger a curtain-reveal on viewport entry. Each line clips upward independently; passing an array staggers them at 0.2s ÷ n."
+        />
+        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+          <div className="grid grid-cols-5 items-baseline gap-8 py-6">
+            <div className="flex flex-col gap-0.5">
+              <span className="dark:text-polar-500 text-xs text-neutral-400">
+                Single line
+              </span>
+            </div>
+            <div className="col-span-4">
+              <Headline animate as="h2" text="The quick brown fox" />
+            </div>
           </div>
-          <div className="col-span-4">
-            <Headline
-              animate
-              as="h2"
-              text={['The quick', 'brown fox', 'jumps over']}
-            />
+          <div className="grid grid-cols-5 items-baseline gap-8 py-6">
+            <div className="flex flex-col gap-0.5">
+              <span className="dark:text-polar-500 text-xs text-neutral-400">
+                Multiline stagger
+              </span>
+              <span className="dark:text-polar-500 text-xs text-neutral-400">
+                Stagger: 0.2s ÷ n
+              </span>
+            </div>
+            <div className="col-span-4">
+              <Headline
+                animate
+                as="h2"
+                text={['The quick', 'brown fox', 'jumps over']}
+              />
+            </div>
           </div>
         </div>
       </div>

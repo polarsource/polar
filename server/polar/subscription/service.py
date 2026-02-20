@@ -2187,7 +2187,9 @@ class SubscriptionService:
         if task == "revoke":
             organization_repository = OrganizationRepository.from_session(session)
             organization = await organization_repository.get_by_id(
-                product.organization_id
+                product.organization_id,
+                include_deleted=True,
+                include_blocked=True,
             )
             assert organization is not None
 

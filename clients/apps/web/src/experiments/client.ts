@@ -7,6 +7,8 @@ import { DISTINCT_ID_COOKIE } from './constants'
 import {
   type ExperimentName,
   type ExperimentResult,
+  type ExperimentVariant,
+  experiments,
   getDefaultVariant,
 } from './index'
 
@@ -29,6 +31,25 @@ export interface UseExperimentOptions {
   trackExposure?: boolean
 }
 
+/**
+ * Read experiment override from URL query params (dev only).
+ * Usage: ?experiment_checkout_terms=treatment
+ */
+function getUrlOverride<T extends ExperimentName>(
+  experimentName: T,
+): ExperimentVariant<T> | null {
+  if (process.env.NODE_ENV !== 'development') return null
+  if (typeof window === 'undefined') return null
+  const params = new URLSearchParams(window.location.search)
+  const value = params.get(`experiment_${experimentName}`)
+  if (!value) return null
+  const validVariants = experiments[experimentName].variants as readonly string[]
+  if (validVariants.includes(value)) {
+    return value as ExperimentVariant<T>
+  }
+  return null
+}
+
 export function useExperiment<T extends ExperimentName>(
   experimentName: T,
   options?: UseExperimentOptions,
@@ -36,15 +57,22 @@ export function useExperiment<T extends ExperimentName>(
   const { trackExposure = true } = options ?? {}
   const posthog = usePostHog()
   const hasTracked = useRef(false)
-  const experiments = useExperimentContext()
+  const experimentContext = useExperimentContext()
+
+  const urlOverride = useMemo(
+    () => getUrlOverride(experimentName),
+    [experimentName],
+  )
 
   const variant =
-    experiments[experimentName] ?? getDefaultVariant(experimentName)
+    urlOverride ??
+    experimentContext[experimentName] ??
+    getDefaultVariant(experimentName)
 
   const canTrack = useMemo(() => hasDistinctIdCookie(), [])
 
   useEffect(() => {
-    if (!trackExposure || !canTrack || hasTracked.current) {
+    if (urlOverride || !trackExposure || !canTrack || hasTracked.current) {
       return
     }
 
@@ -54,7 +82,7 @@ export function useExperiment<T extends ExperimentName>(
       $feature_flag: experimentName,
       $feature_flag_response: variant,
     })
-  }, [experimentName, variant, trackExposure, canTrack, posthog])
+  }, [experimentName, variant, trackExposure, canTrack, posthog, urlOverride])
 
   return useMemo(
     () => ({

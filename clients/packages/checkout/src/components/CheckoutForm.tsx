@@ -111,6 +111,7 @@ interface BaseCheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   pricingPositionExperiment?: 'treatment' | 'control'
+  termsExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
 }
 
@@ -127,6 +128,7 @@ const BaseCheckoutForm = ({
   themePreset: themePresetProps,
   locale: localeProp,
   pricingPositionExperiment,
+  termsExperiment,
   isWalletPayment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
@@ -989,9 +991,22 @@ const BaseCheckoutForm = ({
             </div>
           </form>
         </Form>
-        <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-          {t('checkout.footer.merchantOfRecord')}
-        </p>
+        <div>
+          {termsExperiment === 'treatment' &&
+          checkout.isPaymentFormRequired ? (
+            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
+              {checkout.activeTrialInterval
+                ? t('checkout.footer.mandateSubscriptionTrial')
+                : interval
+                  ? t('checkout.footer.mandateSubscription')
+                  : t('checkout.footer.mandateOneTime')}
+            </p>
+          ) : (
+            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
+              {t('checkout.footer.merchantOfRecord')}
+            </p>
+          )}
+        </div>
       </div>
       <a
         href="https://polar.sh?utm_source=checkout"
@@ -1022,6 +1037,7 @@ interface CheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   pricingPositionExperiment?: 'treatment' | 'control'
+  termsExperiment?: 'treatment' | 'control'
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -1036,6 +1052,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     themePreset: themePresetProps,
     locale,
     pricingPositionExperiment,
+    termsExperiment,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -1051,6 +1068,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const isWalletPayment = selectedPaymentMethod
     ? isWalletPaymentMethod(selectedPaymentMethod)
     : false
+  const hideNameField =
+    isWalletPayment ||
+    (termsExperiment === 'treatment' && selectedPaymentMethod === 'link')
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -1112,7 +1132,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loading={loading}
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
-            isWalletPayment={isWalletPayment}
+            isWalletPayment={hideNameField}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement
@@ -1127,6 +1147,23 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                       address: 'never',
                     },
                   },
+                  ...(termsExperiment === 'treatment'
+                    ? {
+                        terms: {
+                          applePay: 'never',
+                          auBecsDebit: 'never',
+                          bancontact: 'never',
+                          card: 'never',
+                          cashapp: 'never',
+                          googlePay: 'never',
+                          ideal: 'never',
+                          paypal: 'never',
+                          sepaDebit: 'never',
+                          sofort: 'never',
+                          usBankAccount: 'never',
+                        },
+                      }
+                    : {}),
                 }}
                 onChange={(event: StripePaymentElementChangeEvent) => {
                   setSelectedPaymentMethod(event.value.type)

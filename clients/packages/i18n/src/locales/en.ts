@@ -4,6 +4,12 @@ export default {
       poweredBy: 'Powered by',
       merchantOfRecord:
         'This order is processed by our online reseller & Merchant of Record, Polar, who also handles order-related inquiries and returns.',
+      mandateSubscriptionTrial:
+        'By clicking "Start trial," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.',
+      mandateSubscription:
+        'By clicking "Subscribe now," you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.',
+      mandateOneTime:
+        'By clicking "Pay now," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.',
     },
     form: {
       email: 'Email',

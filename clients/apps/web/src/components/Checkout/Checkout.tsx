@@ -72,6 +72,8 @@ const Checkout = ({
     { trackExposure: !embed },
   )
 
+  const { variant: termsExperiment } = useExperiment('checkout_terms')
+
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return
@@ -247,6 +249,7 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
+          termsExperiment={termsExperiment}
         />
       </ShadowBox>
     )
@@ -375,6 +378,7 @@ const Checkout = ({
             isUpdatePending={isUpdatePending}
             locale={locale}
             pricingPositionExperiment={pricingPositionExperiment}
+            termsExperiment={termsExperiment}
           />
         </div>
       </ShadowBoxOnMd>

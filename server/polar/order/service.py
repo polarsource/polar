@@ -313,7 +313,7 @@ class OrderService:
         if external_customer_id is not None:
             statement = statement.where(
                 Customer.external_id.in_(external_customer_id),
-                Customer.deleted_at.is_(None),
+                Customer.is_deleted.is_(False),
             )
 
         if checkout_id is not None:
@@ -1465,7 +1465,7 @@ class OrderService:
         # Skip seat-based orders - benefits are granted when seats are claimed
         base_statement = select(Order).where(
             Order.product_id == product.id,
-            Order.deleted_at.is_(None),
+            Order.is_deleted.is_(False),
             Order.subscription_id.is_(None),
             Order.seats.is_(None),
         )

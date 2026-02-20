@@ -216,7 +216,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[Subscription]]:
         return select(Subscription).where(
-            Subscription.deleted_at.is_(None),
+            Subscription.is_deleted.is_(False),
             Subscription.customer_id == get_customer_id(auth_subject),
         )
 

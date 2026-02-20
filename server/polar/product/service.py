@@ -88,7 +88,7 @@ class ProductService:
                 .where(
                     ProductPrice.product_id == Product.id,
                     ProductPrice.is_archived.is_(False),
-                    ProductPrice.deleted_at.is_(None),
+                    ProductPrice.is_deleted.is_(False),
                 )
                 .order_by(ProductPrice.created_at.asc())
                 .limit(1)

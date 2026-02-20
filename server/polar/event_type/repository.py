@@ -26,7 +26,7 @@ class EventTypeRepository(
                 EventType.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -68,7 +68,7 @@ class EventTypeRepository(
         statement = select(EventType).where(
             EventType.name == name,
             EventType.organization_id == organization_id,
-            EventType.deleted_at.is_(None),
+            EventType.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
@@ -81,7 +81,7 @@ class EventTypeRepository(
         statement = select(EventType).where(
             EventType.name.in_(names),
             EventType.organization_id == organization_id,
-            EventType.deleted_at.is_(None),
+            EventType.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         return {et.name: et for et in result.scalars().all()}

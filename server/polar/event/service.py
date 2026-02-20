@@ -764,7 +764,7 @@ class EventService:
         organization_ids_for_revops: set[uuid.UUID] = set()
         for event in events:
             organization_ids.add(event.organization_id)
-            if event.customer and event.customer.deleted_at is None:
+            if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)
@@ -927,7 +927,7 @@ class EventService:
             Organization.id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 )
             ),
         )
@@ -974,7 +974,7 @@ class EventService:
             allowed_customers: set[uuid.UUID] = set()
         else:
             statement = select(Customer.id).where(
-                Customer.deleted_at.is_(None),
+                Customer.is_deleted.is_(False),
                 Customer.id.in_(customer_ids),
             )
             if is_user(auth_subject):
@@ -982,7 +982,7 @@ class EventService:
                     Customer.organization_id.in_(
                         select(UserOrganization.organization_id).where(
                             UserOrganization.user_id == auth_subject.subject.id,
-                            UserOrganization.deleted_at.is_(None),
+                            UserOrganization.is_deleted.is_(False),
                         )
                     )
                 )

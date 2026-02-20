@@ -58,7 +58,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                     HeldBalance.account_id == account.id,
                     Organization.account_id == account.id,
                 ),
-                HeldBalance.deleted_at.is_(None),
+                HeldBalance.is_deleted.is_(False),
             )
             .options(
                 joinedload(HeldBalance.payment_transaction),

@@ -66,7 +66,7 @@ class CheckoutRepository(
         statement = (
             update(Checkout)
             .where(
-                Checkout.deleted_at.is_(None),
+                Checkout.is_deleted.is_(False),
                 Checkout.expires_at <= utc_now(),
                 Checkout.status == CheckoutStatus.open,
             )
@@ -87,7 +87,7 @@ class CheckoutRepository(
                 Checkout.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

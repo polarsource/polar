@@ -216,7 +216,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         self, session: AsyncSession, id: uuid.UUID, organization_id: uuid.UUID
     ) -> CustomField | None:
         statement = select(CustomField).where(
-            CustomField.deleted_at.is_(None),
+            CustomField.is_deleted.is_(False),
             CustomField.organization_id == organization_id,
             CustomField.id == id,
         )
@@ -238,7 +238,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
     ) -> Select[tuple[CustomField]]:
         statement = (
             select(CustomField)
-            .where(CustomField.deleted_at.is_(None))
+            .where(CustomField.is_deleted.is_(False))
             .join(Organization, Organization.id == CustomField.organization_id)
             .options(contains_eager(CustomField.organization))
         )
@@ -249,7 +249,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
                 CustomField.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

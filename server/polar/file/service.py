@@ -156,7 +156,7 @@ class FileService:
     async def delete(self, session: AsyncSession, *, file: File) -> bool:
         file.set_deleted_at()
         session.add(file)
-        assert file.deleted_at is not None
+        assert file.is_deleted
 
         # Delete ProductMedia association table records
         statement = sql.delete(ProductMedia).where(ProductMedia.file_id == file.id)
@@ -179,7 +179,7 @@ class FileService:
             File.organization_id == organization_id,
             File.is_uploaded.is_(True),
             File.is_enabled.is_(True),
-            File.deleted_at.is_(None),
+            File.is_deleted.is_(False),
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

@@ -97,7 +97,7 @@ class UserRepository(
             self.get_base_statement(include_deleted=include_deleted)
             .join(UserOrganization, UserOrganization.user_id == User.id)
             .where(
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
                 UserOrganization.organization_id == organization_id,
             )
         )
@@ -113,7 +113,7 @@ class UserRepository(
         statement = select(UserOrganization).where(
             UserOrganization.user_id == user_id,
             UserOrganization.organization_id == organization_id,
-            UserOrganization.deleted_at.is_(None),
+            UserOrganization.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None

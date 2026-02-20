@@ -2,9 +2,24 @@ import { BarChart, Headline } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
-  { name: 'data', type: 'BarChartItem[]', default: '—', desc: 'Array of { label, value } objects. Values are relative to each other.' },
-  { name: 'animated', type: 'boolean', default: 'false', desc: 'Enables scaleY bar animation and opacity fade on viewport entry.' },
-  { name: 'className', type: 'string', default: '—', desc: 'Classes applied to the root flex container.' },
+  {
+    name: 'data',
+    type: 'BarChartItem[]',
+    default: '—',
+    desc: 'Array of { label, value } objects. Values are relative to each other.',
+  },
+  {
+    name: 'animated',
+    type: 'boolean',
+    default: 'false',
+    desc: 'Enables scaleY bar animation and opacity fade on viewport entry.',
+  },
+  {
+    name: 'className',
+    type: 'string',
+    default: '—',
+    desc: 'Classes applied to the root flex container.',
+  },
 ]
 
 export default function BarChartPage() {

@@ -14,7 +14,16 @@ export default function CardPage() {
       <OrbitPageHeader
         label="Component"
         title="Card"
-        description={<>A surface for grouping related content. Composed of three optional sub-components — <code className="font-mono text-sm">CardHeader</code>, <code className="font-mono text-sm">CardContent</code>, and{' '}<code className="font-mono text-sm">CardFooter</code> — each separated by a dividing border.</>}
+        description={
+          <>
+            A surface for grouping related content. Composed of three optional
+            sub-components —{' '}
+            <code className="font-mono text-sm">CardHeader</code>,{' '}
+            <code className="font-mono text-sm">CardContent</code>, and{' '}
+            <code className="font-mono text-sm">CardFooter</code> — each
+            separated by a dividing border.
+          </>
+        }
       />
 
       {/* Demos */}

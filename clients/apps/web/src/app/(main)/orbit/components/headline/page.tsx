@@ -11,11 +11,36 @@ const levels = [
 ] as const
 
 const props = [
-  { name: 'as', type: "'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'span'", default: "'h2'", desc: 'Rendered HTML element and default size' },
-  { name: 'text', type: 'string | string[]', default: '—', desc: 'Content. Array triggers multi-line staggered animation' },
-  { name: 'animate', type: 'boolean', default: 'false', desc: 'Enables curtain-reveal animation on viewport entry' },
-  { name: 'size', type: 'string', default: 'derived from as', desc: 'Override the default Tailwind size classes' },
-  { name: 'className', type: 'string', default: '—', desc: 'Additional classes merged via twMerge' },
+  {
+    name: 'as',
+    type: "'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'span'",
+    default: "'h2'",
+    desc: 'Rendered HTML element and default size',
+  },
+  {
+    name: 'text',
+    type: 'string | string[]',
+    default: '—',
+    desc: 'Content. Array triggers multi-line staggered animation',
+  },
+  {
+    name: 'animate',
+    type: 'boolean',
+    default: 'false',
+    desc: 'Enables curtain-reveal animation on viewport entry',
+  },
+  {
+    name: 'size',
+    type: 'string',
+    default: 'derived from as',
+    desc: 'Override the default Tailwind size classes',
+  },
+  {
+    name: 'className',
+    type: 'string',
+    default: '—',
+    desc: 'Additional classes merged via twMerge',
+  },
 ]
 
 export default function HeadlinePage() {

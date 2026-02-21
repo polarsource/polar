@@ -14,9 +14,9 @@ import { resolveProperties } from './resolveProperties'
 // All strings must be fully static so Tailwind JIT can scan them.
 
 export type ColorClasses = {
-  background: string
-  text: string
-  border: string
+  background?: string
+  text?: string
+  border?: string
 }
 
 export type SpacingClasses = {
@@ -143,17 +143,19 @@ type TokenProps<T extends ThemeSpec> = ColorProps<T['colors']> &
 
 // ─── Box props ────────────────────────────────────────────────────────────────
 
-type BoxProps<T extends ThemeSpec, E extends ElementType = 'div'> =
-  TokenProps<T> &
-    FlexProps & {
-      as?: E
-      className?: string
-      children?: ReactNode
-    } & Omit<
-      ComponentPropsWithoutRef<E>,
-      // Omit all Box-managed props + style (disallowed) + native conflicts
-      BoxPropName | 'children' | 'style' | 'className'
-    >
+type BoxProps<
+  T extends ThemeSpec,
+  E extends ElementType = 'div',
+> = TokenProps<T> &
+  FlexProps & {
+    as?: E
+    className?: string
+    children?: ReactNode
+  } & Omit<
+    ComponentPropsWithoutRef<E>,
+    // Omit all Box-managed props + style (disallowed) + native conflicts
+    BoxPropName | 'children' | 'style' | 'className'
+  >
 
 // ─── createBox ────────────────────────────────────────────────────────────────
 
@@ -169,12 +171,37 @@ export function createBox<T extends ThemeSpec>(theme: T) {
 
     // Extract all Box-managed props, leaving native HTML props in rest
     const boxPropNames: BoxPropName[] = [
-      'backgroundColor', 'color', 'borderColor',
-      'padding', 'paddingX', 'paddingY', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-      'margin', 'marginX', 'marginY', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-      'gap', 'rowGap', 'columnGap',
-      'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius',
-      'display', 'flexDirection', 'alignItems', 'justifyContent', 'flexWrap', 'flex',
+      'backgroundColor',
+      'color',
+      'borderColor',
+      'padding',
+      'paddingX',
+      'paddingY',
+      'paddingTop',
+      'paddingRight',
+      'paddingBottom',
+      'paddingLeft',
+      'margin',
+      'marginX',
+      'marginY',
+      'marginTop',
+      'marginRight',
+      'marginBottom',
+      'marginLeft',
+      'gap',
+      'rowGap',
+      'columnGap',
+      'borderRadius',
+      'borderTopLeftRadius',
+      'borderTopRightRadius',
+      'borderBottomLeftRadius',
+      'borderBottomRightRadius',
+      'display',
+      'flexDirection',
+      'alignItems',
+      'justifyContent',
+      'flexWrap',
+      'flex',
     ]
 
     const boxProps: Record<string, unknown> = {}
@@ -191,10 +218,7 @@ export function createBox<T extends ThemeSpec>(theme: T) {
     )
 
     return (
-      <Tag
-        className={twMerge(tokenClasses, className)}
-        {...(rest as object)}
-      >
+      <Tag className={twMerge(tokenClasses, className)} {...(rest as object)}>
         {children}
       </Tag>
     )
@@ -206,4 +230,4 @@ export function createBox<T extends ThemeSpec>(theme: T) {
 
 // ─── Exported types ───────────────────────────────────────────────────────────
 
-export type { TokenProps, BoxProps }
+export type { BoxProps, TokenProps }

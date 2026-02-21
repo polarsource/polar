@@ -22,3 +22,5 @@ export type {
 } from './Input'
 export { Status } from './Status'
 export type { StatusProps, StatusSize, StatusVariant } from './Status'
+export { Text } from './Text'
+export type { TextStyleProps, TextVariant } from './Text'

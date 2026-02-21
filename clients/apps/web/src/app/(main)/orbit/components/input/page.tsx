@@ -1,6 +1,6 @@
 'use client'
 
-import { Headline, Input } from '@/components/Orbit'
+import { Box, Headline, Input } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -44,7 +44,7 @@ const props = [
 
 export default function InputPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="Input"
@@ -52,9 +52,13 @@ export default function InputPage() {
       />
 
       {/* Standard types */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Standard types" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {(
             [
               { label: 'Text', type: 'text', placeholder: 'Plain text…' },
@@ -64,69 +68,73 @@ export default function InputPage() {
               { label: 'Search', type: 'search', placeholder: 'Search…' },
             ] as const
           ).map(({ label, type, placeholder }) => (
-            <div
+            <Box
               key={type}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
-              <div className="col-span-2">
+              <Box className="col-span-2">
                 <Headline as="h6" text={label} />
                 <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
                   type=&quot;{type}&quot;
                 </code>
-              </div>
-              <div className="col-span-3">
+              </Box>
+              <Box className="col-span-3">
                 <Input type={type} placeholder={placeholder} />
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Prefix / suffix slots */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Prefix & Suffix" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box className="col-span-2">
               <Headline as="h6" text="Prefix" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 URL scheme, unit label, icon
               </span>
-            </div>
-            <div className="col-span-3 flex flex-col gap-3">
+            </Box>
+            <Box display="flex" flexDirection="column" className="col-span-3 gap-3">
               <Input
                 type="text"
                 prefix="https://"
                 placeholder="yourdomain.com"
               />
               <Input type="number" prefix="px" placeholder="16" />
-            </div>
-          </div>
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2">
+            </Box>
+          </Box>
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box className="col-span-2">
               <Headline as="h6" text="Suffix" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Unit, format hint
               </span>
-            </div>
-            <div className="col-span-3 flex flex-col gap-3">
+            </Box>
+            <Box display="flex" flexDirection="column" className="col-span-3 gap-3">
               <Input type="number" suffix="%" placeholder="0" />
               <Input type="number" suffix="ms" placeholder="300" />
-            </div>
-          </div>
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2">
+            </Box>
+          </Box>
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box className="col-span-2">
               <Headline as="h6" text="Both" />
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Input type="number" prefix="$" suffix="USD" placeholder="0.00" />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Currency */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Currency"
           description={
@@ -137,7 +145,11 @@ export default function InputPage() {
             </>
           }
         />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {(
             [
               { currency: 'USD', placeholder: 1000, label: 'Decimal — USD' },
@@ -149,70 +161,78 @@ export default function InputPage() {
               },
             ] as const
           ).map(({ currency, placeholder, label }) => (
-            <div
+            <Box
               key={currency}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
-              <div className="col-span-2">
+              <Box className="col-span-2">
                 <Headline as="h6" text={label} />
-              </div>
-              <div className="col-span-3">
+              </Box>
+              <Box className="col-span-3">
                 <Input
                   type="currency"
                   currency={currency}
                   placeholder={placeholder}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Textarea */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Textarea" />
-        <div className="grid grid-cols-5 items-start gap-8">
-          <div className="col-span-2">
+        <Box className="grid grid-cols-5 items-start gap-8">
+          <Box className="col-span-2">
             <Headline as="h6" text="Multiline" />
             <span className="dark:text-polar-500 text-xs text-neutral-400">
               Resizable vertically
             </span>
-          </div>
-          <div className="col-span-3">
+          </Box>
+          <Box className="col-span-3">
             <Input type="textarea" placeholder="Write something…" rows={4} />
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* States */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="States" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box className="col-span-2">
               <Headline as="h6" text="Disabled" />
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Input type="text" placeholder="Disabled field" disabled />
-            </div>
-          </div>
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2">
+            </Box>
+          </Box>
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box className="col-span-2">
               <Headline as="h6" text="With value" />
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Input type="text" defaultValue="Polar Software Inc" readOnly />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Props */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <OrbitSectionHeader title="Props" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -225,10 +245,10 @@ export default function InputPage() {
               <span className="dark:text-polar-400 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

@@ -1,4 +1,4 @@
-import { BarChart, Headline } from '@/components/Orbit'
+import { BarChart, Box, Headline } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -24,7 +24,7 @@ const props = [
 
 export default function BarChartPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="BarChart"
@@ -32,9 +32,9 @@ export default function BarChartPage() {
       />
 
       {/* Demo */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Demo" />
-        <div className="h-96">
+        <Box className="h-96">
           <BarChart
             animated
             data={[
@@ -43,13 +43,17 @@ export default function BarChartPage() {
               { label: 'Customer Satisfaction', value: 81 },
             ]}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Behavior notes */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Behavior" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {[
             {
               heading: 'Relative scaling',
@@ -72,24 +76,28 @@ export default function BarChartPage() {
                 'Text color flips between near-white and near-black at the 45% lightness threshold to maintain readability against any bar color.',
             },
           ].map(({ heading, content }) => (
-            <div key={heading} className="grid grid-cols-5 gap-8 py-6">
-              <div className="col-span-2">
+            <Box key={heading} className="grid grid-cols-5 gap-8 py-6">
+              <Box className="col-span-2">
                 <Headline as="h6" text={heading} />
-              </div>
+              </Box>
               <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
                 {content}
               </p>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Props */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <OrbitSectionHeader title="Props" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 col-span-1 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -102,10 +110,10 @@ export default function BarChartPage() {
               <span className="dark:text-polar-400 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Box,
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
@@ -213,7 +214,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
 
 export default function DataTablePage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="DataTable"
@@ -230,13 +231,13 @@ export default function DataTablePage() {
       />
 
       {/* Basic */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Basic" />
         <DataTable columns={columns} data={data} isLoading={false} />
-      </div>
+      </Box>
 
       {/* Expandable rows */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Expandable rows"
           description={
@@ -260,24 +261,28 @@ export default function DataTablePage() {
             if (row.getCanExpand()) row.getToggleExpandedHandler()()
           }}
         />
-      </div>
+      </Box>
 
       {/* Loading */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Loading state" />
         <DataTable columns={columns} data={[]} isLoading={true} />
-      </div>
+      </Box>
 
       {/* Empty */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Empty state" />
         <DataTable columns={columns} data={[]} isLoading={false} />
-      </div>
+      </Box>
 
       {/* API */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="API" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {[
             {
               name: 'columns',
@@ -326,7 +331,7 @@ export default function DataTablePage() {
               desc: 'Enables row selection via checkbox or click.',
             },
           ].map(({ name, type, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -336,10 +341,10 @@ export default function DataTablePage() {
               <span className="dark:text-polar-400 col-span-2 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

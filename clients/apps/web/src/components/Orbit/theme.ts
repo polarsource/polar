@@ -30,10 +30,8 @@ export const orbitColors = {
     text: 'text-[var(--orbit-text)]',
     border: 'border-[var(--orbit-text)]',
   },
-  'text-muted': {
-    background: 'bg-[var(--orbit-text-muted)]',
-    text: 'text-[var(--orbit-text-muted)]',
-    border: 'border-[var(--orbit-text-muted)]',
+  'text-disabled': {
+    text: 'text-[var(--orbit-text-disabled)]',
   },
   'text-subtle': {
     background: 'bg-[var(--orbit-text-subtle)]',

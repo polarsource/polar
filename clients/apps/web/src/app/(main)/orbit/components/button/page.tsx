@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Headline } from '@/components/Orbit'
+import { Box, Button, Headline } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
@@ -67,7 +67,7 @@ const props = [
 
 export default function ButtonPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="Button"
@@ -81,21 +81,22 @@ export default function ButtonPage() {
       />
 
       {/* Variants */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {variants.map(({ variant, label, desc }) => (
-            <div
-              key={variant}
-              className="grid grid-cols-5 items-center gap-8 py-6"
-            >
-              <div className="col-span-2 flex flex-col gap-1">
+            <Box key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
+              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <span className="dark:text-polar-500 text-xs text-neutral-400">
                   {desc}
                 </span>
-              </div>
-              <div className="col-span-3 flex flex-row items-center gap-3">
+              </Box>
+              <Box display="flex" alignItems="center" className="col-span-3 gap-3">
                 <Button variant={variant} size="lg">
                   Action
                 </Button>
@@ -106,16 +107,20 @@ export default function ButtonPage() {
                 <Button variant={variant} loading>
                   Action
                 </Button>
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Sizes */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {(
             [
               { size: 'lg', label: 'Large', height: 'h-12 / 48px', px: 'px-5' },
@@ -128,11 +133,8 @@ export default function ButtonPage() {
               { size: 'sm', label: 'Small', height: 'h-8 / 32px', px: 'px-3' },
             ] as const
           ).map(({ size, label, height, px }) => (
-            <div
-              key={size}
-              className="grid grid-cols-5 items-center gap-8 py-6"
-            >
-              <div className="col-span-2 flex flex-col gap-1">
+            <Box key={size} className="grid grid-cols-5 items-center gap-8 py-6">
+              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
                   {height}
@@ -140,24 +142,28 @@ export default function ButtonPage() {
                 <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
                   {px}
                 </span>
-              </div>
-              <div className="col-span-3 flex flex-row items-end gap-3">
+              </Box>
+              <Box display="flex" alignItems="end" className="col-span-3 gap-3">
                 <Button size={size}>Label</Button>
                 <Button size={size} variant="secondary">
                   Label
                 </Button>
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Props */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <OrbitSectionHeader title="Props" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 col-span-1 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -170,10 +176,10 @@ export default function ButtonPage() {
               <span className="dark:text-polar-400 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

@@ -1,12 +1,16 @@
+import typing
 from typing import Any, cast
 from unittest.mock import MagicMock, call
 
+import dramatiq
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
+from polar.benefit.strategies.base.service import BenefitRetriableError
+from polar.config import settings
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -1048,6 +1052,39 @@ class TestDeleteBenefitGrant:
         benefit_organization: Benefit,
         benefit_strategy_mock: MagicMock,
     ) -> None:
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        # load
+        grant_loaded = await benefit_grant_service.get(session, grant.id)
+        assert grant_loaded
+
+        updated_grant = await benefit_grant_service.delete_benefit_grant(
+            session, redis, grant_loaded
+        )
+
+        assert updated_grant.id == grant.id
+        assert updated_grant.is_revoked
+        benefit_strategy_mock.revoke.assert_called_once()
+
+    async def test_granted_grant_exhausted_retries(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+        current_message: dramatiq.Message[typing.Any],
+    ) -> None:
+        current_message.options["retries"] = settings.WORKER_MAX_RETRIES
+
+        benefit_strategy_mock.revoke.side_effect = BenefitRetriableError()
+
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=benefit_organization
         )

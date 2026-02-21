@@ -1,4 +1,4 @@
-import { Headline } from '@/components/Orbit'
+import { Box, Headline } from '@/components/Orbit'
 import type { ReactNode } from 'react'
 
 // ─── Page header ─────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ export function OrbitPageHeader({
   description?: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-6">
+    <Box display="flex" flexDirection="column" gap={3}>
       {label && <Headline as="span" text={label} />}
       <Headline as="h2" text={title} />
       {description && (
@@ -21,7 +21,7 @@ export function OrbitPageHeader({
           {description}
         </p>
       )}
-    </div>
+    </Box>
   )
 }
 
@@ -35,14 +35,14 @@ export function OrbitSectionHeader({
   description?: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <Box display="flex" flexDirection="column" className="gap-3">
       <Headline as="h4" text={title} />
-      <div className="dark:border-polar-800 border-t border-neutral-200" />
+      <Box className="dark:border-polar-800 border-t border-neutral-200" />
       {description && (
         <p className="dark:text-polar-400 text-sm text-neutral-600">
           {description}
         </p>
       )}
-    </div>
+    </Box>
   )
 }

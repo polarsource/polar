@@ -1,4 +1,4 @@
-import { Headline } from '@/components/Orbit'
+import { Box, Headline } from '@/components/Orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
 const sections = [
@@ -116,32 +116,32 @@ const sections = [
 
 export default function GuidelinesPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         title="Guidelines"
         description="Principles and rules for how Orbit components behave, and how to use them effectively in product contexts."
       />
 
       {sections.map(({ title, subsections }) => (
-        <div key={title} className="flex flex-col gap-10">
-          <div className="flex flex-col gap-3">
+        <Box key={title} display="flex" flexDirection="column" className="gap-10">
+          <Box display="flex" flexDirection="column" className="gap-3">
             <Headline as="h3" text={title} />
-            <div className="dark:border-polar-800 border-t border-neutral-200" />
-          </div>
-          <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+            <Box className="dark:border-polar-800 border-t border-neutral-200" />
+          </Box>
+          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
             {subsections.map(({ heading, content }) => (
-              <div key={heading} className="grid grid-cols-5 gap-8 py-6">
-                <div className="col-span-2">
+              <Box key={heading} className="grid grid-cols-5 gap-8 py-6">
+                <Box className="col-span-2">
                   <Headline as="h6" text={heading} />
-                </div>
+                </Box>
                 <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
                   {content}
                 </p>
-              </div>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       ))}
-    </div>
+    </Box>
   )
 }

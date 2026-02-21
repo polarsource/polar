@@ -177,18 +177,18 @@
     --orbit-bg-surface: hsl(0, 0%, 97%);
     --orbit-bg-elevated: hsl(0, 0%, 90%);
     --orbit-text: #111111;
-    --orbit-text-muted: hsl(0, 0%, 45%);
     --orbit-text-subtle: hsl(0, 0%, 60%);
+    --orbit-text-disabled: hsl(0, 0%, 32%);
     --orbit-destructive: var(--color-red-500);
   }
 
   .dark {
-    --orbit-bg: hsl(233, 5%, 3%);
-    --orbit-bg-surface: hsl(233, 5%, 6.5%);
-    --orbit-bg-elevated: hsl(233, 5%, 9.5%);
+    --orbit-bg: hsl(233, 2%, 3%);
+    --orbit-bg-surface: hsl(233, 2%, 6.5%);
+    --orbit-bg-elevated: hsl(233, 2%, 9.5%);
     --orbit-text: #f0f0f0;
-    --orbit-text-muted: hsl(233, 5%, 46%);
-    --orbit-text-subtle: hsl(233, 5%, 52%);
+    --orbit-text-subtle: hsl(233, 2%, 52%);
+    --orbit-text-disabled: hsl(233, 2%, 32%);
     --orbit-destructive: var(--color-red-600);
   }
 }

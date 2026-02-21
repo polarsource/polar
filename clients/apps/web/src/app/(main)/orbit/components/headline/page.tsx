@@ -1,4 +1,4 @@
-import { Headline } from '@/components/Orbit'
+import { Box, Headline } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const levels = [
@@ -45,7 +45,7 @@ const props = [
 
 export default function HeadlinePage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="Headline"
@@ -53,11 +53,11 @@ export default function HeadlinePage() {
       />
 
       {/* Type scale demo */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Type Scale" />
         {levels.map(({ tag, size, weight }) => (
-          <div key={tag} className="grid grid-cols-5 items-baseline gap-8">
-            <div className="flex flex-col gap-0.5">
+          <Box key={tag} className="grid grid-cols-5 items-baseline gap-8">
+            <Box display="flex" flexDirection="column" className="gap-0.5">
               <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
                 {tag}
               </span>
@@ -67,57 +67,65 @@ export default function HeadlinePage() {
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 {weight}
               </span>
-            </div>
-            <div className="col-span-4">
+            </Box>
+            <Box className="col-span-4">
               <Headline as={tag} text="The quick brown fox" />
-            </div>
-          </div>
+            </Box>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Animated */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Animated"
           description="Set animate to trigger a curtain-reveal on viewport entry. Each line clips upward independently; passing an array staggers them at 0.2s ÷ n."
         />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
-          <div className="grid grid-cols-5 items-baseline gap-8 py-6">
-            <div className="flex flex-col gap-0.5">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
+          <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="gap-0.5">
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Single line
               </span>
-            </div>
-            <div className="col-span-4">
+            </Box>
+            <Box className="col-span-4">
               <Headline animate as="h2" text="The quick brown fox" />
-            </div>
-          </div>
-          <div className="grid grid-cols-5 items-baseline gap-8 py-6">
-            <div className="flex flex-col gap-0.5">
+            </Box>
+          </Box>
+          <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="gap-0.5">
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Multiline stagger
               </span>
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Stagger: 0.2s ÷ n
               </span>
-            </div>
-            <div className="col-span-4">
+            </Box>
+            <Box className="col-span-4">
               <Headline
                 animate
                 as="h2"
                 text={['The quick', 'brown fox', 'jumps over']}
               />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Props */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <OrbitSectionHeader title="Props" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 col-span-1 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -130,10 +138,10 @@ export default function HeadlinePage() {
               <span className="dark:text-polar-400 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

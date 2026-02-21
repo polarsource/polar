@@ -1,4 +1,4 @@
-import { Headline } from '@/components/Orbit'
+import { Box, Headline } from '@/components/Orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
@@ -55,6 +55,11 @@ const sections = [
         desc: 'Display typography with staggered curtain animation',
       },
       {
+        label: 'Text',
+        href: '/orbit/components/text',
+        desc: 'Body copy, labels, and captions with token-constrained styling',
+      },
+      {
         label: 'Button',
         href: '/orbit/components/button',
         desc: 'Four variants — primary, secondary, ghost, destructive',
@@ -90,7 +95,7 @@ const sections = [
 
 export default function OrbitIntroductionPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="v0.1 — Polar Software Inc."
         title="Orbit"
@@ -98,10 +103,10 @@ export default function OrbitIntroductionPage() {
       />
 
       {/* What is Orbit */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <Headline as="h5" text="What is Orbit" />
-        <div className="dark:border-polar-800 border-t border-neutral-200" />
-        <div className="flex flex-col gap-4">
+        <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        <Box display="flex" flexDirection="column" gap={2}>
           <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently across
@@ -115,38 +120,42 @@ export default function OrbitIntroductionPage() {
             rules produce. Together they make the right choice the path of least
             resistance.
           </p>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Design principles */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <Headline as="h5" text="Design Principles" />
-        <div className="dark:border-polar-800 border-t border-neutral-200" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {principles.map(({ title, description }) => (
-            <div key={title} className="grid grid-cols-5 gap-8 py-5">
-              <div className="col-span-2">
+            <Box key={title} className="grid grid-cols-5 gap-8 py-5">
+              <Box className="col-span-2">
                 <Headline as="h6" text={title} />
-              </div>
+              </Box>
               <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
                 {description}
               </p>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* What's inside */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <Headline as="h5" text="What's inside" />
-        <div className="dark:border-polar-800 border-t border-neutral-200" />
-        <div className="flex flex-col gap-10">
+        <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        <Box display="flex" flexDirection="column" className="gap-10">
           {sections.map(({ label, links }) => (
-            <div key={label} className="flex flex-col gap-3">
+            <Box key={label} display="flex" flexDirection="column" className="gap-3">
               <span className="dark:text-polar-500 text-xs tracking-widest text-neutral-400 uppercase">
                 {label}
               </span>
-              <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
+              <Box className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
                 {links.map(({ label: linkLabel, href, desc }) => (
                   <Link
                     key={href}
@@ -159,11 +168,11 @@ export default function OrbitIntroductionPage() {
                     </span>
                   </Link>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

@@ -6,6 +6,8 @@ export const SUPPORTED_LOCALES = [
   'es',
   'de',
   'hu',
+  'pt',
+  'pt-PT',
 ] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en' satisfies SupportedLocale
@@ -41,6 +43,7 @@ type Alpha =
   | 'X'
   | 'Y'
   | 'Z'
+
 type ResolveBCP47<T extends string> = T extends `${string}-${string}`
   ? T
   : T | `${T}-${Alpha}${Alpha}`
@@ -55,4 +58,6 @@ export const LOCALE_NAMES: Record<SupportedLocale, string> = {
   fr: 'French',
   de: 'German',
   hu: 'Hungarian',
+  pt: 'Portuguese (Brazilian)',
+  'pt-PT': 'Portuguese (Portugal)',
 }

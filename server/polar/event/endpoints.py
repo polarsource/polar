@@ -1,7 +1,10 @@
+import re
 from collections.abc import Sequence
 from datetime import date
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
+from annotated_types import Len, Predicate
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4, AwareDatetime, ValidationError
@@ -42,6 +45,17 @@ router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
 
 EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.schema()}
+
+_aggregate_field_regex = re.compile(r"^[a-zA-Z0-9_.]+$")
+
+
+def _validate_aggregate_field(value: str) -> bool:
+    return _aggregate_field_regex.match(value) is not None
+
+
+type AggregateField = Annotated[
+    str, Len(min_length=1, max_length=255), Predicate(_validate_aggregate_field)
+]
 
 
 @router.get(
@@ -108,7 +122,7 @@ async def list(
         le=5,
         description="Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.",
     ),
-    aggregate_fields: Sequence[str] = Query(
+    aggregate_fields: Sequence[AggregateField] = Query(
         default=[],
         description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
         include_in_schema=False,
@@ -236,7 +250,7 @@ async def list_statistics_timeseries(
     query: str | None = Query(
         None, title="Query", description="Query to filter events."
     ),
-    aggregate_fields: Sequence[str] = Query(
+    aggregate_fields: Sequence[AggregateField] = Query(
         default=["_cost.amount"],
         description="Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
     ),
@@ -356,7 +370,7 @@ async def get(
     id: EventID,
     auth_subject: auth.EventRead,
     session: AsyncSession = Depends(get_db_session),
-    aggregate_fields: Sequence[str] = Query(
+    aggregate_fields: Sequence[AggregateField] = Query(
         default=[],
         description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
         include_in_schema=False,

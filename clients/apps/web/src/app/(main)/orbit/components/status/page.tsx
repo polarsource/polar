@@ -1,4 +1,4 @@
-import { Status } from '@/components/Orbit'
+import { Box, Status } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
@@ -58,7 +58,7 @@ const props = [
 
 export default function StatusPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="Status"
@@ -66,23 +66,27 @@ export default function StatusPage() {
       />
 
       {/* Variants */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {variants.map(({ variant, label, desc }) => (
-            <div
+            <Box
               key={variant}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
-              <div className="col-span-2 flex flex-col gap-1">
+              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
                 <span className="text-sm font-medium text-black dark:text-white">
                   {label}
                 </span>
                 <span className="dark:text-polar-500 text-xs text-neutral-400">
                   {desc}
                 </span>
-              </div>
-              <div className="col-span-3 flex flex-row items-center gap-3">
+              </Box>
+              <Box display="flex" alignItems="center" className="col-span-3 gap-3">
                 {variant === 'neutral' && (
                   <>
                     <Status variant={variant} status="Draft" />
@@ -118,55 +122,63 @@ export default function StatusPage() {
                     <Status variant={variant} size="sm" status="Pending" />
                   </>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Sizes */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2 flex flex-col gap-1">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <span className="text-sm font-medium text-black dark:text-white">
                 Medium
               </span>
               <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
                 size="md"
               </span>
-            </div>
-            <div className="col-span-3 flex flex-row items-center gap-3">
+            </Box>
+            <Box display="flex" alignItems="center" className="col-span-3 gap-3">
               <Status status="Paid" variant="success" size="md" />
               <Status status="Past due" variant="warning" size="md" />
               <Status status="Declined" variant="error" size="md" />
-            </div>
-          </div>
-          <div className="grid grid-cols-5 items-center gap-8 py-6">
-            <div className="col-span-2 flex flex-col gap-1">
+            </Box>
+          </Box>
+          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <span className="text-sm font-medium text-black dark:text-white">
                 Small
               </span>
               <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
                 size="sm"
               </span>
-            </div>
-            <div className="col-span-3 flex flex-row items-center gap-3">
+            </Box>
+            <Box display="flex" alignItems="center" className="col-span-3 gap-3">
               <Status status="Paid" variant="success" size="sm" />
               <Status status="Past due" variant="warning" size="sm" />
               <Status status="Declined" variant="error" size="sm" />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Props */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <OrbitSectionHeader title="Props" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -179,10 +191,10 @@ export default function StatusPage() {
               <span className="dark:text-polar-400 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

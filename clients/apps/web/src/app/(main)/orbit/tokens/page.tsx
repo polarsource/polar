@@ -1,4 +1,4 @@
-import { Headline } from '@/components/Orbit'
+import { Box, Headline } from '@/components/Orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
@@ -257,18 +257,18 @@ function Mono({ children }: { children: ReactNode }) {
 
 export default function TokensPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         title="Design Tokens"
         description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
       />
 
       {/* Color */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
+      <Box display="flex" flexDirection="column" gap={3}>
+        <Box display="flex" flexDirection="column" className="gap-3">
           <Headline as="h4" text="Color" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+          <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        </Box>
         <TableHeader cols={['Token', 'Light', 'Dark', 'Usage']} />
         {colorTokens.map(
           ({ token, light, lightLabel, dark, darkLabel, usage }) => (
@@ -299,14 +299,14 @@ export default function TokensPage() {
             />
           ),
         )}
-      </div>
+      </Box>
 
       {/* Type scale */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
+      <Box display="flex" flexDirection="column" gap={3}>
+        <Box display="flex" flexDirection="column" className="gap-3">
           <Headline as="h4" text="Type Scale" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+          <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        </Box>
         <TableHeader
           cols={['Level', 'Mobile', 'Desktop', 'Weight', 'Tracking']}
         />
@@ -347,14 +347,14 @@ export default function TokensPage() {
           All heading levels use font-feature-settings: &apos;ss07&apos; 1,
           &apos;ss08&apos; 1, &apos;zero&apos; 1, &apos;liga&apos; 0
         </p>
-      </div>
+      </Box>
 
       {/* Motion */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
+      <Box display="flex" flexDirection="column" gap={3}>
+        <Box display="flex" flexDirection="column" className="gap-3">
           <Headline as="h4" text="Motion" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
-        </div>
+          <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        </Box>
         <TableHeader cols={['Token', 'Value', 'Usage']} />
         {motionTokens.map(({ token, value, usage }) => (
           <TableRow
@@ -372,39 +372,39 @@ export default function TokensPage() {
             ]}
           />
         ))}
-      </div>
+      </Box>
 
       {/* Spacing */}
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
+      <Box display="flex" flexDirection="column" gap={3}>
+        <Box display="flex" flexDirection="column" className="gap-3">
           <Headline as="h4" text="Spacing" />
-          <div className="dark:border-polar-800 border-t border-neutral-200" />
+          <Box className="dark:border-polar-800 border-t border-neutral-200" />
           <p className="dark:text-polar-400 text-sm text-neutral-600">
             All spacing follows a base-8 grid. Use these values exclusively.
           </p>
-        </div>
-        <div className="flex flex-col gap-3">
+        </Box>
+        <Box display="flex" flexDirection="column" className="gap-3">
           {spacingTokens.map(({ token, px, rem, usage }) => {
             const size = parseInt(px)
             const barWidth = Math.min(100, (size / 256) * 100)
             return (
-              <div key={token} className="flex items-center gap-6">
-                <div className="w-32 shrink-0">
+              <Box key={token} display="flex" alignItems="center" className="gap-6">
+                <Box className="w-32 shrink-0">
                   <div
                     className="h-1.5 rounded-full bg-black dark:bg-white"
                     style={{ width: `${barWidth}%` }}
                   />
-                </div>
+                </Box>
                 <Mono>{px}</Mono>
                 <Mono>{rem}</Mono>
                 <span className="dark:text-polar-400 flex-1 text-xs text-neutral-500">
                   {usage}
                 </span>
-              </div>
+              </Box>
             )
           })}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

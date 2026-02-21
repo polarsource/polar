@@ -1,28 +1,31 @@
-import { twMerge } from 'tailwind-merge'
+import type { ReactNode } from 'react'
+import { Box } from './Box'
 import { Button, type ButtonProps } from './Button'
+import type { OrbitSpacing } from './theme'
 
 export function Card({
   children,
   className,
-  padding = 'p-6',
-  gap = 'gap-4',
+  padding = 3,
+  gap = 2,
 }: {
-  children?: React.ReactNode
+  children?: ReactNode
   className?: string
-  padding?: string
-  gap?: string
+  padding?: OrbitSpacing
+  gap?: OrbitSpacing
 }) {
   return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-900 flex flex-col rounded-2xl bg-neutral-50',
-        padding,
-        gap,
-        className,
-      )}
+    <Box
+      backgroundColor="bg-surface"
+      borderRadius="lg"
+      display="flex"
+      flexDirection="column"
+      padding={padding}
+      gap={gap}
+      className={className}
     >
       {children}
-    </div>
+    </Box>
   )
 }
 
@@ -30,20 +33,24 @@ export function CardHeader({
   children,
   className,
 }: {
-  children?: React.ReactNode
+  children?: ReactNode
   className?: string
 }) {
-  return <div className={twMerge(className)}>{children}</div>
+  return <Box className={className}>{children}</Box>
 }
 
 export function CardContent({
   children,
   className,
 }: {
-  children?: React.ReactNode
+  children?: ReactNode
   className?: string
 }) {
-  return <div className={twMerge('flex-1', className)}>{children}</div>
+  return (
+    <Box flex="1" className={className}>
+      {children}
+    </Box>
+  )
 }
 
 export function CardFooter({
@@ -51,20 +58,20 @@ export function CardFooter({
   className,
   actions,
 }: {
-  children?: React.ReactNode
+  children?: ReactNode
   className?: string
   actions?: ButtonProps[]
 }) {
   return (
-    <div className={twMerge(actions ? 'pt-4' : undefined, className)}>
+    <Box paddingTop={actions ? 2 : undefined} className={className}>
       {children}
       {actions && (
-        <div className="flex gap-3">
+        <Box display="flex" className="gap-3">
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }

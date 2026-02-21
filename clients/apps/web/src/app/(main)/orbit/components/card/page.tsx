@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 export default function CardPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="Card"
@@ -27,19 +28,23 @@ export default function CardPage() {
       />
 
       {/* Demos */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Variants" />
 
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {/* Full */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Full" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Header + Content + Footer
               </span>
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
                   <Headline as="h5" text="Card title" />
@@ -56,15 +61,15 @@ export default function CardPage() {
                   </span>
                 </CardFooter>
               </Card>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* No footer */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Header + Content" />
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
                   <Headline as="h5" text="Card title" />
@@ -76,15 +81,15 @@ export default function CardPage() {
                   </p>
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Content only */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Content only" />
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardContent>
                   <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
@@ -93,26 +98,26 @@ export default function CardPage() {
                   </p>
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Composed */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Composed" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 With richer content
               </span>
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <Box display="flex" alignItems="center" justifyContent="between">
                     <Headline as="h5" text="Monthly Revenue" />
                     <span className="dark:text-polar-500 text-xs text-neutral-400">
                       Feb 2026
                     </span>
-                  </div>
+                  </Box>
                 </CardHeader>
                 <CardContent>
                   <Headline as="h2" text="$12,480" />
@@ -126,25 +131,29 @@ export default function CardPage() {
                   </span>
                 </CardFooter>
               </Card>
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* With actions */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="With actions" />
 
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {/* Single primary action in footer */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Primary action" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Footer with a single CTA
               </span>
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
                   <Headline as="h5" text="Upgrade your plan" />
@@ -157,18 +166,18 @@ export default function CardPage() {
                 </CardContent>
                 <CardFooter actions={[{ children: 'Upgrade now' }]} />
               </Card>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Primary + secondary */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Primary + secondary" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Confirm / cancel pattern
               </span>
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
                   <Headline as="h5" text="Delete organization" />
@@ -186,26 +195,26 @@ export default function CardPage() {
                   ]}
                 />
               </Card>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Action in header */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Action in header" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Secondary action alongside title
               </span>
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <Box display="flex" alignItems="center" justifyContent="between">
                     <Headline as="h5" text="API Keys" />
                     <Button size="sm" variant="secondary">
                       New key
                     </Button>
-                  </div>
+                  </Box>
                 </CardHeader>
                 <CardContent>
                   <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
@@ -214,34 +223,34 @@ export default function CardPage() {
                   </p>
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Full: header action + footer actions */}
-          <div className="grid grid-cols-5 gap-8 py-8">
-            <div className="col-span-2 flex flex-col gap-1">
+          <Box className="grid grid-cols-5 gap-8 py-8">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Full composition" />
               <span className="dark:text-polar-500 text-xs text-neutral-400">
                 Actions in both header and footer
               </span>
-            </div>
-            <div className="col-span-3">
+            </Box>
+            <Box className="col-span-3">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <Box display="flex" alignItems="center" justifyContent="between">
                     <Headline as="h5" text="Billing" />
                     <Button size="sm" variant="ghost">
                       View history
                     </Button>
-                  </div>
+                  </Box>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col gap-2">
+                  <Box display="flex" flexDirection="column" gap={1}>
                     <Headline as="h3" text="$49 / mo" />
                     <p className="dark:text-polar-500 text-sm text-neutral-400">
                       Pro plan · renews Mar 1, 2026
                     </p>
-                  </div>
+                  </Box>
                 </CardContent>
                 <CardFooter
                   actions={[
@@ -250,15 +259,19 @@ export default function CardPage() {
                   ]}
                 />
               </Card>
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* API */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="API" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box
+          display="flex"
+          flexDirection="column"
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {[
             {
               name: 'Card',
@@ -281,7 +294,7 @@ export default function CardPage() {
               desc: 'Bottom section. Adds top border and 16px vertical padding.',
             },
           ].map(({ name, props, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
                 {name}
               </code>
@@ -291,10 +304,10 @@ export default function CardPage() {
               <span className="dark:text-polar-400 col-span-2 text-xs text-neutral-500">
                 {desc}
               </span>
-            </div>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

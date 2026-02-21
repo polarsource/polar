@@ -1,0 +1,142 @@
+NODE resolve_fx
+SQL >
+    SELECT
+        e.organization_id,
+        e.order_id,
+        toStartOfFifteenMinutes(COALESCE(e.order_created_at, e.timestamp)) AS quarter_hour,
+        e.product_id,
+        e.billing_type,
+        e.name,
+        e.subscription_id,
+        e.net_amount,
+        e.amount,
+        e.fee,
+        e.applied_balance_amount,
+        COALESCE(e.currency, 'usd') AS settlement_currency,
+        multiIf(
+            e.exchange_rate IS NOT NULL AND e.exchange_rate != 0,
+            toFloat64(e.exchange_rate),
+            e.presentment_amount IS NOT NULL AND e.presentment_amount != 0,
+            toFloat64(e.amount) / toFloat64(e.presentment_amount),
+            NULL
+        ) AS own_fx,
+        argMax(
+            multiIf(
+                s.exchange_rate IS NOT NULL AND s.exchange_rate != 0,
+                toFloat64(s.exchange_rate),
+                s.presentment_amount IS NOT NULL AND s.presentment_amount != 0,
+                toFloat64(s.amount) / toFloat64(s.presentment_amount),
+                NULL
+            ),
+            tuple(
+                toUInt8(
+                    if(e.subscription_id IS NOT NULL AND s.subscription_id = e.subscription_id, 1, 0)
+                ),
+                s.timestamp
+            )
+        ) AS lookup_fx
+    FROM events_by_ingested_at AS e
+    LEFT JOIN
+        events_by_ingested_at AS s
+        ON s.organization_id = e.organization_id
+        AND s.source = 'system'
+        AND s.name = 'balance.order'
+        AND s.order_id IS NOT NULL
+        AND s.customer_id = e.customer_id
+        AND s.currency = e.currency
+        AND s.timestamp < e.timestamp
+        AND s.order_id != e.order_id
+    WHERE
+        e.source = 'system'
+        AND e.order_id IS NOT NULL
+        AND e.name IN ('order.paid', 'balance.order', 'balance.credit_order')
+    GROUP BY
+        e.organization_id,
+        e.order_id,
+        quarter_hour,
+        e.product_id,
+        e.billing_type,
+        e.name,
+        e.subscription_id,
+        e.net_amount,
+        e.amount,
+        e.fee,
+        e.applied_balance_amount,
+        settlement_currency,
+        own_fx
+
+NODE materialize
+SQL >
+    SELECT
+        organization_id,
+        quarter_hour,
+        COALESCE(product_id, toUUID('00000000-0000-0000-0000-000000000000')) AS product_id,
+        COALESCE(billing_type, '') AS billing_type,
+        settlement_currency,
+        sumState(toUInt64(if(name = 'order.paid', 1, 0))) AS orders,
+        sumState(
+            toUInt64(if(name = 'order.paid' AND subscription_id IS NULL, 1, 0))
+        ) AS one_time_products,
+        sumState(
+            toInt64(
+                if(
+                    name IN ('balance.order', 'balance.credit_order'),
+                    COALESCE(net_amount, amount, 0),
+                    0
+                )
+            )
+        ) AS settlement_revenue,
+        sumState(
+            toInt64(if(name IN ('balance.order', 'balance.credit_order'), COALESCE(fee, 0), 0))
+        ) AS settlement_fee,
+        sumState(
+            toInt64(
+                if(
+                    name IN ('balance.order', 'balance.credit_order') AND subscription_id IS NULL,
+                    COALESCE(net_amount, amount, 0),
+                    0
+                )
+            )
+        ) AS one_time_settlement_revenue,
+        sumState(
+            toInt64(
+                if(
+                    name IN ('balance.order', 'balance.credit_order') AND subscription_id IS NULL,
+                    COALESCE(fee, 0),
+                    0
+                )
+            )
+        ) AS one_time_settlement_fee,
+        sumState(
+            toInt64(
+                if(
+                    name IN ('balance.order', 'balance.credit_order'),
+                    toInt64(
+                        round(
+                            greatest(COALESCE(applied_balance_amount, 0), 0)
+                            * COALESCE(own_fx, lookup_fx, 1.0)
+                        )
+                    ),
+                    0
+                )
+            )
+        ) AS applied_balance_settlement,
+        sumState(
+            toInt64(
+                if(
+                    name IN ('balance.order', 'balance.credit_order') AND subscription_id IS NULL,
+                    toInt64(
+                        round(
+                            greatest(COALESCE(applied_balance_amount, 0), 0)
+                            * COALESCE(own_fx, lookup_fx, 1.0)
+                        )
+                    ),
+                    0
+                )
+            )
+        ) AS one_time_applied_balance_settlement
+    FROM resolve_fx
+    GROUP BY organization_id, quarter_hour, product_id, billing_type, settlement_currency
+
+TYPE MATERIALIZED
+DATASOURCE orders_base_state_by_quarter_hour

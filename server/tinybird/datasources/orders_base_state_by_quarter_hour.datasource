@@ -1,0 +1,17 @@
+SCHEMA >
+    `organization_id` UUID,
+    `quarter_hour` DateTime,
+    `product_id` UUID,
+    `billing_type` LowCardinality(String),
+    `settlement_currency` LowCardinality(String),
+    `orders` AggregateFunction(sum, UInt64),
+    `one_time_products` AggregateFunction(sum, UInt64),
+    `settlement_revenue` AggregateFunction(sum, Int64),
+    `settlement_fee` AggregateFunction(sum, Int64),
+    `one_time_settlement_revenue` AggregateFunction(sum, Int64),
+    `one_time_settlement_fee` AggregateFunction(sum, Int64),
+    `applied_balance_settlement` AggregateFunction(sum, Int64),
+    `one_time_applied_balance_settlement` AggregateFunction(sum, Int64)
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, quarter_hour, product_id, billing_type, settlement_currency

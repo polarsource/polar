@@ -6,11 +6,11 @@ import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const spacingEntries = (
   Object.keys(orbitSpacing) as unknown as (keyof typeof orbitSpacing)[]
-).map((key) => ({ key, value: orbitSpacing[key] }))
+).map((key) => ({ key, cls: orbitSpacing[key].padding }))
 
 const radiiEntries = (
   Object.keys(orbitRadii) as (keyof typeof orbitRadii)[]
-).map((key) => ({ key, value: orbitRadii[key] }))
+).map((key) => ({ key, cls: orbitRadii[key].all }))
 
 const colorTokens = [
   { token: 'bg', label: 'bg', desc: 'Page background' },
@@ -63,13 +63,7 @@ const props = [
     name: 'className',
     type: 'string',
     default: '—',
-    desc: 'Tailwind classes — merged via twMerge',
-  },
-  {
-    name: 'style',
-    type: 'CSSProperties',
-    default: '—',
-    desc: 'Arbitrary inline CSS — applied after token styles',
+    desc: 'Tailwind classes — merged with token classes via twMerge. Use as an escape hatch for layout and anything outside the token set.',
   },
 ]
 
@@ -91,7 +85,7 @@ export default function BoxPage() {
           description="The padding prop (and its directional variants) maps numeric keys to the Orbit spacing scale. The inner square shows the resulting padding."
         />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
-          {spacingEntries.map(({ key, value }) => (
+          {spacingEntries.map(({ key, cls }) => (
             <div
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
@@ -101,7 +95,7 @@ export default function BoxPage() {
                   padding={`{${key}}`}
                 </code>
                 <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
-                  {value}
+                  {cls}
                 </span>
               </div>
               <div className="col-span-3">
@@ -153,7 +147,7 @@ export default function BoxPage() {
       <div className="flex flex-col gap-8">
         <OrbitSectionHeader title="Border radius" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
-          {radiiEntries.map(({ key, value }) => (
+          {radiiEntries.map(({ key, cls }) => (
             <div
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
@@ -163,7 +157,7 @@ export default function BoxPage() {
                   borderRadius="{key}"
                 </code>
                 <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
-                  {value}
+                  {cls}
                 </span>
               </div>
               <div className="col-span-3">

@@ -6,6 +6,7 @@ import {
   CardFooter,
   CardHeader,
   Headline,
+  Text,
 } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
@@ -19,9 +20,9 @@ export default function CardPage() {
           <>
             A surface for grouping related content. Composed of three optional
             sub-components —{' '}
-            <code className="font-mono text-sm">CardHeader</code>,{' '}
-            <code className="font-mono text-sm">CardContent</code>, and{' '}
-            <code className="font-mono text-sm">CardFooter</code> — each
+            <Text as="code" fontFamily="mono" fontSize="sm">CardHeader</Text>,{' '}
+            <Text as="code" fontFamily="mono" fontSize="sm">CardContent</Text>, and{' '}
+            <Text as="code" fontFamily="mono" fontSize="sm">CardFooter</Text> — each
             separated by a dividing border.
           </>
         }
@@ -40,9 +41,9 @@ export default function CardPage() {
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Full" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Header + Content + Footer
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-3">
               <Card>
@@ -50,15 +51,15 @@ export default function CardPage() {
                   <Headline as="h5" text="Card title" />
                 </CardHeader>
                 <CardContent>
-                  <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+                  <Text variant="subtle" fontSize="sm" leading="relaxed">
                     This is the main body of the card. Use it for any content —
                     text, form fields, data, or other components.
-                  </p>
+                  </Text>
                 </CardContent>
                 <CardFooter>
-                  <span className="dark:text-polar-500 text-xs text-neutral-400">
+                  <Text as="span" variant="subtle" fontSize="xs">
                     Footer metadata or actions
-                  </span>
+                  </Text>
                 </CardFooter>
               </Card>
             </Box>
@@ -75,10 +76,10 @@ export default function CardPage() {
                   <Headline as="h5" text="Card title" />
                 </CardHeader>
                 <CardContent>
-                  <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+                  <Text variant="subtle" fontSize="sm" leading="relaxed">
                     A card without a footer — the most common pattern for
                     informational surfaces.
-                  </p>
+                  </Text>
                 </CardContent>
               </Card>
             </Box>
@@ -92,10 +93,10 @@ export default function CardPage() {
             <Box className="col-span-3">
               <Card>
                 <CardContent>
-                  <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+                  <Text variant="subtle" fontSize="sm" leading="relaxed">
                     Just the surface. Useful as a highlight box or when the
                     content itself provides the structure.
-                  </p>
+                  </Text>
                 </CardContent>
               </Card>
             </Box>
@@ -105,30 +106,30 @@ export default function CardPage() {
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Composed" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 With richer content
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-3">
               <Card>
                 <CardHeader>
                   <Box display="flex" alignItems="center" justifyContent="between">
                     <Headline as="h5" text="Monthly Revenue" />
-                    <span className="dark:text-polar-500 text-xs text-neutral-400">
+                    <Text as="span" variant="subtle" fontSize="xs">
                       Feb 2026
-                    </span>
+                    </Text>
                   </Box>
                 </CardHeader>
                 <CardContent>
                   <Headline as="h2" text="$12,480" />
-                  <p className="dark:text-polar-500 mt-1 text-xs text-neutral-400">
+                  <Text variant="subtle" fontSize="xs" className="mt-1">
                     +18% from last month
-                  </p>
+                  </Text>
                 </CardContent>
                 <CardFooter>
-                  <span className="dark:text-polar-500 text-xs text-neutral-400">
+                  <Text as="span" variant="subtle" fontSize="xs">
                     Updated just now
-                  </span>
+                  </Text>
                 </CardFooter>
               </Card>
             </Box>
@@ -149,9 +150,9 @@ export default function CardPage() {
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Primary action" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Footer with a single CTA
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-3">
               <Card>
@@ -159,10 +160,10 @@ export default function CardPage() {
                   <Headline as="h5" text="Upgrade your plan" />
                 </CardHeader>
                 <CardContent>
-                  <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+                  <Text variant="subtle" fontSize="sm" leading="relaxed">
                     Get access to unlimited projects, priority support, and
                     advanced analytics.
-                  </p>
+                  </Text>
                 </CardContent>
                 <CardFooter actions={[{ children: 'Upgrade now' }]} />
               </Card>
@@ -173,9 +174,9 @@ export default function CardPage() {
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Primary + secondary" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Confirm / cancel pattern
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-3">
               <Card>
@@ -183,10 +184,10 @@ export default function CardPage() {
                   <Headline as="h5" text="Delete organization" />
                 </CardHeader>
                 <CardContent>
-                  <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+                  <Text variant="subtle" fontSize="sm" leading="relaxed">
                     This action cannot be undone. All data associated with this
                     organization will be permanently removed.
-                  </p>
+                  </Text>
                 </CardContent>
                 <CardFooter
                   actions={[
@@ -202,9 +203,9 @@ export default function CardPage() {
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Action in header" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Secondary action alongside title
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-3">
               <Card>
@@ -217,10 +218,10 @@ export default function CardPage() {
                   </Box>
                 </CardHeader>
                 <CardContent>
-                  <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+                  <Text variant="subtle" fontSize="sm" leading="relaxed">
                     Manage your personal API keys. Keys are shown only once at
                     creation time.
-                  </p>
+                  </Text>
                 </CardContent>
               </Card>
             </Box>
@@ -230,9 +231,9 @@ export default function CardPage() {
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
               <Headline as="h6" text="Full composition" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Actions in both header and footer
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-3">
               <Card>
@@ -247,9 +248,9 @@ export default function CardPage() {
                 <CardContent>
                   <Box display="flex" flexDirection="column" gap={1}>
                     <Headline as="h3" text="$49 / mo" />
-                    <p className="dark:text-polar-500 text-sm text-neutral-400">
+                    <Text variant="subtle" fontSize="sm">
                       Pro plan · renews Mar 1, 2026
-                    </p>
+                    </Text>
                   </Box>
                 </CardContent>
                 <CardFooter
@@ -295,15 +296,15 @@ export default function CardPage() {
             },
           ].map(({ name, props, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {props}
-              </code>
-              <span className="dark:text-polar-400 col-span-2 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs" className="col-span-2">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

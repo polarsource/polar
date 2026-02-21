@@ -72,6 +72,11 @@ const Checkout = ({
     { trackExposure: !embed },
   )
 
+  const { variant: termsExperiment } = useExperiment('checkout_terms')
+  const { variant: businessCheckboxExperiment } = useExperiment(
+    'checkout_business_checkbox',
+  )
+
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return
@@ -247,6 +252,8 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
+          termsExperiment={termsExperiment}
+          businessCheckboxExperiment={businessCheckboxExperiment}
         />
       </ShadowBox>
     )
@@ -375,6 +382,8 @@ const Checkout = ({
             isUpdatePending={isUpdatePending}
             locale={locale}
             pricingPositionExperiment={pricingPositionExperiment}
+            termsExperiment={termsExperiment}
+            businessCheckboxExperiment={businessCheckboxExperiment}
           />
         </div>
       </ShadowBoxOnMd>

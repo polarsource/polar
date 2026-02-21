@@ -23,4 +23,16 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  checkout_terms: {
+    description:
+      'Move terms and conditions text from inside payment element to below the form',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
+  checkout_business_checkbox: {
+    description:
+      'Redesign business checkbox: subtle styling below billing address with grouped billing details box',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

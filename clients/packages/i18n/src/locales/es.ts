@@ -4,6 +4,12 @@ export default {
       poweredBy: 'Desarrollado por',
       merchantOfRecord:
         'Este pedido es procesado por nuestro revendedor en línea y Comerciante registrado, Polar, quien también gestiona las consultas y devoluciones relacionadas con el pedido.',
+      mandateSubscriptionTrial:
+        'Al hacer clic en "Iniciar prueba", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar a tu método de pago seleccionado la cantidad mostrada arriba al finalizar tu periodo de prueba y en cada fecha de facturación posterior hasta que canceles. Puedes cancelar en cualquier momento antes de que finalice tu prueba para evitar que se te cobre.',
+      mandateSubscription:
+        'Al hacer clic en "Suscribirse ahora", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar inmediatamente a tu método de pago seleccionado la cantidad mostrada arriba y a cobrar la misma cantidad en cada fecha de facturación posterior hasta que canceles.',
+      mandateOneTime:
+        'Al hacer clic en "Pagar ahora", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar a tu método de pago seleccionado la cantidad mostrada arriba. Este es un cargo único.',
     },
     form: {
       email: 'Email',
@@ -26,6 +32,9 @@ export default {
       optional: 'Opcional',
       apply: 'Aplicar',
       fieldRequired: 'Este campo es obligatorio',
+      addBusinessDetails: 'Añadir datos de empresa',
+      removeBusinessDetails: 'Eliminar datos de empresa',
+      billingDetails: 'Datos de facturación',
     },
     pricing: {
       subtotal: 'Subtotal',

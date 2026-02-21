@@ -1,4 +1,4 @@
-import { Box, Headline } from '@/components/Orbit'
+import { Box, Headline, Text } from '@/components/Orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
@@ -107,19 +107,19 @@ export default function OrbitIntroductionPage() {
         <Headline as="h5" text="What is Orbit" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
         <Box display="flex" flexDirection="column" gap={2}>
-          <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+          <Text variant="subtle" fontSize="sm" leading="relaxed">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently across
             teams — how things move, how type is set, what surfaces look like in
             the dark — and promotes them to named, reusable primitives.
-          </p>
-          <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+          </Text>
+          <Text variant="subtle" fontSize="sm" leading="relaxed">
             Rather than a component library alone, Orbit is a system of
             constraints. Design tokens encode the raw values. Guidelines encode
             the rules for applying them. Components encode the patterns those
             rules produce. Together they make the right choice the path of least
             resistance.
-          </p>
+          </Text>
         </Box>
       </Box>
 
@@ -137,9 +137,9 @@ export default function OrbitIntroductionPage() {
               <Box className="col-span-2">
                 <Headline as="h6" text={title} />
               </Box>
-              <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
+              <Text variant="subtle" fontSize="sm" leading="relaxed" className="col-span-3">
                 {description}
-              </p>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -152,9 +152,15 @@ export default function OrbitIntroductionPage() {
         <Box display="flex" flexDirection="column" className="gap-10">
           {sections.map(({ label, links }) => (
             <Box key={label} display="flex" flexDirection="column" className="gap-3">
-              <span className="dark:text-polar-500 text-xs tracking-widest text-neutral-400 uppercase">
+              <Text
+                as="span"
+                variant="subtle"
+                fontSize="xs"
+                tracking="widest"
+                transform="uppercase"
+              >
                 {label}
-              </span>
+              </Text>
               <Box className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
                 {links.map(({ label: linkLabel, href, desc }) => (
                   <Link
@@ -163,9 +169,9 @@ export default function OrbitIntroductionPage() {
                     className="dark:bg-polar-950 dark:hover:bg-polar-900 flex flex-col gap-1 bg-white p-5 transition-colors hover:bg-neutral-50"
                   >
                     <Headline as="h6" text={linkLabel} />
-                    <span className="dark:text-polar-500 text-xs text-neutral-500">
+                    <Text as="span" variant="subtle" fontSize="xs">
                       {desc}
-                    </span>
+                    </Text>
                   </Link>
                 ))}
               </Box>

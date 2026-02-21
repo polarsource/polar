@@ -41,8 +41,8 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.organization.ai_validation import validator as organization_validator
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
+from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
@@ -317,6 +317,11 @@ class OrganizationService:
         if not previous_details and update_schema.details:
             organization.details = update_schema.details.model_dump()
             organization.details_submitted_at = datetime.now(UTC)
+            enqueue_job(
+                "organization_review.run_agent",
+                organization_id=organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
 
         organization = await repository.update(organization, update_dict=update_dict)
 
@@ -977,42 +982,16 @@ class OrganizationService:
 
         return True
 
-    async def validate_with_ai(
+    async def get_ai_review(
         self, session: AsyncSession, organization: Organization
-    ) -> OrganizationReview:
-        """Validate organization details using AI and store the result."""
+    ) -> OrganizationReview | None:
+        """Get the existing AI review for an organization, if any.
+
+        The actual AI review is now triggered asynchronously via a background
+        task when organization details are first submitted (see update()).
+        """
         repository = OrganizationReviewRepository.from_session(session)
-        previous_validation = await repository.get_by_organization(organization.id)
-
-        if previous_validation is not None:
-            return previous_validation
-
-        result = await organization_validator.validate_organization_details(
-            organization
-        )
-
-        ai_validation = OrganizationReview(
-            organization_id=organization.id,
-            verdict=result.verdict.verdict,
-            risk_score=result.verdict.risk_score,
-            violated_sections=result.verdict.violated_sections,
-            reason=result.verdict.reason,
-            timed_out=result.timed_out,
-            organization_details_snapshot={
-                "name": organization.name,
-                "website": organization.website,
-                "details": organization.details,
-                "socials": organization.socials,
-            },
-            model_used=organization_validator.model.model_name,
-        )
-
-        if result.verdict.verdict in ["FAIL", "UNCERTAIN"]:
-            await self.deny_organization(session, organization)
-
-        session.add(ai_validation)
-
-        return ai_validation
+        return await repository.get_by_organization(organization.id)
 
     async def submit_appeal(
         self, session: AsyncSession, organization: Organization, appeal_reason: str

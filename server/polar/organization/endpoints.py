@@ -518,9 +518,9 @@ async def remove_member(
 @router.post(
     "/{id}/ai-validation",
     response_model=OrganizationReviewStatus,
-    summary="Validate Organization Details with AI",
+    summary="Get AI Validation Status",
     responses={
-        200: {"description": "Organization validated with AI."},
+        200: {"description": "AI validation status returned."},
         404: OrganizationNotFound,
     },
     tags=[APITag.private],
@@ -530,18 +530,25 @@ async def validate_with_ai(
     auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationReviewStatus:
-    """Validate organization details using AI compliance check."""
+    """Get the AI validation status. Review runs asynchronously in the background."""
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:
         raise ResourceNotFound()
 
-    # Run AI validation and store results
-    result = await organization_service.validate_with_ai(session, organization)
+    review = await organization_service.get_ai_review(session, organization)
+
+    if review is None:
+        # Review is pending (background task not yet complete)
+        return OrganizationReviewStatus()
 
     return OrganizationReviewStatus(
-        verdict=result.verdict,  # type: ignore[arg-type]
-        reason=result.reason,
+        verdict=review.verdict,  # type: ignore[arg-type]
+        reason=review.reason,
+        appeal_submitted_at=review.appeal_submitted_at,
+        appeal_reason=review.appeal_reason,
+        appeal_decision=review.appeal_decision,
+        appeal_reviewed_at=review.appeal_reviewed_at,
     )
 
 

@@ -1,12 +1,8 @@
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
-from pydantic_ai import models
-from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
-from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
@@ -20,11 +16,6 @@ from polar.models.organization import (
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
-from polar.organization.ai_validation import (
-    OrganizationAIValidationResult,
-    OrganizationAIValidationVerdict,
-    OrganizationAIValidator,
-)
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
@@ -33,9 +24,6 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from tests.fixtures.database import SaveFixture
-
-# Disable real model requests to avoid costs
-models.ALLOW_MODEL_REQUESTS = False
 
 
 @pytest.mark.asyncio
@@ -749,274 +737,48 @@ class TestGetPaymentStatus:
 
 
 @pytest.mark.asyncio
-class TestValidateWithAI:
-    """Test AI validation integration in OrganizationService."""
+class TestGetAIReview:
+    """Test AI review retrieval in OrganizationService."""
 
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_success(
+    async def test_get_ai_review_no_review(
         self,
-        mock_fetch_policy: MagicMock,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test successful AI validation through service layer."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
+        """Test returns None when no review exists."""
+        result = await organization_service.get_ai_review(session, organization)
+        assert result is None
 
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                result = await organization_service.validate_with_ai(
-                    session, organization
-                )
-
-        # Then
-        assert isinstance(result, OrganizationReview)
-        assert result.verdict in ["PASS", "FAIL", "UNCERTAIN"]
-        assert isinstance(result.risk_score, float)
-        assert 0 <= result.risk_score <= 100
-        assert result.timed_out is False
-        assert isinstance(result.violated_sections, list)
-        assert isinstance(result.reason, str)
-
-        # Verify database record was created
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        assert db_record.verdict == result.verdict
-        assert db_record.risk_score == result.risk_score
-        assert db_record.organization_id == organization.id
-        assert db_record.organization_details_snapshot is not None
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_fail_verdict(
+    async def test_get_ai_review_existing_review(
         self,
-        mock_fetch_policy: MagicMock,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test AI validation flow works with TestModel."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                result = await organization_service.validate_with_ai(
-                    session, organization
-                )
-
-        # Then - TestModel provides structured responses, verify format
-        assert isinstance(result, OrganizationReview)
-        assert result.verdict in ["PASS", "FAIL", "UNCERTAIN"]
-        assert isinstance(result.risk_score, float)
-        assert 0 <= result.risk_score <= 100
-        assert isinstance(result.violated_sections, list)
-        assert isinstance(result.reason, str)
-
-        # Verify database storage
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        assert db_record.verdict == result.verdict
-        assert db_record.violated_sections == result.violated_sections
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_timeout(
-        self,
-        mock_fetch_policy: MagicMock,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test AI validation timeout handling."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When - simulate timeout with very short timeout
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            # Mock the validate_organization_details method to simulate timeout
-            async def mock_validate(
-                *args: object, **kwargs: object
-            ) -> OrganizationAIValidationResult:
-                timeout_result = OrganizationAIValidationResult(
-                    verdict=OrganizationAIValidationVerdict(
-                        verdict="UNCERTAIN",
-                        risk_score=50.0,
-                        violated_sections=[],
-                        reason="Validation timed out. Manual review required.",
-                    ),
-                    timed_out=True,
-                    model="test",
-                )
-                return timeout_result
-
-            with patch.object(
-                validator, "validate_organization_details", side_effect=mock_validate
-            ):
-                with patch(
-                    "polar.organization.service.organization_validator", validator
-                ):
-                    result = await organization_service.validate_with_ai(
-                        session, organization
-                    )
-
-        # Then
-        assert result.timed_out is True
-        assert result.verdict == "UNCERTAIN"
-        assert "timed out" in result.reason.lower()
-
-        # Verify timeout flag stored in database
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        assert db_record.timed_out is True
-
-    async def test_validate_with_ai_validator_exception(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        """Test AI validation handles validator exceptions."""
-        # Given
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When - simulate an error
-        validator = OrganizationAIValidator()
-        with patch.object(validator, "validate_organization_details") as mock_validate:
-            mock_validate.side_effect = Exception("AI service error")
-
-            with patch("polar.organization.service.organization_validator", validator):
-                # Should raise the exception (service doesn't handle validator errors)
-                with pytest.raises(Exception, match="AI service error"):
-                    await organization_service.validate_with_ai(session, organization)
-
-        # Then - verify no database record was created
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is None
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_organization_snapshot(
-        self, mock_fetch_policy: MagicMock, session: AsyncSession
-    ) -> None:
-        """Test organization details snapshot is stored correctly."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-
-        # Create organization with detailed information
-        org = Organization(
-            name="Test Company",
-            slug="test-company",
-            website="https://test-company.com",
-            customer_invoice_prefix="TEST",
-            details={
-                "description": "A comprehensive software development company",
-                "industry": "Technology",
-                "services": ["Web Development", "Mobile Apps", "Consulting"],
+        """Test returns existing review when one exists."""
+        # Create a review record
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Looks good.",
+            timed_out=False,
+            organization_details_snapshot={
+                "name": organization.name,
+                "website": organization.website,
+                "details": organization.details,
+                "socials": organization.socials,
             },
+            model_used="test-model",
         )
-        session.add(org)
+        session.add(review)
         await session.flush()
 
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                result = await organization_service.validate_with_ai(session, org)
+        result = await organization_service.get_ai_review(session, organization)
 
-        # Then - verify snapshot contains expected data
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == org.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        snapshot = db_record.organization_details_snapshot
-        assert snapshot["name"] == "Test Company"
-        assert snapshot["website"] == "https://test-company.com"
-        assert (
-            snapshot["details"]["description"]
-            == "A comprehensive software development company"
-        )
-        assert snapshot["details"]["industry"] == "Technology"
-        assert "Web Development" in snapshot["details"]["services"]
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_multiple_validations(
-        self,
-        mock_fetch_policy: MagicMock,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test multiple AI validations for the same organization."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                # First validation
-                result1 = await organization_service.validate_with_ai(
-                    session, organization
-                )
-                assert isinstance(result1, OrganizationReview)
-
-                # Second validation should return the same cached result
-                result2 = await organization_service.validate_with_ai(
-                    session, organization
-                )
-                assert isinstance(result2, OrganizationReview)
-                assert result1.id == result2.id  # Should be same record
-
-        # Then - verify only one record exists (cached behavior)
-        db_records = await session.execute(
-            select(OrganizationReview)
-            .where(OrganizationReview.organization_id == organization.id)
-            .order_by(OrganizationReview.created_at)
-        )
-        records = db_records.scalars().all()
-
-        assert len(records) == 1
-        # Record should have valid verdict
-        assert records[0].verdict in ["PASS", "FAIL", "UNCERTAIN"]
+        assert result is not None
+        assert result.id == review.id
+        assert result.verdict == OrganizationReview.Verdict.PASS
 
 
 @pytest.mark.asyncio

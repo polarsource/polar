@@ -1,5 +1,6 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -371,3 +372,82 @@ class TestIngest:
         assert response.status_code == 200
         json = response.json()
         assert json == {"inserted": len(events), "duplicates": 0}
+
+
+SQLI_PAYLOADS = [
+    pytest.param("' OR '1'='1", id="string-breakout"),
+    pytest.param("_cost.amount' --", id="comment-injection"),
+    pytest.param("x}' AS NUMERIC)); DROP TABLE events --", id="drop-table"),
+    pytest.param(
+        'x}\' AS NUMERIC) + (SELECT count(*) FROM "user"))--',
+        id="subquery-exfil",
+    ),
+    pytest.param(
+        "x}', (SELECT to_jsonb(email) FROM users LIMIT 1), true)--",
+        id="jsonb-set-exfil",
+    ),
+    pytest.param(
+        "}||(SELECT CASE WHEN (SELECT 1)=1 THEN pg_sleep(3) END)--",
+        id="sleep-injection",
+    ),
+]
+
+
+@pytest.mark.asyncio
+class TestAggregateFieldsValidation:
+    """Malicious aggregate_fields values must be rejected with 422 before
+    reaching any SQL execution path."""
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("payload", SQLI_PAYLOADS)
+    async def test_list(
+        self,
+        payload: str,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/events/",
+            params={"aggregate_fields": payload},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("payload", SQLI_PAYLOADS)
+    async def test_get(
+        self,
+        payload: str,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            f"/v1/events/{uuid4()}",
+            params={"aggregate_fields": payload},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("payload", SQLI_PAYLOADS)
+    async def test_statistics_timeseries(
+        self,
+        payload: str,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        today = date.today()
+        response = await client.get(
+            "/v1/events/statistics/timeseries",
+            params={
+                "aggregate_fields": payload,
+                "start_date": str(today - timedelta(days=7)),
+                "end_date": str(today),
+                "interval": "day",
+            },
+        )
+
+        assert response.status_code == 422

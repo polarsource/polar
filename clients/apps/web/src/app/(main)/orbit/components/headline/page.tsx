@@ -1,4 +1,4 @@
-import { Box, Headline } from '@/components/Orbit'
+import { Box, Headline, Text } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const levels = [
@@ -58,15 +58,15 @@ export default function HeadlinePage() {
         {levels.map(({ tag, size, weight }) => (
           <Box key={tag} className="grid grid-cols-5 items-baseline gap-8">
             <Box display="flex" flexDirection="column" className="gap-0.5">
-              <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                 {tag}
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              </Text>
+              <Text as="span" variant="subtle" fontSize="xs">
                 {size}
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              </Text>
+              <Text as="span" variant="subtle" fontSize="xs">
                 {weight}
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-4">
               <Headline as={tag} text="The quick brown fox" />
@@ -88,9 +88,9 @@ export default function HeadlinePage() {
         >
           <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
             <Box display="flex" flexDirection="column" className="gap-0.5">
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Single line
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-4">
               <Headline animate as="h2" text="The quick brown fox" />
@@ -98,12 +98,12 @@ export default function HeadlinePage() {
           </Box>
           <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
             <Box display="flex" flexDirection="column" className="gap-0.5">
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Multiline stagger
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              </Text>
+              <Text as="span" variant="subtle" fontSize="xs">
                 Stagger: 0.2s ÷ n
-              </span>
+              </Text>
             </Box>
             <Box className="col-span-4">
               <Headline
@@ -126,18 +126,18 @@ export default function HeadlinePage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 col-span-1 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
-              <span className="dark:text-polar-400 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

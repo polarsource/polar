@@ -5,6 +5,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
+  Text,
 } from '@/components/Orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
@@ -77,9 +78,9 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="ID" />
     ),
     cell: ({ row }) => (
-      <code className="dark:text-polar-400 font-mono text-xs text-neutral-500">
+      <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
         {row.getValue('id')}
-      </code>
+      </Text>
     ),
     size: 120,
   },
@@ -102,7 +103,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="Amount" />
     ),
     cell: ({ row }) => (
-      <span className="font-medium tabular-nums">{row.getValue('amount')}</span>
+      <Text as="span" fontWeight="medium" tabular>{row.getValue('amount')}</Text>
     ),
     size: 120,
   },
@@ -114,11 +115,15 @@ const columns: DataTableColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const status: Transaction['status'] = row.getValue('status')
       return (
-        <span
-          className={`text-xs font-medium capitalize ${statusColors[status]}`}
+        <Text
+          as="span"
+          fontSize="xs"
+          fontWeight="medium"
+          transform="capitalize"
+          className={statusColors[status]}
         >
           {status}
-        </span>
+        </Text>
       )
     },
     size: 120,
@@ -175,19 +180,19 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
         style={{ paddingLeft: `${row.depth * 20}px` }}
       >
         {row.getCanExpand() ? (
-          <span className="dark:text-polar-400 text-neutral-400">
+          <Box as="span" color="text-subtle">
             {row.getIsExpanded() ? (
               <ChevronDown className="h-3.5 w-3.5" />
             ) : (
               <ChevronRight className="h-3.5 w-3.5" />
             )}
-          </span>
+          </Box>
         ) : (
           <span className="w-3.5" />
         )}
-        <code className="dark:text-polar-400 font-mono text-xs text-neutral-500">
+        <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
           {row.getValue('id') || '—'}
-        </code>
+        </Text>
       </div>
     ),
     size: 140,
@@ -204,7 +209,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
       <DataTableColumnHeader column={column} title="Total" />
     ),
     cell: ({ row }) => (
-      <span className="font-medium tabular-nums">{row.getValue('total')}</span>
+      <Text as="span" fontWeight="medium" tabular>{row.getValue('total')}</Text>
     ),
     size: 120,
   },
@@ -221,11 +226,11 @@ export default function DataTablePage() {
         description={
           <>
             A data grid built on{' '}
-            <code className="font-mono text-sm">@tanstack/react-table</code>.
+            <Text as="code" fontFamily="mono" fontSize="sm">@tanstack/react-table</Text>.
             Supports sortable columns, row selection, click handlers,
             pagination, expandable sub-rows, and loading states. Column
             definitions follow the standard TanStack{' '}
-            <code className="font-mono text-sm">ColumnDef</code> API.
+            <Text as="code" fontFamily="mono" fontSize="sm">ColumnDef</Text> API.
           </>
         }
       />
@@ -242,12 +247,12 @@ export default function DataTablePage() {
           title="Expandable rows"
           description={
             <>
-              Pass <code className="font-mono text-xs">getSubRows</code> to
+              Pass <Text as="code" fontFamily="mono" fontSize="xs">getSubRows</Text> to
               enable tree expansion. Toggle state lives in the row — use{' '}
-              <code className="font-mono text-xs">
+              <Text as="code" fontFamily="mono" fontSize="xs">
                 row.getToggleExpandedHandler()
-              </code>{' '}
-              and <code className="font-mono text-xs">row.depth</code> to
+              </Text>{' '}
+              and <Text as="code" fontFamily="mono" fontSize="xs">row.depth</Text> to
               indent.
             </>
           }
@@ -332,15 +337,15 @@ export default function DataTablePage() {
             },
           ].map(({ name, type, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <span className="dark:text-polar-400 col-span-2 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs" className="col-span-2">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

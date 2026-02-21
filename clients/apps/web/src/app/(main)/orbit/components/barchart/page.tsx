@@ -1,4 +1,4 @@
-import { BarChart, Box, Headline } from '@/components/Orbit'
+import { BarChart, Box, Headline, Text } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -80,9 +80,9 @@ export default function BarChartPage() {
               <Box className="col-span-2">
                 <Headline as="h6" text={heading} />
               </Box>
-              <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
+              <Text variant="subtle" fontSize="sm" leading="relaxed" className="col-span-3">
                 {content}
-              </p>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -98,18 +98,18 @@ export default function BarChartPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 col-span-1 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
-              <span className="dark:text-polar-400 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

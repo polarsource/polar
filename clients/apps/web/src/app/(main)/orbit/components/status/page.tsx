@@ -1,4 +1,4 @@
-import { Box, Status } from '@/components/Orbit'
+import { Box, Status, Text } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
@@ -79,12 +79,12 @@ export default function StatusPage() {
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
-                <span className="text-sm font-medium text-black dark:text-white">
+                <Text fontSize="sm" fontWeight="medium">
                   {label}
-                </span>
-                <span className="dark:text-polar-500 text-xs text-neutral-400">
+                </Text>
+                <Text as="span" variant="subtle" fontSize="xs">
                   {desc}
-                </span>
+                </Text>
               </Box>
               <Box display="flex" alignItems="center" className="col-span-3 gap-3">
                 {variant === 'neutral' && (
@@ -138,12 +138,12 @@ export default function StatusPage() {
         >
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
-              <span className="text-sm font-medium text-black dark:text-white">
+              <Text fontSize="sm" fontWeight="medium">
                 Medium
-              </span>
-              <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
-                size="md"
-              </span>
+              </Text>
+              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+                size=&quot;md&quot;
+              </Text>
             </Box>
             <Box display="flex" alignItems="center" className="col-span-3 gap-3">
               <Status status="Paid" variant="success" size="md" />
@@ -153,12 +153,12 @@ export default function StatusPage() {
           </Box>
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
-              <span className="text-sm font-medium text-black dark:text-white">
+              <Text fontSize="sm" fontWeight="medium">
                 Small
-              </span>
-              <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
-                size="sm"
-              </span>
+              </Text>
+              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+                size=&quot;sm&quot;
+              </Text>
             </Box>
             <Box display="flex" alignItems="center" className="col-span-3 gap-3">
               <Status status="Paid" variant="success" size="sm" />
@@ -179,18 +179,18 @@ export default function StatusPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
-              <span className="dark:text-polar-400 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

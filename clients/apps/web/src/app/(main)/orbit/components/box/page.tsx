@@ -1,4 +1,4 @@
-import { Box } from '@/components/Orbit'
+import { Box, Text } from '@/components/Orbit'
 import { orbitRadii, orbitSpacing } from '@/components/Orbit/theme'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
@@ -185,7 +185,7 @@ const props = [
 
 export default function BoxPage() {
   return (
-    <div className="flex flex-col gap-20">
+    <Box display="flex" flexDirection="column" className="gap-20">
       <OrbitPageHeader
         label="Component"
         title="Box"
@@ -193,72 +193,69 @@ export default function BoxPage() {
       />
 
       {/* Guidelines */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Guidelines"
           description="Follow these four rules when reaching for Box. They keep design values tied to the token system and prevent one-off Tailwind strings from drifting out of sync with the design."
         />
-        <div className="flex flex-col gap-4">
+        <Box display="flex" flexDirection="column" gap={2}>
           {guidelines.map(({ rule, desc, do: doExample, dont }) => (
-            <div
+            <Box
               key={rule}
-              className="dark:border-polar-800 flex flex-col gap-4 rounded-2xl border border-neutral-200 p-6"
+              borderRadius="lg"
+              padding={3}
+              display="flex"
+              flexDirection="column"
+              gap={2}
+              className="dark:border-polar-800 border border-neutral-200"
             >
-              <div className="flex flex-col gap-1.5">
-                <span className="dark:text-polar-200 text-sm font-medium text-neutral-800">
-                  {rule}
-                </span>
-                <span className="dark:text-polar-500 text-xs leading-relaxed text-neutral-500">
-                  {desc}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+              <Box display="flex" flexDirection="column" className="gap-1.5">
+                <Text fontWeight="medium" fontSize="sm">{rule}</Text>
+                <Text variant="subtle" fontSize="xs" leading="relaxed">{desc}</Text>
+              </Box>
+              <Box display="grid" gap={1} className="grid-cols-2">
+                <Box display="flex" flexDirection="column" className="gap-1.5">
+                  <Text fontSize="xs" fontWeight="medium" className="text-green-600 dark:text-green-400">
                     Do
-                  </span>
+                  </Text>
                   <pre className="dark:bg-polar-900 dark:text-polar-200 flex-1 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
                     {doExample}
                   </pre>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-red-500">
+                </Box>
+                <Box display="flex" flexDirection="column" className="gap-1.5">
+                  <Text fontSize="xs" fontWeight="medium" className="text-red-500">
                     Don&apos;t
-                  </span>
+                  </Text>
                   <pre className="dark:bg-polar-900 dark:text-polar-400 flex-1 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-400">
                     {dont}
                   </pre>
-                </div>
-              </div>
-            </div>
+                </Box>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Flex */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Flex layout"
           description="display and flexDirection replace the most common className patterns. alignItems and justifyContent handle cross- and main-axis alignment without raw class strings."
         />
 
         {/* flexDirection */}
-        <div className="flex flex-col gap-3">
-          <span className="dark:text-polar-400 text-xs text-neutral-500">
-            flexDirection
-          </span>
-          <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="gap-3">
+          <Text as="span" variant="subtle" fontSize="xs">flexDirection</Text>
+          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
             {flexDirectionExamples.map(({ prop, label }) => (
-              <div
+              <Box
                 key={prop}
                 className="grid grid-cols-5 items-center gap-8 py-5"
               >
-                <div className="col-span-2">
-                  <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
-                    {label}
-                  </code>
-                </div>
-                <div className="col-span-3">
+                <Box className="col-span-2">
+                  <Text as="code" fontFamily="mono" fontSize="sm">{label}</Text>
+                </Box>
+                <Box className="col-span-3">
                   <Box
                     display="flex"
                     flexDirection={prop}
@@ -276,29 +273,27 @@ export default function BoxPage() {
                       />
                     ))}
                   </Box>
-                </div>
-              </div>
+                </Box>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* alignItems */}
-        <div className="flex flex-col gap-3">
-          <span className="dark:text-polar-400 text-xs text-neutral-500">
-            alignItems
-          </span>
-          <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="gap-3">
+          <Text as="span" variant="subtle" fontSize="xs">alignItems</Text>
+          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
             {alignItemsExamples.map(({ value, label }) => (
-              <div
+              <Box
                 key={value}
                 className="grid grid-cols-5 items-center gap-8 py-5"
               >
-                <div className="col-span-2">
-                  <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+                <Box className="col-span-2">
+                  <Text as="code" fontFamily="mono" fontSize="sm">
                     alignItems=&quot;{label}&quot;
-                  </code>
-                </div>
-                <div className="col-span-3">
+                  </Text>
+                </Box>
+                <Box className="col-span-3">
                   <Box
                     display="flex"
                     flexDirection="row"
@@ -318,29 +313,27 @@ export default function BoxPage() {
                       />
                     ))}
                   </Box>
-                </div>
-              </div>
+                </Box>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* justifyContent */}
-        <div className="flex flex-col gap-3">
-          <span className="dark:text-polar-400 text-xs text-neutral-500">
-            justifyContent
-          </span>
-          <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="gap-3">
+          <Text as="span" variant="subtle" fontSize="xs">justifyContent</Text>
+          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
             {justifyContentExamples.map(({ value, label }) => (
-              <div
+              <Box
                 key={value}
                 className="grid grid-cols-5 items-center gap-8 py-5"
               >
-                <div className="col-span-2">
-                  <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+                <Box className="col-span-2">
+                  <Text as="code" fontFamily="mono" fontSize="sm">
                     justifyContent=&quot;{label}&quot;
-                  </code>
-                </div>
-                <div className="col-span-3">
+                  </Text>
+                </Box>
+                <Box className="col-span-3">
                   <Box
                     display="flex"
                     flexDirection="row"
@@ -358,34 +351,34 @@ export default function BoxPage() {
                       />
                     ))}
                   </Box>
-                </div>
-              </div>
+                </Box>
+              </Box>
             ))}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Spacing */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Spacing"
           description="Numeric keys map to the Orbit spacing scale. Directional variants (paddingX, paddingTop, marginY, gap, …) use the same keys."
         />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
           {spacingEntries.map(({ key, cls }) => (
-            <div
+            <Box
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
             >
-              <div className="col-span-2 flex flex-col gap-0.5">
-                <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Box display="flex" flexDirection="column" className="col-span-2 gap-0.5">
+                <Text as="code" fontFamily="mono" fontSize="sm">
                   padding={`{${key}}`}
-                </code>
-                <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                </Text>
+                <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {cls}
-                </span>
-              </div>
-              <div className="col-span-3">
+                </Text>
+              </Box>
+              <Box className="col-span-3">
                 <Box
                   padding={key}
                   backgroundColor="bg-elevated"
@@ -394,87 +387,79 @@ export default function BoxPage() {
                 >
                   <Box backgroundColor="bg-surface" className="h-6 w-6" />
                 </Box>
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Colors */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Color tokens"
           description="backgroundColor, color, and borderColor accept OrbitColor keys. Values are CSS custom properties — dark mode is automatic, no dark: prefix needed."
         />
-        <div className="grid grid-cols-7 gap-3">
+        <Box display="grid" className="grid-cols-7 gap-3">
           {colorTokens.map(({ token, label, desc }) => (
-            <div key={token} className="flex flex-col gap-2">
+            <Box key={token} display="flex" flexDirection="column" gap={1}>
               <Box
                 backgroundColor={token}
                 borderRadius="md"
                 className="dark:border-polar-700 h-16 w-full border border-neutral-200"
               />
-              <div className="flex flex-col gap-0.5">
-                <code className="dark:text-polar-200 font-mono text-xs text-neutral-800">
-                  {label}
-                </code>
-                <span className="dark:text-polar-500 text-xs text-neutral-400">
-                  {desc}
-                </span>
-              </div>
-            </div>
+              <Box display="flex" flexDirection="column" className="gap-0.5">
+                <Text as="code" fontFamily="mono" fontSize="xs">{label}</Text>
+                <Text as="span" variant="subtle" fontSize="xs">{desc}</Text>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Border radius */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader title="Border radius" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
           {radiiEntries.map(({ key, cls }) => (
-            <div
+            <Box
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
             >
-              <div className="col-span-2 flex flex-col gap-0.5">
-                <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Box display="flex" flexDirection="column" className="col-span-2 gap-0.5">
+                <Text as="code" fontFamily="mono" fontSize="sm">
                   borderRadius=&quot;{key}&quot;
-                </code>
-                <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                </Text>
+                <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {cls}
-                </span>
-              </div>
-              <div className="col-span-3">
+                </Text>
+              </Box>
+              <Box className="col-span-3">
                 <Box
                   backgroundColor="bg-elevated"
                   borderRadius={key}
                   className="h-12 w-12"
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Composition */}
-      <div className="flex flex-col gap-8">
+      <Box display="flex" flexDirection="column" gap={4}>
         <OrbitSectionHeader
           title="Composition"
           description="Real-world patterns combining token props. Note how className is only used for values outside the token set — dimensions, responsive variants, or one-off utilities."
         />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
 
           {/* Card */}
-          <div className="grid grid-cols-5 items-start gap-8 py-6">
-            <div className="col-span-2 flex flex-col gap-1">
-              <span className="dark:text-polar-200 text-sm text-neutral-800">
-                Card
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
-                Surface · padding · radius · column layout
-              </span>
-            </div>
-            <div className="col-span-3">
+          <Box className="grid grid-cols-5 items-start gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Text fontSize="sm">Card</Text>
+              <Text variant="subtle" fontSize="xs">Surface · padding · radius · column layout</Text>
+            </Box>
+            <Box className="col-span-3">
               <Box
                 as="article"
                 backgroundColor="bg-surface"
@@ -485,27 +470,21 @@ export default function BoxPage() {
                 gap={2}
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Box color="text" className="text-sm font-medium">
-                  Card title
-                </Box>
-                <Box color="text-muted" className="text-xs leading-relaxed">
+                <Text fontWeight="medium" fontSize="sm">Card title</Text>
+                <Text variant="subtle" fontSize="xs" leading="relaxed">
                   Supporting description text using the text-muted color token.
-                </Box>
+                </Text>
               </Box>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Toolbar */}
-          <div className="grid grid-cols-5 items-start gap-8 py-6">
-            <div className="col-span-2 flex flex-col gap-1">
-              <span className="dark:text-polar-200 text-sm text-neutral-800">
-                Toolbar
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
-                Row · space-between · centered cross-axis
-              </span>
-            </div>
-            <div className="col-span-3">
+          <Box className="grid grid-cols-5 items-start gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Text fontSize="sm">Toolbar</Text>
+              <Text variant="subtle" fontSize="xs">Row · space-between · centered cross-axis</Text>
+            </Box>
+            <Box className="col-span-3">
               <Box
                 backgroundColor="bg-surface"
                 paddingX={3}
@@ -517,34 +496,26 @@ export default function BoxPage() {
                 justifyContent="between"
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Box color="text" className="text-sm font-medium">
-                  Section title
-                </Box>
+                <Text fontWeight="medium" fontSize="sm">Section title</Text>
                 <Box
                   backgroundColor="bg-elevated"
                   paddingX={2}
                   paddingY={1}
                   borderRadius="sm"
-                  color="text-muted"
-                  className="text-xs"
                 >
-                  Action
+                  <Text variant="subtle" fontSize="xs">Action</Text>
                 </Box>
               </Box>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          {/* Token grid */}
-          <div className="grid grid-cols-5 items-start gap-8 py-6">
-            <div className="col-span-2 flex flex-col gap-1">
-              <span className="dark:text-polar-200 text-sm text-neutral-800">
-                Color chips
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
-                Row · gap token · flex children
-              </span>
-            </div>
-            <div className="col-span-3">
+          {/* Color chips */}
+          <Box className="grid grid-cols-5 items-start gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Text fontSize="sm">Color chips</Text>
+              <Text variant="subtle" fontSize="xs">Row · gap token · flex children</Text>
+            </Box>
+            <Box className="col-span-3">
               <Box display="flex" flexDirection="row" gap={2}>
                 {(['bg-surface', 'bg-elevated', 'destructive'] as const).map(
                   (token) => (
@@ -554,28 +525,28 @@ export default function BoxPage() {
                       backgroundColor={token}
                       padding={2}
                       borderRadius="md"
-                      color="text-muted"
-                      className="dark:border-polar-700 border border-neutral-200 text-center font-mono text-xs"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      className="dark:border-polar-700 border border-neutral-200"
                     >
-                      {token}
+                      <Text variant="subtle" fontFamily="mono" fontSize="xs">{token}</Text>
                     </Box>
                   ),
                 )}
               </Box>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Semantic element */}
-          <div className="grid grid-cols-5 items-start gap-8 py-6">
-            <div className="col-span-2 flex flex-col gap-1">
-              <span className="dark:text-polar-200 text-sm text-neutral-800">
-                Semantic element
-              </span>
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
-                as="nav" renders a &lt;nav&gt; — no extra wrapper needed
-              </span>
-            </div>
-            <div className="col-span-3">
+          <Box className="grid grid-cols-5 items-start gap-8 py-6">
+            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Text fontSize="sm">Semantic element</Text>
+              <Text variant="subtle" fontSize="xs">
+                as=&quot;nav&quot; renders a &lt;nav&gt; — no extra wrapper needed
+              </Text>
+            </Box>
+            <Box className="col-span-3">
               <Box
                 as="nav"
                 backgroundColor="bg-surface"
@@ -592,40 +563,41 @@ export default function BoxPage() {
                     paddingX={2}
                     paddingY={1}
                     borderRadius="sm"
-                    color="text-muted"
-                    className="cursor-default text-sm hover:text-black dark:hover:text-white"
+                    className="cursor-default"
                   >
-                    {item}
+                    <Text variant="subtle" fontSize="sm" className="hover:text-black dark:hover:text-white">
+                      {item}
+                    </Text>
                   </Box>
                 ))}
               </Box>
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Props */}
-      <div className="flex flex-col gap-6">
+      <Box display="flex" flexDirection="column" gap={3}>
         <OrbitSectionHeader title="Props" />
-        <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
+        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <div key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 col-span-1 font-mono text-xs text-neutral-800">
+            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" fontFamily="mono" fontSize="xs" className="col-span-1">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
-              <span className="dark:text-polar-400 text-xs text-neutral-500">
+              </Text>
+              <Text as="span" variant="subtle" fontSize="xs">
                 {desc}
-              </span>
-            </div>
+              </Text>
+            </Box>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

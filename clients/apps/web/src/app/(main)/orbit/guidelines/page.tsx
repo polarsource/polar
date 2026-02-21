@@ -1,4 +1,4 @@
-import { Box, Headline } from '@/components/Orbit'
+import { Box, Headline, Text } from '@/components/Orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
 const sections = [
@@ -134,9 +134,9 @@ export default function GuidelinesPage() {
                 <Box className="col-span-2">
                   <Headline as="h6" text={heading} />
                 </Box>
-                <p className="dark:text-polar-400 col-span-3 text-sm leading-relaxed text-neutral-600">
+                <Text variant="subtle" fontSize="sm" leading="relaxed" className="col-span-3">
                   {content}
-                </p>
+                </Text>
               </Box>
             ))}
           </Box>

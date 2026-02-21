@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Headline, Input } from '@/components/Orbit'
+import { Box, Headline, Input, Text } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -74,9 +74,9 @@ export default function InputPage() {
             >
               <Box className="col-span-2">
                 <Headline as="h6" text={label} />
-                <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   type=&quot;{type}&quot;
-                </code>
+                </Text>
               </Box>
               <Box className="col-span-3">
                 <Input type={type} placeholder={placeholder} />
@@ -97,9 +97,9 @@ export default function InputPage() {
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box className="col-span-2">
               <Headline as="h6" text="Prefix" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 URL scheme, unit label, icon
-              </span>
+              </Text>
             </Box>
             <Box display="flex" flexDirection="column" className="col-span-3 gap-3">
               <Input
@@ -113,9 +113,9 @@ export default function InputPage() {
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box className="col-span-2">
               <Headline as="h6" text="Suffix" />
-              <span className="dark:text-polar-500 text-xs text-neutral-400">
+              <Text as="span" variant="subtle" fontSize="xs">
                 Unit, format hint
-              </span>
+              </Text>
             </Box>
             <Box display="flex" flexDirection="column" className="col-span-3 gap-3">
               <Input type="number" suffix="%" placeholder="0" />
@@ -141,7 +141,7 @@ export default function InputPage() {
             <>
               Values are stored and emitted in smallest currency units (cents
               for USD, whole units for JPY). Arrow keys step by{' '}
-              <code className="font-mono">step</code> (default 0.1).
+              <Text as="code" fontFamily="mono" fontSize="sm">step</Text> (default 0.1).
             </>
           }
         />
@@ -186,9 +186,9 @@ export default function InputPage() {
         <Box className="grid grid-cols-5 items-start gap-8">
           <Box className="col-span-2">
             <Headline as="h6" text="Multiline" />
-            <span className="dark:text-polar-500 text-xs text-neutral-400">
+            <Text as="span" variant="subtle" fontSize="xs">
               Resizable vertically
-            </span>
+            </Text>
           </Box>
           <Box className="col-span-3">
             <Input type="textarea" placeholder="Write something…" rows={4} />
@@ -233,18 +233,18 @@ export default function InputPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
-              <span className="dark:text-polar-400 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

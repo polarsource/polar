@@ -1,4 +1,4 @@
-import { Box, Headline } from '@/components/Orbit'
+import { Box, Headline, Text } from '@/components/Orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
@@ -213,11 +213,20 @@ const spacingTokens = [
 function TableHeader({ cols }: { cols: string[] }) {
   return (
     <div
-      className="dark:border-polar-800 dark:text-polar-500 grid border-b border-neutral-200 pb-2 text-[10px] tracking-widest text-neutral-400 uppercase"
+      className="dark:border-polar-800 grid border-b border-neutral-200 pb-2"
       style={{ gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
     >
       {cols.map((col) => (
-        <span key={col}>{col}</span>
+        <Text
+          key={col}
+          as="span"
+          variant="subtle"
+          fontSize="xs"
+          tracking="widest"
+          transform="uppercase"
+        >
+          {col}
+        </Text>
       ))}
     </div>
   )
@@ -226,7 +235,7 @@ function TableHeader({ cols }: { cols: string[] }) {
 function TableRow({ cells, cols }: { cells: ReactNode[]; cols: number }) {
   return (
     <div
-      className="dark:border-polar-800 grid items-start border-b border-neutral-100 py-3.5 text-sm"
+      className="dark:border-polar-800 grid items-start border-b border-neutral-100 py-3.5"
       style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
     >
       {cells.map((cell, i) => (
@@ -247,9 +256,9 @@ function Swatch({ color }: { color: string }) {
 
 function Mono({ children }: { children: ReactNode }) {
   return (
-    <code className="dark:text-polar-300 font-mono text-xs text-neutral-700">
+    <Text as="code" fontFamily="mono" fontSize="xs" variant="subtle">
       {children}
-    </code>
+    </Text>
   )
 }
 
@@ -277,24 +286,21 @@ export default function TokensPage() {
               cols={4}
               cells={[
                 <Mono key="token">{token}</Mono>,
-                <span key="light" className="flex items-center gap-2">
+                <Box key="light" as="span" display="inline-flex" alignItems="center" gap={1}>
                   <Swatch color={light} />
-                  <span className="dark:text-polar-400 text-xs text-neutral-500">
+                  <Text as="span" variant="subtle" fontSize="xs">
                     {lightLabel}
-                  </span>
-                </span>,
-                <span key="dark" className="flex items-center gap-2">
+                  </Text>
+                </Box>,
+                <Box key="dark" as="span" display="inline-flex" alignItems="center" gap={1}>
                   <Swatch color={dark} />
-                  <span className="dark:text-polar-400 text-xs text-neutral-500">
+                  <Text as="span" variant="subtle" fontSize="xs">
                     {darkLabel}
-                  </span>
-                </span>,
-                <span
-                  key="usage"
-                  className="dark:text-polar-400 text-xs text-neutral-500"
-                >
+                  </Text>
+                </Box>,
+                <Text key="usage" as="span" variant="subtle" fontSize="xs">
                   {usage}
-                </span>,
+                </Text>,
               ]}
             />
           ),
@@ -316,37 +322,25 @@ export default function TokensPage() {
             cols={5}
             cells={[
               <Mono key="level">{level}</Mono>,
-              <span
-                key="mobile"
-                className="dark:text-polar-400 text-xs text-neutral-500"
-              >
+              <Text key="mobile" as="span" variant="subtle" fontSize="xs">
                 {mobile}
-              </span>,
-              <span
-                key="desktop"
-                className="dark:text-polar-400 text-xs text-neutral-500"
-              >
+              </Text>,
+              <Text key="desktop" as="span" variant="subtle" fontSize="xs">
                 {desktop}
-              </span>,
-              <span
-                key="weight"
-                className="dark:text-polar-400 text-xs text-neutral-500"
-              >
+              </Text>,
+              <Text key="weight" as="span" variant="subtle" fontSize="xs">
                 {weight}
-              </span>,
-              <span
-                key="tracking"
-                className="dark:text-polar-400 text-xs text-neutral-500"
-              >
+              </Text>,
+              <Text key="tracking" as="span" variant="subtle" fontSize="xs">
                 {tracking}
-              </span>,
+              </Text>,
             ]}
           />
         ))}
-        <p className="dark:text-polar-500 text-xs text-neutral-400">
+        <Text variant="subtle" fontSize="xs">
           All heading levels use font-feature-settings: &apos;ss07&apos; 1,
           &apos;ss08&apos; 1, &apos;zero&apos; 1, &apos;liga&apos; 0
-        </p>
+        </Text>
       </Box>
 
       {/* Motion */}
@@ -363,12 +357,9 @@ export default function TokensPage() {
             cells={[
               <Mono key="token">{token}</Mono>,
               <Mono key="value">{value}</Mono>,
-              <span
-                key="usage"
-                className="dark:text-polar-400 text-xs text-neutral-500"
-              >
+              <Text key="usage" as="span" variant="subtle" fontSize="xs">
                 {usage}
-              </span>,
+              </Text>,
             ]}
           />
         ))}
@@ -379,9 +370,9 @@ export default function TokensPage() {
         <Box display="flex" flexDirection="column" className="gap-3">
           <Headline as="h4" text="Spacing" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
-          <p className="dark:text-polar-400 text-sm text-neutral-600">
+          <Text variant="subtle" fontSize="sm">
             All spacing follows a base-8 grid. Use these values exclusively.
-          </p>
+          </Text>
         </Box>
         <Box display="flex" flexDirection="column" className="gap-3">
           {spacingTokens.map(({ token, px, rem, usage }) => {
@@ -397,9 +388,9 @@ export default function TokensPage() {
                 </Box>
                 <Mono>{px}</Mono>
                 <Mono>{rem}</Mono>
-                <span className="dark:text-polar-400 flex-1 text-xs text-neutral-500">
+                <Text as="span" variant="subtle" fontSize="xs" className="flex-1">
                   {usage}
-                </span>
+                </Text>
               </Box>
             )
           })}

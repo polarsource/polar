@@ -1,6 +1,7 @@
 'use client'
 
 import { Headline } from '@/components/Orbit/Headline'
+import { Text } from '@/components/Orbit/Text'
 import {
   Sidebar,
   SidebarContent,
@@ -53,9 +54,14 @@ export function OrbitNav() {
         <nav className="flex flex-col gap-7">
           {nav.map(({ section, items }) => (
             <div key={section} className="flex flex-col gap-0.5">
-              <span className="dark:text-polar-500 pb-2.5 text-xs text-neutral-500">
+              <Text
+                as="span"
+                variant="subtle"
+                fontSize="xs"
+                className="pb-2.5"
+              >
                 {section}
-              </span>
+              </Text>
               {items.map(({ label, href }) => {
                 const isActive = pathname === href
                 return (

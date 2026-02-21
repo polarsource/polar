@@ -78,6 +78,30 @@ const props = [
     desc: 'Line height token. Use relaxed for body copy, tight for labels and captions.',
   },
   {
+    name: 'tracking',
+    type: "'tighter' | 'tight' | 'normal' | 'wide' | 'wider' | 'widest'",
+    default: '—',
+    desc: 'Letter spacing token.',
+  },
+  {
+    name: 'transform',
+    type: "'uppercase' | 'lowercase' | 'capitalize'",
+    default: '—',
+    desc: 'Text transform token.',
+  },
+  {
+    name: 'fontFamily',
+    type: "'sans' | 'mono'",
+    default: '—',
+    desc: 'Font family token. Use mono for code, numeric values, and technical labels.',
+  },
+  {
+    name: 'tabular',
+    type: 'boolean',
+    default: '—',
+    desc: 'Enables tabular-nums for numeric alignment in tables and lists.',
+  },
+  {
     name: 'className',
     type: 'string',
     default: '—',
@@ -129,10 +153,10 @@ export default function TextPage() {
           {fontSizes.map(({ size, px }) => (
             <Box key={size} className="grid grid-cols-5 items-baseline gap-8 py-5">
               <Box display="flex" flexDirection="column" className="gap-0.5">
-                <code className="dark:text-polar-400 font-mono text-xs text-neutral-500">
+                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {size}
-                </code>
-                <Text variant="disabled" fontSize="xs">{px}</Text>
+                </Text>
+                <Text variant="subtle" fontSize="xs">{px}</Text>
               </Box>
               <Box className="col-span-4">
                 <Text fontSize={size}>The quick brown fox</Text>
@@ -153,10 +177,10 @@ export default function TextPage() {
           {fontWeights.map(({ weight, value }) => (
             <Box key={weight} className="grid grid-cols-5 items-baseline gap-8 py-5">
               <Box display="flex" flexDirection="column" className="gap-0.5">
-                <code className="dark:text-polar-400 font-mono text-xs text-neutral-500">
+                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {weight}
-                </code>
-                <Text variant="disabled" fontSize="xs">{value}</Text>
+                </Text>
+                <Text variant="subtle" fontSize="xs">{value}</Text>
               </Box>
               <Box className="col-span-4">
                 <Text fontWeight={weight} fontSize="lg">The quick brown fox</Text>
@@ -177,10 +201,10 @@ export default function TextPage() {
           {leadings.map(({ leading, value }) => (
             <Box key={leading} className="grid grid-cols-5 items-start gap-8 py-5">
               <Box display="flex" flexDirection="column" className="gap-0.5">
-                <code className="dark:text-polar-400 font-mono text-xs text-neutral-500">
+                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {leading}
-                </code>
-                <Text variant="disabled" fontSize="xs">{value}</Text>
+                </Text>
+                <Text variant="subtle" fontSize="xs">{value}</Text>
               </Box>
               <Box className="col-span-4">
                 <Text leading={leading} fontSize="sm">
@@ -202,15 +226,15 @@ export default function TextPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
+              </Text>
               <Text variant="subtle" fontSize="xs">{desc}</Text>
             </Box>
           ))}

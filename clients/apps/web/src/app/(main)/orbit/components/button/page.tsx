@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Button, Headline } from '@/components/Orbit'
+import { Box, Button, Headline, Text } from '@/components/Orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
@@ -75,7 +75,7 @@ export default function ButtonPage() {
           <>
             The primary interactive element. Four semantic variants, three
             sizes, and a built-in loading state. Always renders as a native{' '}
-            <code className="font-mono text-sm">{'<button>'}</code>.
+            <Text as="code" fontFamily="mono" fontSize="sm">{'<button>'}</Text>.
           </>
         }
       />
@@ -92,9 +92,9 @@ export default function ButtonPage() {
             <Box key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
               <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
-                <span className="dark:text-polar-500 text-xs text-neutral-400">
+                <Text as="span" variant="subtle" fontSize="xs">
                   {desc}
-                </span>
+                </Text>
               </Box>
               <Box display="flex" alignItems="center" className="col-span-3 gap-3">
                 <Button variant={variant} size="lg">
@@ -136,12 +136,12 @@ export default function ButtonPage() {
             <Box key={size} className="grid grid-cols-5 items-center gap-8 py-6">
               <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
-                <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {height}
-                </span>
-                <span className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+                </Text>
+                <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {px}
-                </span>
+                </Text>
               </Box>
               <Box display="flex" alignItems="end" className="col-span-3 gap-3">
                 <Button size={size}>Label</Button>
@@ -164,18 +164,18 @@ export default function ButtonPage() {
         >
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <code className="dark:text-polar-200 col-span-1 font-mono text-sm text-neutral-800">
+              <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
                 {name}
-              </code>
-              <code className="dark:text-polar-400 col-span-2 font-mono text-xs text-neutral-500">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
                 {type}
-              </code>
-              <code className="dark:text-polar-500 font-mono text-xs text-neutral-400">
+              </Text>
+              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                 {def}
-              </code>
-              <span className="dark:text-polar-400 text-xs text-neutral-500">
+              </Text>
+              <Text variant="subtle" fontSize="xs">
                 {desc}
-              </span>
+              </Text>
             </Box>
           ))}
         </Box>

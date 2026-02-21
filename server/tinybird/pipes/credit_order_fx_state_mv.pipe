@@ -1,0 +1,41 @@
+NODE materialize
+SQL >
+    SELECT
+        c.organization_id,
+        c.order_id,
+        argMaxState(
+            multiIf(
+                s.exchange_rate IS NOT NULL AND s.exchange_rate != 0,
+                toFloat64(s.exchange_rate),
+                s.presentment_amount IS NOT NULL AND s.presentment_amount != 0,
+                toFloat64(s.amount) / toFloat64(s.presentment_amount),
+                NULL
+            ),
+            tuple(
+                toUInt8(
+                    if(c.subscription_id IS NOT NULL AND s.subscription_id = c.subscription_id, 1, 0)
+                ),
+                s.timestamp
+            )
+        ) AS credit_effective_fx
+    FROM events_by_ingested_at AS c
+    INNER JOIN
+        events_by_ingested_at AS s
+        ON s.organization_id = c.organization_id
+        AND s.source = 'system'
+        AND s.name = 'balance.order'
+        AND s.order_id IS NOT NULL
+        AND s.customer_id = c.customer_id
+        AND s.currency = c.currency
+        AND s.timestamp < c.timestamp
+        AND s.order_id != c.order_id
+    WHERE
+        c.source = 'system'
+        AND c.name = 'balance.credit_order'
+        AND c.order_id IS NOT NULL
+        AND c.customer_id IS NOT NULL
+        AND c.currency IS NOT NULL
+    GROUP BY c.organization_id, c.order_id
+
+TYPE MATERIALIZED
+DATASOURCE credit_order_fx_state

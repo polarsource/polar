@@ -1213,7 +1213,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.update({\n    id: \"<value>\",\n    subscriptionUpdate: {\n      trialEnd: new Date(\"2024-12-03T14:44:14.136Z\"),\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.update({\n    id: \"<value>\",\n    subscriptionUpdate: {\n      productId: \"<value>\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -2331,7 +2331,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    type: \"license_keys\",\n    description: \"mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding\",\n    properties: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    type: \"license_keys\",\n    description: \"mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    properties: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -2545,7 +2545,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {\n      type: \"meter_credit\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {\n      type: \"custom\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -3325,7 +3325,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    events: [\n      \"subscription.canceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    events: [\n      \"subscription.uncanceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -4217,6 +4217,27 @@
             "description": "Filter products granting specific benefit."
           },
           {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductVisibility"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by visibility.",
+              "title": "Visibility"
+            },
+            "description": "Filter by visibility."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -4345,7 +4366,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: null,\n  });\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -4422,7 +4443,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        amountType: \"custom\",\n        priceCurrency: \"usd\",\n        minimumAmount: 50,\n      },\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        amountType: \"fixed\",\n        priceCurrency: \"usd\",\n        priceAmount: 677078,\n      },\n      {\n        amountType: \"free\",\n      },\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    recurringInterval: \"year\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -6001,8 +6022,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
+          "201": {
+            "description": "Refund created.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6010,9 +6031,6 @@
                 }
               }
             }
-          },
-          "201": {
-            "description": "Refund created."
           },
           "403": {
             "description": "Order is already fully refunded.",
@@ -6058,7 +6076,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.refunds.create({\n    orderId: \"<value>\",\n    reason: \"service_disruption\",\n    amount: 90,\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.refunds.create({\n    orderId: \"<value>\",\n    reason: \"customer_request\",\n    amount: 90,\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -6752,7 +6770,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    customerName: \"John Doe\",\n    customerBillingAddress: {\n      country: \"US\",\n    },\n    products: [\n      \"<value 1>\",\n      \"<value 2>\",\n      \"<value 3>\",\n    ],\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    customerName: \"John Doe\",\n    customerBillingAddress: {\n      country: \"US\",\n    },\n    locale: \"en\",\n    products: [\n      \"<value 1>\",\n      \"<value 2>\",\n      \"<value 3>\",\n    ],\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -6946,7 +6964,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.update({\n    id: \"<value>\",\n    checkoutUpdate: {\n      customerName: \"John Doe\",\n      customerBillingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.update({\n    id: \"<value>\",\n    checkoutUpdate: {\n      customerName: \"John Doe\",\n      customerBillingAddress: {\n        country: \"US\",\n      },\n      locale: \"en\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -7156,7 +7174,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.checkouts.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {\n      customerName: \"John Doe\",\n      customerBillingAddress: null,\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.checkouts.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {\n      customerName: \"John Doe\",\n      customerBillingAddress: {\n        country: \"US\",\n      },\n      locale: \"en\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -7283,7 +7301,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.clientConfirm({\n    clientSecret: \"<value>\",\n    checkoutConfirmStripe: {\n      customerName: \"John Doe\",\n      customerBillingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.clientConfirm({\n    clientSecret: \"<value>\",\n    checkoutConfirmStripe: {\n      customerName: \"John Doe\",\n      customerBillingAddress: {\n        country: \"US\",\n      },\n      locale: \"en\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -7536,7 +7554,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 612128,\n    upload: {\n      parts: [],\n    },\n    service: \"downloadable\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 612128,\n    upload: {\n      parts: [],\n    },\n    service: \"downloadable\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -7663,7 +7681,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/boot\",\n      parts: [\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/boot\",\n      parts: [\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -8150,7 +8168,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types/rfcdate.js\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2026-03-14\"),\n    endDate: new RFCDate(\"2026-03-18\"),\n    interval: \"hour\",\n    organizationId: null,\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types/rfcdate.js\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2025-03-14\"),\n    endDate: new RFCDate(\"2025-03-18\"),\n    interval: \"hour\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -9830,7 +9848,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    type: \"select\",\n    slug: \"<value>\",\n    name: \"<value>\",\n    properties: {\n      options: [],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    type: \"select\",\n    slug: \"<value>\",\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    properties: {\n      options: [],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -10937,7 +10955,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"US\",\n    },\n    taxId: [\n      \"911144442\",\n      \"us_ein\",\n    ],\n    type: \"individual\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    owner: {\n      email: \"member@example.com\",\n      name: \"Jane Doe\",\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"US\",\n    },\n    taxId: [\n      \"911144442\",\n      \"us_ein\",\n    ],\n    locale: \"en\",\n    type: \"individual\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    owner: {\n      email: \"member@example.com\",\n      name: \"Jane Doe\",\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11244,7 +11262,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n      externalId: \"usr_1337\",\n      type: \"individual\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n      locale: \"en\",\n      externalId: \"usr_1337\",\n      type: \"individual\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11532,7 +11550,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.updateExternal({\n    externalId: \"<id>\",\n    customerUpdateExternalID: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: null,\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.updateExternal({\n    externalId: \"<id>\",\n    customerUpdateExternalID: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n      locale: \"en\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -12351,6 +12369,24 @@
           }
         ],
         "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by benefit description.",
+              "title": "Query"
+            },
+            "description": "Filter by benefit description."
+          },
           {
             "name": "type",
             "in": "query",
@@ -13397,7 +13433,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  await polar.customerPortal.customers.deletePaymentMethod({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  await polar.customerPortal.customers.deletePaymentMethod({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<id>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -13824,7 +13860,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.seats.listSeats({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {});\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.seats.listSeats({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    subscriptionId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -14009,7 +14045,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.seats.revokeSeat({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    seatId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.seats.revokeSeat({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    seatId: \"4b3d74b3-01ff-4aac-bd03-320535cd5ce4\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -14105,7 +14141,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.seats.resendInvitation({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    seatId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.seats.resendInvitation({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    seatId: \"e3817437-8d53-4578-88d2-1dc256825965\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -15006,6 +15042,256 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\LicenseKeyDeactivate(\n    key: '<key>',\n    organizationId: '<value>',\n    activationId: '<value>',\n);\n\n$response = $sdk->customerPortal->licenseKeys->deactivate(\n    request: $request\n);\n\nif ($response->statusCode === 200) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/members": {
+      "get": {
+        "tags": [
+          "customer_portal",
+          "members",
+          "public"
+        ],
+        "summary": "List Members",
+        "description": "List all members of the customer's team.\n\nOnly available to owners and billing managers of team customers.",
+        "operationId": "customer_portal:members:list_members",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerPortalMember"
+                  },
+                  "type": "array",
+                  "title": "Response Customer Portal:Members:List Members"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Not permitted - requires owner or billing manager role"
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-name-override": "list_members",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.members.listMembers();\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "customer_portal",
+          "members",
+          "public"
+        ],
+        "summary": "Add Member",
+        "description": "Add a new member to the customer's team.\n\nOnly available to owners and billing managers of team customers.\n\nRules:\n- Cannot add a member with the owner role (there must be exactly one owner)\n- If a member with this email already exists, the existing member is returned",
+        "operationId": "customer_portal:members:add_member",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerPortalMemberCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Member added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerPortalMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or member already exists."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Not permitted - requires owner or billing manager role"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-name-override": "add_member",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.members.addMember({\n    email: \"Domenica.Schamberger@yahoo.com\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/members/{id}": {
+      "patch": {
+        "tags": [
+          "customer_portal",
+          "members",
+          "public"
+        ],
+        "summary": "Update Member",
+        "description": "Update a member's role.\n\nOnly available to owners and billing managers of team customers.\n\nRules:\n- Cannot modify your own role (to prevent self-demotion)\n- Customer must have exactly one owner at all times",
+        "operationId": "customer_portal:members:update_member",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerPortalMemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerPortalMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid role change."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Not permitted - requires owner or billing manager role"
+          },
+          "404": {
+            "description": "Member not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-name-override": "update_member",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.members.updateMember({\n    id: \"8319ae11-ed5f-4642-81e4-4b40731df195\",\n    customerPortalMemberUpdate: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "customer_portal",
+          "members",
+          "public"
+        ],
+        "summary": "Remove Member",
+        "description": "Remove a member from the team.\n\nOnly available to owners and billing managers of team customers.\n\nRules:\n- Cannot remove yourself\n- Cannot remove the only owner",
+        "operationId": "customer_portal:members:remove_member",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Member removed."
+          },
+          "400": {
+            "description": "Cannot remove the only owner."
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Not permitted - requires owner or billing manager role"
+          },
+          "404": {
+            "description": "Member not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.members",
+        "x-speakeasy-name-override": "remove_member",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.customerPortal.members.removeMember({\n    id: \"b61c5e87-cda5-4b14-93ee-71a695f42d9d\",\n  });\n\n\n}\n\nrun();"
           }
         ]
       }
@@ -17026,7 +17312,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSeats.revokeSeat({\n    seatId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSeats.revokeSeat({\n    seatId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -17115,7 +17401,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSeats.resendInvitation({\n    seatId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSeats.resendInvitation({\n    seatId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -17357,7 +17643,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    returnUrl: \"https://example.com/account\",\n    externalCustomerId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    externalCustomerId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -18944,7 +19230,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"or\",\n      clauses: [],\n    },\n    aggregation: {\n      func: \"count\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"or\",\n      clauses: [\n        {\n          property: \"<value>\",\n          operator: \"ne\",\n          value: \"<value>\",\n        },\n      ],\n    },\n    aggregation: {\n      func: \"max\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -19195,6 +19481,19 @@
             "description": "Interval between two timestamps."
           },
           {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Timezone to use for the timestamps. Default is UTC.",
+              "default": "UTC",
+              "title": "Timezone"
+            },
+            "description": "Timezone to use for the timestamps. Default is UTC."
+          },
+          {
             "name": "customer_id",
             "in": "query",
             "required": false,
@@ -19330,7 +19629,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.quantities({\n    id: \"<value>\",\n    startTimestamp: new Date(\"2026-11-25T04:37:16.823Z\"),\n    endTimestamp: new Date(\"2026-11-26T17:06:00.727Z\"),\n    interval: \"day\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.quantities({\n    id: \"<value>\",\n    startTimestamp: new Date(\"2025-11-25T04:37:16.823Z\"),\n    endTimestamp: new Date(\"2025-11-26T17:06:00.727Z\"),\n    interval: \"day\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -20558,6 +20857,43 @@
         }
       }
     },
+    "checkout.expired": {
+      "post": {
+        "summary": "checkout.expired",
+        "description": "Sent when a checkout expires.\n\nThis event fires when a checkout reaches its expiration time without being completed.\nDevelopers can use this to send reminder emails or track checkout abandonment.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointcheckout_expired_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCheckoutExpiredPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "customer.created": {
       "post": {
         "summary": "customer.created",
@@ -20790,6 +21126,117 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebhookCustomerSeatRevokedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "member.created": {
+      "post": {
+        "summary": "member.created",
+        "description": "Sent when a new member is created.\n\nA member represents an individual within a customer (team).\nThis event is triggered when a member is added to a customer,\neither programmatically via the API or when an owner is automatically\ncreated for a new customer.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointmember_created_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookMemberCreatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "member.updated": {
+      "post": {
+        "summary": "member.updated",
+        "description": "Sent when a member is updated.\n\nThis event is triggered when member details are updated,\nsuch as their name or role within the customer.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointmember_updated_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookMemberUpdatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "member.deleted": {
+      "post": {
+        "summary": "member.deleted",
+        "description": "Sent when a member is deleted.\n\nThis event is triggered when a member is removed from a customer.\nAny active seats assigned to the member will be automatically revoked.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointmember_deleted_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookMemberDeletedPayload"
               }
             }
           },
@@ -23036,7 +23483,6 @@
               "metrics:read": "Read metrics",
               "webhooks:read": "Read webhooks",
               "webhooks:write": "Create or modify webhooks",
-              "external_organizations:read": "Read external organizations",
               "license_keys:read": "Read license keys",
               "license_keys:write": "Modify license keys",
               "customer_portal:read": "Read your orders, subscriptions and benefits",
@@ -23154,7 +23600,6 @@
               "metrics:read": "Read metrics",
               "webhooks:read": "Read webhooks",
               "webhooks:write": "Create or modify webhooks",
-              "external_organizations:read": "Read external organizations",
               "license_keys:read": "Read license keys",
               "license_keys:write": "Modify license keys",
               "customer_portal:read": "Read your orders, subscriptions and benefits",
@@ -23263,13 +23708,8 @@
           "metrics:read",
           "webhooks:read",
           "webhooks:write",
-          "external_organizations:read",
           "license_keys:read",
           "license_keys:write",
-          "repositories:read",
-          "repositories:write",
-          "issues:read",
-          "issues:write",
           "customer_portal:read",
           "customer_portal:write",
           "notifications:read",
@@ -23344,6 +23784,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -23528,6 +23993,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -23655,6 +24145,10 @@
           "fee": {
             "type": "integer",
             "title": "Fee"
+          },
+          "exchange_rate": {
+            "type": "number",
+            "title": "Exchange Rate"
           }
         },
         "type": "object",
@@ -23733,6 +24227,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -23854,6 +24373,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -23932,6 +24476,10 @@
             "type": "integer",
             "title": "Amount"
           },
+          "net_amount": {
+            "type": "integer",
+            "title": "Net Amount"
+          },
           "currency": {
             "type": "string",
             "title": "Currency"
@@ -23973,6 +24521,10 @@
           "fee": {
             "type": "integer",
             "title": "Fee"
+          },
+          "exchange_rate": {
+            "type": "number",
+            "title": "Exchange Rate"
           }
         },
         "type": "object",
@@ -24051,6 +24603,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -24183,6 +24760,10 @@
           "fee": {
             "type": "integer",
             "title": "Fee"
+          },
+          "exchange_rate": {
+            "type": "number",
+            "title": "Exchange Rate"
           }
         },
         "type": "object",
@@ -24262,6 +24843,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -24319,7 +24925,7 @@
         "description": "An event created by Polar when a refund is reverted."
       },
       "Benefit": {
-        "anyOf": [
+        "oneOf": [
           {
             "$ref": "#/components/schemas/BenefitCustom"
           },
@@ -24338,7 +24944,18 @@
           {
             "$ref": "#/components/schemas/BenefitMeterCredit"
           }
-        ]
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "custom": "#/components/schemas/BenefitCustom",
+            "discord": "#/components/schemas/BenefitDiscord",
+            "downloadables": "#/components/schemas/BenefitDownloadables",
+            "github_repository": "#/components/schemas/BenefitGitHubRepository",
+            "license_keys": "#/components/schemas/BenefitLicenseKeys",
+            "meter_credit": "#/components/schemas/BenefitMeterCredit"
+          }
+        }
       },
       "BenefitCreate": {
         "oneOf": [
@@ -24818,6 +25435,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -26147,6 +26789,16 @@
           "customer": {
             "$ref": "#/components/schemas/Customer"
           },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Member"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "benefit": {
             "$ref": "#/components/schemas/Benefit",
             "title": "Benefit"
@@ -26989,6 +27641,10 @@
       },
       "BenefitGrantLicenseKeysProperties": {
         "properties": {
+          "user_provided_key": {
+            "type": "string",
+            "title": "User Provided Key"
+          },
           "license_key_id": {
             "type": "string",
             "title": "License Key Id"
@@ -27486,6 +28142,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -28563,6 +29244,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -28780,6 +29486,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -29423,6 +30154,17 @@
             ],
             "title": "Customer Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "payment_processor_metadata": {
             "additionalProperties": {
               "type": "string"
@@ -29868,6 +30610,25 @@
             ],
             "title": "Customer Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "discount_code": {
             "anyOf": [
               {
@@ -29976,6 +30737,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -30986,6 +31772,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -31067,6 +31857,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -31632,6 +32423,25 @@
             "title": "Embed Origin",
             "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "product_price_id": {
             "type": "string",
             "format": "uuid4",
@@ -31713,6 +32523,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -31793,6 +32607,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -32131,6 +32946,25 @@
             ],
             "title": "Embed Origin",
             "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "currency": {
             "anyOf": [
@@ -32484,6 +33318,25 @@
             ],
             "title": "Embed Origin",
             "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "currency": {
             "anyOf": [
@@ -32944,6 +33797,17 @@
               }
             ],
             "title": "Customer Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "payment_processor_metadata": {
             "additionalProperties": {
@@ -33503,6 +34367,17 @@
             ],
             "title": "Customer Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "payment_processor_metadata": {
             "additionalProperties": {
               "type": "string"
@@ -33861,6 +34736,25 @@
               }
             ],
             "title": "Customer Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "trial_interval": {
             "anyOf": [
@@ -34225,6 +35119,25 @@
               }
             ],
             "title": "Customer Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "discount_code": {
             "anyOf": [
@@ -36469,6 +37382,17 @@
             ],
             "title": "Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -36645,6 +37569,16 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customer": {
             "$ref": "#/components/schemas/CustomerPortalCustomer"
           },
@@ -36792,6 +37726,16 @@
           "is_revoked": {
             "type": "boolean",
             "title": "Is Revoked"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "customer": {
             "$ref": "#/components/schemas/CustomerPortalCustomer"
@@ -36965,6 +37909,16 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customer": {
             "$ref": "#/components/schemas/CustomerPortalCustomer"
           },
@@ -37112,6 +38066,16 @@
           "is_revoked": {
             "type": "boolean",
             "title": "Is Revoked"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "customer": {
             "$ref": "#/components/schemas/CustomerPortalCustomer"
@@ -37285,6 +38249,16 @@
             "type": "boolean",
             "title": "Is Revoked"
           },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customer": {
             "$ref": "#/components/schemas/CustomerPortalCustomer"
           },
@@ -37432,6 +38406,16 @@
           "is_revoked": {
             "type": "boolean",
             "title": "Is Revoked"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "customer": {
             "$ref": "#/components/schemas/CustomerPortalCustomer"
@@ -37648,6 +38632,25 @@
             ],
             "title": "Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "type": {
             "anyOf": [
               {
@@ -37765,6 +38768,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -38102,6 +39130,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -38837,6 +39890,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -38920,6 +39977,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -39302,6 +40360,10 @@
           "customer_portal_settings": {
             "$ref": "#/components/schemas/OrganizationCustomerPortalSettings",
             "description": "Settings related to the customer portal"
+          },
+          "organization_features": {
+            "$ref": "#/components/schemas/CustomerOrganizationFeatureSettings",
+            "description": "Feature flags for the customer portal."
           }
         },
         "type": "object",
@@ -39338,6 +40400,19 @@
         ],
         "title": "CustomerOrganizationData",
         "description": "Schema of an organization and related data for customer portal."
+      },
+      "CustomerOrganizationFeatureSettings": {
+        "properties": {
+          "member_model_enabled": {
+            "type": "boolean",
+            "title": "Member Model Enabled",
+            "description": "Whether the member model is enabled for this organization.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "CustomerOrganizationFeatureSettings",
+        "description": "Feature flags exposed to the customer portal."
       },
       "CustomerPaymentMethod": {
         "anyOf": [
@@ -39561,6 +40636,16 @@
               }
             ],
             "title": "Default Payment Method Id"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -39615,6 +40700,126 @@
         },
         "type": "object",
         "title": "CustomerPortalCustomerUpdate"
+      },
+      "CustomerPortalMember": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "The email address of the member."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the member."
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole",
+            "description": "The role of the member within the team."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "email",
+          "name",
+          "role"
+        ],
+        "title": "CustomerPortalMember",
+        "description": "A member of the customer's team as seen in the customer portal."
+      },
+      "CustomerPortalMemberCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "The email address of the new member."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the new member (optional)."
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole",
+            "description": "The role for the new member. Defaults to 'member'.",
+            "default": "member",
+            "examples": [
+              "billing_manager",
+              "member"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "CustomerPortalMemberCreate",
+        "description": "Schema for adding a new member to the customer's team."
+      },
+      "CustomerPortalMemberUpdate": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberRole"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The new role for the member.",
+            "examples": [
+              "billing_manager",
+              "member"
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CustomerPortalMemberUpdate",
+        "description": "Schema for updating a member's role in the customer portal."
       },
       "CustomerPortalOAuthAccount": {
         "properties": {
@@ -39739,6 +40944,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -39819,6 +41028,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -39913,6 +41123,17 @@
             ],
             "title": "Member Id",
             "description": "The member ID of the seat occupant"
+          },
+          "member": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Member"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The member associated with this seat"
           },
           "email": {
             "anyOf": [
@@ -40307,6 +41528,17 @@
               }
             ],
             "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "organization_id": {
             "type": "string",
@@ -41412,6 +42644,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -41495,6 +42731,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -41688,6 +42925,25 @@
             ],
             "title": "Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "external_id": {
             "anyOf": [
               {
@@ -41823,6 +43079,25 @@
               }
             ],
             "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{2}|-[0-9]{3})?$",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag. Supported: language code (e.g. `en`) or language + region (e.g. `en-US`). If `null` or unsupported, the locale will default to `en-US`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           }
         },
         "type": "object",
@@ -41891,6 +43166,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -42275,6 +43575,17 @@
               }
             ],
             "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "organization_id": {
             "type": "string",
@@ -44262,6 +45573,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -44312,6 +45627,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -44982,6 +46298,19 @@
             "format": "uuid4",
             "title": "Customer Id",
             "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action. Used for member-level attribution in B2B."
           }
         },
         "type": "object",
@@ -45058,6 +46387,18 @@
             "type": "string",
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B."
           }
         },
         "type": "object",
@@ -46280,6 +47621,11 @@
             "const": "custom",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -46300,11 +47646,6 @@
           "recurring_interval": {
             "$ref": "#/components/schemas/SubscriptionRecurringInterval",
             "description": "The recurring interval of the price."
-          },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency."
           },
           "minimum_amount": {
             "type": "integer",
@@ -46348,11 +47689,11 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
           "recurring_interval",
-          "price_currency",
           "minimum_amount",
           "maximum_amount",
           "preset_amount",
@@ -46397,6 +47738,11 @@
             "const": "fixed",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -46418,11 +47764,6 @@
             "$ref": "#/components/schemas/SubscriptionRecurringInterval",
             "description": "The recurring interval of the price."
           },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency."
-          },
           "price_amount": {
             "type": "integer",
             "title": "Price Amount",
@@ -46441,11 +47782,11 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
           "recurring_interval",
-          "price_currency",
           "price_amount",
           "legacy"
         ],
@@ -46488,6 +47829,11 @@
             "const": "free",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -46522,6 +47868,7 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
@@ -46878,6 +48225,17 @@
               }
             ],
             "title": "Tax Id"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           },
           "organization_id": {
             "type": "string",
@@ -48731,6 +50089,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -48922,6 +50305,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -51045,7 +52453,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
+            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
           },
           "client_name": {
             "type": "string",
@@ -51166,7 +52574,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
+            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
           },
           "client_name": {
             "type": "string",
@@ -51874,6 +53282,17 @@
             ],
             "title": "Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -52110,6 +53529,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -52302,6 +53746,10 @@
             "title": "Description",
             "description": "The description of the product."
           },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
+          },
           "recurring_interval": {
             "anyOf": [
               {
@@ -52352,6 +53800,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -52423,6 +53872,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -52987,6 +54461,11 @@
             "title": "Details Submitted At",
             "description": "When the business details were submitted."
           },
+          "default_presentment_currency": {
+            "type": "string",
+            "title": "Default Presentment Currency",
+            "description": "Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available."
+          },
           "feature_settings": {
             "anyOf": [
               {
@@ -53030,6 +54509,7 @@
           "socials",
           "status",
           "details_submitted_at",
+          "default_presentment_currency",
           "feature_settings",
           "subscription_settings",
           "notification_settings",
@@ -53586,6 +55066,11 @@
                 "type": "null"
               }
             ]
+          },
+          "default_presentment_currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "Default presentment currency for the organization",
+            "default": "usd"
           }
         },
         "type": "object",
@@ -53763,6 +55248,30 @@
             "type": "boolean",
             "title": "Member Model Enabled",
             "description": "If this organization has the Member model enabled",
+            "default": false
+          },
+          "tinybird_read": {
+            "type": "boolean",
+            "title": "Tinybird Read",
+            "description": "If this organization reads from Tinybird",
+            "default": false
+          },
+          "tinybird_compare": {
+            "type": "boolean",
+            "title": "Tinybird Compare",
+            "description": "If this organization compares Tinybird results with database",
+            "default": false
+          },
+          "presentment_currencies_enabled": {
+            "type": "boolean",
+            "title": "Presentment Currencies Enabled",
+            "description": "If this organization has multiple presentment currencies enabled",
+            "default": false
+          },
+          "checkout_localization_enabled": {
+            "type": "boolean",
+            "title": "Checkout Localization Enabled",
+            "description": "If this organization has checkout localization enabled",
             "default": false
           }
         },
@@ -54147,6 +55656,17 @@
                 "type": "null"
               }
             ]
+          },
+          "default_presentment_currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default presentment currency for the organization"
           }
         },
         "type": "object",
@@ -54528,6 +56048,19 @@
             "title": "Customer Id",
             "description": "Associated customer ID."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "Member ID. Only set for members."
+          },
           "role": {
             "anyOf": [
               {
@@ -54554,14 +56087,16 @@
       "PresentmentCurrency": {
         "type": "string",
         "enum": [
-          "usd",
-          "eur",
-          "gbp",
-          "cad",
           "aud",
-          "jpy",
+          "brl",
+          "cad",
           "chf",
-          "sek"
+          "eur",
+          "inr",
+          "gbp",
+          "jpy",
+          "sek",
+          "usd"
         ],
         "title": "PresentmentCurrency"
       },
@@ -54631,6 +56166,10 @@
             ],
             "title": "Description",
             "description": "The description of the product."
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product."
           },
           "recurring_interval": {
             "anyOf": [
@@ -54724,6 +56263,7 @@
           "trial_interval_count",
           "name",
           "description",
+          "visibility",
           "recurring_interval",
           "recurring_interval_count",
           "is_recurring",
@@ -54828,6 +56368,11 @@
             ],
             "title": "Description",
             "description": "The description of the product."
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product.",
+            "default": "public"
           },
           "prices": {
             "items": {
@@ -54975,6 +56520,11 @@
             ],
             "title": "Description",
             "description": "The description of the product."
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ProductVisibility",
+            "description": "The visibility of the product.",
+            "default": "public"
           },
           "prices": {
             "items": {
@@ -55391,6 +56941,11 @@
             "const": "custom",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -55416,11 +56971,6 @@
               }
             ],
             "deprecated": true
-          },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency."
           },
           "minimum_amount": {
             "type": "integer",
@@ -55459,11 +57009,11 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
           "recurring_interval",
-          "price_currency",
           "minimum_amount",
           "maximum_amount",
           "preset_amount"
@@ -55479,10 +57029,8 @@
             "title": "Amount Type"
           },
           "price_currency": {
-            "type": "string",
-            "pattern": "usd",
-            "title": "Price Currency",
-            "description": "The currency. Currently, only `usd` is supported.",
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency in which the customer will be charged.",
             "default": "usd"
           },
           "minimum_amount": {
@@ -55566,6 +57114,11 @@
             "const": "fixed",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -55592,11 +57145,6 @@
             ],
             "deprecated": true
           },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency."
-          },
           "price_amount": {
             "type": "integer",
             "title": "Price Amount",
@@ -55610,11 +57158,11 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
           "recurring_interval",
-          "price_currency",
           "price_amount"
         ],
         "title": "ProductPriceFixed",
@@ -55627,19 +57175,17 @@
             "const": "fixed",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency in which the customer will be charged.",
+            "default": "usd"
+          },
           "price_amount": {
             "type": "integer",
             "maximum": 99999999,
             "minimum": 50,
             "title": "Price Amount",
             "description": "The price in cents."
-          },
-          "price_currency": {
-            "type": "string",
-            "pattern": "usd",
-            "title": "Price Currency",
-            "description": "The currency. Currently, only `usd` is supported.",
-            "default": "usd"
           }
         },
         "type": "object",
@@ -55686,6 +57232,11 @@
             "const": "free",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -55720,6 +57271,7 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
@@ -55734,6 +57286,11 @@
             "type": "string",
             "const": "free",
             "title": "Amount Type"
+          },
+          "price_currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency in which the customer will be charged.",
+            "default": "usd"
           }
         },
         "type": "object",
@@ -55801,6 +57358,11 @@
             "const": "metered_unit",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -55826,11 +57388,6 @@
               }
             ],
             "deprecated": true
-          },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency."
           },
           "unit_amount": {
             "type": "string",
@@ -55868,11 +57425,11 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
           "recurring_interval",
-          "price_currency",
           "unit_amount",
           "cap_amount",
           "meter_id",
@@ -55888,18 +57445,16 @@
             "const": "metered_unit",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency in which the customer will be charged.",
+            "default": "usd"
+          },
           "meter_id": {
             "type": "string",
             "format": "uuid4",
             "title": "Meter Id",
             "description": "The ID of the meter associated to the price."
-          },
-          "price_currency": {
-            "type": "string",
-            "pattern": "usd",
-            "title": "Price Currency",
-            "description": "The currency. Currently, only `usd` is supported.",
-            "default": "usd"
           },
           "unit_amount": {
             "anyOf": [
@@ -55975,6 +57530,11 @@
             "const": "seat_based",
             "title": "Amount Type"
           },
+          "price_currency": {
+            "type": "string",
+            "title": "Price Currency",
+            "description": "The currency in which the customer will be charged."
+          },
           "is_archived": {
             "type": "boolean",
             "title": "Is Archived",
@@ -56001,11 +57561,6 @@
             ],
             "deprecated": true
           },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency."
-          },
           "seat_tiers": {
             "$ref": "#/components/schemas/ProductPriceSeatTiers-Output",
             "description": "Tiered pricing based on seat quantity"
@@ -56018,11 +57573,11 @@
           "id",
           "source",
           "amount_type",
+          "price_currency",
           "is_archived",
           "product_id",
           "type",
           "recurring_interval",
-          "price_currency",
           "seat_tiers"
         ],
         "title": "ProductPriceSeatBased",
@@ -56036,10 +57591,8 @@
             "title": "Amount Type"
           },
           "price_currency": {
-            "type": "string",
-            "pattern": "usd",
-            "title": "Price Currency",
-            "description": "The currency. Currently, only `usd` is supported.",
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency in which the customer will be charged.",
             "default": "usd"
           },
           "seat_tiers": {
@@ -56296,6 +57849,17 @@
             "title": "Is Archived",
             "description": "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally."
           },
+          "visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductVisibility"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visibility of the product."
+          },
           "prices": {
             "anyOf": [
               {
@@ -56379,6 +57943,15 @@
         "type": "object",
         "title": "ProductUpdate",
         "description": "Schema to update a product."
+      },
+      "ProductVisibility": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "private",
+          "public"
+        ],
+        "title": "ProductVisibility"
       },
       "PropertyAggregation": {
         "properties": {
@@ -57020,13 +58593,8 @@
           "metrics:read",
           "webhooks:read",
           "webhooks:write",
-          "external_organizations:read",
           "license_keys:read",
           "license_keys:write",
-          "repositories:read",
-          "repositories:write",
-          "issues:read",
-          "issues:write",
           "customer_portal:read",
           "customer_portal:write",
           "notifications:read",
@@ -57060,7 +58628,6 @@
           "email": "Read your email address",
           "events:read": "Read events",
           "events:write": "Create events",
-          "external_organizations:read": "Read external organizations",
           "files:read": "Read file uploads",
           "files:write": "Create or modify file uploads",
           "license_keys:read": "Read license keys",
@@ -57182,6 +58749,31 @@
             ],
             "title": "Customer Id",
             "description": "Customer ID for the seat assignment"
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "External member ID for the seat assignment. Only supported when member_model_enabled is true. Can be used alone (lookup existing member) or with email (create/validate member)."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "Member ID for the seat assignment. Only supported when member_model_enabled is true."
           },
           "metadata": {
             "anyOf": [
@@ -57727,6 +59319,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -57906,6 +59523,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -58195,6 +59837,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -58428,6 +60095,17 @@
             ],
             "title": "Tax Id"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -58539,6 +60217,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -58794,6 +60497,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -58993,6 +60721,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -59145,6 +60898,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -59330,6 +61108,31 @@
             ],
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
           },
           "child_count": {
             "type": "integer",
@@ -59999,6 +61802,31 @@
             "title": "External Customer Id",
             "description": "ID of the customer in your system associated with the event."
           },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
           "child_count": {
             "type": "integer",
             "title": "Child Count",
@@ -60295,6 +62123,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
@@ -60506,6 +62341,34 @@
         ],
         "title": "WebhookCheckoutCreatedPayload",
         "description": "Sent when a new checkout is created.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookCheckoutExpiredPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "checkout.expired",
+            "title": "Type",
+            "examples": [
+              "checkout.expired"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Checkout"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookCheckoutExpiredPayload",
+        "description": "Sent when a checkout expires.\n\nThis event fires when a checkout reaches its expiration time without being completed.\nDevelopers can use this to send reminder emails or track checkout abandonment.\n\n**Discord & Slack support:** Basic"
       },
       "WebhookCheckoutUpdatedPayload": {
         "properties": {
@@ -61140,6 +63003,7 @@
         "enum": [
           "checkout.created",
           "checkout.updated",
+          "checkout.expired",
           "customer.created",
           "customer.updated",
           "customer.deleted",
@@ -61147,6 +63011,9 @@
           "customer_seat.assigned",
           "customer_seat.claimed",
           "customer_seat.revoked",
+          "member.created",
+          "member.updated",
+          "member.deleted",
           "order.created",
           "order.updated",
           "order.paid",
@@ -61180,6 +63047,90 @@
           "slack"
         ],
         "title": "WebhookFormat"
+      },
+      "WebhookMemberCreatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "member.created",
+            "title": "Type",
+            "examples": [
+              "member.created"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Member"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookMemberCreatedPayload",
+        "description": "Sent when a new member is created.\n\nA member represents an individual within a customer (team).\nThis event is triggered when a member is added to a customer,\neither programmatically via the API or when an owner is automatically\ncreated for a new customer.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookMemberDeletedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "member.deleted",
+            "title": "Type",
+            "examples": [
+              "member.deleted"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Member"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookMemberDeletedPayload",
+        "description": "Sent when a member is deleted.\n\nThis event is triggered when a member is removed from a customer.\nAny active seats assigned to the member will be automatically revoked.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookMemberUpdatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "member.updated",
+            "title": "Type",
+            "examples": [
+              "member.updated"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Member"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookMemberUpdatedPayload",
+        "description": "Sent when a member is updated.\n\nThis event is triggered when member details are updated,\nsuch as their name or role within the customer.\n\n**Discord & Slack support:** Basic"
       },
       "WebhookOrderCreatedPayload": {
         "properties": {

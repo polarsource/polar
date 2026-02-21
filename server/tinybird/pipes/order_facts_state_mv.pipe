@@ -1,0 +1,236 @@
+NODE materialize
+SQL >
+    SELECT
+        e.organization_id,
+        e.order_id,
+        argMaxState(e.customer_id, tuple(toUInt8(1), e.timestamp, e.ingested_at)) AS customer_id,
+        argMaxState(
+            e.external_customer_id, tuple(toUInt8(1), e.timestamp, e.ingested_at)
+        ) AS external_customer_id,
+        argMaxState(e.product_id, tuple(toUInt8(1), e.timestamp, e.ingested_at)) AS product_id,
+        argMaxState(e.billing_type, tuple(toUInt8(1), e.timestamp, e.ingested_at)) AS billing_type,
+        argMaxState(
+            if(e.name = 'order.paid', e.timestamp, CAST(NULL, 'Nullable(DateTime64(3))')),
+            tuple(toUInt8(if(e.name = 'order.paid', 1, 0)), e.timestamp, e.ingested_at)
+        ) AS order_paid_timestamp,
+        argMaxState(
+            if(e.name = 'order.paid', e.subscription_id, CAST(NULL, 'Nullable(UUID)')),
+            tuple(toUInt8(if(e.name = 'order.paid', 1, 0)), e.timestamp, e.ingested_at)
+        ) AS order_paid_subscription_id,
+        argMaxState(
+            if(
+                e.name = 'order.paid',
+                COALESCE(e.applied_balance_amount, 0),
+                CAST(NULL, 'Nullable(Int64)')
+            ),
+            tuple(toUInt8(if(e.name = 'order.paid', 1, 0)), e.timestamp, e.ingested_at)
+        ) AS applied_balance_amount,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                e.name,
+                CAST(NULL, 'Nullable(String)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_name,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                e.timestamp,
+                CAST(NULL, 'Nullable(DateTime64(3))')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_effective_ts,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                e.subscription_id,
+                CAST(NULL, 'Nullable(UUID)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_subscription_id,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                e.customer_id,
+                CAST(NULL, 'Nullable(UUID)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_customer_id,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                e.currency,
+                CAST(NULL, 'Nullable(String)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_currency,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                ),
+                CAST(NULL, 'Nullable(Int64)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS settlement_revenue_amount,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                toUInt8(if(e.net_amount IS NULL, 1, 0)),
+                CAST(NULL, 'Nullable(UInt8)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS apply_applied_balance_deduction,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                multiIf(
+                    e.exchange_rate IS NOT NULL AND e.exchange_rate != 0,
+                    toFloat64(e.exchange_rate),
+                    e.presentment_amount IS NOT NULL AND e.presentment_amount != 0,
+                    toFloat64(e.amount) / toFloat64(e.presentment_amount),
+                    NULL
+                ),
+                CAST(NULL, 'Nullable(Float64)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_exchange_rate,
+        argMaxState(
+            if(
+                e.name IN ('balance.order', 'balance.credit_order'),
+                COALESCE(e.fee, 0),
+                CAST(NULL, 'Nullable(Int64)')
+            ),
+            tuple(
+                toInt8(if(e.name = 'balance.order', 2, if(e.name = 'balance.credit_order', 1, 0))),
+                e.timestamp,
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+            )
+        ) AS balance_fee,
+        argMaxState(
+            if(
+                e.name = 'balance.order',
+                multiIf(
+                    e.exchange_rate IS NOT NULL AND e.exchange_rate != 0,
+                    toFloat64(e.exchange_rate),
+                    e.presentment_amount IS NOT NULL AND e.presentment_amount != 0,
+                    toFloat64(e.amount) / toFloat64(e.presentment_amount),
+                    NULL
+                ),
+                CAST(NULL, 'Nullable(Float64)')
+            ),
+            tuple(toUInt8(if(e.name = 'balance.order', 1, 0)), e.timestamp, e.ingested_at)
+        ) AS balance_order_source_fx,
+        sumState(
+            if(
+                e.name IN ('balance.refund', 'balance.refund_reversal'),
+                COALESCE(
+                    toInt64(
+                        round(
+                            COALESCE(e.net_amount, e.amount, 0)
+                            * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                        )
+                    )
+                    - COALESCE(e.fee, 0),
+                    0
+                ),
+                0
+            )
+        ) AS refund_net_amount
+    FROM events_by_ingested_at AS e
+    WHERE
+        e.source = 'system'
+        AND e.order_id IS NOT NULL
+        AND e.name IN (
+            'order.paid',
+            'balance.order',
+            'balance.credit_order',
+            'balance.refund',
+            'balance.refund_reversal'
+        )
+    GROUP BY e.organization_id, e.order_id
+
+TYPE MATERIALIZED
+DATASOURCE order_facts_state

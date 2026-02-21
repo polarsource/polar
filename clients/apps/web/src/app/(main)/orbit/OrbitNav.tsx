@@ -25,6 +25,7 @@ const nav = [
   {
     section: 'Components',
     items: [
+      { label: 'Box', href: '/orbit/components/box' },
       { label: 'Headline', href: '/orbit/components/headline' },
       { label: 'Button', href: '/orbit/components/button' },
       { label: 'Card', href: '/orbit/components/card' },

@@ -1,4 +1,6 @@
 export { BarChart } from './BarChart'
+export { Box } from './Box'
+export type { BoxProps } from './Box'
 export type { BarChartItem } from './BarChart'
 export { Button } from './Button'
 export type { ButtonProps } from './Button'

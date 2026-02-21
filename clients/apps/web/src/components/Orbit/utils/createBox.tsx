@@ -8,11 +8,49 @@ import { twMerge } from 'tailwind-merge'
 import { resolveProperties } from './resolveProperties'
 
 // ─── Theme Spec ──────────────────────────────────────────────────────────────
+// Each color token exposes three class strings — one per CSS usage.
+// Each spacing token exposes one class string per spacing prop variant.
+// Each radius token exposes one class string per corner variant.
+// All strings must be fully static so Tailwind JIT can scan them.
+
+export type ColorClasses = {
+  background: string
+  text: string
+  border: string
+}
+
+export type SpacingClasses = {
+  padding: string
+  paddingX: string
+  paddingY: string
+  paddingTop: string
+  paddingRight: string
+  paddingBottom: string
+  paddingLeft: string
+  margin: string
+  marginX: string
+  marginY: string
+  marginTop: string
+  marginRight: string
+  marginBottom: string
+  marginLeft: string
+  gap: string
+  rowGap: string
+  columnGap: string
+}
+
+export type RadiusClasses = {
+  all: string
+  tl: string
+  tr: string
+  bl: string
+  br: string
+}
 
 export type ThemeSpec = {
-  colors: Record<string, string>
-  spacing: Record<string | number, string | number>
-  radii: Record<string, string | number>
+  colors: Record<string, ColorClasses>
+  spacing: Record<string | number, SpacingClasses>
+  radii: Record<string, RadiusClasses>
 }
 
 // ─── Token prop names ─────────────────────────────────────────────────────────
@@ -47,13 +85,13 @@ type TokenPropName =
 
 // ─── Per-category token prop types ───────────────────────────────────────────
 
-type ColorProps<TColors extends Record<string, string>> = {
+type ColorProps<TColors extends Record<string, ColorClasses>> = {
   backgroundColor?: keyof TColors
   color?: keyof TColors
   borderColor?: keyof TColors
 }
 
-type SpacingProps<TSpacing extends Record<string | number, string | number>> = {
+type SpacingProps<TSpacing extends Record<string | number, SpacingClasses>> = {
   padding?: keyof TSpacing
   paddingX?: keyof TSpacing
   paddingY?: keyof TSpacing
@@ -73,7 +111,7 @@ type SpacingProps<TSpacing extends Record<string | number, string | number>> = {
   columnGap?: keyof TSpacing
 }
 
-type RadiiProps<TRadii extends Record<string, string | number>> = {
+type RadiiProps<TRadii extends Record<string, RadiusClasses>> = {
   borderRadius?: keyof TRadii
   borderTopLeftRadius?: keyof TRadii
   borderTopRightRadius?: keyof TRadii
@@ -110,7 +148,7 @@ export function createBox<T extends ThemeSpec>(theme: T) {
     const Tag = (as ?? 'div') as ElementType
     const { ...rest } = props as Record<string, unknown>
 
-    // Extract token props to pass to resolveProperties, leaving native props in rest
+    // Extract token props, leaving native props in rest
     const tokenPropNames: TokenPropName[] = [
       'backgroundColor', 'color', 'borderColor',
       'padding', 'paddingX', 'paddingY', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
@@ -127,10 +165,11 @@ export function createBox<T extends ThemeSpec>(theme: T) {
       }
     }
 
+    const tokenClasses = resolveProperties(theme, tokenProps as TokenProps<T>)
+
     return (
       <Tag
-        className={className ? twMerge(className) : undefined}
-        style={resolveProperties(theme, tokenProps as TokenProps<T>)}
+        className={twMerge(tokenClasses, className)}
         {...(rest as object)}
       >
         {children}

@@ -53,10 +53,22 @@ export type ThemeSpec = {
   radii: Record<string, RadiusClasses>
 }
 
-// ─── Token prop names ─────────────────────────────────────────────────────────
+// ─── Flex props ───────────────────────────────────────────────────────────────
+// Not theme-dependent — map directly to fixed Tailwind utility classes.
+
+export type FlexProps = {
+  display?: 'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'
+  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse'
+  alignItems?: 'start' | 'end' | 'center' | 'stretch' | 'baseline'
+  justifyContent?: 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'
+  flexWrap?: 'wrap' | 'nowrap' | 'wrap-reverse'
+  flex?: '1' | 'auto' | 'none' | 'initial'
+}
+
+// ─── All Box prop names ───────────────────────────────────────────────────────
 // Hardcoded so we can safely Omit them from native element props.
 
-type TokenPropName =
+type BoxPropName =
   | 'backgroundColor'
   | 'color'
   | 'borderColor'
@@ -82,6 +94,12 @@ type TokenPropName =
   | 'borderTopRightRadius'
   | 'borderBottomLeftRadius'
   | 'borderBottomRightRadius'
+  | 'display'
+  | 'flexDirection'
+  | 'alignItems'
+  | 'justifyContent'
+  | 'flexWrap'
+  | 'flex'
 
 // ─── Per-category token prop types ───────────────────────────────────────────
 
@@ -126,14 +144,15 @@ type TokenProps<T extends ThemeSpec> = ColorProps<T['colors']> &
 // ─── Box props ────────────────────────────────────────────────────────────────
 
 type BoxProps<T extends ThemeSpec, E extends ElementType = 'div'> =
-  TokenProps<T> & {
-    as?: E
-    className?: string
-    children?: ReactNode
-  } & Omit<
+  TokenProps<T> &
+    FlexProps & {
+      as?: E
+      className?: string
+      children?: ReactNode
+    } & Omit<
       ComponentPropsWithoutRef<E>,
-      // Omit token props + style (disallowed) + native conflicts
-      TokenPropName | 'children' | 'style' | 'className'
+      // Omit all Box-managed props + style (disallowed) + native conflicts
+      BoxPropName | 'children' | 'style' | 'className'
     >
 
 // ─── createBox ────────────────────────────────────────────────────────────────
@@ -148,24 +167,28 @@ export function createBox<T extends ThemeSpec>(theme: T) {
     const Tag = (as ?? 'div') as ElementType
     const { ...rest } = props as Record<string, unknown>
 
-    // Extract token props, leaving native props in rest
-    const tokenPropNames: TokenPropName[] = [
+    // Extract all Box-managed props, leaving native HTML props in rest
+    const boxPropNames: BoxPropName[] = [
       'backgroundColor', 'color', 'borderColor',
       'padding', 'paddingX', 'paddingY', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
       'margin', 'marginX', 'marginY', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
       'gap', 'rowGap', 'columnGap',
       'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius',
+      'display', 'flexDirection', 'alignItems', 'justifyContent', 'flexWrap', 'flex',
     ]
 
-    const tokenProps: Record<string, unknown> = {}
-    for (const key of tokenPropNames) {
+    const boxProps: Record<string, unknown> = {}
+    for (const key of boxPropNames) {
       if (key in rest) {
-        tokenProps[key] = rest[key]
+        boxProps[key] = rest[key]
         delete rest[key]
       }
     }
 
-    const tokenClasses = resolveProperties(theme, tokenProps as TokenProps<T>)
+    const tokenClasses = resolveProperties(
+      theme,
+      boxProps as TokenProps<T> & FlexProps,
+    )
 
     return (
       <Tag

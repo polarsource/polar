@@ -262,8 +262,8 @@ export default function CardPage() {
           {[
             {
               name: 'Card',
-              props: 'children, className',
-              desc: 'Root container. Faint gray surface with a border.',
+              props: 'children, className, padding, gap',
+              desc: 'Root container. bg-surface background, lg radius. padding and gap accept OrbitSpacing keys (default: 3, 2).',
             },
             {
               name: 'CardHeader',

@@ -1,8 +1,59 @@
-import type { ThemeSpec, TokenProps } from './createBox'
+import type { FlexProps, ThemeSpec, TokenProps } from './createBox'
+
+// ─── Flex class maps ──────────────────────────────────────────────────────────
+// Fully static strings — Tailwind JIT can scan these as literals.
+
+const DISPLAY: Record<NonNullable<FlexProps['display']>, string> = {
+  flex: 'flex',
+  block: 'block',
+  'inline-flex': 'inline-flex',
+  grid: 'grid',
+  'inline-grid': 'inline-grid',
+  hidden: 'hidden',
+}
+
+const FLEX_DIRECTION: Record<NonNullable<FlexProps['flexDirection']>, string> = {
+  row: 'flex-row',
+  column: 'flex-col',
+  'row-reverse': 'flex-row-reverse',
+  'column-reverse': 'flex-col-reverse',
+}
+
+const ALIGN_ITEMS: Record<NonNullable<FlexProps['alignItems']>, string> = {
+  start: 'items-start',
+  end: 'items-end',
+  center: 'items-center',
+  stretch: 'items-stretch',
+  baseline: 'items-baseline',
+}
+
+const JUSTIFY_CONTENT: Record<NonNullable<FlexProps['justifyContent']>, string> = {
+  start: 'justify-start',
+  end: 'justify-end',
+  center: 'justify-center',
+  between: 'justify-between',
+  around: 'justify-around',
+  evenly: 'justify-evenly',
+}
+
+const FLEX_WRAP: Record<NonNullable<FlexProps['flexWrap']>, string> = {
+  wrap: 'flex-wrap',
+  nowrap: 'flex-nowrap',
+  'wrap-reverse': 'flex-wrap-reverse',
+}
+
+const FLEX: Record<NonNullable<FlexProps['flex']>, string> = {
+  '1': 'flex-1',
+  auto: 'flex-auto',
+  none: 'flex-none',
+  initial: 'flex-initial',
+}
+
+// ─── resolveProperties ───────────────────────────────────────────────────────
 
 export function resolveProperties<T extends ThemeSpec>(
   theme: T,
-  props: TokenProps<T>,
+  props: TokenProps<T> & FlexProps,
 ): string {
   const classes: string[] = []
 
@@ -42,6 +93,14 @@ export function resolveProperties<T extends ThemeSpec>(
   if (props.borderTopRightRadius !== undefined) classes.push(r(props.borderTopRightRadius).tr)
   if (props.borderBottomLeftRadius !== undefined) classes.push(r(props.borderBottomLeftRadius).bl)
   if (props.borderBottomRightRadius !== undefined) classes.push(r(props.borderBottomRightRadius).br)
+
+  // ── Flex
+  if (props.display !== undefined) classes.push(DISPLAY[props.display])
+  if (props.flexDirection !== undefined) classes.push(FLEX_DIRECTION[props.flexDirection])
+  if (props.alignItems !== undefined) classes.push(ALIGN_ITEMS[props.alignItems])
+  if (props.justifyContent !== undefined) classes.push(JUSTIFY_CONTENT[props.justifyContent])
+  if (props.flexWrap !== undefined) classes.push(FLEX_WRAP[props.flexWrap])
+  if (props.flex !== undefined) classes.push(FLEX[props.flex])
 
   return classes.join(' ')
 }

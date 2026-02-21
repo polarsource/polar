@@ -25,45 +25,103 @@ const principles = [
   },
 ]
 
-const links = [
+const sections = [
   {
-    label: 'Guidelines',
-    href: '/orbit/guidelines',
-    desc: 'Motion, typography, color, and spacing rules',
+    label: 'Get started',
+    links: [
+      {
+        label: 'Guidelines',
+        href: '/orbit/guidelines',
+        desc: 'Motion, typography, color, spacing, and accessibility rules',
+      },
+    ],
   },
   {
-    label: 'Design Tokens',
-    href: '/orbit/tokens',
-    desc: 'The raw values behind every decision',
+    label: 'Foundations',
+    links: [
+      {
+        label: 'Design Tokens',
+        href: '/orbit/tokens',
+        desc: 'The raw values behind every visual decision',
+      },
+    ],
   },
   {
-    label: 'Headline',
-    href: '/orbit/components/headline',
-    desc: 'Display typography with curtain animation',
-  },
-  {
-    label: 'Button',
-    href: '/orbit/components/button',
-    desc: 'Interactive element with four variants',
-  },
-  {
-    label: 'BarChart',
-    href: '/orbit/components/barchart',
-    desc: 'Animated comparative data visualization',
+    label: 'Components',
+    links: [
+      {
+        label: 'Headline',
+        href: '/orbit/components/headline',
+        desc: 'Display typography with staggered curtain animation',
+      },
+      {
+        label: 'Button',
+        href: '/orbit/components/button',
+        desc: 'Four variants — primary, secondary, ghost, destructive',
+      },
+      {
+        label: 'Card',
+        href: '/orbit/components/card',
+        desc: 'Surface container for grouping related content',
+      },
+      {
+        label: 'Input',
+        href: '/orbit/components/input',
+        desc: 'Text, textarea, and currency inputs with slot support',
+      },
+      {
+        label: 'BarChart',
+        href: '/orbit/components/barchart',
+        desc: 'Animated comparative data visualization',
+      },
+      {
+        label: 'DataTable',
+        href: '/orbit/components/datatable',
+        desc: 'Sortable, filterable table with pagination and row selection',
+      },
+      {
+        label: 'Status',
+        href: '/orbit/components/status',
+        desc: 'Semantic badge for neutral, success, warning, error, and info states',
+      },
+    ],
   },
 ]
 
-export default function OrbitOverviewPage() {
+export default function OrbitIntroductionPage() {
   return (
     <div className="flex flex-col gap-20">
       <OrbitPageHeader
-        label="v0.1 — Polar Software Inc"
+        label="v0.1 — Polar Software Inc."
         title="Orbit"
-        description="The design system powering Polar's products. A shared language of components, tokens, and patterns for building expressive, accessible interfaces."
+        description="The design system for Polar — unifying design philosophies, guidelines, design tokens, and components to guardrail building exceptional user experiences."
       />
 
+      {/* What is Orbit */}
+      <div className="flex flex-col gap-6">
+        <Headline as="h5" text="What is Orbit" />
+        <div className="dark:border-polar-800 border-t border-neutral-200" />
+        <div className="flex flex-col gap-4">
+          <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+            Orbit is the shared design language across every Polar product. It
+            captures decisions that would otherwise be made inconsistently across
+            teams — how things move, how type is set, what surfaces look like in
+            the dark — and promotes them to named, reusable primitives.
+          </p>
+          <p className="dark:text-polar-400 text-sm leading-relaxed text-neutral-600">
+            Rather than a component library alone, Orbit is a system of
+            constraints. Design tokens encode the raw values. Guidelines encode
+            the rules for applying them. Components encode the patterns those
+            rules produce. Together they make the right choice the path of least
+            resistance.
+          </p>
+        </div>
+      </div>
+
+      {/* Design principles */}
       <div className="flex flex-col gap-6">
         <Headline as="h5" text="Design Principles" />
+        <div className="dark:border-polar-800 border-t border-neutral-200" />
         <div className="dark:divide-polar-800 flex flex-col divide-y divide-neutral-200">
           {principles.map(({ title, description }) => (
             <div key={title} className="grid grid-cols-5 gap-8 py-5">
@@ -78,20 +136,31 @@ export default function OrbitOverviewPage() {
         </div>
       </div>
 
+      {/* What's inside */}
       <div className="flex flex-col gap-6">
         <Headline as="h5" text="What's inside" />
-        <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
-          {links.map(({ label, href, desc }) => (
-            <Link
-              key={href}
-              href={href}
-              className="dark:bg-polar-950 dark:hover:bg-polar-900 flex flex-col gap-1 bg-white p-5 transition-colors hover:bg-neutral-50"
-            >
-              <Headline as="h6" text={label} />
-              <span className="dark:text-polar-500 text-xs text-neutral-500">
-                {desc}
+        <div className="dark:border-polar-800 border-t border-neutral-200" />
+        <div className="flex flex-col gap-10">
+          {sections.map(({ label, links }) => (
+            <div key={label} className="flex flex-col gap-3">
+              <span className="dark:text-polar-500 text-xs tracking-widest text-neutral-400 uppercase">
+                {label}
               </span>
-            </Link>
+              <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
+                {links.map(({ label: linkLabel, href, desc }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="dark:bg-polar-950 dark:hover:bg-polar-900 flex flex-col gap-1 bg-white p-5 transition-colors hover:bg-neutral-50"
+                  >
+                    <Headline as="h6" text={linkLabel} />
+                    <span className="dark:text-polar-500 text-xs text-neutral-500">
+                      {desc}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

@@ -14,7 +14,7 @@ const nav = [
   {
     section: 'Get started',
     items: [
-      { label: 'Overview', href: '/orbit' },
+      { label: 'Introduction', href: '/orbit' },
       { label: 'Guidelines', href: '/orbit/guidelines' },
     ],
   },

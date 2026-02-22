@@ -3,7 +3,7 @@ import type {
   RadiusClasses,
   SpacingClasses,
   ThemeSpec,
-} from './utils/createBox'
+} from '../primitives/createBox'
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 // Each token exposes three fully-static Tailwind class strings so JIT can

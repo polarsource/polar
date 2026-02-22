@@ -1,4 +1,4 @@
-import { Box, Headline, Text } from '@/components/Orbit'
+import { Box, Headline, Text } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
@@ -49,6 +49,11 @@ const sections = [
   {
     label: 'Components',
     links: [
+      {
+        label: 'Avatar',
+        href: '/orbit/components/avatar',
+        desc: 'User avatar with Facehash fallback for missing images',
+      },
       {
         label: 'Headline',
         href: '/orbit/components/headline',

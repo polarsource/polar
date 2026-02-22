@@ -1,4 +1,4 @@
-import { BarChart, Box, Headline, Text } from '@/components/Orbit'
+import { BarChart, Box, Headline, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [

@@ -1,5 +1,5 @@
-import { orbitTheme } from './theme'
-import { createBox } from './utils/createBox'
+import { orbitTheme } from '../tokens/theme'
+import { createBox } from '../primitives/createBox'
 
 /**
  * Orbit Box — a polymorphic layout primitive whose spacing, color and radius
@@ -16,4 +16,4 @@ import { createBox } from './utils/createBox'
  * <Box className="grid grid-cols-3" style={{ aspectRatio: '16/9' }}>…</Box>
  */
 export const Box = createBox(orbitTheme)
-export type { BoxProps } from './utils/createBox'
+export type { BoxProps } from '../primitives/createBox'

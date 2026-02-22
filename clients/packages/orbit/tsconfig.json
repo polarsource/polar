@@ -5,7 +5,8 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext", "dom"],
     "module": "esnext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "jsx": "react"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "build", "node_modules"]

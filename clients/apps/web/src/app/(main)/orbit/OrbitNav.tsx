@@ -1,7 +1,7 @@
 'use client'
 
-import { Headline } from '@/components/Orbit/Headline'
-import { Text } from '@/components/Orbit/Text'
+import { Headline } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +26,7 @@ const nav = [
   {
     section: 'Components',
     items: [
+      { label: 'Avatar', href: '/orbit/components/avatar' },
       { label: 'Box', href: '/orbit/components/box' },
       { label: 'Headline', href: '/orbit/components/headline' },
       { label: 'Text', href: '/orbit/components/text' },

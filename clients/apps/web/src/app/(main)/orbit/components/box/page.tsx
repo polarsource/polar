@@ -1,5 +1,5 @@
-import { Box, Text } from '@/components/Orbit'
-import { orbitRadii, orbitSpacing } from '@/components/Orbit/theme'
+import { Box, Text } from '@polar-sh/orbit'
+import { orbitRadii, orbitSpacing } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 // ─── Token data ───────────────────────────────────────────────────────────────

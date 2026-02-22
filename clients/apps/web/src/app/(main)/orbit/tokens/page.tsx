@@ -1,4 +1,4 @@
-import { Box, Headline, Text } from '@/components/Orbit'
+import { Box, Headline, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 

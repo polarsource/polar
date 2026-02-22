@@ -62,9 +62,18 @@ export function resolveProperties<T extends ThemeSpec>(
   const r = (k: keyof T['radii']) => theme.radii[k as string]
 
   // ── Colors
-  if (props.backgroundColor !== undefined) classes.push(c[props.backgroundColor as string].background)
-  if (props.color !== undefined) classes.push(c[props.color as string].text)
-  if (props.borderColor !== undefined) classes.push(c[props.borderColor as string].border)
+  if (props.backgroundColor !== undefined) {
+    const cls = c[props.backgroundColor as string]?.background
+    if (cls !== undefined) classes.push(cls)
+  }
+  if (props.color !== undefined) {
+    const cls = c[props.color as string]?.text
+    if (cls !== undefined) classes.push(cls)
+  }
+  if (props.borderColor !== undefined) {
+    const cls = c[props.borderColor as string]?.border
+    if (cls !== undefined) classes.push(cls)
+  }
 
   // ── Spacing
   if (props.padding !== undefined) classes.push(sp(props.padding).padding)

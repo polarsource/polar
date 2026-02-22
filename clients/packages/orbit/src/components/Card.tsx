@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Box } from './Box'
 import { Button, type ButtonProps } from './Button'
-import type { OrbitSpacing } from './theme'
+import type { OrbitSpacing } from '../tokens/theme'
 
 export function Card({
   children,

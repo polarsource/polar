@@ -7,7 +7,7 @@ import {
   CardHeader,
   Headline,
   Text,
-} from '@/components/Orbit'
+} from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 export default function CardPage() {

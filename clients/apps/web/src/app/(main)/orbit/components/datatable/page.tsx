@@ -6,7 +6,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
   Text,
-} from '@/components/Orbit'
+} from '@polar-sh/orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 

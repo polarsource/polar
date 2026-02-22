@@ -1,6 +1,6 @@
 'use client'
 
-import { Headline } from '@/components/Orbit/Headline'
+import { Headline } from '@polar-sh/orbit'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'

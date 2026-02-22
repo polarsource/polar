@@ -32,6 +32,8 @@ from plain_client import (
     EmailAddressInput,
     Plain,
     ReplyToThreadInput,
+    SnoozeStatusDetail,
+    SnoozeThreadInput,
     ThreadsFilter,
     ThreadStatus,
     UpsertCustomerIdentifierInput,
@@ -256,6 +258,27 @@ class PlainService:
                         slug=organization.slug,
                         error=reply_result.error.message,
                     )
+
+                # Snooze the thread if we asked the customer for more details
+                has_action_items = (
+                    issues.missing_website
+                    or issues.missing_socials
+                    or issues.admin_not_verified
+                )
+                if has_action_items:
+                    snooze_result = await plain.snooze_thread(
+                        SnoozeThreadInput(
+                            thread_id=thread_result.thread.id,
+                            status_detail=SnoozeStatusDetail.WAITING_FOR_CUSTOMER,
+                        )
+                    )
+                    if snooze_result.error is not None:
+                        log.error(
+                            "Failed to snooze thread",
+                            thread_id=thread_result.thread.id,
+                            slug=organization.slug,
+                            error=snooze_result.error.message,
+                        )
 
     async def create_appeal_review_thread(
         self,

@@ -1,4 +1,4 @@
-import { Box, Text } from '@/components/Orbit'
+import { Box, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants: { variant: 'default' | 'subtle' | 'disabled'; label: string; desc: string }[] = [

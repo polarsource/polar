@@ -1,4 +1,4 @@
-import { Box, Status, Text } from '@/components/Orbit'
+import { Box, Status, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [

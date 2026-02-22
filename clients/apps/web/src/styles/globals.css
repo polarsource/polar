@@ -16,9 +16,10 @@
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
   --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
 
-  --font-sans: var(--font-geist-sans), sans-serif;
+  --font-sans: var(--sans), sans-serif;
+  --font-display: var(--display), sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
-  --font-louize: var(--font-louize), serif;
+  --font-louize: var(--louize), serif;
 
   --text-xxs: 0.65rem;
 
@@ -71,17 +72,17 @@
   --color-gray-900: oklch(0.21 0.034 264.665);
   --color-gray-950: oklch(0.13 0.028 261.692);
 
-  --color-polar-50: hsl(233, 5%, 85%);
-  --color-polar-100: hsl(233, 5%, 79%);
-  --color-polar-200: hsl(233, 5%, 68%);
-  --color-polar-300: hsl(233, 5%, 62%);
-  --color-polar-400: hsl(233, 5%, 52%);
-  --color-polar-500: hsl(233, 5%, 46%);
-  --color-polar-600: hsl(233, 5%, 24%);
-  --color-polar-700: hsl(233, 5%, 12%);
-  --color-polar-800: hsl(233, 5%, 9.5%);
-  --color-polar-900: hsl(233, 5%, 6.5%);
-  --color-polar-950: hsl(233, 5%, 3%);
+  --color-polar-50: hsl(233, 2%, 85%);
+  --color-polar-100: hsl(233, 2%, 79%);
+  --color-polar-200: hsl(233, 2%, 68%);
+  --color-polar-300: hsl(233, 2%, 62%);
+  --color-polar-400: hsl(233, 2%, 52%);
+  --color-polar-500: hsl(233, 2%, 46%);
+  --color-polar-600: hsl(233, 2%, 24%);
+  --color-polar-700: hsl(233, 2%, 12%);
+  --color-polar-800: hsl(233, 2%, 9.5%);
+  --color-polar-900: hsl(233, 2%, 6.5%);
+  --color-polar-950: hsl(233, 2%, 3%);
 
   /* shadcn */
   --color-border: var(--border);
@@ -165,6 +166,30 @@
   img[src$='#gh-dark-mode-only'],
   img[src$='#only-dark'] {
     display: none;
+  }
+}
+
+/* ─── Orbit design tokens ──────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    --orbit-bg: var(--color-white, #ffffff);
+    --orbit-bg-surface: hsl(0, 0%, 97%);
+    --orbit-bg-elevated: hsl(0, 0%, 90%);
+    --orbit-text: #111111;
+    --orbit-text-subtle: hsl(0, 0%, 60%);
+    --orbit-text-disabled: hsl(0, 0%, 32%);
+    --orbit-destructive: var(--color-red-500);
+  }
+
+  .dark {
+    --orbit-bg: hsl(233, 2%, 3%);
+    --orbit-bg-surface: hsl(233, 2%, 6.5%);
+    --orbit-bg-elevated: hsl(233, 2%, 9.5%);
+    --orbit-text: #f0f0f0;
+    --orbit-text-subtle: hsl(233, 2%, 52%);
+    --orbit-text-disabled: hsl(233, 2%, 32%);
+    --orbit-destructive: var(--color-red-600);
   }
 }
 

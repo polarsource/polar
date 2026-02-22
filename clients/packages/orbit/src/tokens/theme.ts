@@ -1,0 +1,288 @@
+import type {
+  ColorClasses,
+  RadiusClasses,
+  SpacingClasses,
+  ThemeSpec,
+} from '../primitives/createBox'
+
+// ─── Colors ───────────────────────────────────────────────────────────────────
+// Each token exposes three fully-static Tailwind class strings so JIT can
+// scan them. CSS custom properties defined in globals.css handle dark mode.
+
+export const orbitColors = {
+  bg: {
+    background: 'bg-[var(--orbit-bg)]',
+    text: 'text-[var(--orbit-bg)]',
+    border: 'border-[var(--orbit-bg)]',
+  },
+  'bg-surface': {
+    background: 'bg-[var(--orbit-bg-surface)]',
+    text: 'text-[var(--orbit-bg-surface)]',
+    border: 'border-[var(--orbit-bg-surface)]',
+  },
+  'bg-elevated': {
+    background: 'bg-[var(--orbit-bg-elevated)]',
+    text: 'text-[var(--orbit-bg-elevated)]',
+    border: 'border-[var(--orbit-bg-elevated)]',
+  },
+  text: {
+    background: 'bg-[var(--orbit-text)]',
+    text: 'text-[var(--orbit-text)]',
+    border: 'border-[var(--orbit-text)]',
+  },
+  'text-disabled': {
+    text: 'text-[var(--orbit-text-disabled)]',
+  },
+  'text-subtle': {
+    background: 'bg-[var(--orbit-text-subtle)]',
+    text: 'text-[var(--orbit-text-subtle)]',
+    border: 'border-[var(--orbit-text-subtle)]',
+  },
+  destructive: {
+    background: 'bg-[var(--orbit-destructive)]',
+    text: 'text-[var(--orbit-destructive)]',
+    border: 'border-[var(--orbit-destructive)]',
+  },
+} as const satisfies Record<string, ColorClasses>
+
+// ─── Spacing ──────────────────────────────────────────────────────────────────
+// Numeric keys map to the Orbit spacing scale. Every key carries the full set
+// of per-prop Tailwind class strings so JIT sees them as static tokens.
+//
+// Orbit key → Tailwind scale:  1→2  2→4  3→6  4→8  6→12  8→16  12→24  16→32  32→64
+
+export const orbitSpacing = {
+  1: {
+    padding: 'p-2',
+    paddingX: 'px-2',
+    paddingY: 'py-2',
+    paddingTop: 'pt-2',
+    paddingRight: 'pr-2',
+    paddingBottom: 'pb-2',
+    paddingLeft: 'pl-2',
+    margin: 'm-2',
+    marginX: 'mx-2',
+    marginY: 'my-2',
+    marginTop: 'mt-2',
+    marginRight: 'mr-2',
+    marginBottom: 'mb-2',
+    marginLeft: 'ml-2',
+    gap: 'gap-2',
+    rowGap: 'gap-y-2',
+    columnGap: 'gap-x-2',
+  },
+  2: {
+    padding: 'p-4',
+    paddingX: 'px-4',
+    paddingY: 'py-4',
+    paddingTop: 'pt-4',
+    paddingRight: 'pr-4',
+    paddingBottom: 'pb-4',
+    paddingLeft: 'pl-4',
+    margin: 'm-4',
+    marginX: 'mx-4',
+    marginY: 'my-4',
+    marginTop: 'mt-4',
+    marginRight: 'mr-4',
+    marginBottom: 'mb-4',
+    marginLeft: 'ml-4',
+    gap: 'gap-4',
+    rowGap: 'gap-y-4',
+    columnGap: 'gap-x-4',
+  },
+  3: {
+    padding: 'p-6',
+    paddingX: 'px-6',
+    paddingY: 'py-6',
+    paddingTop: 'pt-6',
+    paddingRight: 'pr-6',
+    paddingBottom: 'pb-6',
+    paddingLeft: 'pl-6',
+    margin: 'm-6',
+    marginX: 'mx-6',
+    marginY: 'my-6',
+    marginTop: 'mt-6',
+    marginRight: 'mr-6',
+    marginBottom: 'mb-6',
+    marginLeft: 'ml-6',
+    gap: 'gap-6',
+    rowGap: 'gap-y-6',
+    columnGap: 'gap-x-6',
+  },
+  4: {
+    padding: 'p-8',
+    paddingX: 'px-8',
+    paddingY: 'py-8',
+    paddingTop: 'pt-8',
+    paddingRight: 'pr-8',
+    paddingBottom: 'pb-8',
+    paddingLeft: 'pl-8',
+    margin: 'm-8',
+    marginX: 'mx-8',
+    marginY: 'my-8',
+    marginTop: 'mt-8',
+    marginRight: 'mr-8',
+    marginBottom: 'mb-8',
+    marginLeft: 'ml-8',
+    gap: 'gap-8',
+    rowGap: 'gap-y-8',
+    columnGap: 'gap-x-8',
+  },
+  6: {
+    padding: 'p-12',
+    paddingX: 'px-12',
+    paddingY: 'py-12',
+    paddingTop: 'pt-12',
+    paddingRight: 'pr-12',
+    paddingBottom: 'pb-12',
+    paddingLeft: 'pl-12',
+    margin: 'm-12',
+    marginX: 'mx-12',
+    marginY: 'my-12',
+    marginTop: 'mt-12',
+    marginRight: 'mr-12',
+    marginBottom: 'mb-12',
+    marginLeft: 'ml-12',
+    gap: 'gap-12',
+    rowGap: 'gap-y-12',
+    columnGap: 'gap-x-12',
+  },
+  8: {
+    padding: 'p-16',
+    paddingX: 'px-16',
+    paddingY: 'py-16',
+    paddingTop: 'pt-16',
+    paddingRight: 'pr-16',
+    paddingBottom: 'pb-16',
+    paddingLeft: 'pl-16',
+    margin: 'm-16',
+    marginX: 'mx-16',
+    marginY: 'my-16',
+    marginTop: 'mt-16',
+    marginRight: 'mr-16',
+    marginBottom: 'mb-16',
+    marginLeft: 'ml-16',
+    gap: 'gap-16',
+    rowGap: 'gap-y-16',
+    columnGap: 'gap-x-16',
+  },
+  12: {
+    padding: 'p-24',
+    paddingX: 'px-24',
+    paddingY: 'py-24',
+    paddingTop: 'pt-24',
+    paddingRight: 'pr-24',
+    paddingBottom: 'pb-24',
+    paddingLeft: 'pl-24',
+    margin: 'm-24',
+    marginX: 'mx-24',
+    marginY: 'my-24',
+    marginTop: 'mt-24',
+    marginRight: 'mr-24',
+    marginBottom: 'mb-24',
+    marginLeft: 'ml-24',
+    gap: 'gap-24',
+    rowGap: 'gap-y-24',
+    columnGap: 'gap-x-24',
+  },
+  16: {
+    padding: 'p-32',
+    paddingX: 'px-32',
+    paddingY: 'py-32',
+    paddingTop: 'pt-32',
+    paddingRight: 'pr-32',
+    paddingBottom: 'pb-32',
+    paddingLeft: 'pl-32',
+    margin: 'm-32',
+    marginX: 'mx-32',
+    marginY: 'my-32',
+    marginTop: 'mt-32',
+    marginRight: 'mr-32',
+    marginBottom: 'mb-32',
+    marginLeft: 'ml-32',
+    gap: 'gap-32',
+    rowGap: 'gap-y-32',
+    columnGap: 'gap-x-32',
+  },
+  32: {
+    padding: 'p-64',
+    paddingX: 'px-64',
+    paddingY: 'py-64',
+    paddingTop: 'pt-64',
+    paddingRight: 'pr-64',
+    paddingBottom: 'pb-64',
+    paddingLeft: 'pl-64',
+    margin: 'm-64',
+    marginX: 'mx-64',
+    marginY: 'my-64',
+    marginTop: 'mt-64',
+    marginRight: 'mr-64',
+    marginBottom: 'mb-64',
+    marginLeft: 'ml-64',
+    gap: 'gap-64',
+    rowGap: 'gap-y-64',
+    columnGap: 'gap-x-64',
+  },
+} as const satisfies Record<number, SpacingClasses>
+
+// ─── Radii ────────────────────────────────────────────────────────────────────
+// Each token exposes five Tailwind class strings: all corners plus each
+// individual corner, so directional radius props are also supported.
+
+export const orbitRadii = {
+  sm: {
+    all: 'rounded-lg',
+    tl: 'rounded-tl-lg',
+    tr: 'rounded-tr-lg',
+    bl: 'rounded-bl-lg',
+    br: 'rounded-br-lg',
+  },
+  md: {
+    all: 'rounded-xl',
+    tl: 'rounded-tl-xl',
+    tr: 'rounded-tr-xl',
+    bl: 'rounded-bl-xl',
+    br: 'rounded-br-xl',
+  },
+  lg: {
+    all: 'rounded-2xl',
+    tl: 'rounded-tl-2xl',
+    tr: 'rounded-tr-2xl',
+    bl: 'rounded-bl-2xl',
+    br: 'rounded-br-2xl',
+  },
+  xl: {
+    all: 'rounded-3xl',
+    tl: 'rounded-tl-3xl',
+    tr: 'rounded-tr-3xl',
+    bl: 'rounded-bl-3xl',
+    br: 'rounded-br-3xl',
+  },
+  '2xl': {
+    all: 'rounded-4xl',
+    tl: 'rounded-tl-4xl',
+    tr: 'rounded-tr-4xl',
+    bl: 'rounded-bl-4xl',
+    br: 'rounded-br-4xl',
+  },
+  full: {
+    all: 'rounded-full',
+    tl: 'rounded-tl-full',
+    tr: 'rounded-tr-full',
+    bl: 'rounded-bl-full',
+    br: 'rounded-br-full',
+  },
+} as const satisfies Record<string, RadiusClasses>
+
+// ─── Theme ────────────────────────────────────────────────────────────────────
+
+export const orbitTheme = {
+  colors: orbitColors,
+  spacing: orbitSpacing,
+  radii: orbitRadii,
+} as const satisfies ThemeSpec
+
+export type OrbitTheme = typeof orbitTheme
+export type OrbitColor = keyof typeof orbitColors
+export type OrbitSpacing = keyof typeof orbitSpacing
+export type OrbitRadius = keyof typeof orbitRadii

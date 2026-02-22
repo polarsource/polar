@@ -12,7 +12,6 @@ import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { GeistMono } from 'geist/font/mono'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
-import { Inter } from 'next/font/google'
 import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
 import {
@@ -83,11 +82,31 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-const inter = Inter()
+const inter = localFont({
+  src: [
+    { path: '../fonts/Inter-Light.woff2', weight: '300' },
+    { path: '../fonts/Inter-Regular.woff2', weight: '400' },
+    { path: '../fonts/Inter-Medium.woff2', weight: '500' },
+    { path: '../fonts/Inter-Semibold.woff2', weight: '600' },
+  ],
+  display: 'swap',
+  variable: '--sans',
+})
+
+const interDisplay = localFont({
+  src: [
+    { path: '../fonts/InterDisplay-Light.woff2', weight: '300' },
+    { path: '../fonts/Inter-Regular.woff2', weight: '400' },
+    { path: '../fonts/Inter-Medium.woff2', weight: '500' },
+    { path: '../fonts/Inter-Semibold.woff2', weight: '600' },
+  ],
+  display: 'swap',
+  variable: '--display',
+})
 
 const louize = localFont({
   src: '../fonts/Louize-Italic-205TF.otf',
-  variable: '--font-louize',
+  variable: '--louize',
 })
 
 export default async function RootLayout({
@@ -122,7 +141,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`antialiased ${inter.className} ${louize.variable} ${GeistMono.variable}`}
+      className={`antialiased ${inter.variable} ${interDisplay.variable} ${louize.variable} ${GeistMono.variable}`}
     >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (

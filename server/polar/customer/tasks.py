@@ -53,6 +53,15 @@ async def customer_webhook(
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
+        # When a customer is deleted, external_id is cleared in the DB to allow
+        # ID recycling, but it's preserved in user_metadata["__external_id"].
+        # Restore it here so the webhook payload reflects the pre-deletion state.
+        if (
+            event_type == WebhookEventType.customer_deleted
+            and customer.external_id is None
+        ):
+            customer.external_id = customer.user_metadata.get("__external_id")
+
         await customer_service.webhook(
             session, RedisMiddleware.get(), event_type, customer
         )
@@ -101,7 +110,10 @@ async def customer_event(
                         "customer_id": str(customer.id),
                         "customer_email": customer.email,
                         "customer_name": customer.name,
-                        "customer_external_id": customer.external_id,
+                        # external_id is cleared on deletion for ID recycling;
+                        # fall back to the value preserved in user_metadata.
+                        "customer_external_id": customer.external_id
+                        or customer.user_metadata.get("__external_id"),
                     },
                 )
             case SystemEvent.customer_updated:

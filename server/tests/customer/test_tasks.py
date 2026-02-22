@@ -39,7 +39,7 @@ class TestCustomerWebhook:
         await customer_webhook(WebhookEventType.customer_deleted, customer.id)
 
         webhook_mock.assert_called_once()
-        called_customer: Customer = webhook_mock.call_args.args[2]
+        called_customer: Customer = webhook_mock.call_args.args[3]
         assert called_customer.external_id == "ext_123"
 
     async def test_customer_deleted_without_external_id(
@@ -67,5 +67,5 @@ class TestCustomerWebhook:
         await customer_webhook(WebhookEventType.customer_deleted, customer.id)
 
         webhook_mock.assert_called_once()
-        called_customer: Customer = webhook_mock.call_args.args[2]
+        called_customer: Customer = webhook_mock.call_args.args[3]
         assert called_customer.external_id is None

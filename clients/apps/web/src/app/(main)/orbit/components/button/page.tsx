@@ -67,7 +67,7 @@ const props = [
 
 export default function ButtonPage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Button"
@@ -81,18 +81,18 @@ export default function ButtonPage() {
       />
 
       {/* Variants */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
             <Box key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
-              <Stack className="col-span-2 gap-1">
+              <Stack vertical className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <Text as="span" variant="subtle" fontSize="xs">
                   {desc}
                 </Text>
               </Stack>
-              <Stack horizontal alignItems="center" gap={1.5} className="col-span-3">
+              <Stack alignItems="center" gap={1.5} className="col-span-3">
                 <Button variant={variant} size="lg">
                   Action
                 </Button>
@@ -110,9 +110,9 @@ export default function ButtonPage() {
       </Stack>
 
       {/* Sizes */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
             [
               { size: 'lg', label: 'Large', height: 'h-12 / 48px', px: 'px-5' },
@@ -126,7 +126,7 @@ export default function ButtonPage() {
             ] as const
           ).map(({ size, label, height, px }) => (
             <Box key={size} className="grid grid-cols-5 items-center gap-8 py-6">
-              <Stack className="col-span-2 gap-1">
+              <Stack vertical className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {height}
@@ -135,7 +135,7 @@ export default function ButtonPage() {
                   {px}
                 </Text>
               </Stack>
-              <Stack horizontal alignItems="end" gap={1.5} className="col-span-3">
+              <Stack alignItems="end" gap={1.5} className="col-span-3">
                 <Button size={size}>Label</Button>
                 <Button size={size} variant="secondary">
                   Label
@@ -147,9 +147,9 @@ export default function ButtonPage() {
       </Stack>
 
       {/* Props */}
-      <Stack gap={3}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">

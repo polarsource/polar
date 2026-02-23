@@ -13,7 +13,7 @@ import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 export default function CardPage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Card"
@@ -30,13 +30,13 @@ export default function CardPage() {
       />
 
       {/* Demos */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
 
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {/* Full */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Full" />
               <Text as="span" variant="subtle" fontSize="xs">
                 Header + Content + Footer
@@ -64,7 +64,7 @@ export default function CardPage() {
 
           {/* No footer */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Header + Content" />
             </Stack>
             <Box className="col-span-3">
@@ -84,7 +84,7 @@ export default function CardPage() {
 
           {/* Content only */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Content only" />
             </Stack>
             <Box className="col-span-3">
@@ -101,7 +101,7 @@ export default function CardPage() {
 
           {/* Composed */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Composed" />
               <Text as="span" variant="subtle" fontSize="xs">
                 With richer content
@@ -110,7 +110,7 @@ export default function CardPage() {
             <Box className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Stack horizontal alignItems="center" justifyContent="between">
+                  <Stack alignItems="center" justifyContent="between">
                     <Headline as="h5" text="Monthly Revenue" />
                     <Text as="span" variant="subtle" fontSize="xs">
                       Feb 2026
@@ -135,13 +135,13 @@ export default function CardPage() {
       </Stack>
 
       {/* With actions */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="With actions" />
 
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {/* Single primary action in footer */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Primary action" />
               <Text as="span" variant="subtle" fontSize="xs">
                 Footer with a single CTA
@@ -165,7 +165,7 @@ export default function CardPage() {
 
           {/* Primary + secondary */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Primary + secondary" />
               <Text as="span" variant="subtle" fontSize="xs">
                 Confirm / cancel pattern
@@ -194,7 +194,7 @@ export default function CardPage() {
 
           {/* Action in header */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Action in header" />
               <Text as="span" variant="subtle" fontSize="xs">
                 Secondary action alongside title
@@ -203,7 +203,7 @@ export default function CardPage() {
             <Box className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Stack horizontal alignItems="center" justifyContent="between">
+                  <Stack alignItems="center" justifyContent="between">
                     <Headline as="h5" text="API Keys" />
                     <Button size="sm" variant="secondary">
                       New key
@@ -222,7 +222,7 @@ export default function CardPage() {
 
           {/* Full: header action + footer actions */}
           <Box className="grid grid-cols-5 gap-8 py-8">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Headline as="h6" text="Full composition" />
               <Text as="span" variant="subtle" fontSize="xs">
                 Actions in both header and footer
@@ -231,7 +231,7 @@ export default function CardPage() {
             <Box className="col-span-3">
               <Card>
                 <CardHeader>
-                  <Stack horizontal alignItems="center" justifyContent="between">
+                  <Stack alignItems="center" justifyContent="between">
                     <Headline as="h5" text="Billing" />
                     <Button size="sm" variant="ghost">
                       View history
@@ -239,7 +239,7 @@ export default function CardPage() {
                   </Stack>
                 </CardHeader>
                 <CardContent>
-                  <Stack gap={1}>
+                  <Stack vertical gap={1}>
                     <Headline as="h3" text="$49 / mo" />
                     <Text variant="subtle" fontSize="sm">
                       Pro plan · renews Mar 1, 2026
@@ -259,9 +259,9 @@ export default function CardPage() {
       </Stack>
 
       {/* API */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="API" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
             {
               name: 'Card',

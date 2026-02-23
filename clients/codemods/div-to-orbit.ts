@@ -187,14 +187,19 @@ function transformElement(
   const newTag = analysis.tag
 
   // ── Rename tag ────────────────────────────────────────────────────────────
-  node.getTagNameNode().replaceWithText(newTag)
-
+  // Rename closing tag FIRST (higher file position) so that renaming the
+  // opening tag doesn't shift its position and invalidate the reference.
+  // If we renamed the opening tag first, TypeScript would see <Box>...</div>
+  // (mismatched), fail to create a proper JsxElement parent, and the closing
+  // rename would be silently skipped.
   if (Node.isJsxOpeningElement(node)) {
     const parent = node.getParent()
     if (Node.isJsxElement(parent)) {
       parent.getClosingElement().getTagNameNode().replaceWithText(newTag)
     }
   }
+
+  node.getTagNameNode().replaceWithText(newTag)
 
   // ── Rebuild attributes ────────────────────────────────────────────────────
   if (expressionMode && analysis.tag === 'Stack') {

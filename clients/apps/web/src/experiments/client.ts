@@ -43,7 +43,8 @@ function getUrlOverride<T extends ExperimentName>(
   const params = new URLSearchParams(window.location.search)
   const value = params.get(`experiment_${experimentName}`)
   if (!value) return null
-  const validVariants = experiments[experimentName].variants as readonly string[]
+  const validVariants = experiments[experimentName]
+    .variants as readonly string[]
   if (validVariants.includes(value)) {
     return value as ExperimentVariant<T>
   }

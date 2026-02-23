@@ -68,7 +68,6 @@ const Checkout = ({
 
   const { variant: termsExperiment } = useExperiment('checkout_terms')
 
-
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return

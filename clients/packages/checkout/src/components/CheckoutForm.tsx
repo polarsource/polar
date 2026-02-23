@@ -348,32 +348,31 @@ const BaseCheckoutForm = ({
                     />
                   )}
 
-                  {termsExperiment !== 'treatment' &&
-                    isBusinessCustomer && (
-                      <FormField
-                        control={control}
-                        name="customerBillingName"
-                        rules={{
-                          required: t('checkout.form.fieldRequired'),
-                        }}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t('checkout.form.businessName')}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                autoComplete="billing organization"
-                                {...field}
-                                value={field.value || ''}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
+                  {termsExperiment !== 'treatment' && isBusinessCustomer && (
+                    <FormField
+                      control={control}
+                      name="customerBillingName"
+                      rules={{
+                        required: t('checkout.form.fieldRequired'),
+                      }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t('checkout.form.businessName')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              autoComplete="billing organization"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormItem>
                     <FormLabel>
@@ -581,57 +580,56 @@ const BaseCheckoutForm = ({
                     )}
                   </FormItem>
 
-                  {termsExperiment !== 'treatment' &&
-                    isBusinessCustomer && (
-                      <FormField
-                        control={control}
-                        name="customerTaxId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex flex-row items-center justify-between">
-                              <div>{t('checkout.form.taxId')}</div>
-                              <div className="dark:text-polar-500 text-xs text-gray-500">
-                                {t('checkout.form.optional')}
+                  {termsExperiment !== 'treatment' && isBusinessCustomer && (
+                    <FormField
+                      control={control}
+                      name="customerTaxId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex flex-row items-center justify-between">
+                            <div>{t('checkout.form.taxId')}</div>
+                            <div className="dark:text-polar-500 text-xs text-gray-500">
+                              {t('checkout.form.optional')}
+                            </div>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="text"
+                                autoComplete="off"
+                                {...field}
+                                value={field.value || ''}
+                                disabled={validTaxID}
+                              />
+                              <div className="absolute inset-y-0 right-1 z-10 flex items-center gap-1">
+                                {!validTaxID && taxId && (
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={addTaxID}
+                                  >
+                                    {t('checkout.form.apply')}
+                                  </Button>
+                                )}
+                                {validTaxID && (
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => clearTaxId()}
+                                  >
+                                    <XIcon className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
-                            </FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Input
-                                  type="text"
-                                  autoComplete="off"
-                                  {...field}
-                                  value={field.value || ''}
-                                  disabled={validTaxID}
-                                />
-                                <div className="absolute inset-y-0 right-1 z-10 flex items-center gap-1">
-                                  {!validTaxID && taxId && (
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={addTaxID}
-                                    >
-                                      {t('checkout.form.apply')}
-                                    </Button>
-                                  )}
-                                  {validTaxID && (
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={() => clearTaxId()}
-                                    >
-                                      <XIcon className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   {termsExperiment === 'treatment' && (
                     <>
@@ -795,10 +793,16 @@ const BaseCheckoutForm = ({
           {termsExperiment === 'treatment' && checkout.isPaymentFormRequired ? (
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               {checkout.activeTrialInterval
-                ? t('checkout.footer.mandateSubscriptionTrial', { buttonLabel: checkoutLabel })
+                ? t('checkout.footer.mandateSubscriptionTrial', {
+                    buttonLabel: checkoutLabel,
+                  })
                 : interval
-                  ? t('checkout.footer.mandateSubscription', { buttonLabel: checkoutLabel })
-                  : t('checkout.footer.mandateOneTime', { buttonLabel: checkoutLabel })}
+                  ? t('checkout.footer.mandateSubscription', {
+                      buttonLabel: checkoutLabel,
+                    })
+                  : t('checkout.footer.mandateOneTime', {
+                      buttonLabel: checkoutLabel,
+                    })}
             </p>
           ) : (
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">

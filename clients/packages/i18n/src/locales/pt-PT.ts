@@ -13,8 +13,8 @@ export default {
     },
     form: {
       email: 'E-mail',
-      cardholderName: 'Nome no cartão',
-      purchasingAsBusiness: 'Estou comprando como empresa',
+      cardholderName: 'Nome do titular',
+      purchasingAsBusiness: 'Estou comprando uma empresa',
       businessName: 'Nome da empresa',
       billingAddress: {
         label: 'Endereço de cobrança',
@@ -43,7 +43,7 @@ export default {
       free: 'Grátis',
       payWhatYouWant: 'Pague quanto quiser',
       total: 'Total',
-      additionalMeteredUsage: 'Uso medido adicional',
+      additionalMeteredUsage: 'Uso adicional',
       perUnit: '/ unidade',
       discount: {
         duration: {
@@ -211,9 +211,9 @@ export default {
   },
   benefitTypes: {
     license_keys: 'Chaves de licença',
-    github_repository: 'Acesso ao repositório GitHub',
+    github_repository: 'Acesso a repositório GitHub',
     discord: 'Convite do Discord',
-    downloadables: 'Downloads de arquivos',
+    downloadables: 'Download de arquivos',
     custom: 'Personalizado',
     meter_credit: 'Créditos de uso',
   },

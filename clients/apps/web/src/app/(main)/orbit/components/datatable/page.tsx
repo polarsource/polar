@@ -220,7 +220,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
 
 export default function DataTablePage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="DataTable"
@@ -237,13 +237,13 @@ export default function DataTablePage() {
       />
 
       {/* Basic */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Basic" />
         <DataTable columns={columns} data={data} isLoading={false} />
       </Stack>
 
       {/* Expandable rows */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Expandable rows"
           description={
@@ -270,21 +270,21 @@ export default function DataTablePage() {
       </Stack>
 
       {/* Loading */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Loading state" />
         <DataTable columns={columns} data={[]} isLoading={true} />
       </Stack>
 
       {/* Empty */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Empty state" />
         <DataTable columns={columns} data={[]} isLoading={false} />
       </Stack>
 
       {/* API */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="API" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
             {
               name: 'columns',

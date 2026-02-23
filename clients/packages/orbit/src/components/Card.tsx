@@ -17,7 +17,7 @@ export function Card({
   gap?: OrbitSpacing
 }) {
   return (
-    <Stack
+    <Stack vertical
       backgroundColor="bg-surface"
       borderRadius="lg"
       padding={padding}
@@ -66,7 +66,7 @@ export function CardFooter({
     <Box paddingTop={actions ? 2 : undefined} className={className}>
       {children}
       {actions && (
-        <Stack className="flex-row gap-3">
+        <Stack className="gap-3">
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}

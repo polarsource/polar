@@ -58,7 +58,7 @@ const props = [
 
 export default function StatusPage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Status"
@@ -66,15 +66,15 @@ export default function StatusPage() {
       />
 
       {/* Variants */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
             <Box
               key={variant}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
-              <Stack className="col-span-2 gap-1">
+              <Stack vertical className="col-span-2 gap-1">
                 <Text fontSize="sm" fontWeight="medium">
                   {label}
                 </Text>
@@ -82,7 +82,7 @@ export default function StatusPage() {
                   {desc}
                 </Text>
               </Stack>
-              <Stack horizontal alignItems="center" gap={1.5} className="col-span-3">
+              <Stack alignItems="center" gap={1.5} className="col-span-3">
                 {variant === 'neutral' && (
                   <>
                     <Status variant={variant} status="Draft" />
@@ -125,11 +125,11 @@ export default function StatusPage() {
       </Stack>
 
       {/* Sizes */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Text fontSize="sm" fontWeight="medium">
                 Medium
               </Text>
@@ -137,14 +137,14 @@ export default function StatusPage() {
                 size=&quot;md&quot;
               </Text>
             </Stack>
-            <Stack horizontal alignItems="center" gap={1.5} className="col-span-3">
+            <Stack alignItems="center" gap={1.5} className="col-span-3">
               <Status status="Paid" variant="success" size="md" />
               <Status status="Past due" variant="warning" size="md" />
               <Status status="Declined" variant="error" size="md" />
             </Stack>
           </Box>
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Stack className="col-span-2 gap-1">
+            <Stack vertical className="col-span-2 gap-1">
               <Text fontSize="sm" fontWeight="medium">
                 Small
               </Text>
@@ -152,7 +152,7 @@ export default function StatusPage() {
                 size=&quot;sm&quot;
               </Text>
             </Stack>
-            <Stack horizontal alignItems="center" gap={1.5} className="col-span-3">
+            <Stack alignItems="center" gap={1.5} className="col-span-3">
               <Status status="Paid" variant="success" size="sm" />
               <Status status="Past due" variant="warning" size="sm" />
               <Status status="Declined" variant="error" size="sm" />
@@ -162,9 +162,9 @@ export default function StatusPage() {
       </Stack>
 
       {/* Props */}
-      <Stack gap={3}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm">

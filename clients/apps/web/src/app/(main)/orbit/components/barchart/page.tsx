@@ -24,7 +24,7 @@ const props = [
 
 export default function BarChartPage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="BarChart"
@@ -32,7 +32,7 @@ export default function BarChartPage() {
       />
 
       {/* Demo */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Demo" />
         <Box className="h-96">
           <BarChart
@@ -47,9 +47,9 @@ export default function BarChartPage() {
       </Stack>
 
       {/* Behavior notes */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Behavior" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
             {
               heading: 'Relative scaling',
@@ -85,9 +85,9 @@ export default function BarChartPage() {
       </Stack>
 
       {/* Props */}
-      <Stack gap={3}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">

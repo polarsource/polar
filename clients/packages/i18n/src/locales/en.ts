@@ -39,7 +39,7 @@ export default {
         stateProvince: 'State / Province',
       },
       taxId: 'Tax ID',
-      discountCode: 'Discount code',
+      discountCode: 'Add discount code',
       optional: 'Optional',
       apply: {
         value: 'Apply',

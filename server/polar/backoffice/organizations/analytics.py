@@ -13,6 +13,7 @@ from polar.models import (
     OrganizationAccessToken,
     Payment,
     Product,
+    ProductBenefit,
     Refund,
     WebhookEndpoint,
 )
@@ -223,6 +224,18 @@ class OrganizationSetupAnalyticsService:
         """Get count of benefits for organization."""
         result = await self.session.execute(
             select(func.count(Benefit.id)).where(
+                Benefit.organization_id == organization_id,
+                Benefit.is_deleted.is_(False),
+            )
+        )
+        return result.scalar() or 0
+
+    async def get_active_benefits_count(self, organization_id: UUID4) -> int:
+        """Get count of benefits that are attached to at least one product."""
+        result = await self.session.execute(
+            select(func.count(func.distinct(Benefit.id)))
+            .join(ProductBenefit, Benefit.id == ProductBenefit.benefit_id)
+            .where(
                 Benefit.organization_id == organization_id,
                 Benefit.is_deleted.is_(False),
             )

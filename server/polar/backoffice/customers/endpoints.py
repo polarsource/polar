@@ -196,10 +196,7 @@ async def get(
                                 "organization.name",
                                 "Name",
                                 href_getter=lambda r, i: str(
-                                    r.url_for(
-                                        "organizations-classic:get",
-                                        id=i.organization_id,
-                                    )
+                                    r.url_for("organizations-classic:get", id=i.organization_id)
                                 ),
                             ),
                             description_list.DescriptionListAttrItem(
@@ -259,9 +256,8 @@ async def get(
                                 description_list.DescriptionListLinkItem[Customer](
                                     "stripe_customer_id",
                                     "Stripe Customer ID",
-                                    href_getter=lambda _, i: (
-                                        f"https://dashboard.stripe.com/customers/{i.stripe_customer_id}"
-                                    ),
+                                    href_getter=lambda _,
+                                    i: f"https://dashboard.stripe.com/customers/{i.stripe_customer_id}",
                                     external=True,
                                 ),
                             ).render(request, customer):

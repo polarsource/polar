@@ -141,7 +141,9 @@ class OrganizationListView:
         yield
 
     @contextlib.contextmanager
-    def organization_row(self, request: Request, org: Organization) -> Generator[None]:
+    def organization_row(
+        self, request: Request, org: Organization, show_quick_actions: bool = False
+    ) -> Generator[None]:
         """Render a single organization row in the table."""
         days_in_status = self.calculate_days_in_status(org)
         needs_attention = self.is_needs_attention(org)
@@ -229,13 +231,44 @@ class OrganizationListView:
 
             # Actions
             with tag.td(classes="text-right"):
-                with tag.a(
-                    href=str(
-                        request.url_for("organizations:detail", organization_id=org.id)
-                    ),
-                    classes="btn btn-ghost btn-sm",
-                ):
-                    text("View →")
+                if show_quick_actions:
+                    with tag.div(classes="flex gap-2 justify-end"):
+                        with button(
+                            variant="secondary",
+                            size="sm",
+                            outline=True,
+                            hx_post=str(
+                                request.url_for(
+                                    "organizations:approve", organization_id=org.id
+                                )
+                            )
+                            + "?threshold=25000",
+                            hx_confirm="Approve with $250 threshold?",
+                        ):
+                            text("Approve")
+                        with button(
+                            variant="secondary",
+                            size="sm",
+                            outline=True,
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations:deny_dialog",
+                                    organization_id=org.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Deny")
+                else:
+                    with tag.a(
+                        href=str(
+                            request.url_for(
+                                "organizations:detail", organization_id=org.id
+                            )
+                        ),
+                        classes="btn btn-ghost btn-sm",
+                    ):
+                        text("View →")
 
         yield
 
@@ -577,7 +610,9 @@ class OrganizationListView:
 
                             with tag.tbody():
                                 for org in needs_attention:
-                                    with self.organization_row(request, org):
+                                    with self.organization_row(
+                                        request, org, show_quick_actions=True
+                                    ):
                                         pass
 
                     # Divider
@@ -795,7 +830,9 @@ class OrganizationListView:
 
                             with tag.tbody():
                                 for org in needs_attention:
-                                    with self.organization_row(request, org):
+                                    with self.organization_row(
+                                        request, org, show_quick_actions=True
+                                    ):
                                         pass
 
                     # Divider

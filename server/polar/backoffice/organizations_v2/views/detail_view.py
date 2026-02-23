@@ -1,10 +1,8 @@
 """Organization detail view with horizontal tabs and sidebar."""
 
 import contextlib
-import urllib.parse
 from collections.abc import Generator
 from datetime import UTC, datetime
-from uuid import UUID
 
 from fastapi import Request
 from tagflow import tag, text
@@ -19,17 +17,6 @@ from ...components import (
     status_badge,
     tab_nav,
 )
-from ...components._clipboard_button import clipboard_button
-
-
-def _get_logfire_url(organization_id: UUID) -> str:
-    params = {
-        "q": f"attributes->>'subject_id' = '{organization_id}'",
-        "last": "30d",
-    }
-    return (
-        f"https://logfire-us.pydantic.dev/polar/polar?{urllib.parse.urlencode(params)}"
-    )
 
 
 class OrganizationDetailView:
@@ -47,7 +34,9 @@ class OrganizationDetailView:
             Tab(
                 "Overview",
                 str(
-                    request.url_for("organizations:detail", organization_id=self.org.id)
+                    request.url_for(
+                        "organizations:detail", organization_id=self.org.id
+                    )
                 )
                 + "?section=overview",
                 active=current_section == "overview",
@@ -55,7 +44,9 @@ class OrganizationDetailView:
             Tab(
                 "Team",
                 str(
-                    request.url_for("organizations:detail", organization_id=self.org.id)
+                    request.url_for(
+                        "organizations:detail", organization_id=self.org.id
+                    )
                 )
                 + "?section=team",
                 active=current_section == "team",
@@ -63,7 +54,9 @@ class OrganizationDetailView:
             Tab(
                 "Account",
                 str(
-                    request.url_for("organizations:detail", organization_id=self.org.id)
+                    request.url_for(
+                        "organizations:detail", organization_id=self.org.id
+                    )
                 )
                 + "?section=account",
                 active=current_section == "account",
@@ -71,7 +64,9 @@ class OrganizationDetailView:
             Tab(
                 "Files",
                 str(
-                    request.url_for("organizations:detail", organization_id=self.org.id)
+                    request.url_for(
+                        "organizations:detail", organization_id=self.org.id
+                    )
                 )
                 + "?section=files",
                 active=current_section == "files",
@@ -79,7 +74,9 @@ class OrganizationDetailView:
             Tab(
                 "Settings",
                 str(
-                    request.url_for("organizations:detail", organization_id=self.org.id)
+                    request.url_for(
+                        "organizations:detail", organization_id=self.org.id
+                    )
                 )
                 + "?section=settings",
                 active=current_section == "settings",
@@ -185,22 +182,7 @@ class OrganizationDetailView:
                                 text("Approve")
 
                     elif self.org.status == OrganizationStatus.ACTIVE:
-                        # Active organizations can be denied or set under review
-                        with tag.div(classes="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:under_review_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Set Under Review")
-
+                        # Active organizations can be denied
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
@@ -217,20 +199,49 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
+                        # Quick approve with doubled threshold
+                        # Use current threshold (in cents) or $250 default, then double it
+                        current_threshold = self.org.next_review_threshold or 25000
+                        next_threshold = current_threshold * 2
+                        next_threshold_display = f"${next_threshold / 100:,.0f}"
+
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_get=str(
+                                hx_post=str(
                                     request.url_for(
-                                        "organizations:approve_dialog",
+                                        "organizations:approve",
                                         organization_id=self.org.id,
                                     )
-                                ),
-                                hx_target="#modal",
+                                )
+                                + f"?threshold={next_threshold}",
+                                hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
                             ):
-                                text("Approve")
+                                text(f"Approve ({next_threshold_display})")
+
+                        # Custom approve with input
+                        approve_url = str(
+                            request.url_for(
+                                "organizations:approve", organization_id=self.org.id
+                            )
+                        )
+                        with tag.div(classes="flex gap-2"):
+                            with tag.input(
+                                type="number",
+                                id="custom-threshold",
+                                placeholder="Custom amount",
+                                classes="input input-bordered input-sm flex-1",
+                            ):
+                                pass
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
+                            ):
+                                text("✓")
 
                         with tag.div(classes="w-full"):
                             with button(
@@ -297,8 +308,13 @@ class OrganizationDetailView:
                                 classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
                             ):
                                 text(self.org.slug)
-                            with clipboard_button(self.org.slug):
-                                pass
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                ghost=True,
+                                onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
+                            ):
+                                text("Copy")
 
                     # ID (copyable)
                     with tag.div():
@@ -309,8 +325,13 @@ class OrganizationDetailView:
                                 classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
                             ):
                                 text(str(self.org.id))
-                            with clipboard_button(str(self.org.id)):
-                                pass
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                ghost=True,
+                                onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
+                            ):
+                                text("Copy")
 
                     # Created
                     with tag.div():
@@ -354,8 +375,14 @@ class OrganizationDetailView:
     def render(self, request: Request, section: str = "overview") -> Generator[None]:
         """Render the complete detail view with top tabs."""
 
-        # Header
+        # Back button and header
         with tag.div(classes="mb-6"):
+            with tag.a(
+                href=str(request.url_for("organizations:list")),
+                classes="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
+            ):
+                text("← Back to Organizations")
+
             with tag.div(classes="flex items-center justify-between gap-4"):
                 with tag.div(classes="flex items-center gap-3 min-w-0 flex-1"):
                     with tag.h1(
@@ -367,39 +394,23 @@ class OrganizationDetailView:
                         with status_badge(self.org.status):
                             pass
 
-                with tag.a(
-                    href=str(
-                        request.url_for("organizations-classic:get", id=self.org.id)
-                    ),
-                    classes="btn btn-ghost btn-sm",
-                ):
-                    text("Switch to Classic View")
-
                 # Top-right menu
                 with tag.div(classes="dropdown dropdown-end"):
                     with tag.button(
                         classes="btn btn-circle btn-ghost",
-                        tabindex="0",
                         **{"aria-label": "More options"},
                     ):
                         text("⋮")
                     with tag.ul(
-                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
-                        tabindex="0",
+                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-52",
                     ):
                         with tag.li():
                             with tag.a(
-                                href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.org.email or self.org.slug}",
+                                href=f"https://app.plain.com/search?q={self.org.email or self.org.slug}",
                                 target="_blank",
                             ):
                                 text("Search in Plain")
                         with tag.li():
-                            with tag.a(
-                                href=_get_logfire_url(self.org.id),
-                                target="_blank",
-                            ):
-                                text("View API Logs in Logfire")
-                        with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
                             with tag.a(
                                 hx_get=str(
                                     request.url_for(

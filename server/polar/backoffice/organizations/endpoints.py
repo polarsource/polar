@@ -43,13 +43,11 @@ from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
-from polar.models.user_session import UserSession
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
-from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
@@ -66,7 +64,6 @@ from polar.user_organization.service import (
 
 from .. import formatters
 from ..components import accordion, button, datatable, description_list, input, modal
-from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
@@ -194,6 +191,16 @@ async def get_payment_statistics(
 
     # Get account ID for the organization
     account_id = await analytics_service.get_organization_account_id(organization_id)
+    if not account_id:
+        return PaymentStatistics(
+            payment_count=0,
+            p50_risk=0,
+            p90_risk=0,
+            refunds_count=0,
+            transfer_sum=0,
+            refunds_amount=0,
+            total_payment_amount=0,
+        )
 
     # Get payment statistics
     (
@@ -210,13 +217,10 @@ async def get_payment_statistics(
         organization_id
     )
 
-    if account_id:
-        # Get transfer sum (used for review threshold checking)
-        transfer_sum = await transaction_service.get_transactions_sum(
-            session, account_id, type=TransactionType.balance
-        )
-    else:
-        transfer_sum = 0
+    # Get transfer sum (used for review threshold checking)
+    transfer_sum = await transaction_service.get_transactions_sum(
+        session, account_id, type=TransactionType.balance
+    )
 
     return PaymentStatistics(
         payment_count=payment_count,
@@ -443,10 +447,7 @@ async def list(
                         text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
-                    "id",
-                    "ID",
-                    href_route_name="organizations-classic:get",
-                    clipboard=True,
+                    "id", "ID", href_route_name="organizations-classic:get", clipboard=True
                 ),
                 datatable.DatatableDateTimeColumn(
                     "created_at",
@@ -481,9 +482,7 @@ async def list(
                 pass
 
 
-@router.api_route(
-    "/{id}/update", name="organizations-classic:update", methods=["GET", "POST"]
-)
+@router.api_route("/{id}/update", name="organizations-classic:update", methods=["GET", "POST"])
 async def update(
     request: Request,
     id: UUID4,
@@ -588,9 +587,7 @@ async def update(
 
 
 @router.api_route(
-    "/{id}/update_details",
-    name="organizations-classic:update_details",
-    methods=["GET", "POST"],
+    "/{id}/update_details", name="organizations-classic:update_details", methods=["GET", "POST"]
 )
 async def update_details(
     request: Request,
@@ -679,9 +676,7 @@ async def update_internal_notes(
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
             validation_error=validation_error,
-            hx_post=str(
-                request.url_for("organizations-classic:update_internal_notes", id=id)
-            ),
+            hx_post=str(request.url_for("organizations-classic:update_internal_notes", id=id)),
             hx_target="#modal",
             classes="space-y-4",
         ):
@@ -697,9 +692,7 @@ async def update_internal_notes(
                     text("Save Notes")
 
 
-@router.api_route(
-    "/{id}/delete", name="organizations-classic:delete", methods=["GET", "POST"]
-)
+@router.api_route("/{id}/delete", name="organizations-classic:delete", methods=["GET", "POST"])
 async def delete(
     request: Request,
     id: UUID4,
@@ -710,7 +703,7 @@ async def delete(
     if not organization:
         raise HTTPException(status_code=404)
 
-    if organization.is_deleted:
+    if organization.deleted_at is not None:
         await add_toast(
             request, "This organization is already deleted", variant="error"
         )
@@ -765,8 +758,7 @@ async def delete(
 
 
 @router.get(
-    "/{id}/confirm_remove_member/{user_id}",
-    name="organizations-classic:confirm_remove_member",
+    "/{id}/confirm_remove_member/{user_id}", name="organizations-classic:confirm_remove_member"
 )
 async def confirm_remove_member(
     request: Request,
@@ -873,8 +865,7 @@ async def remove_member(
 
 
 @router.get(
-    "/{id}/confirm_change_admin/{user_id}",
-    name="organizations-classic:confirm_change_admin",
+    "/{id}/confirm_change_admin/{user_id}", name="organizations-classic:confirm_change_admin"
 )
 async def confirm_change_admin(
     request: Request,
@@ -1341,7 +1332,6 @@ async def get(
     files_page: int = Query(1, ge=1),
     files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
@@ -1376,42 +1366,19 @@ async def get(
         data = await request.form()
         try:
             account_status = OrganizationStatusFormAdapter.validate_python(data)
-            review_repo = OrganizationReviewRepository.from_session(session)
             if account_status.action == "approve":
-                await review_repo.record_human_decision(
-                    organization_id=id,
-                    reviewer_id=user_session.user.id,
-                    decision="APPROVE",
-                )
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
-                await review_repo.record_human_decision(
-                    organization_id=id,
-                    reviewer_id=user_session.user.id,
-                    decision="DENY",
-                )
                 await organization_service.deny_organization(session, organization)
             elif account_status.action == "under_review":
                 await organization_service.set_organization_under_review(
                     session, organization
                 )
             elif account_status.action == "approve_appeal":
-                await review_repo.record_human_decision(
-                    organization_id=id,
-                    reviewer_id=user_session.user.id,
-                    decision="APPROVE",
-                    review_context="appeal",
-                )
                 await organization_service.approve_appeal(session, organization)
             elif account_status.action == "deny_appeal":
-                await review_repo.record_human_decision(
-                    organization_id=id,
-                    reviewer_id=user_session.user.id,
-                    decision="DENY",
-                    review_context="appeal",
-                )
                 await organization_service.deny_appeal(session, organization)
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
@@ -1447,8 +1414,7 @@ async def get(
                         classes="btn",
                         href=str(
                             request.url_for(
-                                "organizations-classic:plain_search_url",
-                                id=organization.id,
+                                "organizations-classic:plain_search_url", id=organization.id
                             )
                         ),
                         title="Search in Plain",
@@ -1461,8 +1427,7 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations-classic:create_thread_modal",
-                                id=organization.id,
+                                "organizations-classic:create_thread_modal", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1475,8 +1440,7 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations-classic:import_orders",
-                                id=organization.id,
+                                "organizations-classic:import_orders", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1502,9 +1466,7 @@ async def get(
                     with button(
                         variant="primary",
                         hx_get=str(
-                            request.url_for(
-                                "organizations-classic:update", id=organization.id
-                            )
+                            request.url_for("organizations-classic:update", id=organization.id)
                         ),
                         hx_target="#modal",
                     ):
@@ -1925,9 +1887,7 @@ async def get_plain_search_url(
     return RedirectResponse(url=search_url, status_code=302)
 
 
-@router.get(
-    "/{id}/create_thread_modal", name="organizations-classic:create_thread_modal"
-)
+@router.get("/{id}/create_thread_modal", name="organizations-classic:create_thread_modal")
 async def get_create_thread_modal(
     request: Request,
     id: UUID4,
@@ -1956,8 +1916,7 @@ async def get_create_thread_modal(
                         id="create-thread-form",
                         hx_post=str(
                             request.url_for(
-                                "organizations-classic:create_plain_thread",
-                                id=organization.id,
+                                "organizations-classic:create_plain_thread", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1982,8 +1941,7 @@ async def get_create_thread_modal(
                                 classes="btn",
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-classic:clear_modal",
-                                        id=organization.id,
+                                        "organizations-classic:clear_modal", id=organization.id
                                     )
                                 ),
                                 hx_target="#modal",
@@ -1998,9 +1956,7 @@ async def get_create_thread_modal(
                 with tag.div(
                     classes="modal-backdrop",
                     hx_get=str(
-                        request.url_for(
-                            "organizations-classic:clear_modal", id=organization.id
-                        )
+                        request.url_for("organizations-classic:clear_modal", id=organization.id)
                     ),
                     hx_target="#modal",
                 ):
@@ -2016,9 +1972,7 @@ async def clear_modal(id: UUID4) -> Any:
 
 
 @router.api_route(
-    "/{id}/import-orders",
-    name="organizations-classic:import_orders",
-    methods=["GET", "POST"],
+    "/{id}/import-orders", name="organizations-classic:import_orders", methods=["GET", "POST"]
 )
 async def import_orders(
     request: Request,

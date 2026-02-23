@@ -5,6 +5,7 @@ import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
+  Stack,
   Text,
 } from '@polar-sh/orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
@@ -219,7 +220,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
 
 export default function DataTablePage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="DataTable"
@@ -236,13 +237,13 @@ export default function DataTablePage() {
       />
 
       {/* Basic */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Basic" />
         <DataTable columns={columns} data={data} isLoading={false} />
-      </Box>
+      </Stack>
 
       {/* Expandable rows */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Expandable rows"
           description={
@@ -266,28 +267,24 @@ export default function DataTablePage() {
             if (row.getCanExpand()) row.getToggleExpandedHandler()()
           }}
         />
-      </Box>
+      </Stack>
 
       {/* Loading */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Loading state" />
         <DataTable columns={columns} data={[]} isLoading={true} />
-      </Box>
+      </Stack>
 
       {/* Empty */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Empty state" />
         <DataTable columns={columns} data={[]} isLoading={false} />
-      </Box>
+      </Stack>
 
       {/* API */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="API" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
             {
               name: 'columns',
@@ -348,8 +345,8 @@ export default function DataTablePage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

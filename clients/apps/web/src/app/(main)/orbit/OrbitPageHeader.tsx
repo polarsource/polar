@@ -1,4 +1,4 @@
-import { Box, Headline, Text } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 
 // ─── Page header ─────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ export function OrbitPageHeader({
   description?: ReactNode
 }) {
   return (
-    <Box display="flex" flexDirection="column" gap={3}>
+    <Stack gap={3}>
       {label && <Headline as="span" text={label} />}
       <Headline as="h2" text={title} />
       {description && (
@@ -21,7 +21,7 @@ export function OrbitPageHeader({
           {description}
         </Text>
       )}
-    </Box>
+    </Stack>
   )
 }
 
@@ -35,7 +35,7 @@ export function OrbitSectionHeader({
   description?: ReactNode
 }) {
   return (
-    <Box display="flex" flexDirection="column" className="gap-3">
+    <Stack gap={1.5}>
       <Headline as="h4" text={title} />
       <Box className="dark:border-polar-800 border-t border-neutral-200" />
       {description && (
@@ -43,6 +43,6 @@ export function OrbitSectionHeader({
           {description}
         </Text>
       )}
-    </Box>
+    </Stack>
   )
 }

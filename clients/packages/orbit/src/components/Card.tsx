@@ -1,6 +1,7 @@
 import React from 'react'
 import type { ReactNode } from 'react'
 import { Box } from './Box'
+import { Stack } from './Stack'
 import { Button, type ButtonProps } from './Button'
 import type { OrbitSpacing } from '../tokens/theme'
 
@@ -16,17 +17,15 @@ export function Card({
   gap?: OrbitSpacing
 }) {
   return (
-    <Box
+    <Stack
       backgroundColor="bg-surface"
       borderRadius="lg"
-      display="flex"
-      flexDirection="column"
       padding={padding}
       gap={gap}
       className={className}
     >
       {children}
-    </Box>
+    </Stack>
   )
 }
 
@@ -67,11 +66,11 @@ export function CardFooter({
     <Box paddingTop={actions ? 2 : undefined} className={className}>
       {children}
       {actions && (
-        <Box display="flex" className="gap-3">
+        <Stack className="flex-row gap-3">
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}
-        </Box>
+        </Stack>
       )}
     </Box>
   )

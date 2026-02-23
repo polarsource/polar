@@ -106,9 +106,6 @@ type BoxPropName =
   | 'marginRight'
   | 'marginBottom'
   | 'marginLeft'
-  | 'gap'
-  | 'rowGap'
-  | 'columnGap'
   | 'borderRadius'
   | 'borderTopLeftRadius'
   | 'borderTopRightRadius'
@@ -142,9 +139,6 @@ type SpacingProps<TSpacing extends Record<string | number, SpacingClasses>> = {
   marginRight?: keyof TSpacing
   marginBottom?: keyof TSpacing
   marginLeft?: keyof TSpacing
-  gap?: keyof TSpacing
-  rowGap?: keyof TSpacing
-  columnGap?: keyof TSpacing
 }
 
 type RadiiProps<TRadii extends Record<string, RadiusClasses>> = {
@@ -205,9 +199,6 @@ export function createBox<T extends ThemeSpec>(theme: T) {
       'marginRight',
       'marginBottom',
       'marginLeft',
-      'gap',
-      'rowGap',
-      'columnGap',
       'borderRadius',
       'borderTopLeftRadius',
       'borderTopRightRadius',

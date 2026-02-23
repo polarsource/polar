@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Button, Headline, Text } from '@polar-sh/orbit'
+import { Box, Button, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants = [
@@ -67,7 +67,7 @@ const props = [
 
 export default function ButtonPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Button"
@@ -81,22 +81,18 @@ export default function ButtonPage() {
       />
 
       {/* Variants */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
             <Box key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Stack className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <Text as="span" variant="subtle" fontSize="xs">
                   {desc}
                 </Text>
-              </Box>
-              <Box display="flex" alignItems="center" className="col-span-3 gap-3">
+              </Stack>
+              <Stack horizontal alignItems="center" gap={1.5} className="col-span-3">
                 <Button variant={variant} size="lg">
                   Action
                 </Button>
@@ -107,20 +103,16 @@ export default function ButtonPage() {
                 <Button variant={variant} loading>
                   Action
                 </Button>
-              </Box>
+              </Stack>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Sizes */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
             [
               { size: 'lg', label: 'Large', height: 'h-12 / 48px', px: 'px-5' },
@@ -134,7 +126,7 @@ export default function ButtonPage() {
             ] as const
           ).map(({ size, label, height, px }) => (
             <Box key={size} className="grid grid-cols-5 items-center gap-8 py-6">
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Stack className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {height}
@@ -142,26 +134,22 @@ export default function ButtonPage() {
                 <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {px}
                 </Text>
-              </Box>
-              <Box display="flex" alignItems="end" className="col-span-3 gap-3">
+              </Stack>
+              <Stack horizontal alignItems="end" gap={1.5} className="col-span-3">
                 <Button size={size}>Label</Button>
                 <Button size={size} variant="secondary">
                   Label
                 </Button>
-              </Box>
+              </Stack>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Props */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
@@ -178,8 +166,8 @@ export default function ButtonPage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

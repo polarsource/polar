@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, Headline, Input, Text } from '@polar-sh/orbit'
+import { Box, Headline, Input, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -44,7 +44,7 @@ const props = [
 
 export default function InputPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Input"
@@ -52,13 +52,9 @@ export default function InputPage() {
       />
 
       {/* Standard types */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Standard types" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
             [
               { label: 'Text', type: 'text', placeholder: 'Plain text…' },
@@ -83,17 +79,13 @@ export default function InputPage() {
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Prefix / suffix slots */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Prefix & Suffix" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box className="col-span-2">
               <Headline as="h6" text="Prefix" />
@@ -101,14 +93,14 @@ export default function InputPage() {
                 URL scheme, unit label, icon
               </Text>
             </Box>
-            <Box display="flex" flexDirection="column" className="col-span-3 gap-3">
+            <Stack gap={1.5} className="col-span-3">
               <Input
                 type="text"
                 prefix="https://"
                 placeholder="yourdomain.com"
               />
               <Input type="number" prefix="px" placeholder="16" />
-            </Box>
+            </Stack>
           </Box>
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box className="col-span-2">
@@ -117,10 +109,10 @@ export default function InputPage() {
                 Unit, format hint
               </Text>
             </Box>
-            <Box display="flex" flexDirection="column" className="col-span-3 gap-3">
+            <Stack gap={1.5} className="col-span-3">
               <Input type="number" suffix="%" placeholder="0" />
               <Input type="number" suffix="ms" placeholder="300" />
-            </Box>
+            </Stack>
           </Box>
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box className="col-span-2">
@@ -130,11 +122,11 @@ export default function InputPage() {
               <Input type="number" prefix="$" suffix="USD" placeholder="0.00" />
             </Box>
           </Box>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Currency */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Currency"
           description={
@@ -145,11 +137,7 @@ export default function InputPage() {
             </>
           }
         />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
             [
               { currency: 'USD', placeholder: 1000, label: 'Decimal — USD' },
@@ -177,11 +165,11 @@ export default function InputPage() {
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Textarea */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Textarea" />
         <Box className="grid grid-cols-5 items-start gap-8">
           <Box className="col-span-2">
@@ -194,16 +182,12 @@ export default function InputPage() {
             <Input type="textarea" placeholder="Write something…" rows={4} />
           </Box>
         </Box>
-      </Box>
+      </Stack>
 
       {/* States */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="States" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
             <Box className="col-span-2">
               <Headline as="h6" text="Disabled" />
@@ -220,17 +204,13 @@ export default function InputPage() {
               <Input type="text" defaultValue="Polar Software Inc" readOnly />
             </Box>
           </Box>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Props */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm">
@@ -247,8 +227,8 @@ export default function InputPage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

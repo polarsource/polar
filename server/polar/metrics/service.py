@@ -646,8 +646,8 @@ class MetricsService:
         if org is None:
             return pg_response
 
-        tinybird_compare = org.feature_settings.get("tinybird_compare", True)
-        tinybird_read = org.feature_settings.get("tinybird_read", False)
+        tinybird_compare = org.feature_settings.get("tinybird_compare", False)
+        tinybird_read = org.feature_settings.get("tinybird_read", True)
 
         external_customer_id: list[str] | None = None
         if customer_id is not None:

@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ElementType, JSX } from 'react'
+import React, { type ComponentPropsWithoutRef, type ElementType, type JSX } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { ThemeSpec } from './createBox'
 

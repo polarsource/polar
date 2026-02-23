@@ -1,7 +1,7 @@
 'use client'
 
 import { Facehash } from 'facehash'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // ─── Size scale ───────────────────────────────────────────────────────────────

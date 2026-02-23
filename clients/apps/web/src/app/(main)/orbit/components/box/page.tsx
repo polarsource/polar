@@ -1,4 +1,4 @@
-import { Box, Text } from '@polar-sh/orbit'
+import { Box, Stack, Text } from '@polar-sh/orbit'
 import { orbitRadii, orbitSpacing } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
@@ -39,15 +39,16 @@ const guidelines = [
 >`,
   },
   {
-    rule: 'Use flex props for layout direction',
-    desc: 'display, flexDirection, alignItems, and justifyContent cover the most common flex patterns without needing raw Tailwind class strings.',
-    do: `<Box
+    rule: 'Use Stack for flex layouts',
+    desc: 'Box is not a flex container. Use Stack for any row/column layout. Box can still carry token styling and flex child props (flex, alignSelf) when nested inside a Stack.',
+    do: `<Stack gap={2} verticalUntil="xl">
+  <Box backgroundColor="bg-surface"
+    padding={3} borderRadius="lg">…</Box>
+</Stack>`,
+    dont: `<Box
   display="flex"
   flexDirection="column"
   gap={2}
->`,
-    dont: `<Box
-  className="flex flex-col gap-4"
 >`,
   },
   {
@@ -66,7 +67,7 @@ const guidelines = [
   },
   {
     rule: 'className is an escape hatch',
-    desc: 'Dimensions (h-12, w-full), and anything not in the token set belong in className. Flex props now accept responsive breakpoint maps directly — no need for md:flex-row in className.',
+    desc: 'Dimensions (h-12, w-full) and anything not in the token set belong in className. Do not use it to bypass token props.',
     do: `<Box
   padding={3}
   className="w-full md:w-1/2"
@@ -78,56 +79,32 @@ const guidelines = [
   },
 ]
 
-// ─── Flex examples ─────────────────────────────────────────────────────────────
+// ─── Flex child examples ───────────────────────────────────────────────────────
 
-const flexDirectionExamples = [
-  { prop: 'row', label: 'flexDirection="row"' },
-  { prop: 'column', label: 'flexDirection="column"' },
-] as const
-
-const alignItemsExamples = [
-  { value: 'start', label: 'start' },
-  { value: 'center', label: 'center' },
-  { value: 'end', label: 'end' },
-] as const
-
-const justifyContentExamples = [
-  { value: 'start', label: 'start' },
-  { value: 'center', label: 'center' },
-  { value: 'between', label: 'between' },
-  { value: 'end', label: 'end' },
-] as const
-
-// ─── Responsive examples ───────────────────────────────────────────────────────
-
-const responsiveExamples = [
+const flexChildExamples = [
   {
-    label: 'flexDirection',
-    code: `<Box
-  display="flex"
-  flexDirection={{ default: 'column', xl: 'row' }}
-  gap={2}
->`,
-    desc: 'Stacks vertically by default, switches to a row at the xl breakpoint.',
+    label: 'flex="1"',
+    desc: 'Fill all remaining space in a Stack.',
+    code: `<Stack className="flex-row" gap={2}>
+  <Box>Fixed</Box>
+  <Box flex="1">Fills rest</Box>
+</Stack>`,
   },
   {
-    label: 'alignItems',
-    code: `<Box
-  display="flex"
-  flexDirection="row"
-  alignItems={{ default: 'start', xl: 'center' }}
-  gap={2}
->`,
-    desc: 'Aligns to the start on small screens, centers at xl.',
+    label: 'alignSelf="end"',
+    desc: 'Override cross-axis alignment for a single child.',
+    code: `<Stack alignItems="start" className="flex-row h-16">
+  <Box alignSelf="end">Bottom</Box>
+  <Box>Top</Box>
+</Stack>`,
   },
   {
-    label: 'justifyContent',
-    code: `<Box
-  display="flex"
-  flexDirection="row"
-  justifyContent={{ default: 'start', xl: 'between' }}
->`,
-    desc: 'Packed left by default, spreads to space-between at xl.',
+    label: 'flexGrow / flexShrink',
+    desc: 'Fine-grained grow and shrink control.',
+    code: `<Stack className="flex-row" gap={2}>
+  <Box flexGrow="1">Grows</Box>
+  <Box flexShrink="0">Won't shrink</Box>
+</Stack>`,
   },
 ]
 
@@ -141,46 +118,34 @@ const props = [
     desc: 'Rendered HTML element. Pass any valid tag for semantic markup.',
   },
   {
-    name: 'display',
-    type: "Responsive<'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'>",
-    default: '—',
-    desc: 'CSS display value. Accepts a plain value or a breakpoint map.',
-  },
-  {
-    name: 'flexDirection',
-    type: "Responsive<'row' | 'column' | 'row-reverse' | 'column-reverse'>",
-    default: '—',
-    desc: 'Flex axis direction. Accepts a plain value or a breakpoint map.',
-  },
-  {
-    name: 'alignItems',
-    type: "Responsive<'start' | 'end' | 'center' | 'stretch' | 'baseline'>",
-    default: '—',
-    desc: 'Cross-axis alignment. Accepts a plain value or a breakpoint map.',
-  },
-  {
-    name: 'justifyContent',
-    type: "Responsive<'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'>",
-    default: '—',
-    desc: 'Main-axis distribution. Accepts a plain value or a breakpoint map.',
-  },
-  {
-    name: 'flexWrap',
-    type: "Responsive<'wrap' | 'nowrap' | 'wrap-reverse'>",
-    default: '—',
-    desc: 'Whether flex children wrap onto multiple lines. Accepts a plain value or a breakpoint map.',
-  },
-  {
     name: 'flex',
     type: "Responsive<'1' | 'auto' | 'none' | 'initial'>",
     default: '—',
-    desc: 'flex shorthand for the element itself as a flex child. Accepts a plain value or a breakpoint map.',
+    desc: 'flex shorthand — use flex="1" to fill remaining space in a Stack.',
+  },
+  {
+    name: 'alignSelf',
+    type: "Responsive<'auto' | 'start' | 'end' | 'center' | 'stretch' | 'baseline'>",
+    default: '—',
+    desc: 'align-self override for this element when inside a Stack.',
+  },
+  {
+    name: 'flexGrow',
+    type: "'0' | '1'",
+    default: '—',
+    desc: 'flex-grow: 0 (default) or 1 (grow to fill available space).',
+  },
+  {
+    name: 'flexShrink',
+    type: "'0' | '1'",
+    default: '—',
+    desc: 'flex-shrink: 0 (prevent shrinking) or 1 (default browser behavior).',
   },
   {
     name: 'backgroundColor / color / borderColor',
     type: 'OrbitColor',
     default: '—',
-    desc: 'Color tokens. All values are CSS custom properties that respond to dark mode automatically.',
+    desc: 'Color tokens. Values are CSS custom properties — dark mode is automatic.',
   },
   {
     name: 'padding / paddingX / paddingY / paddingTop … paddingLeft',
@@ -198,7 +163,7 @@ const props = [
     name: 'gap / rowGap / columnGap',
     type: 'OrbitSpacing',
     default: '—',
-    desc: 'Gap between flex or grid children.',
+    desc: 'Gap between grid children (Box is not a flex container — use Stack for flex gaps).',
   },
   {
     name: 'borderRadius / borderTopLeftRadius … borderBottomRightRadius',
@@ -210,7 +175,7 @@ const props = [
     name: 'className',
     type: 'string',
     default: '—',
-    desc: 'Escape hatch for dimensions, responsive variants, and anything outside the token set. Merged with token classes via twMerge.',
+    desc: 'Escape hatch for dimensions, custom utilities, and anything outside the token set.',
   },
 ]
 
@@ -218,237 +183,69 @@ const props = [
 
 export default function BoxPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={20}>
       <OrbitPageHeader
         label="Component"
         title="Box"
-        description="The atomic layout primitive in Orbit. Spacing, color, radius, and flex layout are all expressed through type-safe token props — raw Tailwind strings are the escape hatch, not the default."
+        description="The atomic styling primitive in Orbit. Box is not a flex container — use Stack for flex layouts. Box handles spacing, color, radius, and flex child props (flex, alignSelf) through type-safe token props."
       />
 
       {/* Guidelines */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Guidelines"
-          description="Follow these four rules when reaching for Box. They keep design values tied to the token system and prevent one-off Tailwind strings from drifting out of sync with the design."
+          description="Four rules for reaching for Box. They keep design values tied to the token system and separate layout concerns (Stack) from styling concerns (Box)."
         />
-        <Box display="flex" flexDirection="column" gap={2}>
+        <Stack gap={2}>
           {guidelines.map(({ rule, desc, do: doExample, dont }) => (
             <Box
               key={rule}
               borderRadius="lg"
               padding={3}
-              display="flex"
-              flexDirection="column"
-              gap={2}
               className="dark:border-polar-800 border border-neutral-200"
             >
-              <Box display="flex" flexDirection="column" className="gap-1.5">
-                <Text fontWeight="medium" fontSize="sm">{rule}</Text>
-                <Text variant="subtle" fontSize="xs" leading="relaxed">{desc}</Text>
-              </Box>
-              <Box display="grid" gap={1} className="grid-cols-2">
-                <Box display="flex" flexDirection="column" className="gap-1.5">
-                  <Text fontSize="xs" fontWeight="medium" className="text-green-600 dark:text-green-400">
-                    Do
-                  </Text>
-                  <pre className="dark:bg-polar-900 dark:text-polar-200 flex-1 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-                    {doExample}
-                  </pre>
+              <Stack gap={2}>
+                <Stack gap={1}>
+                  <Text fontWeight="medium" fontSize="sm">{rule}</Text>
+                  <Text variant="subtle" fontSize="xs" leading="relaxed">{desc}</Text>
+                </Stack>
+                <Box className="grid grid-cols-2 gap-1">
+                  <Stack gap={1}>
+                    <Text fontSize="xs" fontWeight="medium" className="text-green-600 dark:text-green-400">
+                      Do
+                    </Text>
+                    <pre className="dark:bg-polar-900 dark:text-polar-200 flex-1 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
+                      {doExample}
+                    </pre>
+                  </Stack>
+                  <Stack gap={1}>
+                    <Text fontSize="xs" fontWeight="medium" className="text-red-500">
+                      Don&apos;t
+                    </Text>
+                    <pre className="dark:bg-polar-900 dark:text-polar-400 flex-1 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-400">
+                      {dont}
+                    </pre>
+                  </Stack>
                 </Box>
-                <Box display="flex" flexDirection="column" className="gap-1.5">
-                  <Text fontSize="xs" fontWeight="medium" className="text-red-500">
-                    Don&apos;t
-                  </Text>
-                  <pre className="dark:bg-polar-900 dark:text-polar-400 flex-1 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-400">
-                    {dont}
-                  </pre>
-                </Box>
-              </Box>
+              </Stack>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
-      {/* Flex */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      {/* Flex child props */}
+      <Stack gap={4}>
         <OrbitSectionHeader
-          title="Flex layout"
-          description="display and flexDirection replace the most common className patterns. alignItems and justifyContent handle cross- and main-axis alignment without raw class strings."
+          title="Flex child props"
+          description="When Box is a child inside a Stack, these props control how it participates in the flex layout."
         />
-
-        {/* flexDirection */}
-        <Box display="flex" flexDirection="column" className="gap-3">
-          <Text as="span" variant="subtle" fontSize="xs">flexDirection</Text>
-          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
-            {flexDirectionExamples.map(({ prop, label }) => (
-              <Box
-                key={prop}
-                className="grid grid-cols-5 items-center gap-8 py-5"
-              >
-                <Box className="col-span-2">
-                  <Text as="code" fontFamily="mono" fontSize="sm">{label}</Text>
-                </Box>
-                <Box className="col-span-3">
-                  <Box
-                    display="flex"
-                    flexDirection={prop}
-                    gap={1}
-                    backgroundColor="bg-elevated"
-                    borderRadius="sm"
-                    padding={2}
-                  >
-                    {[0, 1, 2].map((i) => (
-                      <Box
-                        key={i}
-                        backgroundColor="bg-surface"
-                        borderRadius="sm"
-                        className="h-6 w-6"
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* alignItems */}
-        <Box display="flex" flexDirection="column" className="gap-3">
-          <Text as="span" variant="subtle" fontSize="xs">alignItems</Text>
-          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
-            {alignItemsExamples.map(({ value, label }) => (
-              <Box
-                key={value}
-                className="grid grid-cols-5 items-center gap-8 py-5"
-              >
-                <Box className="col-span-2">
-                  <Text as="code" fontFamily="mono" fontSize="sm">
-                    alignItems=&quot;{label}&quot;
-                  </Text>
-                </Box>
-                <Box className="col-span-3">
-                  <Box
-                    display="flex"
-                    flexDirection="row"
-                    alignItems={value}
-                    gap={1}
-                    backgroundColor="bg-elevated"
-                    borderRadius="sm"
-                    padding={2}
-                    className="h-16"
-                  >
-                    {[4, 6, 8].map((h) => (
-                      <Box
-                        key={h}
-                        backgroundColor="bg-surface"
-                        borderRadius="sm"
-                        className={`w-6 h-${h}`}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* justifyContent */}
-        <Box display="flex" flexDirection="column" className="gap-3">
-          <Text as="span" variant="subtle" fontSize="xs">justifyContent</Text>
-          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
-            {justifyContentExamples.map(({ value, label }) => (
-              <Box
-                key={value}
-                className="grid grid-cols-5 items-center gap-8 py-5"
-              >
-                <Box className="col-span-2">
-                  <Text as="code" fontFamily="mono" fontSize="sm">
-                    justifyContent=&quot;{label}&quot;
-                  </Text>
-                </Box>
-                <Box className="col-span-3">
-                  <Box
-                    display="flex"
-                    flexDirection="row"
-                    justifyContent={value}
-                    backgroundColor="bg-elevated"
-                    borderRadius="sm"
-                    padding={2}
-                  >
-                    {[0, 1, 2].map((i) => (
-                      <Box
-                        key={i}
-                        backgroundColor="bg-surface"
-                        borderRadius="sm"
-                        className="h-6 w-6"
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Responsive props */}
-      <Box display="flex" flexDirection="column" gap={4}>
-        <OrbitSectionHeader
-          title="Responsive props"
-          description="All flex props accept a breakpoint map in addition to a plain value. Use 'default' for the base (un-prefixed) class, then override at any Tailwind breakpoint. Class strings are pre-built static literals — Tailwind JIT scans them at build time."
-        />
-
-        {/* Live demo */}
-        <Box display="flex" flexDirection="column" className="gap-3">
-          <Text as="span" variant="subtle" fontSize="xs">Live demo — resize the window to see the layout change at xl</Text>
-          <Box
-            backgroundColor="bg-elevated"
-            borderRadius="lg"
-            padding={3}
-          >
-            <Box
-              display="flex"
-              flexDirection={{ default: 'column', xl: 'row' }}
-              alignItems={{ default: 'start', xl: 'center' }}
-              justifyContent={{ default: 'start', xl: 'between' }}
-              gap={2}
-            >
-              {(['A', 'B', 'C'] as const).map((label) => (
-                <Box
-                  key={label}
-                  flex="1"
-                  backgroundColor="bg-surface"
-                  borderRadius="md"
-                  padding={2}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  className="dark:border-polar-700 h-12 border border-neutral-200"
-                >
-                  <Text fontFamily="mono" fontSize="sm">{label}</Text>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-          <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Box
-  display="flex"
-  flexDirection={{ default: 'column', xl: 'row' }}
-  alignItems={{ default: 'start', xl: 'center' }}
-  justifyContent={{ default: 'start', xl: 'between' }}
-  gap={2}
->`}
-          </pre>
-        </Box>
-
-        {/* Syntax reference */}
-        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
-          {responsiveExamples.map(({ label, code, desc }) => (
+        <Stack gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
+          {flexChildExamples.map(({ label, desc, code }) => (
             <Box key={label} className="grid grid-cols-5 items-start gap-8 py-5">
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Stack gap={1} className="col-span-2">
                 <Text as="code" fontFamily="mono" fontSize="sm">{label}</Text>
                 <Text variant="subtle" fontSize="xs">{desc}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-3">
                 <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
                   {code}
@@ -456,114 +253,84 @@ export default function BoxPage() {
               </Box>
             </Box>
           ))}
-        </Box>
-
-        {/* Breakpoints reference */}
-        <Box
-          backgroundColor="bg-elevated"
-          borderRadius="lg"
-          padding={3}
-          display="flex"
-          flexDirection="column"
-          gap={2}
-        >
-          <Text fontSize="xs" fontWeight="medium">Available breakpoints</Text>
-          <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap">
-            {(['default', 'sm', 'md', 'lg', 'xl', '2xl'] as const).map((bp) => (
-              <Box
-                key={bp}
-                backgroundColor="bg-surface"
-                borderRadius="sm"
-                paddingX={2}
-                paddingY={1}
-                className="dark:border-polar-700 border border-neutral-200"
-              >
-                <Text as="code" fontFamily="mono" fontSize="xs">{bp}</Text>
-              </Box>
-            ))}
-          </Box>
-          <Text variant="subtle" fontSize="xs">
-            <Text as="code" fontFamily="mono" fontSize="xs">&apos;default&apos;</Text>
-            {' '}emits no prefix. All others map to the standard Tailwind responsive prefixes.
-          </Text>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Spacing */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Spacing"
           description="Numeric keys map to the Orbit spacing scale. Directional variants (paddingX, paddingTop, marginY, gap, …) use the same keys."
         />
-        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {spacingEntries.map(({ key, cls }) => (
             <Box
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
             >
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-0.5">
+              <Stack gap={0} className="col-span-2">
                 <Text as="code" fontFamily="mono" fontSize="sm">
                   padding={`{${key}}`}
                 </Text>
                 <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {cls}
                 </Text>
-              </Box>
+              </Stack>
               <Box className="col-span-3">
                 <Box
                   padding={key}
                   backgroundColor="bg-elevated"
                   borderRadius="sm"
-                  display="inline-flex"
+                  className="inline-flex"
                 >
                   <Box backgroundColor="bg-surface" className="h-6 w-6" />
                 </Box>
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Colors */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Color tokens"
           description="backgroundColor, color, and borderColor accept OrbitColor keys. Values are CSS custom properties — dark mode is automatic, no dark: prefix needed."
         />
-        <Box display="grid" className="grid-cols-7 gap-3">
+        <Box className="grid grid-cols-7 gap-3">
           {colorTokens.map(({ token, label, desc }) => (
-            <Box key={token} display="flex" flexDirection="column" gap={1}>
+            <Stack key={token} gap={1}>
               <Box
                 backgroundColor={token}
                 borderRadius="md"
                 className="dark:border-polar-700 h-16 w-full border border-neutral-200"
               />
-              <Box display="flex" flexDirection="column" className="gap-0.5">
+              <Stack gap={0}>
                 <Text as="code" fontFamily="mono" fontSize="xs">{label}</Text>
                 <Text as="span" variant="subtle" fontSize="xs">{desc}</Text>
-              </Box>
-            </Box>
+              </Stack>
+            </Stack>
           ))}
         </Box>
-      </Box>
+      </Stack>
 
       {/* Border radius */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Border radius" />
-        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {radiiEntries.map(({ key, cls }) => (
             <Box
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
             >
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-0.5">
+              <Stack gap={0} className="col-span-2">
                 <Text as="code" fontFamily="mono" fontSize="sm">
                   borderRadius=&quot;{key}&quot;
                 </Text>
                 <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                   {cls}
                 </Text>
-              </Box>
+              </Stack>
               <Box className="col-span-3">
                 <Box
                   backgroundColor="bg-elevated"
@@ -573,144 +340,111 @@ export default function BoxPage() {
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Composition */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Composition"
-          description="Real-world patterns combining token props. Note how className is only used for values outside the token set — dimensions, responsive variants, or one-off utilities."
+          description="Real-world patterns. Stack drives flex layout; Box handles token-based styling."
         />
-        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
 
           {/* Card */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+            <Stack gap={1} className="col-span-2">
               <Text fontSize="sm">Card</Text>
-              <Text variant="subtle" fontSize="xs">Surface · padding · radius · column layout</Text>
-            </Box>
+              <Text variant="subtle" fontSize="xs">Surface · padding · radius</Text>
+            </Stack>
             <Box className="col-span-3">
               <Box
                 as="article"
                 backgroundColor="bg-surface"
                 padding={3}
                 borderRadius="lg"
-                display="flex"
-                flexDirection="column"
-                gap={2}
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Text fontWeight="medium" fontSize="sm">Card title</Text>
-                <Text variant="subtle" fontSize="xs" leading="relaxed">
-                  Supporting description text using the text-muted color token.
-                </Text>
+                <Stack gap={2}>
+                  <Text fontWeight="medium" fontSize="sm">Card title</Text>
+                  <Text variant="subtle" fontSize="xs" leading="relaxed">
+                    Supporting description text using the text-muted color token.
+                  </Text>
+                </Stack>
               </Box>
             </Box>
           </Box>
 
           {/* Toolbar */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+            <Stack gap={1} className="col-span-2">
               <Text fontSize="sm">Toolbar</Text>
-              <Text variant="subtle" fontSize="xs">Row · space-between · centered cross-axis</Text>
-            </Box>
+              <Text variant="subtle" fontSize="xs">Surface · Stack handles row layout</Text>
+            </Stack>
             <Box className="col-span-3">
               <Box
                 backgroundColor="bg-surface"
                 paddingX={3}
                 paddingY={2}
                 borderRadius="lg"
-                display="flex"
-                flexDirection="row"
-                alignItems="center"
-                justifyContent="between"
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Text fontWeight="medium" fontSize="sm">Section title</Text>
-                <Box
-                  backgroundColor="bg-elevated"
-                  paddingX={2}
-                  paddingY={1}
-                  borderRadius="sm"
-                >
-                  <Text variant="subtle" fontSize="xs">Action</Text>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Color chips */}
-          <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
-              <Text fontSize="sm">Color chips</Text>
-              <Text variant="subtle" fontSize="xs">Row · gap token · flex children</Text>
-            </Box>
-            <Box className="col-span-3">
-              <Box display="flex" flexDirection="row" gap={2}>
-                {(['bg-surface', 'bg-elevated', 'destructive'] as const).map(
-                  (token) => (
-                    <Box
-                      key={token}
-                      flex="1"
-                      backgroundColor={token}
-                      padding={2}
-                      borderRadius="md"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      className="dark:border-polar-700 border border-neutral-200"
-                    >
-                      <Text variant="subtle" fontFamily="mono" fontSize="xs">{token}</Text>
-                    </Box>
-                  ),
-                )}
+                <Stack alignItems="center" justifyContent="between" className="flex-row">
+                  <Text fontWeight="medium" fontSize="sm">Section title</Text>
+                  <Box
+                    backgroundColor="bg-elevated"
+                    paddingX={2}
+                    paddingY={1}
+                    borderRadius="sm"
+                  >
+                    <Text variant="subtle" fontSize="xs">Action</Text>
+                  </Box>
+                </Stack>
               </Box>
             </Box>
           </Box>
 
           {/* Semantic element */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+            <Stack gap={1} className="col-span-2">
               <Text fontSize="sm">Semantic element</Text>
               <Text variant="subtle" fontSize="xs">
                 as=&quot;nav&quot; renders a &lt;nav&gt; — no extra wrapper needed
               </Text>
-            </Box>
+            </Stack>
             <Box className="col-span-3">
               <Box
                 as="nav"
                 backgroundColor="bg-surface"
                 padding={2}
                 borderRadius="lg"
-                display="flex"
-                flexDirection="column"
-                gap={1}
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                {['Overview', 'Settings', 'Billing'].map((item) => (
-                  <Box
-                    key={item}
-                    paddingX={2}
-                    paddingY={1}
-                    borderRadius="sm"
-                    className="cursor-default"
-                  >
-                    <Text variant="subtle" fontSize="sm" className="hover:text-black dark:hover:text-white">
-                      {item}
-                    </Text>
-                  </Box>
-                ))}
+                <Stack gap={1}>
+                  {['Overview', 'Settings', 'Billing'].map((item) => (
+                    <Box
+                      key={item}
+                      paddingX={2}
+                      paddingY={1}
+                      borderRadius="sm"
+                      className="cursor-default"
+                    >
+                      <Text variant="subtle" fontSize="sm" className="hover:text-black dark:hover:text-white">
+                        {item}
+                      </Text>
+                    </Box>
+                  ))}
+                </Stack>
               </Box>
             </Box>
           </Box>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Props */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="xs" className="col-span-1">
@@ -727,8 +461,8 @@ export default function BoxPage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

@@ -37,7 +37,6 @@ from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.file.s3 import S3_SERVICES
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -95,9 +94,6 @@ from polar.transaction.service.balance import (
 )
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
-)
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
 )
 from polar.wallet.repository import WalletTransactionRepository
 from polar.wallet.service import wallet as wallet_service
@@ -1686,6 +1682,7 @@ class OrderService:
         await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
+        enqueue_job("order.created", order.id)
         enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
@@ -1700,17 +1697,6 @@ class OrderService:
         if order.checkout:
             await publish_checkout_event(
                 order.checkout.client_secret, CheckoutEvent.order_created
-            )
-
-        # Store last order on Loops.so to create Organization segment based on sales activity
-        user_organizations = await user_organization_service.list_by_org(
-            session, order.customer.organization_id
-        )
-        for user_organization in user_organizations:
-            await loops_service.user_update(
-                session,
-                user_organization.user,
-                lastOrderAt=int(order.created_at.timestamp() * 1000),
             )
 
     async def _on_order_updated(

@@ -100,7 +100,7 @@ const sections = [
 
 export default function OrbitIntroductionPage() {
   return (
-    <Stack vertical gap={10}>
+    <Stack vertical gap="spacing-10">
       <OrbitPageHeader
         label="v0.1 — Polar Software Inc."
         title="Orbit"
@@ -108,10 +108,10 @@ export default function OrbitIntroductionPage() {
       />
 
       {/* What is Orbit */}
-      <Stack vertical gap={3}>
+      <Stack vertical gap="spacing-3">
         <Headline as="h5" text="What is Orbit" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical gap={2}>
+        <Stack vertical gap="spacing-2">
           <Text variant="subtle" fontSize="sm" leading="relaxed">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently across
@@ -129,7 +129,7 @@ export default function OrbitIntroductionPage() {
       </Stack>
 
       {/* Design principles */}
-      <Stack vertical gap={3}>
+      <Stack vertical gap="spacing-3">
         <Headline as="h5" text="Design Principles" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
@@ -147,12 +147,12 @@ export default function OrbitIntroductionPage() {
       </Stack>
 
       {/* What's inside */}
-      <Stack vertical gap={3}>
+      <Stack vertical gap="spacing-3">
         <Headline as="h5" text="What's inside" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical gap={5}>
+        <Stack vertical gap="spacing-5">
           {sections.map(({ label, links }) => (
-            <Stack vertical key={label} gap={1.5}>
+            <Stack vertical key={label} gap="spacing-1.5">
               <Text
                 as="span"
                 variant="subtle"

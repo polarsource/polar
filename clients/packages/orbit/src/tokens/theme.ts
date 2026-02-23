@@ -49,10 +49,10 @@ export const orbitColors = {
 // Numeric keys map to the Orbit spacing scale. Every key carries the full set
 // of per-prop Tailwind class strings so JIT sees them as static tokens.
 //
-// Orbit key → Tailwind scale:  1→2  1.5→3  2→4  3→6  4→8  5→10  6→12  8→16  10→20  12→24  16→32  32→64
+// Token → Tailwind scale:  spacing-0→0  spacing-1→2  spacing-1.5→3  spacing-2→4  spacing-3→6  spacing-4→8  spacing-5→10  spacing-6→12  spacing-8→16  spacing-10→20  spacing-12→24  spacing-16→32  spacing-32→64
 
 export const orbitSpacing = {
-  0: {
+  'spacing-0': {
     padding: 'p-0',
     paddingX: 'px-0',
     paddingY: 'py-0',
@@ -71,7 +71,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-0',
     columnGap: 'gap-x-0',
   },
-  1.5: {
+  'spacing-1.5': {
     padding: 'p-3',
     paddingX: 'px-3',
     paddingY: 'py-3',
@@ -90,7 +90,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-3',
     columnGap: 'gap-x-3',
   },
-  1: {
+  'spacing-1': {
     padding: 'p-2',
     paddingX: 'px-2',
     paddingY: 'py-2',
@@ -109,7 +109,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-2',
     columnGap: 'gap-x-2',
   },
-  2: {
+  'spacing-2': {
     padding: 'p-4',
     paddingX: 'px-4',
     paddingY: 'py-4',
@@ -128,7 +128,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-4',
     columnGap: 'gap-x-4',
   },
-  3: {
+  'spacing-3': {
     padding: 'p-6',
     paddingX: 'px-6',
     paddingY: 'py-6',
@@ -147,7 +147,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-6',
     columnGap: 'gap-x-6',
   },
-  4: {
+  'spacing-4': {
     padding: 'p-8',
     paddingX: 'px-8',
     paddingY: 'py-8',
@@ -166,7 +166,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-8',
     columnGap: 'gap-x-8',
   },
-  5: {
+  'spacing-5': {
     padding: 'p-10',
     paddingX: 'px-10',
     paddingY: 'py-10',
@@ -185,7 +185,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-10',
     columnGap: 'gap-x-10',
   },
-  6: {
+  'spacing-6': {
     padding: 'p-12',
     paddingX: 'px-12',
     paddingY: 'py-12',
@@ -204,7 +204,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-12',
     columnGap: 'gap-x-12',
   },
-  8: {
+  'spacing-8': {
     padding: 'p-16',
     paddingX: 'px-16',
     paddingY: 'py-16',
@@ -223,7 +223,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-16',
     columnGap: 'gap-x-16',
   },
-  10: {
+  'spacing-10': {
     padding: 'p-20',
     paddingX: 'px-20',
     paddingY: 'py-20',
@@ -242,7 +242,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-20',
     columnGap: 'gap-x-20',
   },
-  12: {
+  'spacing-12': {
     padding: 'p-24',
     paddingX: 'px-24',
     paddingY: 'py-24',
@@ -261,7 +261,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-24',
     columnGap: 'gap-x-24',
   },
-  16: {
+  'spacing-16': {
     padding: 'p-32',
     paddingX: 'px-32',
     paddingY: 'py-32',
@@ -280,7 +280,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-32',
     columnGap: 'gap-x-32',
   },
-  32: {
+  'spacing-32': {
     padding: 'p-64',
     paddingX: 'px-64',
     paddingY: 'py-64',
@@ -299,7 +299,7 @@ export const orbitSpacing = {
     rowGap: 'gap-y-64',
     columnGap: 'gap-x-64',
   },
-} as const satisfies Record<number, SpacingClasses>
+} as const satisfies Record<string, SpacingClasses>
 
 // ─── Radii ────────────────────────────────────────────────────────────────────
 // Each token exposes five Tailwind class strings: all corners plus each

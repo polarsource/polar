@@ -49,7 +49,7 @@ export type RadiusClasses = {
 
 export type ThemeSpec = {
   colors: Record<string, ColorClasses>
-  spacing: Record<string | number, SpacingClasses>
+  spacing: Record<string, SpacingClasses>
   radii: Record<string, RadiusClasses>
 }
 
@@ -124,7 +124,7 @@ type ColorProps<TColors extends Record<string, ColorClasses>> = {
   borderColor?: keyof TColors
 }
 
-type SpacingProps<TSpacing extends Record<string | number, SpacingClasses>> = {
+type SpacingProps<TSpacing extends Record<string, SpacingClasses>> = {
   padding?: keyof TSpacing
   paddingX?: keyof TSpacing
   paddingY?: keyof TSpacing

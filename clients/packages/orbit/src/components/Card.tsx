@@ -8,8 +8,8 @@ import type { OrbitSpacing } from '../tokens/theme'
 export function Card({
   children,
   className,
-  padding = 3,
-  gap = 2,
+  padding = 'spacing-3',
+  gap = 'spacing-2',
 }: {
   children?: ReactNode
   className?: string
@@ -63,10 +63,10 @@ export function CardFooter({
   actions?: ButtonProps[]
 }) {
   return (
-    <Box paddingTop={actions ? 2 : undefined} className={className}>
+    <Box paddingTop={actions ? 'spacing-2' : undefined} className={className}>
       {children}
       {actions && (
-        <Stack className="gap-3">
+        <Stack gap="spacing-3">
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}

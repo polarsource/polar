@@ -13,7 +13,7 @@ export function OrbitPageHeader({
   description?: ReactNode
 }) {
   return (
-    <Stack vertical gap={3}>
+    <Stack vertical gap="spacing-3">
       {label && <Headline as="span" text={label} />}
       <Headline as="h2" text={title} />
       {description && (
@@ -35,7 +35,7 @@ export function OrbitSectionHeader({
   description?: ReactNode
 }) {
   return (
-    <Stack vertical gap={1.5}>
+    <Stack vertical gap="spacing-1.5">
       <Headline as="h4" text={title} />
       <Box className="dark:border-polar-800 border-t border-neutral-200" />
       {description && (

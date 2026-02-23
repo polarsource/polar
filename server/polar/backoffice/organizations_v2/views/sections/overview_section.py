@@ -465,7 +465,7 @@ class OverviewSection:
                         ("API Keys", setup_data.get("api_keys_count", 0)),
                         ("Products", setup_data.get("products_count", 0)),
                         ("Benefits", setup_data.get("benefits_count", 0)),
-                        ("Active Benefits", setup_data.get("active_benefits_count", 0)),
+                        ("Enabled Benefits", setup_data.get("enabled_benefits_count", 0)),
                     ]
 
                     for label, value in metrics:

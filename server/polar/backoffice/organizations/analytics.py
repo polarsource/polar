@@ -230,7 +230,7 @@ class OrganizationSetupAnalyticsService:
         )
         return result.scalar() or 0
 
-    async def get_active_benefits_count(self, organization_id: UUID4) -> int:
+    async def get_enabled_benefits_count(self, organization_id: UUID4) -> int:
         """Get count of benefits that are attached to at least one product."""
         result = await self.session.execute(
             select(func.count(func.distinct(Benefit.id)))

@@ -6,6 +6,9 @@ set -x
 # Setup uv
 pip install -U pip uv
 
+# Setup environment files
+./dev/setup-environment
+
 # Create test database
 ./dev/create-test-db
 

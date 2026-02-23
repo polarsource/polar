@@ -17,7 +17,7 @@ const colorTokens = [
   { token: 'bg-surface', label: 'bg-surface', desc: 'Card / panel' },
   { token: 'bg-elevated', label: 'bg-elevated', desc: 'Divider / raised' },
   { token: 'text', label: 'text', desc: 'Primary text' },
-  { token: 'text-muted', label: 'text-muted', desc: 'Secondary text' },
+  { token: 'text-disabled', label: 'text-disabled', desc: 'Secondary text' },
   { token: 'text-subtle', label: 'text-subtle', desc: 'Placeholder' },
   { token: 'destructive', label: 'destructive', desc: 'Error / danger' },
 ] as const
@@ -183,7 +183,7 @@ const props = [
 
 export default function BoxPage() {
   return (
-    <Stack gap={20}>
+    <Stack gap={16}>
       <OrbitPageHeader
         label="Component"
         title="Box"
@@ -389,7 +389,7 @@ export default function BoxPage() {
                 borderRadius="lg"
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Stack alignItems="center" justifyContent="between" className="flex-row">
+                <Stack horizontal alignItems="center" justifyContent="between">
                   <Text fontWeight="medium" fontSize="sm">Section title</Text>
                   <Box
                     backgroundColor="bg-elevated"

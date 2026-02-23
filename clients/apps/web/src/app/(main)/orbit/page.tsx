@@ -1,4 +1,4 @@
-import { Box, Headline, Text } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
@@ -100,7 +100,7 @@ const sections = [
 
 export default function OrbitIntroductionPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="v0.1 — Polar Software Inc."
         title="Orbit"
@@ -108,10 +108,10 @@ export default function OrbitIntroductionPage() {
       />
 
       {/* What is Orbit */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <Headline as="h5" text="What is Orbit" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Box display="flex" flexDirection="column" gap={2}>
+        <Stack gap={2}>
           <Text variant="subtle" fontSize="sm" leading="relaxed">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently across
@@ -125,18 +125,14 @@ export default function OrbitIntroductionPage() {
             rules produce. Together they make the right choice the path of least
             resistance.
           </Text>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Design principles */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <Headline as="h5" text="Design Principles" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {principles.map(({ title, description }) => (
             <Box key={title} className="grid grid-cols-5 gap-8 py-5">
               <Box className="col-span-2">
@@ -147,16 +143,16 @@ export default function OrbitIntroductionPage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* What's inside */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <Headline as="h5" text="What's inside" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Box display="flex" flexDirection="column" className="gap-10">
+        <Stack gap={5}>
           {sections.map(({ label, links }) => (
-            <Box key={label} display="flex" flexDirection="column" className="gap-3">
+            <Stack key={label} gap={1.5}>
               <Text
                 as="span"
                 variant="subtle"
@@ -180,10 +176,10 @@ export default function OrbitIntroductionPage() {
                   </Link>
                 ))}
               </Box>
-            </Box>
+            </Stack>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

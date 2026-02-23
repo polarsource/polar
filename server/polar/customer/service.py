@@ -435,6 +435,14 @@ class CustomerService:
 
         return state
 
+    async def state_changed(
+        self, session: AsyncSession, redis: Redis, customer: Customer
+    ) -> None:
+        await self.get_state(session, redis, customer, cache=False)
+        enqueue_job(
+            "customer.webhook", WebhookEventType.customer_state_changed, customer.id
+        )
+
     async def webhook(
         self,
         session: AsyncSession,

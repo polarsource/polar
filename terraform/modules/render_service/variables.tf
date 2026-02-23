@@ -206,10 +206,8 @@ variable "stripe_secrets" {
 variable "logfire_config" {
   description = "Logfire configuration (optional)"
   type = object({
-    server_project_name = string # "production"
-    worker_project_name = string # "production-worker"
-    server_token        = string
-    worker_token        = string
+    project_name = optional(string, "polar")
+    token        = string
   })
   default   = null
   sensitive = true

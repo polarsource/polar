@@ -255,10 +255,7 @@ module "production" {
   }
 
   logfire_config = {
-    server_project_name = "production"
-    worker_project_name = "production-worker"
-    server_token        = var.logfire_token_server
-    worker_token        = var.logfire_token_worker
+    token = var.logfire_token
   }
 
   apple_secrets = {

@@ -132,23 +132,13 @@ resource "render_env_group" "stripe" {
   }
 }
 
-resource "render_env_group" "logfire_server" {
+resource "render_env_group" "logfire" {
   count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire-server${local.env_suffix}"
+  name           = "logfire${local.env_suffix}"
   env_vars = {
-    POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.server_project_name }
-    POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.server_token }
-  }
-}
-
-resource "render_env_group" "logfire_worker" {
-  count          = var.logfire_config != null ? 1 : 0
-  environment_id = var.render_environment_id
-  name           = "logfire-worker${local.env_suffix}"
-  env_vars = {
-    POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.worker_project_name }
-    POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.worker_token }
+    POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.project_name }
+    POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.token }
   }
 }
 
@@ -367,16 +357,10 @@ resource "render_env_group_link" "stripe" {
   service_ids  = local.all_service_ids
 }
 
-resource "render_env_group_link" "logfire_server" {
+resource "render_env_group_link" "logfire" {
   count        = var.logfire_config != null ? 1 : 0
-  env_group_id = render_env_group.logfire_server[0].id
-  service_ids  = [render_web_service.api.id]
-}
-
-resource "render_env_group_link" "logfire_worker" {
-  count        = var.logfire_config != null ? 1 : 0
-  env_group_id = render_env_group.logfire_worker[0].id
-  service_ids  = local.worker_ids
+  env_group_id = render_env_group.logfire[0].id
+  service_ids  = local.all_service_ids
 }
 
 resource "render_env_group_link" "openai" {

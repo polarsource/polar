@@ -212,10 +212,7 @@ module "test" {
   }
 
   logfire_config = {
-    server_project_name = "test"
-    worker_project_name = "test-worker"
-    server_token        = var.logfire_token_server
-    worker_token        = var.logfire_token_worker
+    token = var.logfire_token
   }
 
   apple_secrets = {

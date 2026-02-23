@@ -226,14 +226,8 @@ variable "stripe_webhook_secret_production" {
 }
 
 # Logfire
-variable "logfire_token_server" {
-  description = "Logfire Token for server"
-  type        = string
-  sensitive   = true
-}
-
-variable "logfire_token_worker" {
-  description = "Logfire Token for worker"
+variable "logfire_token" {
+  description = "Logfire Token"
   type        = string
   sensitive   = true
 }

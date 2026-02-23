@@ -697,7 +697,7 @@ const BaseCheckoutForm = ({
                                     <Input
                                       type="text"
                                       autoComplete="off"
-                                      placeholder={t('checkout.form.taxId')}
+                                      placeholder={`${t('checkout.form.taxId')} (${t('checkout.form.optional')})`}
                                       {...field}
                                       value={field.value || ''}
                                       disabled={validTaxID}

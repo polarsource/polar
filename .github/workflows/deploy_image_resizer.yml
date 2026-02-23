@@ -1,0 +1,54 @@
+name: Deploy Image Resizer
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "lambda/image-resizer/**"
+      - ".github/workflows/deploy_image_resizer.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: "Build & Upload Lambda Package"
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "lambda/image-resizer/pyproject.toml"
+
+      - name: Build deployment package
+        working-directory: ./lambda/image-resizer
+        run: |
+          mkdir -p package
+          uv pip install \
+            --target package \
+            --platform manylinux2014_x86_64 \
+            --only-binary=:all: \
+            --python-version 3.13 \
+            pillow
+          cp handler.py package/
+          cd package
+          zip -r ../package.zip .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp lambda/image-resizer/package.zip \
+            s3://polar-lambda-artifacts/image-resizer/package.zip

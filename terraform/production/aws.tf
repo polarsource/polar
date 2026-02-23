@@ -117,6 +117,46 @@ module "s3_buckets" {
   allowed_origins = ["https://polar.sh"]
 }
 
+# =============================================================================
+# Lambda Artifacts S3 Bucket
+# =============================================================================
+
+resource "aws_s3_bucket" "lambda_artifacts" {
+  provider = aws.us_east_1
+  bucket   = "polar-lambda-artifacts"
+}
+
+resource "aws_s3_bucket_versioning" "lambda_artifacts" {
+  provider = aws.us_east_1
+  bucket   = aws_s3_bucket.lambda_artifacts.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# =============================================================================
+# Image Resizer Lambda@Edge
+# =============================================================================
+
+data "aws_s3_object" "image_resizer_package" {
+  provider = aws.us_east_1
+  bucket   = aws_s3_bucket.lambda_artifacts.id
+  key      = "image-resizer/package.zip"
+}
+
+module "image_resizer" {
+  source = "../modules/lambda_edge_resizer"
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  function_name     = "polar-image-resizer"
+  s3_bucket         = aws_s3_bucket.lambda_artifacts.id
+  s3_key            = data.aws_s3_object.image_resizer_package.key
+  s3_object_version = data.aws_s3_object.image_resizer_package.version_id
+  source_bucket_arn = module.s3_buckets.public_assets_bucket_arn
+}
+
 
 # =============================================================================
 # CloudFront Distribution (Public Assets)
@@ -137,10 +177,10 @@ module "cloudfront_public_assets" {
   s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
 
   lambda_function_associations = [
-    # {
-    #   event_type = "origin-request"
-    #   lambda_arn = module.image_resizer.qualified_arn
-    # },
+    {
+      event_type = "origin-request"
+      lambda_arn = module.image_resizer.qualified_arn
+    },
   ]
 }
 

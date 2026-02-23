@@ -23,6 +23,7 @@ variable "s3_bucket_regional_domain_name" {
   type        = string
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "s3_bucket_arn" {
   description = "ARN of the S3 bucket (for future OAC bucket policy)"
   type        = string

@@ -17,7 +17,7 @@ from dramatiq.results.backends import RedisBackend as ResultsBackend
 
 from polar.config import settings
 from polar.logfire import instrument_httpx
-from polar.logging import Logger
+from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 
 from ._debounce import DebounceMiddleware
@@ -86,7 +86,10 @@ class LogContextMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         structlog.contextvars.bind_contextvars(
-            actor_name=message.actor_name, message_id=message.message_id
+            actor_name=message.actor_name,
+            message_id=message.message_id,
+            correlation_id=CorrelationID.set(),
+            source_correlation_id=message.options.get("source_correlation_id"),
         )
 
     def after_process_message(
@@ -97,7 +100,9 @@ class LogContextMiddleware(dramatiq.Middleware):
         result: Any | None = None,
         exception: BaseException | None = None,
     ) -> None:
-        structlog.contextvars.unbind_contextvars("actor_name", "message_id")
+        structlog.contextvars.unbind_contextvars(
+            "actor_name", "message_id", "correlation_id", "source_correlation_id"
+        )
 
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
@@ -132,7 +137,13 @@ class LogfireMiddleware(dramatiq.Middleware):
             )
         else:
             logfire_span = logfire_stack.enter_context(
-                logfire.span("TASK {actor}", actor=actor_name, message=message.asdict())
+                logfire.span(
+                    "TASK {actor}",
+                    actor=actor_name,
+                    message=message.asdict(),
+                    correlation_id=CorrelationID.get(),
+                    source_correlation_id=message.options.get("source_correlation_id"),
+                )
             )
         message.options["logfire_stack"] = logfire_stack
 

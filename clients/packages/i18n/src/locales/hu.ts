@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Céges adatok hozzáadása',
       removeBusinessDetails: 'Céges adatok eltávolítása',
       billingDetails: 'Cégadatok',
+      addDiscountCode: 'Kedvezménykód hozzáadása',
     },
     pricing: {
       subtotal: 'Részösszeg',

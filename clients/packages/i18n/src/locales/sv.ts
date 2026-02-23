@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Lägg till företagsuppgifter',
       removeBusinessDetails: 'Ta bort företagsuppgifter',
       billingDetails: 'Företagsuppgifter',
+      addDiscountCode: 'Lägg till rabattkod',
     },
     pricing: {
       subtotal: 'Delsumma',

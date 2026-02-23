@@ -44,7 +44,7 @@ class OrganizationColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortPrope
     def __init__(self) -> None:
         super().__init__("organization.name", "Organization")
         self.href_getter = lambda r, i: str(
-            r.url_for("organizations:get", id=i.organization_id)
+            r.url_for("organizations-classic:get", id=i.organization_id)
         )
 
 

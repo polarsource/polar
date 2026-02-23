@@ -196,7 +196,7 @@ async def get(
                                 "organization.name",
                                 "Name",
                                 href_getter=lambda r, i: str(
-                                    r.url_for("organizations:get", id=i.organization_id)
+                                    r.url_for("organizations-classic:get", id=i.organization_id)
                                 ),
                             ),
                             description_list.DescriptionListAttrItem(

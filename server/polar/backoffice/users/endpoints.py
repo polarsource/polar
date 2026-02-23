@@ -259,7 +259,7 @@ async def get(
                 text("Organizations")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
-                    "id", "ID", href_route_name="organizations:get", clipboard=True
+                    "id", "ID", href_route_name="organizations-classic:get", clipboard=True
                 ),
                 datatable.DatatableDateTimeColumn("created_at", "Created At"),
                 datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
@@ -273,7 +273,7 @@ async def get(
                     "",
                     datatable.DatatableActionHTMX[Organization](
                         "Delete Organization",
-                        lambda r, i: str(r.url_for("organizations:delete", id=i.id)),
+                        lambda r, i: str(r.url_for("organizations-classic:delete", id=i.id)),
                         target="#modal",
                         hidden=lambda _, i: i.deleted_at is not None,
                     ),

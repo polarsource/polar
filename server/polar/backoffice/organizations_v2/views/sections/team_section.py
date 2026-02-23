@@ -104,7 +104,7 @@ class TeamSection:
                                                     with tag.a(
                                                         hx_post=str(
                                                             request.url_for(
-                                                                "organizations-v2:make_admin",
+                                                                "organizations:make_admin",
                                                                 organization_id=self.org.id,
                                                                 user_id=member.user_id,
                                                             )
@@ -116,7 +116,7 @@ class TeamSection:
                                                 with tag.a(
                                                     hx_delete=str(
                                                         request.url_for(
-                                                            "organizations-v2:remove_member",
+                                                            "organizations:remove_member",
                                                             organization_id=self.org.id,
                                                             user_id=member.user_id,
                                                         )

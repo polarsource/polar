@@ -33,7 +33,7 @@ class SettingsSection:
                         ghost=True,
                         hx_get=str(
                             request.url_for(
-                                "organizations-v2:edit", organization_id=self.org.id
+                                "organizations:edit", organization_id=self.org.id
                             )
                         ),
                         hx_target="#modal",
@@ -77,7 +77,7 @@ class SettingsSection:
                         ghost=True,
                         hx_get=str(
                             request.url_for(
-                                "organizations-v2:edit_order_settings",
+                                "organizations:edit_order_settings",
                                 organization_id=self.org.id,
                             )
                         ),
@@ -111,7 +111,7 @@ class SettingsSection:
                         ghost=True,
                         hx_get=str(
                             request.url_for(
-                                "organizations-v2:edit_features",
+                                "organizations:edit_features",
                                 organization_id=self.org.id,
                             )
                         ),
@@ -163,7 +163,7 @@ class SettingsSection:
                         ghost=True,
                         hx_get=str(
                             request.url_for(
-                                "organizations-v2:edit_details",
+                                "organizations:edit_details",
                                 organization_id=self.org.id,
                             )
                         ),
@@ -232,7 +232,7 @@ class SettingsSection:
                         ghost=True,
                         hx_get=str(
                             request.url_for(
-                                "organizations-v2:edit_socials",
+                                "organizations:edit_socials",
                                 organization_id=self.org.id,
                             )
                         ),
@@ -288,7 +288,7 @@ class SettingsSection:
                             outline=True,
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:delete_dialog",
+                                    "organizations:delete_dialog",
                                     organization_id=self.org.id,
                                 )
                             ),

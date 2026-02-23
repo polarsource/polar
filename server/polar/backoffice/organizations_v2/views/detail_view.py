@@ -35,7 +35,7 @@ class OrganizationDetailView:
                 "Overview",
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=self.org.id
+                        "organizations:detail", organization_id=self.org.id
                     )
                 )
                 + "?section=overview",
@@ -45,7 +45,7 @@ class OrganizationDetailView:
                 "Team",
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=self.org.id
+                        "organizations:detail", organization_id=self.org.id
                     )
                 )
                 + "?section=team",
@@ -55,7 +55,7 @@ class OrganizationDetailView:
                 "Account",
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=self.org.id
+                        "organizations:detail", organization_id=self.org.id
                     )
                 )
                 + "?section=account",
@@ -65,7 +65,7 @@ class OrganizationDetailView:
                 "Files",
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=self.org.id
+                        "organizations:detail", organization_id=self.org.id
                     )
                 )
                 + "?section=files",
@@ -75,7 +75,7 @@ class OrganizationDetailView:
                 "Settings",
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=self.org.id
+                        "organizations:detail", organization_id=self.org.id
                     )
                 )
                 + "?section=settings",
@@ -109,7 +109,7 @@ class OrganizationDetailView:
                             ghost=True,
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:edit_note",
+                                    "organizations:edit_note",
                                     organization_id=self.org.id,
                                 )
                             ),
@@ -130,7 +130,7 @@ class OrganizationDetailView:
                         outline=True,
                         hx_get=str(
                             request.url_for(
-                                "organizations-v2:add_note", organization_id=self.org.id
+                                "organizations:add_note", organization_id=self.org.id
                             )
                         ),
                         hx_target="#modal",
@@ -156,7 +156,7 @@ class OrganizationDetailView:
                                 outline=True,
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-v2:unblock_approve_dialog",
+                                        "organizations:unblock_approve_dialog",
                                         organization_id=self.org.id,
                                     )
                                 ),
@@ -173,7 +173,7 @@ class OrganizationDetailView:
                                 outline=True,
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-v2:approve_denied_dialog",
+                                        "organizations:approve_denied_dialog",
                                         organization_id=self.org.id,
                                     )
                                 ),
@@ -190,7 +190,7 @@ class OrganizationDetailView:
                                 outline=True,
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-v2:deny_dialog",
+                                        "organizations:deny_dialog",
                                         organization_id=self.org.id,
                                     )
                                 ),
@@ -212,7 +212,7 @@ class OrganizationDetailView:
                                 outline=True,
                                 hx_post=str(
                                     request.url_for(
-                                        "organizations-v2:approve",
+                                        "organizations:approve",
                                         organization_id=self.org.id,
                                     )
                                 )
@@ -224,7 +224,7 @@ class OrganizationDetailView:
                         # Custom approve with input
                         approve_url = str(
                             request.url_for(
-                                "organizations-v2:approve", organization_id=self.org.id
+                                "organizations:approve", organization_id=self.org.id
                             )
                         )
                         with tag.div(classes="flex gap-2"):
@@ -250,7 +250,7 @@ class OrganizationDetailView:
                                 outline=True,
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-v2:deny_dialog",
+                                        "organizations:deny_dialog",
                                         organization_id=self.org.id,
                                     )
                                 ),
@@ -269,7 +269,7 @@ class OrganizationDetailView:
                             outline=True,
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:detail",
+                                    "organizations:detail",
                                     organization_id=self.org.id,
                                 )
                             )
@@ -285,7 +285,7 @@ class OrganizationDetailView:
                             outline=True,
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:block_dialog",
+                                    "organizations:block_dialog",
                                     organization_id=self.org.id,
                                 )
                             ),
@@ -378,7 +378,7 @@ class OrganizationDetailView:
         # Back button and header
         with tag.div(classes="mb-6"):
             with tag.a(
-                href=str(request.url_for("organizations-v2:list")),
+                href=str(request.url_for("organizations:list")),
                 classes="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
             ):
                 text("← Back to Organizations")
@@ -414,7 +414,7 @@ class OrganizationDetailView:
                             with tag.a(
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-v2:delete_dialog",
+                                        "organizations:delete_dialog",
                                         organization_id=self.org.id,
                                     )
                                 ),

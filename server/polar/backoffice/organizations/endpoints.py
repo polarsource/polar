@@ -300,7 +300,7 @@ async def get_setup_verdict_data(
     )
 
 
-@router.get("/", name="organizations:list")
+@router.get("/", name="organizations-classic:list")
 async def list(
     request: Request,
     sorting: sorting.ListSorting,
@@ -381,13 +381,19 @@ async def list(
     with layout(
         request,
         [
-            ("Organizations", str(request.url_for("organizations:list"))),
+            ("Organizations", str(request.url_for("organizations-classic:list"))),
         ],
-        "organizations:list",
+        "organizations-classic:list",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Organizations")
+            with tag.div(classes="flex items-center justify-between"):
+                with tag.h1(classes="text-4xl"):
+                    text("Organizations")
+                with tag.a(
+                    href=str(request.url_for("organizations:list")),
+                    classes="btn btn-ghost btn-sm",
+                ):
+                    text("Try New View →")
             with tag.form(method="GET", classes="w-full flex flex-col gap-4"):
                 with tag.div(classes="flex flex-row gap-2"):
                     with input.search("query", query):
@@ -441,7 +447,7 @@ async def list(
                         text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
-                    "id", "ID", href_route_name="organizations:get", clipboard=True
+                    "id", "ID", href_route_name="organizations-classic:get", clipboard=True
                 ),
                 datatable.DatatableDateTimeColumn(
                     "created_at",
@@ -476,7 +482,7 @@ async def list(
                 pass
 
 
-@router.api_route("/{id}/update", name="organizations:update", methods=["GET", "POST"])
+@router.api_route("/{id}/update", name="organizations-classic:update", methods=["GET", "POST"])
 async def update(
     request: Request,
     id: UUID4,
@@ -543,7 +549,7 @@ async def update(
                 },
             )
             return HXRedirectResponse(
-                request, str(request.url_for("organizations:get", id=id)), 303
+                request, str(request.url_for("organizations-classic:get", id=id)), 303
             )
 
         except ValidationError as e:
@@ -564,7 +570,7 @@ async def update(
     with modal("Update Organization", open=True):
         with UpdateOrganizationForm.render(
             form_data,
-            hx_post=str(request.url_for("organizations:update", id=id)),
+            hx_post=str(request.url_for("organizations-classic:update", id=id)),
             hx_target="#modal",
             classes="flex flex-col gap-4",
             validation_error=validation_error,
@@ -581,7 +587,7 @@ async def update(
 
 
 @router.api_route(
-    "/{id}/update_details", name="organizations:update_details", methods=["GET", "POST"]
+    "/{id}/update_details", name="organizations-classic:update_details", methods=["GET", "POST"]
 )
 async def update_details(
     request: Request,
@@ -603,7 +609,7 @@ async def update_details(
                 organization, update_dict=form.model_dump(exclude_none=True)
             )
             return HXRedirectResponse(
-                request, str(request.url_for("organizations:get", id=id)), 303
+                request, str(request.url_for("organizations-classic:get", id=id)), 303
             )
 
         except ValidationError as e:
@@ -616,7 +622,7 @@ async def update_details(
         with UpdateOrganizationDetailsForm.render(
             data=organization,
             validation_error=validation_error,
-            hx_post=str(request.url_for("organizations:update_details", id=id)),
+            hx_post=str(request.url_for("organizations-classic:update_details", id=id)),
             hx_target="#modal",
             classes="space-y-6",
         ):
@@ -634,7 +640,7 @@ async def update_details(
 
 @router.api_route(
     "/{id}/update_internal_notes",
-    name="organizations:update_internal_notes",
+    name="organizations-classic:update_internal_notes",
     methods=["GET", "POST"],
 )
 async def update_internal_notes(
@@ -657,7 +663,7 @@ async def update_internal_notes(
                 organization, update_dict=form.model_dump(exclude_none=True)
             )
             return HXRedirectResponse(
-                request, str(request.url_for("organizations:get", id=id)), 303
+                request, str(request.url_for("organizations-classic:get", id=id)), 303
             )
 
         except ValidationError as e:
@@ -670,7 +676,7 @@ async def update_internal_notes(
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
             validation_error=validation_error,
-            hx_post=str(request.url_for("organizations:update_internal_notes", id=id)),
+            hx_post=str(request.url_for("organizations-classic:update_internal_notes", id=id)),
             hx_target="#modal",
             classes="space-y-4",
         ):
@@ -686,7 +692,7 @@ async def update_internal_notes(
                     text("Save Notes")
 
 
-@router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
+@router.api_route("/{id}/delete", name="organizations-classic:delete", methods=["GET", "POST"])
 async def delete(
     request: Request,
     id: UUID4,
@@ -752,7 +758,7 @@ async def delete(
 
 
 @router.get(
-    "/{id}/confirm_remove_member/{user_id}", name="organizations:confirm_remove_member"
+    "/{id}/confirm_remove_member/{user_id}", name="organizations-classic:confirm_remove_member"
 )
 async def confirm_remove_member(
     request: Request,
@@ -795,7 +801,7 @@ async def confirm_remove_member(
                     variant="error",
                     hx_delete=str(
                         request.url_for(
-                            "organizations:remove_member",
+                            "organizations-classic:remove_member",
                             id=id,
                             user_id=user_id,
                         )
@@ -807,7 +813,7 @@ async def confirm_remove_member(
 
 @router.api_route(
     "/{id}/remove_member/{user_id}",
-    name="organizations:remove_member",
+    name="organizations-classic:remove_member",
     methods=["DELETE"],
 )
 async def remove_member(
@@ -835,7 +841,7 @@ async def remove_member(
         )
 
         return HXRedirectResponse(
-            request, request.url_for("organizations:get", id=id), 303
+            request, request.url_for("organizations-classic:get", id=id), 303
         )
 
     except UserOrgOrganizationNotFound:
@@ -859,7 +865,7 @@ async def remove_member(
 
 
 @router.get(
-    "/{id}/confirm_change_admin/{user_id}", name="organizations:confirm_change_admin"
+    "/{id}/confirm_change_admin/{user_id}", name="organizations-classic:confirm_change_admin"
 )
 async def confirm_change_admin(
     request: Request,
@@ -1000,7 +1006,7 @@ async def confirm_change_admin(
                         variant="primary",
                         hx_post=str(
                             request.url_for(
-                                "organizations:change_admin",
+                                "organizations-classic:change_admin",
                                 id=id,
                                 user_id=user_id,
                             )
@@ -1012,7 +1018,7 @@ async def confirm_change_admin(
 
 @router.api_route(
     "/{id}/change_admin/{user_id}",
-    name="organizations:change_admin",
+    name="organizations-classic:change_admin",
     methods=["POST"],
 )
 async def change_admin(
@@ -1053,7 +1059,7 @@ async def change_admin(
         )
 
         return HXRedirectResponse(
-            request, request.url_for("organizations:get", id=id), 303
+            request, request.url_for("organizations-classic:get", id=id), 303
         )
 
     except CannotChangeAdminError as e:
@@ -1070,7 +1076,7 @@ async def change_admin(
 
 @router.api_route(
     "/{id}/setup_manual_payout",
-    name="organizations:setup_manual_payout",
+    name="organizations-classic:setup_manual_payout",
     methods=["GET", "POST"],
 )
 async def setup_manual_payout(
@@ -1131,7 +1137,7 @@ async def setup_manual_payout(
         )
 
         return HXRedirectResponse(
-            request, str(request.url_for("organizations:get", id=id)), 303
+            request, str(request.url_for("organizations-classic:get", id=id)), 303
         )
 
     with modal("Setup Manual Payout", open=True):
@@ -1191,7 +1197,7 @@ async def setup_manual_payout(
 
 @router.post(
     "/{id}/create_plain_thread",
-    name="organizations:create_plain_thread",
+    name="organizations-classic:create_plain_thread",
 )
 async def create_plain_thread(
     request: Request,
@@ -1212,7 +1218,7 @@ async def create_plain_thread(
                 "error",
             )
             return RedirectResponse(
-                url=request.url_for("organizations:get_organization", id=id),
+                url=request.url_for("organizations-classic:get_organization", id=id),
                 status_code=302,
             )
 
@@ -1258,7 +1264,7 @@ async def create_plain_thread(
                                 classes="btn",
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations:clear_modal",
+                                        "organizations-classic:clear_modal",
                                         id=organization.id,
                                     )
                                 ),
@@ -1270,7 +1276,7 @@ async def create_plain_thread(
                         classes="modal-backdrop",
                         hx_get=str(
                             request.url_for(
-                                "organizations:clear_modal", id=organization.id
+                                "organizations-classic:clear_modal", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1288,7 +1294,7 @@ async def create_plain_thread(
         )
 
         return HXRedirectResponse(
-            request, str(request.url_for("organizations:get", id=id)), 303
+            request, str(request.url_for("organizations-classic:get", id=id)), 303
         )
 
 
@@ -1319,7 +1325,7 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
         return formatters.file_size(raw_value) if raw_value is not None else None
 
 
-@router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
+@router.api_route("/{id}", name="organizations-classic:get", methods=["GET", "POST"])
 async def get(
     request: Request,
     id: UUID4,
@@ -1394,9 +1400,9 @@ async def get(
         request,
         [
             (organization.name, str(request.url)),
-            ("Organizations", str(request.url_for("organizations:list"))),
+            ("Organizations", str(request.url_for("organizations-classic:list"))),
         ],
-        "organizations:get",
+        "organizations-classic:get",
     ):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.div(classes="flex justify-between items-center"):
@@ -1408,7 +1414,7 @@ async def get(
                         classes="btn",
                         href=str(
                             request.url_for(
-                                "organizations:plain_search_url", id=organization.id
+                                "organizations-classic:plain_search_url", id=organization.id
                             )
                         ),
                         title="Search in Plain",
@@ -1421,7 +1427,7 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations:create_thread_modal", id=organization.id
+                                "organizations-classic:create_thread_modal", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1434,7 +1440,7 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations:import_orders", id=organization.id
+                                "organizations-classic:import_orders", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1447,7 +1453,7 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations:add_payment_method_domain",
+                                "organizations-classic:add_payment_method_domain",
                                 id=organization.id,
                             )
                         ),
@@ -1460,7 +1466,7 @@ async def get(
                     with button(
                         variant="primary",
                         hx_get=str(
-                            request.url_for("organizations:update", id=organization.id)
+                            request.url_for("organizations-classic:update", id=organization.id)
                         ),
                         hx_target="#modal",
                     ):
@@ -1469,7 +1475,7 @@ async def get(
                         classes="btn",
                         href=str(
                             request.url_for(
-                                "organizations-v2:detail",
+                                "organizations:detail",
                                 organization_id=organization.id,
                             )
                         ),
@@ -1641,7 +1647,7 @@ async def get(
                                                                         with tag.a(
                                                                             hx_get=str(
                                                                                 request.url_for(
-                                                                                    "organizations:confirm_change_admin",
+                                                                                    "organizations-classic:confirm_change_admin",
                                                                                     id=organization.id,
                                                                                     user_id=user.id,
                                                                                 )
@@ -1658,7 +1664,7 @@ async def get(
                                                                         with tag.a(
                                                                             hx_get=str(
                                                                                 request.url_for(
-                                                                                    "organizations:confirm_remove_member",
+                                                                                    "organizations-classic:confirm_remove_member",
                                                                                     id=organization.id,
                                                                                     user_id=user.id,
                                                                                 )
@@ -1717,7 +1723,7 @@ async def get(
                                 with button(
                                     hx_get=str(
                                         request.url_for(
-                                            "organizations:setup_manual_payout",
+                                            "organizations-classic:setup_manual_payout",
                                             id=organization.id,
                                         )
                                     ),
@@ -1734,7 +1740,7 @@ async def get(
                             with button(
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations:update_details",
+                                        "organizations-classic:update_details",
                                         id=organization.id,
                                     )
                                 ),
@@ -1785,7 +1791,7 @@ async def get(
                         with button(
                             hx_get=str(
                                 request.url_for(
-                                    "organizations:update_internal_notes",
+                                    "organizations-classic:update_internal_notes",
                                     id=organization.id,
                                 )
                             ),
@@ -1860,7 +1866,7 @@ async def get(
                     pass
 
 
-@router.get("/{id}/plain_search_url", name="organizations:plain_search_url")
+@router.get("/{id}/plain_search_url", name="organizations-classic:plain_search_url")
 async def get_plain_search_url(
     request: Request,
     id: UUID4,
@@ -1881,7 +1887,7 @@ async def get_plain_search_url(
     return RedirectResponse(url=search_url, status_code=302)
 
 
-@router.get("/{id}/create_thread_modal", name="organizations:create_thread_modal")
+@router.get("/{id}/create_thread_modal", name="organizations-classic:create_thread_modal")
 async def get_create_thread_modal(
     request: Request,
     id: UUID4,
@@ -1910,7 +1916,7 @@ async def get_create_thread_modal(
                         id="create-thread-form",
                         hx_post=str(
                             request.url_for(
-                                "organizations:create_plain_thread", id=organization.id
+                                "organizations-classic:create_plain_thread", id=organization.id
                             )
                         ),
                         hx_target="#modal",
@@ -1935,7 +1941,7 @@ async def get_create_thread_modal(
                                 classes="btn",
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations:clear_modal", id=organization.id
+                                        "organizations-classic:clear_modal", id=organization.id
                                     )
                                 ),
                                 hx_target="#modal",
@@ -1950,7 +1956,7 @@ async def get_create_thread_modal(
                 with tag.div(
                     classes="modal-backdrop",
                     hx_get=str(
-                        request.url_for("organizations:clear_modal", id=organization.id)
+                        request.url_for("organizations-classic:clear_modal", id=organization.id)
                     ),
                     hx_target="#modal",
                 ):
@@ -1959,14 +1965,14 @@ async def get_create_thread_modal(
     return HTMLResponse(str(doc))
 
 
-@router.get("/{id}/clear_modal", name="organizations:clear_modal")
+@router.get("/{id}/clear_modal", name="organizations-classic:clear_modal")
 async def clear_modal(id: UUID4) -> Any:
     """Clear the modal content."""
     return HTMLResponse('<div id="modal"></div>')
 
 
 @router.api_route(
-    "/{id}/import-orders", name="organizations:import_orders", methods=["GET", "POST"]
+    "/{id}/import-orders", name="organizations-classic:import_orders", methods=["GET", "POST"]
 )
 async def import_orders(
     request: Request,
@@ -2019,7 +2025,7 @@ async def import_orders(
 
 @router.api_route(
     "/{id}/add-payment-method-domain",
-    name="organizations:add_payment_method_domain",
+    name="organizations-classic:add_payment_method_domain",
     methods=["GET", "POST"],
 )
 async def add_payment_method_domain(

@@ -64,12 +64,12 @@ from .views.sections.overview_section import OverviewSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
 
-router = APIRouter(prefix="/organizations-v2", tags=["organizations-v2"])
+router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
 
 
-@router.get("/", name="organizations-v2:list")
+@router.get("/", name="organizations:list")
 async def list_organizations(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
@@ -292,8 +292,8 @@ async def list_organizations(
         # Render full page with layout
         with layout(
             request,
-            [("Organizations V2", str(request.url))],
-            "organizations-v2:list",
+            [("Organizations", str(request.url))],
+            "organizations:list",
         ):
             with list_view.render(
                 request,
@@ -310,7 +310,7 @@ async def list_organizations(
                 pass
 
 
-@router.get("/{organization_id}", name="organizations-v2:detail")
+@router.get("/{organization_id}", name="organizations:detail")
 async def get_organization_detail(
     request: Request,
     organization_id: UUID4,
@@ -467,10 +467,10 @@ async def get_organization_detail(
     with layout(
         request,
         [
-            ("Organizations V2", str(request.url_for("organizations-v2:list"))),
+            ("Organizations", str(request.url_for("organizations:list"))),
             (organization.name, str(request.url)),
         ],
-        "organizations-v2:detail",
+        "organizations:detail",
     ):
         with detail_view.render(request, section):
             # Render section content
@@ -534,7 +534,7 @@ async def get_organization_detail(
                     text(f"Unknown section: {section}")
 
 
-@router.post("/{organization_id}/approve", name="organizations-v2:approve")
+@router.post("/{organization_id}/approve", name="organizations:approve")
 async def approve_organization(
     request: Request,
     organization_id: UUID4,
@@ -559,7 +559,7 @@ async def approve_organization(
     return HXRedirectResponse(
         request,
         str(
-            request.url_for("organizations-v2:detail", organization_id=organization_id)
+            request.url_for("organizations:detail", organization_id=organization_id)
         ),
         303,
     )
@@ -567,7 +567,7 @@ async def approve_organization(
 
 @router.api_route(
     "/{organization_id}/deny-dialog",
-    name="organizations-v2:deny_dialog",
+    name="organizations:deny_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -591,7 +591,7 @@ async def deny_dialog(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             ),
             303,
@@ -616,7 +616,7 @@ async def deny_dialog(
                 with tag.form(
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:deny_dialog",
+                            "organizations:deny_dialog",
                             organization_id=organization_id,
                         )
                     ),
@@ -629,7 +629,7 @@ async def deny_dialog(
 
 @router.api_route(
     "/{organization_id}/approve-denied-dialog",
-    name="organizations-v2:approve_denied_dialog",
+    name="organizations:approve_denied_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -660,7 +660,7 @@ async def approve_denied_dialog(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             ),
             303,
@@ -670,7 +670,7 @@ async def approve_denied_dialog(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:approve_denied_dialog",
+                    "organizations:approve_denied_dialog",
                     organization_id=organization_id,
                 )
             ),
@@ -715,7 +715,7 @@ async def approve_denied_dialog(
 
 @router.api_route(
     "/{organization_id}/unblock-approve-dialog",
-    name="organizations-v2:unblock_approve_dialog",
+    name="organizations:unblock_approve_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -749,7 +749,7 @@ async def unblock_approve_dialog(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             ),
             303,
@@ -759,7 +759,7 @@ async def unblock_approve_dialog(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:unblock_approve_dialog",
+                    "organizations:unblock_approve_dialog",
                     organization_id=organization_id,
                 )
             ),
@@ -804,7 +804,7 @@ async def unblock_approve_dialog(
 
 @router.api_route(
     "/{organization_id}/block-dialog",
-    name="organizations-v2:block_dialog",
+    name="organizations:block_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -830,7 +830,7 @@ async def block_dialog(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             ),
             303,
@@ -866,7 +866,7 @@ async def block_dialog(
                 with tag.form(
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:block_dialog",
+                            "organizations:block_dialog",
                             organization_id=organization_id,
                         )
                     ),
@@ -879,7 +879,7 @@ async def block_dialog(
 
 @router.api_route(
     "/{organization_id}/edit",
-    name="organizations-v2:edit",
+    name="organizations:edit",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -928,7 +928,7 @@ async def edit_organization(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -954,7 +954,7 @@ async def edit_organization(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit", organization_id=organization_id
+                    "organizations:edit", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -976,7 +976,7 @@ async def edit_organization(
 
 @router.api_route(
     "/{organization_id}/edit-details",
-    name="organizations-v2:edit_details",
+    name="organizations:edit_details",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1009,7 +1009,7 @@ async def edit_details(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1036,7 +1036,7 @@ async def edit_details(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_details", organization_id=organization_id
+                    "organizations:edit_details", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1058,7 +1058,7 @@ async def edit_details(
 
 @router.api_route(
     "/{organization_id}/edit-order-settings",
-    name="organizations-v2:edit_order_settings",
+    name="organizations:edit_order_settings",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1087,7 +1087,7 @@ async def edit_order_settings(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             )
             + "?section=settings",
@@ -1103,7 +1103,7 @@ async def edit_order_settings(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_order_settings",
+                    "organizations:edit_order_settings",
                     organization_id=organization_id,
                 )
             ),
@@ -1148,7 +1148,7 @@ async def edit_order_settings(
 
 @router.api_route(
     "/{organization_id}/edit-socials",
-    name="organizations-v2:edit_socials",
+    name="organizations:edit_socials",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1230,7 +1230,7 @@ async def edit_socials(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1287,7 +1287,7 @@ async def edit_socials(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_socials", organization_id=organization_id
+                    "organizations:edit_socials", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1309,7 +1309,7 @@ async def edit_socials(
 
 @router.api_route(
     "/{organization_id}/edit-features",
-    name="organizations-v2:edit_features",
+    name="organizations:edit_features",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1352,7 +1352,7 @@ async def edit_features(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1370,7 +1370,7 @@ async def edit_features(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_features", organization_id=organization_id
+                    "organizations:edit_features", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1415,7 +1415,7 @@ async def edit_features(
 
 @router.api_route(
     "/{organization_id}/add-note",
-    name="organizations-v2:add_note",
+    name="organizations:add_note",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1445,7 +1445,7 @@ async def add_note(
                 request,
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 ),
                 303,
@@ -1463,7 +1463,7 @@ async def add_note(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:add_note", organization_id=organization_id
+                    "organizations:add_note", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1485,7 +1485,7 @@ async def add_note(
 
 @router.api_route(
     "/{organization_id}/edit-note",
-    name="organizations-v2:edit_note",
+    name="organizations:edit_note",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1515,7 +1515,7 @@ async def edit_note(
                 request,
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 ),
                 303,
@@ -1533,7 +1533,7 @@ async def edit_note(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_note", organization_id=organization_id
+                    "organizations:edit_note", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1555,7 +1555,7 @@ async def edit_note(
 
 @router.get(
     "/{organization_id}/impersonate/{user_id}",
-    name="organizations-v2:impersonate",
+    name="organizations:impersonate",
 )
 async def impersonate_user(
     request: Request,
@@ -1641,7 +1641,7 @@ async def impersonate_user(
 
 @router.post(
     "/{organization_id}/make-admin/{user_id}",
-    name="organizations-v2:make_admin",
+    name="organizations:make_admin",
 )
 async def make_admin(
     request: Request,
@@ -1671,7 +1671,7 @@ async def make_admin(
         raise HTTPException(status_code=400, detail=str(e))
 
     redirect_url = (
-        str(request.url_for("organizations-v2:detail", organization_id=organization_id))
+        str(request.url_for("organizations:detail", organization_id=organization_id))
         + "?section=team"
     )
     return HXRedirectResponse(request, redirect_url, 303)
@@ -1679,7 +1679,7 @@ async def make_admin(
 
 @router.delete(
     "/{organization_id}/remove-member/{user_id}",
-    name="organizations-v2:remove_member",
+    name="organizations:remove_member",
 )
 async def remove_member(
     request: Request,
@@ -1706,7 +1706,7 @@ async def remove_member(
         raise HTTPException(status_code=400, detail=str(e))
 
     redirect_url = (
-        str(request.url_for("organizations-v2:detail", organization_id=organization_id))
+        str(request.url_for("organizations:detail", organization_id=organization_id))
         + "?section=team"
     )
     return HXRedirectResponse(request, redirect_url, 303)
@@ -1714,7 +1714,7 @@ async def remove_member(
 
 @router.api_route(
     "/{organization_id}/delete-dialog",
-    name="organizations-v2:delete_dialog",
+    name="organizations:delete_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1735,7 +1735,7 @@ async def delete_dialog(
 
         return HXRedirectResponse(
             request,
-            str(request.url_for("organizations-v2:list")),
+            str(request.url_for("organizations:list")),
             303,
         )
 
@@ -1768,7 +1768,7 @@ async def delete_dialog(
                 with tag.form(
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:delete_dialog",
+                            "organizations:delete_dialog",
                             organization_id=organization_id,
                         )
                     ),
@@ -1781,7 +1781,7 @@ async def delete_dialog(
 
 @router.api_route(
     "/{organization_id}/setup-account",
-    name="organizations-v2:setup_account",
+    name="organizations:setup_account",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1808,7 +1808,7 @@ async def setup_account(
         redirect_url = (
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             )
             + "?section=account"
@@ -1836,7 +1836,7 @@ async def setup_account(
                     variant="primary",
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:setup_account",
+                            "organizations:setup_account",
                             organization_id=organization_id,
                         )
                     ),
@@ -1848,7 +1848,7 @@ async def setup_account(
 
 @router.api_route(
     "/{organization_id}/disconnect-stripe-account",
-    name="organizations-v2:disconnect_stripe_account",
+    name="organizations:disconnect_stripe_account",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1929,7 +1929,7 @@ async def disconnect_stripe_account(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=account"
@@ -1941,7 +1941,7 @@ async def disconnect_stripe_account(
 
     form_action = str(
         request.url_for(
-            "organizations-v2:disconnect_stripe_account",
+            "organizations:disconnect_stripe_account",
             organization_id=organization_id,
         )
     )
@@ -1954,7 +1954,7 @@ async def disconnect_stripe_account(
 
 @router.api_route(
     "/{organization_id}/delete-stripe-account",
-    name="organizations-v2:delete_stripe_account",
+    name="organizations:delete_stripe_account",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2028,7 +2028,7 @@ async def delete_stripe_account(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=account"
@@ -2040,7 +2040,7 @@ async def delete_stripe_account(
 
     form_action = str(
         request.url_for(
-            "organizations-v2:delete_stripe_account",
+            "organizations:delete_stripe_account",
             organization_id=organization_id,
         )
     )
@@ -2065,7 +2065,7 @@ async def delete_stripe_account(
 
 @router.api_route(
     "/{organization_id}/grant-credit",
-    name="organizations-v2:grant_credit",
+    name="organizations:grant_credit",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2142,7 +2142,7 @@ async def grant_credit(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             )
             + "?section=account",
@@ -2153,7 +2153,7 @@ async def grant_credit(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:grant_credit", organization_id=organization_id
+                    "organizations:grant_credit", organization_id=organization_id
                 )
             ),
         ):
@@ -2230,7 +2230,7 @@ async def grant_credit(
 
 @router.api_route(
     "/{organization_id}/credits/{credit_id}/revoke",
-    name="organizations-v2:revoke_credit",
+    name="organizations:revoke_credit",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2276,7 +2276,7 @@ async def revoke_credit(
             request,
             str(
                 request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
+                    "organizations:detail", organization_id=organization_id
                 )
             )
             + "?section=account",
@@ -2316,7 +2316,7 @@ async def revoke_credit(
                 variant="error",
                 hx_post=str(
                     request.url_for(
-                        "organizations-v2:revoke_credit",
+                        "organizations:revoke_credit",
                         organization_id=organization_id,
                         credit_id=credit_id,
                     )

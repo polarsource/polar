@@ -370,7 +370,7 @@ async def get(
                                 "Organization",
                                 href_getter=lambda r, i: str(
                                     r.url_for(
-                                        "organizations:get",
+                                        "organizations-classic:get",
                                         id=i.organization.id,
                                     )
                                 ),

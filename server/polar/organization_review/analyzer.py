@@ -7,9 +7,9 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
-from polar.organization.ai_validation import _fetch_policy_content
 
-from .schemas import DataSnapshot, ReviewAgentReport, UsageInfo
+from .policy import fetch_policy_content
+from .schemas import DataSnapshot, ReviewAgentReport, ReviewContext, UsageInfo
 
 log = structlog.get_logger(__name__)
 
@@ -84,6 +84,13 @@ sellers. False approvals can expose Polar to risk. Balance both.
 - Provide specific, actionable findings — not vague concerns.
 """
 
+SUBMISSION_PREAMBLE = """\
+This is a SUBMISSION review. The organization just submitted their details. \
+No Stripe account, payments, or products exist yet. \
+Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY (website cross-reference), PRIOR_HISTORY. \
+Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0.
+"""
+
 
 class ReviewAnalyzer:
     def __init__(self) -> None:
@@ -96,15 +103,23 @@ class ReviewAnalyzer:
         )
 
     async def analyze(
-        self, snapshot: DataSnapshot, timeout_seconds: int = 60
+        self,
+        snapshot: DataSnapshot,
+        context: ReviewContext = ReviewContext.THRESHOLD,
+        timeout_seconds: int = 60,
     ) -> tuple[ReviewAgentReport, UsageInfo]:
-        policy_content = await _fetch_policy_content()
+        policy_content = await fetch_policy_content()
 
         prompt = self._build_prompt(snapshot, policy_content)
 
+        instructions = (
+            SUBMISSION_PREAMBLE if context == ReviewContext.SUBMISSION else None
+        )
+
         try:
             result = await asyncio.wait_for(
-                self.agent.run(prompt), timeout=timeout_seconds
+                self.agent.run(prompt, instructions=instructions),
+                timeout=timeout_seconds,
             )
             run_usage = result.usage()
             estimated_cost: float | None = None

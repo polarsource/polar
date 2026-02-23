@@ -17,13 +17,15 @@ from .collectors import (
     collect_website_data,
 )
 from .repository import OrganizationReviewRepository
-from .schemas import AgentReviewResult, DataSnapshot
+from .schemas import AgentReviewResult, DataSnapshot, ReviewContext
 
 log = structlog.get_logger(__name__)
 
 
 async def run_organization_review(
-    session: AsyncSession, organization: Organization
+    session: AsyncSession,
+    organization: Organization,
+    context: ReviewContext = ReviewContext.THRESHOLD,
 ) -> AgentReviewResult:
     start_time = time.monotonic()
 
@@ -31,12 +33,13 @@ async def run_organization_review(
         "organization_review.agent.start",
         organization_id=str(organization.id),
         slug=organization.slug,
+        context=context.value,
     )
 
     try:
-        snapshot = await _collect_data(session, organization)
+        snapshot = await _collect_data(session, organization, context)
 
-        report, usage = await review_analyzer.analyze(snapshot)
+        report, usage = await review_analyzer.analyze(snapshot, context=context)
 
         duration = time.monotonic() - start_time
 
@@ -70,8 +73,12 @@ async def run_organization_review(
 
 
 async def _collect_data(
-    session: AsyncSession, organization: Organization
+    session: AsyncSession,
+    organization: Organization,
+    context: ReviewContext,
 ) -> DataSnapshot:
+    from .schemas import AccountData, PaymentMetrics, ProductsData
+
     org_repository = OrganizationRepository.from_session(session)
     review_repository = OrganizationReviewRepository.from_session(session)
 
@@ -79,36 +86,42 @@ async def _collect_data(
     admin_user = await org_repository.get_admin_user(session, organization)
     admin_user_id = admin_user.id if admin_user else None
 
-    # Organization data (pure transformation, no DB query)
+    # Organization data (pure transformation, no DB query) — always collected
     org_data = collect_organization_data(organization)
 
-    # Products (DB query via repository, then transform)
-    products = await review_repository.get_products_with_prices(organization.id)
-    products_data = collect_products_data(products)
+    # Products — skip for SUBMISSION (no products exist yet)
+    if context == ReviewContext.THRESHOLD:
+        products = await review_repository.get_products_with_prices(organization.id)
+        products_data = collect_products_data(products)
+    else:
+        products_data = ProductsData()
 
-    # Payment metrics (multiple DB queries via repository, then transform)
-    total, succeeded, amount = await review_repository.get_payment_stats(
-        organization.id
-    )
-    risk_scores = await review_repository.get_risk_scores(organization.id)
-    refund_count, refund_amount = await review_repository.get_refund_stats(
-        organization.id
-    )
-    dispute_count, dispute_amount = await review_repository.get_dispute_stats(
-        organization.id
-    )
-    metrics_data = collect_metrics_data(
-        total_payments=total,
-        succeeded_payments=succeeded,
-        total_amount_cents=amount,
-        risk_scores=risk_scores,
-        refund_count=refund_count,
-        refund_amount_cents=refund_amount,
-        dispute_count=dispute_count,
-        dispute_amount_cents=dispute_amount,
-    )
+    # Payment metrics — skip for SUBMISSION (no payments exist yet)
+    if context == ReviewContext.THRESHOLD:
+        total, succeeded, amount = await review_repository.get_payment_stats(
+            organization.id
+        )
+        risk_scores = await review_repository.get_risk_scores(organization.id)
+        refund_count, refund_amount = await review_repository.get_refund_stats(
+            organization.id
+        )
+        dispute_count, dispute_amount = await review_repository.get_dispute_stats(
+            organization.id
+        )
+        metrics_data = collect_metrics_data(
+            total_payments=total,
+            succeeded_payments=succeeded,
+            total_amount_cents=amount,
+            risk_scores=risk_scores,
+            refund_count=refund_count,
+            refund_amount_cents=refund_amount,
+            dispute_count=dispute_count,
+            dispute_amount_cents=dispute_amount,
+        )
+    else:
+        metrics_data = PaymentMetrics()
 
-    # History (DB queries via repository, then transform)
+    # History — always collected
     user = (
         await review_repository.get_user_by_id(admin_user_id) if admin_user_id else None
     )
@@ -121,15 +134,18 @@ async def _collect_data(
     )
     history_data = collect_history_data(user, other_orgs)
 
-    # Account (DB query via repository, then transform)
-    account = (
-        await review_repository.get_account_with_admin(organization.account_id)
-        if organization.account_id
-        else None
-    )
-    account_data = collect_account_data(account)
+    # Account — skip for SUBMISSION (no Stripe account yet)
+    if context == ReviewContext.THRESHOLD:
+        account = (
+            await review_repository.get_account_with_admin(organization.account_id)
+            if organization.account_id
+            else None
+        )
+        account_data = collect_account_data(account)
+    else:
+        account_data = AccountData()
 
-    # Website content (async I/O, non-fatal)
+    # Website content (async I/O, non-fatal) — always collected
     website_data = None
     if organization.website:
         log.debug(
@@ -153,6 +169,7 @@ async def _collect_data(
             )
 
     return DataSnapshot(
+        context=context,
         organization=org_data,
         products=products_data,
         account=account_data,

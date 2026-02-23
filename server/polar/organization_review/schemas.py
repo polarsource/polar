@@ -6,6 +6,14 @@ from pydantic import Field
 
 from polar.kit.schemas import Schema
 
+# --- Review context ---
+
+
+class ReviewContext(StrEnum):
+    SUBMISSION = "submission"  # First review at details submission time
+    THRESHOLD = "threshold"  # Following reviews when payment threshold hit
+
+
 # --- Collector output schemas ---
 
 
@@ -101,6 +109,7 @@ class WebsiteData(Schema):
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
+    context: ReviewContext
     organization: OrganizationData
     products: ProductsData
     account: AccountData

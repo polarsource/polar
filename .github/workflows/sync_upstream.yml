@@ -106,45 +106,40 @@ jobs:
         if: steps.merge.outputs.result == 'success'
         run: git push origin develop
 
-      - name: Create sync branch for conflict resolution
-        if: steps.merge.outputs.result == 'conflict'
-        run: |
-          SYNC_BRANCH="upstream-sync/develop-$(date +%Y%m%d-%H%M%S)"
-          echo "SYNC_BRANCH=$SYNC_BRANCH" >> "$GITHUB_ENV"
-          git checkout -b "$SYNC_BRANCH" origin/source
-          git push origin "$SYNC_BRANCH"
-
-      - name: Create PR for conflict resolution
+      - name: Create sync branch and PR for conflict resolution
         if: steps.merge.outputs.result == 'conflict'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --base develop \
-            --head "$SYNC_BRANCH" \
-            --title "⚠️ Upstream sync: resolve conflicts before merging into develop" \
-            --body "$(cat <<'EOF'
-          ## Upstream Sync — Conflict Resolution Required
+          SYNC_BRANCH="upstream-sync/develop-$(date +%Y%m%d)-${{ github.run_number }}"
+          git checkout -b "$SYNC_BRANCH" origin/source
+          git push origin "$SYNC_BRANCH"
 
-          This PR brings the latest upstream changes from `polarsource/polar` into `develop`.
+          BODY="## Upstream Sync — Conflict Resolution Required
+
+          This PR brings the latest upstream changes from \`polarsource/polar\` into \`develop\`.
 
           An automatic merge was attempted but **conflicts were detected**.
           Please resolve them manually before merging.
 
           ### Steps to resolve locally
-          ```bash
-          git fetch origin develop ${{ env.SYNC_BRANCH }}
+          \`\`\`bash
+          git fetch origin develop ${SYNC_BRANCH}
           git checkout develop
-          git merge origin/${{ env.SYNC_BRANCH }}
+          git merge origin/${SYNC_BRANCH}
           # resolve conflicts
           git add .
           git commit
           git push origin develop
-          ```
+          \`\`\`
 
-          > ⚠️ Take care not to overwrite custom implementations in `develop`.
-          EOF
-          )"
+          > ⚠️ Take care not to overwrite custom implementations in \`develop\`."
+
+          gh pr create \
+            --base develop \
+            --head "$SYNC_BRANCH" \
+            --title "⚠️ Upstream sync: resolve conflicts before merging into develop" \
+            --body "$BODY"
 
   promote-to-main:
     name: "Create PR from develop to main"
@@ -182,20 +177,19 @@ jobs:
           if [ -n "$EXISTING" ]; then
             echo "✅ PR #$EXISTING already exists (develop → main)"
           else
+            BODY="## Promote develop → main
+
+          This PR promotes the latest tested changes from \`develop\` to \`main\`,
+          including upstream sync and any custom implementations.
+
+          **Before merging**, ensure:
+          - [ ] CI tests pass on \`develop\`
+          - [ ] Custom implementations are intact
+          - [ ] No unintended changes are included"
+
             gh pr create \
               --base main \
               --head develop \
               --title "🔄 Promote develop to main (upstream sync)" \
-              --body "$(cat <<'EOF'
-          ## Promote develop → main
-
-          This PR promotes the latest tested changes from `develop` to `main`,
-          including upstream sync and any custom implementations.
-
-          **Before merging**, ensure:
-          - [ ] CI tests pass on `develop`
-          - [ ] Custom implementations are intact
-          - [ ] No unintended changes are included
-          EOF
-          )"
+              --body "$BODY"
           fi

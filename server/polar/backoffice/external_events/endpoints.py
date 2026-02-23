@@ -27,7 +27,9 @@ def _get_logfire_url(event: ExternalEvent) -> str:
         "q": f"attributes->>'actor' = '{event.task_name}' AND attributes->'message'->'args'->>0 = '{event.id}'",
         "since": event.created_at.isoformat(),
     }
-    return f"https://logfire-us.pydantic.dev/polar/production-worker?{urllib.parse.urlencode(params)}"
+    return (
+        f"https://logfire-us.pydantic.dev/polar/polar?{urllib.parse.urlencode(params)}"
+    )
 
 
 router = APIRouter()

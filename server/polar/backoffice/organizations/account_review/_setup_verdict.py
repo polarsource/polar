@@ -15,7 +15,9 @@ def _get_logfire_url(organization_id: UUID) -> str:
         "q": f"attributes->>'subject_id' = '{organization_id}'",
         "last": "30d",
     }
-    return f"https://logfire-us.pydantic.dev/polar/production?{urllib.parse.urlencode(params)}"
+    return (
+        f"https://logfire-us.pydantic.dev/polar/polar?{urllib.parse.urlencode(params)}"
+    )
 
 
 class SetupVerdict:

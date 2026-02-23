@@ -105,11 +105,11 @@ class TestReverse:
         account = await create_account(save_fixture, organization, user)
 
         payment_transaction_1 = await create_payment_transaction(save_fixture)
-        await create_balance_transaction(
+        balance_transaction_1 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_1
         )
         payment_transaction_2 = await create_payment_transaction(save_fixture)
-        await create_balance_transaction(
+        balance_transaction_2 = await create_balance_transaction(
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
@@ -127,7 +127,7 @@ class TestReverse:
             pledge=None,
             issue_reward=None,
             order=None,
-            paid_transactions=[],
+            paid_transactions=[balance_transaction_1, balance_transaction_2],
             incurred_transactions=[],
             account_incurred_transactions=[],
             payout=payout,
@@ -149,3 +149,8 @@ class TestReverse:
         assert transaction.transfer_reversal_id is None
 
         assert payout_transaction.payout == payout
+
+        await session.refresh(balance_transaction_1)
+        await session.refresh(balance_transaction_2)
+        assert balance_transaction_1.payout_transaction_id is None
+        assert balance_transaction_2.payout_transaction_id is None

@@ -87,7 +87,14 @@ class PayoutTransactionService(BaseTransactionService):
         )
 
         repository = PayoutReversalTransactionRepository.from_session(session)
-        return await repository.create(reversed_transaction, flush=True)
+        reversed_transaction = await repository.create(reversed_transaction, flush=True)
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        await balance_transaction_repository.reset_payout_transaction_id(transaction.id)
+
+        return reversed_transaction
 
 
 payout_transaction = PayoutTransactionService(Transaction)

@@ -1083,6 +1083,20 @@ class CheckoutService:
         ):
             raise PaymentNotReady()
 
+        # When payments are unavailable, ensure discounts that make a checkout
+        # free are permanent (forever), to avoid starting charges once the
+        # discount expires without the organization having been reviewed.
+        if (
+            not checkout.is_payment_required
+            and checkout.is_payment_setup_required
+            and checkout.discount is not None
+            and checkout.discount.duration != DiscountDuration.forever
+            and not await organization_service.is_organization_ready_for_payment(
+                session, checkout.organization
+            )
+        ):
+            raise PaymentNotReady()
+
         # For wallet payments (Apple Pay, Google Pay), we hide the customer name field
         # for better UX and instead extract the name from Stripe's confirmation token.
         if (

@@ -4908,6 +4908,177 @@ class TestConfirm:
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.create_payment_intent.assert_called_once()
 
+    async def test_payment_not_ready_non_forever_discount_recurring(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        # Make organization not payment ready
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Verify preconditions: discount makes it free but payment setup needed
+        assert checkout_discount_percentage_100.is_payment_required is False
+        assert checkout_discount_percentage_100.is_payment_setup_required is True
+        assert checkout_discount_percentage_100.discount is not None
+        assert (
+            checkout_discount_percentage_100.discount.duration
+            != DiscountDuration.forever
+        )
+
+        # Should fail: non-forever discount on recurring product when org not ready
+        with pytest.raises(PaymentNotReady):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_discount_percentage_100,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {
+                            "line1": "123 Main St",
+                            "postal_code": "12345",
+                            "city": "New York",
+                            "state": "US-NY",
+                            "country": "US",
+                        },
+                    }
+                ),
+            )
+
+    async def test_payment_not_ready_forever_discount_recurring_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # Create a forever 100% discount
+        forever_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            discount=forever_discount,
+        )
+
+        # Make organization not payment ready
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Verify preconditions
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is True
+        assert checkout.discount is not None
+        assert checkout.discount.duration == DiscountDuration.forever
+
+        # Mock Stripe service for customer creation
+        stripe_service_mock.create_customer = AsyncMock(
+            return_value=SimpleNamespace(id="STRIPE_CUSTOMER_ID")
+        )
+        setup_intent = MagicMock(spec=stripe_lib.SetupIntent)
+        setup_intent.client_secret = "si_test_secret"
+        setup_intent.status = "succeeded"
+        setup_intent.payment_method = MagicMock(spec=stripe_lib.PaymentMethod)
+        setup_intent.payment_method.id = "pm_test"
+        stripe_service_mock.create_setup_intent.return_value = setup_intent
+
+        # Should be allowed: forever discount won't expire
+        confirmed_checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {
+                        "line1": "123 Main St",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert confirmed_checkout.status == CheckoutStatus.confirmed
+
+    async def test_payment_not_ready_non_forever_discount_one_time_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product_one_time: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        # Create a once 100% discount on a one-time product
+        once_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            discount=once_discount,
+        )
+
+        # Make organization not payment ready
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Verify preconditions: free one-time product doesn't need payment setup
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is False
+
+        # Mock Stripe service for customer creation
+        stripe_service_mock = mocker.patch("polar.checkout.service.stripe_service")
+        stripe_service_mock.create_customer = AsyncMock(
+            return_value=SimpleNamespace(id="STRIPE_CUSTOMER_ID")
+        )
+
+        # Mock the free checkout success flow
+        mocker.patch("polar.checkout.service.enqueue_job")
+
+        # Should be allowed: one-time products have no future charges
+        confirmed_checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout,
+            CheckoutConfirm(
+                customer_email="test@example.com",
+                customer_name="Test Customer",
+                confirmation_token_id=None,
+            ),
+        )
+
+        assert confirmed_checkout.status == CheckoutStatus.confirmed
+
     async def test_wallet_payment_extracts_name_from_confirmation_token(
         self,
         save_fixture: SaveFixture,

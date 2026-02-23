@@ -1,4 +1,4 @@
-import { type ElementType } from 'react'
+import React, { type ElementType } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type {
   BoxProps,
@@ -6,7 +6,7 @@ import type {
   FlexContainerProps,
 } from '../primitives/createBox'
 import { resolveContainerClasses } from '../primitives/resolveProperties'
-import { orbitTheme, type OrbitSpacing, type OrbitTheme } from '../tokens/theme'
+import { type OrbitTheme } from '../tokens/theme'
 import { Box } from './Box'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,14 +22,7 @@ export type StackBreakpoint = Exclude<Breakpoint, 'default'>
 type StackContainerProps = Omit<
   FlexContainerProps,
   'display' | 'flexDirection'
-> & {
-  /** Gap between flex children, resolved via the Orbit spacing scale. */
-  gap?: OrbitSpacing
-  /** Row gap between flex children, resolved via the Orbit spacing scale. */
-  rowGap?: OrbitSpacing
-  /** Column gap between flex children, resolved via the Orbit spacing scale. */
-  columnGap?: OrbitSpacing
-}
+>
 
 export type StackProps<E extends ElementType = 'div'> = BoxProps<
   OrbitTheme,
@@ -144,9 +137,6 @@ export function Stack<E extends ElementType = 'div'>({
   alignItems,
   justifyContent,
   flexWrap,
-  gap,
-  rowGap,
-  columnGap,
   divider,
   dividerColor,
   className,
@@ -166,21 +156,10 @@ export function Stack<E extends ElementType = 'div'>({
     flexWrap,
   })
 
-  const gapClasses = [
-    gap !== undefined ? orbitTheme.spacing[gap]?.gap : undefined,
-    rowGap !== undefined ? orbitTheme.spacing[rowGap]?.rowGap : undefined,
-    columnGap !== undefined
-      ? orbitTheme.spacing[columnGap]?.columnGap
-      : undefined,
-  ]
-    .filter(Boolean)
-    .join(' ')
-
   return (
     <Box
       className={twMerge(
         containerClasses,
-        gapClasses,
         divider,
         dividerColor,
         className,

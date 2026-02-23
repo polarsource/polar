@@ -111,6 +111,9 @@ type BoxPropName =
   | 'borderTopRightRadius'
   | 'borderBottomLeftRadius'
   | 'borderBottomRightRadius'
+  | 'gap'
+  | 'rowGap'
+  | 'columnGap'
   | 'flex'
   | 'alignSelf'
   | 'flexGrow'
@@ -119,34 +122,37 @@ type BoxPropName =
 // ─── Per-category token prop types ───────────────────────────────────────────
 
 type ColorProps<TColors extends Record<string, ColorClasses>> = {
-  backgroundColor?: keyof TColors
-  color?: keyof TColors
-  borderColor?: keyof TColors
+  backgroundColor?: Responsive<keyof TColors>
+  color?: Responsive<keyof TColors>
+  borderColor?: Responsive<keyof TColors>
 }
 
 type SpacingProps<TSpacing extends Record<string, SpacingClasses>> = {
-  padding?: keyof TSpacing
-  paddingX?: keyof TSpacing
-  paddingY?: keyof TSpacing
-  paddingTop?: keyof TSpacing
-  paddingRight?: keyof TSpacing
-  paddingBottom?: keyof TSpacing
-  paddingLeft?: keyof TSpacing
-  margin?: keyof TSpacing
-  marginX?: keyof TSpacing
-  marginY?: keyof TSpacing
-  marginTop?: keyof TSpacing
-  marginRight?: keyof TSpacing
-  marginBottom?: keyof TSpacing
-  marginLeft?: keyof TSpacing
+  padding?: Responsive<keyof TSpacing>
+  paddingX?: Responsive<keyof TSpacing>
+  paddingY?: Responsive<keyof TSpacing>
+  paddingTop?: Responsive<keyof TSpacing>
+  paddingRight?: Responsive<keyof TSpacing>
+  paddingBottom?: Responsive<keyof TSpacing>
+  paddingLeft?: Responsive<keyof TSpacing>
+  margin?: Responsive<keyof TSpacing>
+  marginX?: Responsive<keyof TSpacing>
+  marginY?: Responsive<keyof TSpacing>
+  marginTop?: Responsive<keyof TSpacing>
+  marginRight?: Responsive<keyof TSpacing>
+  marginBottom?: Responsive<keyof TSpacing>
+  marginLeft?: Responsive<keyof TSpacing>
+  gap?: Responsive<keyof TSpacing>
+  rowGap?: Responsive<keyof TSpacing>
+  columnGap?: Responsive<keyof TSpacing>
 }
 
 type RadiiProps<TRadii extends Record<string, RadiusClasses>> = {
-  borderRadius?: keyof TRadii
-  borderTopLeftRadius?: keyof TRadii
-  borderTopRightRadius?: keyof TRadii
-  borderBottomLeftRadius?: keyof TRadii
-  borderBottomRightRadius?: keyof TRadii
+  borderRadius?: Responsive<keyof TRadii>
+  borderTopLeftRadius?: Responsive<keyof TRadii>
+  borderTopRightRadius?: Responsive<keyof TRadii>
+  borderBottomLeftRadius?: Responsive<keyof TRadii>
+  borderBottomRightRadius?: Responsive<keyof TRadii>
 }
 
 type TokenProps<T extends ThemeSpec> = ColorProps<T['colors']> &
@@ -204,6 +210,9 @@ export function createBox<T extends ThemeSpec>(theme: T) {
       'borderTopRightRadius',
       'borderBottomLeftRadius',
       'borderBottomRightRadius',
+      'gap',
+      'rowGap',
+      'columnGap',
       'flex',
       'alignSelf',
       'flexGrow',

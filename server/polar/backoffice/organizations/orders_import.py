@@ -4,9 +4,10 @@ import string
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from typing import Any, overload
+from typing import overload
 
 import aiocsv
+import sqlalchemy.exc
 from fastapi import UploadFile
 from sqlalchemy import func
 from sse_starlette.event import ServerSentEvent
@@ -31,14 +32,28 @@ from polar.worker import enqueue_job
 from ..components import alert
 
 
+class MultipleProductsWithSameNameError(PolarError):
+    def __init__(self, product_name: str) -> None:
+        self.product_name = product_name
+        message = (
+            f"Multiple products with the same name '{product_name}' found. "
+            f"Please ensure product names are unique."
+        )
+        super().__init__(message)
+
+
 async def _get_product_by_name(
     repository: ProductRepository, organization: Organization, name: str
-) -> Any:
+) -> Product | None:
     statement = repository.get_base_statement().where(
         Product.organization_id == organization.id,
+        Product.is_archived.is_(False),
         func.lower(func.trim(Product.name)) == name.lower(),
     )
-    return await repository.get_one_or_none(statement)
+    try:
+        return await repository.get_one_or_none(statement)
+    except sqlalchemy.exc.MultipleResultsFound as e:
+        raise MultipleProductsWithSameNameError(name) from e
 
 
 @overload
@@ -103,7 +118,7 @@ async def orders_import(
     license_key_repository = LicenseKeyRepository.from_session(session)
 
     customer_map: dict[str, Customer] = {}
-    product_map: dict[str, Any] = {}
+    product_map: dict[str, Product] = {}
     benefit_map: dict[str, Benefit] = {}
     license_keys: set[str] = set()
 
@@ -168,10 +183,18 @@ async def orders_import(
             errors.append(RowError(i + 1, "Missing product name"))
             yield i, total_rows
             continue
-        product = product_map.get(
-            product_name,
-            await _get_product_by_name(product_repository, organization, product_name),
-        )
+        try:
+            product = product_map.get(
+                product_name,
+                await _get_product_by_name(
+                    product_repository, organization, product_name
+                ),
+            )
+        except MultipleProductsWithSameNameError as e:
+            errors.append(RowError(i + 1, str(e)))
+            yield i, total_rows
+            continue
+
         if product is None:
             errors.append(RowError(i + 1, f"Product not found: {product_name}"))
             yield i, total_rows

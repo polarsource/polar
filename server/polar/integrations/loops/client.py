@@ -5,6 +5,7 @@ import structlog
 
 from polar.config import settings
 from polar.enums import AccountType
+from polar.exceptions import PolarError
 from polar.logging import Logger
 
 log: Logger = structlog.get_logger()
@@ -43,6 +44,24 @@ class Properties(TypedDict, total=False):
     githubIssueBadged: bool
 
 
+class LoopsClientError(PolarError): ...
+
+
+class LoopsClientOperationalError(LoopsClientError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class LoopsClientLogicalError(LoopsClientError):
+    def __init__(self, response: httpx.Response) -> None:
+        self.status_code = response.status_code
+        self.body = response.text
+        message = (
+            f"Loops API returned status code {self.status_code} with body: {self.body}"
+        )
+        super().__init__(message)
+
+
 class LoopsClient:
     def __init__(self, api_key: str | None) -> None:
         self.client = httpx.AsyncClient(
@@ -62,10 +81,13 @@ class LoopsClient:
     ) -> None:
         log.debug("loops.contact.update", email=email, id=id, **properties)
 
-        response = await self.client.post(
-            "/contacts/update", json={"email": email, "userId": id, **properties}
+        await self._make_request(
+            httpx.Request(
+                "POST",
+                "/contacts/update",
+                json={"email": email, "userId": id, **properties},
+            )
         )
-        self._handle_response(response)
 
     async def send_event(
         self,
@@ -82,19 +104,30 @@ class LoopsClient:
             **contact_properties,
         )
 
-        response = await self.client.post(
-            "/events/send",
-            json={
-                "email": email,
-                "eventName": event_name,
-                "eventProperties": event_properties or {},
-                **contact_properties,
-            },
+        await self._make_request(
+            httpx.Request(
+                "POST",
+                "/events/send",
+                json={
+                    "email": email,
+                    "eventName": event_name,
+                    "eventProperties": event_properties or {},
+                    **contact_properties,
+                },
+            )
         )
-        self._handle_response(response)
 
-    def _handle_response(self, response: httpx.Response) -> httpx.Response:
-        response.raise_for_status()
+    async def _make_request(self, request: httpx.Request) -> httpx.Response:
+        try:
+            response = await self.client.send(request)
+        except httpx.RequestError as e:
+            raise LoopsClientOperationalError(str(e)) from e
+
+        if response.is_server_error or response.status_code == 429:
+            raise LoopsClientOperationalError(response.text)
+        elif response.is_client_error:
+            raise LoopsClientLogicalError(response)
+
         return response
 
 

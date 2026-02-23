@@ -1074,28 +1074,21 @@ class CheckoutService:
                 }
             )
 
-        # Check if organization can accept payments (only block paid transactions)
-        if (
-            checkout.is_payment_required
-            and not await organization_service.is_organization_ready_for_payment(
-                session, checkout.organization
-            )
+        # Check if organization can accept payments
+        if not await organization_service.is_organization_ready_for_payment(
+            session, checkout.organization
         ):
-            raise PaymentNotReady()
-
-        # When payments are unavailable, ensure discounts that make a checkout
-        # free are permanent (forever), to avoid starting charges once the
-        # discount expires without the organization having been reviewed.
-        if (
-            not checkout.is_payment_required
-            and checkout.is_payment_setup_required
-            and checkout.discount is not None
-            and checkout.discount.duration != DiscountDuration.forever
-            and not await organization_service.is_organization_ready_for_payment(
-                session, checkout.organization
-            )
-        ):
-            raise PaymentNotReady()
+            if checkout.is_payment_required:
+                raise PaymentNotReady()
+            # When a discount makes a checkout free, ensure it's a permanent
+            # (forever) discount to avoid starting charges once it expires
+            # without the organization having been reviewed.
+            if (
+                checkout.is_payment_setup_required
+                and checkout.discount is not None
+                and checkout.discount.duration != DiscountDuration.forever
+            ):
+                raise PaymentNotReady()
 
         # For wallet payments (Apple Pay, Google Pay), we hide the customer name field
         # for better UX and instead extract the name from Stripe's confirmation token.

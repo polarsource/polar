@@ -1,4 +1,4 @@
-import { BarChart, Box, Headline, Text } from '@polar-sh/orbit'
+import { BarChart, Box, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const props = [
@@ -24,7 +24,7 @@ const props = [
 
 export default function BarChartPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="BarChart"
@@ -32,7 +32,7 @@ export default function BarChartPage() {
       />
 
       {/* Demo */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Demo" />
         <Box className="h-96">
           <BarChart
@@ -44,16 +44,12 @@ export default function BarChartPage() {
             ]}
           />
         </Box>
-      </Box>
+      </Stack>
 
       {/* Behavior notes */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Behavior" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
             {
               heading: 'Relative scaling',
@@ -85,17 +81,13 @@ export default function BarChartPage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Props */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
@@ -112,8 +104,8 @@ export default function BarChartPage() {
               </Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

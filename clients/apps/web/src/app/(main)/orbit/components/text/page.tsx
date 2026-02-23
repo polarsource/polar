@@ -1,4 +1,4 @@
-import { Box, Text } from '@polar-sh/orbit'
+import { Box, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 const variants: { variant: 'default' | 'subtle' | 'disabled'; label: string; desc: string }[] = [
@@ -111,7 +111,7 @@ const props = [
 
 export default function TextPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Text"
@@ -119,19 +119,15 @@ export default function TextPage() {
       />
 
       {/* Variants */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
             <Box key={variant} className="grid grid-cols-5 items-start gap-8 py-6">
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Stack className="col-span-2 gap-1">
                 <Text fontWeight="medium" fontSize="sm">{label}</Text>
                 <Text variant="subtle" fontSize="xs">{desc}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-3">
                 <Text variant={variant} fontSize="sm" leading="relaxed">
                   The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
@@ -139,73 +135,61 @@ export default function TextPage() {
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Font size */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Font Size" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {fontSizes.map(({ size, px }) => (
             <Box key={size} className="grid grid-cols-5 items-baseline gap-8 py-5">
-              <Box display="flex" flexDirection="column" className="gap-0.5">
+              <Stack className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {size}
                 </Text>
                 <Text variant="subtle" fontSize="xs">{px}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-4">
                 <Text fontSize={size}>The quick brown fox</Text>
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Font weight */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Font Weight" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {fontWeights.map(({ weight, value }) => (
             <Box key={weight} className="grid grid-cols-5 items-baseline gap-8 py-5">
-              <Box display="flex" flexDirection="column" className="gap-0.5">
+              <Stack className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {weight}
                 </Text>
                 <Text variant="subtle" fontSize="xs">{value}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-4">
                 <Text fontWeight={weight} fontSize="lg">The quick brown fox</Text>
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Leading */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Leading" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {leadings.map(({ leading, value }) => (
             <Box key={leading} className="grid grid-cols-5 items-start gap-8 py-5">
-              <Box display="flex" flexDirection="column" className="gap-0.5">
+              <Stack className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {leading}
                 </Text>
                 <Text variant="subtle" fontSize="xs">{value}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-4">
                 <Text leading={leading} fontSize="sm">
                   The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
@@ -213,17 +197,13 @@ export default function TextPage() {
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Props */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm">
@@ -238,8 +218,8 @@ export default function TextPage() {
               <Text variant="subtle" fontSize="xs">{desc}</Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

@@ -82,7 +82,7 @@ const props = [
 
 export default function StackPage() {
   return (
-    <Stack gap={20}>
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Stack"
@@ -195,12 +195,13 @@ export default function StackPage() {
               </Box>
               <Box className="col-span-3">
                 <Stack
+                  horizontal
                   alignItems={value}
                   gap={1}
                   backgroundColor="bg-elevated"
                   borderRadius="sm"
                   padding={2}
-                  className="h-16 flex-row"
+                  className="h-16"
                 >
                   {[4, 6, 8].map((h) => (
                     <Box
@@ -300,7 +301,7 @@ export default function StackPage() {
                 borderRadius="lg"
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Stack alignItems="center" justifyContent="between" className="flex-row">
+                <Stack horizontal alignItems="center" justifyContent="between">
                   <Text fontWeight="medium" fontSize="sm">Section title</Text>
                   <Box
                     backgroundColor="bg-elevated"

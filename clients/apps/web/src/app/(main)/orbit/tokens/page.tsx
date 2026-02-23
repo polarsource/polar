@@ -1,4 +1,4 @@
-import { Box, Headline, Text } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
@@ -266,18 +266,18 @@ function Mono({ children }: { children: ReactNode }) {
 
 export default function TokensPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         title="Design Tokens"
         description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
       />
 
       {/* Color */}
-      <Box display="flex" flexDirection="column" gap={3}>
-        <Box display="flex" flexDirection="column" className="gap-3">
+      <Stack gap={3}>
+        <Stack gap={1.5}>
           <Headline as="h4" text="Color" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        </Box>
+        </Stack>
         <TableHeader cols={['Token', 'Light', 'Dark', 'Usage']} />
         {colorTokens.map(
           ({ token, light, lightLabel, dark, darkLabel, usage }) => (
@@ -286,18 +286,18 @@ export default function TokensPage() {
               cols={4}
               cells={[
                 <Mono key="token">{token}</Mono>,
-                <Box key="light" as="span" display="inline-flex" alignItems="center" gap={1}>
+                <span key="light" className="inline-flex items-center gap-2">
                   <Swatch color={light} />
                   <Text as="span" variant="subtle" fontSize="xs">
                     {lightLabel}
                   </Text>
-                </Box>,
-                <Box key="dark" as="span" display="inline-flex" alignItems="center" gap={1}>
+                </span>,
+                <span key="dark" className="inline-flex items-center gap-2">
                   <Swatch color={dark} />
                   <Text as="span" variant="subtle" fontSize="xs">
                     {darkLabel}
                   </Text>
-                </Box>,
+                </span>,
                 <Text key="usage" as="span" variant="subtle" fontSize="xs">
                   {usage}
                 </Text>,
@@ -305,14 +305,14 @@ export default function TokensPage() {
             />
           ),
         )}
-      </Box>
+      </Stack>
 
       {/* Type scale */}
-      <Box display="flex" flexDirection="column" gap={3}>
-        <Box display="flex" flexDirection="column" className="gap-3">
+      <Stack gap={3}>
+        <Stack gap={1.5}>
           <Headline as="h4" text="Type Scale" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        </Box>
+        </Stack>
         <TableHeader
           cols={['Level', 'Mobile', 'Desktop', 'Weight', 'Tracking']}
         />
@@ -341,14 +341,14 @@ export default function TokensPage() {
           All heading levels use font-feature-settings: &apos;ss07&apos; 1,
           &apos;ss08&apos; 1, &apos;zero&apos; 1, &apos;liga&apos; 0
         </Text>
-      </Box>
+      </Stack>
 
       {/* Motion */}
-      <Box display="flex" flexDirection="column" gap={3}>
-        <Box display="flex" flexDirection="column" className="gap-3">
+      <Stack gap={3}>
+        <Stack gap={1.5}>
           <Headline as="h4" text="Motion" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        </Box>
+        </Stack>
         <TableHeader cols={['Token', 'Value', 'Usage']} />
         {motionTokens.map(({ token, value, usage }) => (
           <TableRow
@@ -363,23 +363,23 @@ export default function TokensPage() {
             ]}
           />
         ))}
-      </Box>
+      </Stack>
 
       {/* Spacing */}
-      <Box display="flex" flexDirection="column" gap={3}>
-        <Box display="flex" flexDirection="column" className="gap-3">
+      <Stack gap={3}>
+        <Stack gap={1.5}>
           <Headline as="h4" text="Spacing" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
           <Text variant="subtle" fontSize="sm">
             All spacing follows a base-8 grid. Use these values exclusively.
           </Text>
-        </Box>
-        <Box display="flex" flexDirection="column" className="gap-3">
+        </Stack>
+        <Stack gap={1.5}>
           {spacingTokens.map(({ token, px, rem, usage }) => {
             const size = parseInt(px)
             const barWidth = Math.min(100, (size / 256) * 100)
             return (
-              <Box key={token} display="flex" alignItems="center" className="gap-6">
+              <Stack key={token} horizontal alignItems="center" gap={3}>
                 <Box className="w-32 shrink-0">
                   <div
                     className="h-1.5 rounded-full bg-black dark:bg-white"
@@ -391,11 +391,11 @@ export default function TokensPage() {
                 <Text as="span" variant="subtle" fontSize="xs" className="flex-1">
                   {usage}
                 </Text>
-              </Box>
+              </Stack>
             )
           })}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

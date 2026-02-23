@@ -408,10 +408,6 @@ export function resolveProperties<T extends ThemeSpec>(
   if (props.marginBottom !== undefined) classes.push(sp(props.marginBottom).marginBottom)
   if (props.marginLeft !== undefined) classes.push(sp(props.marginLeft).marginLeft)
 
-  if (props.gap !== undefined) classes.push(sp(props.gap).gap)
-  if (props.rowGap !== undefined) classes.push(sp(props.rowGap).rowGap)
-  if (props.columnGap !== undefined) classes.push(sp(props.columnGap).columnGap)
-
   // ── Radii
   if (props.borderRadius !== undefined) classes.push(r(props.borderRadius).all)
   if (props.borderTopLeftRadius !== undefined) classes.push(r(props.borderTopLeftRadius).tl)

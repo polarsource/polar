@@ -1,4 +1,4 @@
-import { Box, Headline, Text } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
 const sections = [
@@ -116,19 +116,19 @@ const sections = [
 
 export default function GuidelinesPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         title="Guidelines"
         description="Principles and rules for how Orbit components behave, and how to use them effectively in product contexts."
       />
 
       {sections.map(({ title, subsections }) => (
-        <Box key={title} display="flex" flexDirection="column" className="gap-10">
-          <Box display="flex" flexDirection="column" className="gap-3">
+        <Stack key={title} gap={5}>
+          <Stack gap={1.5}>
             <Headline as="h3" text={title} />
             <Box className="dark:border-polar-800 border-t border-neutral-200" />
-          </Box>
-          <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
+          </Stack>
+          <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
             {subsections.map(({ heading, content }) => (
               <Box key={heading} className="grid grid-cols-5 gap-8 py-6">
                 <Box className="col-span-2">
@@ -139,9 +139,9 @@ export default function GuidelinesPage() {
                 </Text>
               </Box>
             ))}
-          </Box>
-        </Box>
+          </Stack>
+        </Stack>
       ))}
-    </Box>
+    </Stack>
   )
 }

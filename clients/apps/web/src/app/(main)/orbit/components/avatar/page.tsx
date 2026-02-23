@@ -1,4 +1,4 @@
-import { Avatar, Box, Text } from '@polar-sh/orbit'
+import { Avatar, Box, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ const props = [
 
 export default function AvatarPage() {
   return (
-    <Box display="flex" flexDirection="column" className="gap-20">
+    <Stack gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Avatar"
@@ -81,75 +81,63 @@ export default function AvatarPage() {
       />
 
       {/* Sizes */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {sizes.map(({ size, px }) => (
             <Box key={size} className="grid grid-cols-5 items-center gap-8 py-5">
-              <Box display="flex" flexDirection="column" className="gap-0.5">
+              <Stack className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {size}
                 </Text>
                 <Text variant="subtle" fontSize="xs">{px}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-4">
                 <Avatar name="birk" size={size} />
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* States */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader title="States" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {states.map(({ label, desc, src, name }) => (
             <Box key={label} className="grid grid-cols-5 items-center gap-8 py-6">
-              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+              <Stack className="col-span-2 gap-1">
                 <Text fontWeight="medium" fontSize="sm">{label}</Text>
                 <Text variant="subtle" fontSize="xs">{desc}</Text>
-              </Box>
+              </Stack>
               <Box className="col-span-3">
                 <Avatar name={name} src={src} size="lg" />
               </Box>
             </Box>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Facehash */}
-      <Box display="flex" flexDirection="column" gap={4}>
+      <Stack gap={4}>
         <OrbitSectionHeader
           title="Facehash"
           description="Every unique name produces a unique, deterministic face. The same name always renders the same avatar — across sessions, devices, and renders."
         />
-        <Box display="flex" flexDirection="row" flexWrap="wrap" gap={2}>
+        <Stack horizontal flexWrap="wrap" gap={2}>
           {facehashExamples.map((name) => (
-            <Box key={name} display="flex" flexDirection="column" alignItems="center" gap={1}>
+            <Stack key={name} alignItems="center" gap={1}>
               <Avatar name={name} size="xl" />
               <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">{name}</Text>
-            </Box>
+            </Stack>
           ))}
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
 
       {/* Props */}
-      <Box display="flex" flexDirection="column" gap={3}>
+      <Stack gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Box
-          display="flex"
-          flexDirection="column"
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
+        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm">
@@ -164,8 +152,8 @@ export default function AvatarPage() {
               <Text variant="subtle" fontSize="xs">{desc}</Text>
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }

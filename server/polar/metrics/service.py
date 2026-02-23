@@ -398,8 +398,14 @@ class MetricsService:
 
         tb_product_id = product_id
         if billing_type is not None:
+            org_filter: list[uuid.UUID] = []
+            if organization_id is not None:
+                org_filter = list(organization_id)
+            elif is_organization(auth_subject):
+                org_filter = [auth_subject.subject.id]
+
             product_stmt = select(Product.id).where(
-                Product.organization_id == organization_id,
+                Product.organization_id.in_(org_filter),
                 Product.billing_type.in_(billing_type),
                 Product.is_deleted.is_(False),
             )

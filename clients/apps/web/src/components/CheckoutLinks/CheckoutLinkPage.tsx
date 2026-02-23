@@ -1,8 +1,6 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
-import QrCode from '@mui/icons-material/QrCode'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import {
   Tabs,
@@ -13,11 +11,8 @@ import {
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { Label } from '@polar-sh/ui/components/ui/label'
 import { useContext, useMemo, useState } from 'react'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
 import { toast } from '../Toast/use-toast'
 import { CheckoutLinkForm } from './CheckoutLinkForm'
-import { CheckoutLinkQRCodeModal } from './CheckoutLinkQRCodeModal'
 
 interface CheckoutLinkPageProps {
   checkoutLink: schemas['CheckoutLink']
@@ -25,12 +20,6 @@ interface CheckoutLinkPageProps {
 
 export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
   const { organization } = useContext(OrganizationContext)
-
-  const {
-    isShown: isQRCodeModalOpen,
-    show: showQRCodeModal,
-    hide: hideQRCodeModal,
-  } = useModal()
 
   const [darkmode, setDarkmode] = useState<boolean>(true)
   const [embedType, setEmbedType] = useState<string>('link')
@@ -65,23 +54,17 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
         </TabsList>
 
         <TabsContent value="link">
-          <div className="flex flex-row items-center gap-x-4">
-            <CopyToClipboardInput
-              value={checkoutLink.url}
-              buttonLabel="Copy"
-              className="bg-white"
-              onCopy={() => {
-                toast({
-                  title: 'Copied To Clipboard',
-                  description: `Checkout Link was copied to clipboard`,
-                })
-              }}
-            />
-            <Button variant="secondary" onClick={showQRCodeModal}>
-              <QrCode />
-              <span className="ml-2">QR Code</span>
-            </Button>
-          </div>
+          <CopyToClipboardInput
+            value={checkoutLink.url}
+            buttonLabel="Copy"
+            className="bg-white"
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `Checkout Link was copied to clipboard`,
+              })
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="embed">
@@ -118,18 +101,6 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
         checkoutLink={checkoutLink}
         organization={organization}
         onClose={() => {}}
-      />
-
-      <Modal
-        title="Checkout QR Code"
-        isShown={isQRCodeModalOpen}
-        hide={hideQRCodeModal}
-        modalContent={
-          <CheckoutLinkQRCodeModal
-            checkoutLink={checkoutLink}
-            hide={hideQRCodeModal}
-          />
-        }
       />
     </div>
   )

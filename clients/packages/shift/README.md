@@ -25,15 +25,18 @@ pnpm dlx @polar-sh/shift build --input "tokens/**/*.yaml"
 ## Quick start
 
 ```bash
-# Build tokens
+# Build tokens (colors unchanged, dimensions normalised to px)
 shift build --input "tokens/**/*.yaml" --output dist/tokens
 
-# Build with dark mode
+# Build with hex colors + dark mode
 shift build \
   --input "tokens/**/*.yaml" \
   --output dist/tokens \
-  --format css,json,ts \
+  --transform web \
   --themes '{"dark":":root .dark"}'
+
+# Build with OKLCH color space
+shift build --input "tokens/**/*.yaml" --output dist/tokens --transform web/oklch
 
 # Validate without writing
 shift validate --input "tokens/**/*.yaml"
@@ -158,6 +161,43 @@ export const themes = {
 
 `themes` is only exported when `--themes` is passed and at least one token has theme overrides.
 
+## Transform pipelines
+
+`--transform` selects a named pipeline that controls how token values are converted before output.
+
+### Built-in pipelines
+
+| Pipeline | Color output | Dimension output |
+|---|---|---|
+| `default` | unchanged | `px` suffix added |
+| `web` | `#rrggbb` hex | `px` |
+| `web/rgb` | `rgb()` / `rgba()` | `px` |
+| `web/oklch` | `oklch(L C H)` | `px` |
+| `ios` | `#aarrggbb` (ARGB) | `px` |
+| `android` | `#aarrggbb` (ARGB) | `px` |
+
+### Built-in value transforms
+
+| Name | Matches | Description |
+|---|---|---|
+| `color/hex` | `type === 'color'` | Convert to `#rrggbb` hex |
+| `color/rgb` | `type === 'color'` | Convert to `rgb()` / `rgba()` |
+| `color/hex8rgba` | `type === 'color'` | Convert to `#rrggbbaa` (CSS/PNG order) |
+| `color/hex8argb` | `type === 'color'` | Convert to `#aarrggbb` (Android/Windows order) |
+| `color/oklch` | `type === 'color'` | Convert to `oklch(L C H)` |
+| `dimension/px` | `type === 'dimension'` | Ensure `px` (or other CSS unit) suffix |
+
+All color transforms pass through values they cannot parse — named colors, `var()`, `oklch()`, `color-mix()`, etc. — unchanged.
+
+### Custom pipelines
+
+```ts
+import { createDefaultRegistry } from '@polar-sh/shift/transform/built-in'
+
+const registry = createDefaultRegistry()
+registry.define('brand', ['color/oklch', 'dimension/px'])
+```
+
 ## CLI reference
 
 ### `shift build`
@@ -167,7 +207,8 @@ export const themes = {
 | `--input` | `-i` | `tokens/**/*.yaml` | Glob pattern for YAML token files |
 | `--output` | `-o` | `./dist` | Output directory |
 | `--format` | `-f` | `css,json,ts` | Comma-separated output formats |
-| `--themes` | `-t` | — | JSON map of theme name → CSS selector |
+| `--transform` | — | `default` | Named transform pipeline |
+| `--themes` | — | — | JSON map of theme name → CSS selector |
 | `--watch` | `-w` | `false` | Watch mode (re-builds on file change) |
 
 `--themes` accepts a JSON string:
@@ -208,7 +249,7 @@ Output files
 
 ```bash
 pnpm build       # compile src/ → dist/
-pnpm test        # run vitest (89 tests)
+pnpm test        # run vitest (202 tests)
 pnpm test:watch  # watch mode
 pnpm typecheck   # tsc --noEmit
 ```

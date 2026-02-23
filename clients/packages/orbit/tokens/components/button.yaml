@@ -1,0 +1,121 @@
+# Button component tokens
+#
+# Semantic color tokens for each Button variant, plus shared sizing tokens.
+# Color tokens carry $themes entries for dark-mode overrides; dimension
+# tokens are light/dark-agnostic.
+
+button:
+
+  # ── Radius ──────────────────────────────────────────────────────────────────
+
+  radius:
+    $type: dimension
+    $value: "{radii.sm}"
+    $description: >
+      Corner radius shared by all button variants (8 px / rounded-lg).
+
+  # ── Sizes ───────────────────────────────────────────────────────────────────
+
+  size:
+    sm:
+      height:
+        $type: dimension
+        $value: "32px"
+        $description: Small button height (h-8).
+      padding-x:
+        $type: dimension
+        $value: "12px"
+        $description: Small button horizontal padding — 12 px (px-3).
+      padding-y:
+        $type: dimension
+        $value: "6px"
+        $description: Small button vertical padding — 6 px (py-1.5).
+
+    default:
+      height:
+        $type: dimension
+        $value: "40px"
+        $description: Default button height (h-10).
+      padding-x:
+        $type: dimension
+        $value: "{spacing.spacing-2}"
+        $description: Default button horizontal padding — 16 px (px-4).
+      padding-y:
+        $type: dimension
+        $value: "{spacing.spacing-1}"
+        $description: Default button vertical padding — 8 px (py-2).
+
+    lg:
+      height:
+        $type: dimension
+        $value: "48px"
+        $description: Large button height (h-12).
+      padding-x:
+        $type: dimension
+        $value: "20px"
+        $description: Large button horizontal padding — 20 px (px-5).
+      padding-y:
+        $type: dimension
+        $value: "{spacing.spacing-2}"
+        $description: Large button vertical padding — 16 px (py-4).
+
+  # ── Variants ─────────────────────────────────────────────────────────────────
+
+  primary:
+    $description: High-emphasis action — used for the single most important CTA.
+    background:
+      $type: color
+      $value: "#000000"
+      $description: Primary button fill.
+      $themes:
+        dark: "#ffffff"
+    foreground:
+      $type: color
+      $value: "#ffffff"
+      $description: Primary button label and icon color.
+      $themes:
+        dark: "#000000"
+
+  secondary:
+    $description: >
+      Medium-emphasis action — alternatives to the primary CTA
+      and non-destructive confirmations.
+    background:
+      $type: color
+      $value: "oklch(0.967 0.003 264.542)"
+      $description: >
+        Secondary button fill (gray-100).
+      $themes:
+        dark: "hsl(233, 2%, 12%)"
+    foreground:
+      $type: color
+      $value: "#000000"
+      $description: Secondary button label color.
+      $themes:
+        dark: "#ffffff"
+
+  destructive:
+    $description: Irreversible or dangerous actions — delete, remove, revoke.
+    background:
+      $type: color
+      $value: "{colors.destructive}"
+      $description: Destructive button fill (red-500 / red-600 in dark).
+    foreground:
+      $type: color
+      $value: "#ffffff"
+      $description: Destructive button label color.
+
+  ghost:
+    $description: >
+      Low-emphasis action — tertiary actions, toolbar buttons, and
+      icon-only controls.
+    background:
+      $type: color
+      $value: "transparent"
+      $description: Ghost button has no fill at rest.
+    foreground:
+      $type: color
+      $value: "#000000"
+      $description: Ghost button label color.
+      $themes:
+        dark: "#ffffff"

@@ -1,0 +1,43 @@
+# Card component tokens
+#
+# Semantic tokens for the Card, CardHeader, CardContent, and CardFooter
+# components.  Tokens reference design tokens via {dot.path} aliases so
+# that any downstream theme change propagates automatically.
+
+card:
+  background:
+    $type: color
+    $value: "{colors.bg-surface}"
+    $description: >
+      Card background color — sits one step above the page background.
+
+  padding:
+    $type: dimension
+    $value: "{spacing.spacing-3}"
+    $description: >
+      Default inset padding applied to the Card root (24 px).
+      Consumers may override per-instance.
+
+  gap:
+    $type: dimension
+    $value: "{spacing.spacing-2}"
+    $description: >
+      Vertical gap between direct children of the Card stack (16 px).
+
+  radius:
+    $type: dimension
+    $value: "{radii.lg}"
+    $description: >
+      Corner radius of the Card surface (16 px / rounded-2xl).
+
+  footer:
+    gap:
+      $type: dimension
+      $value: "12px"
+      $description: Gap between action buttons in CardFooter (12 px).
+
+    padding-top:
+      $type: dimension
+      $value: "{spacing.spacing-2}"
+      $description: >
+        Top padding added to CardFooter when action buttons are present (16 px).

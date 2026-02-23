@@ -49,7 +49,7 @@ export const orbitColors = {
 // Numeric keys map to the Orbit spacing scale. Every key carries the full set
 // of per-prop Tailwind class strings so JIT sees them as static tokens.
 //
-// Token → Tailwind scale:  spacing-0→0  spacing-1→2  spacing-1.5→3  spacing-2→4  spacing-3→6  spacing-4→8  spacing-5→10  spacing-6→12  spacing-8→16  spacing-10→20  spacing-12→24  spacing-16→32  spacing-32→64
+// Token → Tailwind scale:  spacing-0→0  spacing-1→2  spacing-2→4  spacing-3→6  spacing-4→8  spacing-5→10  spacing-6→12  spacing-8→16  spacing-10→20  spacing-12→24  spacing-16→32  spacing-32→64
 
 export const orbitSpacing = {
   'spacing-0': {
@@ -70,25 +70,6 @@ export const orbitSpacing = {
     gap: 'gap-0',
     rowGap: 'gap-y-0',
     columnGap: 'gap-x-0',
-  },
-  'spacing-1.5': {
-    padding: 'p-3',
-    paddingX: 'px-3',
-    paddingY: 'py-3',
-    paddingTop: 'pt-3',
-    paddingRight: 'pr-3',
-    paddingBottom: 'pb-3',
-    paddingLeft: 'pl-3',
-    margin: 'm-3',
-    marginX: 'mx-3',
-    marginY: 'my-3',
-    marginTop: 'mt-3',
-    marginRight: 'mr-3',
-    marginBottom: 'mb-3',
-    marginLeft: 'ml-3',
-    gap: 'gap-3',
-    rowGap: 'gap-y-3',
-    columnGap: 'gap-x-3',
   },
   'spacing-1': {
     padding: 'p-2',

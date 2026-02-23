@@ -6,8 +6,7 @@ import fg from 'fast-glob'
 import { join, resolve } from 'node:path'
 import { parseYamlFile } from '../parse/yaml.js'
 import { resolveAliases } from '../resolve/aliases.js'
-import { transformColors } from '../transform/color.js'
-import { transformDimensions } from '../transform/dimension.js'
+import { defaultRegistry } from '../transform/built-in.js'
 import { formatCss } from '../format/css.js'
 import { formatJson } from '../format/json.js'
 import { formatTypescript } from '../format/typescript.js'
@@ -37,15 +36,21 @@ const watchOption = Options.boolean('watch').pipe(
   Options.withDefault(false),
 )
 
-/** JSON string mapping theme names to CSS selectors.
- *  e.g. '{"dark":":root .dark","light":":root .light"}' */
+/** JSON string mapping theme names to CSS selectors. */
 const themesOption = Options.text('themes').pipe(
-  Options.withAlias('t'),
   Options.withDescription(
     'JSON map of theme name → CSS selector for multi-theme output. ' +
       'e.g. \'{"dark":":root .dark"}\'',
   ),
   Options.optional,
+)
+
+const transformOption = Options.text('transform').pipe(
+  Options.withDescription(
+    'Named transform pipeline to apply to token values. ' +
+      `Built-in pipelines: ${defaultRegistry.pipelines().join(', ')}.`,
+  ),
+  Options.withDefault('default'),
 )
 
 const runBuild = (opts: {
@@ -54,9 +59,10 @@ const runBuild = (opts: {
   format: string
   watch: boolean
   themes: string | undefined
+  transform: string
 }) =>
   Effect.gen(function* () {
-    const { input, output, format: formatStr, themes: themesJson } = opts
+    const { input, output, format: formatStr, themes: themesJson, transform } = opts
     const formats = formatStr.split(',').map((f) => f.trim())
     const outputDir = resolve(output)
 
@@ -90,13 +96,9 @@ const runBuild = (opts: {
 
     const merged: TokenGroup = Object.assign({}, ...groups)
 
-    // Resolve aliases
+    // Pipeline: resolve aliases → apply named transform pipeline → format
     const flatMap = yield* resolveAliases(merged)
-
-    // Transform
-    const afterColors = yield* transformColors(flatMap)
-    const afterDimensions = yield* transformDimensions(afterColors)
-    const finalMap: FlatTokenMap = afterDimensions
+    const finalMap: FlatTokenMap = yield* defaultRegistry.apply(transform, flatMap)
 
     // Ensure output directory exists
     const fs = yield* FileSystem.FileSystem
@@ -132,7 +134,15 @@ export const buildCommand = Command.make(
     format: formatOption,
     watch: watchOption,
     themes: themesOption,
+    transform: transformOption,
   },
-  ({ input, output, format, watch, themes }) =>
-    runBuild({ input, output, format, watch, themes: themes._tag === 'Some' ? themes.value : undefined }),
+  ({ input, output, format, watch, themes, transform }) =>
+    runBuild({
+      input,
+      output,
+      format,
+      watch,
+      themes: themes._tag === 'Some' ? themes.value : undefined,
+      transform,
+    }),
 ).pipe(Command.withDescription('Build design tokens from YAML source files'))

@@ -18,9 +18,4 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  checkout_pricing_position: {
-    description: 'Show detailed pricing breakdown on the left side of checkout',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
 } as const

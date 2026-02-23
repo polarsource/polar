@@ -85,6 +85,7 @@ interface BaseCheckoutFormProps {
   locale?: AcceptedLocale
   termsExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
+  beforeSubmit?: React.ReactNode
 }
 
 const BaseCheckoutForm = ({
@@ -101,6 +102,7 @@ const BaseCheckoutForm = ({
   locale: localeProp,
   termsExperiment,
   isWalletPayment,
+  beforeSubmit,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -760,6 +762,7 @@ const BaseCheckoutForm = ({
                   ),
                 )}
             </div>
+            {beforeSubmit}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
               <Button
                 type="submit"
@@ -840,6 +843,7 @@ interface CheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   termsExperiment?: 'treatment' | 'control'
+  beforeSubmit?: React.ReactNode
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

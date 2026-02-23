@@ -244,6 +244,30 @@ const Checkout = ({
           isUpdatePending={isUpdatePending}
           locale={locale}
           termsExperiment={termsExperiment}
+          beforeSubmit={
+            hasProductCheckout(checkout) && !checkout.isFreeProductPrice ? (
+              <div className="flex flex-col gap-4">
+                {checkout.productPrice.amountType === 'seat_based' && (
+                  <CheckoutSeatSelector
+                    checkout={checkout}
+                    update={
+                      update as (
+                        data: CheckoutUpdatePublic,
+                      ) => Promise<ProductCheckoutPublic>
+                    }
+                    locale={locale}
+                    compact
+                  />
+                )}
+                <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
+                <CheckoutDiscountInput
+                  checkout={checkout}
+                  update={update}
+                  locale={locale}
+                />
+              </div>
+            ) : undefined
+          }
         />
       </ShadowBox>
     )

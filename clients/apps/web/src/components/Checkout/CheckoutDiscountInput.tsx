@@ -89,7 +89,7 @@ export const CheckoutDiscountInput = ({
           size="sm"
           onClick={() => setExpanded(true)}
         >
-          Add discount code
+          {t('checkout.form.addDiscountCode')}
         </Button>
       </div>
     )

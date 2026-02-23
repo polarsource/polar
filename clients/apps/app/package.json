@@ -93,6 +93,7 @@
     "@babel/core": "^7.28.5",
     "@sentry/cli": "^2.58.4",
     "@types/jest": "^29.5.14",
+    "@types/node": "^24.0.0",
     "@types/react": "19.2.3",
     "@types/react-test-renderer": "^18.3.1",
     "eslint": "^9.39.2",

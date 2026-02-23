@@ -365,14 +365,8 @@ class OrganizationDetailView:
     def render(self, request: Request, section: str = "overview") -> Generator[None]:
         """Render the complete detail view with top tabs."""
 
-        # Back button and header
+        # Header
         with tag.div(classes="mb-6"):
-            with tag.a(
-                href=str(request.url_for("organizations:list")),
-                classes="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
-            ):
-                text("← Back to Organizations")
-
             with tag.div(classes="flex items-center justify-between gap-4"):
                 with tag.div(classes="flex items-center gap-3 min-w-0 flex-1"):
                     with tag.h1(

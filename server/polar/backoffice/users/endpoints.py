@@ -303,7 +303,9 @@ async def get(
                     datatable.DatatableActionHTMX[UserOrganization](
                         "Delete Organization",
                         lambda r, i: str(
-                            r.url_for("organizations-classic:delete", id=i.organization_id)
+                            r.url_for(
+                                "organizations-classic:delete", id=i.organization_id
+                            )
                         ),
                         target="#modal",
                         hidden=lambda _, i: i.organization.is_deleted,

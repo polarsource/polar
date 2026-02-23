@@ -35,9 +35,7 @@ class OrganizationDetailView:
             Tab(
                 "Overview",
                 str(
-                    request.url_for(
-                        "organizations:detail", organization_id=self.org.id
-                    )
+                    request.url_for("organizations:detail", organization_id=self.org.id)
                 )
                 + "?section=overview",
                 active=current_section == "overview",
@@ -45,9 +43,7 @@ class OrganizationDetailView:
             Tab(
                 "Team",
                 str(
-                    request.url_for(
-                        "organizations:detail", organization_id=self.org.id
-                    )
+                    request.url_for("organizations:detail", organization_id=self.org.id)
                 )
                 + "?section=team",
                 active=current_section == "team",
@@ -55,9 +51,7 @@ class OrganizationDetailView:
             Tab(
                 "Account",
                 str(
-                    request.url_for(
-                        "organizations:detail", organization_id=self.org.id
-                    )
+                    request.url_for("organizations:detail", organization_id=self.org.id)
                 )
                 + "?section=account",
                 active=current_section == "account",
@@ -65,9 +59,7 @@ class OrganizationDetailView:
             Tab(
                 "Files",
                 str(
-                    request.url_for(
-                        "organizations:detail", organization_id=self.org.id
-                    )
+                    request.url_for("organizations:detail", organization_id=self.org.id)
                 )
                 + "?section=files",
                 active=current_section == "files",
@@ -75,9 +67,7 @@ class OrganizationDetailView:
             Tab(
                 "Settings",
                 str(
-                    request.url_for(
-                        "organizations:detail", organization_id=self.org.id
-                    )
+                    request.url_for("organizations:detail", organization_id=self.org.id)
                 )
                 + "?section=settings",
                 active=current_section == "settings",

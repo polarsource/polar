@@ -235,6 +235,7 @@ def build_review_message(organization_name: str, issues: OrgIssues) -> str:
     )
     lines.append("")
     lines.append("Cheers,")
+    lines.append("")
     lines.append("The customer success team at Polar")
 
     return "\n".join(lines)

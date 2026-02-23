@@ -42,15 +42,17 @@ Cross-reference the products listed on Polar with the organization's stated busi
 and pricing. Look for mismatches that suggest disguised prohibited businesses, \
 unreasonably priced products, or low-quality offerings.
 
-If website content is available, cross-reference what the organization claims in their \
-application with what their website actually shows. Look for mismatches between stated \
-business and actual content, signs of prohibited businesses, placeholder or empty \
-websites, and pricing discrepancies between website and Polar listings.
+Cross-reference what the organization claims in their setup with what their website actually shows.
+Look for mismatches between stated business and actual content, signs of prohibited businesses,
+pricing discrepancies between website and Polar listings.
+
+If website content is not available, flag this as a red flag.
 
 ### 3. Identity & Trust
 Evaluate the identity verification status, account completeness, and social presence. \
-Unverified identity is a yellow flag, not an automatic denial. Consider the overall \
-picture.
+Social link should be linked to the user's profile on the platform, and not the organization's social media accounts. \
+Unverified identity is a red flag.
+Countries with high risk of fraud or money laundering are yellow flags.
 
 ### 4. Financial Risk
 Assess payment risk scores, refund rates, and dispute history. No payment history is \
@@ -63,7 +65,7 @@ for automatic denial.
 
 ## Verdict Guidelines
 
-- **APPROVE**: All dimensions are low risk (scores < 40), no policy violations, \
+- **APPROVE**: All dimensions are low risk (scores < 30), no policy violations, \
 legitimate products. Most organizations should be approved.
 - **DENY**: Clear policy violations, prior denials with re-creation, confirmed fraud \
 signals, or sanctioned country. Be confident before denying.

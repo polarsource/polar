@@ -121,7 +121,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(CheckoutLink.id)).where(
                 CheckoutLink.organization_id == organization_id,
-                CheckoutLink.deleted_at.is_(None),
+                CheckoutLink.is_deleted.is_(False),
             )
         )
         return result.scalar() or 0
@@ -131,7 +131,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(WebhookEndpoint.id)).where(
                 WebhookEndpoint.organization_id == organization_id,
-                WebhookEndpoint.deleted_at.is_(None),
+                WebhookEndpoint.is_deleted.is_(False),
             )
         )
         return result.scalar() or 0
@@ -141,7 +141,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(OrganizationAccessToken.id)).where(
                 OrganizationAccessToken.organization_id == organization_id,
-                OrganizationAccessToken.deleted_at.is_(None),
+                OrganizationAccessToken.is_deleted.is_(False),
             )
         )
         return result.scalar() or 0
@@ -151,7 +151,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(Product.id)).where(
                 Product.organization_id == organization_id,
-                Product.deleted_at.is_(None),
+                Product.is_deleted.is_(False),
             )
         )
         return result.scalar() or 0
@@ -161,7 +161,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(Benefit.id)).where(
                 Benefit.organization_id == organization_id,
-                Benefit.deleted_at.is_(None),
+                Benefit.is_deleted.is_(False),
             )
         )
         return result.scalar() or 0

@@ -316,7 +316,7 @@ class ValidateSubAndPrompt:
                 UserOrganization,
                 onclause=and_(
                     UserOrganization.user_id == user.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 ),
             )
             .where(Organization.id == organization_id)

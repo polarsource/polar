@@ -1,0 +1,7 @@
+SCHEMA >
+    `organization_id` UUID,
+    `order_id` UUID,
+    `credit_effective_fx` AggregateFunction(argMax, Nullable(Float64), Tuple(UInt8, DateTime64(3)))
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, order_id

@@ -3,7 +3,16 @@ from uuid import UUID
 
 from alembic_utils.pg_extension import PGExtension
 from alembic_utils.replaceable_entity import register_entities
-from sqlalchemy import TIMESTAMP, MetaData, Uuid, inspect
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    ColumnElement,
+    MetaData,
+    Uuid,
+    inspect,
+    type_coerce,
+)
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from polar.enums import RateLimitGroup
@@ -45,6 +54,15 @@ class TimestampedModel(Model):
 
     def set_deleted_at(self) -> None:
         self.deleted_at = utc_now()
+
+    @hybrid_property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None
+
+    @is_deleted.inplace.expression
+    @classmethod
+    def _is_deleted_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(cls.deleted_at.is_not(None), Boolean)
 
 
 class IDModel(Model):

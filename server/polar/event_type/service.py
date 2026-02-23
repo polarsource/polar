@@ -136,7 +136,7 @@ class EventTypeService:
                 Organization.id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == auth_subject.subject.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 ),
             )

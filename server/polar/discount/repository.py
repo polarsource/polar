@@ -15,7 +15,7 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         """Get discount by ID with FOR UPDATE lock."""
         statement = (
             select(Discount)
-            .where(Discount.id == discount_id, Discount.deleted_at.is_(None))
+            .where(Discount.id == discount_id, Discount.is_deleted.is_(False))
             .with_for_update(nowait=nowait)
         )
         return await self.get_one_or_none(statement)

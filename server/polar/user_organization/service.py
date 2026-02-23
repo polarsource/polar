@@ -46,7 +46,7 @@ class UserOrganizationService:
             sql.select(UserOrganization)
             .where(
                 UserOrganization.organization_id == org_id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
             .options(
                 joinedload(UserOrganization.user),
@@ -61,7 +61,7 @@ class UserOrganizationService:
         """Get the count of active members in an organization."""
         stmt = sql.select(func.count(UserOrganization.user_id)).where(
             UserOrganization.organization_id == org_id,
-            UserOrganization.deleted_at.is_(None),
+            UserOrganization.is_deleted.is_(False),
         )
         res = await session.execute(stmt)
         count = res.scalar()
@@ -97,7 +97,7 @@ class UserOrganizationService:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
             .options(
                 joinedload(UserOrganization.user),
@@ -119,7 +119,7 @@ class UserOrganizationService:
             .where(
                 UserOrganization.user_id == user_id,
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
             .values(deleted_at=utc_now())
         )
@@ -168,7 +168,7 @@ class UserOrganizationService:
             sql.select(UserOrganization)
             .where(
                 UserOrganization.user_id == user_id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
             .options(
                 joinedload(UserOrganization.user),

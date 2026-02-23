@@ -18,6 +18,7 @@ from dramatiq.results.backends import RedisBackend as ResultsBackend
 from polar.config import settings
 from polar.logfire import instrument_httpx
 from polar.logging import Logger
+from polar.operational_errors import handle_operational_error
 
 from ._debounce import DebounceMiddleware
 from ._encoder import JSONEncoder
@@ -28,6 +29,21 @@ from ._redis import RedisMiddleware
 from ._sqlalchemy import SQLAlchemyMiddleware
 
 log: Logger = structlog.get_logger()
+
+
+class OperationalErrorMiddleware(dramatiq.Middleware):
+    """Middleware to detect and handle operational errors during message processing."""
+
+    def after_process_message(
+        self,
+        broker: dramatiq.Broker,
+        message: dramatiq.MessageProxy,
+        *,
+        result: Any | None = None,
+        exception: BaseException | None = None,
+    ) -> None:
+        if exception is not None:
+            handle_operational_error(exception)
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -170,13 +186,14 @@ def get_broker() -> dramatiq.Broker:
         # Message flow control
         DebounceMiddleware(redis_pool),
         # Retry & execution control (MaxRetries must precede Retries)
+        OperationalErrorMiddleware(),
         MaxRetriesMiddleware(),
         middleware.Retries(
             max_retries=settings.WORKER_MAX_RETRIES,
             min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
         ),
         middleware.AgeLimit(),
-        middleware.TimeLimit(),
+        middleware.TimeLimit(time_limit=60_000),
         middleware.CurrentMessage(),
     ]
 

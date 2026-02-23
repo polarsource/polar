@@ -1706,7 +1706,13 @@ class SubscriptionService:
             customer_id
         )
         for subscription in subscriptions:
-            await self._perform_cancellation(session, subscription, immediately=True)
+            await self._perform_cancellation(
+                session,
+                subscription,
+                immediately=True,
+                # Benefits are revoked through `benefit.revoke_customer`
+                revoke_benefits=False,
+            )
 
     async def _perform_cancellation(
         self,
@@ -1716,6 +1722,7 @@ class SubscriptionService:
         customer_reason: CustomerCancellationReason | None = None,
         customer_comment: str | None = None,
         immediately: bool = False,
+        revoke_benefits: bool = True,
     ) -> Subscription:
         if not subscription.can_cancel(immediately):
             raise AlreadyCanceledSubscription(subscription)
@@ -1736,7 +1743,8 @@ class SubscriptionService:
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
-            await self.enqueue_benefits_grants(session, subscription)
+            if revoke_benefits:
+                await self.enqueue_benefits_grants(session, subscription)
         else:
             subscription.cancel_at_period_end = True
             subscription.ends_at = subscription.current_period_end
@@ -2224,7 +2232,7 @@ class SubscriptionService:
         self, session: AsyncSession, product: Product
     ) -> None:
         base_statement = select(Subscription).where(
-            Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
+            Subscription.product_id == product.id, Subscription.is_deleted.is_(False)
         )
 
         count_result = await session.execute(
@@ -2403,7 +2411,7 @@ class SubscriptionService:
             BenefitGrant.subscription_id == subscription.id,
             BenefitGrant.benefit_id.not_in(subscription_tier_benefits_statement),
             BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
+            BenefitGrant.is_deleted.is_(False),
         )
 
         result = await session.execute(statement)

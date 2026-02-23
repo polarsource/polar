@@ -105,6 +105,7 @@ class OrderScenario:
     balance_at: datetime | None = None
     balance_amount: int | None = None
     balance_net_amount: int | None = None
+    include_balance_net_amount: bool = True
     balance_exchange_rate: float | None = None
     include_order_created_at_metadata: bool = True
     include_order_paid: bool = True
@@ -415,12 +416,11 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                 OrderScenario(
                     product_key="one_time",
                     ordered_at=_dt(date(2026, 1, 22), 10, 0),
-                    amount=14_000,
-                    applied_balance_amount=3_000,
-                    balance_amount=10_000,
-                    balance_net_amount=10_000,
-                    balance_exchange_rate=2.0,
-                    platform_fee_amount=500,
+                    amount=4_900,
+                    applied_balance_amount=10_284,
+                    balance_amount=15_184,
+                    balance_net_amount=4_900,
+                    platform_fee_amount=875,
                 ),
             ),
         ),
@@ -433,7 +433,7 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                     amount=0,
                     applied_balance_amount=7_000,
                     balance_amount=7_000,
-                    balance_net_amount=7_000,
+                    include_balance_net_amount=False,
                     balance_exchange_rate=1.25,
                     platform_fee_amount=350,
                 ),
@@ -457,7 +457,7 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                     applied_balance_amount=1_000,
                     emit_balance_credit_order=True,
                     balance_amount=7_000,
-                    balance_net_amount=7_000,
+                    include_balance_net_amount=False,
                     platform_fee_amount=200,
                 ),
             ),
@@ -978,6 +978,7 @@ async def _create_paid_order_events(
     balance_at: datetime | None = None,
     balance_amount: int | None = None,
     balance_net_amount: int | None = None,
+    include_balance_net_amount: bool = True,
     balance_exchange_rate: float | None = None,
     include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
@@ -1041,9 +1042,10 @@ async def _create_paid_order_events(
     balance_metadata = {
         **common_metadata,
         "amount": balance_amount_value,
-        "net_amount": balance_net_amount_value,
         "fee": order.platform_fee_amount,
     }
+    if include_balance_net_amount:
+        balance_metadata["net_amount"] = balance_net_amount_value
     if not emit_balance_credit_order:
         balance_metadata["transaction_id"] = str(transaction.id)
         balance_metadata["presentment_amount"] = balance_amount_value
@@ -1243,6 +1245,9 @@ async def _seed_customer_scenario(
                     balance_at=subscription_order.balance_at,
                     balance_amount=subscription_order.balance_amount,
                     balance_net_amount=subscription_order.balance_net_amount,
+                    include_balance_net_amount=(
+                        subscription_order.include_balance_net_amount
+                    ),
                     balance_exchange_rate=subscription_order.balance_exchange_rate,
                     include_order_created_at_metadata=(
                         subscription_order.include_order_created_at_metadata
@@ -1316,6 +1321,7 @@ async def _seed_customer_scenario(
                 balance_at=one_time_order.balance_at,
                 balance_amount=one_time_order.balance_amount,
                 balance_net_amount=one_time_order.balance_net_amount,
+                include_balance_net_amount=one_time_order.include_balance_net_amount,
                 balance_exchange_rate=one_time_order.balance_exchange_rate,
                 include_order_created_at_metadata=(
                     one_time_order.include_order_created_at_metadata
@@ -1730,8 +1736,8 @@ class TestTinybirdMetrics:
         tb = snapshot.tinybird.periods[0]
 
         assert pg.orders == 1
-        assert pg.net_revenue == 13_500
-        assert pg.one_time_products_net_revenue == 13_500
+        assert pg.net_revenue == 4_025
+        assert pg.one_time_products_net_revenue == 4_025
         assert tb.orders == pg.orders
         assert tb.net_revenue == pg.net_revenue
         assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue

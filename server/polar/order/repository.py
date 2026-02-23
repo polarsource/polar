@@ -140,7 +140,7 @@ class OrderRepository(
                 Customer.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -152,13 +152,13 @@ class OrderRepository(
             customer = auth_subject.subject
             statement = statement.where(
                 Order.customer_id == customer.id,
-                Order.deleted_at.is_(None),
+                Order.is_deleted.is_(False),
             )
         elif is_member(auth_subject):
             member = auth_subject.subject
             statement = statement.where(
                 Order.customer_id == member.customer_id,
-                Order.deleted_at.is_(None),
+                Order.is_deleted.is_(False),
             )
 
         return statement

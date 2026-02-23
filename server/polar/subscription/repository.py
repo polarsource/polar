@@ -142,7 +142,7 @@ class SubscriptionRepository(
                 Product.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -154,13 +154,13 @@ class SubscriptionRepository(
             customer = auth_subject.subject
             statement = statement.where(
                 Subscription.customer_id == customer.id,
-                Subscription.deleted_at.is_(None),
+                Subscription.is_deleted.is_(False),
             )
         elif is_member(auth_subject):
             member = auth_subject.subject
             statement = statement.where(
                 Subscription.customer_id == member.customer_id,
-                Subscription.deleted_at.is_(None),
+                Subscription.is_deleted.is_(False),
             )
 
         return statement

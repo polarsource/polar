@@ -567,7 +567,7 @@ class OrganizationService:
             .join(Customer, Order.customer_id == Customer.id)
             .where(
                 Customer.organization_id == organization_id,
-                Customer.deleted_at.is_(None),
+                Customer.is_deleted.is_(False),
             )
         )
         result = await session.execute(statement)
@@ -584,7 +584,7 @@ class OrganizationService:
             .join(Customer, Subscription.customer_id == Customer.id)
             .where(
                 Customer.organization_id == organization_id,
-                Customer.deleted_at.is_(None),
+                Customer.is_deleted.is_(False),
                 Subscription.status.in_(SubscriptionStatus.active_statuses()),
             )
         )

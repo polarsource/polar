@@ -421,7 +421,7 @@ class MemberService:
         customer_type = customer.type or CustomerType.individual
         if customer_type == CustomerType.individual:
             existing_members = await repository.list_by_customer(session, customer_id)
-            active_members = [m for m in existing_members if m.deleted_at is None]
+            active_members = [m for m in existing_members if not m.is_deleted]
             if len(active_members) >= 1:
                 raise NotPermitted(
                     "Individual customers can only have one member (the owner). "

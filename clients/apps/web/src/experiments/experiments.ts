@@ -18,11 +18,6 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  checkout_pricing_position: {
-    description: 'Show detailed pricing breakdown on the left side of checkout',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
   checkout_terms: {
     description:
       'Move terms and conditions text from inside payment element to below the form',

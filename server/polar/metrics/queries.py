@@ -99,7 +99,7 @@ def _get_readable_orders_statement(
             Product.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 )
             )
         )
@@ -349,7 +349,7 @@ def _get_readable_subscriptions_statement(
             Product.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 )
             )
         )
@@ -438,7 +438,7 @@ def get_checkouts_cte(
             Product.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 )
             )
         )
@@ -628,7 +628,7 @@ def _get_readable_cost_events_statement(
             Event.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 )
             )
         )
@@ -712,7 +712,7 @@ def get_events_metrics_cte(
             Event.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_deleted.is_(False),
                 )
             )
         )

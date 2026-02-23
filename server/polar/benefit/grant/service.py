@@ -85,7 +85,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         query = select(class_).where(class_.id == id)
         if not allow_deleted:
-            query = query.where(class_.deleted_at.is_(None))
+            query = query.where(class_.is_deleted.is_(False))
 
         if loaded:
             query = query.options(
@@ -114,7 +114,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             select(BenefitGrant)
             .where(
                 BenefitGrant.benefit_id == benefit.id,
-                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.is_deleted.is_(False),
             )
             .order_by(BenefitGrant.created_at.desc())
             .options(
@@ -155,7 +155,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .join(Customer, BenefitGrant.customer_id == Customer.id)
             .where(
                 Benefit.organization_id == organization_id,
-                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.is_deleted.is_(False),
             )
             .options(
                 joinedload(BenefitGrant.customer),

@@ -23,7 +23,7 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 from .repository import OrganizationRepository
 
@@ -104,6 +104,8 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
         await plain_service.create_organization_review_thread(session, organization)
+
+        enqueue_job("organization_review.run_agent", organization_id=organization_id)
 
         # We used to send an email manually too for initial reviews,
         # but we rely on Plain to do that now.
@@ -264,11 +266,11 @@ async def _backfill_owner_members(
             Member,
             (Customer.id == Member.customer_id)
             & (Member.role == MemberRole.owner)
-            & (Member.deleted_at.is_(None)),
+            & (Member.is_deleted.is_(False)),
         )
         .where(
             Customer.organization_id == organization.id,
-            Customer.deleted_at.is_(None),
+            Customer.is_deleted.is_(False),
             Member.id.is_(None),
         )
     )
@@ -533,7 +535,7 @@ async def _backfill_benefit_grants(
         .where(
             Customer.organization_id == organization.id,
             BenefitGrant.member_id.is_(None),
-            BenefitGrant.deleted_at.is_(None),
+            BenefitGrant.is_deleted.is_(False),
         )
     )
     results = await session.stream_scalars(
@@ -707,7 +709,7 @@ async def _cleanup_orphaned_seat_customers(
     count = 0
     for customer_id in orphaned_customer_ids:
         customer = await customer_repo.get_by_id(customer_id)
-        if customer is None or customer.deleted_at is not None:
+        if customer is None or customer.is_deleted:
             continue
 
         # Check if customer has any subscriptions

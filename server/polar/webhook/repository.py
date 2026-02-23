@@ -104,7 +104,7 @@ class WebhookEventRepository(
                 WebhookEndpoint.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -126,7 +126,7 @@ class WebhookEventRepository(
                 isouter=True,
             )
             .where(
-                WebhookEvent.deleted_at.is_(None),
+                WebhookEvent.is_deleted.is_(False),
                 WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
                 WebhookEvent.id != event.id,
                 WebhookDelivery.id.is_(None),
@@ -159,7 +159,7 @@ class WebhookDeliveryRepository(
     async def count_by_event(self, event_id: UUID) -> int:
         statement = select(func.count(WebhookDelivery.id)).where(
             WebhookDelivery.webhook_event_id == event_id,
-            WebhookDelivery.deleted_at.is_(None),
+            WebhookDelivery.is_deleted.is_(False),
         )
         res = await self.session.execute(statement)
         return res.scalar_one()
@@ -182,7 +182,7 @@ class WebhookDeliveryRepository(
                 WebhookEndpoint.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -212,7 +212,7 @@ class WebhookEndpointRepository(
                 WebhookEndpoint.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

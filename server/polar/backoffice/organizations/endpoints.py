@@ -690,7 +690,7 @@ async def delete(
     if not organization:
         raise HTTPException(status_code=404)
 
-    if organization.deleted_at is not None:
+    if organization.is_deleted:
         await add_toast(
             request, "This organization is already deleted", variant="error"
         )

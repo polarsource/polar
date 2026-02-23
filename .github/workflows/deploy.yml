@@ -126,7 +126,7 @@ jobs:
       environment: sandbox
       docker-digest: ${{ needs.build.outputs.digest }}
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: ""
+      render-worker-service-ids: "srv-d62q7vh4tr6s73fk44ng"
       docker-digest-playwright: ${{ needs.build.outputs.digest-playwright }}
       render-playwright-worker-service-ids: "srv-d089jj7diees73934kgg"
       has-migrations: ${{ needs.changes.outputs.migrations == 'true' || github.event_name == 'workflow_dispatch' }}

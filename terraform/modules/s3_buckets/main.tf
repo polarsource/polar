@@ -107,23 +107,6 @@ resource "aws_s3_bucket_policy" "public_assets" {
   depends_on = [aws_s3_bucket_public_access_block.public_assets]
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "public_assets_resized" {
-  bucket = aws_s3_bucket.public_assets.id
-
-  rule {
-    id     = "expire-resized-images"
-    status = "Enabled"
-
-    filter {
-      prefix = "resized/"
-    }
-
-    expiration {
-      days = 30
-    }
-  }
-}
-
 resource "aws_s3_bucket" "public_files" {
   bucket = local.public_files_bucket
 }

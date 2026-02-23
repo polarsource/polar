@@ -1,0 +1,16 @@
+SCHEMA >
+    `organization_id` UUID,
+    `quarter_hour` DateTime,
+    `product_id` UUID,
+    `canceled_subscriptions` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_customer_service` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_low_quality` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_missing_features` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_switched_service` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_too_complex` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_too_expensive` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_unused` AggregateFunction(sum, UInt64),
+    `canceled_subscriptions_other` AggregateFunction(sum, UInt64)
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, quarter_hour, product_id

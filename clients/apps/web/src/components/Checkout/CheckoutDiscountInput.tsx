@@ -35,16 +35,19 @@ interface CheckoutDiscountInputProps {
   checkout: CheckoutPublic
   update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   locale?: AcceptedLocale
+  collapsible?: boolean
 }
 
 export const CheckoutDiscountInput = ({
   checkout,
   update,
   locale = DEFAULT_LOCALE,
+  collapsible = false,
 }: CheckoutDiscountInputProps) => {
   const t = useTranslations(locale)
   const [discountCode, setDiscountCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   const hasDiscount = !!checkout.discount
 
@@ -77,21 +80,42 @@ export const CheckoutDiscountInput = ({
     return null
   }
 
+  if (collapsible && !hasDiscount && !expanded) {
+    return (
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setExpanded(true)}
+        >
+          Add discount code
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex flex-row items-center justify-between text-sm">
-        <span>{t('checkout.form.discountCode')}</span>
-        <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
-          {t('checkout.form.optional')}
-        </span>
-      </label>
+      {!collapsible && (
+        <label className="flex flex-row items-center justify-between text-sm">
+          <span>{t('checkout.form.discountCode')}</span>
+          <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
+            {t('checkout.form.optional')}
+          </span>
+        </label>
+      )}
       <div className="relative">
         <Input
           type="text"
           autoComplete="off"
+          placeholder={
+            collapsible ? t('checkout.form.discountCode') : undefined
+          }
           value={hasDiscount ? checkout.discount?.code || '' : discountCode}
           onChange={(e) => setDiscountCode(e.target.value)}
           disabled={hasDiscount}
+          className={collapsible ? 'h-8 text-sm' : undefined}
           onKeyDown={(e) => {
             if (e.key !== 'Enter') return
             e.preventDefault()
@@ -105,6 +129,7 @@ export const CheckoutDiscountInput = ({
               variant="secondary"
               size="sm"
               onClick={addDiscountCode}
+              className={collapsible ? 'h-6 px-2 text-xs' : undefined}
             >
               {t('checkout.form.apply')}
             </Button>
@@ -115,8 +140,9 @@ export const CheckoutDiscountInput = ({
               variant="secondary"
               size="sm"
               onClick={removeDiscountCode}
+              className={collapsible ? 'h-6 w-6 px-0' : undefined}
             >
-              <XIcon className="h-4 w-4" />
+              <XIcon className={collapsible ? 'h-3 w-3' : 'h-4 w-4'} />
             </Button>
           )}
         </div>

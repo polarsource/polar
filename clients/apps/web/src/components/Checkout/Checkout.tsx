@@ -443,6 +443,7 @@ const Checkout = ({
                         checkout={checkout}
                         update={update}
                         locale={locale}
+                        collapsible
                       />
                     </div>
                   )}

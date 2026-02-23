@@ -1574,6 +1574,7 @@ class PlainService:
         )
         lines.append("")
         lines.append("Cheers,")
+        lines.append("")
         lines.append("The customer success team at Polar")
 
         return "\n".join(lines)

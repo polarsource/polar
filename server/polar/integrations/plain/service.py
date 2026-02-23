@@ -309,6 +309,9 @@ class PlainService:
                     customer_identifier=customer_identifier,
                     title=f"Organization Appeal - {organization.slug}",
                     label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
+                    assigned_to=CreateThreadAssignedToInput(
+                        user_id=random.choice(SUPPORT_AGENT_IDS)
+                    ),
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(

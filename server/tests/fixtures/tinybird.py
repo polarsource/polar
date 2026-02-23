@@ -32,7 +32,7 @@ def tinybird_available() -> bool:
     return get_tinybird_tokens() is not None
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def tinybird_workspace() -> Generator[str, None, None]:
     """Create an isolated Tinybird workspace, deploy schema, and yield token."""
     tokens = get_tinybird_tokens()
@@ -111,7 +111,7 @@ def tinybird_workspace() -> Generator[str, None, None]:
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def tinybird_client(
     tinybird_workspace: str,
 ) -> Generator[TinybirdClient]:

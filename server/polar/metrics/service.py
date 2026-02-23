@@ -8,10 +8,10 @@ import logfire
 import structlog
 from sqlalchemy import ColumnElement, FromClause, select, text
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models import Customer, Organization, Product, User
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -226,44 +226,6 @@ def _is_current_period(
 
 
 class MetricsService:
-    async def _get_tinybird_enabled_org(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization_id: Sequence[uuid.UUID] | None,
-    ) -> Organization | None:
-        if not settings.TINYBIRD_EVENTS_READ:
-            return None
-
-        org: Organization | None
-        if is_organization(auth_subject):
-            org = auth_subject.subject
-        elif is_user(auth_subject):
-            if not organization_id:
-                return None
-            statement = select(Organization).where(
-                Organization.id == organization_id[0],
-                Organization.id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == auth_subject.subject.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                ),
-            )
-            result = await session.execute(statement)
-            org = result.scalar_one_or_none()
-            if org is None:
-                return None
-        else:
-            return None
-
-        if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
-            "tinybird_compare", True
-        ):
-            return org
-
-        return None
-
     async def _get_metrics_from_tinybird(
         self,
         auth_subject: AuthSubject[User | Organization],
@@ -640,15 +602,6 @@ class MetricsService:
             }
         )
 
-        org = await self._get_tinybird_enabled_org(
-            session, auth_subject, organization_id
-        )
-        if org is None:
-            return pg_response
-
-        tinybird_compare = org.feature_settings.get("tinybird_compare", False)
-        tinybird_read = org.feature_settings.get("tinybird_read", True)
-
         external_customer_id: list[str] | None = None
         if customer_id is not None:
             customer_stmt = select(Customer.external_id).where(
@@ -663,7 +616,7 @@ class MetricsService:
         tb_product_id = product_id
         if billing_type is not None:
             product_stmt = select(Product.id).where(
-                Product.organization_id == org.id,
+                Product.organization_id == organization_id,
                 Product.billing_type.in_(billing_type),
                 Product.is_deleted.is_(False),
             )
@@ -695,26 +648,12 @@ class MetricsService:
         except Exception as e:
             log.error(
                 "tinybird.metrics.query.failed",
-                organization_id=str(org.id),
+                organization_id=str(organization_id),
                 error=str(e),
             )
             return pg_response
 
-        if tinybird_compare:
-            self._log_tinybird_comparison(
-                org.id,
-                pg_response,
-                tb_response,
-                interval=interval,
-                timezone=timezone,
-                now=now_dt,
-            )
-            return pg_response
-
-        if tinybird_read:
-            return self._merge_tinybird_over_pg(pg_response, tb_response, metrics)
-
-        return pg_response
+        return self._merge_tinybird_over_pg(pg_response, tb_response, metrics)
 
 
 metrics = MetricsService()

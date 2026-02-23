@@ -209,9 +209,7 @@ async def migrate_organizations(
                     session
                 ).get_by_id(org.id)
                 assert organization is not None
-                grants_linked = await _backfill_benefit_grants(
-                    session, organization
-                )
+                grants_linked = await _backfill_benefit_grants(session, organization)
 
             # Step D: Soft-delete orphaned seat-holder customers
             async with sessionmaker() as session:

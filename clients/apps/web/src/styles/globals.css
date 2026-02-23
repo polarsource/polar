@@ -3,6 +3,7 @@
 
 @source '../../../../packages/ui/src';
 @source '../../../../packages/checkout/src';
+@source '../../../../packages/orbit/src';
 
 @plugin '@tailwindcss/forms';
 @plugin 'tailwindcss-radix';

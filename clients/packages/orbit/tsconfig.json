@@ -6,8 +6,11 @@
     "lib": ["esnext", "dom"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "jsx": "react"
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "build", "node_modules"]
 }
+

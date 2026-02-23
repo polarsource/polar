@@ -266,15 +266,15 @@ function Mono({ children }: { children: ReactNode }) {
 
 export default function TokensPage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         title="Design Tokens"
         description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
       />
 
       {/* Color */}
-      <Stack gap={3}>
-        <Stack gap={1.5}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1.5}>
           <Headline as="h4" text="Color" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -308,8 +308,8 @@ export default function TokensPage() {
       </Stack>
 
       {/* Type scale */}
-      <Stack gap={3}>
-        <Stack gap={1.5}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1.5}>
           <Headline as="h4" text="Type Scale" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -344,8 +344,8 @@ export default function TokensPage() {
       </Stack>
 
       {/* Motion */}
-      <Stack gap={3}>
-        <Stack gap={1.5}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1.5}>
           <Headline as="h4" text="Motion" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -366,20 +366,20 @@ export default function TokensPage() {
       </Stack>
 
       {/* Spacing */}
-      <Stack gap={3}>
-        <Stack gap={1.5}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1.5}>
           <Headline as="h4" text="Spacing" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
           <Text variant="subtle" fontSize="sm">
             All spacing follows a base-8 grid. Use these values exclusively.
           </Text>
         </Stack>
-        <Stack gap={1.5}>
+        <Stack vertical gap={1.5}>
           {spacingTokens.map(({ token, px, rem, usage }) => {
             const size = parseInt(px)
             const barWidth = Math.min(100, (size / 256) * 100)
             return (
-              <Stack key={token} horizontal alignItems="center" gap={3}>
+              <Stack key={token} alignItems="center" gap={3}>
                 <Box className="w-32 shrink-0">
                   <div
                     className="h-1.5 rounded-full bg-black dark:bg-white"

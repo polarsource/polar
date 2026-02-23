@@ -45,7 +45,7 @@ const props = [
 
 export default function HeadlinePage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Headline"
@@ -53,11 +53,11 @@ export default function HeadlinePage() {
       />
 
       {/* Type scale demo */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Type Scale" />
         {levels.map(({ tag, size, weight }) => (
           <Box key={tag} className="grid grid-cols-5 items-baseline gap-8">
-            <Stack className="gap-0.5">
+            <Stack vertical className="gap-0.5">
               <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
                 {tag}
               </Text>
@@ -76,14 +76,14 @@ export default function HeadlinePage() {
       </Stack>
 
       {/* Animated */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Animated"
           description="Set animate to trigger a curtain-reveal on viewport entry. Each line clips upward independently; passing an array staggers them at 0.2s ÷ n."
         />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
-            <Stack className="gap-0.5">
+            <Stack vertical className="gap-0.5">
               <Text as="span" variant="subtle" fontSize="xs">
                 Single line
               </Text>
@@ -93,7 +93,7 @@ export default function HeadlinePage() {
             </Box>
           </Box>
           <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
-            <Stack className="gap-0.5">
+            <Stack vertical className="gap-0.5">
               <Text as="span" variant="subtle" fontSize="xs">
                 Multiline stagger
               </Text>
@@ -113,9 +113,9 @@ export default function HeadlinePage() {
       </Stack>
 
       {/* Props */}
-      <Stack gap={3}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">

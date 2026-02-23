@@ -1,8 +1,8 @@
-import React, { type ElementType, type JSX, type ReactNode } from 'react'
+import { type ElementType } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type {
-  Breakpoint,
   BoxProps,
+  Breakpoint,
   FlexContainerProps,
 } from '../primitives/createBox'
 import { resolveContainerClasses } from '../primitives/resolveProperties'
@@ -19,7 +19,10 @@ export type StackBreakpoint = Exclude<Breakpoint, 'default'>
  * display is omitted — Stack is always `flex`.
  * flexDirection is omitted — use vertical / horizontal / verticalUntil / horizontalUntil.
  */
-type StackContainerProps = Omit<FlexContainerProps, 'display' | 'flexDirection'> & {
+type StackContainerProps = Omit<
+  FlexContainerProps,
+  'display' | 'flexDirection'
+> & {
   /** Gap between flex children, resolved via the Orbit spacing scale. */
   gap?: OrbitSpacing
   /** Row gap between flex children, resolved via the Orbit spacing scale. */
@@ -28,19 +31,21 @@ type StackContainerProps = Omit<FlexContainerProps, 'display' | 'flexDirection'>
   columnGap?: OrbitSpacing
 }
 
-export type StackProps<E extends ElementType = 'div'> = BoxProps<OrbitTheme, E> &
+export type StackProps<E extends ElementType = 'div'> = BoxProps<
+  OrbitTheme,
+  E
+> &
   StackContainerProps & {
     /**
-     * Render children in a row (horizontal flex). Equivalent to flex-row.
-     * Takes precedence over the default column direction.
-     *
-     * @example
-     * <Stack horizontal gap={2}>…</Stack>
+     * Render children in a row (horizontal flex). This is the default.
+     * Useful when combining with horizontalUntil to be explicit.
      */
     horizontal?: boolean
     /**
-     * Render children in a column (vertical flex). This is the default.
-     * Useful when combining with verticalUntil to be explicit.
+     * Render children in a column (vertical flex). Equivalent to flex-col.
+     *
+     * @example
+     * <Stack vertical gap={2}>…</Stack>
      */
     vertical?: boolean
     /**
@@ -62,17 +67,17 @@ export type StackProps<E extends ElementType = 'div'> = BoxProps<OrbitTheme, E> 
      */
     horizontalUntil?: StackBreakpoint
     /**
-     * Element inserted between each child. Renders the divider node
-     * between adjacent children — does not add one before the first
-     * or after the last.
+     * Tailwind divide utility applied between children (e.g. `'divide-x'`, `'divide-y'`).
      *
      * @example
-     * <Stack divider={<Box className="border-t border-neutral-200 dark:border-polar-800" />}>
-     *   <Item />
-     *   <Item />
-     * </Stack>
+     * <Stack divider="divide-x" dividerColor="divide-gray-200">…</Stack>
      */
-    divider?: ReactNode
+    divider?: string
+    /**
+     * Tailwind divide color utility (e.g. `'divide-gray-200'`, `'dark:divide-polar-800'`).
+     * Only meaningful when `divider` is set.
+     */
+    dividerColor?: string
   }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -97,23 +102,10 @@ function resolveDirection(
     map[horizontalUntil] = 'column'
     return map
   }
-  if (horizontal) return 'row'
   if (vertical) return 'column'
-  return 'column'
-}
+  if (horizontal) return 'row'
 
-function withDividers(children: ReactNode, divider: ReactNode): ReactNode {
-  const childArray = React.Children.toArray(children)
-  return (
-    <>
-      {childArray.map((child, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && divider}
-          {child}
-        </React.Fragment>
-      ))}
-    </>
-  )
+  return 'row'
 }
 
 // ─── Stack ────────────────────────────────────────────────────────────────────
@@ -121,8 +113,8 @@ function withDividers(children: ReactNode, divider: ReactNode): ReactNode {
 /**
  * Orbit Stack — the primary flex layout primitive.
  *
- * Always renders as `display="flex"`. Defaults to a vertical column.
- * Use `horizontal` for a row, `verticalUntil` / `horizontalUntil` for
+ * Always renders as `display="flex"`. Defaults to a horizontal row.
+ * Use `vertical` for a column, `verticalUntil` / `horizontalUntil` for
  * responsive direction changes. All Box token props (spacing, color, radius)
  * and flex child props (flex, alignSelf, …) are forwarded to the inner Box.
  *
@@ -134,12 +126,12 @@ function withDividers(children: ReactNode, divider: ReactNode): ReactNode {
  * </Stack>
  *
  * @example
- * // Always horizontal, centered cross-axis
- * <Stack horizontal alignItems="center" gap={2}>…</Stack>
+ * // Always vertical, centered cross-axis
+ * <Stack vertical alignItems="center" gap={2}>…</Stack>
  *
  * @example
  * // Divider between each child
- * <Stack divider={<Box className="border-t border-neutral-200 dark:border-polar-800" />}>
+ * <Stack vertical divider="divide-y" dividerColor="divide-gray-200 dark:divide-polar-800">
  *   <Item />
  *   <Item />
  * </Stack>
@@ -156,13 +148,19 @@ export function Stack<E extends ElementType = 'div'>({
   rowGap,
   columnGap,
   divider,
+  dividerColor,
   className,
   children,
   ...boxProps
-}: StackProps<E>): JSX.Element {
+}: StackProps<E>) {
   const containerClasses = resolveContainerClasses({
     display: 'flex',
-    flexDirection: resolveDirection(horizontal, vertical, verticalUntil, horizontalUntil),
+    flexDirection: resolveDirection(
+      horizontal,
+      vertical,
+      verticalUntil,
+      horizontalUntil,
+    ),
     alignItems,
     justifyContent,
     flexWrap,
@@ -171,15 +169,25 @@ export function Stack<E extends ElementType = 'div'>({
   const gapClasses = [
     gap !== undefined ? orbitTheme.spacing[gap]?.gap : undefined,
     rowGap !== undefined ? orbitTheme.spacing[rowGap]?.rowGap : undefined,
-    columnGap !== undefined ? orbitTheme.spacing[columnGap]?.columnGap : undefined,
-  ].filter(Boolean).join(' ')
+    columnGap !== undefined
+      ? orbitTheme.spacing[columnGap]?.columnGap
+      : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <Box
-      className={twMerge(containerClasses, gapClasses, className)}
+      className={twMerge(
+        containerClasses,
+        gapClasses,
+        divider,
+        dividerColor,
+        className,
+      )}
       {...(boxProps as BoxProps<OrbitTheme, E>)}
     >
-      {divider ? withDividers(children, divider) : children}
+      {children}
     </Box>
   )
 }

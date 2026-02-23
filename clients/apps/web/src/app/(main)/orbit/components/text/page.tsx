@@ -111,7 +111,7 @@ const props = [
 
 export default function TextPage() {
   return (
-    <Stack gap={10}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Text"
@@ -119,12 +119,12 @@ export default function TextPage() {
       />
 
       {/* Variants */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
             <Box key={variant} className="grid grid-cols-5 items-start gap-8 py-6">
-              <Stack className="col-span-2 gap-1">
+              <Stack vertical className="col-span-2 gap-1">
                 <Text fontWeight="medium" fontSize="sm">{label}</Text>
                 <Text variant="subtle" fontSize="xs">{desc}</Text>
               </Stack>
@@ -139,12 +139,12 @@ export default function TextPage() {
       </Stack>
 
       {/* Font size */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Font Size" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {fontSizes.map(({ size, px }) => (
             <Box key={size} className="grid grid-cols-5 items-baseline gap-8 py-5">
-              <Stack className="gap-0.5">
+              <Stack vertical className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {size}
                 </Text>
@@ -159,12 +159,12 @@ export default function TextPage() {
       </Stack>
 
       {/* Font weight */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Font Weight" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {fontWeights.map(({ weight, value }) => (
             <Box key={weight} className="grid grid-cols-5 items-baseline gap-8 py-5">
-              <Stack className="gap-0.5">
+              <Stack vertical className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {weight}
                 </Text>
@@ -179,12 +179,12 @@ export default function TextPage() {
       </Stack>
 
       {/* Leading */}
-      <Stack gap={4}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Leading" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {leadings.map(({ leading, value }) => (
             <Box key={leading} className="grid grid-cols-5 items-start gap-8 py-5">
-              <Stack className="gap-0.5">
+              <Stack vertical className="gap-0.5">
                 <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
                   {leading}
                 </Text>
@@ -201,9 +201,9 @@ export default function TextPage() {
       </Stack>
 
       {/* Props */}
-      <Stack gap={3}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="sm">

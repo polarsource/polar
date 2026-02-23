@@ -5,7 +5,7 @@ Given optional filters, this script:
 1. Queries organizations ordered by next_review_threshold (ascending)
 2. Filters to those that don't already have member_model_enabled
 3. Enables member_model_enabled on each organization
-4. Enqueues the backfill_members job for each organization
+4. Runs the backfill steps directly for each organization
 
 Usage:
     Dry run (default):
@@ -29,17 +29,20 @@ import logging.config
 from functools import wraps
 from typing import Any
 
-import dramatiq
 import structlog
 import typer
 from sqlalchemy import or_, select
 
-from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
+from polar.organization.repository import OrganizationRepository
+from polar.organization.tasks import (
+    _backfill_benefit_grants,
+    _backfill_owner_members,
+    _backfill_seats,
+    _cleanup_orphaned_seat_customers,
+)
 from polar.postgres import create_async_engine
-from polar.redis import create_redis
-from polar.worker import JobQueueManager, enqueue_job
 
 cli = typer.Typer()
 
@@ -86,120 +89,157 @@ async def migrate_organizations(
     """Migrate organizations to the members model, ordered by next_review_threshold."""
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
-    redis = create_redis("app")
 
-    async with JobQueueManager.open(dramatiq.get_broker(), redis):
-        async with sessionmaker() as session:
-            # Build query for eligible organizations
-            # Exclude orgs already migrated or with seat-based pricing at the DB level
-            statement = (
-                select(Organization)
-                .where(
-                    Organization.deleted_at.is_(None),
-                    Organization.blocked_at.is_(None),
-                    or_(
-                        Organization.feature_settings["member_model_enabled"].is_(None),
-                        Organization.feature_settings["member_model_enabled"]
-                        .as_boolean()
-                        .is_(False),
+    async with sessionmaker() as session:
+        # Build query for eligible organizations
+        # Exclude orgs already migrated or with seat-based pricing at the DB level
+        statement = (
+            select(Organization)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
+                or_(
+                    Organization.feature_settings["member_model_enabled"].is_(None),
+                    Organization.feature_settings["member_model_enabled"]
+                    .as_boolean()
+                    .is_(False),
+                ),
+                or_(
+                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
+                        None
                     ),
-                    or_(
-                        Organization.feature_settings["seat_based_pricing_enabled"].is_(
-                            None
-                        ),
-                        Organization.feature_settings["seat_based_pricing_enabled"]
-                        .as_boolean()
-                        .is_(False),
-                    ),
-                )
-                .order_by(Organization.next_review_threshold.asc())
+                    Organization.feature_settings["seat_based_pricing_enabled"]
+                    .as_boolean()
+                    .is_(False),
+                ),
+            )
+            .order_by(Organization.next_review_threshold.asc())
+        )
+
+        if slug is not None:
+            statement = statement.where(Organization.slug == slug)
+
+        if max_threshold is not None:
+            statement = statement.where(
+                Organization.next_review_threshold <= max_threshold
             )
 
-            if slug is not None:
-                statement = statement.where(Organization.slug == slug)
+        if min_threshold is not None:
+            statement = statement.where(
+                Organization.next_review_threshold >= min_threshold
+            )
 
-            if max_threshold is not None:
-                statement = statement.where(
-                    Organization.next_review_threshold <= max_threshold
+        if limit is not None:
+            statement = statement.limit(limit)
+
+        result = await session.execute(statement)
+        organizations = list(result.scalars().all())
+
+    if not organizations:
+        typer.echo("No eligible organizations found.")
+        return
+
+    typer.echo(f"Found {len(organizations)} organization(s) to migrate")
+    typer.echo()
+
+    # Display organizations to migrate
+    typer.echo("Organizations to migrate (ordered by next_review_threshold):")
+    typer.echo(f"{'Slug':<40} {'Threshold':>10} {'ID'}")
+    typer.echo("-" * 90)
+    for org in organizations:
+        typer.echo(f"{org.slug:<40} {org.next_review_threshold:>10} {org.id}")
+    typer.echo()
+
+    if dry_run:
+        typer.echo("DRY RUN - No changes will be made.")
+        typer.echo(
+            f"Would migrate {len(organizations)} organization(s) and run backfill."
+        )
+        return
+
+    # Perform migration
+    typer.echo(f"Migrating {len(organizations)} organization(s)...")
+    typer.echo()
+
+    migrated_count = 0
+    failed_count = 0
+
+    for org in organizations:
+        try:
+            # Step 1: Enable member_model_enabled
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                organization.feature_settings = {
+                    **organization.feature_settings,
+                    "member_model_enabled": True,
+                }
+                session.add(organization)
+                await session.commit()
+
+            # Step 2: Run backfill steps directly
+            # Each step runs in its own session/transaction so that
+            # partial progress is preserved on failure (steps are idempotent)
+
+            # Step A: Create owner members for all customers without one
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                owner_members_created = await _backfill_owner_members(
+                    session, organization
                 )
 
-            if min_threshold is not None:
-                statement = statement.where(
-                    Organization.next_review_threshold >= min_threshold
+            # Step B: Migrate active seats
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                seats_migrated, orphaned_customer_ids = await _backfill_seats(
+                    session, organization
                 )
 
-            if limit is not None:
-                statement = statement.limit(limit)
+            # Step C: Link benefit grants to correct members
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                grants_linked = await _backfill_benefit_grants(session, organization)
 
-            result = await session.execute(statement)
-            organizations = list(result.scalars().all())
-
-            if not organizations:
-                typer.echo("No eligible organizations found.")
-                return
-
-            typer.echo(f"Found {len(organizations)} organization(s) to migrate")
-            typer.echo()
-
-            # Display organizations to migrate
-            typer.echo("Organizations to migrate (ordered by next_review_threshold):")
-            typer.echo(f"{'Slug':<40} {'Threshold':>10} {'ID'}")
-            typer.echo("-" * 90)
-            for org in organizations:
-                typer.echo(f"{org.slug:<40} {org.next_review_threshold:>10} {org.id}")
-            typer.echo()
-
-            if dry_run:
-                typer.echo("DRY RUN - No changes will be made.")
-                typer.echo(
-                    f"Would migrate {len(organizations)} organization(s) and enqueue backfill jobs."
+            # Step D: Soft-delete orphaned seat-holder customers
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                customers_deleted = await _cleanup_orphaned_seat_customers(
+                    session, organization, orphaned_customer_ids
                 )
-                return
 
-            # Perform migration
-            typer.echo(f"Migrating {len(organizations)} organization(s)...")
-            typer.echo()
+            migrated_count += 1
+            typer.echo(
+                f"  [{migrated_count}/{len(organizations)}] "
+                f"{org.slug} (threshold={org.next_review_threshold}) "
+                f"owners={owner_members_created} seats={seats_migrated} "
+                f"grants={grants_linked} deleted={customers_deleted}"
+            )
 
-            migrated_count = 0
-            failed_count = 0
+        except Exception as e:
+            failed_count += 1
+            typer.echo(
+                f"  FAILED: {org.slug} - {e}",
+                err=True,
+            )
 
-            for org in organizations:
-                try:
-                    # Enable member_model_enabled
-                    org.feature_settings = {
-                        **org.feature_settings,
-                        "member_model_enabled": True,
-                    }
-                    session.add(org)
-                    await session.flush()
-
-                    # Enqueue backfill job
-                    enqueue_job(
-                        "organization.backfill_members",
-                        organization_id=org.id,
-                    )
-
-                    migrated_count += 1
-                    typer.echo(
-                        f"  [{migrated_count}/{len(organizations)}] "
-                        f"{org.slug} (threshold={org.next_review_threshold})"
-                    )
-
-                except Exception as e:
-                    failed_count += 1
-                    typer.echo(
-                        f"  FAILED: {org.slug} - {e}",
-                        err=True,
-                    )
-
-            # Commit all changes in a single transaction
-            await session.commit()
-
-            typer.echo()
-            typer.echo("Migration complete:")
-            typer.echo(f"  - Migrated: {migrated_count}")
-            typer.echo(f"  - Failed: {failed_count}")
-            typer.echo(f"  - Backfill jobs enqueued: {migrated_count}")
+    typer.echo()
+    typer.echo("Migration complete:")
+    typer.echo(f"  - Migrated: {migrated_count}")
+    typer.echo(f"  - Failed: {failed_count}")
 
 
 if __name__ == "__main__":

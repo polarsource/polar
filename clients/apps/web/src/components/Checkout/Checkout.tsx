@@ -103,31 +103,7 @@ const Checkout = ({
     })
   }, [checkout.clientSecret, posthog])
 
-  const baseThemePreset = getThemePreset(theme)
-  const themePreset =
-    flattenExperiment === 'treatment'
-      ? {
-          ...baseThemePreset,
-          stripe: {
-            ...baseThemePreset.stripe,
-            rules: {
-              ...baseThemePreset.stripe.rules,
-              '.Block': {
-                ...baseThemePreset.stripe.rules?.['.Block'],
-                borderRadius: '12px',
-              },
-              '.Tab': {
-                ...baseThemePreset.stripe.rules?.['.Tab'],
-                borderRadius: '12px',
-              },
-            },
-            variables: {
-              ...baseThemePreset.stripe.variables,
-              borderRadius: '6px',
-            },
-          },
-        }
-      : baseThemePreset
+  const themePreset = getThemePreset(theme)
 
   // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(

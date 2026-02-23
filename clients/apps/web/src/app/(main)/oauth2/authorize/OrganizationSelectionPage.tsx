@@ -162,8 +162,8 @@ const OrganizationSelectionPage = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="w-full">
-                    <FormControl className="flex w-full flex-col gap-y-4">
-                      <Label htmlFor="name">Organization Name</Label>
+                    <Label htmlFor="name">Organization Name</Label>
+                    <FormControl>
                       <Input {...field} placeholder="Acme Inc." />
                     </FormControl>
                     <FormMessage />
@@ -183,8 +183,8 @@ const OrganizationSelectionPage = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="w-full">
-                    <FormControl className="flex w-full flex-col gap-y-4">
-                      <Label htmlFor="slug">Organization Slug</Label>
+                    <Label htmlFor="slug">Organization Slug</Label>
+                    <FormControl>
                       <Input
                         type="text"
                         {...field}
@@ -206,10 +206,10 @@ const OrganizationSelectionPage = ({
                   }}
                   render={({ field }) => (
                     <FormItem className="w-full">
-                      <FormControl className="flex w-full flex-col gap-y-4">
-                        <Label htmlFor="default_presentment_currency">
-                          Default Payment Currency
-                        </Label>
+                      <Label htmlFor="default_presentment_currency">
+                        Default Payment Currency
+                      </Label>
+                      <FormControl>
                         <CurrencySelector
                           value={field.value as schemas['PresentmentCurrency']}
                           onChange={field.onChange}

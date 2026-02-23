@@ -150,9 +150,7 @@ class OverviewSection:
                 with tag.div(classes="flex items-center gap-3"):
                     if self.agent_reviewed_at:
                         with tag.span(classes="text-xs text-base-content/60"):
-                            text(
-                                self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC")
-                            )
+                            text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
                     with button(
                         variant="secondary",
                         size="sm",
@@ -407,9 +405,7 @@ class OverviewSection:
                         "Refund Rate",
                         f"{refund_rate:.1f}%",
                         subtitle=f"${payment_stats.get('refunds_amount', 0):,.2f}",
-                        variant=self._rate_variant(
-                            refund_rate, yellow=10, red=15
-                        ),
+                        variant=self._rate_variant(refund_rate, yellow=10, red=15),
                         compact=True,
                     ):
                         pass
@@ -423,9 +419,7 @@ class OverviewSection:
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
                         subtitle=f"{payment_stats.get('dispute_count', 0)} disputes (${payment_stats.get('dispute_amount', 0):,.2f})",
-                        variant=self._rate_variant(
-                            dispute_rate, yellow=0.50, red=0.75
-                        ),
+                        variant=self._rate_variant(dispute_rate, yellow=0.50, red=0.75),
                         compact=True,
                     ):
                         pass
@@ -554,9 +548,7 @@ class OverviewSection:
             if socials:
                 has_content = True
                 with tag.div(
-                    classes="pt-4 mt-4 border-t border-base-200"
-                    if has_content
-                    else ""
+                    classes="pt-4 mt-4 border-t border-base-200" if has_content else ""
                 ):
                     with tag.div(classes="text-sm font-semibold mb-3"):
                         text("Social Media Links")
@@ -618,9 +610,7 @@ class OverviewSection:
                         text(f"{confidence:.0%} confidence")
 
             if findings:
-                with tag.ul(
-                    classes="list-disc list-inside text-xs space-y-0.5 mt-1"
-                ):
+                with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
                     for finding in findings:
                         with tag.li():
                             text(finding)

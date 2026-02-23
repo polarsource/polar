@@ -468,9 +468,7 @@ async def get_organization_detail(
             (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
         )
         refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
-        dispute_rate = (
-            (dispute_count / payment_count * 100) if payment_count > 0 else 0
-        )
+        dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
         chargeback_rate = (
             (chargeback_count / payment_count * 100) if payment_count > 0 else 0
         )
@@ -514,9 +512,7 @@ async def get_organization_detail(
         unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
 
         review_repo = OrganizationReviewRepository.from_session(session)
-        agent_review = await review_repo.get_latest_agent_review(
-            organization_id
-        )
+        agent_review = await review_repo.get_latest_agent_review(organization_id)
         agent_report = agent_review.report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 

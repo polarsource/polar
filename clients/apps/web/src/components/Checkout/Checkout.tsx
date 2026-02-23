@@ -318,7 +318,7 @@ const Checkout = ({
       {checkout.returnUrl && (
         <Link
           href={checkout.returnUrl}
-          className="dark:text-polar-500 text-gray-500"
+          className={`dark:text-polar-500 ${isFlat ? 'text-gray-600' : 'text-gray-500'}`}
         >
           <ArrowBackOutlined fontSize="small" />
         </Link>
@@ -359,13 +359,13 @@ const Checkout = ({
                         />
                       )}
                       <div className="flex min-w-0 flex-col">
-                        <span className="dark:text-polar-400 text-sm text-gray-500">
+                        <span className="dark:text-polar-400 text-sm text-gray-600">
                           {checkout.product.name}
                         </span>
                         {checkout.product.description && (
                           <Dialog>
                             <DialogTrigger asChild>
-                              <button className="dark:text-polar-400 dark:hover:text-polar-300 line-clamp-1 cursor-pointer text-left text-xs text-gray-500 hover:text-gray-700">
+                              <button className="dark:text-polar-400 dark:hover:text-polar-300 line-clamp-1 cursor-pointer text-left text-xs text-gray-600 hover:text-gray-700">
                                 {checkout.product.description}
                               </button>
                             </DialogTrigger>
@@ -438,6 +438,7 @@ const Checkout = ({
                       <CheckoutPricingBreakdown
                         checkout={checkout}
                         locale={locale}
+                        flattenExperiment={flattenExperiment}
                       />
                       <CheckoutDiscountInput
                         checkout={checkout}

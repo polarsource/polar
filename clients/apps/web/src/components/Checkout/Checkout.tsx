@@ -1,5 +1,6 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
@@ -64,6 +65,8 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
+
+  const { variant: termsExperiment } = useExperiment('checkout_terms')
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -240,6 +243,7 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
+          termsExperiment={termsExperiment}
         />
       </ShadowBox>
     )
@@ -338,6 +342,7 @@ const Checkout = ({
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
+            termsExperiment={termsExperiment}
           />
         </div>
       </ShadowBoxOnMd>

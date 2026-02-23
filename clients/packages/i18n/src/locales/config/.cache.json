@@ -145,7 +145,13 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.footer.mandateSubscriptionTrial": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscription": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.",
+    "checkout.footer.mandateOneTime": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.",
+    "checkout.form.addBusinessDetails": "Add business details",
+    "checkout.form.removeBusinessDetails": "Remove business details",
+    "checkout.form.billingDetails": "Business Details"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -293,7 +299,13 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.footer.mandateSubscriptionTrial": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscription": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.",
+    "checkout.footer.mandateOneTime": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.",
+    "checkout.form.addBusinessDetails": "Add business details",
+    "checkout.form.removeBusinessDetails": "Remove business details",
+    "checkout.form.billingDetails": "Business Details"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -441,7 +453,13 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.footer.mandateSubscriptionTrial": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscription": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.",
+    "checkout.footer.mandateOneTime": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.",
+    "checkout.form.addBusinessDetails": "Add business details",
+    "checkout.form.removeBusinessDetails": "Remove business details",
+    "checkout.form.billingDetails": "Business Details"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -589,7 +607,13 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.footer.mandateSubscriptionTrial": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscription": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.",
+    "checkout.footer.mandateOneTime": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.",
+    "checkout.form.addBusinessDetails": "Add business details",
+    "checkout.form.removeBusinessDetails": "Remove business details",
+    "checkout.form.billingDetails": "Business Details"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -737,7 +761,13 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.footer.mandateSubscriptionTrial": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscription": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.",
+    "checkout.footer.mandateOneTime": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.",
+    "checkout.form.addBusinessDetails": "Add business details",
+    "checkout.form.removeBusinessDetails": "Remove business details",
+    "checkout.form.billingDetails": "Business Details"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -884,6 +914,12 @@
     "checkout.pricing.everyInterval.day.=2": "Every other day",
     "checkout.pricing.everyInterval.week.=2": "Every other week",
     "checkout.pricing.everyInterval.month.=2": "Every other month",
-    "checkout.pricing.everyInterval.year.=2": "Every other year"
+    "checkout.pricing.everyInterval.year.=2": "Every other year",
+    "checkout.footer.mandateSubscriptionTrial": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method in the amount shown above at the end of your trial period and on each subsequent billing date until you cancel. You may cancel at any time before the end of your trial to avoid being charged.",
+    "checkout.footer.mandateSubscription": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.",
+    "checkout.footer.mandateOneTime": "By clicking \"{buttonLabel},\" you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.",
+    "checkout.form.addBusinessDetails": "Add business details",
+    "checkout.form.removeBusinessDetails": "Remove business details",
+    "checkout.form.billingDetails": "Business Details"
   }
 }

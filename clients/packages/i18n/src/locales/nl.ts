@@ -4,6 +4,12 @@ export default {
       poweredBy: 'Mogelijk gemaakt door',
       merchantOfRecord:
         'Deze bestelling wordt verwerkt door onze online wederverkoper & Merchant of Record, Polar, die ook bestelgerelateerde vragen en terugbetalingen afhandelt.',
+      mandateSubscriptionTrial:
+        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om uw geselecteerde betaalmethode te belasten voor het hierboven getoonde bedrag aan het einde van uw proefperiode en op elke volgende factuurdatum totdat u opzegt. U kunt op elk moment vóór het einde van uw proefperiode opzeggen om kosten te voorkomen.',
+      mandateSubscription:
+        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om uw geselecteerde betaalmethode onmiddellijk te belasten voor het hierboven getoonde bedrag en om hetzelfde bedrag in rekening te brengen op elke volgende factuurdatum totdat u opzegt.',
+      mandateOneTime:
+        'Door op "{buttonLabel}" te klikken, machtigt u Polar Software, Inc., onze online wederverkoper en merchant of record, om uw geselecteerde betaalmethode te belasten voor het hierboven getoonde bedrag. Dit is een eenmalige betaling.',
     },
     form: {
       email: 'E-mailadres',
@@ -26,6 +32,9 @@ export default {
       optional: 'Optioneel',
       apply: 'Toepassen',
       fieldRequired: 'Dit veld is verplicht',
+      addBusinessDetails: 'Bedrijfsgegevens toevoegen',
+      removeBusinessDetails: 'Bedrijfsgegevens verwijderen',
+      billingDetails: 'Bedrijfsgegevens',
     },
     pricing: {
       subtotal: 'Subtotaal',

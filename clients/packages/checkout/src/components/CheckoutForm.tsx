@@ -83,6 +83,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
+  termsExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
 }
 
@@ -98,6 +99,7 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
   locale: localeProp,
+  termsExperiment,
   isWalletPayment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
@@ -319,35 +321,34 @@ const BaseCheckoutForm = ({
               {(checkout.isPaymentFormRequired ||
                 checkout.requireBillingAddress) && (
                 <>
-                  <FormField
-                    control={control}
-                    name="isBusinessCustomer"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex flex-row items-center space-y-0 space-x-3">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value ? field.value : false}
-                              onCheckedChange={(checked) => {
-                                if (isUpdatePending) {
-                                  return
-                                }
+                  {termsExperiment !== 'treatment' && (
+                    <FormField
+                      control={control}
+                      name="isBusinessCustomer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex flex-row items-center space-y-0 space-x-3">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value ? field.value : false}
+                                onCheckedChange={(checked) => {
+                                  if (isUpdatePending) return
+                                  field.onChange(checked)
+                                  updateBusinessCustomer(!!checked)
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel>
+                              {t('checkout.form.purchasingAsBusiness')}
+                            </FormLabel>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
-                                field.onChange(checked)
-                                updateBusinessCustomer(!!checked)
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel>
-                            {t('checkout.form.purchasingAsBusiness')}
-                          </FormLabel>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {isBusinessCustomer && (
+                  {termsExperiment !== 'treatment' && isBusinessCustomer && (
                     <FormField
                       control={control}
                       name="customerBillingName"
@@ -579,7 +580,7 @@ const BaseCheckoutForm = ({
                     )}
                   </FormItem>
 
-                  {isBusinessCustomer && (
+                  {termsExperiment !== 'treatment' && isBusinessCustomer && (
                     <FormField
                       control={control}
                       name="customerTaxId"
@@ -628,6 +629,110 @@ const BaseCheckoutForm = ({
                         </FormItem>
                       )}
                     />
+                  )}
+
+                  {termsExperiment === 'treatment' && (
+                    <>
+                      <FormField
+                        control={control}
+                        name="isBusinessCustomer"
+                        render={({ field }) => (
+                          <FormItem className="-mt-4">
+                            <div className="flex flex-row items-center space-y-0 space-x-2">
+                              <FormControl>
+                                <Checkbox
+                                  className="dark:border-polar-600 cursor-pointer border-gray-300"
+                                  checked={field.value ? field.value : false}
+                                  onCheckedChange={(checked) => {
+                                    if (isUpdatePending) return
+                                    field.onChange(checked)
+                                    updateBusinessCustomer(!!checked)
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="dark:text-polar-400 cursor-pointer font-normal">
+                                {t('checkout.form.purchasingAsBusiness')}
+                              </FormLabel>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {isBusinessCustomer && (
+                        <div className="dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4">
+                          <span className="text-sm font-medium">
+                            {t('checkout.form.billingDetails')}
+                          </span>
+                          <FormField
+                            control={control}
+                            name="customerBillingName"
+                            rules={{
+                              required: t('checkout.form.fieldRequired'),
+                            }}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing organization"
+                                    placeholder={t(
+                                      'checkout.form.businessName',
+                                    )}
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={control}
+                            name="customerTaxId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input
+                                      type="text"
+                                      autoComplete="off"
+                                      placeholder={`${t('checkout.form.taxId')} (${t('checkout.form.optional')})`}
+                                      {...field}
+                                      value={field.value || ''}
+                                      disabled={validTaxID}
+                                    />
+                                    <div className="absolute inset-y-0 right-1 z-10 flex items-center gap-1">
+                                      {!validTaxID && taxId && (
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          onClick={addTaxID}
+                                        >
+                                          {t('checkout.form.apply')}
+                                        </Button>
+                                      )}
+                                      {validTaxID && (
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          onClick={() => clearTaxId()}
+                                        >
+                                          <XIcon className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -684,9 +789,27 @@ const BaseCheckoutForm = ({
             </div>
           </form>
         </Form>
-        <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-          {t('checkout.footer.merchantOfRecord')}
-        </p>
+        <div>
+          {termsExperiment === 'treatment' && checkout.isPaymentFormRequired ? (
+            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
+              {checkout.activeTrialInterval
+                ? t('checkout.footer.mandateSubscriptionTrial', {
+                    buttonLabel: checkoutLabel,
+                  })
+                : interval
+                  ? t('checkout.footer.mandateSubscription', {
+                      buttonLabel: checkoutLabel,
+                    })
+                  : t('checkout.footer.mandateOneTime', {
+                      buttonLabel: checkoutLabel,
+                    })}
+            </p>
+          ) : (
+            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
+              {t('checkout.footer.merchantOfRecord')}
+            </p>
+          )}
+        </div>
       </div>
       <a
         href="https://polar.sh?utm_source=checkout"
@@ -716,6 +839,7 @@ interface CheckoutFormProps {
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
+  termsExperiment?: 'treatment' | 'control'
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -729,6 +853,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     isUpdatePending,
     themePreset: themePresetProps,
     locale,
+    termsExperiment,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -820,6 +945,23 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                       address: 'never',
                     },
                   },
+                  ...(termsExperiment === 'treatment'
+                    ? {
+                        terms: {
+                          applePay: 'never',
+                          auBecsDebit: 'never',
+                          bancontact: 'never',
+                          card: 'never',
+                          cashapp: 'never',
+                          googlePay: 'never',
+                          ideal: 'never',
+                          paypal: 'never',
+                          sepaDebit: 'never',
+                          sofort: 'never',
+                          usBankAccount: 'never',
+                        },
+                      }
+                    : {}),
                 }}
                 onChange={(event: StripePaymentElementChangeEvent) => {
                   setSelectedPaymentMethod(event.value.type)

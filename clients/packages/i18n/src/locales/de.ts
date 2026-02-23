@@ -4,6 +4,12 @@ export default {
       poweredBy: 'Bereitgestellt von',
       merchantOfRecord:
         'Diese Bestellung wird von unserem Online-Reseller & Merchant of Record, Polar, bearbeitet, der auch Anfragen und Rücksendungen im Zusammenhang mit der Bestellung abwickelt.',
+      mandateSubscriptionTrial:
+        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode am Ende Ihres Testzeitraums und an jedem folgenden Abrechnungsdatum mit dem oben angezeigten Betrag zu belasten, bis Sie kündigen. Sie können jederzeit vor Ablauf des Testzeitraums kündigen, um eine Belastung zu vermeiden.',
+      mandateSubscription:
+        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode sofort mit dem oben angezeigten Betrag zu belasten und denselben Betrag an jedem folgenden Abrechnungsdatum abzubuchen, bis Sie kündigen.',
+      mandateOneTime:
+        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode mit dem oben angezeigten Betrag zu belasten. Dies ist eine einmalige Belastung.',
     },
     form: {
       email: 'E-Mail',
@@ -26,6 +32,9 @@ export default {
       optional: 'Optional',
       apply: 'Anwenden',
       fieldRequired: 'Dieses Feld ist erforderlich',
+      addBusinessDetails: 'Firmendaten hinzufügen',
+      removeBusinessDetails: 'Firmendaten entfernen',
+      billingDetails: 'Unternehmensdaten',
     },
     pricing: {
       subtotal: 'Zwischensumme',

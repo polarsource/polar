@@ -4,6 +4,12 @@ export default {
       poweredBy: 'Drivs av',
       merchantOfRecord:
         'Denna beställning behandlas av vår online-återförsäljare & Merchant of Record, Polar, som också hanterar beställningsrelaterade frågor och returer.',
+      mandateSubscriptionTrial:
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår återförsäljare och registrerade handlare, debiterar din valda betalningsmetod med beloppet som visas ovan vid slutet av din provperiod och vid varje efterföljande faktureringsdatum tills du säger upp prenumerationen. Du kan när som helst säga upp prenumerationen innan provperioden löper ut för att undvika debitering.',
+      mandateSubscription:
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår återförsäljare och registrerade handlare, omedelbart debiterar din valda betalningsmetod med beloppet som visas ovan och debiterar samma belopp vid varje efterföljande faktureringsdatum tills du säger upp prenumerationen.',
+      mandateOneTime:
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår återförsäljare och registrerade handlare, debiterar din valda betalningsmetod med beloppet som visas ovan. Detta är en engångsdebitering.',
     },
     form: {
       email: 'Email',
@@ -26,6 +32,9 @@ export default {
       optional: 'Valfritt',
       apply: 'Lägg till',
       fieldRequired: 'Detta fält är obligatoriskt',
+      addBusinessDetails: 'Lägg till företagsuppgifter',
+      removeBusinessDetails: 'Ta bort företagsuppgifter',
+      billingDetails: 'Företagsuppgifter',
     },
     pricing: {
       subtotal: 'Delsumma',

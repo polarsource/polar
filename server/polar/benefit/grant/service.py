@@ -668,9 +668,10 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     "Stopping retries and marking grant as revoked"
                 ),
                 error=str(e),
-                defer_seconds=e.defer_seconds,
                 benefit_grant_id=str(grant.id),
             )
+        except BenefitActionRequiredError:
+            pass
 
         grant.set_revoked()
 

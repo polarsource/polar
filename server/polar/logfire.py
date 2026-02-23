@@ -122,8 +122,14 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     logfire.configure(
         send_to_logfire="if-token-present",
         token=settings.LOGFIRE_TOKEN,
+        environment=settings.ENV,
         service_name=resolved_service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
+        code_source=logfire.CodeSource(
+            repository="https://github.com/polarsource/polar",
+            revision=os.environ.get("RELEASE_VERSION", "main"),
+            root_path="server",
+        ),
         console=False,
         sampling=logfire.SamplingOptions.level_or_duration(
             head=ParentBased(

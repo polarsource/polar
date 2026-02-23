@@ -4,6 +4,7 @@ import re
 
 import dramatiq
 import logfire
+import sentry_sdk
 import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -27,6 +28,7 @@ class LogCorrelationIdMiddleware:
         )
         logfire_stack = contextlib.ExitStack()
         logfire_stack.enter_context(logfire.set_baggage(correlation_id=correlation_id))
+        sentry_sdk.set_tag("correlation_id", correlation_id)
 
         await self.app(scope, receive, send)
 

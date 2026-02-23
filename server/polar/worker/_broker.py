@@ -6,6 +6,7 @@ from typing import Any, ClassVar
 import dramatiq
 import logfire
 import redis
+import sentry_sdk
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import middleware
@@ -85,12 +86,18 @@ class LogContextMiddleware(dramatiq.Middleware):
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
+        correlation_id = CorrelationID.set()
+        source_correlation_id = message.options.get("source_correlation_id")
+
         structlog.contextvars.bind_contextvars(
             actor_name=message.actor_name,
             message_id=message.message_id,
-            correlation_id=CorrelationID.set(),
+            correlation_id=correlation_id,
             source_correlation_id=message.options.get("source_correlation_id"),
         )
+        sentry_sdk.set_tag("correlation_id", correlation_id)
+        if source_correlation_id is not None:
+            sentry_sdk.set_tag("source_correlation_id", source_correlation_id)
 
     def after_process_message(
         self,

@@ -135,7 +135,7 @@ resource "render_env_group" "stripe" {
 resource "render_env_group" "logfire" {
   count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire${local.env_suffix}"
+  name           = "logfire-${var.environment}"
   env_vars = {
     POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.project_name }
     POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.token }

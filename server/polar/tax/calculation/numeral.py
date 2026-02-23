@@ -10,6 +10,7 @@ from polar.logging import Logger
 
 from ..tax_id import TaxID
 from .base import (
+    CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
     TaxCalculation,
@@ -258,6 +259,10 @@ class NumeralTaxService(TaxServiceProtocol):
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            error_json = e.response.json()
+            error_code = error_json.get("error", {}).get("error_code")
+            if error_code == "calculation_expired":
+                raise CalculationExpiredError() from e
             log.warning("Numeral tax record error: %s", e.response.text)
             raise TaxRecordError() from e
 

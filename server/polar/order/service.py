@@ -82,6 +82,7 @@ from polar.product.guard import is_custom_price, is_seat_price, is_static_price
 from polar.product.price_set import PriceSet
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
+    CalculationExpiredError,
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationLogicalError,
@@ -233,8 +234,15 @@ class SubscriptionNotTrialing(OrderError):
         super().__init__(message)
 
 
-def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
-    return customer_address is None or customer_address["country"] is None
+class TaxCalculationChangedAfterPayment(OrderError):
+    def __init__(self, order: Order, new_calculation_id: str | None) -> None:
+        self.order = order
+        self.new_calculation_id = new_calculation_id
+        message = (
+            "Tax calculation for order {order.id} has changed after payment was made. "
+            "New calculation ID: {new_calculation_id}."
+        )
+        super().__init__(message)
 
 
 class OrderService:
@@ -609,8 +617,6 @@ class OrderService:
 
             order_id = uuid.uuid4()
             customer = subscription.customer
-            billing_address = customer.billing_address
-            product = subscription.product
 
             subtotal_amount = sum(item.amount for item in items)
 
@@ -625,59 +631,25 @@ class OrderService:
                 )
                 discount_amount = discount.get_discount_amount(discountable_amount)
 
-            # Calculate tax
-            tax_processor: TaxProcessor | None = None
-            tax_calculation: TaxCalculation | None = None
-            taxable_amount = subtotal_amount - discount_amount
-            tax_amount = 0
-            taxability_reason: TaxabilityReason | None = None
-            tax_rate: TaxRate | None = None
+            billing_address = customer.billing_address
             tax_id = customer.tax_id
-            tax_calculation_processor_id: str | None = None
+            product = subscription.product
 
-            if (
-                taxable_amount != 0
-                and product.is_tax_applicable
-                and billing_address is not None
-            ):
-                try:
-                    (
-                        tax_calculation,
-                        tax_processor,
-                    ) = await tax_calculation_service.calculate(
-                        order_id,
-                        subscription.currency,
-                        # Stripe doesn't support calculating negative tax amounts
-                        taxable_amount if taxable_amount >= 0 else -taxable_amount,
-                        product.tax_code,
-                        billing_address,
-                        [tax_id] if tax_id is not None else [],
-                        subscription.tax_exempted,
-                    )
-                except TaxCalculationLogicalError:
-                    log.warning(
-                        "Failed to calculate tax for subscription order due to invalid or incomplete address",
-                        subscription_id=subscription.id,
-                        order_id=order_id,
-                        customer_id=customer.id,
-                    )
-                    tax_amount = 0
-                    tax_calculation_processor_id = None
-                else:
-                    if taxable_amount >= 0:
-                        tax_calculation_processor_id = tax_calculation["processor_id"]
-                        tax_amount = tax_calculation["amount"]
-                    else:
-                        # When the taxable amount is negative it's usually due to a credit proration
-                        # this means we "owe" the customer money -- but we don't pay it back at this
-                        # point. This also means that there's no money transaction going on, and we
-                        # don't have to record the tax transaction either.
-                        tax_calculation_processor_id = None
-                        tax_amount = -tax_calculation["amount"]
-
-                if tax_calculation is not None:
-                    taxability_reason = tax_calculation["taxability_reason"]
-                    tax_rate = tax_calculation["tax_rate"]
+            # Calculate tax
+            (
+                tax_processor,
+                tax_calculation_processor_id,
+                tax_amount,
+                taxability_reason,
+                tax_rate,
+            ) = await self._calculate_subscription_order_tax(
+                reference=str(order_id),
+                taxable_amount=subtotal_amount - discount_amount,
+                currency=subscription.currency,
+                customer=customer,
+                product=product,
+                tax_exempted=subscription.tax_exempted,
+            )
 
             invoice_number = await organization_service.get_next_invoice_number(
                 session, subscription.organization, customer
@@ -1257,10 +1229,55 @@ class OrderService:
             and order.tax_transaction_processor_id is None
         ):
             assert order.tax_processor is not None
-            transaction_id = await tax_calculation_service.record(
-                order.tax_processor, order.tax_calculation_processor_id, str(order.id)
-            )
-            update_dict["tax_transaction_processor_id"] = transaction_id
+            try:
+                transaction_id = await tax_calculation_service.record(
+                    order.tax_processor,
+                    order.tax_calculation_processor_id,
+                    str(order.id),
+                )
+                update_dict["tax_transaction_processor_id"] = transaction_id
+            except CalculationExpiredError as e:
+                # Recover by recalculating tax
+                # Happens if the order was created a long time ago and the tax calculation result expired before payment was completed
+                product = order.product
+                customer = order.customer
+                tax_exempted = (
+                    order.subscription.tax_exempted if order.subscription else False
+                )
+                assert product is not None
+                (
+                    tax_processor,
+                    tax_calculation_processor_id,
+                    tax_amount,
+                    taxability_reason,
+                    tax_rate,
+                ) = await self._calculate_subscription_order_tax(
+                    reference=str(order.id),
+                    taxable_amount=order.net_amount,
+                    currency=order.currency,
+                    customer=customer,
+                    product=product,
+                    tax_exempted=tax_exempted,
+                )
+                update_dict = {
+                    **update_dict,
+                    "tax_processor": tax_processor,
+                    "tax_calculation_processor_id": tax_calculation_processor_id,
+                    "tax_amount": tax_amount,
+                    "taxability_reason": taxability_reason,
+                    "tax_rate": tax_rate,
+                }
+
+                if tax_amount != order.tax_amount:
+                    raise TaxCalculationChangedAfterPayment(
+                        order, tax_calculation_processor_id
+                    )
+
+                if tax_processor and tax_calculation_processor_id:
+                    transaction_id = await tax_calculation_service.record(
+                        tax_processor, tax_calculation_processor_id, str(order.id)
+                    )
+                    update_dict["tax_transaction_processor_id"] = transaction_id
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
@@ -1921,6 +1938,83 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
+
+    async def _calculate_subscription_order_tax(
+        self,
+        *,
+        reference: str,
+        taxable_amount: int,
+        currency: str,
+        customer: Customer,
+        product: Product,
+        tax_exempted: bool,
+    ) -> tuple[
+        TaxProcessor | None,
+        str | None,
+        int,
+        TaxabilityReason | None,
+        TaxRate | None,
+    ]:
+        billing_address = customer.billing_address
+        tax_id = customer.tax_id
+
+        tax_processor: TaxProcessor | None = None
+        tax_calculation: TaxCalculation | None = None
+        tax_amount = 0
+        taxability_reason: TaxabilityReason | None = None
+        tax_rate: TaxRate | None = None
+        tax_calculation_processor_id: str | None = None
+
+        if (
+            taxable_amount != 0
+            and product.is_tax_applicable
+            and billing_address is not None
+        ):
+            try:
+                (
+                    tax_calculation,
+                    tax_processor,
+                ) = await tax_calculation_service.calculate(
+                    reference,
+                    currency,
+                    # Stripe doesn't support calculating negative tax amounts
+                    taxable_amount if taxable_amount >= 0 else -taxable_amount,
+                    product.tax_code,
+                    billing_address,
+                    [tax_id] if tax_id is not None else [],
+                    tax_exempted,
+                )
+            except TaxCalculationLogicalError:
+                log.warning(
+                    "Failed to calculate tax for subscription order due to invalid or incomplete address",
+                    reference=reference,
+                    customer_id=customer.id,
+                )
+                tax_amount = 0
+                tax_calculation_processor_id = None
+            else:
+                if taxable_amount >= 0:
+                    tax_calculation_processor_id = tax_calculation["processor_id"]
+                    tax_amount = tax_calculation["amount"]
+                else:
+                    # When the taxable amount is negative it's usually due to a credit proration
+                    # this means we "owe" the customer money -- but we don't pay it back at this
+                    # point. This also means that there's no money transaction going on, and we
+                    # don't have to record the tax transaction either.
+                    tax_calculation_processor_id = None
+                    tax_amount = -tax_calculation["amount"]
+
+            if tax_calculation is not None:
+                taxability_reason = tax_calculation["taxability_reason"]
+                tax_rate = tax_calculation["tax_rate"]
+
+        return (
+            tax_processor,
+            tax_calculation_processor_id,
+            tax_amount,
+            taxability_reason,
+            tax_rate,
+        )
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

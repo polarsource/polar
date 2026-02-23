@@ -73,6 +73,7 @@ from polar.product.guard import is_fixed_price, is_static_price
 from polar.product.price_set import PriceSet
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
+    CalculationExpiredError,
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationService,
@@ -923,7 +924,7 @@ class TestCreateSubscriptionOrder:
         assert order.subscription == subscription
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             order.net_amount,
             product.tax_code,
@@ -998,7 +999,7 @@ class TestCreateSubscriptionOrder:
         assert order.net_amount == order.subtotal_amount - order.discount_amount
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             order.net_amount,
             product.tax_code,
@@ -1101,7 +1102,7 @@ class TestCreateSubscriptionOrder:
         )
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             order.subtotal_amount,
             product.tax_code,
@@ -1535,7 +1536,7 @@ class TestCreateSubscriptionOrder:
             )
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             abs(order.net_amount),
             subscription.product.tax_code,
@@ -2198,7 +2199,6 @@ class TestHandlePayment:
 
     async def test_full_case_with_payment_and_tax(
         self,
-        stripe_service_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         tax_service_mock: MagicMock,
         session: AsyncSession,
@@ -2241,6 +2241,74 @@ class TestHandlePayment:
 
         # Verify tax transaction was created
         tax_service_mock.record.assert_called_once()
+
+    async def test_tax_recalculated_on_calculation_expired_error(
+        self,
+        enqueue_job_mock: MagicMock,
+        tax_service_mock: MagicMock,
+        calculate_tax_mock: AsyncMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        # Create a customer with a billing address so that _calculate_subscription_order_tax
+        # will actually invoke tax_calculation_service.calculate and produce a non-zero amount.
+        # The mocked calculate returns polar_round(amount * 0.20), so for net_amount=1000 → 200.
+        customer_with_address = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Set tax_amount=200 to match the recalculated amount so no TaxCalculationChangedAfterPayment is raised
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer_with_address,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            tax_amount=200,
+        )
+
+        order.tax_processor = TaxProcessor.stripe
+        order.tax_calculation_processor_id = "tax_calc_expired_123"
+        await save_fixture(order)
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_456",
+        )
+
+        # First call to record raises CalculationExpiredError; second call (after recalculation) succeeds
+        tax_service_mock.record.side_effect = [
+            CalculationExpiredError(),
+            "NEW_TAX_TRANSACTION_ID",
+        ]
+
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        # Order should be marked paid
+        assert updated_order.status == OrderStatus.paid
+
+        # Tax should have been recalculated via calculate
+        calculate_tax_mock.assert_called_once()
+
+        # record should have been called twice: once failing with the expired ID,
+        # once succeeding with the newly recalculated calculation ID
+        assert tax_service_mock.record.call_count == 2
+        first_record_call, second_record_call = tax_service_mock.record.call_args_list
+        assert first_record_call.args[1] == "tax_calc_expired_123"
+        assert second_record_call.args[1] == "TAX_PROCESSOR_ID"
+
+        # The tax transaction processor ID should reflect the second (successful) record call
+        assert updated_order.tax_transaction_processor_id == "NEW_TAX_TRANSACTION_ID"
+
+        # The balance job should still be enqueued
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_456"
+        )
 
 
 @pytest.mark.asyncio

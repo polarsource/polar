@@ -558,9 +558,7 @@ async def approve_organization(
 
     return HXRedirectResponse(
         request,
-        str(
-            request.url_for("organizations:detail", organization_id=organization_id)
-        ),
+        str(request.url_for("organizations:detail", organization_id=organization_id)),
         303,
     )
 
@@ -590,9 +588,7 @@ async def deny_dialog(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             ),
             303,
         )
@@ -659,9 +655,7 @@ async def approve_denied_dialog(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             ),
             303,
         )
@@ -748,9 +742,7 @@ async def unblock_approve_dialog(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             ),
             303,
         )
@@ -829,9 +821,7 @@ async def block_dialog(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             ),
             303,
         )
@@ -953,9 +943,7 @@ async def edit_organization(
             data=form_data,
             validation_error=validation_error,
             hx_post=str(
-                request.url_for(
-                    "organizations:edit", organization_id=organization_id
-                )
+                request.url_for("organizations:edit", organization_id=organization_id)
             ),
             hx_target="#modal",
             classes="space-y-4",
@@ -1086,9 +1074,7 @@ async def edit_order_settings(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=settings",
             303,
@@ -1807,9 +1793,7 @@ async def setup_account(
         # Redirect back to account section
         redirect_url = (
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=account"
         )
@@ -2141,9 +2125,7 @@ async def grant_credit(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=account",
         )
@@ -2275,9 +2257,7 @@ async def revoke_credit(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=account",
         )

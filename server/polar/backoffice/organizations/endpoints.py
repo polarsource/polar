@@ -447,7 +447,10 @@ async def list(
                         text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
-                    "id", "ID", href_route_name="organizations-classic:get", clipboard=True
+                    "id",
+                    "ID",
+                    href_route_name="organizations-classic:get",
+                    clipboard=True,
                 ),
                 datatable.DatatableDateTimeColumn(
                     "created_at",
@@ -482,7 +485,9 @@ async def list(
                 pass
 
 
-@router.api_route("/{id}/update", name="organizations-classic:update", methods=["GET", "POST"])
+@router.api_route(
+    "/{id}/update", name="organizations-classic:update", methods=["GET", "POST"]
+)
 async def update(
     request: Request,
     id: UUID4,
@@ -587,7 +592,9 @@ async def update(
 
 
 @router.api_route(
-    "/{id}/update_details", name="organizations-classic:update_details", methods=["GET", "POST"]
+    "/{id}/update_details",
+    name="organizations-classic:update_details",
+    methods=["GET", "POST"],
 )
 async def update_details(
     request: Request,
@@ -676,7 +683,9 @@ async def update_internal_notes(
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
             validation_error=validation_error,
-            hx_post=str(request.url_for("organizations-classic:update_internal_notes", id=id)),
+            hx_post=str(
+                request.url_for("organizations-classic:update_internal_notes", id=id)
+            ),
             hx_target="#modal",
             classes="space-y-4",
         ):
@@ -692,7 +701,9 @@ async def update_internal_notes(
                     text("Save Notes")
 
 
-@router.api_route("/{id}/delete", name="organizations-classic:delete", methods=["GET", "POST"])
+@router.api_route(
+    "/{id}/delete", name="organizations-classic:delete", methods=["GET", "POST"]
+)
 async def delete(
     request: Request,
     id: UUID4,
@@ -758,7 +769,8 @@ async def delete(
 
 
 @router.get(
-    "/{id}/confirm_remove_member/{user_id}", name="organizations-classic:confirm_remove_member"
+    "/{id}/confirm_remove_member/{user_id}",
+    name="organizations-classic:confirm_remove_member",
 )
 async def confirm_remove_member(
     request: Request,
@@ -865,7 +877,8 @@ async def remove_member(
 
 
 @router.get(
-    "/{id}/confirm_change_admin/{user_id}", name="organizations-classic:confirm_change_admin"
+    "/{id}/confirm_change_admin/{user_id}",
+    name="organizations-classic:confirm_change_admin",
 )
 async def confirm_change_admin(
     request: Request,
@@ -1414,7 +1427,8 @@ async def get(
                         classes="btn",
                         href=str(
                             request.url_for(
-                                "organizations-classic:plain_search_url", id=organization.id
+                                "organizations-classic:plain_search_url",
+                                id=organization.id,
                             )
                         ),
                         title="Search in Plain",
@@ -1427,7 +1441,8 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations-classic:create_thread_modal", id=organization.id
+                                "organizations-classic:create_thread_modal",
+                                id=organization.id,
                             )
                         ),
                         hx_target="#modal",
@@ -1440,7 +1455,8 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations-classic:import_orders", id=organization.id
+                                "organizations-classic:import_orders",
+                                id=organization.id,
                             )
                         ),
                         hx_target="#modal",
@@ -1466,7 +1482,9 @@ async def get(
                     with button(
                         variant="primary",
                         hx_get=str(
-                            request.url_for("organizations-classic:update", id=organization.id)
+                            request.url_for(
+                                "organizations-classic:update", id=organization.id
+                            )
                         ),
                         hx_target="#modal",
                     ):
@@ -1887,7 +1905,9 @@ async def get_plain_search_url(
     return RedirectResponse(url=search_url, status_code=302)
 
 
-@router.get("/{id}/create_thread_modal", name="organizations-classic:create_thread_modal")
+@router.get(
+    "/{id}/create_thread_modal", name="organizations-classic:create_thread_modal"
+)
 async def get_create_thread_modal(
     request: Request,
     id: UUID4,
@@ -1916,7 +1936,8 @@ async def get_create_thread_modal(
                         id="create-thread-form",
                         hx_post=str(
                             request.url_for(
-                                "organizations-classic:create_plain_thread", id=organization.id
+                                "organizations-classic:create_plain_thread",
+                                id=organization.id,
                             )
                         ),
                         hx_target="#modal",
@@ -1941,7 +1962,8 @@ async def get_create_thread_modal(
                                 classes="btn",
                                 hx_get=str(
                                     request.url_for(
-                                        "organizations-classic:clear_modal", id=organization.id
+                                        "organizations-classic:clear_modal",
+                                        id=organization.id,
                                     )
                                 ),
                                 hx_target="#modal",
@@ -1956,7 +1978,9 @@ async def get_create_thread_modal(
                 with tag.div(
                     classes="modal-backdrop",
                     hx_get=str(
-                        request.url_for("organizations-classic:clear_modal", id=organization.id)
+                        request.url_for(
+                            "organizations-classic:clear_modal", id=organization.id
+                        )
                     ),
                     hx_target="#modal",
                 ):
@@ -1972,7 +1996,9 @@ async def clear_modal(id: UUID4) -> Any:
 
 
 @router.api_route(
-    "/{id}/import-orders", name="organizations-classic:import_orders", methods=["GET", "POST"]
+    "/{id}/import-orders",
+    name="organizations-classic:import_orders",
+    methods=["GET", "POST"],
 )
 async def import_orders(
     request: Request,

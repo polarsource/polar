@@ -3,7 +3,7 @@
  * Codemod: div-to-orbit
  *
  * Replaces <div> elements with Orbit primitives:
- *   • flex containers  → <Stack>  (extracts alignItems / justifyContent / flexWrap / horizontal)
+ *   • flex containers  → <Stack>  (extracts alignItems / justifyContent / flexWrap / vertical)
  *   • everything else  → <Box>
  *
  * Usage (run from clients/):
@@ -33,15 +33,25 @@ const VALID_ALIGN = new Set(['start', 'end', 'center', 'stretch', 'baseline'])
 const VALID_JUSTIFY = new Set(['start', 'end', 'center', 'between', 'around', 'evenly'])
 const FLEX_CHILD = new Set(['1', 'auto', 'none', 'initial'])
 
+// Tailwind gap scale value → Orbit spacing key
+// Orbit key → Tailwind: spacing-0→0  spacing-1→2  spacing-1.5→3  spacing-2→4  spacing-3→6  spacing-4→8  spacing-5→10  spacing-6→12  spacing-8→16  spacing-10→20  spacing-12→24  spacing-16→32  spacing-32→64
+const GAP_TO_ORBIT: Record<string, string> = {
+  '0': 'spacing-0', '2': 'spacing-1', '3': 'spacing-1.5', '4': 'spacing-2', '6': 'spacing-3', '8': 'spacing-4',
+  '10': 'spacing-5', '12': 'spacing-6', '16': 'spacing-8', '20': 'spacing-10', '24': 'spacing-12', '32': 'spacing-16', '64': 'spacing-32',
+}
+
 // ─── Analysis ─────────────────────────────────────────────────────────────────
 
 interface Analysis {
   tag: 'Stack' | 'Box'
-  horizontal: boolean
+  vertical: boolean
   alignItems?: string
   justifyContent?: string
   flexWrap?: string
   flex?: string
+  gap?: string
+  rowGap?: string
+  columnGap?: string
   remaining: string[]
 }
 
@@ -50,14 +60,17 @@ function analyzeClasses(raw: string): Analysis {
   const hasFlex = classes.some((c) => c === 'flex' || c === 'inline-flex')
 
   if (!hasFlex) {
-    return { tag: 'Box', horizontal: false, remaining: classes }
+    return { tag: 'Box', vertical: false, remaining: classes }
   }
 
-  let horizontal = false
+  let vertical = false
   let alignItems: string | undefined
   let justifyContent: string | undefined
   let flexWrap: string | undefined
   let flex: string | undefined
+  let gap: string | undefined
+  let rowGap: string | undefined
+  let columnGap: string | undefined
   const remaining: string[] = []
 
   for (const cls of classes) {
@@ -66,9 +79,9 @@ function analyzeClasses(raw: string): Analysis {
     if (cls === 'flex' || cls === 'inline-flex') {
       // consumed — Stack always renders as flex
     } else if (cls === 'flex-row') {
-      horizontal = true
+      // row is Stack's default, silently consumed
     } else if (cls === 'flex-col') {
-      // column is Stack's default, silently consumed
+      vertical = true
     } else if (cls === 'flex-row-reverse' || cls === 'flex-col-reverse') {
       remaining.push(cls) // no direct prop for reverse
     } else if (cls.startsWith('items-')) {
@@ -85,20 +98,29 @@ function analyzeClasses(raw: string): Analysis {
       flexWrap = 'wrap-reverse'
     } else if (cls.startsWith('flex-') && FLEX_CHILD.has(cls.slice(5))) {
       flex = cls.slice(5)
+    } else if (cls.startsWith('gap-x-')) {
+      const orbit = GAP_TO_ORBIT[cls.slice(6)]
+      orbit !== undefined ? (columnGap = orbit) : remaining.push(cls)
+    } else if (cls.startsWith('gap-y-')) {
+      const orbit = GAP_TO_ORBIT[cls.slice(6)]
+      orbit !== undefined ? (rowGap = orbit) : remaining.push(cls)
+    } else if (cls.startsWith('gap-')) {
+      const orbit = GAP_TO_ORBIT[cls.slice(4)]
+      orbit !== undefined ? (gap = orbit) : remaining.push(cls)
     } else {
       remaining.push(cls)
     }
   }
 
-  return { tag: 'Stack', horizontal, alignItems, justifyContent, flexWrap, flex, remaining }
+  return { tag: 'Stack', vertical, alignItems, justifyContent, flexWrap, flex, gap, rowGap, columnGap, remaining }
 }
 
 // ─── Attribute builders ───────────────────────────────────────────────────────
 
 function stackPropAttrs(a: Analysis): JsxAttributeStructure[] {
   const out: JsxAttributeStructure[] = []
-  if (a.horizontal)
-    out.push({ kind: StructureKind.JsxAttribute, name: 'horizontal' })
+  if (a.vertical)
+    out.push({ kind: StructureKind.JsxAttribute, name: 'vertical' })
   if (a.alignItems)
     out.push({ kind: StructureKind.JsxAttribute, name: 'alignItems', initializer: `"${a.alignItems}"` })
   if (a.justifyContent)
@@ -107,6 +129,12 @@ function stackPropAttrs(a: Analysis): JsxAttributeStructure[] {
     out.push({ kind: StructureKind.JsxAttribute, name: 'flexWrap', initializer: `"${a.flexWrap}"` })
   if (a.flex)
     out.push({ kind: StructureKind.JsxAttribute, name: 'flex', initializer: `"${a.flex}"` })
+  if (a.gap !== undefined)
+    out.push({ kind: StructureKind.JsxAttribute, name: 'gap', initializer: `"${a.gap}"` })
+  if (a.rowGap !== undefined)
+    out.push({ kind: StructureKind.JsxAttribute, name: 'rowGap', initializer: `"${a.rowGap}"` })
+  if (a.columnGap !== undefined)
+    out.push({ kind: StructureKind.JsxAttribute, name: 'columnGap', initializer: `"${a.columnGap}"` })
   return out
 }
 
@@ -176,12 +204,12 @@ function transformElement(
         if (first && Node.isStringLiteral(first)) firstStr = first.getLiteralValue()
       }
 
-      analysis = firstStr ? analyzeClasses(firstStr) : { tag: 'Box', horizontal: false, remaining: [] }
+      analysis = firstStr ? analyzeClasses(firstStr) : { tag: 'Box', vertical: false, remaining: [] }
     } else {
-      analysis = { tag: 'Box', horizontal: false, remaining: [] }
+      analysis = { tag: 'Box', vertical: false, remaining: [] }
     }
   } else {
-    analysis = { tag: 'Box', horizontal: false, remaining: [] }
+    analysis = { tag: 'Box', vertical: false, remaining: [] }
   }
 
   const newTag = analysis.tag

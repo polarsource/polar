@@ -45,7 +45,7 @@ const props = [
 
 export default function HeadlinePage() {
   return (
-    <Stack vertical gap={10}>
+    <Stack vertical gap="spacing-10">
       <OrbitPageHeader
         label="Component"
         title="Headline"
@@ -53,7 +53,7 @@ export default function HeadlinePage() {
       />
 
       {/* Type scale demo */}
-      <Stack vertical gap={4}>
+      <Stack vertical gap="spacing-4">
         <OrbitSectionHeader title="Type Scale" />
         {levels.map(({ tag, size, weight }) => (
           <Box key={tag} className="grid grid-cols-5 items-baseline gap-8">
@@ -76,7 +76,7 @@ export default function HeadlinePage() {
       </Stack>
 
       {/* Animated */}
-      <Stack vertical gap={4}>
+      <Stack vertical gap="spacing-4">
         <OrbitSectionHeader
           title="Animated"
           description="Set animate to trigger a curtain-reveal on viewport entry. Each line clips upward independently; passing an array staggers them at 0.2s ÷ n."
@@ -113,7 +113,7 @@ export default function HeadlinePage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={3}>
+      <Stack vertical gap="spacing-3">
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (

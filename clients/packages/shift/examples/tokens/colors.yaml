@@ -1,0 +1,18 @@
+colors:
+  $type: color
+  primary:
+    $value: "#0066ff"
+    $description: Primary brand color
+  secondary:
+    $value: "#6b7280"
+    $description: Secondary gray
+  accent:
+    $value: "{colors.primary}"
+    $description: Alias for primary
+  background:
+    $value: "#ffffff"
+  text:
+    default:
+      $value: "#111827"
+    muted:
+      $value: "#6b7280"

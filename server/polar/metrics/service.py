@@ -432,6 +432,22 @@ class MetricsService:
             )
             return pg_response
 
+        comparison_org_id: uuid.UUID | None = None
+        if organization_id:
+            comparison_org_id = organization_id[0]
+        elif is_organization(auth_subject):
+            comparison_org_id = auth_subject.subject.id
+
+        if comparison_org_id is not None:
+            self._log_tinybird_comparison(
+                comparison_org_id,
+                pg_response,
+                tb_response,
+                interval=interval,
+                timezone=timezone,
+                now=now_dt,
+            )
+
         return self._merge_tinybird_over_pg(pg_response, tb_response, metrics)
 
     async def _get_metrics_from_tinybird(

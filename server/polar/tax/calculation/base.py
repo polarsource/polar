@@ -42,6 +42,12 @@ class TaxRecordError(TaxError):
         super().__init__(message)
 
 
+class CalculationExpiredError(TaxError):
+    def __init__(self) -> None:
+        message = "The tax calculation has expired and cannot be recorded."
+        super().__init__(message)
+
+
 class TaxCode(StrEnum):
     general_electronically_supplied_services = (
         "general_electronically_supplied_services"

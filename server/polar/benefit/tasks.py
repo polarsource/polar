@@ -216,6 +216,20 @@ async def benefit_revoke(
             benefit_id, options=benefit_repository.get_eager_options()
         )
         if benefit is None:
+            message = CurrentMessage.get_current_message()
+            if (
+                message
+                and message.message_timestamp
+                < datetime.datetime(
+                    2025, 2, 23, 11, 0, 0, tzinfo=datetime.UTC
+                ).timestamp()
+            ):
+                log.info(
+                    "Old task message encountered for non-existent benefit; skipping.",
+                    "Should not happen after 2025-02-23",
+                    benefit_id=str(benefit_id),
+                )
+                return
             raise BenefitDoesNotExist(benefit_id)
 
         resolved_scope = await resolve_scope(session, scope)

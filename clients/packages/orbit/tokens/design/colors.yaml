@@ -1,0 +1,69 @@
+# Orbit color design tokens
+#
+# Each token maps to a --orbit-* CSS custom property.
+# Light-mode values are the $value; dark-mode overrides use $themes.dark.
+#
+# Usage (CSS): var(--orbit-bg), var(--orbit-bg-surface), …
+# Usage (Box):  backgroundColor="bg-surface"  color="text-subtle"
+
+colors:
+  $type: color
+
+  bg:
+    $value: "#ffffff"
+    $description: >
+      Page background — the outermost canvas.
+      Mapped to --orbit-bg.
+    $themes:
+      dark: "hsl(233, 2%, 3%)"
+
+  bg-surface:
+    $value: "hsl(0, 0%, 97%)"
+    $description: >
+      Surface background — cards, panels, and containers
+      elevated above the page background.
+      Mapped to --orbit-bg-surface.
+    $themes:
+      dark: "hsl(233, 2%, 6.5%)"
+
+  bg-elevated:
+    $value: "hsl(0, 0%, 90%)"
+    $description: >
+      Elevated surface — popovers, dropdowns, tooltips, and
+      floating layers above a surface.
+      Mapped to --orbit-bg-elevated.
+    $themes:
+      dark: "hsl(233, 2%, 9.5%)"
+
+  text:
+    $value: "#111111"
+    $description: >
+      Primary text color.
+      Mapped to --orbit-text.
+    $themes:
+      dark: "#f0f0f0"
+
+  text-subtle:
+    $value: "hsl(0, 0%, 60%)"
+    $description: >
+      Secondary and muted text — labels, captions, supporting copy.
+      Mapped to --orbit-text-subtle.
+    $themes:
+      dark: "hsl(233, 2%, 52%)"
+
+  text-disabled:
+    $value: "hsl(0, 0%, 32%)"
+    $description: >
+      Disabled and placeholder text — conveys non-interactive state.
+      Mapped to --orbit-text-disabled.
+    $themes:
+      dark: "hsl(233, 2%, 32%)"
+
+  destructive:
+    $value: "oklch(0.637 0.237 25.331)"
+    $description: >
+      Destructive-action color (red-500).
+      Used for delete, remove, and irreversible operations.
+      Mapped to --orbit-destructive.
+    $themes:
+      dark: "oklch(0.577 0.245 27.325)"

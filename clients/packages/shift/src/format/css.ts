@@ -7,13 +7,22 @@ export class FormatError extends Data.TaggedError('FormatError')<{
 }> {}
 
 /**
+ * Convert a token path to a valid CSS custom-property name.
+ * Dots are used as path separators in the token model but are not valid
+ * in CSS identifiers, so all dots are replaced with hyphens.
+ */
+function cssVarName(path: string): string {
+  return path.replace(/\./g, '-')
+}
+
+/**
  * Resolve the CSS emission value for a token value.
  * If the token was an alias (aliasOf is set), emit var(--aliased-path).
  * Otherwise emit the concrete value directly.
  */
 function cssValue(value: string | number, aliasOf?: string): string {
   if (aliasOf) {
-    return `var(--${aliasOf.replace(/\./g, '-')})`
+    return `var(--${cssVarName(aliasOf)})`
   }
   return String(value)
 }
@@ -39,7 +48,7 @@ export const formatCss = (
       // :root block — all tokens
       const rootLines: string[] = [':root {']
       for (const token of map.values()) {
-        rootLines.push(`  --${token.path}: ${cssValue(token.value, token.aliasOf)};`)
+        rootLines.push(`  --${cssVarName(token.path)}: ${cssValue(token.value, token.aliasOf)};`)
       }
       rootLines.push('}')
       blocks.push(rootLines.join('\n'))
@@ -53,7 +62,7 @@ export const formatCss = (
             const tv = token.themeValues?.[themeName]
             if (tv === undefined) continue
             themeLines.push(
-              `  --${token.path}: ${cssValue(tv.value, tv.aliasOf)};`,
+              `  --${cssVarName(token.path)}: ${cssValue(tv.value, tv.aliasOf)};`,
             )
           }
 

@@ -5,11 +5,11 @@ export default {
       merchantOfRecord:
         'Diese Bestellung wird von unserem Online-Reseller & Merchant of Record, Polar, bearbeitet, der auch Anfragen und Rücksendungen im Zusammenhang mit der Bestellung abwickelt.',
       mandateSubscriptionTrial:
-        'Mit dem Klick auf "{buttonLabel}" ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und eingetragenen Händler, Ihre gewählte Zahlungsmethode am Ende Ihres Testzeitraums und an jedem folgenden Abrechnungsdatum mit dem oben angezeigten Betrag zu belasten, bis Sie kündigen. Sie können jederzeit vor Ablauf des Testzeitraums kündigen, um eine Belastung zu vermeiden.',
+        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode am Ende Ihres Testzeitraums und an jedem folgenden Abrechnungsdatum mit dem oben angezeigten Betrag zu belasten, bis Sie kündigen. Sie können jederzeit vor Ablauf des Testzeitraums kündigen, um eine Belastung zu vermeiden.',
       mandateSubscription:
-        'Mit dem Klick auf "{buttonLabel}" ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und eingetragenen Händler, Ihre gewählte Zahlungsmethode sofort mit dem oben angezeigten Betrag zu belasten und den gleichen Betrag an jedem folgenden Abrechnungsdatum abzubuchen, bis Sie kündigen.',
+        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode sofort mit dem oben angezeigten Betrag zu belasten und denselben Betrag an jedem folgenden Abrechnungsdatum abzubuchen, bis Sie kündigen.',
       mandateOneTime:
-        'Mit dem Klick auf "{buttonLabel}" ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und eingetragenen Händler, Ihre gewählte Zahlungsmethode mit dem oben angezeigten Betrag zu belasten. Dies ist eine einmalige Belastung.',
+        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode mit dem oben angezeigten Betrag zu belasten. Dies ist eine einmalige Belastung.',
     },
     form: {
       email: 'E-Mail',
@@ -34,7 +34,7 @@ export default {
       fieldRequired: 'Dieses Feld ist erforderlich',
       addBusinessDetails: 'Firmendaten hinzufügen',
       removeBusinessDetails: 'Firmendaten entfernen',
-      billingDetails: 'Rechnungsdetails',
+      billingDetails: 'Unternehmensdaten',
     },
     pricing: {
       subtotal: 'Zwischensumme',

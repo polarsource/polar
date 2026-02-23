@@ -5,11 +5,11 @@ export default {
       merchantOfRecord:
         'Este pedido es procesado por nuestro revendedor en línea y Comerciante registrado, Polar, quien también gestiona las consultas y devoluciones relacionadas con el pedido.',
       mandateSubscriptionTrial:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar a tu método de pago seleccionado la cantidad mostrada arriba al finalizar tu periodo de prueba y en cada fecha de facturación posterior hasta que canceles. Puedes cancelar en cualquier momento antes de que finalice tu prueba para evitar que se te cobre.',
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar en tu método de pago seleccionado el importe mostrado arriba al finalizar tu periodo de prueba y en cada fecha de facturación posterior hasta que canceles. Puedes cancelar en cualquier momento antes de que finalice la prueba para evitar el cargo.',
       mandateSubscription:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar inmediatamente a tu método de pago seleccionado la cantidad mostrada arriba y a cobrar la misma cantidad en cada fecha de facturación posterior hasta que canceles.',
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar inmediatamente en tu método de pago seleccionado el importe mostrado arriba y a cobrar el mismo importe en cada fecha de facturación posterior hasta que canceles.',
       mandateOneTime:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar a tu método de pago seleccionado la cantidad mostrada arriba. Este es un cargo único.',
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar en tu método de pago seleccionado el importe mostrado arriba. Este es un cargo único.',
     },
     form: {
       email: 'Email',
@@ -34,7 +34,7 @@ export default {
       fieldRequired: 'Este campo es obligatorio',
       addBusinessDetails: 'Añadir datos de empresa',
       removeBusinessDetails: 'Eliminar datos de empresa',
-      billingDetails: 'Datos de facturación',
+      billingDetails: 'Datos de la empresa',
     },
     pricing: {
       subtotal: 'Subtotal',

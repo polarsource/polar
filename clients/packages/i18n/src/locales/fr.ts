@@ -5,9 +5,9 @@ export default {
       merchantOfRecord:
         'Cette commande est traitée par notre revendeur en ligne et commerçant enregistré, Polar, qui gère également les demandes et les retours liés à la commande.',
       mandateSubscriptionTrial:
-        "En cliquant sur « {buttonLabel} », vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter votre moyen de paiement sélectionné du montant indiqué ci-dessus à la fin de votre période d'essai et à chaque date de facturation suivante jusqu'à résiliation. Vous pouvez annuler à tout moment avant la fin de votre essai pour éviter d'être débité.",
+        "En cliquant sur « {buttonLabel} », vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter votre moyen de paiement sélectionné du montant indiqué ci-dessus à la fin de votre période d'essai et à chaque date de facturation ultérieure jusqu'à annulation. Vous pouvez annuler à tout moment avant la fin de votre essai pour éviter d'être débité.",
       mandateSubscription:
-        "En cliquant sur « {buttonLabel} », vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter immédiatement votre moyen de paiement sélectionné du montant indiqué ci-dessus et à débiter le même montant à chaque date de facturation suivante jusqu'à résiliation.",
+        "En cliquant sur « {buttonLabel} », vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter immédiatement votre moyen de paiement sélectionné du montant indiqué ci-dessus et à débiter le même montant à chaque date de facturation ultérieure jusqu'à annulation.",
       mandateOneTime:
         "En cliquant sur « {buttonLabel} », vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter votre moyen de paiement sélectionné du montant indiqué ci-dessus. Il s'agit d'un paiement unique.",
     },
@@ -34,7 +34,7 @@ export default {
       fieldRequired: 'Ce champ est obligatoire',
       addBusinessDetails: 'Ajouter les informations de facturation',
       removeBusinessDetails: 'Supprimer les informations de facturation',
-      billingDetails: 'Coordonnées de facturation',
+      billingDetails: "Informations sur l'entreprise",
     },
     pricing: {
       subtotal: 'Sous-total',

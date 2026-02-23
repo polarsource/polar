@@ -1,12 +1,14 @@
+import contextlib
 import functools
 import re
 
 import dramatiq
+import logfire
 import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from polar.logging import Logger, generate_correlation_id
+from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 from polar.worker import JobQueueManager
 
@@ -19,15 +21,18 @@ class LogCorrelationIdMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
+        correlation_id = CorrelationID.set()
         structlog.contextvars.bind_contextvars(
-            correlation_id=generate_correlation_id(),
-            method=scope["method"],
-            path=scope["path"],
+            correlation_id=correlation_id, method=scope["method"], path=scope["path"]
         )
+        logfire_stack = contextlib.ExitStack()
+        logfire_stack.enter_context(logfire.set_baggage(correlation_id=correlation_id))
 
         await self.app(scope, receive, send)
 
+        logfire_stack.close()
         structlog.contextvars.unbind_contextvars("correlation_id", "method", "path")
+        CorrelationID.clear()
 
 
 class FlushEnqueuedWorkerJobsMiddleware:

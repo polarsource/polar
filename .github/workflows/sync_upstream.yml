@@ -1,0 +1,195 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target branch to sync"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - develop
+          - both
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UPSTREAM_REPO: https://github.com/polarsource/polar.git
+  UPSTREAM_BRANCH: main
+
+jobs:
+  sync-source:
+    name: "Update source branch from upstream"
+    runs-on: ubuntu-latest
+    outputs:
+      has_new_commits: ${{ steps.check.outputs.has_new_commits }}
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: source
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream "${{ env.UPSTREAM_REPO }}"
+
+      - name: Fetch upstream
+        run: git fetch upstream "${{ env.UPSTREAM_BRANCH }}"
+
+      - name: Check for new commits
+        id: check
+        run: |
+          NEW_COMMITS=$(git rev-list --count HEAD..upstream/${{ env.UPSTREAM_BRANCH }})
+          echo "new_commits=$NEW_COMMITS" >> "$GITHUB_OUTPUT"
+          if [ "$NEW_COMMITS" -eq "0" ]; then
+            echo "has_new_commits=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Source branch is already up to date with upstream"
+          else
+            echo "has_new_commits=true" >> "$GITHUB_OUTPUT"
+            echo "📦 Found $NEW_COMMITS new upstream commits to sync"
+          fi
+
+      - name: Fast-forward source to upstream
+        if: steps.check.outputs.has_new_commits == 'true'
+        run: |
+          git merge upstream/${{ env.UPSTREAM_BRANCH }} --ff-only
+          git push origin source
+
+  sync-develop:
+    name: "Sync source into develop"
+    runs-on: ubuntu-latest
+    needs: sync-source
+    if: >-
+      needs.sync-source.outputs.has_new_commits == 'true' && (
+        github.event_name == 'schedule' ||
+        github.event.inputs.target == 'develop' ||
+        github.event.inputs.target == 'both'
+      )
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch source branch
+        run: git fetch origin source
+
+      - name: Attempt merge
+        id: merge
+        run: |
+          if git merge origin/source --no-edit -m "chore: merge upstream changes from source into develop"; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push merged develop
+        if: steps.merge.outputs.result == 'success'
+        run: git push origin develop
+
+      - name: Create sync branch and PR for conflict resolution
+        if: steps.merge.outputs.result == 'conflict'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SYNC_BRANCH="upstream-sync/develop-$(date +%Y%m%d)-${{ github.run_number }}"
+          git checkout -b "$SYNC_BRANCH" origin/source
+          git push origin "$SYNC_BRANCH"
+
+          BODY="## Upstream Sync — Conflict Resolution Required
+
+          This PR brings the latest upstream changes from \`polarsource/polar\` into \`develop\`.
+
+          An automatic merge was attempted but **conflicts were detected**.
+          Please resolve them manually before merging.
+
+          ### Steps to resolve locally
+          \`\`\`bash
+          git fetch origin develop ${SYNC_BRANCH}
+          git checkout develop
+          git merge origin/${SYNC_BRANCH}
+          # resolve conflicts
+          git add .
+          git commit
+          git push origin develop
+          \`\`\`
+
+          > ⚠️ Take care not to overwrite custom implementations in \`develop\`."
+
+          gh pr create \
+            --base develop \
+            --head "$SYNC_BRANCH" \
+            --title "⚠️ Upstream sync: resolve conflicts before merging into develop" \
+            --body "$BODY"
+
+  promote-to-main:
+    name: "Create PR from develop to main"
+    runs-on: ubuntu-latest
+    needs: sync-develop
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event.inputs.target == 'both'
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if develop is ahead of main
+        id: diff
+        run: |
+          git fetch origin main
+          AHEAD=$(git rev-list --count origin/main..origin/develop)
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+          if [ "$AHEAD" -eq "0" ]; then
+            echo "✅ develop and main are in sync"
+          else
+            echo "📦 develop is $AHEAD commits ahead of main"
+          fi
+
+      - name: Create or skip PR
+        if: steps.diff.outputs.ahead != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "✅ PR #$EXISTING already exists (develop → main)"
+          else
+            BODY="## Promote develop → main
+
+          This PR promotes the latest tested changes from \`develop\` to \`main\`,
+          including upstream sync and any custom implementations.
+
+          **Before merging**, ensure:
+          - [ ] CI tests pass on \`develop\`
+          - [ ] Custom implementations are intact
+          - [ ] No unintended changes are included"
+
+            gh pr create \
+              --base main \
+              --head develop \
+              --title "🔄 Promote develop to main (upstream sync)" \
+              --body "$BODY"
+          fi

@@ -134,6 +134,11 @@ class TestReverse:
         )
         await save_fixture(payout_transaction)
 
+        await session.refresh(balance_transaction_1)
+        await session.refresh(balance_transaction_2)
+        assert balance_transaction_1.payout_transaction_id == payout_transaction.id
+        assert balance_transaction_2.payout_transaction_id == payout_transaction.id
+
         transaction = await payout_transaction_service.reverse(
             session, payout_transaction
         )

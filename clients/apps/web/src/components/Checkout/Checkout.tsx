@@ -1,6 +1,5 @@
 'use client'
 
-import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
@@ -36,7 +35,6 @@ import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CheckoutCard } from './CheckoutCard'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -66,11 +64,6 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
-
-  const { variant: pricingPositionExperiment } = useExperiment(
-    'checkout_pricing_position',
-    { trackExposure: !embed },
-  )
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -254,51 +247,34 @@ const Checkout = ({
 
   return (
     <div className="flex w-full flex-col gap-y-6">
-      {pricingPositionExperiment === 'treatment' && (
-        <div className="flex flex-row items-center gap-x-4">
-          {checkout.returnUrl && (
-            <Link
-              href={checkout.returnUrl}
-              className="dark:text-polar-500 text-gray-500"
-            >
-              <ArrowBackOutlined fontSize="small" />
-            </Link>
-          )}
-          <div className="flex flex-row items-center gap-x-3">
-            <Avatar
-              avatar_url={checkout.organization.avatarUrl}
-              name={checkout.organization.name}
-              className="h-8 w-8"
-            />
-            <span className="font-medium dark:text-white">
-              {checkout.organization.name}
-            </span>
-          </div>
-        </div>
-      )}
-      <ShadowBoxOnMd
-        className={`md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent ${pricingPositionExperiment === 'treatment' ? 'md:overflow-clip' : 'md:overflow-hidden'}`}
-      >
-        <div className="md:dark:bg-polar-950 md:bg-gray-50 md:p-12">
-          <div
-            className={`flex flex-col gap-y-8 ${pricingPositionExperiment === 'treatment' ? 'md:sticky md:top-8' : ''}`}
+      <div className="flex flex-row items-center gap-x-4">
+        {checkout.returnUrl && (
+          <Link
+            href={checkout.returnUrl}
+            className="dark:text-polar-500 text-gray-500"
           >
-            {pricingPositionExperiment !== 'treatment' &&
-              checkout.returnUrl && (
-                <Link
-                  href={checkout.returnUrl}
-                  className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
-                >
-                  <ArrowBackOutlined fontSize="inherit" />
-                  <span>Back to {checkout.organization.name}</span>
-                </Link>
-              )}
+            <ArrowBackOutlined fontSize="small" />
+          </Link>
+        )}
+        <div className="flex flex-row items-center gap-x-3">
+          <Avatar
+            avatar_url={checkout.organization.avatarUrl}
+            name={checkout.organization.name}
+            className="h-8 w-8"
+          />
+          <span className="font-medium dark:text-white">
+            {checkout.organization.name}
+          </span>
+        </div>
+      </div>
+      <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-clip md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
+        <div className="md:dark:bg-polar-950 md:bg-gray-50 md:p-12">
+          <div className="flex flex-col gap-y-8 md:sticky md:top-8">
             {hasProductCheckout(checkout) && (
               <>
                 <CheckoutProductInfo
                   organization={checkout.organization}
                   product={checkout.product}
-                  pricingPositionExperiment={pricingPositionExperiment}
                 />
                 <CheckoutProductSwitcher
                   checkout={checkout}
@@ -309,7 +285,6 @@ const Checkout = ({
                   }
                   themePreset={themePreset}
                   locale={locale}
-                  pricingPositionExperiment={pricingPositionExperiment}
                 />
                 {checkout.productPrice.amountType === 'custom' && (
                   <CheckoutPWYWForm
@@ -320,42 +295,31 @@ const Checkout = ({
                     locale={locale}
                   />
                 )}
-                {pricingPositionExperiment === 'treatment' &&
-                  !checkout.isFreeProductPrice && (
-                    <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
-                      {checkout.productPrice.amountType === 'seat_based' && (
-                        <CheckoutSeatSelector
-                          checkout={checkout}
-                          update={
-                            update as (
-                              data: CheckoutUpdatePublic,
-                            ) => Promise<ProductCheckoutPublic>
-                          }
-                          locale={locale}
-                          compact
-                        />
-                      )}
-                      <CheckoutPricingBreakdown
+                {!checkout.isFreeProductPrice && (
+                  <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
+                    {checkout.productPrice.amountType === 'seat_based' && (
+                      <CheckoutSeatSelector
                         checkout={checkout}
+                        update={
+                          update as (
+                            data: CheckoutUpdatePublic,
+                          ) => Promise<ProductCheckoutPublic>
+                        }
                         locale={locale}
+                        compact
                       />
-                      <CheckoutDiscountInput
-                        checkout={checkout}
-                        update={update}
-                        locale={locale}
-                      />
-                    </ShadowBox>
-                  )}
-                <CheckoutCard
-                  checkout={checkout}
-                  update={
-                    update as (
-                      data: CheckoutUpdatePublic,
-                    ) => Promise<ProductCheckoutPublic>
-                  }
-                  locale={locale}
-                  pricingPositionExperiment={pricingPositionExperiment}
-                />
+                    )}
+                    <CheckoutPricingBreakdown
+                      checkout={checkout}
+                      locale={locale}
+                    />
+                    <CheckoutDiscountInput
+                      checkout={checkout}
+                      update={update}
+                      locale={locale}
+                    />
+                  </ShadowBox>
+                )}
               </>
             )}
           </div>
@@ -374,7 +338,6 @@ const Checkout = ({
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
-            pricingPositionExperiment={pricingPositionExperiment}
           />
         </div>
       </ShadowBoxOnMd>

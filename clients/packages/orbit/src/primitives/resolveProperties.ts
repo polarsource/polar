@@ -1,9 +1,33 @@
-import type { Breakpoint, FlexProps, ThemeSpec, TokenProps } from './createBox'
+import type {
+  Breakpoint,
+  FlexChildProps,
+  FlexContainerProps,
+  ThemeSpec,
+  TokenProps,
+} from './createBox'
 
-// ─── Flex class maps ──────────────────────────────────────────────────────────
-// Every breakpoint variant is a fully-static string literal so Tailwind JIT
-// can scan this file and compile only the classes that are actually used.
-// Never concatenate prefix + class — always look up from these tables.
+// ─── Shared helper ────────────────────────────────────────────────────────────
+// Never concatenate prefix + class — always look up from pre-built tables.
+// Tailwind JIT scans this file and compiles every literal string it finds.
+
+function resolveFlexProp<V extends string>(
+  value: V | Partial<Record<Breakpoint, V>> | undefined,
+  map: Record<Breakpoint, Record<V, string>>,
+): string[] {
+  if (value === undefined) return []
+  if (typeof value === 'object') {
+    const result: string[] = []
+    for (const [bp, v] of Object.entries(value) as [Breakpoint, V][]) {
+      if (v !== undefined) result.push(map[bp][v])
+    }
+    return result
+  }
+  return [map.default[value]]
+}
+
+// ─── Flex container maps ──────────────────────────────────────────────────────
+// Used by resolveContainerClasses (Stack). All breakpoint variants are fully
+// static string literals — no runtime string concatenation anywhere.
 
 const DISPLAY = {
   default: {
@@ -224,6 +248,9 @@ const FLEX_WRAP = {
   },
 } as const
 
+// ─── Flex child maps ──────────────────────────────────────────────────────────
+// Used by resolveProperties (Box). Props useful when Box is a flex/grid child.
+
 const FLEX = {
   default: {
     '1': 'flex-1',
@@ -263,28 +290,86 @@ const FLEX = {
   },
 } as const
 
-// ─── Breakpoint-aware flex resolver ──────────────────────────────────────────
+const ALIGN_SELF = {
+  default: {
+    auto: 'self-auto',
+    start: 'self-start',
+    end: 'self-end',
+    center: 'self-center',
+    stretch: 'self-stretch',
+    baseline: 'self-baseline',
+  },
+  sm: {
+    auto: 'sm:self-auto',
+    start: 'sm:self-start',
+    end: 'sm:self-end',
+    center: 'sm:self-center',
+    stretch: 'sm:self-stretch',
+    baseline: 'sm:self-baseline',
+  },
+  md: {
+    auto: 'md:self-auto',
+    start: 'md:self-start',
+    end: 'md:self-end',
+    center: 'md:self-center',
+    stretch: 'md:self-stretch',
+    baseline: 'md:self-baseline',
+  },
+  lg: {
+    auto: 'lg:self-auto',
+    start: 'lg:self-start',
+    end: 'lg:self-end',
+    center: 'lg:self-center',
+    stretch: 'lg:self-stretch',
+    baseline: 'lg:self-baseline',
+  },
+  xl: {
+    auto: 'xl:self-auto',
+    start: 'xl:self-start',
+    end: 'xl:self-end',
+    center: 'xl:self-center',
+    stretch: 'xl:self-stretch',
+    baseline: 'xl:self-baseline',
+  },
+  '2xl': {
+    auto: '2xl:self-auto',
+    start: '2xl:self-start',
+    end: '2xl:self-end',
+    center: '2xl:self-center',
+    stretch: '2xl:self-stretch',
+    baseline: '2xl:self-baseline',
+  },
+} as const
 
-function resolveFlexProp<V extends string>(
-  value: V | Partial<Record<Breakpoint, V>> | undefined,
-  map: Record<Breakpoint, Record<V, string>>,
-): string[] {
-  if (value === undefined) return []
-  if (typeof value === 'object') {
-    const result: string[] = []
-    for (const [bp, v] of Object.entries(value) as [Breakpoint, V][]) {
-      if (v !== undefined) result.push(map[bp][v])
-    }
-    return result
-  }
-  return [map.default[value]]
+const FLEX_GROW: Record<NonNullable<FlexChildProps['flexGrow']>, string> = {
+  '0': 'grow-0',
+  '1': 'grow',
+}
+
+const FLEX_SHRINK: Record<NonNullable<FlexChildProps['flexShrink']>, string> = {
+  '0': 'shrink-0',
+  '1': 'shrink',
+}
+
+// ─── resolveContainerClasses ──────────────────────────────────────────────────
+// Used by Stack to resolve all flex container props to Tailwind classes.
+
+export function resolveContainerClasses(props: FlexContainerProps): string {
+  const classes: string[] = []
+  classes.push(...resolveFlexProp(props.display, DISPLAY))
+  classes.push(...resolveFlexProp(props.flexDirection, FLEX_DIRECTION))
+  classes.push(...resolveFlexProp(props.alignItems, ALIGN_ITEMS))
+  classes.push(...resolveFlexProp(props.justifyContent, JUSTIFY_CONTENT))
+  classes.push(...resolveFlexProp(props.flexWrap, FLEX_WRAP))
+  return classes.filter(Boolean).join(' ')
 }
 
 // ─── resolveProperties ───────────────────────────────────────────────────────
+// Used by Box to resolve token props + flex child props to Tailwind classes.
 
 export function resolveProperties<T extends ThemeSpec>(
   theme: T,
-  props: TokenProps<T> & FlexProps,
+  props: TokenProps<T> & FlexChildProps,
 ): string {
   const classes: string[] = []
 
@@ -292,7 +377,7 @@ export function resolveProperties<T extends ThemeSpec>(
   const sp = (k: keyof T['spacing']) => theme.spacing[k as string | number]
   const r = (k: keyof T['radii']) => theme.radii[k as string]
 
-  // ── Colors (scalar — breakpoint variants require theme-level class strings)
+  // ── Colors
   if (props.backgroundColor !== undefined) {
     const cls = c[props.backgroundColor as string]?.background
     if (cls !== undefined) classes.push(cls)
@@ -306,7 +391,7 @@ export function resolveProperties<T extends ThemeSpec>(
     if (cls !== undefined) classes.push(cls)
   }
 
-  // ── Spacing (scalar)
+  // ── Spacing
   if (props.padding !== undefined) classes.push(sp(props.padding).padding)
   if (props.paddingX !== undefined) classes.push(sp(props.paddingX).paddingX)
   if (props.paddingY !== undefined) classes.push(sp(props.paddingY).paddingY)
@@ -327,20 +412,18 @@ export function resolveProperties<T extends ThemeSpec>(
   if (props.rowGap !== undefined) classes.push(sp(props.rowGap).rowGap)
   if (props.columnGap !== undefined) classes.push(sp(props.columnGap).columnGap)
 
-  // ── Radii (scalar)
+  // ── Radii
   if (props.borderRadius !== undefined) classes.push(r(props.borderRadius).all)
   if (props.borderTopLeftRadius !== undefined) classes.push(r(props.borderTopLeftRadius).tl)
   if (props.borderTopRightRadius !== undefined) classes.push(r(props.borderTopRightRadius).tr)
   if (props.borderBottomLeftRadius !== undefined) classes.push(r(props.borderBottomLeftRadius).bl)
   if (props.borderBottomRightRadius !== undefined) classes.push(r(props.borderBottomRightRadius).br)
 
-  // ── Flex (scalar or breakpoint map — all strings are pre-built static literals)
-  classes.push(...resolveFlexProp(props.display, DISPLAY))
-  classes.push(...resolveFlexProp(props.flexDirection, FLEX_DIRECTION))
-  classes.push(...resolveFlexProp(props.alignItems, ALIGN_ITEMS))
-  classes.push(...resolveFlexProp(props.justifyContent, JUSTIFY_CONTENT))
-  classes.push(...resolveFlexProp(props.flexWrap, FLEX_WRAP))
+  // ── Flex child props
   classes.push(...resolveFlexProp(props.flex, FLEX))
+  classes.push(...resolveFlexProp(props.alignSelf, ALIGN_SELF))
+  if (props.flexGrow !== undefined) classes.push(FLEX_GROW[props.flexGrow])
+  if (props.flexShrink !== undefined) classes.push(FLEX_SHRINK[props.flexShrink])
 
   return classes.filter(Boolean).join(' ')
 }

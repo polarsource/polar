@@ -42,8 +42,8 @@ from polar.file.sorting import FileSortProperty
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
 from polar.models.customer import Customer
-from polar.models.member import Member
 from polar.models.file import FileServiceTypes
+from polar.models.member import Member
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType

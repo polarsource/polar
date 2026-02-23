@@ -284,18 +284,10 @@ resource "tfe_variable" "stripe_webhook_secret_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
-resource "tfe_variable" "logfire_token_server" {
-  key             = "logfire_token_server"
+resource "tfe_variable" "logfire_token" {
+  key             = "logfire_token"
   category        = "terraform"
-  description     = "Logfire Token for server"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-}
-
-resource "tfe_variable" "logfire_token_worker" {
-  key             = "logfire_token_worker"
-  category        = "terraform"
-  description     = "Logfire Token for worker"
+  description     = "Logfire Token"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }

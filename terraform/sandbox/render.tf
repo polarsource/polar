@@ -186,10 +186,7 @@ module "sandbox" {
   }
 
   logfire_config = {
-    server_project_name = "sandbox"
-    worker_project_name = "sandbox-worker"
-    server_token        = var.logfire_token_server
-    worker_token        = var.logfire_token_worker
+    token = var.logfire_token
   }
 
   prometheus_config = {

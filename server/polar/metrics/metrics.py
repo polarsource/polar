@@ -1368,7 +1368,7 @@ class TBCanceledSubscriptionsMetric(TinybirdMetric):
     slug = "canceled_subscriptions"
     display_name = "Canceled Subscriptions"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1379,7 +1379,7 @@ class TBCanceledSubscriptionsCustomerServiceMetric(TinybirdMetric):
     slug = "canceled_subscriptions_customer_service"
     display_name = "Canceled Subscriptions - Customer Service"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1390,7 +1390,7 @@ class TBCanceledSubscriptionsLowQualityMetric(TinybirdMetric):
     slug = "canceled_subscriptions_low_quality"
     display_name = "Canceled Subscriptions - Low Quality"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1401,7 +1401,7 @@ class TBCanceledSubscriptionsMissingFeaturesMetric(TinybirdMetric):
     slug = "canceled_subscriptions_missing_features"
     display_name = "Canceled Subscriptions - Missing Features"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1412,7 +1412,7 @@ class TBCanceledSubscriptionsSwitchedServiceMetric(TinybirdMetric):
     slug = "canceled_subscriptions_switched_service"
     display_name = "Canceled Subscriptions - Switched Service"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1423,7 +1423,7 @@ class TBCanceledSubscriptionsTooComplexMetric(TinybirdMetric):
     slug = "canceled_subscriptions_too_complex"
     display_name = "Canceled Subscriptions - Too Complex"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1434,7 +1434,7 @@ class TBCanceledSubscriptionsTooExpensiveMetric(TinybirdMetric):
     slug = "canceled_subscriptions_too_expensive"
     display_name = "Canceled Subscriptions - Too Expensive"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1445,7 +1445,7 @@ class TBCanceledSubscriptionsUnusedMetric(TinybirdMetric):
     slug = "canceled_subscriptions_unused"
     display_name = "Canceled Subscriptions - Unused"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1456,7 +1456,7 @@ class TBCanceledSubscriptionsOtherMetric(TinybirdMetric):
     slug = "canceled_subscriptions_other"
     display_name = "Canceled Subscriptions - Other"
     type = MetricType.scalar
-    query = TinybirdQuery.events
+    query = TinybirdQuery.cancellations
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:

@@ -228,13 +228,7 @@ resource "tfe_variable" "stripe_webhook_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
-resource "tfe_variable" "logfire_token_test" {
-  key             = "logfire_token"
-  category        = "terraform"
-  description     = "Logfire Token"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-}
+
 
 resource "tfe_variable" "numeral_api_key_test" {
   key             = "numeral_api_key"

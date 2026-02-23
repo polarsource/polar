@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, update
 from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import (
@@ -83,6 +83,14 @@ class BalanceTransactionRepository(TransactionRepository):
             )
         )
         return await self.get_all(statement)
+
+    async def reset_payout_transaction_id(self, payout_transaction_id: UUID) -> None:
+        statement = (
+            update(Transaction)
+            .where(Transaction.payout_transaction_id == payout_transaction_id)
+            .values(payout_transaction_id=None)
+        )
+        await self.session.execute(statement)
 
     def get_base_statement(
         self, *, include_deleted: bool = False

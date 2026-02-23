@@ -18,4 +18,10 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  checkout_flatten: {
+    description:
+      'Flatten checkout UI by removing visual containers for a more minimal layout',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

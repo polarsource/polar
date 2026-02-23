@@ -48,6 +48,20 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
     return (
       <div className="text-[min(1em,24px)]">{t('checkout.pricing.free')}</div>
     )
+  } else if (price.amountType === 'seat_based') {
+    const tiers = price.seatTiers?.tiers ?? []
+    const sortedTiers = [...tiers].sort((a, b) => a.minSeats - b.minSeats)
+    const basePricePerSeat = sortedTiers[0]?.pricePerSeat ?? 0
+    return (
+      <AmountLabel
+        amount={basePricePerSeat}
+        currency={price.priceCurrency}
+        interval={product.recurringInterval}
+        intervalCount={product.recurringIntervalCount}
+        mode="compact"
+        locale={locale}
+      />
+    )
   } else if (price.amountType === 'metered_unit') {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">

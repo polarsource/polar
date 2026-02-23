@@ -18,6 +18,7 @@ import { Fragment, useCallback } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
+import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
@@ -26,12 +27,14 @@ interface CheckoutProductSwitcherProps {
   disabled?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
+  flattenExperiment?: 'treatment' | 'control'
 }
 
 const CheckoutProductSwitcher = ({
   checkout,
   update,
   locale = DEFAULT_LOCALE,
+  flattenExperiment,
 }: CheckoutProductSwitcherProps) => {
   const t = useTranslations(locale)
 
@@ -98,6 +101,86 @@ const CheckoutProductSwitcher = ({
     }
 
     return t('checkout.productSwitcher.oneTimePurchase')
+  }
+
+  const isFlat = flattenExperiment === 'treatment'
+
+  if (isFlat) {
+    const items: {
+      key: string
+      value: string
+      productName: string
+      product: ProductCheckoutPublic['product']
+      price: ProductPrice | LegacyRecurringProductPrice
+      isSelected: boolean
+    }[] = []
+    for (const product of products) {
+      if (hasLegacyRecurringPrices(prices[product.id])) {
+        for (const price of prices[product.id]) {
+          items.push({
+            key: price.id,
+            value: `${product.id}:${price.id}`,
+            productName: product.name,
+            product,
+            price,
+            isSelected: price.id === selectedPrice.id,
+          })
+        }
+      } else {
+        items.push({
+          key: product.id,
+          value: `${product.id}:${prices[product.id][0].id}`,
+          productName: product.name,
+          product,
+          price: prices[product.id][0],
+          isSelected: product.id === selectedProduct.id,
+        })
+      }
+    }
+
+    return (
+      <RadioGroup
+        value={`${selectedProduct.id}:${selectedPrice.id}`}
+        onValueChange={selectProduct}
+        className="dark:border-polar-700 dark:divide-polar-700 gap-0 divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200"
+      >
+        {items.map((item) => (
+          <label
+            key={item.key}
+            className={cn(
+              'flex cursor-pointer items-center gap-x-3 px-4 py-3 transition-colors',
+              item.isSelected
+                ? 'bg-blue-50/50 dark:bg-blue-950/20'
+                : 'dark:hover:bg-polar-800 hover:bg-gray-50',
+            )}
+            htmlFor={`product-${item.key}`}
+          >
+            <RadioGroupItem value={item.value} id={`product-${item.key}`} />
+            <span className="min-w-0 flex-1 truncate text-sm">
+              {item.productName}
+            </span>
+            <span className="dark:text-polar-400 shrink-0 text-sm text-gray-500">
+              {item.isSelected && item.price.amountType === 'seat_based' ? (
+                <AmountLabel
+                  amount={checkout.netAmount || 0}
+                  currency={item.price.priceCurrency}
+                  interval={item.product.recurringInterval}
+                  intervalCount={item.product.recurringIntervalCount}
+                  mode="compact"
+                  locale={locale}
+                />
+              ) : (
+                <ProductPriceLabel
+                  product={item.product}
+                  price={item.price}
+                  locale={locale}
+                />
+              )}
+            </span>
+          </label>
+        ))}
+      </RadioGroup>
+    )
   }
 
   return (

@@ -80,6 +80,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
+  flattenExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
   beforeSubmit?: React.ReactNode
 }
@@ -96,6 +97,7 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
   locale: localeProp,
+  flattenExperiment,
   isWalletPayment,
   beforeSubmit,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -653,7 +655,10 @@ const BaseCheckoutForm = ({
                 type="submit"
                 size="lg"
                 wrapperClassNames="text-base"
-                className={cn('w-full')}
+                className={cn(
+                  'w-full',
+                  flattenExperiment === 'treatment' && 'rounded-xl',
+                )}
                 disabled={disabled || isUpdatePending}
                 loading={loading}
               >
@@ -723,6 +728,7 @@ interface CheckoutFormProps {
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
+  flattenExperiment?: 'treatment' | 'control'
   beforeSubmit?: React.ReactNode
 }
 

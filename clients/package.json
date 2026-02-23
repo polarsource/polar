@@ -21,6 +21,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "ts-morph": "^27.0.2",
     "turbo": "^2.8.9"
   },
   "resolutions": {

@@ -1,4 +1,7 @@
+from unittest.mock import MagicMock
+
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
@@ -561,7 +564,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, member, role=MemberRole.owner)
 
-        assert "must have exactly one owner" in str(exc_info.value).lower()
+        assert "only the owner can transfer ownership" in str(exc_info.value).lower()
 
     @pytest.mark.auth
     async def test_update_no_changes(
@@ -592,3 +595,82 @@ class TestUpdate:
 
         assert updated_member.id == member.id
         assert updated_member.modified_at == original_updated_at
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    async def test_delete_member_enqueues_seat_revocation_job(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that deleting a member enqueues a job to revoke their seats."""
+        enqueue_job_mock: MagicMock = mocker.patch("polar.member.service.enqueue_job")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        # Create owner and a regular member
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        deleted_member = await member_service.delete(session, member)
+
+        # Verify member is soft-deleted
+        assert deleted_member.id == member.id
+        assert deleted_member.deleted_at is not None
+
+        # Verify enqueue_job was called with correct parameters
+        enqueue_job_mock.assert_called_once_with(
+            "customer_seat.revoke_seats_for_member",
+            member_id=member.id,
+        )
+
+    async def test_cannot_delete_only_owner(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that the only owner cannot be deleted."""
+        from polar.exceptions import PolarRequestValidationError
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.delete(session, owner)
+
+        assert "only owner" in str(exc_info.value).lower()

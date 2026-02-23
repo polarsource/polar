@@ -367,6 +367,7 @@ class BalanceOrderMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceOrderEvent(Event):
@@ -411,6 +412,7 @@ class BalanceRefundMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceRefundEvent(Event):
@@ -442,6 +444,7 @@ class BalanceDisputeMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceDisputeEvent(Event):

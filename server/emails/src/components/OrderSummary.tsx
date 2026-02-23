@@ -148,10 +148,10 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
         {/* Total */}
         <Row className="mb-1">
           <Column className="w-3/4">
-            <span className="text-sm font-bold text-gray-900">Total</span>
+            <span className="text-sm font-medium text-gray-900">Total</span>
           </Column>
           <Column className="w-1/4 text-right">
-            <span className="text-sm font-bold text-gray-900">
+            <span className="text-sm font-medium text-gray-900">
               {formatCurrency(order.total_amount, order.currency)}
             </span>
           </Column>
@@ -177,12 +177,12 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
         {order.due_amount !== order.total_amount && (
           <Row className="mt-1">
             <Column className="w-3/4">
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-sm font-medium text-gray-900">
                 To be paid
               </span>
             </Column>
             <Column className="w-1/4 text-right">
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-sm font-medium text-gray-900">
                 {formatCurrency(order.due_amount, order.currency)}
               </span>
             </Column>

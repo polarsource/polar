@@ -1,14 +1,17 @@
 import { formatCurrency } from '@polar-sh/currency'
+import type { AcceptedLocale } from '@polar-sh/i18n'
+import { getTranslations } from '@polar-sh/i18n'
+import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
-import { formatRecurringInterval } from '../utils/product'
 
 interface AmountLabelProps {
   amount: number
   currency: string
+  mode: 'compact' | 'standard'
   interval?: SubscriptionRecurringInterval | null
   intervalCount?: number | null
-  currencySymbol?: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry
+  locale?: AcceptedLocale
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
@@ -16,32 +19,23 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   currency,
   interval,
   intervalCount,
-  currencySymbol,
+  mode,
+  locale,
 }) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
       return ''
     }
-    const formatted = formatRecurringInterval(interval, intervalCount, 'short')
+    const t = getTranslations(locale ?? 'en')
+    const count = intervalCount && intervalCount > 1 ? intervalCount : null
+    const prefix = count ? `${formatOrdinal(count, locale ?? 'en')} ` : ''
+    const formatted = `${prefix}${t.intervals.short[interval]}`
     return formatted ? ` / ${formatted}` : ''
-  }, [interval, intervalCount])
-
-  const minimumFractionDigits = useMemo(
-    // Show 0 decimals if a round number, show default decimals (2 for USD) otherwise
-    // This will trip when we add multi-currency (e.g. for JPY etc)
-    () => (amount % 100 === 0 ? 0 : 2),
-    [amount],
-  )
+  }, [interval, intervalCount, locale])
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">
-      {formatCurrency(
-        amount,
-        currency,
-        minimumFractionDigits,
-        undefined,
-        currencySymbol,
-      )}
+      {formatCurrency(mode, locale)(amount, currency)}
       {intervalDisplay ? (
         <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
       ) : null}

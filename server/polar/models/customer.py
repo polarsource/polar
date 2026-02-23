@@ -147,6 +147,7 @@ class Customer(MetadataMixin, RecordModel):
     )
 
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    locale: Mapped[str | None] = mapped_column(String, nullable=True)
     _billing_name: Mapped[str | None] = mapped_column(
         "billing_name", String, nullable=True, default=None
     )
@@ -245,12 +246,12 @@ class Customer(MetadataMixin, RecordModel):
 
     @hybrid_property
     def can_authenticate(self) -> bool:
-        return self.deleted_at is None
+        return not self.is_deleted
 
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return cls.deleted_at.is_(None)
+        return cls.is_deleted.is_(False)
 
     def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform

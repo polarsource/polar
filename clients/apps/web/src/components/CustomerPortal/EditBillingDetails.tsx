@@ -1,7 +1,6 @@
+import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
-import { isValidationError } from '@polar-sh/customer-portal/core'
-import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -62,9 +61,17 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
         })
 
         onSuccess()
-      } catch (e) {
-        if (isValidationError(e)) {
-          setValidationErrors(e.errors, setError)
+      } catch (e: unknown) {
+        if (
+          e != null &&
+          typeof e === 'object' &&
+          'errors' in e &&
+          Array.isArray((e as { errors: unknown }).errors)
+        ) {
+          setValidationErrors(
+            (e as { errors: schemas['ValidationError'][] }).errors,
+            setError,
+          )
         }
       }
     },
@@ -235,6 +242,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                       country={country}
                       value={field.value || undefined}
                       onChange={field.onChange}
+                      placeholder={country === 'US' ? 'State' : 'Province'}
                     />
                     <FormMessage />
                   </div>

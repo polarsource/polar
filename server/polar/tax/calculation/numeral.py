@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 from typing import Literal, NotRequired, TypedDict
 
@@ -11,10 +10,12 @@ from polar.logging import Logger
 
 from ..tax_id import TaxID
 from .base import (
+    CalculationExpiredError,
     InvalidTaxIDError,
     TaxabilityReason,
     TaxCalculation,
-    TaxCalculationError,
+    TaxCalculationLogicalError,
+    TaxCalculationTechnicalError,
     TaxCode,
     TaxRate,
     TaxRecordError,
@@ -146,7 +147,6 @@ class NumeralTaxService(TaxServiceProtocol):
         address: Address,
         tax_ids: list[TaxID],
         customer_exempt: bool,
-        attempt: int = 1,
     ) -> TaxCalculation:
         customer_type = "BUSINESS" if len(tax_ids) > 0 else "CONSUMER"
         product_category = "EXEMPT" if customer_exempt else tax_code.to_numeral()
@@ -193,20 +193,7 @@ class NumeralTaxService(TaxServiceProtocol):
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 log.debug("Numeral rate limit exceeded")
-                retry_after = int(e.response.headers.get("Retry-After", "1"))
-                if attempt <= 3:
-                    await asyncio.sleep(retry_after)
-                    return await self.calculate(
-                        identifier,
-                        currency,
-                        amount,
-                        tax_code,
-                        address,
-                        tax_ids,
-                        customer_exempt,
-                        attempt=attempt + 1,
-                    )
-                raise TaxCalculationError("Rate limit exceeded") from e
+                raise TaxCalculationTechnicalError("Rate limit exceeded") from e
 
             log.debug("Numeral tax calculation error: %s", e.response.text)
             error_response: NumeralTaxCalculationErrorResponse = e.response.json()
@@ -230,13 +217,16 @@ class NumeralTaxService(TaxServiceProtocol):
             if error_meta is not None and error_meta["field"].startswith(
                 "customer.address"
             ):
-                raise TaxCalculationError("Invalid address provided") from e
+                raise TaxCalculationLogicalError("Invalid address provided") from e
             error_message = error_response["error"]["error_message"].lower()
             if "address_zip_code" in error_message:
-                raise TaxCalculationError("Invalid postal code provided") from e
+                raise TaxCalculationLogicalError("Invalid postal code provided") from e
             if "vat id" in error_message:
                 raise InvalidTaxIDError() from e
             raise
+        except httpx.RequestError as e:
+            log.debug("Numeral tax calculation request error: %s", str(e))
+            raise TaxCalculationTechnicalError(str(e)) from e
 
         calculation: NumeralTaxCalculationResponse = response.json()
 
@@ -269,7 +259,11 @@ class NumeralTaxService(TaxServiceProtocol):
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            log.debug("Numeral tax record error: %s", e.response.text)
+            error_json = e.response.json()
+            error_code = error_json.get("error", {}).get("error_code")
+            if error_code == "calculation_expired":
+                raise CalculationExpiredError() from e
+            log.warning("Numeral tax record error: %s", e.response.text)
             raise TaxRecordError() from e
 
         transaction: NumeralTaxTransactionResponse = response.json()

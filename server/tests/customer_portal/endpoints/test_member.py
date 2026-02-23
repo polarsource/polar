@@ -90,7 +90,7 @@ class TestListMembers:
 
         response = await client.get("/v1/customer-portal/members")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["items"]
         assert len(data) == 3  # owner + billing_manager + member
 
     @pytest.mark.auth(MEMBER_BILLING_MANAGER_AUTH_SUBJECT)
@@ -419,6 +419,93 @@ class TestUpdateMember:
         assert response.status_code == 200
         data = response.json()
         assert data["role"] == "billing_manager"
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_owner_can_transfer_ownership(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Owner can transfer ownership to another member."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # Create a billing manager to promote to owner
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="new-owner@example.com",
+            name="New Owner",
+            role=MemberRole.billing_manager,
+        )
+        await save_fixture(member2)
+
+        # Transfer ownership
+        response = await client.patch(
+            f"/v1/customer-portal/members/{member2.id}",
+            json={"role": "owner"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["role"] == "owner"
+
+        # Verify the old owner was demoted
+        response = await client.get("/v1/customer-portal/members")
+        assert response.status_code == 200
+        members = response.json()["items"]
+        old_owner = next(m for m in members if m["id"] == str(member_owner.id))
+        new_owner = next(m for m in members if m["id"] == str(member2.id))
+        assert old_owner["role"] == "billing_manager"
+        assert new_owner["role"] == "owner"
+
+    @pytest.mark.auth(MEMBER_BILLING_MANAGER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_billing_manager_cannot_transfer_ownership(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_billing_manager: Member,
+    ) -> None:
+        """Billing manager cannot transfer ownership."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # Create an owner and another member
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Regular Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(owner)
+        await save_fixture(member2)
+
+        # Billing manager tries to promote member to owner
+        response = await client.patch(
+            f"/v1/customer-portal/members/{member2.id}",
+            json={"role": "owner"},
+        )
+        assert response.status_code == 422
+        assert (
+            "only the owner can transfer ownership"
+            in response.json()["detail"][0]["msg"].lower()
+        )
 
 
 @pytest.mark.asyncio

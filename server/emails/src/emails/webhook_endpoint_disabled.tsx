@@ -2,9 +2,8 @@ import { Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
-import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import Intro from '../components/Intro'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function WebhookEndpointDisabled({
@@ -14,17 +13,16 @@ export function WebhookEndpointDisabled({
   dashboard_url,
 }: schemas['WebhookEndpointDisabledProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         Webhook endpoint disabled for {organization.name} due to continuous
         failures
       </Preview>
-      <PolarHeader />
-      <IntroWithHi>
+      <Intro>
         We've automatically disabled a webhook endpoint for{' '}
         <span className="font-bold">{organization.name}</span> due to continuous
         delivery failures.
-      </IntroWithHi>
+      </Intro>
       <Section>
         <Text>
           After multiple consecutive failed delivery attempts, we've disabled
@@ -49,10 +47,10 @@ export function WebhookEndpointDisabled({
         </ul>
       </Section>
       <Section className="text-center">
-        <Button href={dashboard_url}>Go to Webhooks Dashboard</Button>
+        <Button href={dashboard_url}>Manage webhooks</Button>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 
@@ -65,8 +63,7 @@ WebhookEndpointDisabled.PreviewProps = {
     avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=200&v=4',
   },
   webhook_endpoint_url: 'https://api.example.com/webhooks/polar',
-  dashboard_url:
-    'https://polar.sh/dashboard/acme-inc/settings/webhooks',
+  dashboard_url: 'https://polar.sh/dashboard/acme-inc/settings/webhooks',
 }
 
 export default WebhookEndpointDisabled

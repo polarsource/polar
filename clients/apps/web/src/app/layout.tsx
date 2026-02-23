@@ -11,8 +11,9 @@ import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { GeistMono } from 'geist/font/mono'
-import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
+import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
 import {
   NavigationHistoryProvider,
@@ -82,6 +83,13 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+const inter = Inter()
+
+const louize = localFont({
+  src: '../fonts/Louize-Italic-205TF.otf',
+  variable: '--font-louize',
+})
+
 export default async function RootLayout({
   // Layouts must accept a children prop.
   // This will be populated with nested layouts or pages
@@ -114,7 +122,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`antialiased ${GeistSans.variable} ${GeistMono.variable}`}
+      className={`antialiased ${inter.className} ${louize.variable} ${GeistMono.variable}`}
     >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (

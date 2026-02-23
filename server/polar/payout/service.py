@@ -3,6 +3,7 @@ import uuid
 from collections.abc import AsyncIterable, Sequence
 from typing import Any, cast
 
+import sentry_sdk
 import stripe as stripe_lib
 import structlog
 
@@ -20,11 +21,13 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import Account, Payout
+from polar.models import Account, Payout, PayoutAttempt
 from polar.models.payout import PayoutStatus
+from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.transaction.repository import (
+    PayoutReversalTransactionRepository,
     PayoutTransactionRepository,
     TransactionRepository,
 )
@@ -38,11 +41,45 @@ from polar.transaction.service.platform_fee import (
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
-from .repository import PayoutRepository
+from .repository import PayoutAttemptRepository, PayoutRepository
 from .schemas import PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
 from .sorting import PayoutSortProperty
 
 log: Logger = structlog.get_logger()
+
+# Currencies that Stripe treats as zero-decimal for payouts, even though they
+# technically have smaller units. For these currencies, payout amounts must be
+# in whole units (amounts in our internal representation must end with "00").
+# See: https://docs.stripe.com/currencies#special-cases
+_STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES: frozenset[str] = frozenset(
+    {"isk", "huf", "twd", "ugx"}
+)
+
+
+def _adjust_payout_amount_for_zero_decimal_currency(
+    amount: int, currency: str
+) -> tuple[int, int]:
+    """Adjust a payout amount for zero-decimal currencies.
+
+    For currencies like ISK, HUF, TWD, and UGX, Stripe requires payout amounts
+    to be in whole units. This function rounds down the amount to the nearest
+    valid value (multiple of 100 in our internal cents representation).
+
+    Args:
+        amount: The amount in smallest currency units (cents).
+        currency: The currency code (e.g., "isk", "huf").
+
+    Returns:
+        A tuple of (adjusted_amount, remainder) where:
+        - adjusted_amount: The amount rounded down to be valid for Stripe payouts
+        - remainder: The amount that could not be paid out (0-99)
+    """
+    if currency.lower() not in _STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES:
+        return amount, 0
+
+    remainder = amount % 100
+    adjusted_amount = amount - remainder
+    return adjusted_amount, remainder
 
 
 class PayoutError(PolarError): ...
@@ -77,7 +114,7 @@ class PendingPayoutCreation(PayoutError):
         super().__init__(message, 409)
 
 
-class PayoutDoesNotExist(PayoutError):
+class PayoutAttemptDoesNotExist(PayoutError):
     def __init__(self, payout_id: str) -> None:
         self.payout_id = payout_id
         message = (
@@ -124,6 +161,15 @@ class PayoutAlreadyTriggered(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
         message = f"Payout {payout.id} has already been triggered."
+        super().__init__(message)
+
+
+class PayoutNotCancelable(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            f"Payout {payout.id} cannot be canceled because of its current status."
+        )
         super().__init__(message)
 
 
@@ -243,6 +289,7 @@ class PayoutService:
                     invoice_number=await self._get_next_invoice_number(
                         session, account
                     ),
+                    attempts=[],
                 )
             )
             transaction = await payout_transaction_service.create(
@@ -310,6 +357,21 @@ class PayoutService:
                 )
                 account_amount = stripe_destination_balance_transaction.amount
 
+            # For zero-decimal payout currencies (ISK, HUF, TWD, UGX), adjust
+            # the amount to be payable by Stripe (rounded down to nearest 100)
+            account_amount, remainder = _adjust_payout_amount_for_zero_decimal_currency(
+                account_amount, transaction.account_currency
+            )
+            if remainder > 0:
+                log.info(
+                    "Adjusted transfer amount for zero-decimal currency",
+                    payout_id=str(payout.id),
+                    original_amount=stripe_destination_balance_transaction.amount,
+                    adjusted_amount=account_amount,
+                    remainder=remainder,
+                    currency=transaction.account_currency,
+                )
+
         await payout_transaction_repository.update(
             transaction,
             update_dict={
@@ -327,21 +389,33 @@ class PayoutService:
 
     async def update_from_stripe(
         self, session: AsyncSession, stripe_payout: stripe_lib.Payout
-    ) -> Payout:
-        repository = PayoutRepository.from_session(session)
-        payout = await repository.get_by_processor_id(
+    ) -> PayoutAttempt:
+        """Update payout attempt status from Stripe webhook."""
+        attempt_repository = PayoutAttemptRepository.from_session(session)
+
+        attempt = await attempt_repository.get_by_processor_id(
             AccountType.stripe, stripe_payout.id
         )
-        if payout is None:
-            raise PayoutDoesNotExist(stripe_payout.id)
+        if attempt is None:
+            raise PayoutAttemptDoesNotExist(stripe_payout.id)
 
-        status = PayoutStatus.from_stripe(stripe_payout.status)
+        status = PayoutAttemptStatus.from_stripe(stripe_payout.status)
         update_dict: dict[str, Any] = {"status": status}
-        if status == PayoutStatus.succeeded and stripe_payout.arrival_date is not None:
+
+        if status == PayoutAttemptStatus.failed and stripe_payout.failure_code:
+            update_dict["failed_reason"] = stripe_payout.failure_code
+            if stripe_payout.failure_message:
+                update_dict["failed_reason"] += f": {stripe_payout.failure_message}"
+
+        if (
+            status == PayoutAttemptStatus.succeeded
+            and stripe_payout.arrival_date is not None
+        ):
             update_dict["paid_at"] = datetime.datetime.fromtimestamp(
                 stripe_payout.arrival_date, datetime.UTC
             )
-        return await repository.update(payout, update_dict=update_dict)
+
+        return await attempt_repository.update(attempt, update_dict=update_dict)
 
     async def trigger_stripe_payouts(self, session: AsyncSession) -> None:
         """
@@ -360,41 +434,102 @@ class PayoutService:
 
     async def trigger_stripe_payout(
         self, session: AsyncSession, payout: Payout
-    ) -> Payout:
-        if payout.processor_id is not None:
-            raise PayoutAlreadyTriggered(payout)
-
+    ) -> PayoutAttempt:
+        """
+        Trigger a Stripe payout for the given payout.
+        Creates a new payout attempt if none exists yet.
+        """
         account = payout.account
         assert account.stripe_id is not None
+
         _, balance = await stripe_service.retrieve_balance(account.stripe_id)
 
         if balance < payout.account_amount:
             log.info(
-                (
-                    "The Stripe Connect account doesn't have enough balance "
-                    "to make the payout yet"
-                ),
+                "The Stripe Connect account doesn't have enough balance to make the payout yet",
                 payout_id=str(payout.id),
                 account_id=str(account.id),
                 balance=balance,
                 payout_amount=payout.account_amount,
             )
-            return payout
+            raise InsufficientBalance(account, balance)
+
+        # Create a new payout attempt
+        attempt_repository = PayoutAttemptRepository.from_session(session)
+        attempt = await attempt_repository.create(
+            PayoutAttempt(
+                payout=payout,
+                processor=account.account_type,
+                amount=payout.account_amount,
+                currency=payout.account_currency,
+                status=PayoutAttemptStatus.pending,
+            ),
+            flush=True,
+        )
 
         # Trigger a payout on the Stripe Connect account
-        stripe_payout = await stripe_service.create_payout(
-            stripe_account=account.stripe_id,
-            amount=payout.account_amount,
-            currency=payout.account_currency,
-            metadata={
-                "payout_id": str(payout.id),
-            },
+        try:
+            stripe_payout = await stripe_service.create_payout(
+                stripe_account=account.stripe_id,
+                amount=payout.account_amount,
+                currency=payout.account_currency,
+                metadata={
+                    "payout_id": str(payout.id),
+                    "payout_attempt_id": str(attempt.id),
+                },
+            )
+        except stripe_lib.InvalidRequestError as e:
+            # Capture exception in Sentry for debugging purposes
+            sentry_sdk.capture_exception(
+                e,
+                extras={"payout_id": str(payout.id)},
+            )
+            # Do not raise an error here: we know it happens often, because Stripe
+            # has many hidden rules on payout creation that we cannot control.
+            return await attempt_repository.update(
+                attempt,
+                update_dict={
+                    "status": PayoutAttemptStatus.failed,
+                    "failed_reason": str(e),
+                },
+            )
+
+        return await attempt_repository.update(
+            attempt,
+            update_dict={"processor_id": stripe_payout.id},
         )
+
+    async def cancel(self, session: AsyncSession, payout: Payout) -> Payout:
+        if not payout.status.is_cancelable():
+            raise PayoutNotCancelable(payout)
+
+        payout_transaction = payout.transaction
+        payout_reversal_transaction = await payout_transaction_service.reverse(
+            session, payout_transaction
+        )
+
+        if (
+            payout.processor == AccountType.stripe
+            and payout_transaction.transfer_id is not None
+        ):
+            stripe_reversal = await stripe_service.reverse_transfer(
+                payout_transaction.transfer_id,
+                metadata={
+                    "payout_id": str(payout.id),
+                    "payout_reversal_transaction": str(payout_reversal_transaction.id),
+                },
+            )
+            payout_reversal_transaction_repository = (
+                PayoutReversalTransactionRepository.from_session(session)
+            )
+            await payout_reversal_transaction_repository.update(
+                payout_reversal_transaction,
+                update_dict={"transfer_reversal_id": stripe_reversal.id},
+            )
 
         repository = PayoutRepository.from_session(session)
         return await repository.update(
-            payout,
-            update_dict={"processor_id": stripe_payout.id},
+            payout, update_dict={"status": PayoutStatus.canceled}
         )
 
     async def trigger_invoice_generation(

@@ -5,10 +5,11 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_user
+from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.address import AddressInput, CountryAlpha2, CountryAlpha2Input
+from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
@@ -410,6 +411,82 @@ class TestCreate:
         assert member.external_id == "different_owner_ext_id"
         assert member.role == MemberRole.owner
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_concurrent_create_duplicate_email(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        """Race condition: pre-check passes but INSERT hits unique constraint on email."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        mocker.patch.object(
+            CustomerRepository,
+            "get_by_email_and_organization",
+            return_value=None,
+        )
+
+        payload: dict[str, Any] = {
+            "email": customer.email,
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "email")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_concurrent_create_duplicate_external_id(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        """Race condition: pre-check passes but INSERT hits unique constraint on external_id."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        mocker.patch.object(
+            CustomerRepository,
+            "get_by_email_and_organization",
+            return_value=None,
+        )
+        mocker.patch.object(
+            CustomerRepository,
+            "get_by_external_id_and_organization",
+            return_value=None,
+        )
+
+        payload: dict[str, Any] = {
+            "email": "unique.race.condition@example.com",
+            "external_id": customer_external_id.external_id,
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
+
 
 @pytest.mark.asyncio
 class TestUpdate:
@@ -444,6 +521,24 @@ class TestUpdate:
                 CustomerUpdate(external_id=external_id),
             )
             await session.flush()
+
+    async def test_explicit_null_billing_address(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.update(
+                session, customer, CustomerUpdate(billing_address=None)
+            )
+            await session.flush()
+        assert customer.billing_address is not None
 
     async def test_existing_email(
         self, session: AsyncSession, customer: Customer, customer_second: Customer
@@ -678,7 +773,7 @@ class TestDelete:
         )
         deleted = await customer_service.delete(session, customer, anonymize=True)
         assert deleted.deleted_at is not None
-        assert deleted.email.endswith("@anonymized.invalid")
+        assert deleted.email.endswith("@anonymized.polar.sh")
         assert deleted.name is not None
         assert deleted.name != "Delete Anon User"
         assert len(deleted.name) == 64  # SHA-256 hex
@@ -730,7 +825,7 @@ class TestAnonymize:
         anonymized = await customer_service.anonymize(session, customer)
 
         # Email should be hashed
-        assert anonymized.email.endswith("@anonymized.invalid")
+        assert anonymized.email.endswith("@anonymized.polar.sh")
         assert anonymized.email != "individual@example.com"
         assert anonymized.email_verified is False
 
@@ -765,7 +860,7 @@ class TestAnonymize:
         anonymized = await customer_service.anonymize(session, customer)
 
         # Email should be hashed
-        assert anonymized.email.endswith("@anonymized.invalid")
+        assert anonymized.email.endswith("@anonymized.polar.sh")
         assert anonymized.email_verified is False
 
         # Name should be PRESERVED for businesses
@@ -913,7 +1008,7 @@ class TestAnonymize:
         # Should still be able to anonymize
         anonymized = await customer_service.anonymize(session, customer)
 
-        assert anonymized.email.endswith("@anonymized.invalid")
+        assert anonymized.email.endswith("@anonymized.polar.sh")
         assert anonymized.deleted_at is not None
 
 

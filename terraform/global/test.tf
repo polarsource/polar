@@ -228,21 +228,7 @@ resource "tfe_variable" "stripe_webhook_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
-resource "tfe_variable" "logfire_token_server_test" {
-  key             = "logfire_token_server"
-  category        = "terraform"
-  description     = "Logfire Token for server"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-}
 
-resource "tfe_variable" "logfire_token_worker_test" {
-  key             = "logfire_token_worker"
-  category        = "terraform"
-  description     = "Logfire Token for worker"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-}
 
 resource "tfe_variable" "numeral_api_key_test" {
   key             = "numeral_api_key"
@@ -305,6 +291,14 @@ resource "tfe_variable" "tinybird_clickhouse_token_test" {
   key             = "tinybird_clickhouse_token"
   category        = "terraform"
   description     = "Tinybird ClickHouse Token for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "tinybird_read_token_test" {
+  key             = "tinybird_read_token"
+  category        = "terraform"
+  description     = "Tinybird Read Token for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }

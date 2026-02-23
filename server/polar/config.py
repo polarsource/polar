@@ -64,13 +64,25 @@ class Settings(BaseSettings):
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
     WORKER_PROMETHEUS_DIR: Path = Path(tempfile.gettempdir()) / "prometheus_multiproc"
 
-    # Prometheus Remote Write (for pushing metrics to Prometheus or Grafana Cloud)
-    PROMETHEUS_REMOTE_WRITE_URL: str | None = None
-    PROMETHEUS_REMOTE_WRITE_USERNAME: str | None = None
-    PROMETHEUS_REMOTE_WRITE_PASSWORD: str | None = None
-    PROMETHEUS_REMOTE_WRITE_INTERVAL: Annotated[int, Ge(1)] = 15  # seconds
+    # Grafana Cloud Prometheus
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_URL: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_PASSWORD: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL: Annotated[int, Ge(1)] = 60  # seconds
+    GRAFANA_CLOUD_PROMETHEUS_QUERY_URL: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_QUERY_USER: str | None = None
+    GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY: str | None = None
+
+    # Slack
+    SLACK_BOT_TOKEN: str | None = None
+    SLACK_CHANNEL: str | None = None
+
+    # SLO Report
+    SLO_REPORT_ENABLED: bool = True
 
     WEBHOOK_MAX_RETRIES: int = 10
+    WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
+    WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
@@ -212,7 +224,7 @@ class Settings(BaseSettings):
 
     # OpenAI
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "o4-mini-2025-04-16"
+    OPENAI_MODEL: str = "gpt-5.2-2025-12-11"
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
@@ -241,6 +253,7 @@ class Settings(BaseSettings):
     # Tinybird
     TINYBIRD_API_URL: str = "http://localhost:7181"
     TINYBIRD_API_TOKEN: str | None = None
+    TINYBIRD_READ_TOKEN: str | None = None
     TINYBIRD_CLICKHOUSE_URL: str = "http://localhost:7182"
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None
@@ -398,7 +411,7 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
 
-    DEFAULT_TAX_PROCESSOR: TaxProcessor = TaxProcessor.stripe
+    TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

@@ -19,10 +19,12 @@ import { getErrorRedirect } from '../Toast/utils'
 
 const ProductPriceListItem = ({
   product,
+  currency,
   selected,
   onSelect,
 }: {
-  product: schemas['ProductStorefront']
+  product: schemas['CustomerProduct']
+  currency: string
   selected: boolean
   onSelect?: () => void
 }) => {
@@ -34,7 +36,7 @@ const ProductPriceListItem = ({
       size="small"
     >
       <h3 className="font-medium">{product.name}</h3>
-      <ProductPriceLabel product={product} />
+      <ProductPriceLabel product={product} currency={currency} />
     </ListItem>
   )
 }
@@ -64,7 +66,7 @@ const CustomerChangePlanModal = ({
   )
 
   const [selectedProduct, setSelectedProduct] = useState<
-    schemas['ProductStorefront'] | null
+    schemas['CustomerProduct'] | null
   >(null)
 
   const paymentMethods = useCustomerPaymentMethods(api)
@@ -242,7 +244,11 @@ const CustomerChangePlanModal = ({
       <div className="flex flex-col gap-y-8 p-8">
         <h3 className="font-medium">Current Plan</h3>
         <List size="small">
-          <ProductPriceListItem product={subscription.product} selected />
+          <ProductPriceListItem
+            product={subscription.product}
+            currency={subscription.currency}
+            selected
+          />
         </List>
         <h3 className="font-medium">Available Plans</h3>
         <List size="small">
@@ -252,6 +258,7 @@ const CustomerChangePlanModal = ({
               <ProductPriceListItem
                 key={product.id}
                 product={product}
+                currency={subscription.currency}
                 selected={selectedProduct?.id === product.id}
                 onSelect={() => setSelectedProduct(product)}
               />

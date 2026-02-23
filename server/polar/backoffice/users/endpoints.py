@@ -7,23 +7,24 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Account, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus, OAuthAccount
-from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.user import sorting
 from polar.user.repository import UserRepository
+from polar.user.schemas import UserDeletionBlockedReason
 from polar.user.service import user as user_service
 from polar.user.sorting import UserSortProperty
 
-from ..components import button, datatable, description_list, input
+from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
 from ..toast import add_toast
 from .views.modals import DeleteIdentityVerificationModal
@@ -204,18 +205,19 @@ async def get(
                     text(user.email)
 
                 # Actions dropdown menu
-                if user.identity_verification_id is not None:
-                    with tag.div(classes="dropdown dropdown-end"):
-                        with tag.button(
-                            classes="btn btn-circle btn-ghost",
-                            tabindex="0",
-                            **{"aria-label": "More options"},
-                        ):
-                            text("⋮")
-                        with tag.ul(
-                            classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
-                            tabindex="0",
-                        ):
+                with tag.div(classes="dropdown dropdown-end"):
+                    with tag.button(
+                        classes="btn btn-circle btn-ghost",
+                        tabindex="0",
+                        **{"aria-label": "More options"},
+                    ):
+                        text("⋮")
+                    with tag.ul(
+                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                        tabindex="0",
+                    ):
+                        # Show Delete Identity Verification only if user has identity verification
+                        if user.identity_verification_id is not None:
                             with tag.li():
                                 with tag.a(
                                     hx_get=str(
@@ -228,6 +230,20 @@ async def get(
                                     classes="text-error",
                                 ):
                                     text("Delete Identity Verification")
+
+                        # Always show Delete User action
+                        with tag.li():
+                            with tag.a(
+                                hx_get=str(
+                                    request.url_for(
+                                        "users:delete",
+                                        id=user.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                                classes="text-error",
+                            ):
+                                text("Delete User")
             with description_list.DescriptionList[User](
                 description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
                 description_list.DescriptionListAttrItem(
@@ -246,39 +262,54 @@ async def get(
         #####################
         ### Organizations ###
         #####################
-        orgs = await OrganizationRepository.from_session(session).get_all(
-            OrganizationRepository.from_session(session)
-            .get_base_statement(include_deleted=True)
-            .join(UserOrganization)
-            .where(
-                UserOrganization.user_id == user.id,
-            )
+        user_orgs_result = await session.execute(
+            select(UserOrganization)
+            .options(selectinload(UserOrganization.organization))
+            .where(UserOrganization.user_id == user.id)
         )
+        user_orgs = user_orgs_result.scalars().all()
+
         with tag.div(classes="flex flex-col gap-4 pt-16"):
             with tag.h2(classes="text-2xl"):
                 text("Organizations")
-            with datatable.Datatable[Organization, OrganizationSortProperty](
+            with datatable.Datatable[UserOrganization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
-                    "id", "ID", href_route_name="organizations-classic:get", clipboard=True
+                    "organization.id",
+                    "ID",
+                    external_href=lambda r, i: str(
+                        r.url_for("organizations-classic:get", id=i.organization_id)
+                    ),
+                    clipboard=True,
                 ),
-                datatable.DatatableDateTimeColumn("created_at", "Created At"),
-                datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
-                datatable.DatatableDateTimeColumn("blocked_at", "Blocked At"),
+                datatable.DatatableDateTimeColumn(
+                    "organization.created_at", "Created At"
+                ),
+                datatable.DatatableDateTimeColumn(
+                    "organization.deleted_at", "Organization Deleted At"
+                ),
+                datatable.DatatableDateTimeColumn(
+                    "deleted_at", "Membership Deleted At"
+                ),
+                datatable.DatatableDateTimeColumn(
+                    "organization.blocked_at", "Blocked At"
+                ),
                 datatable.DatatableAttrColumn(
-                    "slug",
+                    "organization.slug",
                     "Slug",
                     clipboard=True,
                 ),
                 datatable.DatatableActionsColumn(
                     "",
-                    datatable.DatatableActionHTMX[Organization](
+                    datatable.DatatableActionHTMX[UserOrganization](
                         "Delete Organization",
-                        lambda r, i: str(r.url_for("organizations-classic:delete", id=i.id)),
+                        lambda r, i: str(
+                            r.url_for("organizations-classic:delete", id=i.organization_id)
+                        ),
                         target="#modal",
-                        hidden=lambda _, i: i.deleted_at is not None,
+                        hidden=lambda _, i: i.organization.is_deleted,
                     ),
                 ),
-            ).render(request, orgs):
+            ).render(request, user_orgs):
                 pass
 
         ################
@@ -328,7 +359,7 @@ async def get(
         active_oauth_result = await session.execute(
             select(OAuthAccount).where(
                 OAuthAccount.user_id == user.id,
-                OAuthAccount.deleted_at.is_(None),
+                OAuthAccount.is_deleted.is_(False),
             )
         )
         active_oauth_accounts = active_oauth_result.scalars().all()
@@ -336,7 +367,7 @@ async def get(
         deleted_oauth_result = await session.execute(
             select(OAuthAccount).where(
                 OAuthAccount.user_id == user.id,
-                OAuthAccount.deleted_at.is_not(None),
+                OAuthAccount.is_deleted.is_(True),
             )
         )
         deleted_oauth_accounts = deleted_oauth_result.scalars().all()
@@ -370,6 +401,96 @@ async def get(
                     datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
                 ).render(request, deleted_oauth_accounts):
                     pass
+
+
+@router.api_route(
+    "/{id}/delete",
+    name="users:delete",
+    methods=["GET", "POST"],
+)
+async def delete_user(
+    request: Request,
+    id: UUID4,
+    confirm: bool = Form(False),
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = UserRepository.from_session(session)
+    user = await repository.get_by_id(id)
+
+    if user is None:
+        raise HTTPException(status_code=404)
+
+    # Check if user can be deleted
+    check_result = await user_service.check_can_delete(session, user)
+    has_blocking_reasons = bool(check_result.blocked_reasons)
+
+    if request.method == "POST" and confirm:
+        if has_blocking_reasons:
+            # Show error if there are blocking reasons
+            error_message = "Cannot delete user: "
+            if (
+                UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS
+                in check_result.blocked_reasons
+            ):
+                error_message += (
+                    "User has active organizations that must be deleted first."
+                )
+            await add_toast(request, error_message, "error")
+            return
+
+        # Perform the soft deletion
+        await user_service.soft_delete_user(session, user)
+        await add_toast(
+            request,
+            f"User {user.email} has been soft-deleted",
+            "success",
+        )
+        return
+
+    # Show modal with errors if any
+    with modal(f"Delete User {user.email}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to delete this user? ")
+                text("This will soft-delete the user account, anonymize PII, ")
+                text("and remove all OAuth accounts. This action cannot be undone.")
+
+            # Show blocking reasons if any
+            if has_blocking_reasons:
+                with tag.div(classes="alert alert-error"):
+                    with tag.div(classes="flex items-center gap-2"):
+                        with tag.div(classes="icon-alert-triangle"):
+                            pass
+                        with tag.p():
+                            text("Cannot delete this user:")
+                            with tag.ul(classes="list-disc pl-4 mt-1"):
+                                if (
+                                    UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS
+                                    in check_result.blocked_reasons
+                                ):
+                                    with tag.li():
+                                        text(
+                                            "User has active organizations that must be deleted first"
+                                        )
+                                    with tag.ul(classes="list-disc pl-4 mt-1"):
+                                        for org in check_result.blocking_organizations:
+                                            with tag.li():
+                                                text(f"{org.name} ({org.slug})")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                # Only show confirm button if no blocking reasons
+                if not has_blocking_reasons:
+                    with button(
+                        type="button",
+                        variant="error",
+                        hx_post=str(request.url),
+                        hx_target="#modal",
+                        hx_vals='{"confirm": "true"}',
+                    ):
+                        text("Delete User")
 
 
 @router.api_route(

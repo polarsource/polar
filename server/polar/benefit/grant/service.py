@@ -3,10 +3,13 @@ from collections.abc import Sequence
 from typing import Any, Literal, TypeVar, Unpack, overload
 from uuid import UUID
 
+import dramatiq
 import structlog
+from dramatiq import group
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.strategies import BenefitRetriableError
 from polar.customer.repository import CustomerRepository
 from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
@@ -23,7 +26,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job
+from polar.worker import can_retry, enqueue_job
 
 from ..registry import get_benefit_strategy
 from ..strategies import (
@@ -83,7 +86,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         query = select(class_).where(class_.id == id)
         if not allow_deleted:
-            query = query.where(class_.deleted_at.is_(None))
+            query = query.where(class_.is_deleted.is_(False))
 
         if loaded:
             query = query.options(
@@ -112,7 +115,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             select(BenefitGrant)
             .where(
                 BenefitGrant.benefit_id == benefit.id,
-                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.is_deleted.is_(False),
             )
             .order_by(BenefitGrant.created_at.desc())
             .options(
@@ -153,7 +156,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .join(Customer, BenefitGrant.customer_id == Customer.id)
             .where(
                 Benefit.organization_id == organization_id,
-                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.is_deleted.is_(False),
             )
             .options(
                 joinedload(BenefitGrant.customer),
@@ -384,46 +387,73 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             existing_grants = await repository.list_by_customer_and_scope(
                 customer, **scope
             )
+
         granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
-        # Don't retry grants that failed due to required customer action -
-        # they should only be retried when the customer takes that action
+        # Don't retry grants that failed due to required customer action
         errored_benefit_ids = {
             g.benefit_id
             for g in existing_grants
             if g.error and g.error.get("type") == BenefitActionRequiredError.__name__
         }
 
-        if task == "grant":
-            benefits_to_process = [
-                b
+        grant_benefit_ids = (
+            [
+                b.id
                 for b in product.benefits
                 if b.id not in granted_benefit_ids and b.id not in errored_benefit_ids
             ]
-        else:
-            # Only revoke benefits that are actually granted
-            benefits_to_process = [
-                b for b in product.benefits if b.id in granted_benefit_ids
-            ]
+            if task == "grant"
+            else []
+        )
 
-        for benefit in benefits_to_process:
-            enqueue_job(
-                f"benefit.{task}",
-                customer_id=customer.id,
-                benefit_id=benefit.id,
-                member_id=member_id,
-                **scope_to_args(scope),
-            )
+        revoke_benefit_ids = (
+            [b.id for b in product.benefits if b.id in granted_benefit_ids]
+            if task == "revoke"
+            else []
+        )
 
-        # Get granted benefits that are not part of this product.
-        # It happens if the subscription has been upgraded/downgraded.
+        # Include outdated grants (from subscription upgrades/downgrades)
         outdated_grants = await repository.list_outdated_grants(product, **scope)
-        for outdated_grant in outdated_grants:
+        revoke_benefit_ids.extend(g.benefit_id for g in outdated_grants)
+
+        if not revoke_benefit_ids and not grant_benefit_ids:
+            return
+
+        scope_args = scope_to_args(scope)
+        broker = dramatiq.get_broker()
+        enqueue_grants_actor = broker.get_actor(
+            "benefit.reset_meters_and_enqueue_grants"
+        )
+
+        # Pipeline: revoke group → enqueue_grants (resets meters for subs, then grants)
+        if revoke_benefit_ids:
+            revoke_actor = broker.get_actor("benefit.revoke")
+            revoke_messages = [
+                revoke_actor.message(
+                    customer_id=customer.id,
+                    benefit_id=benefit_id,
+                    member_id=member_id,
+                    **scope_args,
+                )
+                for benefit_id in revoke_benefit_ids
+            ]
+            revoke_group = group(revoke_messages)
+            revoke_group.add_completion_callback(
+                enqueue_grants_actor.message(
+                    customer_id=customer.id,
+                    grant_benefit_ids=grant_benefit_ids,
+                    member_id=member_id,
+                    **scope_args,
+                )
+            )
+            revoke_group.run()
+        else:
             enqueue_job(
-                "benefit.revoke",
+                "benefit.reset_meters_and_enqueue_grants",
                 customer_id=customer.id,
-                benefit_id=outdated_grant.benefit_id,
+                grant_benefit_ids=grant_benefit_ids,
                 member_id=member_id,
-                **scope_to_args(scope),
+                **scope_args,
             )
 
     async def enqueue_benefit_grant_updates(
@@ -620,15 +650,29 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
-        properties = await benefit_strategy.revoke(
-            benefit,
-            customer,
-            grant.properties,
-            attempt=attempt,
-            member=member,
-        )
+        try:
+            properties = await benefit_strategy.revoke(
+                benefit,
+                customer,
+                grant.properties,
+                attempt=attempt,
+                member=member,
+            )
+            grant.properties = properties
+        except BenefitRetriableError as e:
+            if can_retry():
+                raise
+            log.warning(
+                (
+                    "Retriable error encountered while deleting benefit grant. "
+                    "Stopping retries and marking grant as revoked"
+                ),
+                error=str(e),
+                benefit_grant_id=str(grant.id),
+            )
+        except BenefitActionRequiredError:
+            pass
 
-        grant.properties = properties
         grant.set_revoked()
 
         session.add(grant)

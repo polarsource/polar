@@ -15,7 +15,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
@@ -41,15 +41,20 @@ from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
+from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
+from polar.models.member import Member
+from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
+from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.worker import enqueue_job
 
 from ..components import button, modal
 from ..layout import layout
@@ -361,6 +366,10 @@ async def get_organization_detail(
     # Fetch analytics data for overview section
     setup_data = None
     payment_stats = None
+    orders_count = 0
+    unrefunded_orders_count = 0
+    agent_report = None
+    agent_reviewed_at = None
     if section == "overview":
         setup_analytics = OrganizationSetupAnalyticsService(session)
         payment_analytics = PaymentAnalyticsService(session)
@@ -375,6 +384,9 @@ async def get_organization_detail(
         )
         products_count = await setup_analytics.get_products_count(organization_id)
         benefits_count = await setup_analytics.get_benefits_count(organization_id)
+        enabled_benefits_count = await setup_analytics.get_enabled_benefits_count(
+            organization_id
+        )
 
         user_verified_result = await session.execute(
             select(User.identity_verification_status)
@@ -428,6 +440,7 @@ async def get_organization_detail(
             "api_keys_count": api_keys_count,
             "products_count": products_count,
             "benefits_count": benefits_count,
+            "enabled_benefits_count": enabled_benefits_count,
             "user_verified": user_verified,
             "account_charges_enabled": account_charges_enabled,
             "account_payouts_enabled": account_payouts_enabled,
@@ -440,28 +453,88 @@ async def get_organization_detail(
         (
             payment_count,
             total_amount,
-            risk_scores,
+            _risk_scores,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
         )
+        failed_count = await payment_analytics.get_failed_payments_count(
+            organization_id
+        )
+        (
+            dispute_count,
+            dispute_amount,
+            chargeback_count,
+            chargeback_amount,
+        ) = await payment_analytics.get_dispute_stats(organization_id)
 
-        p50_risk, p90_risk = PaymentAnalyticsService.calculate_risk_percentiles(
-            risk_scores
+        total_attempts = payment_count + failed_count
+        auth_rate = (
+            (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
         )
         refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
+        dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
+        chargeback_rate = (
+            (chargeback_count / payment_count * 100) if payment_count > 0 else 0
+        )
 
         payment_stats = {
             "payment_count": payment_count,
-            "total_amount": total_amount / 100,  # Convert cents to dollars
+            "total_amount": total_amount / 100,
             "refunds_count": refunds_count,
-            "refunds_amount": refunds_amount / 100,  # Convert cents to dollars
+            "refunds_amount": refunds_amount / 100,
             "refund_rate": refund_rate,
-            "p50_risk": p50_risk,
-            "p90_risk": p90_risk,
+            "auth_rate": auth_rate,
+            "failed_count": failed_count,
+            "dispute_count": dispute_count,
+            "dispute_amount": dispute_amount / 100,
+            "dispute_rate": dispute_rate,
+            "chargeback_count": chargeback_count,
+            "chargeback_amount": chargeback_amount / 100,
+            "chargeback_rate": chargeback_rate,
             "next_review_threshold": organization.next_review_threshold,
             "total_transfer_sum": total_transfer_sum,
         }
+
+        # Fetch test sales data (self-purchases by org members with positive amounts)
+        member_emails_subquery = (
+            select(func.lower(Member.email))
+            .where(
+                Member.organization_id == organization_id,
+                Member.deleted_at.is_(None),
+            )
+            .correlate(None)
+        )
+
+        test_sales_filter = (
+            Customer.organization_id == organization_id,
+            func.lower(Customer.email).in_(member_emails_subquery),
+            Order.net_amount > 0,
+        )
+
+        orders_count_result = await session.execute(
+            select(func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(*test_sales_filter)
+        )
+        orders_count = orders_count_result.scalar() or 0
+
+        unrefunded_orders_result = await session.execute(
+            select(func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                *test_sales_filter,
+                Order.status.notin_(
+                    [OrderStatus.refunded, OrderStatus.partially_refunded]
+                ),
+            )
+        )
+        unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
+
+        review_repo = OrganizationReviewRepository.from_session(session)
+        agent_review = await review_repo.get_latest_agent_review(organization_id)
+        agent_report = agent_review.report if agent_review else None
+        agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
     # Render based on section
     with layout(
@@ -475,7 +548,13 @@ async def get_organization_detail(
         with detail_view.render(request, section):
             # Render section content
             if section == "overview":
-                overview = OverviewSection(organization)
+                overview = OverviewSection(
+                    organization,
+                    orders_count=orders_count,
+                    unrefunded_orders_count=unrefunded_orders_count,
+                    agent_report=agent_report,
+                    agent_reviewed_at=agent_reviewed_at,
+                )
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats
                 ):
@@ -544,11 +623,18 @@ async def approve_organization(
     """Approve an organization with optional threshold."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Use provided threshold or default to $250 in cents (max as per requirement)
+    # Check form data for threshold in dollars (from custom approve input)
+    if threshold is None:
+        form_data = await request.form()
+        raw_dollars = form_data.get("threshold_dollars")
+        if raw_dollars:
+            threshold = int(float(str(raw_dollars)) * 100)
+
+    # Use provided threshold or default to $250 in cents
     next_review_threshold = threshold if threshold else 25000
 
     # Approve the organization
@@ -561,6 +647,30 @@ async def approve_organization(
         str(
             request.url_for("organizations:detail", organization_id=organization_id)
         ),
+        303,
+    )
+
+
+@router.post(
+    "/{organization_id}/run-review-agent", name="organizations:run_review_agent"
+)
+async def run_review_agent(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse:
+    """Trigger the organization review agent as a background task."""
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    enqueue_job("organization_review.run_agent", organization_id=organization.id)
+
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=overview",
         303,
     )
 
@@ -579,7 +689,7 @@ async def deny_dialog(
     """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -641,7 +751,7 @@ async def approve_denied_dialog(
     """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -727,7 +837,7 @@ async def unblock_approve_dialog(
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -816,7 +926,7 @@ async def block_dialog(
     """Block organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -892,7 +1002,7 @@ async def edit_organization(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -989,7 +1099,7 @@ async def edit_details(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1070,7 +1180,7 @@ async def edit_order_settings(
     """Edit organization order settings."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1172,7 +1282,7 @@ async def edit_socials(
 
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1322,7 +1432,7 @@ async def edit_features(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1339,6 +1449,9 @@ async def edit_features(
                 feature_flags[field_name] = field_name in data
 
             # Merge with existing feature_settings
+            old_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
             updated_feature_settings = {
                 **organization.feature_settings,
                 **feature_flags,
@@ -1349,6 +1462,16 @@ async def edit_features(
                 organization,
                 update_dict={"feature_settings": updated_feature_settings},
             )
+
+            # Trigger backfill when member_model transitions False → True
+            new_member_model = updated_feature_settings.get(
+                "member_model_enabled", False
+            )
+            if not old_member_model and new_member_model:
+                enqueue_job(
+                    "organization.backfill_members",
+                    organization_id=organization.id,
+                )
             redirect_url = (
                 str(
                     request.url_for(
@@ -1428,7 +1551,7 @@ async def add_note(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1498,7 +1621,7 @@ async def edit_note(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1652,7 +1775,7 @@ async def make_admin(
     """Make a user an admin of the organization."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1690,7 +1813,7 @@ async def remove_member(
     """Remove a member from the organization."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1726,7 +1849,7 @@ async def delete_dialog(
     """Delete organization dialog and action."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1793,7 +1916,7 @@ async def setup_account(
     """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 

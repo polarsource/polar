@@ -3,10 +3,8 @@ import { schemas } from '@polar-sh/client'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
-  product:
-    | schemas['Product']
-    | schemas['ProductStorefront']
-    | schemas['CheckoutProduct']
+  product: schemas['Product'] | schemas['CheckoutProduct']
+  currency: string
 }
 
 function isSeatBasedPrice(
@@ -17,9 +15,12 @@ function isSeatBasedPrice(
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
+  currency,
 }: ProductPriceLabelProps) => {
-  const staticPrice = product.prices.find(({ amount_type }) =>
-    ['fixed', 'custom', 'free', 'seat_based'].includes(amount_type),
+  const staticPrice = product.prices.find(
+    ({ amount_type, price_currency }) =>
+      price_currency === currency &&
+      ['fixed', 'custom', 'free', 'seat_based'].includes(amount_type),
   )
 
   if (!staticPrice) {

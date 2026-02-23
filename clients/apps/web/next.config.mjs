@@ -1,5 +1,4 @@
 /* global process */
-import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
@@ -65,7 +64,7 @@ const docsCSP = `
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['shiki'],
+  transpilePackages: ['shiki', '@polar-sh/checkout'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
   // This is required to support PostHog trailing slash API requests
@@ -343,6 +342,20 @@ const nextConfig = {
         ],
         permanent: false,
       },
+
+      // CLI Install Script
+      {
+        source: '/install.sh',
+        destination:
+          'https://raw.githubusercontent.com/polarsource/cli/main/install.sh',
+        permanent: false,
+      },
+
+      {
+        source: '/signup',
+        destination: '/login',
+        permanent: false,
+      },
     ]
   },
   async headers() {
@@ -517,13 +530,6 @@ const createConfig = async () => {
     // https://vercel.com/docs/cron-jobs
     automaticVercelMonitors: true,
   })
-
-  if (process.env.ANALYZE === 'true') {
-    const withBundleAnalyzer = bundleAnalyzer({
-      enabled: true,
-    })
-    conf = withBundleAnalyzer(conf)
-  }
 
   return conf
 }

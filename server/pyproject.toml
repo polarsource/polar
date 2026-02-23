@@ -11,13 +11,13 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.34",
   "greenlet>=3.1.1",
   "structlog>=24.4.0",
-  "githubkit==0.14.3",
+  "githubkit==0.14.4",
   "redis>=5.0.4",
   "sse-starlette>=2.0.0",
   "stripe>=14,<15",
   "pyjwt>=2.6.0",
   "pydantic>=2.11",
-  "sentry-sdk[fastapi,sqlalchemy]>=2.48.0",
+  "sentry-sdk[fastapi,sqlalchemy]>=2.52.0",
   "posthog>=3.6.0",
   "python-slugify>=8.0.1",
   "python-multipart>=0.0.12",
@@ -57,6 +57,8 @@ dependencies = [
   "alembic-utils>=0.8.8",
   "countryinfo>=0.1.2",
   "clickhouse-connect>=0.8.0",
+  "playwright>=1.50.0",
+  "trafilatura>=2.0.0",
 ]
 
 [dependency-groups]

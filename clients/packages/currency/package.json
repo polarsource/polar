@@ -18,6 +18,8 @@
     "dist"
   ],
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest watch",
     "build": "rm -rf dist/ && tsup",
     "format": "prettier --write ./src",
     "format:check": "prettier -c ./src",
@@ -33,7 +35,8 @@
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "^4.0.18"
   },
   "publishConfig": {
     "access": "public"

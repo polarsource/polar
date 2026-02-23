@@ -88,6 +88,7 @@ class PaymentTransactionService(BaseTransactionService):
             presentment_currency=charge.currency,
             presentment_amount=charge.amount - tax_amount,
             presentment_tax_amount=tax_amount,
+            exchange_rate=exchange_rate,
             customer_id=get_expandable_id(charge.customer) if charge.customer else None,
             charge_id=charge.id,
             risk_level=risk.get("risk_level"),

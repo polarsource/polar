@@ -1,9 +1,11 @@
+from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, case, func, select
+from sqlalchemy import Select, and_, case, func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -85,7 +87,7 @@ class ProductRepository(
                 Product.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -105,7 +107,7 @@ class ProductRepository(
         """Count products for an organization with optional archived filter."""
         statement = sql.select(sql.func.count(Product.id)).where(
             Product.organization_id == organization_id,
-            Product.deleted_at.is_(None),
+            Product.is_deleted.is_(False),
         )
 
         if is_archived is not None:
@@ -150,6 +152,30 @@ class ProductRepository(
                         ProductPriceFixed.price_amount,
                     ),
                 )
+
+    async def get_products_without_currency(
+        self, organization_id: UUID, currency: PresentmentCurrency
+    ) -> Sequence[Product]:
+        """Get active products that don't have the specified currency in their prices."""
+        statement = (
+            select(Product)
+            .join(
+                ProductPrice,
+                and_(
+                    ProductPrice.product_id == Product.id,
+                    ProductPrice.is_archived.is_(False),
+                    ProductPrice.price_currency == currency,
+                ),
+                isouter=True,
+            )
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
+                ProductPrice.id.is_(None),
+            )
+        )
+
+        return await self.get_all(statement)
 
 
 class ProductPriceRepository(
@@ -201,7 +227,7 @@ class ProductPriceRepository(
                 Product.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

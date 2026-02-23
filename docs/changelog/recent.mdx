@@ -4,6 +4,762 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2026-01-31">
+## Team Member Management (B2B)
+
+Complete team member management system for B2B customers:
+
+* Owner and billing managers can add/remove team members
+* Role-based access control (owner, billing_manager, member)
+* Member-specific benefit grants and portal access
+* Team portal page with member list and management
+* Member sessions (`polar_mst_`) preserve identity and permissions
+* Members tab on customer detail pages
+
+Perfect for B2B customers managing team access and permissions.
+
+### Explicit Currency Display
+
+Currency symbols now show explicitly (e.g., `USD 123.45`) instead of just `$123.45` to prevent confusion for non-US dollar users.
+## Event & Metering Enhancements
+
+### Member-Level Event Attribution
+
+Events now support member tracking:
+
+* `member_id` and `external_member_id` fields
+* Member validation during event ingestion
+* B2B usage tracking at member level
+
+### Timezone Handling
+
+Fixed timezone issues in meter quantities endpoint:
+
+* Added `timezone` parameter
+* Set database session timezone properly
+* Correct date grouping for non-UTC users
+
+## Customer Portal Enhancements
+
+### Benefit Grants UI
+
+* Complex benefit grants list with search and pagination
+* Better display for benefit details
+* Improved OAuth benefit grant buttons
+
+### Payment Retry Fixes
+
+* 3DS modal display (popup instead of redirect)
+* Retry persistence after 3DS cancellation
+* Proper dunning management on manual retries
+
+## Discount Management
+
+### Redemption Count Optimization
+
+* Added `redemptions_count` column to discounts table
+</Update>
+
+<Update label="2025-12-31">
+## System Events for Subscriptions
+
+Expanded system events to provide detailed subscription lifecycle tracking:
+
+* **Subscription cycled** - when billing periods roll over
+* **Subscription canceled** - when subscriptions are canceled
+* **Subscription past due** - when payment fails (separate from permanent revocation)
+* All events include product IDs and relevant metadata
+* Perfect for analytics and building custom workflows
+
+## iOS Widget
+
+New iOS home screen and lock screen widget:
+
+* Real-time revenue display
+* Support for dark and light mode
+* Multiple widget sizes
+* Quick glance at your sales without opening the app
+
+Built with `@bacons/apple-targets` for native iOS integration.
+
+## Product Management Improvements
+
+Major UX improvements for managing products:
+
+### Sorting & Filtering
+
+* Sort products by name, creation date, update date, and end date
+* Custom pagination size (20, 50, 100 items per page)
+* Product rows are clickable links for cmd+click support
+
+### Editing Experience
+
+* Unsaved changes alert prevents accidental data loss
+* Update button at top right for easier access
+* Auto-save for most settings
+* Fixed empty state flashing when sorting/filtering
+
+### File Management
+
+* Client-side pagination for downloadable benefit files (10 per page)
+* Better file upload error messages
+* Fixed React state issues in benefit forms
+
+### Product Duplication
+
+* Re-uploads images when duplicating to prevent shared references
+* Deleting an image from a duplicate no longer affects the original
+
+## Search Improvements
+
+Significant search infrastructure updates:
+
+* Search vectors for full-text search
+* Union queries for better performance
+* PostgreSQL text search capabilities
+
+## Member Management
+
+Enhanced member endpoint functionality:
+
+* Added `member_id` to relevant API endpoints
+* Improved B2B customer management
+
+## Mobile App Improvements
+
+### iOS Updates
+
+* iOS widget for home and lock screen
+* App rating prompts at appropriate times
+* Login screen animations (fade in, Ken Burns effect)
+* Fixed multi-account crash on settings
+* Fixed scroll issues with many organizations
+* Version bumped to 1.1.0
+
+### Android Support
+
+* Full Android build support
+* App store ready for both platforms
+* Consistent design system across iOS and Android
+
+## Customer Meter Enhancements
+
+Significant improvements to customer meter calculation:
+
+* Speed improvements with optimized queries (avoided cartesian joins)
+* Better activation logic for meters with events
+* Fixed organization ID tracking
+* Increased lock time to 30s for slow queries
+* Debug information in window event spans
+* Proper external customer ID handling
+
+## Webhook Management
+
+Better webhook health tracking:
+
+* Discord rate limit logging
+* Missing event types added to schema
+* Improved error handling
+* Repository-based webhook service
+
+## Checkout Links
+
+* Added checkout links to mobile app
+* Better link management
+* Share and track checkout performance on mobile
+
+## OAuth2 Improvements
+
+* First-party clients auto-save grants
+* No authorization prompt for trusted apps
+* Better user experience for internal tools
+
+## Bug Fixes
+
+* Fixed undefined organization in dashboard sidebar
+* Fixed customer meter updates for soft-deleted customers
+* Fixed seat and trial end updates for seat-based products
+* Fixed tax calculation error handling
+* Fixed product empty state flashing
+* Fixed notifications on iOS simulator
+* Fixed Switch rendering on Android
+* Fixed Polar logo not linking to home
+* Fixed image duplication on product creation
+* Handle null Stripe refund reasons
+* Fixed subscription fields in system events
+</Update>
+
+<Update label="2025-12-07">
+## Dispute & Chargeback Management
+
+Complete dispute tracking and prevention system:
+
+* Dispute model to track chargebacks from Stripe
+* Chargeback Stop integration for rapid dispute resolution (RDR)
+* Auto-refund on RDR disputes to prevent chargebacks
+* Link refunds to disputes for better tracking
+* Improved dispute event handling from Stripe webhooks
+
+Helps reduce chargeback fees and protect your account standing.
+
+## Metrics API
+
+New metrics filtering system:
+
+* `metrics` query parameter to filter specific metrics
+* Removed deprecated `focus_metrics` parameter
+* Better performance by only calculating requested metrics
+
+## iOS App Updates
+
+* App rating prompts at appropriate times
+* iOS upsell banner on homepage
+* Animations on login screen (fade in, Ken Burns effect, staggered elements)
+* Fixed multi-account crash on settings screen
+* Fixed onboarding redirect after org creation
+* Fixed scroll issue with many orgs
+* Version bumped to 1.1.0
+
+## Mobile App (Android)
+
+Added Android support:
+
+* Android targets in build scripts
+* App store ready for both iOS and Android
+
+## Email Improvements
+
+* Updated Polar logo in all emails
+* Better email DNS validation
+* Fixed invalid email domain issues
+
+## Worker Queue Management
+
+Better task prioritization:
+
+* Low, medium, and high priority queues
+* Separate workers for different priorities
+* Schedule tasks moved to high priority worker
+</Update>
+
+<Update label="2025-11-28">
+## Downloads Page
+
+New dedicated downloads page at polar.sh/downloads for easy access to desktop and mobile apps.
+
+## Customer Balance Refunds
+
+* Handle refunds on orders with customer balance applied
+* Proper balance credit restoration
+* Block refunds on specific orders via API flag
+
+## Worker Priority Queues
+
+Introduced task prioritization system:
+
+* Low priority queue for background tasks
+* Medium priority queue for standard tasks
+* High priority queue for time-sensitive operations
+* Separate workers consuming from each queue
+
+Ensures critical tasks get processed first.
+
+## Rate Limiting
+
+* New restricted rate limit group for abusive patterns
+* Better rate limit handling across endpoints
+
+## Email Validation
+
+Added DNS validation for email addresses across checkout, customer creation, and user management to prevent typos and invalid domains.
+
+## Event Query Optimization
+
+Massive performance improvements:
+
+* Removed unnecessary ordering from event queries (3x faster)
+* Better customer latest event queries
+* New indexes on events table
+* Optimized IN queries for customer meters
+
+## Mobile App Improvements
+
+* Account deletion functionality
+* Proper logout and login flow fixes
+* Better error handling
+* Login screen animations with Ken Burns effect
+
+## Bug Fixes
+
+* Fixed settings scroll with many organizations
+* Fixed app onboarding redirect
+* Fixed organization service name in Logfire
+* Fixed customer meter organization ID tracking
+* Fixed bitwise SQL operator parentheses
+</Update>
+
+<Update label="2025-11-21">
+## Customer Balance
+
+Customer balance system built on top of wallet infrastructure:
+
+* Track customer credit balances
+* Apply balances automatically to invoices
+* API support for balance management
+* Foundation for store credit and refund credits
+
+## Members API
+
+New members management system for B2B customers:
+
+* GET `/v1/members` endpoint with pagination
+* Filter members by customer ID
+* Auto-create owner member when customer is created
+* Override owner member details via API
+* Members included in customer endpoints
+* Proper organization scoping and access control
+
+Perfect for managing team members across B2B customer accounts.
+
+## Sign in with Apple
+
+Added Apple OAuth for authentication:
+
+* Apple OAuth integration
+
+## Ad-hoc Checkout Pricing
+
+Create checkouts with dynamic pricing that override catalog prices:
+
+* Useful for custom deals, usage-based pricing, or testing
+* Supports all price types (fixed, free, custom)
+* Full API and SDK support
+
+[Read more](/docs/features/checkout/session#ad-hoc-prices)
+
+## Churn Rate
+
+New churn rate metric on analytics dashboard:
+
+* Track subscription cancellations over time
+* Understand retention patterns
+* Available on homepage and customers page
+
+## Event Labels
+
+Events now have customizable labels:
+
+* System events get readable labels automatically
+* User events can have custom labels
+* Labels shown throughout events UI
+* Edit labels via event type settings
+
+Makes events more readable and meaningful for your team.
+
+## Spans View
+
+New spans interface for hierarchical event tracking (hidden for now):
+
+* List and detail views for event spans
+* Charts and sparklines for visualization
+* Time-series data with proper timezone handling
+* Cost aggregation across event hierarchies
+
+## Metrics Performance
+
+Significant performance improvements for analytics:
+
+* Optimized metrics queries with window functions
+* Better date range bounds handling
+* Indexes on subscription date columns
+* Cumulative revenue includes full history
+* Fixed timezone and interval issues
+
+## Invoice Numbering
+
+Changed default invoice numbering to per-customer (was organization-wide):
+
+* Each customer starts invoice numbering at 1
+* Hides sales volume from individual customers
+* Can still switch to organization-wide in settings
+
+## Tax & Billing
+
+* Show taxable amount after discount in checkout
+* Fixed tax ID formatting (was showing raw strings)
+* Fixed Stripe coupon name length validation
+* Fixed conflicting invoice numbering issues
+
+## Checkout Improvements
+
+* Persist business name across checkouts
+* Hide cookie consent banner when logging in via app
+* Fixed expired checkout intent handling
+
+## Bug Fixes
+
+* Fixed 404 after deleting customers, benefits, or checkout links
+* Fixed product price configurator validation
+* Fixed custom field number constraint validation
+* Fixed benefit capitalization in customer portal
+* Fixed organization cache after profile picture update
+* Fixed social link parsing
+
+## Mobile App
+
+* Continue with Apple support
+* Disabled tablet support (phone-only for now)
+* Fixed EAS build configuration
+* Removed demo mode
+* Better workspace integration
+</Update>
+
+<Update label="2025-11-14">
+## Trial Abuse Prevention
+
+Prevent customers from redeeming multiple trials with email aliases or different payment methods:
+
+* Email normalization strips `+aliases` to detect duplicates
+* Payment method fingerprinting tracks card usage
+* Enable via Settings → Subscription → "Prevent trial abuse"
+* Blocked customers see error and can still subscribe without trial
+* Checkout parameter `allow_trial` to force disable trials
+
+Perfect for controlling trial costs while still allowing new customers to subscribe.
+
+## Event Types & Aggregation
+
+New event types system for better organization and analytics:
+
+* Event types automatically created for events with the same name
+* Custom display names for better readability
+* Statistics endpoint for event aggregation
+* Event closure tables for efficient hierarchy queries
+
+## Mobile App (Beta)
+
+Polar mobile app added to the monorepo:
+
+* React Native implementation with Expo
+* Expo workflow for development and builds
+* Shared workspace with web dashboard
+* Foundation for mobile-first experiences
+
+## Webhook Events
+
+Skipped events now properly tracked:
+
+* Events skipped when endpoint disabled no longer count as failures
+* Prevents false positives in health checks
+* Better webhook reliability metrics
+
+## File Uploads
+
+Large file upload support:
+
+* Handles files larger than memory limits
+* Multipart upload handling
+* SHA256 validation per part
+* Better progress tracking
+
+## Subscription Management
+
+### Billing Period Control
+
+New API to change current billing period end date:
+
+* Useful for custom billing arrangements
+* Prorations calculated automatically
+* Prevented on already-cancelled subscriptions
+
+### Payout Improvements
+
+* Increased minimum payout amounts for certain currencies
+* Better error logging for Stripe payout failures
+
+## UI & UX
+
+### Analytics Improvements
+
+* Fixed timezone issues with date range selection
+* Better interval formatting in legends
+* Improved preset intervals ("this year", "last year")
+* Consistent date handling across dashboard
+
+### Customer Portal
+
+* Fixed overflowing invoice action buttons
+* Improved mobile experience
+
+### Settings
+
+* Auto-prefix social media URLs
+* Removed seat-based billing toggle (now standard)
+
+## Bug Fixes
+
+* Fixed `allow_trial` parameter handling
+* Fixed dark mode colors across dashboard
+* Fixed tax rate limiting in sandbox environment
+* Fixed Stripe trial redemption error handling
+* Fixed member invitation dialog Enter key submission
+* Fixed large file upload memory issues
+* Fixed metrics organization filtering
+</Update>
+
+<Update label="2025-11-07">
+## Hierarchical Events & Spans
+
+Events can now be organized hierarchically with parent-child relationships, perfect for tracking complex workflows:
+
+* Create event spans with `parent_id` reference
+* Use `external_id` as idempotency key to prevent duplicate events
+* View nested events in the dashboard
+* Navigate event hierarchies with dedicated event detail pages
+* Query transitive closure for efficient sub-hierarchy analysis
+
+This enables use cases like tracking LLM requests with multiple steps, or multi-phase order fulfillment workflows.
+
+## Master-Detail Layout
+
+New master-detail layout pattern across the dashboard:
+
+* List view on the left, detail view on the right
+* Proper nested routing for direct linking
+* Better navigation and state management
+* Improved querystring handling
+
+Applied to customers, subscriptions, events, and more.
+
+## Improved Date Range Picker
+
+Better date range selection throughout analytics:
+
+* Fixed "this year" and "last year" presets
+* Smart interval selection based on date range
+* Consistent behavior across all views
+* Better timezone handling
+
+## Settings Auto-Save
+
+Settings now auto-save as you type instead of requiring manual save button clicks. Includes proper debouncing and error handling for a smoother experience.
+
+## Customer Management Enhancements
+
+### Product Subscription View
+
+Product overview now shows active subscriptions table, making it easier to see who's using each product.
+
+### Customer Filtering
+
+Filter subscriptions by cancellation status - find subscriptions that will cancel at period end.
+
+### Benefit Grants
+
+Added direct links to customers and subscriptions from benefit grants overview for easier navigation.
+
+## Account Management
+
+* Email notifications when unlinking accounts from organizations
+* Fixed OAuth account disconnection for users with multiple accounts on the same platform
+
+## Bug Fixes
+
+* Fixed customer update trying to set email to None when explicitly provided
+* Fixed payment method handling when soft-deleted methods are updated from Stripe
+* Added maximum length validation to customer names
+* Fixed customer portal theming
+* Fixed subscription double cycling with proper locking mechanisms
+* Fixed Mintlify docs CSP configuration
+</Update>
+
+<Update label="2025-10-31">
+
+## Cost Insights
+
+We've launched Cost Insights - a powerful way to track and analyze costs associated with usage. Now you can:
+
+* Track costs per event with sub-cent precision
+* View cost analytics across your dashboard
+* See cost breakdowns by customer and product
+* Monitor cost trends with dedicated charts
+
+Perfect for understanding unit economics and profitability of your usage-based offerings.
+
+[Read more](/features/usage-billing/cost-insights)
+
+## Webhook Management
+
+### Auto-Disable Failing Webhooks
+
+Webhooks that continuously fail (10+ consecutive failures by default) are now automatically disabled to save resources. You can manually re-enable them from the dashboard once the issue is fixed.
+
+### Email Notifications for Webhook Failures
+
+When webhooks are automatically disabled due to continuous failures, all organization members receive an email notification with details and steps to re-enable.
+
+## Benefit Revocation Grace Period
+
+Configure a grace period for benefit revocation when subscription payments fail. Instead of immediately revoking benefits, you can now give customers time to resolve payment issues:
+
+* Immediate revocation (default)
+* Grace period matching payment retry window
+
+This applies to both regular benefits and customer seat benefits.
+
+## Customer Portal Enhancements
+
+### Upcoming Charge Display
+
+Subscription detail pages now show the upcoming charge amount and date, including:
+
+* Trial end dates with first charge amount
+* Next billing cycle charges for active subscriptions
+* Automatic updates when subscriptions change
+
+### Usage & Metering View
+
+Improved the customer usage view:
+
+* Respect archived meters - they no longer appear in usage tracking
+* Better empty states for customers with granted credits
+* Create customer meters automatically when meter credits are granted
+
+### Navigation & UX Improvements
+
+* Fixed navigation highlighting on mobile
+* Better handling of expired login codes
+* Removed unnecessary scrolling
+* Can't switch plans during trial period (not supported yet)
+
+## Seat Management Updates
+
+* API support for assigning seats programmatically
+* $0/seat pricing now allowed for seat-based tiers
+* Fixed eager loading issues with customer seats
+* Better webhooks for customer seat events
+
+## Invoice Numbering
+
+Two invoice numbering modes:
+
+* **Organization-wide** (default) - Sequential across all customers
+* **Per-customer** - Each customer has independent invoice numbering starting at 1
+
+Useful when you want to hide sales volume from customers.
+
+## System Events
+
+New system events automatically created for:
+
+* Orders paid
+* Orders refunded
+* Customer creation
+* Customer updates
+
+These events are available in the events explorer with cost tracking where applicable.
+
+## Discount Management
+
+Improved discount code selection with a searchable combobox instead of a dropdown, making it easier to find specific codes.
+
+## Bug Fixes
+
+* Fixed customer meter matching to include external customer IDs
+* Fixed Indian GST tax validation
+* Fixed subscription dunning process when payment is deleted
+* Fixed order confirmation emails for orders without products
+</Update>
+
+<Update label="2025-10-24">
+
+## Seat-Based Pricing for One-Time Products
+
+You can now offer seat-based pricing for one-time purchases, not just subscriptions. Customers can select the number of seats during checkout, and you can manage seats for one-time orders through both the dashboard and API.
+
+This extends our seat management capabilities to all product types, giving you more flexibility in how you price and package your offerings.
+
+## Ability to Change Subscription Seats
+
+Customers can now change the number of seats on their active subscriptions directly from the Customer Portal. The changes are prorated automatically, making it easy for teams to scale up or down as needed.
+
+## Flexible Subscription Intervals
+
+We've added support for flexible subscription intervals beyond monthly and yearly. You can now create subscriptions with custom billing periods:
+
+* Daily subscriptions
+* Weekly subscriptions
+* Custom intervals (e.g., every 2 weeks, every 3 months)
+
+Configure the interval count when creating or updating subscription products through both the dashboard and API.
+
+## Subscription Creation API
+
+We've launched a new API endpoint to create subscriptions programmatically. This enables you to set up subscriptions directly without requiring customers to go through the checkout flow.
+
+[Read more](/api-reference/subscriptions/create)
+
+## Enhanced Email Confirmations
+
+Order confirmation emails now include:
+
+* **Invoice PDFs attached** - Invoices are automatically generated and attached to confirmation emails for one-time purchases
+* **Order details** - Complete breakdown of what was purchased
+* **Benefits list** - Clear view of all benefits the customer will receive
+
+## Customer Portal Improvements
+
+### Seat Management
+
+Customers with seat-based subscriptions can now:
+
+* View all active seats
+* Add or remove seats (with automatic proration)
+* Manage team members directly from the portal
+
+### URL Encoding Fix
+
+Fixed an issue where email addresses with special characters (like `+` signs in email aliases) weren't properly encoded in customer portal links, causing the wrong email to be pre-filled.
+
+## Events & Metering
+
+### Cost Tracking
+
+Events can now include cost metadata, enabling you to track costs associated with usage. Costs are displayed throughout the events explorer and analytics.
+
+### Event Explorer Enhancements
+
+* Metadata filtering - Search and filter events by metadata fields
+* Customer filtering - Filter events by specific customers
+* Query search - Full-text search across event data
+* Improved event cards with better timestamps and cost visualization
+
+## Order Export
+
+You can now export orders to CSV directly from the dashboard. Filter by product and the export will respect your current filters, making it easy to analyze sales data.
+
+## OAuth2 Flow Improvements
+
+* If no scope is passed in the authorize request, the client's default scope is now used automatically
+* Improved organization selector UI in the OAuth2 authorization flow
+
+## Checkout Improvements
+
+* Fixed seat selector visibility on mobile devices
+* Server-side prefilling of checkout link query parameters
+* Improved discount code validation flow
+
+## Statement Descriptor Enhancement
+
+First payments after a trial period now include "TRIAL OVER" in the statement descriptor, making it clearer to customers why they're being charged.
+
+## Bug Fixes
+
+* Fixed customer state API for trialing subscriptions
+* Fixed broken customer links in events explorer
+* Fixed discount duration calculation for very long durations (capped at 999 months)
+</Update>
+
 <Update label="2025-10-17">
   ## Ability to update subscription to an updated price of the product
 

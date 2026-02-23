@@ -14,18 +14,21 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Organization, Transaction, User
 from polar.models.payout import PayoutStatus
-from polar.models.transaction import TransactionType
+from polar.models.transaction import Processor, TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
     InsufficientBalance,
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
     NotReadyAccount,
+    PayoutNotCancelable,
     PayoutNotSucceeded,
 )
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
-from polar.transaction.repository import PayoutTransactionRepository
+from polar.transaction.repository import (
+    PayoutTransactionRepository,
+)
 from polar.transaction.service.payout import (
     PayoutTransactionService,
 )
@@ -208,6 +211,31 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
+class TestEstimate:
+    async def test_regular_currency(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that regular currencies return net_amount unchanged."""
+        mocker.patch(
+            "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
+            return_value=[],
+        )
+
+        account = await create_account(save_fixture, organization, user, currency="usd")
+        await create_balance_transaction(save_fixture, account=account, amount=12345)
+
+        estimate = await payout_service.estimate(session, account=account)
+
+        assert estimate.gross_amount == 12345
+        assert estimate.net_amount == 12345
+
+
+@pytest.mark.asyncio
 class TestTriggerStripePayouts:
     async def test_valid(
         self,
@@ -228,16 +256,28 @@ class TestTriggerStripePayouts:
             save_fixture,
             account=account_1,
             created_at=utc_now() - datetime.timedelta(days=14),
+            status=PayoutStatus.pending,
+            attempts=[],
         )
         payout_2 = await create_payout(
             save_fixture,
             account=account_1,
             created_at=utc_now() - datetime.timedelta(days=7),
+            status=PayoutStatus.pending,
+            attempts=[],
         )
         payout_3 = await create_payout(
             save_fixture,
             account=account_2,
             created_at=utc_now() - datetime.timedelta(days=7),
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+        payout_4 = await create_payout(
+            save_fixture,
+            account=account_2,
+            created_at=utc_now() - datetime.timedelta(days=7),
+            status=PayoutStatus.succeeded,
         )
 
         await payout_service.trigger_stripe_payouts(session)
@@ -296,6 +336,129 @@ class TestTransferStripe:
         assert updated_transaction is not None
         assert updated_transaction.transfer_id == "STRIPE_TRANSFER_ID"
 
+    @pytest.mark.parametrize(
+        ("account_currency", "stripe_amount", "expected_amount"),
+        [
+            # Zero-decimal currencies should be rounded down to nearest 100
+            pytest.param("twd", 1204324, 1204300, id="TWD with remainder"),
+            pytest.param("twd", 1204300, 1204300, id="TWD no remainder"),
+            pytest.param("huf", 50099, 50000, id="HUF with remainder"),
+            pytest.param("isk", 12345, 12300, id="ISK with remainder"),
+            pytest.param("ugx", 10050, 10000, id="UGX with remainder"),
+            # Regular currencies should not be adjusted
+            pytest.param("eur", 12345, 12345, id="EUR unchanged"),
+        ],
+    )
+    async def test_zero_decimal_currency_adjustment(
+        self,
+        account_currency: str,
+        stripe_amount: int,
+        expected_amount: int,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that zero-decimal currency amounts are adjusted at transfer time."""
+        # Mock the transfer with a destination_payment (indicating FX conversion)
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", destination_payment="py_123"
+        )
+        # Mock the charge with a balance_transaction containing the converted amount
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            balance_transaction=SimpleNamespace(amount=stripe_amount)
+        )
+
+        country_map = {"twd": "TW", "huf": "HU", "isk": "IS", "ugx": "UG", "eur": "DE"}
+        country = country_map.get(account_currency, "US")
+
+        account = await create_account(
+            save_fixture, organization, user, country=country, currency=account_currency
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            account_currency=account_currency,
+        )
+        transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account_currency,
+            payout=payout,
+        )
+
+        result = await payout_service.transfer_stripe(session, payout)
+
+        # Verify the payout's account_amount was adjusted for zero-decimal currencies
+        assert result.account_amount == expected_amount
+
+
+@pytest.mark.asyncio
+class TestCancel:
+    async def test_not_cancelable(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+        payout = await create_payout(
+            save_fixture, account=account, status=PayoutStatus.succeeded
+        )
+
+        with pytest.raises(PayoutNotCancelable):
+            await payout_service.cancel(session, payout)
+
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: MagicMock,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+        payout = await create_payout(
+            save_fixture, account=account, status=PayoutStatus.pending, attempts=[]
+        )
+        payout_transaction = Transaction(
+            type=TransactionType.payout,
+            account=account,
+            processor=Processor.stripe,
+            currency=payout.currency,
+            amount=payout.amount,
+            account_currency=payout.account_currency,
+            account_amount=payout.account_amount,
+            tax_amount=0,
+            pledge=None,
+            issue_reward=None,
+            order=None,
+            paid_transactions=[],
+            incurred_transactions=[],
+            account_incurred_transactions=[],
+            payout=payout,
+            transfer_id="STRIPE_TRANSFER_ID",
+        )
+        await save_fixture(payout_transaction)
+
+        payout_reversal_transaction = Transaction()
+        payout_transaction_service_mock.reverse.return_value = (
+            payout_reversal_transaction
+        )
+        stripe_service_mock.reverse_transfer.return_value = SimpleNamespace(
+            id="STRIPE_REVERSAL_ID"
+        )
+
+        canceled_payout = await payout_service.cancel(session, payout)
+
+        assert canceled_payout.status == PayoutStatus.canceled
+        assert payout_reversal_transaction.transfer_reversal_id == "STRIPE_REVERSAL_ID"
+
 
 @pytest.mark.asyncio
 class TestTriggerInvoiceGeneration:
@@ -308,8 +471,6 @@ class TestTriggerInvoiceGeneration:
     ) -> None:
         account = await create_account(save_fixture, organization, user)
         payout = await create_payout(save_fixture, account=account)
-        # Set invoice path
-        payout.status = PayoutStatus.succeeded
         payout.invoice_path = "some/path/to/invoice.pdf"
         await save_fixture(payout)
 
@@ -327,7 +488,10 @@ class TestTriggerInvoiceGeneration:
     ) -> None:
         account = await create_account(save_fixture, organization, user)
         payout = await create_payout(
-            save_fixture, account=account, status=PayoutStatus.pending
+            save_fixture,
+            account=account,
+            status=PayoutStatus.pending,
+            attempts=[],
         )
 
         with pytest.raises(PayoutNotSucceeded):
@@ -345,7 +509,6 @@ class TestTriggerInvoiceGeneration:
         account = await create_account(save_fixture, organization, user)
 
         payout = await create_payout(save_fixture, account=account)
-        payout.status = PayoutStatus.succeeded
         await save_fixture(payout)
 
         with pytest.raises(MissingInvoiceBillingDetails):
@@ -375,12 +538,10 @@ class TestTriggerInvoiceGeneration:
             account=account,
             invoice_number=invoice_number,
         )
-        payout1.status = PayoutStatus.succeeded
         await save_fixture(payout1)
 
         # Create second payout
         payout2 = await create_payout(save_fixture, account=account)
-        payout2.status = PayoutStatus.succeeded
         await save_fixture(payout2)
 
         # Try to set the same invoice number on the second payout
@@ -407,9 +568,7 @@ class TestTriggerInvoiceGeneration:
             billing_address=Address(country=CountryAlpha2("US"), line1="123 Test St"),
         )
 
-        payout = await create_payout(
-            save_fixture, account=account, status=PayoutStatus.succeeded
-        )
+        payout = await create_payout(save_fixture, account=account)
 
         # Test with custom invoice number
         custom_invoice_number = "CUSTOM-INVOICE-123"
@@ -447,7 +606,6 @@ class TestTriggerInvoiceGeneration:
             save_fixture,
             account=account,
             invoice_number=original_invoice_number,
-            status=PayoutStatus.succeeded,
         )
 
         # Test without providing a custom invoice number

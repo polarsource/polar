@@ -105,7 +105,7 @@ export const EventsUpsell = () => {
             <div className="flex flex-row items-center gap-x-4 font-mono text-xs">
               <span>Profit</span>
               <span className="dark:text-polar-500 text-gray-500">
-                {formatCurrency(profit, 'usd', 2, 12)}
+                {formatCurrency('subcent')(profit, 'usd')}
               </span>
             </div>
           </div>

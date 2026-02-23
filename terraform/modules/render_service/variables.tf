@@ -41,6 +41,7 @@ variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
     start_command      = string
+    image_url          = optional(string, "ghcr.io/polarsource/polar")
     digest             = optional(string)
     tag                = optional(string)
     custom_domains     = optional(list(object({ name = string })), [])
@@ -123,7 +124,7 @@ variable "backend_config" {
     auth_cookie_domain         = string               # "polar.sh"
     auth_cookie_key            = optional(string, "") # "polar.sh"
     invoices_additional_info   = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor      = optional(string, "stripe")
+    tax_processors             = optional(string, "[\"stripe\"]")
   })
 }
 
@@ -205,10 +206,8 @@ variable "stripe_secrets" {
 variable "logfire_config" {
   description = "Logfire configuration (optional)"
   type = object({
-    server_project_name = string # "production"
-    worker_project_name = string # "production-worker"
-    server_token        = string
-    worker_token        = string
+    project_name = optional(string, "polar")
+    token        = string
   })
   default   = null
   sensitive = true
@@ -225,13 +224,24 @@ variable "apple_secrets" {
 }
 
 variable "prometheus_config" {
-  description = "Prometheus Remote Write configuration"
+  description = "Grafana Cloud Prometheus configuration (url is the base, e.g. https://prometheus-prod-XX.grafana.net)"
   type = object({
-    url      = string
-    username = string
-    password = string
-    interval = number
+    url       = string
+    username  = string
+    password  = string
+    interval  = optional(number, 60)
+    query_key = optional(string)
   })
+  sensitive = true
+}
+
+variable "slo_report_config" {
+  description = "SLO report Slack configuration (optional)"
+  type = object({
+    slack_bot_token = string
+    slack_channel   = string
+  })
+  default   = null
   sensitive = true
 }
 
@@ -241,6 +251,7 @@ variable "tinybird_config" {
     api_url             = string
     clickhouse_url      = string
     api_token           = string
+    read_token          = string
     clickhouse_username = string
     clickhouse_token    = string
     workspace           = string

@@ -4,6 +4,11 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -14,7 +19,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import LogoType from '../Brand/LogoType'
+import LogoType from '../Brand/logos/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
 import CheckoutBenefits from './CheckoutBenefits'
 import CheckoutSeatInvitations from './CheckoutSeatInvitations'
@@ -29,10 +34,13 @@ const isIntegrationError = (
 const StripeRequiresAction = ({
   stripe,
   checkout,
+  locale = DEFAULT_LOCALE,
 }: {
   stripe: Stripe | null
   checkout: CheckoutPublic
+  locale?: AcceptedLocale
 }) => {
+  const t = useTranslations(locale)
   const [pendingHandling, setPendingHandling] = useState(false)
   const [success, setSuccess] = useState(false)
   const { intent_status, intent_client_secret } =
@@ -83,7 +91,7 @@ const StripeRequiresAction = ({
         onClick={() => handleNextAction(stripe)}
         loading={pendingHandling}
       >
-        Confirm payment
+        {t('checkout.confirmation.confirmPayment')}
       </Button>
     )
   }
@@ -95,6 +103,7 @@ export interface CheckoutConfirmationProps {
   checkout: CheckoutPublic
   embed: boolean
   theme?: 'light' | 'dark'
+  locale?: AcceptedLocale
   customerSessionToken?: string
   disabled?: boolean
   maxWaitingTimeMs?: number
@@ -104,10 +113,12 @@ export const CheckoutConfirmation = ({
   checkout: _checkout,
   embed,
   theme,
+  locale = DEFAULT_LOCALE,
   customerSessionToken,
   disabled,
   maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
+  const t = useTranslations(locale)
   const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
@@ -172,21 +183,22 @@ export const CheckoutConfirmation = ({
           name={organization.name}
         />
         <h1 className="text-2xl font-medium">
-          {status === 'confirmed' && 'We are processing your order'}
-          {status === 'succeeded' && 'Your order was successful!'}
-          {status === 'failed' &&
-            'A problem occurred while processing your order'}
+          {status === 'confirmed' && t('checkout.confirmation.processingTitle')}
+          {status === 'succeeded' && t('checkout.confirmation.successTitle')}
+          {status === 'failed' && t('checkout.confirmation.failedTitle')}
         </h1>
         <p className="dark:text-polar-500 text-gray-500">
           {status === 'confirmed' &&
-            'Please wait while we confirm your payment.'}
+            t('checkout.confirmation.processingDescription')}
           {status === 'succeeded' && (
             <>
               {hasProductCheckout(checkout) &&
-                `You're now eligible for the benefits of ${checkout.product.name}.`}
+                t('checkout.confirmation.successDescription', {
+                  product: checkout.product.name,
+                })}
             </>
           )}
-          {status === 'failed' && 'Please try again or contact support.'}
+          {status === 'failed' && t('checkout.confirmation.failedDescription')}
         </p>
         {status === 'confirmed' && (
           <div className="flex items-center justify-center">
@@ -194,7 +206,11 @@ export const CheckoutConfirmation = ({
               <Elements stripe={stripePromise}>
                 <ElementsConsumer>
                   {({ stripe }) => (
-                    <StripeRequiresAction stripe={stripe} checkout={checkout} />
+                    <StripeRequiresAction
+                      stripe={stripe}
+                      checkout={checkout}
+                      locale={locale}
+                    />
                   )}
                 </ElementsConsumer>
               </Elements>
@@ -206,23 +222,23 @@ export const CheckoutConfirmation = ({
         {status === 'succeeded' && (
           <>
             <CheckoutSeatInvitations checkout={checkout} />
-            {hasProductCheckout(checkout) && (
-              <CheckoutBenefits
-                checkout={checkout}
-                customerSessionToken={customerSessionToken}
-                maxWaitingTimeMs={maxWaitingTimeMs}
-              />
-            )}
+            {hasProductCheckout(checkout) &&
+              checkout.productPrice.amountType !== 'seat_based' && (
+                <CheckoutBenefits
+                  checkout={checkout}
+                  locale={locale}
+                  customerSessionToken={customerSessionToken}
+                  maxWaitingTimeMs={maxWaitingTimeMs}
+                />
+              )}
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-              This order was processed by our online reseller & Merchant of
-              Record, Polar, who also handles order-related inquiries and
-              returns.
+              {t('checkout.footer.merchantOfRecord')}
             </p>
           </>
         )}
       </div>
       <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
-        <span>Powered by</span>
+        <span>{t('checkout.footer.poweredBy')}</span>
         <LogoType className="h-5" />
       </div>
     </ShadowBox>

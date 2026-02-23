@@ -115,8 +115,8 @@ class SubscriptionJobStore(BaseJobStore):
             .join(Customer, onclause=Customer.id == Subscription.customer_id)
             .join(Organization, onclause=Organization.id == Customer.organization_id)
             .where(
-                Customer.deleted_at.is_(None),
-                Organization.deleted_at.is_(None),
+                Customer.is_deleted.is_(False),
+                Organization.is_deleted.is_(False),
                 Organization.blocked_at.is_(None),
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.active.is_(True),

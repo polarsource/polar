@@ -28,6 +28,7 @@ class SearchResultOrder(Schema):
     customer_email: str
     product_name: str
     amount: int
+    currency: str
 
 
 class SearchResultSubscription(Schema):
@@ -38,6 +39,7 @@ class SearchResultSubscription(Schema):
     product_name: str
     status: str
     amount: int
+    currency: str
 
 
 SearchResult = Annotated[

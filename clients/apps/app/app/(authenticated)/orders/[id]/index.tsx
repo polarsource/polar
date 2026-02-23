@@ -122,7 +122,7 @@ export default function Index() {
             >
               <Text numberOfLines={1}>{item.label}</Text>
               <Text variant="bodyMedium">
-                {formatCurrency(item.amount, order.currency)}
+                {formatCurrency('accounting')(item.amount, order.currency)}
               </Text>
             </Box>
           ))}
@@ -150,24 +150,36 @@ export default function Index() {
           />
           <DetailRow
             label="Subtotal"
-            value={formatCurrency(order.subtotal_amount, order.currency)}
+            value={formatCurrency('accounting')(
+              order.subtotal_amount,
+              order.currency,
+            )}
           />
           <DetailRow
             label="Discount"
-            value={`-${formatCurrency(order.discount_amount, order.currency)}`}
+            value={`-${formatCurrency('accounting')(order.discount_amount, order.currency)}`}
           />
           <DetailRow
             label="Net"
-            value={formatCurrency(order.net_amount, order.currency)}
+            value={formatCurrency('accounting')(
+              order.net_amount,
+              order.currency,
+            )}
           />
           <DetailRow
             label="Tax"
-            value={formatCurrency(order.tax_amount, order.currency)}
+            value={formatCurrency('accounting')(
+              order.tax_amount,
+              order.currency,
+            )}
           />
           <DetailRow
             labelStyle={{ color: theme.colors.text }}
             label="Total"
-            value={formatCurrency(order.total_amount, order.currency)}
+            value={formatCurrency('accounting')(
+              order.total_amount,
+              order.currency,
+            )}
           />
         </Details>
       </Box>

@@ -1,0 +1,39 @@
+DESCRIPTION >
+    Returns event type statistics for an organization from the event_types materialized view.
+    Supports optional source filtering and sorting.
+
+NODE event_types_query
+SQL >
+    %
+    SELECT
+        name,
+        source,
+        countMerge(occurrences) AS occurrences,
+        minMerge(first_seen) AS first_seen,
+        maxMerge(last_seen) AS last_seen
+    FROM event_types
+    WHERE
+        organization_id = toUUID(
+            {{
+                String(
+                    organization_id,
+                    '00000000-0000-0000-0000-000000000000',
+                    description="Organization UUID",
+                )
+            }}
+        )
+        {% if defined(source) %}
+            AND source = {{ String(source, description="Event source filter (system or user)") }}
+        {% end %}
+    GROUP BY name, source
+    ORDER BY
+        {% if defined(order_by) and order_by == 'name' %} name
+        {% elif defined(order_by) and order_by == 'first_seen' %} first_seen
+        {% elif defined(order_by) and order_by == 'occurrences' %} occurrences
+        {% else %} last_seen
+        {% end %}
+        {% if defined(order_direction) and order_direction == 'asc' %} ASC
+        {% else %} DESC
+        {% end %}
+
+TYPE ENDPOINT

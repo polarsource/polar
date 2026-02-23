@@ -1,21 +1,5 @@
 import { schemas } from '@polar-sh/client'
 
-export const hasIntervals = (
-  product: schemas['Product'],
-): [boolean, boolean, boolean] => {
-  const hasMonthInterval = product.prices.some(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'month',
-  )
-  const hasYearInterval = product.prices.some(
-    (price) =>
-      price.type === 'recurring' && price.recurring_interval === 'year',
-  )
-  const hasBothIntervals = hasMonthInterval && hasYearInterval
-
-  return [hasMonthInterval, hasYearInterval, hasBothIntervals]
-}
-
 type ProductPrice =
   | schemas['ProductPriceFixed']
   | schemas['ProductPriceCustom']

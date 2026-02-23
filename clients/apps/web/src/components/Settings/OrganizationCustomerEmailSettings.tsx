@@ -40,6 +40,11 @@ const customerEmails: {
     description: 'Sent when a subscription automatically renews',
   },
   {
+    key: 'subscription_cycled_after_trial',
+    title: 'Trial converted',
+    description: 'Sent when a trial ends and the subscription becomes paid',
+  },
+  {
     key: 'subscription_updated',
     title: 'Subscription updated',
     description:

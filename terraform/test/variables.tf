@@ -180,14 +180,8 @@ variable "stripe_webhook_secret" {
 }
 
 # Logfire
-variable "logfire_token_server" {
-  description = "Logfire Token for server"
-  type        = string
-  sensitive   = true
-}
-
-variable "logfire_token_worker" {
-  description = "Logfire Token for worker"
+variable "logfire_token" {
+  description = "Logfire Token"
   type        = string
   sensitive   = true
 }
@@ -217,29 +211,25 @@ variable "apple_key_value" {
   sensitive   = true
 }
 
-variable "prometheus_remote_write_url" {
-  description = "Prometheus Remote Write URL"
+variable "grafana_cloud_prometheus_url" {
+  description = "Grafana Cloud Prometheus base URL"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_username" {
-  description = "Prometheus Remote Write Username"
+variable "grafana_cloud_prometheus_username" {
+  description = "Grafana Cloud Prometheus username (numeric stack ID)"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_password" {
-  description = "Prometheus Remote Write Password"
+variable "grafana_cloud_prometheus_password" {
+  description = "Grafana Cloud Prometheus write API key"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_interval" {
-  description = "Prometheus Remote Write Interval"
-  type        = number
-  sensitive   = false
-}
+
 
 variable "numeral_api_key" {
   description = "Numeral API Key"
@@ -281,4 +271,10 @@ variable "tinybird_events_read" {
   description = "Tinybird Events Read enabled"
   type        = bool
   default     = false
+}
+
+variable "tinybird_read_token" {
+  description = "Tinybird Read Token"
+  type        = string
+  sensitive   = true
 }

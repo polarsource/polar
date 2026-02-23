@@ -28,7 +28,7 @@ class ResourceServiceReader[ModelType: RecordModel]:
     ) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
         if not allow_deleted:
-            query = query.where(self.model.deleted_at.is_(None))
+            query = query.where(self.model.is_deleted.is_(False))
         if options is not None:
             query = query.options(*options)
         res = await session.execute(query)
@@ -42,7 +42,7 @@ class ResourceServiceReader[ModelType: RecordModel]:
     async def soft_delete(self, session: AsyncSession, id: UUID) -> None:
         stmt = (
             sql.update(self.model)
-            .where(self.model.id == id, self.model.deleted_at.is_(None))
+            .where(self.model.id == id, self.model.is_deleted.is_(False))
             .values(
                 deleted_at=utc_now(),
             )

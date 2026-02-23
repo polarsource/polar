@@ -720,12 +720,12 @@ class TestAssignSeat:
         assert seat.member_id is None
 
     @pytest.mark.asyncio
-    async def test_assign_seat_rejects_customer_id_when_member_model_enabled(
+    async def test_assign_seat_with_customer_id_backward_compat_member_model(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """Test that assign_seat rejects customer_id when member_model_enabled is true."""
+        """Test that assign_seat auto-resolves customer_id to email when member_model_enabled."""
         organization = await create_organization(
             save_fixture,
             feature_settings={
@@ -751,11 +751,94 @@ class TestAssignSeat:
             save_fixture,
             organization=organization,
             email="seat@example.com",
+            stripe_customer_id="stripe_seat_compat",
+        )
+
+        # Should succeed — auto-resolves customer_id to email and creates member
+        seat = await seat_service.assign_seat(
+            session, subscription, customer_id=seat_customer.id
+        )
+        assert seat is not None
+        assert seat.email == "seat@example.com"
+        assert seat.member_id is not None
+        assert seat.customer_id == billing_customer.id
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_with_external_customer_id_backward_compat(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that assign_seat auto-resolves external_customer_id when member_model_enabled."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+        seat_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="ext-seat@example.com",
+            external_id="ext-123",
+            stripe_customer_id="stripe_ext_seat",
+        )
+
+        seat = await seat_service.assign_seat(
+            session, subscription, external_customer_id="ext-123"
+        )
+        assert seat is not None
+        assert seat.email == "ext-seat@example.com"
+        assert seat.member_id is not None
+        assert seat.customer_id == billing_customer.id
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_customer_id_not_found_member_model(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that non-existent customer_id raises error even with backward compat."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
         )
 
         with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(
-                session, subscription, customer_id=seat_customer.id
+                session, subscription, customer_id=uuid.uuid4()
             )
 
     @pytest.mark.asyncio
@@ -2336,3 +2419,91 @@ class TestRevokeAllSeatsForSubscription:
                 assert call[1]["subscription_id"] == subscription_with_seats.id
                 # Customer ID should be either customer1 or customer2
                 assert call[1]["customer_id"] in [customer1.id, customer2.id]
+
+
+class TestAssignSeatToDeletedMember:
+    """Tests for assigning seats to previously deleted members."""
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_to_deleted_member_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """
+        Test that assigning a seat to an email that belongs to a soft-deleted member
+        should reactivate that member instead of creating a new one.
+
+        This test replicates the bug where:
+        1. A seat is assigned to an email (creates a member)
+        2. The seat is revoked and the member is deleted
+        3. Trying to assign a new seat to the same email fails with:
+           IntegrityError: duplicate key value violates unique constraint
+           "members_customer_id_email_key"
+
+        The unique constraint (customer_id, email) doesn't account for soft deletion,
+        but the application queries filter out soft-deleted members, causing the
+        application to try to INSERT a new member with the same (customer_id, email).
+        """
+        # Setup organization with member_model_enabled
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        seat_member_email = "seat-member@example.com"
+
+        # Step 1: Assign a seat to the email (this creates a member)
+        seat = await seat_service.assign_seat(
+            session, subscription, email=seat_member_email
+        )
+        assert seat.member_id is not None
+        original_member_id = seat.member_id
+
+        # Step 2: Revoke the seat (this clears member_id, customer_id, email from seat)
+        await session.refresh(seat, ["subscription"])
+        assert seat.subscription is not None
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+        await seat_service.revoke_seat(session, seat)
+
+        # Step 3: Soft delete the member
+        from polar.member.repository import MemberRepository
+
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_id(original_member_id)
+        assert member is not None
+        await member_repository.soft_delete(member)
+        await session.flush()
+
+        # Verify member is soft-deleted (deleted_at is set)
+        await session.refresh(member)
+        assert member.deleted_at is not None
+
+        # Step 4: Try to assign a new seat to the same email
+        # This should NOT raise IntegrityError - it should reactivate the member
+        new_seat = await seat_service.assign_seat(
+            session, subscription, email=seat_member_email
+        )
+
+        # The new seat should reference the same member (reactivated)
+        # or a new member should have been created successfully
+        assert new_seat.member_id is not None
+        assert new_seat.email == seat_member_email

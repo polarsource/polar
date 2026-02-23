@@ -33,7 +33,7 @@ class PaymentRepository(
         statement = (
             self.get_base_statement()
             .join(Order, Payment.order_id == Order.id)
-            .where(Order.deleted_at.is_(None), Order.customer_id == customer_id)
+            .where(Order.is_deleted.is_(False), Order.customer_id == customer_id)
         )
         if status is not None:
             statement = statement.where(Payment.status == status)
@@ -73,7 +73,7 @@ class PaymentRepository(
                 Payment.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -113,3 +113,15 @@ class PaymentRepository(
             .limit(1)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_order(
+        self, order_id: UUID, *, options: Options = ()
+    ) -> Sequence[Payment]:
+        """Get all payments for a specific order."""
+        statement = (
+            self.get_base_statement()
+            .where(Payment.order_id == order_id)
+            .order_by(Payment.created_at.desc())
+            .options(*options)
+        )
+        return await self.get_all(statement)

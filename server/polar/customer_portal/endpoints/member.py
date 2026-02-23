@@ -5,6 +5,8 @@ from fastapi import Depends
 
 from polar.auth.models import is_member
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models.customer import CustomerType
 from polar.models.member import Member, MemberRole
@@ -38,7 +40,7 @@ def _require_team_customer(auth_subject: auth.CustomerPortalBillingManager) -> N
 @router.get(
     "",
     summary="List Members",
-    response_model=list[CustomerPortalMember],
+    response_model=ListResource[CustomerPortalMember],
     responses={
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted - requires owner or billing manager role"},
@@ -46,8 +48,9 @@ def _require_team_customer(auth_subject: auth.CustomerPortalBillingManager) -> N
 )
 async def list_members(
     auth_subject: auth.CustomerPortalBillingManager,
+    pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
-) -> list[Member]:
+) -> ListResource[CustomerPortalMember]:
     """
     List all members of the customer's team.
 
@@ -56,16 +59,26 @@ async def list_members(
     _require_team_customer(auth_subject)
     customer = get_customer(auth_subject)
 
-    members = await member_service.list_by_customer(session, customer.id)
+    repository = MemberRepository.from_session(session)
+    statement = repository.get_base_statement().where(
+        Member.customer_id == customer.id,
+    )
+    results, count = await repository.paginate(
+        statement, limit=pagination.limit, page=pagination.page
+    )
 
     log.info(
         "customer_portal.members.list",
         customer_id=customer.id,
-        member_count=len(members),
+        member_count=count,
         actor_member_id=auth_subject.subject.id if is_member(auth_subject) else None,
     )
 
-    return list(members)
+    return ListResource.from_paginated_results(
+        [CustomerPortalMember.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.post(
@@ -172,7 +185,9 @@ async def update_member(
             ]
         )
 
-    return await member_service.update(session, member, role=member_update.role)
+    return await member_service.update(
+        session, member, role=member_update.role, caller_member=actor_member
+    )
 
 
 @router.delete(

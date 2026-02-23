@@ -1,0 +1,578 @@
+DESCRIPTION >
+    MRR metrics endpoint: monthly_recurring_revenue, active_subscriptions, churn.
+    Call in parallel with metrics_events and metrics_costs for best performance.
+    Supplies the following metrics:
+    - monthly_recurring_revenue
+    - cumulative_monthly_recurring_revenue
+    - average_revenue_per_user
+    - churn
+    Held balances are not counted toward revenue related metrics.
+
+NODE subscription_latest_product
+SQL >
+    %
+    SELECT
+        e.subscription_id,
+        argMax(
+            COALESCE(e.new_product_id, e.product_id),
+            (
+                e.timestamp,
+                e.ingested_at,
+                multiIf(
+                    e.name = 'subscription.product_updated', 3, e.name = 'subscription.created', 2, 1
+                )
+            )
+        ) AS latest_product_id
+    FROM system_events_by_org AS e
+    WHERE
+        e.subscription_id IS NOT NULL
+        AND COALESCE(e.new_product_id, e.product_id) IS NOT NULL
+        AND e.name IN (
+            'subscription.created',
+            'subscription.product_updated',
+            'order.paid',
+            'balance.order',
+            'balance.credit_order'
+        )
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+    GROUP BY e.subscription_id
+
+NODE subscription_latest_canceled
+SQL >
+    %
+    SELECT
+        e.subscription_id,
+        max(e.timestamp) AS canceled_ts,
+        argMax(e.ends_at, (e.timestamp, e.ingested_at)) AS canceled_ends_at,
+        argMax(e.cancel_at_period_end, (e.timestamp, e.ingested_at)) AS cancel_at_period_end
+    FROM system_events_by_org AS e
+    WHERE
+        e.name = 'subscription.canceled'
+        AND e.subscription_id IS NOT NULL
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+    GROUP BY e.subscription_id
+
+NODE subscription_latest_uncanceled
+SQL >
+    %
+    SELECT e.subscription_id, max(e.timestamp) AS uncanceled_ts
+    FROM system_events_by_org AS e
+    WHERE
+        e.name = 'subscription.uncanceled'
+        AND e.subscription_id IS NOT NULL
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+    GROUP BY e.subscription_id
+
+NODE subscription_latest_revoked
+SQL >
+    %
+    SELECT e.subscription_id, max(e.timestamp) AS revoked_ts
+    FROM system_events_by_org AS e
+    WHERE
+        e.name = 'subscription.revoked'
+        AND e.subscription_id IS NOT NULL
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+    GROUP BY e.subscription_id
+
+NODE subs
+SQL >
+    %
+    SELECT
+        ss.subscription_id AS subscription_id,
+        minMerge(ss.started_at) AS started_at,
+        if(
+            anyOrNull(slc.cancel_at_period_end) = 1
+            AND anyOrNull(slc.canceled_ends_at) IS NOT NULL
+            AND anyOrNull(slc.canceled_ends_at) > argMaxMerge(ss.ends_at)
+            AND (
+                anyOrNull(slu.uncanceled_ts) IS NULL
+                OR anyOrNull(slc.canceled_ts) IS NULL
+                OR anyOrNull(slu.uncanceled_ts) <= anyOrNull(slc.canceled_ts)
+            )
+            AND (
+                -- A revoke after cancellation means the subscription ended early.
+                -- In that case we must keep the revoked end timestamp.
+                anyOrNull(slr.revoked_ts) IS NULL
+                OR anyOrNull(slc.canceled_ts) IS NULL
+                OR anyOrNull(slr.revoked_ts) <= anyOrNull(slc.canceled_ts)
+            ),
+            anyOrNull(slc.canceled_ends_at),
+            argMaxMerge(ss.ends_at)
+        ) AS ends_at,
+        argMaxMerge(ss.recurring_interval) AS recurring_interval,
+        argMaxMerge(ss.recurring_interval_count) AS recurring_interval_count,
+        argMaxMerge(ss.customer_id) AS customer_id,
+        COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) AS product_id
+    FROM subscription_state AS ss
+    LEFT JOIN subscription_latest_product slp ON ss.subscription_id = slp.subscription_id
+    LEFT JOIN subscription_latest_canceled slc ON ss.subscription_id = slc.subscription_id
+    LEFT JOIN subscription_latest_uncanceled slu ON ss.subscription_id = slu.subscription_id
+    LEFT JOIN subscription_latest_revoked slr ON ss.subscription_id = slr.subscription_id
+    WHERE
+        ss.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+    GROUP BY ss.subscription_id, slp.latest_product_id
+    HAVING
+        1 = 1
+        AND (
+            started_at IS NULL
+            OR started_at <= toDateTime(
+                {{ String(bounds_end, '2024-01-02 00:00:00', description="End bound for filtering") }},
+                {{ String(tz, 'UTC') }}
+            )
+        )
+        AND (
+            ends_at <= toDateTime64(0, 3, 'UTC')
+            OR ends_at >= toDateTime(
+                {{
+                    String(
+                        bounds_start, '2024-01-01 00:00:00', description="Start bound for filtering"
+                    )
+                }}, {{ String(tz, 'UTC') }}
+            )
+        )
+        {% if defined(product_ids) and product_ids != '' %}
+            AND COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(product_ids, description="Comma-separated product UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND argMaxMerge(subscription_state.customer_id) IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+
+NODE payment_events_raw
+SQL >
+    %
+    SELECT
+        e.id, e.amount, e.timestamp AS event_timestamp, e.ingested_at AS ingested_at, e.subscription_id
+    FROM system_events_by_org AS e
+    WHERE
+        e.name IN ('balance.order', 'balance.credit_order')
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND e.subscription_id IS NOT NULL
+        {% if defined(product_ids) and product_ids != '' %}
+            AND e.product_id IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
+        {% end %}
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+        {% end %}
+
+NODE latest_payment
+SQL >
+    %
+    SELECT
+        subscription_id,
+        argMax(amount, (event_timestamp, ingested_at)) AS settlement_amount,
+        argMaxIf(amount, (event_timestamp, ingested_at), amount != 0) AS nonzero_settlement_amount
+    FROM payment_events_raw
+    GROUP BY subscription_id
+
+NODE subs_with_mrr
+SQL >
+    %
+    SELECT
+        s.subscription_id,
+        s.started_at,
+        s.ends_at,
+        s.customer_id,
+        CASE
+            WHEN s.recurring_interval = 'year'
+            THEN
+                toInt64(
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        / (12 * s.recurring_interval_count)
+                    )
+                )
+            WHEN s.recurring_interval = 'month'
+            THEN
+                toInt64(
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        / s.recurring_interval_count
+                    )
+                )
+            WHEN s.recurring_interval = 'week'
+            THEN
+                toInt64(
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        * 52
+                        / (12 * s.recurring_interval_count)
+                    )
+                )
+            WHEN s.recurring_interval = 'day'
+            THEN
+                toInt64(
+                    round(
+                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        * 365
+                        / (12 * s.recurring_interval_count)
+                    )
+                )
+            ELSE toInt64(0)
+        END AS monthly_amount
+    FROM subs s
+    LEFT JOIN latest_payment lp ON lp.subscription_id = s.subscription_id
+
+NODE mrr_by_window
+SQL >
+    %
+    SELECT
+        w.interval AS window_start,
+        sum(s.monthly_amount) AS monthly_recurring_revenue,
+        {% if not defined(interval) or interval == 'day' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfDay(
+                    toDateTime(
+                        {{ String(now_dt, '2024-01-02 00:00:00', description="Current datetime") }},
+                        {{ String(tz, 'UTC') }}
+                    )
+                )
+            ) AS committed_monthly_recurring_revenue,
+        {% elif interval == 'hour' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfHour(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_monthly_recurring_revenue,
+        {% elif interval == 'week' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) < toStartOfWeek(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
+                )
+            ) AS committed_monthly_recurring_revenue,
+        {% elif interval == 'month' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfMonth(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfMonth(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_monthly_recurring_revenue,
+        {% elif interval == 'year' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfYear(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfYear(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_monthly_recurring_revenue,
+        {% else %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfDay(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_monthly_recurring_revenue,
+        {% end %}
+        count(DISTINCT s.customer_id) AS active_subscriber_count,
+        count(*) AS active_subscriptions,
+        {% if not defined(interval) or interval == 'day' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfDay(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
+        {% elif interval == 'hour' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfHour(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
+        {% elif interval == 'week' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) < toStartOfWeek(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
+                )
+            ) AS committed_subscriptions
+        {% elif interval == 'month' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfMonth(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfMonth(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
+        {% elif interval == 'year' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfYear(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfYear(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
+        {% else %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfDay(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
+        {% end %}
+    FROM intervals w
+    CROSS JOIN subs_with_mrr s
+    WHERE
+        {% if not defined(interval) or interval == 'day' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfDay(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% elif interval == 'hour' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfHour(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% elif interval == 'week' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfWeek(toDateTime(s.started_at, {{ String(tz, 'UTC') }}), 1) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) > w.interval
+            )
+        {% elif interval == 'month' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfMonth(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfMonth(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% elif interval == 'year' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfYear(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfYear(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% else %}
+            (
+                s.started_at IS NULL
+                OR toStartOfDay(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% end %}
+    GROUP BY w.interval
+
+NODE churned_by_window
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) AS window_start,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% else %} toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% end %}
+        count(*) AS churned_subscriptions
+    FROM subs s
+    WHERE
+        s.ends_at > toDateTime64(0, 3, 'UTC')
+        AND s.ends_at >= toDateTime(
+            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        AND s.ends_at <= toDateTime(
+            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+    GROUP BY window_start
+
+NODE endpoint
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        COALESCE(mrr.monthly_recurring_revenue, 0) AS monthly_recurring_revenue,
+        COALESCE(mrr.committed_monthly_recurring_revenue, 0) AS committed_monthly_recurring_revenue,
+        CASE
+            WHEN COALESCE(mrr.active_subscriber_count, 0) > 0
+            THEN
+                intDiv(
+                    COALESCE(mrr.monthly_recurring_revenue, 0) + intDiv(mrr.active_subscriber_count, 2),
+                    mrr.active_subscriber_count
+                )
+            ELSE 0
+        END AS average_revenue_per_user,
+        COALESCE(mrr.active_subscriptions, 0) AS active_subscriptions,
+        COALESCE(mrr.committed_subscriptions, 0) AS committed_subscriptions,
+        COALESCE(churned.churned_subscriptions, 0) AS churned_subscriptions
+    FROM intervals w
+    LEFT JOIN mrr_by_window mrr ON mrr.window_start = w.interval
+    LEFT JOIN churned_by_window churned ON churned.window_start = w.interval
+    ORDER BY w.interval
+
+TYPE ENDPOINT

@@ -9,7 +9,6 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
-import { Checkout } from './Checkout'
 import Features from './Features'
 import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
@@ -66,7 +65,6 @@ export const PageContent = () => {
         <Usage />
       </Section>
       <Section className="flex flex-col gap-y-24">
-        <Checkout />
         <MerchantOfRecord />
         <Testimonials />
       </Section>

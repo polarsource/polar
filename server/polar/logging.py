@@ -1,4 +1,6 @@
+import contextvars
 import logging.config
+import typing
 import uuid
 from typing import Any
 
@@ -153,5 +155,21 @@ def configure(*, logfire: bool = False) -> None:
         Production.configure(logfire=logfire)
 
 
-def generate_correlation_id() -> str:
-    return str(uuid.uuid4())
+class CorrelationID:
+    _correlation_id: typing.ClassVar[contextvars.ContextVar[str | None]] = (
+        contextvars.ContextVar("polar.correlation_id", default=None)
+    )
+
+    @classmethod
+    def set(cls) -> str:
+        correlation_id = str(uuid.uuid4())
+        cls._correlation_id.set(correlation_id)
+        return correlation_id
+
+    @classmethod
+    def get(cls) -> str | None:
+        return cls._correlation_id.get()
+
+    @classmethod
+    def clear(cls) -> None:
+        cls._correlation_id.set(None)

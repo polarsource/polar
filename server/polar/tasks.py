@@ -4,6 +4,7 @@ from polar.billing_entry import tasks as billing_entry
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
 from polar.customer_meter import tasks as customer_meter
+from polar.customer_seat import tasks as customer_seat
 from polar.customer_session import tasks as customer_session
 from polar.email import tasks as email
 from polar.email_update import tasks as email_update
@@ -15,9 +16,11 @@ from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
+from polar.observability.slo_report import tasks as slo_report
 from polar.order import tasks as order
 from polar.organization import tasks as organization
 from polar.organization_access_token import tasks as organization_access_token
+from polar.organization_review import tasks as organization_review
 from polar.payout import tasks as payout
 from polar.personal_access_token import tasks as personal_access_token
 from polar.processor_transaction import tasks as processor_transaction
@@ -34,6 +37,7 @@ __all__ = [
     "checkout",
     "customer",
     "customer_meter",
+    "customer_seat",
     "customer_session",
     "email",
     "email_update",
@@ -46,9 +50,11 @@ __all__ = [
     "order",
     "organization",
     "organization_access_token",
+    "organization_review",
     "payout",
     "personal_access_token",
     "processor_transaction",
+    "slo_report",
     "stripe",
     "subscription",
     "transaction",

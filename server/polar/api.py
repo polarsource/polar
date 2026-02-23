@@ -6,6 +6,7 @@ from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
+from polar.cli.endpoints import router as cli_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -49,7 +50,6 @@ from polar.payout.endpoints import router as payout_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
-from polar.storefront.endpoints import router as storefront_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
@@ -106,6 +106,8 @@ router.include_router(refund_router)
 router.include_router(dispute_router)
 # /checkouts
 router.include_router(checkout_router)
+# /cli
+router.include_router(cli_router)
 # /files
 router.include_router(files_router)
 # /metrics
@@ -116,8 +118,6 @@ router.include_router(google_router)
 router.include_router(license_key_router)
 # /checkout-links
 router.include_router(checkout_link_router)
-# /storefronts
-router.include_router(storefront_router)
 # /custom-fields
 router.include_router(custom_field_router)
 # /discounts

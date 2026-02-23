@@ -3,9 +3,11 @@ from uuid import UUID
 import structlog
 from sqlalchemy.orm import joinedload
 
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.models import Member, Organization
 from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantScopeArgs
 from polar.models.order import Order
@@ -117,11 +119,19 @@ async def resolve_member(
 
     member = await member_repository.get_owner_by_customer_id(session, customer_id)
     if member is None:
-        log.error(
-            "Owner member not found for benefit grant",
-            customer_id=str(customer_id),
-            organization_id=str(organization.id),
-        )
-        raise CustomerDoesntHaveOwnerMember(customer_id)
+        # Auto-create owner member (graceful fallback during migration)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(customer_id)
+        if customer is not None:
+            member = await member_service.create_owner_member(
+                session, customer, organization
+            )
+        if member is None:
+            log.error(
+                "Owner member not found for benefit grant",
+                customer_id=str(customer_id),
+                organization_id=str(organization.id),
+            )
+            raise CustomerDoesntHaveOwnerMember(customer_id)
 
     return member

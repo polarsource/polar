@@ -299,7 +299,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         statement = select(Discount).where(
             Discount.id == id,
             Discount.organization_id == organization.id,
-            Discount.deleted_at.is_(None),
+            Discount.is_deleted.is_(False),
         )
         result = await session.execute(statement)
         discount = result.scalar_one_or_none()
@@ -333,7 +333,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         statement = select(Discount).where(
             func.upper(Discount.code) == code.upper(),
             Discount.organization_id == organization.id,
-            Discount.deleted_at.is_(None),
+            Discount.is_deleted.is_(False),
         )
         result = await session.execute(statement)
         discount = result.scalar_one_or_none()
@@ -429,7 +429,7 @@ class DiscountService(ResourceServiceReader[Discount]):
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Discount]]:
-        statement = select(Discount).where(Discount.deleted_at.is_(None))
+        statement = select(Discount).where(Discount.is_deleted.is_(False))
 
         if is_user(auth_subject):
             user = auth_subject.subject
@@ -437,7 +437,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 Discount.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

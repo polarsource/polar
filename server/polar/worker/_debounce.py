@@ -42,11 +42,17 @@ async def set_debounce_key(
     args: tuple["JSONSerializable", ...],
     kwargs: dict[str, "JSONSerializable"],
 ) -> tuple[str, int] | None:
-    debounce_key_factory: Callable[..., str] | None = actor.options.get("debounce_key")
+    debounce_key_factory: Callable[..., str | None] | None = actor.options.get(
+        "debounce_key"
+    )
     if debounce_key_factory is None:
         return None
 
-    key = f"{DEBOUNCE_KEY_PREFIX}{debounce_key_factory(*args, **kwargs)}"
+    debounce_key = debounce_key_factory(*args, **kwargs)
+    if debounce_key is None:
+        return None
+
+    key = f"{DEBOUNCE_KEY_PREFIX}{debounce_key}"
     delay: int = (
         actor.options.get(
             "debounce_min_threshold",

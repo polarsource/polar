@@ -176,7 +176,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             return None
 
         statement = select(OAuth2Client).where(
-            OAuth2Client.deleted_at.is_(None), OAuth2Client.client_id == client_id
+            OAuth2Client.is_deleted.is_(False), OAuth2Client.client_id == client_id
         )
         result = self.server.session.execute(statement)
         client = result.unique().scalar_one_or_none()
@@ -320,7 +320,7 @@ class AuthorizationServer(_AuthorizationServer):
 
     def query_client(self, client_id: str) -> OAuth2Client | None:
         statement = select(OAuth2Client).where(
-            OAuth2Client.deleted_at.is_(None), OAuth2Client.client_id == client_id
+            OAuth2Client.is_deleted.is_(False), OAuth2Client.client_id == client_id
         )
         result = self.session.execute(statement)
         return result.unique().scalar_one_or_none()

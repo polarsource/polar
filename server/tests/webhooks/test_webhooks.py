@@ -1,7 +1,6 @@
 from typing import cast
 from unittest.mock import MagicMock
 
-import dramatiq
 import httpx
 import pytest
 import respx
@@ -13,6 +12,7 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
+from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
     WebhookEventType,
@@ -139,7 +139,6 @@ async def test_webhook_delivery_500(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    current_message: dramatiq.MessageProxy,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         return_value=httpx.Response(500, text="Internal Error")
@@ -160,22 +159,31 @@ async def test_webhook_delivery_500(
     )
     await save_fixture(event)
 
-    # failures
+    # First attempt: should retry
     with pytest.raises(Retry):
         await _webhook_event_send(session=session, webhook_event_id=event.id)
 
-    # does not raise on last attempt
-    current_message.options["max_retries"] = settings.WEBHOOK_MAX_RETRIES
-    current_message.options["retries"] = settings.WEBHOOK_MAX_RETRIES
+    # Simulate enough prior failed deliveries to reach the max.
+    # The first call already committed 1 delivery, so add enough to make the
+    # next attempt see delivery_count >= WEBHOOK_MAX_RETRIES.
+    for _ in range(settings.WEBHOOK_MAX_RETRIES - 2):
+        await save_fixture(
+            WebhookDelivery(
+                webhook_event_id=event.id,
+                webhook_endpoint_id=endpoint.id,
+                succeeded=False,
+            )
+        )
+
+    # Last attempt: does not raise, records permanent failure
     await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     delivery_repository = WebhookDeliveryRepository.from_session(session)
     deliveries = await delivery_repository.get_all_by_event(event.id)
 
-    assert len(deliveries) == 2
+    assert len(deliveries) == settings.WEBHOOK_MAX_RETRIES
     for delivery in deliveries:
         assert delivery.succeeded is False
-        assert delivery.response == "Internal Error"
 
 
 @pytest.mark.asyncio
@@ -184,7 +192,6 @@ async def test_webhook_delivery_http_error(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    current_message: dramatiq.MessageProxy,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         side_effect=httpx.HTTPError("ERROR")
@@ -205,21 +212,28 @@ async def test_webhook_delivery_http_error(
     )
     await save_fixture(event)
 
-    # failures
+    # First attempt: should retry
     with pytest.raises(Retry):
         await _webhook_event_send(session=session, webhook_event_id=event.id)
 
-    # does not raise on last attempt
-    current_message.options["max_retries"] = settings.WEBHOOK_MAX_RETRIES
-    current_message.options["retries"] = settings.WEBHOOK_MAX_RETRIES
+    # Simulate enough prior failed deliveries to reach the max
+    for _ in range(settings.WEBHOOK_MAX_RETRIES - 2):
+        await save_fixture(
+            WebhookDelivery(
+                webhook_event_id=event.id,
+                webhook_endpoint_id=endpoint.id,
+                succeeded=False,
+            )
+        )
+
+    # Last attempt: does not raise, records permanent failure
     await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     delivery_repository = WebhookDeliveryRepository.from_session(session)
     deliveries = await delivery_repository.get_all_by_event(event.id)
-    assert len(deliveries) == 2
+    assert len(deliveries) == settings.WEBHOOK_MAX_RETRIES
     for delivery in deliveries:
         assert delivery.succeeded is False
-        assert delivery.response == "ERROR"
 
 
 @pytest.mark.asyncio

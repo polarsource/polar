@@ -66,7 +66,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
       if (data) {
         toast({
           title: 'Refund Created',
-          description: `Refund for ${formatCurrency(
+          description: `Refund for ${formatCurrency('compact')(
             data.amount,
             data.currency,
           )} created successfully`,
@@ -80,7 +80,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="text-xl">Refund Order</h2>
       <p className="dark:text-polar-500 text-gray-500">
-        You can refund in part or full. Customer&apos;s see it on their bank
+        You can refund in part or full. Your customer will see it on their bank
         statement in 5-10 days.
       </p>
 
@@ -102,9 +102,8 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                 max: {
                   value: maximumRefundAmount,
                   message: `Amount must be less or equal to ${formatCurrency(
-                    maximumRefundAmount,
-                    order.currency,
-                  )}`,
+                    'compact',
+                  )(maximumRefundAmount, order.currency)}`,
                 },
               }}
               render={({ field }) => (

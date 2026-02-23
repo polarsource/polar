@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, Uuid
+from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import TaxProcessor
@@ -54,6 +54,8 @@ class TransactionType(StrEnum):
     """Money flow between Polar and a user's account."""
     payout = "payout"
     """Money paid to the user's bank account."""
+    payout_reversal = "payout_reversal"
+    """A payout is reversed back to Polar (totally or partially)."""
 
 
 class ProcessorFeeType(StrEnum):
@@ -222,6 +224,8 @@ class Transaction(RecordModel):
     """Amount of tax in the presentment currency collected by Polar for this payment."""
     presentment_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     """Currency in which the customer made the payment."""
+    exchange_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    """Exchange rate from presentment currency to settlement currency."""
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True
     )
@@ -425,7 +429,7 @@ class Transaction(RecordModel):
 
     @declared_attr
     def payout(cls) -> Mapped["Payout | None"]:
-        return relationship("Payout", lazy="raise", back_populates="transaction")
+        return relationship("Payout", lazy="raise", back_populates="transactions")
 
     @declared_attr
     def balance_transactions(cls) -> Mapped[list["Transaction"]]:

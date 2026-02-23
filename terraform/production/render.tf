@@ -153,7 +153,7 @@ module "production" {
       dramatiq_prom_port = "10000"
     }
     "worker-medium-priority" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues default medium_priority"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
       tag                = "latest"
       dramatiq_prom_port = "10001"
     }
@@ -195,7 +195,7 @@ module "production" {
     testing                    = "0"
     auth_cookie_domain         = "polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor      = "stripe"
+    tax_processors             = "[\"stripe\"]"
   }
 
   backend_secrets = {
@@ -255,10 +255,7 @@ module "production" {
   }
 
   logfire_config = {
-    server_project_name = "production"
-    worker_project_name = "production-worker"
-    server_token        = var.logfire_token_server
-    worker_token        = var.logfire_token_worker
+    token = var.logfire_token
   }
 
   apple_secrets = {
@@ -269,16 +266,22 @@ module "production" {
   }
 
   prometheus_config = {
-    url      = var.prometheus_remote_write_url
-    username = var.prometheus_remote_write_username
-    password = var.prometheus_remote_write_password
-    interval = var.prometheus_remote_write_interval
+    url       = var.grafana_cloud_prometheus_url
+    username  = var.grafana_cloud_prometheus_username
+    password  = var.grafana_cloud_prometheus_password
+    query_key = var.grafana_cloud_prometheus_query_key
+  }
+
+  slo_report_config = {
+    slack_bot_token = var.slo_report_slack_bot_token
+    slack_channel   = var.slo_report_slack_channel
   }
 
   tinybird_config = {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"
     api_token           = var.tinybird_api_token
+    read_token          = var.tinybird_read_token
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace
@@ -303,7 +306,7 @@ resource "cloudflare_dns_record" "api" {
   name    = "api.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = true
+  proxied = false
   ttl     = 1
 }
 
@@ -321,7 +324,7 @@ resource "cloudflare_dns_record" "buy" {
   name    = "buy.polar.sh"
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
-  proxied = true
+  proxied = false
   ttl     = 1
 }
 
@@ -339,6 +342,6 @@ resource "cloudflare_dns_record" "worker" {
   name    = "worker.polar.sh"
   type    = "CNAME"
   content = replace(module.production.worker_urls["worker"], "https://", "")
-  proxied = true
+  proxied = false
   ttl     = 1
 }

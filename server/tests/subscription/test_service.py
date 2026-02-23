@@ -1318,6 +1318,31 @@ class TestRevoke:
             session, updated_subscription
         )
 
+    async def test_revoke_scheduled_cancellation_sends_canceled_hook(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        assert subscription.canceled_at is not None
+        assert subscription.cancel_at_period_end is True
+        reset_hooks(subscription_hooks)
+
+        await subscription_service.revoke(session, subscription)
+
+        subscription_hooks.canceled.assert_called_once()
+        subscription_hooks.revoked.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestCancel:
@@ -2089,6 +2114,73 @@ class TestUpdateProduct:
         assert len(updated_subscription.prices) == 1
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
+
+    async def test_seat_based_to_fixed_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=customer,
+            seats=2,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=fixed_product.id,
+            )
+
+    async def test_fixed_to_seat_based_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=fixed_product,
+            customer=customer,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=seat_product.id,
+            )
 
 
 @pytest.mark.asyncio
@@ -3476,4 +3568,49 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             product_id=product.id,
             subscription_id=subscription.id,
             delay=None,
+        )
+
+
+@pytest.mark.asyncio
+class TestCancelCustomer:
+    async def test_basic(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that cancel_customer does not enqueue benefit grants for revocation.
+
+        Benefits should be revoked through benefit.revoke_customer instead,
+        which is called separately by the customer deletion flow.
+        """
+        # Create one active subscription for the customer
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        # Cancel all customer subscriptions
+        await subscription_service.cancel_customer(session, customer.id)
+
+        # Verify subscription was canceled
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.canceled_at is not None
+        assert subscription.ended_at is not None
+
+        # Verify that benefit grants were NOT enqueued
+        # The enqueue_job_mock should not have been called with "benefit.enqueue_benefits_grants"
+        # Benefits should be revoked separately through benefit.revoke_customer
+        benefit_grant_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "benefit.enqueue_benefits_grants"
+        ]
+        assert len(benefit_grant_calls) == 0, (
+            "Expected no calls to 'benefit.enqueue_benefits_grants', "
+            f"but found {len(benefit_grant_calls)} call(s)"
         )

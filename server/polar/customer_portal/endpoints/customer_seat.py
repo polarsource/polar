@@ -11,6 +11,7 @@ from polar.customer_seat.schemas import SeatAssign, SeatsList
 from polar.customer_seat.service import seat_service
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import CustomerSeat, Order, Product, Subscription
 from polar.openapi import APITag
 from polar.order.repository import OrderRepository
@@ -236,15 +237,16 @@ async def resend_invitation(
 @router.get(
     "/subscriptions",
     summary="List Claimed Subscriptions",
-    response_model=list[CustomerSubscription],
+    response_model=ListResource[CustomerSubscription],
     responses={
         401: {"description": "Authentication required"},
     },
 )
 async def list_claimed_subscriptions(
     auth_subject: auth.CustomerPortalUnionRead,
+    pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
-) -> list[Subscription]:
+) -> ListResource[CustomerSubscription]:
     """List all subscriptions where the authenticated customer has claimed a seat."""
     subscription_repository = SubscriptionRepository.from_session(session)
 
@@ -258,6 +260,12 @@ async def list_claimed_subscriptions(
         ),
     )
 
-    subscriptions = await subscription_repository.get_all(statement)
+    results, count = await subscription_repository.paginate(
+        statement, limit=pagination.limit, page=pagination.page
+    )
 
-    return list(subscriptions)
+    return ListResource.from_paginated_results(
+        [CustomerSubscription.model_validate(result) for result in results],
+        count,
+        pagination,
+    )

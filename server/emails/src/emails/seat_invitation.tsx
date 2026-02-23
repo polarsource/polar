@@ -1,9 +1,8 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Preview, Text } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
-import IntroWithHi from '../components/IntroWithHi'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import Intro from '../components/Intro'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,40 +14,25 @@ export function SeatInvitation({
   claim_url,
 }: schemas['SeatInvitationProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>
-        You've been invited to access {product_name} by {organization.name}
+        You&rsquo;re invited to {product_name} from {organization.name}
       </Preview>
-      <OrganizationHeader organization={organization} />
-      <IntroWithHi>
-        {billing_manager_email} has invited you to access{' '}
-        <span className="font-bold">{product_name}</span> from{' '}
-        <span className="font-bold">{organization.name}</span>.
-        <br />
-        <br />
-        A seat has been assigned to you. Click the button below to claim your
-        seat and access your benefits.
-        <br />
-        <br />
-        <span className="text-sm text-gray-600">
-          This invitation expires in 24 hours.
-        </span>
-      </IntroWithHi>
-      <Section className="text-center">
-        <Button href={claim_url}>Claim Your Seat</Button>
-      </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          You can also claim your seat at the following URL
-        </Text>
-        <Text className="text-sm">
-          <Link href={claim_url} className="text-blue-600 underline">
-            {claim_url}
-          </Link>
-        </Text>
-      </Section>
+
+      <Intro headline={`You're invited to join ${product_name}`}>
+        {billing_manager_email} has invited you to{' '}
+        <span className="font-medium">{product_name}</span>.
+        Claim&nbsp;your&nbsp;seat&nbsp;to&nbsp;get&nbsp;started.
+      </Intro>
+
+      <Button href={claim_url}>Claim seat</Button>
+
+      <Text className="my-8 text-center text-sm text-gray-500">
+        This invitation expires in 24 hours.
+      </Text>
+
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

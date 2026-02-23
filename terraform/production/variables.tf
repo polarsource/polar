@@ -226,14 +226,8 @@ variable "stripe_webhook_secret_production" {
 }
 
 # Logfire
-variable "logfire_token_server" {
-  description = "Logfire Token for server"
-  type        = string
-  sensitive   = true
-}
-
-variable "logfire_token_worker" {
-  description = "Logfire Token for worker"
+variable "logfire_token" {
+  description = "Logfire Token"
   type        = string
   sensitive   = true
 }
@@ -276,28 +270,41 @@ variable "backend_app_review_otp_code" {
   sensitive   = true
 }
 
-# Prometheus Remote Write (shared across environments)
-variable "prometheus_remote_write_url" {
-  description = "Prometheus Remote Write URL"
+# Grafana Cloud Prometheus (shared across environments)
+variable "grafana_cloud_prometheus_url" {
+  description = "Grafana Cloud Prometheus base URL"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_username" {
-  description = "Prometheus Remote Write Username"
+variable "grafana_cloud_prometheus_username" {
+  description = "Grafana Cloud Prometheus username (numeric stack ID)"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_password" {
-  description = "Prometheus Remote Write Password"
+variable "grafana_cloud_prometheus_password" {
+  description = "Grafana Cloud Prometheus write API key"
   type        = string
   sensitive   = true
 }
 
-variable "prometheus_remote_write_interval" {
-  description = "Prometheus Remote Write Interval"
-  type        = number
+variable "grafana_cloud_prometheus_query_key" {
+  description = "Grafana Cloud Prometheus query API key (read-only)"
+  type        = string
+  sensitive   = true
+}
+
+# SLO Report
+variable "slo_report_slack_bot_token" {
+  description = "Slack Bot Token for SLO reports"
+  type        = string
+  sensitive   = true
+}
+
+variable "slo_report_slack_channel" {
+  description = "Slack channel ID for SLO reports"
+  type        = string
   sensitive   = false
 }
 
@@ -348,4 +355,10 @@ variable "tinybird_events_read" {
   description = "Tinybird Events Read enabled"
   type        = bool
   default     = false
+}
+
+variable "tinybird_read_token" {
+  description = "Tinybird Read Token"
+  type        = string
+  sensitive   = true
 }

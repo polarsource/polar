@@ -5,7 +5,7 @@ from typing import Literal, cast, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import CursorResult, String, desc, func, or_, select, text, update
+from sqlalchemy import CursorResult, String, desc, or_, select, text, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
 
@@ -30,6 +30,7 @@ from polar.models import (
     Checkout,
     Customer,
     CustomerSeat,
+    Member,
     Order,
     Organization,
     Product,
@@ -49,13 +50,14 @@ from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.worker import enqueue_job
-
-from .repository import (
+from polar.webhook.repository import (
     WebhookDeliveryRepository,
     WebhookEndpointRepository,
     WebhookEventRepository,
 )
+from polar.worker import enqueue_job
+
+from .eventstream import publish_webhook_event
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
@@ -395,29 +397,12 @@ class WebhookService:
                         html_content=body,
                     )
 
-    async def is_latest_event(self, session: AsyncSession, event: WebhookEvent) -> bool:
-        age_limit = utc_now() - datetime.timedelta(minutes=1)
-        statement = (
-            select(func.count(WebhookEvent.id))
-            .join(
-                WebhookDelivery,
-                WebhookDelivery.webhook_event_id == WebhookEvent.id,
-                isouter=True,
-            )
-            .where(
-                WebhookEvent.deleted_at.is_(None),
-                WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
-                WebhookEvent.id != event.id,  # Not the current event
-                WebhookDelivery.id.is_(None),  # Not delivered yet
-                WebhookEvent.created_at
-                < event.created_at,  # Older than the current event
-                WebhookEvent.created_at >= age_limit,  # Not too old
-            )
-            .limit(1)
-        )
-        res = await session.execute(statement)
-        count = res.scalar_one()
-        return count == 0
+    async def count_earlier_pending_events(
+        self, session: AsyncSession, event: WebhookEvent
+    ) -> int:
+        age_limit = utc_now() - settings.WEBHOOK_FIFO_GUARD_MAX_AGE
+        repository = WebhookEventRepository.from_session(session)
+        return await repository.count_earlier_pending(event, age_limit=age_limit)
 
     @overload
     async def send(
@@ -507,6 +492,33 @@ class WebhookService:
         target: Organization,
         event: Literal[WebhookEventType.customer_seat_revoked],
         data: CustomerSeat,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.member_created],
+        data: Member,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.member_updated],
+        data: Member,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.member_deleted],
+        data: Member,
     ) -> list[WebhookEvent]: ...
 
     @overload
@@ -719,6 +731,12 @@ class WebhookService:
             {"type": event, "timestamp": now, "data": data}
         )
 
+        # Publish to eventstream for CLI listeners, regardless of webhook endpoints
+        await publish_webhook_event(
+            organization_id=target.id,
+            payload=payload.get_raw_payload(),
+        )
+
         events: list[WebhookEvent] = []
         for endpoint in await self._get_event_target_endpoints(
             session, event=event, target=target
@@ -789,7 +807,7 @@ class WebhookService:
         target: Organization,
     ) -> Sequence[WebhookEndpoint]:
         statement = select(WebhookEndpoint).where(
-            WebhookEndpoint.deleted_at.is_(None),
+            WebhookEndpoint.is_deleted.is_(False),
             WebhookEndpoint.enabled.is_(True),
             WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
             WebhookEndpoint.organization_id == target.id,

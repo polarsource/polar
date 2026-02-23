@@ -9,8 +9,8 @@ from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
-from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
+from polar.member.service import member_service
 from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -133,7 +133,15 @@ async def list(
     )
 
 
-@router.get("/export", summary="Export Customers")
+@router.get(
+    "/export",
+    summary="Export Customers",
+    responses={
+        200: {
+            "content": {"text/csv": {"schema": {"type": "string"}}},
+        },
+    },
+)
 async def export(
     auth_subject: auth.CustomerRead,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(

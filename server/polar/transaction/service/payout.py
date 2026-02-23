@@ -6,7 +6,11 @@ from polar.models import Payout, Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 
-from ..repository import BalanceTransactionRepository, PayoutTransactionRepository
+from ..repository import (
+    BalanceTransactionRepository,
+    PayoutReversalTransactionRepository,
+    PayoutTransactionRepository,
+)
 from .base import BaseTransactionService
 
 
@@ -59,6 +63,38 @@ class PayoutTransactionService(BaseTransactionService):
 
         repository = PayoutTransactionRepository.from_session(session)
         return await repository.create(transaction, flush=True)
+
+    async def reverse(
+        self, session: AsyncSession, transaction: Transaction
+    ) -> Transaction:
+        reversed_transaction = Transaction(
+            id=generate_uuid(),
+            type=TransactionType.payout_reversal,
+            processor=transaction.processor,
+            currency=transaction.currency,
+            amount=-transaction.amount,
+            account_currency=transaction.account_currency,
+            account_amount=-transaction.account_amount,
+            tax_amount=0,
+            account=transaction.account,
+            pledge=None,
+            issue_reward=None,
+            order=None,
+            paid_transactions=[],
+            incurred_transactions=[],
+            account_incurred_transactions=[],
+            payout=transaction.payout,
+        )
+
+        repository = PayoutReversalTransactionRepository.from_session(session)
+        reversed_transaction = await repository.create(reversed_transaction, flush=True)
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        await balance_transaction_repository.reset_payout_transaction_id(transaction.id)
+
+        return reversed_transaction
 
 
 payout_transaction = PayoutTransactionService(Transaction)

@@ -6,6 +6,7 @@ import {
 } from '@/components/Dashboard/navigation'
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   Command,
   CommandGroup,
@@ -20,7 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
-import type { SearchResult, SearchResultPage } from './types'
+import { SearchResult, SearchResultPage } from './types'
 
 interface OmniSearchProps {
   open: boolean
@@ -180,13 +181,6 @@ export const OmniSearch = ({
     }
   }
 
-  const formatCurrency = (amount: number, currency: string = 'usd') => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency.toUpperCase(),
-    }).format(amount / 100)
-  }
-
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'action':
@@ -245,7 +239,7 @@ export const OmniSearch = ({
         return (
           <Result
             title={result.product_name}
-            description={`${result.customer_name || result.customer_email} • ${formatCurrency(result.amount)}`}
+            description={`${result.customer_name || result.customer_email} • ${formatCurrency('compact')(result.amount, result.currency)}`}
           />
         )
       case 'subscription':

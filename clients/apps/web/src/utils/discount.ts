@@ -1,5 +1,6 @@
 import { schemas } from '@polar-sh/client'
-import { formatCurrency, formatPercentage } from './formatters'
+import { formatCurrency } from '@polar-sh/currency'
+import { formatPercentage } from './formatters'
 
 type CheckoutDiscount =
   | schemas['CheckoutDiscountFixedOnceForeverDuration']
@@ -7,7 +8,7 @@ type CheckoutDiscount =
   | schemas['CheckoutDiscountPercentageOnceForeverDuration']
   | schemas['CheckoutDiscountPercentageRepeatDuration']
 
-const isDiscountFixed = (
+export const isDiscountFixed = (
   discount: CheckoutDiscount,
 ): discount is
   | schemas['CheckoutDiscountFixedOnceForeverDuration']
@@ -15,7 +16,7 @@ const isDiscountFixed = (
   return discount.type === 'fixed'
 }
 
-const isDiscountPercentage = (
+export const isDiscountPercentage = (
   discount: CheckoutDiscount,
 ): discount is
   | schemas['CheckoutDiscountPercentageOnceForeverDuration']
@@ -29,7 +30,7 @@ export const getDiscountDisplay = (discount: CheckoutDiscount): string => {
   }
 
   if (isDiscountFixed(discount)) {
-    return formatCurrency(-discount.amount, discount.currency)
+    return formatCurrency('compact')(-discount.amount, discount.currency)
   }
 
   throw new Error('Unknown discount type')

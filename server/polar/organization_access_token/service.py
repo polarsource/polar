@@ -91,7 +91,7 @@ class OrganizationAccessTokenService:
         repository = OrganizationAccessTokenRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             OrganizationAccessToken.id == id,
-            OrganizationAccessToken.deleted_at.is_(None),
+            OrganizationAccessToken.is_deleted.is_(False),
         )
         return await repository.get_one_or_none(statement)
 

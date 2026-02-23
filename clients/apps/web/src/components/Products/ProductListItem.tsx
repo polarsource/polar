@@ -35,11 +35,13 @@ import { useCallback } from 'react'
 interface ProductListItemProps {
   product: schemas['Product'] | schemas['CheckoutProduct']
   organization: schemas['Organization']
+  currency: string
 }
 
 export const ProductListItem = ({
   product,
   organization,
+  currency,
 }: ProductListItemProps) => {
   const router = useRouter()
   const {
@@ -132,7 +134,7 @@ export const ProductListItem = ({
                   {hasLegacyRecurringPrices(product) ? (
                     <LegacyRecurringProductPrices product={product} />
                   ) : (
-                    <ProductPriceLabel product={product} />
+                    <ProductPriceLabel product={product} currency={currency} />
                   )}
                 </span>
                 <Button

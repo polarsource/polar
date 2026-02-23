@@ -118,6 +118,7 @@ class DisputeTransactionService(BaseTransactionService):
             presentment_currency=dispute.currency,
             presentment_amount=-dispute.amount,
             presentment_tax_amount=-dispute.tax_amount,
+            exchange_rate=exchange_rate,
             dispute=dispute,
             customer_id=payment_transaction.customer_id,
             charge_id=payment_transaction.charge_id,
@@ -154,6 +155,7 @@ class DisputeTransactionService(BaseTransactionService):
                 presentment_currency=dispute.currency,
                 presentment_amount=dispute.amount,
                 presentment_tax_amount=dispute.tax_amount,
+                exchange_rate=exchange_rate,
                 customer_id=payment_transaction.customer_id,
                 charge_id=payment_transaction.charge_id,
                 dispute=dispute,
@@ -220,6 +222,7 @@ class DisputeTransactionService(BaseTransactionService):
                     "tax_state": payment_transaction.tax_state,
                     "tax_country": payment_transaction.tax_country,
                     "fee": sum(-fee.amount for fee in dispute_fees),
+                    "exchange_rate": exchange_rate,
                 }
                 if order is not None:
                     metadata["order_id"] = str(order.id)
@@ -250,6 +253,7 @@ class DisputeTransactionService(BaseTransactionService):
                         "tax_state": payment_transaction.tax_state,
                         "tax_country": payment_transaction.tax_country,
                         "fee": sum(-fee.amount for fee in dispute_reversal_fees),
+                        "exchange_rate": exchange_rate,
                     }
                     if order is not None:
                         reversal_metadata["order_id"] = str(order.id)

@@ -97,7 +97,7 @@ class SearchService:
             .where(
                 Organization.id == organization_id,
                 UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
         )
 
@@ -165,10 +165,11 @@ class SearchService:
             literal(None).cast(String).label("customer_email"),
             literal(None).cast(String).label("product_name"),
             literal(None).cast(Integer).label("amount"),
+            literal(None).cast(String).label("currency"),
             literal(None).cast(String).label("status"),
         ).where(
             Product.organization_id.in_(organization_subquery),
-            Product.deleted_at.is_(None),
+            Product.is_deleted.is_(False),
         )
 
         if query_uuid:
@@ -198,10 +199,11 @@ class SearchService:
             literal(None).cast(String).label("customer_email"),
             literal(None).cast(String).label("product_name"),
             literal(None).cast(Integer).label("amount"),
+            literal(None).cast(String).label("currency"),
             literal(None).cast(String).label("status"),
         ).where(
             Customer.organization_id.in_(organization_subquery),
-            Customer.deleted_at.is_(None),
+            Customer.is_deleted.is_(False),
         )
 
         if query_uuid:
@@ -244,13 +246,14 @@ class SearchService:
                 (
                     Order.subtotal_amount - Order.discount_amount + Order.tax_amount
                 ).label("amount"),
+                Order.currency.label("currency"),
                 literal(None).cast(String).label("status"),
             )
             .join(Customer, Order.customer_id == Customer.id)
             .join(Product, Order.product_id == Product.id)
             .where(
                 Customer.organization_id.in_(organization_subquery),
-                Order.deleted_at.is_(None),
+                Order.is_deleted.is_(False),
             )
         )
 
@@ -293,13 +296,14 @@ class SearchService:
                 Customer.email.label("customer_email"),
                 Product.name.label("product_name"),
                 Subscription.amount.label("amount"),
+                Subscription.currency.label("currency"),
                 Subscription.status.label("status"),
             )
             .join(Customer, Subscription.customer_id == Customer.id)
             .join(Product, Subscription.product_id == Product.id)
             .where(
                 Customer.organization_id.in_(organization_subquery),
-                Subscription.deleted_at.is_(None),
+                Subscription.is_deleted.is_(False),
             )
         )
 

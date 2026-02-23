@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-# Usage: ./deploy_server.sh <docker_digest> <has_migrations> <api_service_id> <worker_service_ids>
+# Usage: ./deploy_server.sh <docker_digest> <has_migrations> <api_service_id> <worker_service_ids> [playwright_digest] [playwright_worker_service_ids]
 if [ $# -lt 4 ]; then
-  echo "Usage: $0 <docker_digest> <has_migrations> <api_service_id> <worker_service_ids>"
-  echo "Example: $0 sha256:abc123... true srv-123 srv-456,srv-789"
+  echo "Usage: $0 <docker_digest> <has_migrations> <api_service_id> <worker_service_ids> [playwright_digest] [playwright_worker_service_ids]"
+  echo "Example: $0 sha256:abc123... true srv-123 srv-456,srv-789 sha256:def456... srv-999"
   exit 1
 fi
 
@@ -15,7 +15,10 @@ API_SERVICE_ID="${3}"
 WORKER_SERVICE_IDS="${4}"
 
 # Convert worker service IDs from comma-separated string to array
-IFS=',' read -ra WORKER_SERVERS <<< "$WORKER_SERVICE_IDS"
+WORKER_SERVERS=()
+if [[ -n "$WORKER_SERVICE_IDS" ]]; then
+  IFS=',' read -ra WORKER_SERVERS <<< "$WORKER_SERVICE_IDS"
+fi
 
 # Configuration
 TIMEOUT=300  # 5 minutes timeout
@@ -41,6 +44,7 @@ deploy_servers() {
   local -n servers_ref=$1
   local services=${2:-"unknown"}
   local environment=${3:-"unknown"}
+  local img="${4:-$IMG}"
 
   echo "🚀 Starting deployment of ${services} to ${environment}..."
 
@@ -54,7 +58,7 @@ deploy_servers() {
       -H "Accept: application/json" \
       -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
       -H "Content-Type: application/json" \
-      -d "{\"imageUrl\":\"${IMG}\"}" \
+      -d "{\"imageUrl\":\"${img}\"}" \
       "https://api.render.com/v1/services/${server_id}/deploys")
 
     deploy_id=$(echo "$deploy_response" | jq -r '.id' 2>/dev/null)
@@ -122,24 +126,62 @@ deploy_servers() {
   echo "✅ ${services} deployments completed successfully!"
 }
 
+# Parse playwright configuration
+PLAYWRIGHT_DIGEST="${5:-}"
+PLAYWRIGHT_WORKER_IDS="${6:-}"
+PLAYWRIGHT_SERVERS=()
+PLAYWRIGHT_IMG=""
+if [[ -n "$PLAYWRIGHT_DIGEST" && -n "$PLAYWRIGHT_WORKER_IDS" ]]; then
+  PLAYWRIGHT_IMG="ghcr.io/polarsource/polar-playwright@${PLAYWRIGHT_DIGEST}"
+  IFS=',' read -ra PLAYWRIGHT_SERVERS <<< "$PLAYWRIGHT_WORKER_IDS"
+fi
+
 # Deploy based on migration status
 if [ "$HAS_MIGRATIONS" = "true" ]; then
-  echo "📋 Deploying sequentially (migrations detected)"
+  echo "📋 Deploying API first (migrations detected), then workers in parallel"
 
   # Deploy API first (runs migrations via preDeployCommand)
   api_server=("$API_SERVICE_ID")
   deploy_servers api_server "API" "environment"
 
-  # Deploy workers after API completes
+  # Deploy workers and playwright workers in parallel
+  pids=()
+
   if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
-    deploy_servers WORKER_SERVERS "workers" "environment"
+    deploy_servers WORKER_SERVERS "workers" "environment" &
+    pids+=($!)
   fi
+
+  if [ ${#PLAYWRIGHT_SERVERS[@]} -gt 0 ]; then
+    deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG" &
+    pids+=($!)
+  fi
+
+  for pid in "${pids[@]}"; do
+    wait "$pid" || exit 1
+  done
 else
   echo "📋 Deploying all services in parallel"
 
-  # Deploy all services in parallel
-  all_servers=("$API_SERVICE_ID" "${WORKER_SERVERS[@]}")
-  deploy_servers all_servers "All" "environment"
+  # Deploy API + regular workers
+  if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
+    all_servers=("$API_SERVICE_ID" "${WORKER_SERVERS[@]}")
+  else
+    all_servers=("$API_SERVICE_ID")
+  fi
+
+  pids=()
+  deploy_servers all_servers "All" "environment" &
+  pids+=($!)
+
+  if [ ${#PLAYWRIGHT_SERVERS[@]} -gt 0 ]; then
+    deploy_servers PLAYWRIGHT_SERVERS "playwright-workers" "environment" "$PLAYWRIGHT_IMG" &
+    pids+=($!)
+  fi
+
+  for pid in "${pids[@]}"; do
+    wait "$pid" || exit 1
+  done
 fi
 
 echo "🎉 Deployment completed successfully!"

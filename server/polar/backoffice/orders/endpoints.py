@@ -18,6 +18,7 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
+from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import refund as refund_service
@@ -27,7 +28,7 @@ from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
-from .components import orders_datatable
+from .components import orders_datatable, payments_datatable
 from .forms import RefundForm
 
 router = APIRouter()
@@ -249,6 +250,10 @@ async def get(
             # If there's an error getting the URL, we'll show "Not generated"
             pass
 
+    # Get all payments for this order
+    payment_repository = PaymentRepository.from_session(session)
+    payments = await payment_repository.get_all_by_order(order.id)
+
     with layout(
         request,
         [
@@ -327,8 +332,9 @@ async def get(
                             description_list.DescriptionListLinkItem[Order](
                                 "stripe_invoice_id",
                                 "Stripe Invoice",
-                                href_getter=lambda _,
-                                i: f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}",
+                                href_getter=lambda _, i: (
+                                    f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}"
+                                ),
                                 external=True,
                             ),
                             InvoicePDFItem(invoice_url),
@@ -603,6 +609,15 @@ async def get(
                                                             )
                                                         }"
                                                     )
+
+                # Payments section
+                if payments:
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Payments")
+                            with payments_datatable(request, payments):
+                                pass
 
 
 @router.api_route("/{id}/refund", name="orders:refund", methods=["GET", "POST"])

@@ -1,7 +1,55 @@
+import { useCustomerPortalContext } from '@/components/CustomerPortal/CustomerPortalProvider'
 import { getQueryClient } from '@/utils/api/query'
 import { Client, operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
+
+export function useCustomerPortalCustomer(options?: {
+  initialData?: schemas['CustomerPortalCustomer']
+}) {
+  const { client } = useCustomerPortalContext()
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: ['customer-portal', 'customer'],
+    queryFn: () => unwrap(client.GET('/v1/customer-portal/customers/me')),
+    initialData: options?.initialData,
+    retry: defaultRetry,
+  })
+
+  const update = useMutation({
+    mutationFn: async (data: schemas['CustomerPortalCustomerUpdate']) => {
+      const result = await client.PATCH('/v1/customer-portal/customers/me', {
+        body: data,
+      })
+      if (result.error) {
+        const detail = (result.error as Record<string, unknown>)?.detail
+        if (result.response.status === 422 && Array.isArray(detail)) {
+          const err = new Error('Validation error') as Error & {
+            errors: schemas['ValidationError'][]
+          }
+          err.errors = detail
+          throw err
+        }
+        throw new Error(
+          typeof detail === 'string' ? detail : 'Failed to update customer',
+        )
+      }
+      return result.data
+    },
+    onSuccess: (updatedCustomer) => {
+      queryClient.setQueryData(['customer-portal', 'customer'], updatedCustomer)
+    },
+  })
+
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error,
+    update,
+  }
+}
 
 export const useCustomerPortalSessionRequest = (
   api: Client,
@@ -533,7 +581,12 @@ export const useResendSeatInvitation = (api: Client) =>
 export const useCustomerClaimedSubscriptions = (api: Client) =>
   useQuery({
     queryKey: ['customer_claimed_subscriptions'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/seats/subscriptions')),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/seats/subscriptions', {
+          params: { query: { limit: 100 } },
+        }),
+      ),
     retry: defaultRetry,
   })
 
@@ -557,7 +610,12 @@ const extractApiErrorMessage = (
 export const useCustomerPortalMembers = (api: Client) =>
   useQuery({
     queryKey: ['customer_portal_members'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/members')),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/members', {
+          params: { query: { limit: 100 } },
+        }),
+      ),
     retry: defaultRetry,
   })
 

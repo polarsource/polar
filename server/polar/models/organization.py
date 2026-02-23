@@ -94,6 +94,7 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_cancellation: bool
     subscription_confirmation: bool
     subscription_cycled: bool
+    subscription_cycled_after_trial: bool
     subscription_past_due: bool
     subscription_revoked: bool
     subscription_uncanceled: bool
@@ -105,6 +106,7 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_cancellation": True,
     "subscription_confirmation": True,
     "subscription_cycled": True,
+    "subscription_cycled_after_trial": True,
     "subscription_past_due": True,
     "subscription_revoked": True,
     "subscription_uncanceled": True,
@@ -311,21 +313,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_authenticate(self) -> bool:
-        return self.deleted_at is None and self.blocked_at is None
+        return not self.is_deleted and self.blocked_at is None
 
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return and_(cls.deleted_at.is_(None), cls.blocked_at.is_(None))
-
-    @hybrid_property
-    def storefront_enabled(self) -> bool:
-        return self.profile_settings.get("enabled", False)
-
-    @storefront_enabled.inplace.expression
-    @classmethod
-    def _storefront_enabled_expression(cls) -> ColumnElement[bool]:
-        return Organization.profile_settings["enabled"].as_boolean()
+        return and_(cls.is_deleted.is_(False), cls.blocked_at.is_(None))
 
     @hybrid_property
     def is_under_review(self) -> bool:

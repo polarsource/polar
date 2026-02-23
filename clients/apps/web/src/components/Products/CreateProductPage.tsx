@@ -83,7 +83,8 @@ export const CreateProductPage = ({
         {
           amount_type: 'fixed' as const,
           price_amount: 0,
-          price_currency: organization.default_presentment_currency,
+          price_currency:
+            organization.default_presentment_currency as schemas['PresentmentCurrency'],
         },
       ],
       medias: [],
@@ -187,18 +188,23 @@ export const CreateProductPage = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-6"
           >
-            <ProductForm organization={organization} update={false} />
+            <ProductForm
+              organization={organization}
+              update={false}
+              benefitsSlot={
+                <Benefits
+                  organization={organization}
+                  benefits={organizationBenefits}
+                  totalBenefitCount={totalBenefitCount}
+                  selectedBenefits={enabledBenefits}
+                  onSelectBenefit={onSelectBenefit}
+                  onRemoveBenefit={onRemoveBenefit}
+                  onReorderBenefits={onReorderBenefits}
+                />
+              }
+            />
           </form>
         </Form>
-        <Benefits
-          organization={organization}
-          benefits={organizationBenefits}
-          totalBenefitCount={totalBenefitCount}
-          selectedBenefits={enabledBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-          onReorderBenefits={onReorderBenefits}
-        />
       </div>
       <div className="flex flex-row items-center gap-2 pb-12">
         <Button

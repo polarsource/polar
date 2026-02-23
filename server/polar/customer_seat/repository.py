@@ -208,6 +208,20 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
+    async def list_active_by_member_id(
+        self, member_id: UUID, *, options: Options = ()
+    ) -> Sequence[CustomerSeat]:
+        """List active (pending or claimed) seats for a member."""
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.member_id == member_id,
+                CustomerSeat.status.in_([SeatStatus.pending, SeatStatus.claimed]),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def get_by_subscription_and_customer(
         self,
         subscription_id: UUID,
@@ -337,7 +351,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         if is_user(auth_subject):
             user_org_ids = select(UserOrganization.organization_id).where(
                 UserOrganization.user_id == auth_subject.subject.id,
-                UserOrganization.deleted_at.is_(None),
+                UserOrganization.is_deleted.is_(False),
             )
             statement = statement.where(Product.organization_id.in_(user_org_ids))
         elif is_organization(auth_subject):

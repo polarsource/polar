@@ -49,6 +49,7 @@ class BenefitLicenseKeysService(
             key=user_provided_key,
         )
         return {
+            **grant_properties,
             "license_key_id": str(license_key.id),
             "display_key": license_key.display_key,
         }

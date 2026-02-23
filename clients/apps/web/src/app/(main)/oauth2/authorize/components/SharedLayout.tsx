@@ -1,4 +1,4 @@
-import LogoType from '@/components/Brand/LogoType'
+import LogoType from '@/components/Brand/logos/LogoType'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import { schemas } from '@polar-sh/client'
 

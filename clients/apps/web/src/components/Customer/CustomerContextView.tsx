@@ -2,8 +2,8 @@
 
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
-import { formatAccountingFriendlyCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -88,7 +88,7 @@ export const CustomerContextView = ({
         </Link>
         <div className="flex flex-row justify-between gap-4">
           <CustomerStatBox title="Cumulative Revenue">
-            {formatAccountingFriendlyCurrency(
+            {formatCurrency('statistics')(
               metrics.data?.periods[metrics.data.periods.length - 1]
                 .cumulative_revenue ?? 0,
               'usd',

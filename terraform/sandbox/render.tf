@@ -90,9 +90,16 @@ module "sandbox" {
 
   workers = {
     worker-sandbox = {
-      start_command      = "uv run dramatiq -p 4 -t 8 -f polar.worker.scheduler:start polar.worker.run"
+      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority"
+      image_url          = "ghcr.io/polarsource/polar-playwright"
       tag                = "latest"
       dramatiq_prom_port = "10000"
+    }
+    worker-sandbox-webhook = {
+      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
+      tag                = "latest"
+      dramatiq_prom_port = "10001"
+      database_pool_size = "16"
     }
   }
 
@@ -121,7 +128,7 @@ module "sandbox" {
     auth_cookie_domain         = "polar.sh"
     auth_cookie_key            = "polar_sandbox_session"
     invoices_additional_info   = ""
-    default_tax_processor      = "numeral"
+    tax_processors             = "[\"numeral\",\"stripe\"]"
   }
 
   backend_secrets = {
@@ -179,23 +186,20 @@ module "sandbox" {
   }
 
   logfire_config = {
-    server_project_name = "sandbox"
-    worker_project_name = "sandbox-worker"
-    server_token        = var.logfire_token_server
-    worker_token        = var.logfire_token_worker
+    token = var.logfire_token
   }
 
   prometheus_config = {
-    url      = var.prometheus_remote_write_url
-    username = var.prometheus_remote_write_username
-    password = var.prometheus_remote_write_password
-    interval = var.prometheus_remote_write_interval
+    url      = var.grafana_cloud_prometheus_url
+    username = var.grafana_cloud_prometheus_username
+    password = var.grafana_cloud_prometheus_password
   }
 
   tinybird_config = {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"
     api_token           = var.tinybird_api_token
+    read_token          = var.tinybird_read_token
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace

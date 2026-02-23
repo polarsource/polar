@@ -72,7 +72,12 @@ from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
 from polar.product.price_set import PriceSet
 from polar.subscription.service import SubscriptionService
-from polar.tax.calculation import TaxabilityReason, TaxCalculation
+from polar.tax.calculation import (
+    CalculationExpiredError,
+    TaxabilityReason,
+    TaxCalculation,
+    TaxCalculationService,
+)
 from polar.tax.tax_id import TaxID
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.payment import (
@@ -163,9 +168,11 @@ def event_creation_time() -> tuple[datetime, int]:
 
 @pytest.fixture(autouse=True)
 def tax_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = mocker.patch("polar.order.service.get_tax_service")
-    mock.return_value.record = AsyncMock(return_value="TAX_TRANSACTION_ID")
-    return mock.return_value
+    mock = mocker.patch(
+        "polar.order.service.tax_calculation_service", spec=TaxCalculationService
+    )
+    mock.record.return_value = "TAX_TRANSACTION_ID"
+    return mock
 
 
 @pytest.fixture
@@ -178,15 +185,18 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
         address: Address,
         tax_ids: list[TaxID],
         tax_exempted: bool,
-    ) -> TaxCalculation:
-        return {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": polar_round(amount * 0.20),
-            "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": None,
-        }
+    ) -> tuple[TaxCalculation, TaxProcessor]:
+        return (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": polar_round(amount * 0.20),
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": None,
+            },
+            TaxProcessor.numeral,
+        )
 
-    tax_service_mock.calculate = AsyncMock(side_effect=mocked_calculate_tax)
+    tax_service_mock.calculate.side_effect = mocked_calculate_tax
 
     return tax_service_mock.calculate
 
@@ -914,7 +924,7 @@ class TestCreateSubscriptionOrder:
         assert order.subscription == subscription
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             order.net_amount,
             product.tax_code,
@@ -989,7 +999,7 @@ class TestCreateSubscriptionOrder:
         assert order.net_amount == order.subtotal_amount - order.discount_amount
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             order.net_amount,
             product.tax_code,
@@ -1092,7 +1102,7 @@ class TestCreateSubscriptionOrder:
         )
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             order.subtotal_amount,
             product.tax_code,
@@ -1526,7 +1536,7 @@ class TestCreateSubscriptionOrder:
             )
 
         calculate_tax_mock.assert_called_once_with(
-            order.id,
+            str(order.id),
             subscription.currency,
             abs(order.net_amount),
             subscription.product.tax_code,
@@ -1670,12 +1680,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -1730,12 +1743,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -1791,12 +1807,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -1852,12 +1871,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -2177,7 +2199,6 @@ class TestHandlePayment:
 
     async def test_full_case_with_payment_and_tax(
         self,
-        stripe_service_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         tax_service_mock: MagicMock,
         session: AsyncSession,
@@ -2220,6 +2241,74 @@ class TestHandlePayment:
 
         # Verify tax transaction was created
         tax_service_mock.record.assert_called_once()
+
+    async def test_tax_recalculated_on_calculation_expired_error(
+        self,
+        enqueue_job_mock: MagicMock,
+        tax_service_mock: MagicMock,
+        calculate_tax_mock: AsyncMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        # Create a customer with a billing address so that _calculate_subscription_order_tax
+        # will actually invoke tax_calculation_service.calculate and produce a non-zero amount.
+        # The mocked calculate returns polar_round(amount * 0.20), so for net_amount=1000 → 200.
+        customer_with_address = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Set tax_amount=200 to match the recalculated amount so no TaxCalculationChangedAfterPayment is raised
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer_with_address,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            tax_amount=200,
+        )
+
+        order.tax_processor = TaxProcessor.stripe
+        order.tax_calculation_processor_id = "tax_calc_expired_123"
+        await save_fixture(order)
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_456",
+        )
+
+        # First call to record raises CalculationExpiredError; second call (after recalculation) succeeds
+        tax_service_mock.record.side_effect = [
+            CalculationExpiredError(),
+            "NEW_TAX_TRANSACTION_ID",
+        ]
+
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        # Order should be marked paid
+        assert updated_order.status == OrderStatus.paid
+
+        # Tax should have been recalculated via calculate
+        calculate_tax_mock.assert_called_once()
+
+        # record should have been called twice: once failing with the expired ID,
+        # once succeeding with the newly recalculated calculation ID
+        assert tax_service_mock.record.call_count == 2
+        first_record_call, second_record_call = tax_service_mock.record.call_args_list
+        assert first_record_call.args[1] == "tax_calc_expired_123"
+        assert second_record_call.args[1] == "TAX_PROCESSOR_ID"
+
+        # The tax transaction processor ID should reflect the second (successful) record call
+        assert updated_order.tax_transaction_processor_id == "NEW_TAX_TRANSACTION_ID"
+
+        # The balance job should still be enqueued
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_456"
+        )
 
 
 @pytest.mark.asyncio
@@ -2266,6 +2355,47 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_first_dunning_enqueues_benefit_revocation(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a subscription product update grants benefits before payment,
+        the first dunning attempt must re-enqueue benefit grants so that
+        benefits are revoked for the now past-due subscription."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        mock_enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+
+        await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_ignores_payment_failure_for_already_paid_order(
@@ -3684,3 +3814,139 @@ class TestOnOrderPaidCustomerTypeUpgrade:
         # Customer should be upgraded to team
         await session.refresh(customer)
         assert customer.type == CustomerType.team
+
+
+@pytest.mark.asyncio
+class TestUpdateProductBenefitsGrants:
+    async def test_enqueues_jobs_for_one_time_orders(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that jobs are enqueued for one-time orders"""
+        customer1 = await create_customer(save_fixture, organization=organization)
+        customer2 = await create_customer(
+            save_fixture, organization=organization, email="customer2@example.com"
+        )
+
+        order1 = await create_order(
+            save_fixture, product=product, customer=customer1, subscription=None
+        )
+        order2 = await create_order(
+            save_fixture, product=product, customer=customer2, subscription=None
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer1.id,
+            product_id=product.id,
+            order_id=order1.id,
+            delay=ANY,
+        )
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer2.id,
+            product_id=product.id,
+            order_id=order2.id,
+            delay=ANY,
+        )
+
+    async def test_skips_subscription_orders(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that subscription orders are skipped"""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_skips_seat_based_orders(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that seat-based orders are skipped"""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=None,
+        )
+        order.seats = 5
+        await save_fixture(order)
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_skips_soft_deleted_customers(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that orders with soft-deleted customers are not processed"""
+        # Create active customer with order
+        active_customer = await create_customer(
+            save_fixture, organization=organization, email="active@example.com"
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=active_customer,
+            subscription=None,
+        )
+
+        # Create soft-deleted customer with order
+        deleted_customer = await create_customer(
+            save_fixture, organization=organization, email="deleted@example.com"
+        )
+        deleted_customer.set_deleted_at()
+        await save_fixture(deleted_customer)
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=deleted_customer,
+            subscription=None,
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        # Only one job should be enqueued for the active customer
+        assert enqueue_job_mock.call_count == 1
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=active_customer.id,
+            product_id=product.id,
+            order_id=ANY,
+            delay=ANY,
+        )

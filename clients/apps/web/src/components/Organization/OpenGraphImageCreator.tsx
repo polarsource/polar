@@ -1,4 +1,4 @@
-import LogoIcon from '@/components/Brand/LogoIcon'
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { schemas } from '@polar-sh/client'
 
 const generatePostOGFallbackPath = (slug: string, maxInt: number) => {

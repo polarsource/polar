@@ -1,0 +1,17 @@
+SCHEMA >
+    `id` UUID,
+    `ingested_at` DateTime64(3),
+    `timestamp` DateTime64(3),
+    `name` LowCardinality(String),
+    `organization_id` UUID,
+    `customer_id` Nullable(UUID),
+    `external_customer_id` Nullable(String),
+    `cost_amount` Float64,
+    `cost_currency` LowCardinality(Nullable(String)),
+    `llm_vendor` LowCardinality(Nullable(String)),
+    `llm_model` LowCardinality(Nullable(String)),
+    `llm_input_tokens` Nullable(Int64),
+    `llm_output_tokens` Nullable(Int64)
+
+ENGINE MergeTree
+ENGINE_SORTING_KEY organization_id, timestamp

@@ -4,9 +4,10 @@ import string
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from typing import Any, overload
+from typing import overload
 
 import aiocsv
+import sqlalchemy.exc
 from fastapi import UploadFile
 from sqlalchemy import func
 from sse_starlette.event import ServerSentEvent
@@ -18,6 +19,7 @@ from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.kit.address import SUPPORTED_COUNTRIES, Address, CountryAlpha2
+from polar.license_key.repository import LicenseKeyRepository
 from polar.models import Benefit, BenefitGrant, Customer, Order, Organization, Product
 from polar.models.benefit import BenefitType
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -30,14 +32,28 @@ from polar.worker import enqueue_job
 from ..components import alert
 
 
+class MultipleProductsWithSameNameError(PolarError):
+    def __init__(self, product_name: str) -> None:
+        self.product_name = product_name
+        message = (
+            f"Multiple products with the same name '{product_name}' found. "
+            f"Please ensure product names are unique."
+        )
+        super().__init__(message)
+
+
 async def _get_product_by_name(
     repository: ProductRepository, organization: Organization, name: str
-) -> Any:
+) -> Product | None:
     statement = repository.get_base_statement().where(
         Product.organization_id == organization.id,
+        Product.is_archived.is_(False),
         func.lower(func.trim(Product.name)) == name.lower(),
     )
-    return await repository.get_one_or_none(statement)
+    try:
+        return await repository.get_one_or_none(statement)
+    except sqlalchemy.exc.MultipleResultsFound as e:
+        raise MultipleProductsWithSameNameError(name) from e
 
 
 @overload
@@ -99,10 +115,12 @@ async def orders_import(
     order_repository = OrderRepository.from_session(session)
     benefit_repository = BenefitRepository.from_session(session)
     benefit_grant_repository = BenefitGrantRepository.from_session(session)
+    license_key_repository = LicenseKeyRepository.from_session(session)
 
     customer_map: dict[str, Customer] = {}
-    product_map: dict[str, Any] = {}
+    product_map: dict[str, Product] = {}
     benefit_map: dict[str, Benefit] = {}
+    license_keys: set[str] = set()
 
     decoded_file = DecodedUploadFile(file)
 
@@ -165,10 +183,18 @@ async def orders_import(
             errors.append(RowError(i + 1, "Missing product name"))
             yield i, total_rows
             continue
-        product = product_map.get(
-            product_name,
-            await _get_product_by_name(product_repository, organization, product_name),
-        )
+        try:
+            product = product_map.get(
+                product_name,
+                await _get_product_by_name(
+                    product_repository, organization, product_name
+                ),
+            )
+        except MultipleProductsWithSameNameError as e:
+            errors.append(RowError(i + 1, str(e)))
+            yield i, total_rows
+            continue
+
         if product is None:
             errors.append(RowError(i + 1, f"Product not found: {product_name}"))
             yield i, total_rows
@@ -267,6 +293,29 @@ async def orders_import(
                         i + 1, f"Benefit is not a license key benefit: {benefit_id}"
                     )
                 )
+            if license_key in license_keys:
+                errors.append(
+                    RowError(
+                        i + 1, f"Duplicate license key in import file: {license_key}"
+                    )
+                )
+                yield i, total_rows
+                continue
+            if (
+                await license_key_repository.get_by_organization_and_key(
+                    organization.id, license_key
+                )
+            ) is not None:
+                errors.append(
+                    RowError(
+                        i + 1,
+                        f"License key already exists in organization: {license_key}",
+                    )
+                )
+                yield i, total_rows
+                continue
+
+            license_keys.add(license_key)
 
             # Create a grant manually to force properties
             # Since it's not granted, it'll be handled automatically by the grant task

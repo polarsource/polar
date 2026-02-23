@@ -256,8 +256,9 @@ async def get(
                                 description_list.DescriptionListLinkItem[Customer](
                                     "stripe_customer_id",
                                     "Stripe Customer ID",
-                                    href_getter=lambda _,
-                                    i: f"https://dashboard.stripe.com/customers/{i.stripe_customer_id}",
+                                    href_getter=lambda _, i: (
+                                        f"https://dashboard.stripe.com/customers/{i.stripe_customer_id}"
+                                    ),
                                     external=True,
                                 ),
                             ).render(request, customer):

@@ -13,14 +13,14 @@ class CustomerOrganizationService(ResourceServiceReader[Organization]):
         statement = (
             select(Organization)
             .where(
-                Organization.deleted_at.is_(None),
+                Organization.is_deleted.is_(False),
                 Organization.blocked_at.is_(None),
                 Organization.slug == slug,
             )
             .options(
                 selectinload(
                     Organization.products.and_(
-                        Product.deleted_at.is_(None),
+                        Product.is_deleted.is_(False),
                         Product.is_archived.is_(False),
                         Product.visibility == ProductVisibility.public,
                     )

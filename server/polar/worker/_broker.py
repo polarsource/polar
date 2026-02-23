@@ -6,16 +6,23 @@ from typing import Any, ClassVar
 import dramatiq
 import logfire
 import redis
+import sentry_sdk
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import middleware
 from dramatiq.brokers.redis import RedisBroker
+from dramatiq.middleware.group_callbacks import GroupCallbacks
+from dramatiq.rate_limits.backends import RedisBackend as RateLimiterBackend
+from dramatiq.results import Results
+from dramatiq.results.backends import RedisBackend as ResultsBackend
 
 from polar.config import settings
 from polar.logfire import instrument_httpx
-from polar.logging import Logger
+from polar.logging import CorrelationID, Logger
+from polar.operational_errors import handle_operational_error
 
 from ._debounce import DebounceMiddleware
+from ._encoder import JSONEncoder
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
 from ._metrics import PrometheusMiddleware
@@ -23,6 +30,21 @@ from ._redis import RedisMiddleware
 from ._sqlalchemy import SQLAlchemyMiddleware
 
 log: Logger = structlog.get_logger()
+
+
+class OperationalErrorMiddleware(dramatiq.Middleware):
+    """Middleware to detect and handle operational errors during message processing."""
+
+    def after_process_message(
+        self,
+        broker: dramatiq.Broker,
+        message: dramatiq.MessageProxy,
+        *,
+        result: Any | None = None,
+        exception: BaseException | None = None,
+    ) -> None:
+        if exception is not None:
+            handle_operational_error(exception)
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -64,9 +86,18 @@ class LogContextMiddleware(dramatiq.Middleware):
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
+        correlation_id = CorrelationID.set()
+        source_correlation_id = message.options.get("source_correlation_id")
+
         structlog.contextvars.bind_contextvars(
-            actor_name=message.actor_name, message_id=message.message_id
+            actor_name=message.actor_name,
+            message_id=message.message_id,
+            correlation_id=correlation_id,
+            source_correlation_id=message.options.get("source_correlation_id"),
         )
+        sentry_sdk.set_tag("correlation_id", correlation_id)
+        if source_correlation_id is not None:
+            sentry_sdk.set_tag("source_correlation_id", source_correlation_id)
 
     def after_process_message(
         self,
@@ -76,7 +107,9 @@ class LogContextMiddleware(dramatiq.Middleware):
         result: Any | None = None,
         exception: BaseException | None = None,
     ) -> None:
-        structlog.contextvars.unbind_contextvars("actor_name", "message_id")
+        structlog.contextvars.unbind_contextvars(
+            "actor_name", "message_id", "correlation_id", "source_correlation_id"
+        )
 
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
@@ -111,7 +144,13 @@ class LogfireMiddleware(dramatiq.Middleware):
             )
         else:
             logfire_span = logfire_stack.enter_context(
-                logfire.span("TASK {actor}", actor=actor_name, message=message.asdict())
+                logfire.span(
+                    "TASK {actor}",
+                    actor=actor_name,
+                    message=message.asdict(),
+                    correlation_id=CorrelationID.get(),
+                    source_correlation_id=message.options.get("source_correlation_id"),
+                )
             )
         message.options["logfire_stack"] = logfire_stack
 
@@ -141,10 +180,17 @@ def get_broker() -> dramatiq.Broker:
         client_name=f"{settings.ENV.value}.worker.dramatiq",
     )
 
+    result_backend = ResultsBackend(url=settings.redis_url, encoder=JSONEncoder())
+    rate_limiter_backend = RateLimiterBackend(url=settings.redis_url)
+
     middleware_list = [
         # Infrastructure & async support
         middleware.ShutdownNotifications(),
         middleware.AsyncIO(),
+        # Results backend for pipeline/group support
+        Results(backend=result_backend, result_ttl=60_000),
+        # Group completion callbacks for orchestrating task sequences
+        GroupCallbacks(rate_limiter_backend),
         # Resource lifecycle (worker boot/shutdown)
         SQLAlchemyMiddleware(),
         RedisMiddleware(),
@@ -158,13 +204,14 @@ def get_broker() -> dramatiq.Broker:
         # Message flow control
         DebounceMiddleware(redis_pool),
         # Retry & execution control (MaxRetries must precede Retries)
+        OperationalErrorMiddleware(),
         MaxRetriesMiddleware(),
         middleware.Retries(
             max_retries=settings.WORKER_MAX_RETRIES,
             min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
         ),
         middleware.AgeLimit(),
-        middleware.TimeLimit(),
+        middleware.TimeLimit(time_limit=60_000),
         middleware.CurrentMessage(),
     ]
 

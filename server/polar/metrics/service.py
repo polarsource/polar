@@ -1,7 +1,7 @@
-import asyncio
+import math
 import uuid
 from collections.abc import Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import logfire
@@ -11,7 +11,7 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Organization, User, UserOrganization
+from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -31,9 +31,7 @@ from .queries import (
     QueryCallable,
 )
 from .queries_tinybird import (
-    TinybirdQuery,
-    query_events_metrics,
-    query_mrr_metrics,
+    query_metrics,
 )
 from .schemas import MetricsPeriod, MetricsResponse
 
@@ -179,6 +177,54 @@ def _get_filtered_all_metrics(
     return [m for m in METRICS if m.slug in metrics]
 
 
+def _metric_values_match(pg_val: int | float, tb_val: int | float) -> bool:
+    if pg_val == tb_val:
+        return True
+
+    if isinstance(pg_val, bool) or isinstance(tb_val, bool):
+        return False
+
+    if isinstance(pg_val, float) or isinstance(tb_val, float):
+        return math.isclose(float(pg_val), float(tb_val), rel_tol=1e-12, abs_tol=1e-12)
+
+    return False
+
+
+def _truncate_to_interval(timestamp: datetime, interval: TimeInterval) -> datetime:
+    if interval == TimeInterval.hour:
+        return timestamp.replace(minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.day:
+        return timestamp.replace(hour=0, minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.week:
+        start = timestamp - timedelta(days=timestamp.weekday())
+        return start.replace(hour=0, minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.month:
+        return timestamp.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if interval == TimeInterval.year:
+        return timestamp.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+    return timestamp
+
+
+def _is_current_period(
+    period_timestamp: datetime,
+    *,
+    timezone: ZoneInfo,
+    interval: TimeInterval,
+    now: datetime,
+) -> bool:
+    period_local = (
+        period_timestamp.replace(tzinfo=timezone)
+        if period_timestamp.tzinfo is None
+        else period_timestamp.astimezone(timezone)
+    )
+    now_local = now.astimezone(timezone)
+    return _truncate_to_interval(period_local, interval) == _truncate_to_interval(
+        now_local, interval
+    )
+
+
 class MetricsService:
     async def _get_tinybird_enabled_org(
         self,
@@ -200,7 +246,7 @@ class MetricsService:
                 Organization.id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == auth_subject.subject.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 ),
             )
@@ -212,7 +258,7 @@ class MetricsService:
             return None
 
         if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
-            "tinybird_compare", False
+            "tinybird_compare", True
         ):
             return org
 
@@ -232,6 +278,7 @@ class MetricsService:
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         metrics: Sequence[str] | None = None,
         now: datetime | None = None,
     ) -> MetricsResponse:
@@ -245,7 +292,8 @@ class MetricsService:
             org_ids = [auth_subject.subject.id]
 
         if metrics is not None:
-            tb_needed = {s for s in metrics if s in tb_slugs}
+            expanded_sql_slugs, _ = _expand_metrics_with_dependencies(metrics)
+            tb_needed = {s for s in expanded_sql_slugs if s in tb_slugs}
         else:
             tb_needed = tb_slugs
 
@@ -254,64 +302,37 @@ class MetricsService:
                 {"periods": [], "totals": {}, "metrics": {}}
             )
 
-        tb_queries = {
-            m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed
-        }
+        tb_queries = list(
+            {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
+        )
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
-
-        tb_coros = []
-        if TinybirdQuery.events in tb_queries:
-            tb_coros.append(
-                query_events_metrics(
-                    organization_id=org_ids,
-                    start=start_timestamp,
-                    end=end_timestamp,
-                    interval=interval,
-                    timezone=timezone.key,
-                    bounds_start=original_start_timestamp,
-                    bounds_end=original_end_timestamp,
-                    product_id=product_id,
-                    customer_id=customer_id,
-                    billing_type=billing_strs,
-                )
-            )
-        if TinybirdQuery.mrr in tb_queries:
-            tb_coros.append(
-                query_mrr_metrics(
-                    organization_id=org_ids,
-                    start=start_timestamp,
-                    end=end_timestamp,
-                    interval=interval,
-                    timezone=timezone.key,
-                    now=now_dt,
-                    product_id=product_id,
-                    customer_id=customer_id,
-                    billing_type=billing_strs,
-                )
-            )
 
         with logfire.span(
             "Execute Tinybird metric queries",
             queries=[q.value for q in tb_queries],
         ):
-            tb_results = await asyncio.gather(*tb_coros) if tb_coros else []
-
-        tb_rows: list[dict[str, int | float]] = []
-        if len(tb_results) == 1:
-            tb_rows = tb_results[0]
-        elif len(tb_results) >= 2:
-            for i in range(len(tb_results[0])):
-                merged = dict(tb_results[0][i])
-                for j in range(1, len(tb_results)):
-                    merged.update(
-                        {k: v for k, v in tb_results[j][i].items() if k != "timestamp"}
-                    )
-                tb_rows.append(merged)
+            tb_rows = await query_metrics(
+                metric_types=tb_queries,
+                organization_id=org_ids,
+                start=start_timestamp,
+                end=end_timestamp,
+                interval=interval,
+                timezone=timezone.key,
+                bounds_start=original_start_timestamp,
+                bounds_end=original_end_timestamp,
+                now=now_dt,
+                product_id=product_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                billing_type=billing_strs,
+            )
 
         periods: list[MetricsPeriod] = []
         for row in tb_rows:
             ts = row.get("timestamp")
-            if isinstance(ts, date) and not isinstance(ts, datetime):
+            if isinstance(ts, str):
+                row["timestamp"] = datetime.fromisoformat(ts).replace(tzinfo=timezone)
+            elif isinstance(ts, date) and not isinstance(ts, datetime):
                 row["timestamp"] = datetime(ts.year, ts.month, ts.day, tzinfo=timezone)
             elif isinstance(ts, datetime) and ts.tzinfo is None:
                 row["timestamp"] = ts.replace(tzinfo=timezone)
@@ -341,35 +362,58 @@ class MetricsService:
         organization_id: uuid.UUID,
         pg_response: MetricsResponse,
         tb_response: MetricsResponse,
+        *,
+        interval: TimeInterval,
+        timezone: ZoneInfo,
+        now: datetime,
     ) -> None:
         tb_slugs = {m.slug for m in METRICS_TINYBIRD_SETTLEMENT}
         mismatches: list[dict[str, object]] = []
+        revenue_mismatches: list[dict[str, object]] = []
 
         for i, (pg_period, tb_period) in enumerate(
             zip(pg_response.periods, tb_response.periods)
         ):
+            if _is_current_period(
+                pg_period.timestamp, interval=interval, timezone=timezone, now=now
+            ):
+                continue
+
             for slug in tb_slugs:
                 pg_val = getattr(pg_period, slug, None)
                 tb_val = getattr(tb_period, slug, None)
-                if pg_val is not None and tb_val is not None and pg_val != tb_val:
-                    mismatches.append(
-                        {
-                            "period": i,
-                            "timestamp": str(pg_period.timestamp),
-                            "slug": slug,
-                            "pg": pg_val,
-                            "tinybird": tb_val,
-                        }
-                    )
+                if (
+                    pg_val is not None
+                    and tb_val is not None
+                    and not _metric_values_match(pg_val, tb_val)
+                ):
+                    mismatch_obj = {
+                        "period": i,
+                        "timestamp": str(pg_period.timestamp),
+                        "slug": slug,
+                        "pg": pg_val,
+                        "tinybird": tb_val,
+                    }
+                    if slug in [
+                        "average_revenue_per_user",
+                        "monthly_recurring_revenue",
+                        "committed_monthly_recurring_revenue",
+                        "ltv",
+                    ]:
+                        revenue_mismatches.append(mismatch_obj)
+                    else:
+                        mismatches.append(mismatch_obj)
 
         with logfire.span(
             "tinybird.metrics.shadow.comparison",
             organization_id=str(organization_id),
             pg_periods=len(pg_response.periods),
             tb_periods=len(tb_response.periods),
-            has_diff=len(mismatches) > 0,
+            has_diff=len(mismatches) > 0 or len(revenue_mismatches) > 0,
             mismatches=mismatches,
             mismatch_count=len(mismatches),
+            revenue_mismatches=revenue_mismatches,
+            revenue_mismatch_count=len(revenue_mismatches),
         ):
             pass
 
@@ -386,12 +430,16 @@ class MetricsService:
         )
 
         periods: list[MetricsPeriod] = []
-        for pg_period, tb_period in zip(pg_response.periods, tb_response.periods):
+        tb_periods_map = {p.timestamp: p for p in tb_response.periods}
+
+        for pg_period in pg_response.periods:
             period_dict = pg_period.model_dump()
-            for slug in tb_slugs:
-                tb_val = getattr(tb_period, slug, None)
-                if tb_val is not None:
-                    period_dict[slug] = tb_val
+            tb_period = tb_periods_map.get(pg_period.timestamp)
+            if tb_period is not None:
+                for slug in tb_slugs:
+                    tb_val = getattr(tb_period, slug, None)
+                    if tb_val is not None:
+                        period_dict[slug] = tb_val
 
             temp_dict = dict(period_dict)
             for meta_metric in filtered_post_compute:
@@ -464,7 +512,9 @@ class MetricsService:
 
         # Truncate start_timestamp to the beginning of the interval period
         # This ensures the timestamp series aligns with how daily metrics are grouped
-        if interval == TimeInterval.month:
+        if interval == TimeInterval.week:
+            start_timestamp -= timedelta(days=start_timestamp.weekday())
+        elif interval == TimeInterval.month:
             start_timestamp = start_timestamp.replace(day=1)
         elif interval == TimeInterval.year:
             start_timestamp = start_timestamp.replace(month=1, day=1)
@@ -473,6 +523,9 @@ class MetricsService:
             start_timestamp, end_timestamp, interval
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+        # Determine which queries to run based on metrics
+        now_dt = now or datetime.now(tz=timezone)
 
         # Determine which queries to run based on metrics
         required_queries = _get_required_queries(metrics)
@@ -495,7 +548,7 @@ class MetricsService:
                     interval,
                     auth_subject,
                     filtered_metrics_sql,
-                    now or datetime.now(tz=timezone),
+                    now_dt,
                     bounds=(original_start_timestamp, original_end_timestamp),
                     organization_id=organization_id,
                     product_id=product_id,
@@ -594,7 +647,33 @@ class MetricsService:
             return pg_response
 
         tinybird_compare = org.feature_settings.get("tinybird_compare", False)
-        tinybird_read = org.feature_settings.get("tinybird_read", False)
+        tinybird_read = org.feature_settings.get("tinybird_read", True)
+
+        external_customer_id: list[str] | None = None
+        if customer_id is not None:
+            customer_stmt = select(Customer.external_id).where(
+                Customer.id.in_(customer_id),
+                Customer.external_id.is_not(None),
+                Customer.external_id != "",
+            )
+            external_ids = [eid for eid in await session.scalars(customer_stmt) if eid]
+            if external_ids:
+                external_customer_id = external_ids
+
+        tb_product_id = product_id
+        if billing_type is not None:
+            product_stmt = select(Product.id).where(
+                Product.organization_id == org.id,
+                Product.billing_type.in_(billing_type),
+                Product.is_deleted.is_(False),
+            )
+            billing_type_product_ids = list(await session.scalars(product_stmt))
+            if product_id is not None:
+                tb_product_id = [
+                    pid for pid in product_id if pid in billing_type_product_ids
+                ]
+            else:
+                tb_product_id = billing_type_product_ids
 
         try:
             tb_response = await self._get_metrics_from_tinybird(
@@ -606,11 +685,12 @@ class MetricsService:
                 timezone=timezone,
                 interval=interval,
                 organization_id=organization_id,
-                product_id=product_id,
+                product_id=tb_product_id,
                 billing_type=billing_type,
                 customer_id=customer_id,
+                external_customer_id=external_customer_id,
                 metrics=metrics,
-                now=now,
+                now=now_dt,
             )
         except Exception as e:
             log.error(
@@ -621,7 +701,14 @@ class MetricsService:
             return pg_response
 
         if tinybird_compare:
-            self._log_tinybird_comparison(org.id, pg_response, tb_response)
+            self._log_tinybird_comparison(
+                org.id,
+                pg_response,
+                tb_response,
+                interval=interval,
+                timezone=timezone,
+                now=now_dt,
+            )
             return pg_response
 
         if tinybird_read:

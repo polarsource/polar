@@ -85,10 +85,8 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
           required: 'A name is required',
         }}
         render={({ field }) => (
-          <FormItem className="flex flex-col gap-4">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Name</FormLabel>
-            </div>
+          <FormItem>
+            <FormLabel>Name</FormLabel>
             <FormControl>
               <Input {...field} placeholder="E.g app-production" />
             </FormControl>
@@ -102,10 +100,8 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
           name="expires_in"
           rules={{ required: 'You need to set an expiration setting' }}
           render={({ field }) => (
-            <FormItem className="flex flex-col gap-4">
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Expiration</FormLabel>
-              </div>
+            <FormItem>
+              <FormLabel>Expiration</FormLabel>
               <FormControl>
                 <Select
                   onValueChange={field.onChange}
@@ -133,15 +129,15 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
           )}
         />
       )}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center">
           <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             Scopes
           </h2>
 
-          <div className="flex-auto text-right">
+          <div className="-my-2 flex-auto text-right">
             <Button onClick={onToggleAll} variant="secondary" size="sm">
-              {!allSelected ? 'Select All' : 'Unselect All'}
+              {!allSelected ? 'Select all' : 'Unselect all'}
             </Button>
           </div>
         </div>
@@ -154,7 +150,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
               name="scopes"
               render={({ field }) => {
                 return (
-                  <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                  <FormItem className="flex flex-row items-center space-y-0 space-x-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value?.includes(scope)}
@@ -169,7 +165,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
                         }}
                       />
                     </FormControl>
-                    <FormLabel className="text-sm leading-none">
+                    <FormLabel className="font-mono text-xs leading-none font-medium">
                       {scope}
                     </FormLabel>
                     <FormMessage />
@@ -226,7 +222,7 @@ const CreateAccessTokenModal = ({
     <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Create Organization Access Token</h2>
+          <h2 className="text-xl">Create organization access token</h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
@@ -236,7 +232,7 @@ const CreateAccessTokenModal = ({
             className="max-w-[700px] space-y-8"
           >
             <AccessTokenForm />
-            <Button type="submit">Create</Button>
+            <Button type="submit">Create organization access token</Button>
           </form>
         </Form>
       </div>
@@ -274,8 +270,14 @@ const UpdateAccessTokenModal = ({
       if (updated) {
         onSuccess(updated)
         toast({
-          title: 'Access Token Updated',
-          description: `Access Token ${updated.comment} was updated successfully`,
+          title: 'Access token updated',
+          description: [
+            'Access token',
+            updated.comment ?? '',
+            'was updated successfully',
+          ]
+            .filter(Boolean)
+            .join(' '),
         })
       }
     },
@@ -296,7 +298,7 @@ const UpdateAccessTokenModal = ({
             className="max-w-[700px] space-y-8"
           >
             <AccessTokenForm update />
-            <Button type="submit">Update</Button>
+            <Button type="submit">Update organization access token</Button>
           </form>
         </Form>
       </div>
@@ -331,14 +333,20 @@ const AccessTokenItem = ({
     deleteToken.mutateAsync(token).then(({ error }) => {
       if (error) {
         toast({
-          title: 'Access Token Deletion Failed',
-          description: `Error deleting access token: ${error.detail}`,
+          title: 'Could not delete access token',
+          description: error.detail?.[0]?.msg ?? 'Unknown error',
         })
         return
       }
       toast({
-        title: 'Access Token Deleted',
-        description: `Access Token ${token.comment} was deleted successfully`,
+        title: 'Access token deleted',
+        description: [
+          'Access token',
+          token.comment ?? '',
+          'was deleted successfully',
+        ]
+          .filter(Boolean)
+          .join(' '),
       })
     })
   }, [token, deleteToken])
@@ -395,15 +403,15 @@ const AccessTokenItem = ({
             value={rawToken}
             onCopy={() => {
               toast({
-                title: 'Copied To Clipboard',
-                description: `Access Token was copied to clipboard`,
+                title: 'Copied to clipboard',
               })
             }}
+            variant="mono"
           />
           <Banner color="blue">
             <span className="text-sm">
-              Copy the access token and save it somewhere safe. You won’t be
-              able to see it again.
+              Copy the access token and save it somewhere safe. You won&rsquo;t
+              be able to see it again.
             </span>
           </Banner>
         </>
@@ -531,7 +539,7 @@ const OrganizationAccessTokensSettings = ({
         ) : (
           <ShadowListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              You don&apos;t have any active Organization Access Tokens.
+              You don&rsquo;t have any active organization access tokens.
             </p>
           </ShadowListGroup.Item>
         )}
@@ -539,7 +547,7 @@ const OrganizationAccessTokensSettings = ({
           <ShadowListGroup.Item>
             <div className="flex flex-row items-center gap-x-4">
               <Button asChild onClick={showCreateModal} size="sm">
-                New Token
+                Create token
               </Button>
             </div>
           </ShadowListGroup.Item>

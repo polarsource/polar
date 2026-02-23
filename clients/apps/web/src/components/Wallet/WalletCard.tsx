@@ -32,7 +32,7 @@ const WalletCard = ({ organization, wallet }: WalletCardProps) => {
             Available Balance
           </div>
           <div className="text-4xl font-bold tracking-tight text-gray-950 dark:text-white">
-            {formatCurrency(wallet.balance, wallet.currency)}
+            {formatCurrency('compact')(wallet.balance, wallet.currency)}
           </div>
         </div>
 

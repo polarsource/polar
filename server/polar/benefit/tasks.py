@@ -1,8 +1,10 @@
+import datetime
 import uuid
 from typing import Literal, Unpack
 
 import structlog
 from dramatiq import Retry
+from dramatiq.middleware import CurrentMessage
 
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
@@ -10,11 +12,14 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.worker import (
     AsyncSessionMaker,
     RedisMiddleware,
     TaskPriority,
     actor,
+    enqueue_job,
     get_retries,
 )
 
@@ -73,12 +78,21 @@ async def enqueue_benefits_grants(
 ) -> None:
     async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(
-            customer_id,
-            # Allow deleted customers to be processed for revocation tasks
-            include_deleted=task == "revoke",
-        )
+        customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
+            message = CurrentMessage.get_current_message()
+            if message and message.message_timestamp < (
+                datetime.datetime(
+                    2025, 2, 20, 17, 0, 0, tzinfo=datetime.UTC
+                ).timestamp()
+                * 1000
+            ):
+                log.info(
+                    "Old task message encountered for non-existent customer; skipping.",
+                    "Should not happen after 2025-02-20",
+                    customer_id=str(customer_id),
+                )
+                return
             raise CustomerDoesNotExist(customer_id)
 
         product_repository = ProductRepository.from_session(session)
@@ -90,6 +104,34 @@ async def enqueue_benefits_grants(
 
         await benefit_grant_service.enqueue_benefits_grants(
             session, task, customer, product, member_id=member_id, **resolved_scope
+        )
+
+
+@actor(
+    actor_name="benefit.reset_meters_and_enqueue_grants", priority=TaskPriority.MEDIUM
+)
+async def benefit_enqueue_grants(
+    customer_id: uuid.UUID,
+    grant_benefit_ids: list[uuid.UUID],
+    member_id: uuid.UUID | None = None,
+    **scope: Unpack[BenefitGrantScopeArgs],
+) -> None:
+    if subscription_id := scope.get("subscription_id"):
+        async with AsyncSessionMaker() as session:
+            repository = SubscriptionRepository.from_session(session)
+            subscription = await repository.get_by_id(
+                subscription_id, options=repository.get_eager_options()
+            )
+            if subscription:
+                await subscription_service.reset_meters(session, subscription)
+
+    for benefit_id in grant_benefit_ids:
+        enqueue_job(
+            "benefit.grant",
+            customer_id=customer_id,
+            benefit_id=benefit_id,
+            member_id=member_id,
+            **scope,
         )
 
 
@@ -173,6 +215,19 @@ async def benefit_revoke(
             benefit_id, options=benefit_repository.get_eager_options()
         )
         if benefit is None:
+            message = CurrentMessage.get_current_message()
+            if message and message.message_timestamp < (
+                datetime.datetime(
+                    2025, 2, 23, 11, 0, 0, tzinfo=datetime.UTC
+                ).timestamp()
+                * 1000
+            ):
+                log.info(
+                    "Old task message encountered for non-existent benefit; skipping.",
+                    "Should not happen after 2025-02-23",
+                    benefit_id=str(benefit_id),
+                )
+                return
             raise BenefitDoesNotExist(benefit_id)
 
         resolved_scope = await resolve_scope(session, scope)

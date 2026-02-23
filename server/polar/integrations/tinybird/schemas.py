@@ -24,6 +24,7 @@ class TinybirdEvent(TypedDict):
     product_id: str | None
     subscription_id: str | None
     order_id: str | None
+    order_created_at: str | None
     benefit_id: str | None
     benefit_grant_id: str | None
     checkout_id: str | None
@@ -40,6 +41,7 @@ class TinybirdEvent(TypedDict):
     applied_balance_amount: int | None
     platform_fee: int | None
     fee: int | None
+    exchange_rate: float | None
     refunded_amount: int | None
     refundable_amount: int | None
     presentment_amount: int | None

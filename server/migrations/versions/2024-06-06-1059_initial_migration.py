@@ -20,7 +20,7 @@ from polar.models import Account
 
 # This enum has been removed from the codebase since this migration was created
 # Creating it here to avoid breaking the migration
-class ReferenceType(str, enum.Enum):
+class ReferenceType(enum.StrEnum):
     # external_id is a pull_requests.id UUID
     PULL_REQUEST = "pull_request"
 

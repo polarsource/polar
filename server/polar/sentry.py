@@ -20,23 +20,9 @@ from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
 
 if TYPE_CHECKING:
-    import dramatiq
+    from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
-
-
-class PatchedSentryMiddleware(SentryMiddleware):
-    """
-    Patched Sentry middleware that makes sure to cleanup its stuff when a message
-    is skipped.
-
-    Temporary until the fix is available upstream.
-    """
-
-    def after_skip_message(
-        self, broker: "dramatiq.Broker", message: "dramatiq.MessageProxy"
-    ) -> None:
-        return self.after_process_message(broker, message)  # type: ignore
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -51,7 +37,14 @@ class DramatiqIntegration(_DramatiqIntegration):
     def setup_once() -> None:
         broker = get_broker()
         first_middleware = type(broker.middleware[0])
-        broker.add_middleware(PatchedSentryMiddleware(), before=first_middleware)
+        broker.add_middleware(SentryMiddleware(), before=first_middleware)
+
+
+def before_send(event: Event, hint: Hint) -> Event | None:
+    tags = event.get("tags", {})
+    if tags and tags.get("is_operational_error") == "true":
+        return None
+    return event
 
 
 def configure_sentry() -> None:
@@ -64,6 +57,7 @@ def configure_sentry() -> None:
         environment=settings.ENV,
         default_integrations=False,
         auto_enabling_integrations=False,
+        before_send=before_send,
         integrations=[
             AtexitIntegration(),
             ExcepthookIntegration(),

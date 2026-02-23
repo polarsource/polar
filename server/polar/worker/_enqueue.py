@@ -11,7 +11,7 @@ import dramatiq
 import structlog
 from dramatiq.common import dq_name
 
-from polar.logging import Logger
+from polar.logging import CorrelationID, Logger
 from polar.redis import Redis
 
 from ._debounce import set_debounce_key
@@ -80,11 +80,14 @@ class JobQueueManager:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
 
+            correlation_id = CorrelationID.get()
+
             # Build base message without delay
             message = fn.message_with_options(
                 args=args,
                 kwargs=kwargs,
                 redis_message_id=redis_message_id,
+                source_correlation_id=correlation_id,
             )
 
             # Set debounce key if any

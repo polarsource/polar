@@ -162,7 +162,7 @@ module "test" {
     testing                    = "0"
     auth_cookie_domain         = "test.polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor      = "numeral"
+    tax_processors             = "[\"numeral\",\"stripe\"]"
   }
 
   backend_secrets = {
@@ -212,10 +212,7 @@ module "test" {
   }
 
   logfire_config = {
-    server_project_name = "test"
-    worker_project_name = "test-worker"
-    server_token        = var.logfire_token_server
-    worker_token        = var.logfire_token_worker
+    token = var.logfire_token
   }
 
   apple_secrets = {
@@ -226,16 +223,16 @@ module "test" {
   }
 
   prometheus_config = {
-    url      = var.prometheus_remote_write_url
-    username = var.prometheus_remote_write_username
-    password = var.prometheus_remote_write_password
-    interval = var.prometheus_remote_write_interval
+    url      = var.grafana_cloud_prometheus_url
+    username = var.grafana_cloud_prometheus_username
+    password = var.grafana_cloud_prometheus_password
   }
 
   tinybird_config = {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"
     api_token           = var.tinybird_api_token
+    read_token          = var.tinybird_read_token
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace

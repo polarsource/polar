@@ -12,8 +12,6 @@ import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -40,12 +38,6 @@ const CustomerSubscriptionDetails = ({
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
-
-  const theme = useTheme()
-  const themePreset = getThemePreset(
-    subscription.product.organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
 
   const {
     isShown: isBenefitGrantsModalOpen,
@@ -141,10 +133,9 @@ const CustomerSubscriptionDetails = ({
                 {subscriptionBaseAmount &&
                   subscription.amount !== subscriptionBaseAmount && (
                     <span className="text-gray-500 line-through">
-                      {formatCurrency(
+                      {formatCurrency('compact')(
                         subscriptionBaseAmount,
                         subscription.currency,
-                        subscriptionBaseAmount % 100 === 0 ? 0 : 2,
                       )}
                     </span>
                   )}
@@ -222,7 +213,7 @@ const CustomerSubscriptionDetails = ({
                     {subscriptionMeter.meter.name}
                   </span>
                   <span>
-                    {formatCurrency(
+                    {formatCurrency('compact')(
                       subscriptionMeter.amount,
                       subscription.currency,
                     )}

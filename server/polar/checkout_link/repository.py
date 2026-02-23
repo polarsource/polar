@@ -34,7 +34,7 @@ class CheckoutLinkRepository(
             )
             .where(
                 CheckoutLink.client_secret == client_secret,
-                Organization.deleted_at.is_(None),
+                Organization.is_deleted.is_(False),
                 Organization.blocked_at.is_(None),
             )
             .options(*options)
@@ -72,7 +72,7 @@ class CheckoutLinkRepository(
                 CheckoutLink.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

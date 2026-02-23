@@ -62,7 +62,7 @@ class OrganizationAccessTokenRepository(
                 OrganizationAccessToken.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -81,7 +81,7 @@ class OrganizationAccessTokenRepository(
         count = await self.session.scalar(
             sql.select(sql.func.count(OrganizationAccessToken.id)).where(
                 OrganizationAccessToken.organization_id == organization_id,
-                OrganizationAccessToken.deleted_at.is_(None),
+                OrganizationAccessToken.is_deleted.is_(False),
             )
         )
         return count or 0

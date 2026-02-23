@@ -1,9 +1,8 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Link, Preview, Text } from '@react-email/components'
 import FooterCustomer from '../components/FooterCustomer'
-import IntroWithHi from '../components/IntroWithHi'
-import OrganizationHeader from '../components/OrganizationHeader'
+import Intro from '../components/Intro'
 import OTPCode from '../components/OTPCode'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,30 +14,26 @@ export function CustomerSessionCode({
   url,
 }: schemas['CustomerSessionCodeProps']) {
   return (
-    <Wrapper>
-      <Preview>
-        Here is your code to access your {organization.name} purchases
-      </Preview>
-      <OrganizationHeader organization={organization} />
-      <IntroWithHi>
-        Here is your code to access your {organization.name}{' '}
-        <span className="font-bold">
-          This code is only valid for the next {code_lifetime_minutes} minutes.
-        </span>
-      </IntroWithHi>
+    <WrapperOrganization organization={organization}>
+      <Preview>Your verification code for {organization.name}</Preview>
+      <Intro>
+        You can use the following code to access your purchases on the{' '}
+        <Link href={url} className="text-blue-500 underline">
+          {organization.name} Customer Portal
+        </Link>
+        .
+      </Intro>
+
       <OTPCode code={code} />
-      <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          You should input this code at the following URL
-        </Text>
-        <Text className="text-sm">
-          <Link href={url} className="text-blue-600 underline">
-            {url}
-          </Link>
-        </Text>
-      </Section>
+
+      <Text className="mt-2 text-center text-sm text-gray-500">
+        This&nbsp;code&nbsp;expires&nbsp;in&nbsp;
+        {code_lifetime_minutes}
+        &nbsp;minutes.
+      </Text>
+
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

@@ -1,12 +1,14 @@
 import { nanoid } from 'nanoid'
 import { cookies, headers } from 'next/headers'
-
-const DISTINCT_ID_COOKIE = 'polar_distinct_id'
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+import {
+  COOKIE_MAX_AGE,
+  DISTINCT_ID_COOKIE,
+  DISTINCT_ID_HEADER,
+} from './constants'
 
 export async function getDistinctId(): Promise<string> {
   const headerStore = await headers()
-  const headerDistinctId = headerStore.get('x-polar-distinct-id')
+  const headerDistinctId = headerStore.get(DISTINCT_ID_HEADER)
   if (headerDistinctId) {
     return headerDistinctId
   }
@@ -22,7 +24,7 @@ export async function getDistinctId(): Promise<string> {
 
 export async function getExistingDistinctId(): Promise<string | undefined> {
   const headerStore = await headers()
-  const headerDistinctId = headerStore.get('x-polar-distinct-id')
+  const headerDistinctId = headerStore.get(DISTINCT_ID_HEADER)
   if (headerDistinctId) {
     return headerDistinctId
   }

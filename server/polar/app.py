@@ -35,6 +35,7 @@ from polar.logging import configure as configure_logging
 from polar.middlewares import (
     FlushEnqueuedWorkerJobsMiddleware,
     LogCorrelationIdMiddleware,
+    OperationalErrorMiddleware,
     PathRewriteMiddleware,
     SandboxResponseHeaderMiddleware,
 )
@@ -187,6 +188,7 @@ def create_app() -> FastAPI:
         **OPENAPI_PARAMETERS,
     )
 
+    app.add_middleware(OperationalErrorMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
     if not settings.is_testing():
@@ -223,6 +225,7 @@ def create_app() -> FastAPI:
 
     app.include_router(router)
     document_webhooks(app)
+    set_openapi_generator(app)
 
     return app
 
@@ -233,6 +236,5 @@ configure_logging(logfire=True)
 configure_posthog()
 
 app = create_app()
-set_openapi_generator(app)
 instrument_fastapi(app)
 instrument_httpx()

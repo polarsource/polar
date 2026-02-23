@@ -1,6 +1,8 @@
 # pyright: reportCallIssue=false
 import asyncio
 import contextlib
+import dataclasses
+import random
 import uuid
 from collections.abc import AsyncIterator, Coroutine
 from typing import Any
@@ -24,10 +26,14 @@ from plain_client import (
     ComponentTextColor,
     ComponentTextInput,
     ComponentTextSize,
+    CreateThreadAssignedToInput,
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
     Plain,
+    ReplyToThreadInput,
+    SnoozeStatusDetail,
+    SnoozeThreadInput,
     ThreadsFilter,
     ThreadStatus,
     UpsertCustomerIdentifierInput,
@@ -63,6 +69,19 @@ from .schemas import (
 )
 
 log = structlog.get_logger(__name__)
+
+SUPPORT_AGENT_IDS: list[str] = [
+    "u_01K8JEAC8BS0ED0KBCGHYCHA70",  # Isac
+    "u_01K0RC6SY9Q8KSVNAYGD7EY6M5",  # Rishi
+]
+
+
+@dataclasses.dataclass
+class OrgIssues:
+    missing_website: bool = False
+    missing_socials: bool = False
+    admin_not_verified: bool = False
+    admin_verification_status: str = ""
 
 
 class PlainServiceError(PolarError): ...
@@ -179,11 +198,19 @@ class PlainService:
                 case _:
                     raise ValueError("Organization is not under review")
 
+            should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
+            assigned_to = (
+                CreateThreadAssignedToInput(user_id=random.choice(SUPPORT_AGENT_IDS))
+                if should_send_email
+                else None
+            )
+
             thread_result = await plain.create_thread(
                 CreateThreadInput(
                     customer_identifier=customer_identifier,
                     title=title,
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
+                    assigned_to=assigned_to,
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
@@ -210,6 +237,48 @@ class PlainService:
                 raise AccountReviewThreadCreationError(
                     organization.account.id, thread_result.error.message
                 )
+
+            # For initial reviews, send the review action checklist as an outbound reply
+            if should_send_email and thread_result.thread is not None:
+                issues = self._check_org_issues(organization, admin)
+                message = self._build_review_message(
+                    organization.name or organization.slug, issues
+                )
+                reply_result = await plain.reply_to_thread(
+                    ReplyToThreadInput(
+                        thread_id=thread_result.thread.id,
+                        text_content=message,
+                        markdown_content=message,
+                    )
+                )
+                if reply_result.error is not None:
+                    log.error(
+                        "Failed to post review action message",
+                        thread_id=thread_result.thread.id,
+                        slug=organization.slug,
+                        error=reply_result.error.message,
+                    )
+
+                # Snooze the thread if we asked the customer for more details
+                has_action_items = (
+                    issues.missing_website
+                    or issues.missing_socials
+                    or issues.admin_not_verified
+                )
+                if has_action_items:
+                    snooze_result = await plain.snooze_thread(
+                        SnoozeThreadInput(
+                            thread_id=thread_result.thread.id,
+                            status_detail=SnoozeStatusDetail.WAITING_FOR_CUSTOMER,
+                        )
+                    )
+                    if snooze_result.error is not None:
+                        log.error(
+                            "Failed to snooze thread",
+                            thread_id=thread_result.thread.id,
+                            slug=organization.slug,
+                            error=snooze_result.error.message,
+                        )
 
     async def create_appeal_review_thread(
         self,
@@ -240,6 +309,9 @@ class PlainService:
                     customer_identifier=customer_identifier,
                     title=f"Organization Appeal - {organization.slug}",
                     label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
+                    assigned_to=CreateThreadAssignedToInput(
+                        user_id=random.choice(SUPPORT_AGENT_IDS)
+                    ),
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
@@ -1423,6 +1495,89 @@ class PlainService:
                     nr_threads += 1
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0
+
+    def _check_org_issues(
+        self,
+        organization: Organization,
+        admin: User,
+    ) -> OrgIssues:
+        """Check an organization for actionable issues."""
+        issues = OrgIssues()
+
+        if not organization.website:
+            issues.missing_website = True
+
+        if not organization.socials:
+            issues.missing_socials = True
+
+        if not admin.identity_verified:
+            issues.admin_not_verified = True
+            issues.admin_verification_status = admin.identity_verification_status
+
+        return issues
+
+    def _build_review_message(self, organization_name: str, issues: OrgIssues) -> str:
+        """Build a friendly numbered message adapted to the org's specific issues."""
+        lines: list[str] = [
+            f"Welcome to Polar! Your organization {organization_name} is currently being reviewed. "
+            "This is a standard step all new organizations go through so we can verify account details and ensure compliance with our policies.",
+            "",
+            "Reviews typically take up to 3 business days (occasionally up to 7). "
+            "You can keep using Polar in the mean time to set up your products and integration.",
+            "",
+        ]
+
+        has_action_items = (
+            issues.missing_website
+            or issues.missing_socials
+            or issues.admin_not_verified
+        )
+
+        if has_action_items:
+            item_num = 1
+
+            if issues.missing_website:
+                lines.append(
+                    f"{item_num}. Please add your product's URL under Settings → General → Website."
+                )
+                item_num += 1
+
+            if issues.missing_socials:
+                lines.append(
+                    f"{item_num}. Please add your personal social links (not your product's) under Settings → General → Social links. "
+                    "These are never displayed publicly. We only use them to verify your identity to avoid people impersonating businesses they do not own."
+                )
+                item_num += 1
+
+            if issues.admin_not_verified:
+                lines.append(
+                    f"{item_num}. Verify your identity under Finance → Payout account. "
+                    "You'll need an ID document (driver's license, ID, passport, ...) and your phone. "
+                    "It's fully secure and only takes a few minutes."
+                )
+
+            lines.append("")
+
+        if has_action_items:
+            lines.append(
+                "Once you've completed these steps, please reply to this email and we'll finalize your review."
+            )
+        else:
+            lines.append(
+                "We'll let you know as soon as you're all set, or if we need anything from you."
+            )
+        lines.append("")
+        lines.append(
+            "You can learn more about our review process on our website: "
+            "https://polar.sh/docs/merchant-of-record/account-reviews. "
+            "Any other questions? Just reply to this message."
+        )
+        lines.append("")
+        lines.append("Cheers,")
+        lines.append("")
+        lines.append("The customer success team at Polar")
+
+        return "\n".join(lines)
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:

@@ -19,7 +19,6 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
-    EmptyStrToNoneValidator,
     HttpUrlToStr,
     IDSchema,
     MergeJSONSchema,
@@ -93,13 +92,15 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization compares Tinybird results with database",
     )
-
-
-class OrganizationSubscribePromoteSettings(Schema):
-    promote: bool = Field(True, description="Promote email subscription (free)")
-    show_count: bool = Field(True, description="Show subscription count publicly")
-    count_free: bool = Field(
-        True, description="Include free subscribers in total count"
+    presentment_currencies_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization has multiple presentment currencies enabled"
+        ),
+    )
+    checkout_localization_enabled: bool = Field(
+        False,
+        description="If this organization has checkout localization enabled",
     )
 
 
@@ -177,38 +178,6 @@ class OrganizationSocialLink(Schema):
         return data
 
 
-# Deprecated
-class OrganizationProfileSettings(Schema):
-    enabled: bool | None = Field(
-        None, description="If this organization has a profile enabled"
-    )
-    description: Annotated[
-        str | None,
-        Field(max_length=160, description="A description of the organization"),
-        EmptyStrToNoneValidator,
-    ] = None
-    featured_projects: list[UUID4] | None = Field(
-        None, description="A list of featured projects"
-    )
-    featured_organizations: list[UUID4] | None = Field(
-        None, description="A list of featured organizations"
-    )
-    links: list[HttpUrl] | None = Field(
-        None, description="A list of links associated with the organization"
-    )
-    subscribe: OrganizationSubscribePromoteSettings | None = Field(
-        OrganizationSubscribePromoteSettings(
-            promote=True,
-            show_count=True,
-            count_free=True,
-        ),
-        description="Subscription promotion settings",
-    )
-    accent_color: str | None = Field(
-        None, description="Accent color for the organization"
-    )
-
-
 class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
@@ -248,9 +217,6 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     pledge_minimum_amount: SkipJsonSchema[int] = Field(0, deprecated=True)
     pledge_badge_show_amount: SkipJsonSchema[bool] = Field(False, deprecated=True)
     default_upfront_split_to_contributors: SkipJsonSchema[int | None] = Field(
-        None, deprecated=True
-    )
-    profile_settings: SkipJsonSchema[OrganizationProfileSettings | None] = Field(
         None, deprecated=True
     )
 
@@ -315,7 +281,7 @@ class Organization(OrganizationBase):
         description="When the business details were submitted.",
     )
 
-    default_presentment_currency: PresentmentCurrency = Field(
+    default_presentment_currency: str = Field(
         description=(
             "Default presentment currency. "
             "Used as fallback in checkout and customer portal, "
@@ -361,6 +327,10 @@ class OrganizationCreate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    default_presentment_currency: PresentmentCurrency = Field(
+        PresentmentCurrency.usd,
+        description="Default presentment currency for the organization",
+    )
 
 
 class OrganizationUpdate(Schema):
@@ -384,6 +354,9 @@ class OrganizationUpdate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    default_presentment_currency: PresentmentCurrency | None = Field(
+        None, description="Default presentment currency for the organization"
+    )
 
 
 class OrganizationPaymentStep(Schema):

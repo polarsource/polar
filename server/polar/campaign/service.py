@@ -18,7 +18,7 @@ class CampaignService(ResourceServiceReader[Campaign]):
             Campaign.code == code,
             Campaign.starts_at <= now,
             Campaign.ends_at > now,
-            Campaign.deleted_at.is_(None),
+            Campaign.is_deleted.is_(False),
         )
         res = await session.execute(stmt)
         campaign = res.scalars().unique().one_or_none()

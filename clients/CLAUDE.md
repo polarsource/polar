@@ -201,17 +201,9 @@ const useAppStore = create<AppState>((set) => ({
 
 ```tsx
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-
-const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email'),
-})
 
 const MyForm = () => {
   const form = useForm({
-    resolver: zodResolver(schema),
     defaultValues: { name: '', email: '' },
   })
 

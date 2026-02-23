@@ -38,6 +38,9 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceFreeCreate,
     ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBasedCreate,
+    ProductPriceSeatTier,
+    ProductPriceSeatTiers,
     ProductUpdate,
 )
 from polar.product.service import product as product_service
@@ -947,6 +950,75 @@ class TestCreate:
 
             assert len(fixed_prices) == 1
             assert len(metered_prices) == 1
+
+    @pytest.mark.auth
+    async def test_seat_based_price_feature_disabled(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceSeatBasedCreate(
+                    amount_type=ProductPriceAmountType.seat_based,
+                    price_currency=PresentmentCurrency.usd,
+                    seat_tiers=ProductPriceSeatTiers(
+                        tiers=[
+                            ProductPriceSeatTier(
+                                min_seats=1,
+                                max_seats=None,
+                                price_per_seat=1000,
+                            )
+                        ]
+                    ),
+                )
+            ],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(session, create_schema, auth_subject)
+
+    @pytest.mark.auth
+    async def test_seat_based_price_feature_enabled(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"seat_based_pricing_enabled": True}
+        session.add(organization)
+        await session.flush()
+
+        create_schema = ProductCreateRecurring(
+            name="Product",
+            organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceSeatBasedCreate(
+                    amount_type=ProductPriceAmountType.seat_based,
+                    price_currency=PresentmentCurrency.usd,
+                    seat_tiers=ProductPriceSeatTiers(
+                        tiers=[
+                            ProductPriceSeatTier(
+                                min_seats=1,
+                                max_seats=None,
+                                price_per_seat=1000,
+                            )
+                        ]
+                    ),
+                )
+            ],
+        )
+
+        product = await product_service.create(session, create_schema, auth_subject)
+        assert product.organization_id == organization.id
+        assert len(product.prices) == 1
 
 
 @pytest.mark.asyncio

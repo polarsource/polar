@@ -159,8 +159,6 @@ async def _get_github_repository_invitations(
                 owner=repository_owner, name=repository_name
             )
         )
-        if not installation:
-            return []
 
         # Get GitHub client for the installation
         async with github.get_app_installation_client(installation.id) as client:

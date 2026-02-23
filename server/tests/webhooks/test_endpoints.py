@@ -101,6 +101,27 @@ class TestCreateWebhookEndpoint:
 
         assert response.status_code == 201
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.webhooks_write}),
+    )
+    async def test_url_with_leading_and_trailing_spaces(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        params = {
+            "url": "  https://example.com/hook  ",
+            "format": "raw",
+            "events": [],
+            "organization_id": str(organization.id),
+        }
+        response = await client.post("/v1/webhooks/endpoints", json=params)
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["url"] == "https://example.com/hook"
+
 
 @pytest.mark.asyncio
 class TestUpdateWebhookEndpoint:

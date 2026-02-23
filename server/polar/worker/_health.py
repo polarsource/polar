@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator, Callable, Mapping
 from datetime import timedelta
 from typing import Any
 
+import logfire
 import structlog
 import uvicorn
 from dramatiq.middleware import Middleware
@@ -19,7 +20,9 @@ from polar.config import settings
 from polar.external_event.repository import ExternalEventRepository
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.kit.utils import utc_now
+from polar.logfire import configure_logfire
 from polar.logging import Logger
+from polar.logging import configure as configure_logging
 from polar.postgres import create_async_engine, create_async_read_engine
 from polar.redis import Redis, create_redis
 from polar.webhook.repository import WebhookEventRepository
@@ -109,17 +112,28 @@ async def lifespan(app: Starlette) -> AsyncGenerator[Mapping[str, Any]]:
     await async_engine.dispose()
 
 
+async def handle_server_error(request: Request, exc: Exception) -> JSONResponse:
+    logfire.exception(f"Worker health server error on {request.url.path}")
+    return JSONResponse({"status": "error"}, status_code=500)
+
+
 def create_app() -> Starlette:
     routes = [
         Route("/", health, methods=["GET"]),
         Route("/webhooks", webhooks, methods=["GET"]),
         Route("/unhandled-external-events", external_events, methods=["GET"]),
     ]
-    return Starlette(routes=routes, lifespan=lifespan)
+    return Starlette(
+        routes=routes,
+        lifespan=lifespan,
+        exception_handlers={Exception: handle_server_error},
+    )
 
 
 def _run_exposition_server() -> int:
     log.debug("Starting exposition server...")
+    configure_logfire("worker")
+    configure_logging(logfire=True)
     app = create_app()
     config = uvicorn.Config(
         app, host=HTTP_HOST, port=HTTP_PORT, log_level="error", access_log=False

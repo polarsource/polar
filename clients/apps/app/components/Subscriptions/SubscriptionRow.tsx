@@ -112,6 +112,7 @@ export const SubscriptionRow = ({
             <ProductPriceLabel
               loading={loading}
               product={subscription?.product}
+              currency={subscription?.currency || 'usd'}
             />
             {showCustomer ? (
               <>

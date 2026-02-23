@@ -23,6 +23,9 @@ if TYPE_CHECKING:
     from stripe.params._setup_intent_create_params import SetupIntentCreateParams
     from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
     from stripe.params._transfer_create_params import TransferCreateParams
+    from stripe.params._transfer_create_reversal_params import (
+        TransferCreateReversalParams,
+    )
     from stripe.params._transfer_modify_params import TransferModifyParams
     from stripe.params.tax._calculation_create_params import CalculationCreateParams
     from stripe.params.tax._transaction_create_reversal_params import (
@@ -183,6 +186,22 @@ class StripeService:
         }
         return await stripe_lib.Transfer.modify_async(id, **update_params)
 
+    async def reverse_transfer(
+        self,
+        id: str,
+        *,
+        amount: int | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> stripe_lib.Reversal:
+        reverse_params: TransferCreateReversalParams = {
+            "metadata": metadata or {},
+            "idempotency_key": f"polar:transfer_reverse:{id}",
+        }
+        if amount is not None:
+            reverse_params["amount"] = amount
+
+        return await stripe_lib.Transfer.create_reversal_async(id, **reverse_params)
+
     async def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return await stripe_lib.Customer.retrieve_async(customer_id)
 
@@ -272,6 +291,16 @@ class StripeService:
     ) -> stripe_lib.Dispute:
         return await stripe_lib.Dispute.retrieve_async(
             id, stripe_account=stripe_account, expand=expand or []
+        )
+
+    async def get_confirmation_token(
+        self,
+        id: str,
+        *,
+        expand: list[str] | None = None,
+    ) -> stripe_lib.ConfirmationToken:
+        return await stripe_lib.ConfirmationToken.retrieve_async(
+            id, expand=expand or []
         )
 
     async def create_payout(

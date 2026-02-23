@@ -180,7 +180,7 @@ const TransactionsList = ({
 
         return (
           <div className="flex flex-row justify-end">
-            {formatCurrency(amount, transaction.currency)}
+            {formatCurrency('accounting')(amount, transaction.currency)}
           </div>
         )
       },
@@ -205,7 +205,10 @@ const TransactionsList = ({
         return (
           <div className="flex justify-end">
             {incurredAmount !== undefined
-              ? formatCurrency(incurredAmount, transaction.currency)
+              ? formatCurrency('accounting')(
+                  incurredAmount,
+                  transaction.currency,
+                )
               : '—'}
           </div>
         )
@@ -231,7 +234,7 @@ const TransactionsList = ({
         return (
           <div className="flex justify-end">
             {netAmount !== undefined
-              ? formatCurrency(netAmount, transaction.currency)
+              ? formatCurrency('accounting')(netAmount, transaction.currency)
               : '—'}
           </div>
         )

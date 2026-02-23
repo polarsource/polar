@@ -130,7 +130,7 @@ class Account(RecordModel):
             primaryjoin=(
                 "and_("
                 "Organization.account_id == Account.id,"
-                "Organization.deleted_at.is_(None)"
+                "Organization.is_deleted.is_(False)"
                 ")"
             ),
             viewonly=True,

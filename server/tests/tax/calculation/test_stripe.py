@@ -5,7 +5,7 @@ import pytest
 import stripe as stripe_lib
 
 from polar.kit.address import Address, CountryAlpha2
-from polar.tax.calculation import TaxCode
+from polar.tax.calculation import TaxCalculationTechnicalError, TaxCode
 from polar.tax.calculation.stripe import stripe_tax_service
 
 
@@ -73,7 +73,7 @@ class TestStripeCalculateTax:
                 "polar.tax.calculation.stripe.settings.is_sandbox", return_value=False
             ),
         ):
-            with pytest.raises(stripe_lib.RateLimitError):
+            with pytest.raises(TaxCalculationTechnicalError):
                 await stripe_tax_service.calculate(
                     identifier=uuid.uuid4(),
                     currency="usd",

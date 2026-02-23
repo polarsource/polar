@@ -191,16 +191,6 @@ async def get_payment_statistics(
 
     # Get account ID for the organization
     account_id = await analytics_service.get_organization_account_id(organization_id)
-    if not account_id:
-        return PaymentStatistics(
-            payment_count=0,
-            p50_risk=0,
-            p90_risk=0,
-            refunds_count=0,
-            transfer_sum=0,
-            refunds_amount=0,
-            total_payment_amount=0,
-        )
 
     # Get payment statistics
     (
@@ -217,10 +207,13 @@ async def get_payment_statistics(
         organization_id
     )
 
-    # Get transfer sum (used for review threshold checking)
-    transfer_sum = await transaction_service.get_transactions_sum(
-        session, account_id, type=TransactionType.balance
-    )
+    if account_id:
+        # Get transfer sum (used for review threshold checking)
+        transfer_sum = await transaction_service.get_transactions_sum(
+            session, account_id, type=TransactionType.balance
+        )
+    else:
+        transfer_sum = 0
 
     return PaymentStatistics(
         payment_count=payment_count,
@@ -703,7 +696,7 @@ async def delete(
     if not organization:
         raise HTTPException(status_code=404)
 
-    if organization.deleted_at is not None:
+    if organization.is_deleted:
         await add_toast(
             request, "This organization is already deleted", variant="error"
         )

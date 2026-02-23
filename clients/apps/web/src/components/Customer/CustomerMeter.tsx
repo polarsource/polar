@@ -119,7 +119,10 @@ export const CustomerMeter = ({
             </span>
             <h3 className="text-lg">
               {unitPrice &&
-                formatCurrency(overages || 0, unitPrice.price_currency, 2)}
+                formatCurrency('compact')(
+                  overages || 0,
+                  unitPrice.price_currency,
+                )}
             </h3>
           </div>
         </div>

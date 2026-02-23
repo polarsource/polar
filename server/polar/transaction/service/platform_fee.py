@@ -1,5 +1,4 @@
 import datetime
-from uuid import UUID
 
 import structlog
 from sqlalchemy import select
@@ -138,7 +137,13 @@ class PlatformFeeTransactionService(BaseTransactionService):
         account = await account_repository.get_by_id(incoming.account_id)
         assert account is not None
 
-        total_amount = incoming.amount + incoming.tax_amount
+        if incoming.payment_transaction_id is None:
+            raise
+
+        payment_transaction = await self.get(session, incoming.payment_transaction_id)
+        assert payment_transaction is not None
+        total_amount = payment_transaction.amount + payment_transaction.tax_amount
+
         fees_balances: list[tuple[Transaction, Transaction]] = []
 
         # Payment fee
@@ -154,22 +159,17 @@ class PlatformFeeTransactionService(BaseTransactionService):
         fees_balances.append(fee_balances)
 
         # International fee
-        if incoming.payment_transaction_id is not None:
-            if await self._is_international_payment_transaction(
-                session, incoming.payment_transaction_id
-            ):
-                international_fee_amount = get_stripe_international_fee(total_amount)
-                fee_balances = (
-                    await balance_transaction_service.create_reversal_balance(
-                        session,
-                        balance_transactions=balance_transactions,
-                        amount=international_fee_amount,
-                        platform_fee_type=PlatformFeeType.international_payment,
-                        outgoing_incurred_by=incoming,
-                        incoming_incurred_by=outgoing,
-                    )
-                )
-                fees_balances.append(fee_balances)
+        if await self._is_international_payment_transaction(payment_transaction):
+            international_fee_amount = get_stripe_international_fee(total_amount)
+            fee_balances = await balance_transaction_service.create_reversal_balance(
+                session,
+                balance_transactions=balance_transactions,
+                amount=international_fee_amount,
+                platform_fee_type=PlatformFeeType.international_payment,
+                outgoing_incurred_by=incoming,
+                incoming_incurred_by=outgoing,
+            )
+            fees_balances.append(fee_balances)
 
         # Subscription fee
         if incoming.order_id is not None:
@@ -256,7 +256,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         return credit_balances
 
     async def _is_international_payment_transaction(
-        self, session: AsyncSession, payment_transaction_id: UUID
+        self, payment_transaction: Transaction
     ) -> bool:
         """
         Check if the payment transaction is an international payment.
@@ -264,9 +264,6 @@ class PlatformFeeTransactionService(BaseTransactionService):
         Currently, we only check if the payment was made using Stripe
         and the card is not from the US.
         """
-        payment_transaction = await self.get(session, payment_transaction_id)
-        assert payment_transaction is not None
-
         if payment_transaction.processor != Processor.stripe:
             return False
 

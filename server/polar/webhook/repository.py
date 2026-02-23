@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -104,7 +104,7 @@ class WebhookEventRepository(
                 WebhookEndpoint.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -114,6 +114,28 @@ class WebhookEventRepository(
             )
 
         return statement
+
+    async def count_earlier_pending(
+        self, event: WebhookEvent, *, age_limit: datetime
+    ) -> int:
+        statement = (
+            select(func.count(WebhookEvent.id))
+            .join(
+                WebhookDelivery,
+                WebhookDelivery.webhook_event_id == WebhookEvent.id,
+                isouter=True,
+            )
+            .where(
+                WebhookEvent.is_deleted.is_(False),
+                WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
+                WebhookEvent.id != event.id,
+                WebhookDelivery.id.is_(None),
+                WebhookEvent.created_at < event.created_at,
+                WebhookEvent.created_at >= age_limit,
+            )
+        )
+        res = await self.session.execute(statement)
+        return res.scalar_one()
 
     def get_eager_options(self) -> Options:
         return (joinedload(WebhookEvent.webhook_endpoint),)
@@ -134,6 +156,14 @@ class WebhookDeliveryRepository(
         )
         return await self.get_all(statement)
 
+    async def count_by_event(self, event_id: UUID) -> int:
+        statement = select(func.count(WebhookDelivery.id)).where(
+            WebhookDelivery.webhook_event_id == event_id,
+            WebhookDelivery.is_deleted.is_(False),
+        )
+        res = await self.session.execute(statement)
+        return res.scalar_one()
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[WebhookDelivery]]:
@@ -152,7 +182,7 @@ class WebhookDeliveryRepository(
                 WebhookEndpoint.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )
@@ -182,7 +212,7 @@ class WebhookEndpointRepository(
                 WebhookEndpoint.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_deleted.is_(False),
                     )
                 )
             )

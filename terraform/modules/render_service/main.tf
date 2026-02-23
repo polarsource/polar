@@ -53,7 +53,7 @@ resource "render_env_group" "backend" {
       POLAR_LOGO_DEV_PUBLISHABLE_KEY   = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }
-      POLAR_DEFAULT_TAX_PROCESSOR      = { value = var.backend_config.default_tax_processor }
+      POLAR_TAX_PROCESSORS             = { value = var.backend_config.tax_processors }
       POLAR_NUMERAL_API_KEY            = { value = var.backend_secrets.numeral_api_key }
     },
     var.backend_config.user_session_cookie_key != "" ? {
@@ -132,23 +132,13 @@ resource "render_env_group" "stripe" {
   }
 }
 
-resource "render_env_group" "logfire_server" {
+resource "render_env_group" "logfire" {
   count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire-server${local.env_suffix}"
+  name           = "logfire-${var.environment}"
   env_vars = {
-    POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.server_project_name }
-    POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.server_token }
-  }
-}
-
-resource "render_env_group" "logfire_worker" {
-  count          = var.logfire_config != null ? 1 : 0
-  environment_id = var.render_environment_id
-  name           = "logfire-worker${local.env_suffix}"
-  env_vars = {
-    POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.worker_project_name }
-    POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.worker_token }
+    POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.project_name }
+    POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.token }
   }
 }
 
@@ -168,11 +158,28 @@ resource "render_env_group" "prometheus" {
   count          = var.prometheus_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "prometheus-${var.environment}"
+  env_vars = merge(
+    {
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_URL      = { value = "${var.prometheus_config.url}/api/prom/push" }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_USERNAME = { value = var.prometheus_config.username }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_PASSWORD = { value = var.prometheus_config.password }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL = { value = var.prometheus_config.interval }
+    },
+    var.prometheus_config.query_key != null ? {
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_URL  = { value = "${var.prometheus_config.url}/api/prom" }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_USER = { value = var.prometheus_config.username }
+      POLAR_GRAFANA_CLOUD_PROMETHEUS_QUERY_KEY  = { value = var.prometheus_config.query_key }
+    } : {}
+  )
+}
+
+resource "render_env_group" "slo_report" {
+  count          = var.slo_report_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "slo-report-${var.environment}"
   env_vars = {
-    POLAR_PROMETHEUS_REMOTE_WRITE_URL      = { value = var.prometheus_config.url }
-    POLAR_PROMETHEUS_REMOTE_WRITE_USERNAME = { value = var.prometheus_config.username }
-    POLAR_PROMETHEUS_REMOTE_WRITE_PASSWORD = { value = var.prometheus_config.password }
-    POLAR_PROMETHEUS_REMOTE_WRITE_INTERVAL = { value = var.prometheus_config.interval }
+    POLAR_SLACK_BOT_TOKEN = { value = var.slo_report_config.slack_bot_token }
+    POLAR_SLACK_CHANNEL   = { value = var.slo_report_config.slack_channel }
   }
 }
 
@@ -184,6 +191,7 @@ resource "render_env_group" "tinybird" {
     POLAR_TINYBIRD_API_URL             = { value = var.tinybird_config.api_url }
     POLAR_TINYBIRD_CLICKHOUSE_URL      = { value = var.tinybird_config.clickhouse_url }
     POLAR_TINYBIRD_API_TOKEN           = { value = var.tinybird_config.api_token }
+    POLAR_TINYBIRD_READ_TOKEN          = { value = var.tinybird_config.read_token }
     POLAR_TINYBIRD_CLICKHOUSE_USERNAME = { value = var.tinybird_config.clickhouse_username }
     POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = { value = var.tinybird_config.clickhouse_token }
     POLAR_TINYBIRD_WORKSPACE           = { value = var.tinybird_config.workspace }
@@ -272,11 +280,11 @@ resource "render_web_service" "worker" {
 
   runtime_source = {
     image = each.value.digest != null ? {
-      image_url              = "ghcr.io/polarsource/polar"
+      image_url              = each.value.image_url
       registry_credential_id = var.registry_credential_id
       digest                 = each.value.digest
       } : {
-      image_url              = "ghcr.io/polarsource/polar"
+      image_url              = each.value.image_url
       registry_credential_id = var.registry_credential_id
       tag                    = each.value.tag
     }
@@ -349,16 +357,10 @@ resource "render_env_group_link" "stripe" {
   service_ids  = local.all_service_ids
 }
 
-resource "render_env_group_link" "logfire_server" {
+resource "render_env_group_link" "logfire" {
   count        = var.logfire_config != null ? 1 : 0
-  env_group_id = render_env_group.logfire_server[0].id
-  service_ids  = [render_web_service.api.id]
-}
-
-resource "render_env_group_link" "logfire_worker" {
-  count        = var.logfire_config != null ? 1 : 0
-  env_group_id = render_env_group.logfire_worker[0].id
-  service_ids  = local.worker_ids
+  env_group_id = render_env_group.logfire[0].id
+  service_ids  = local.all_service_ids
 }
 
 resource "render_env_group_link" "openai" {
@@ -374,6 +376,12 @@ resource "render_env_group_link" "apple" {
 resource "render_env_group_link" "prometheus" {
   count        = var.prometheus_config != null ? 1 : 0
   env_group_id = render_env_group.prometheus[0].id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "slo_report" {
+  count        = var.slo_report_config != null ? 1 : 0
+  env_group_id = render_env_group.slo_report[0].id
   service_ids  = local.all_service_ids
 }
 

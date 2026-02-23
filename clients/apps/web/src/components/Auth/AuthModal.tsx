@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import LogoIcon from '../Brand/LogoIcon'
+import LogoIcon from '../Brand/logos/LogoIcon'
 import Login from './Login'
 
 interface AuthModalProps {

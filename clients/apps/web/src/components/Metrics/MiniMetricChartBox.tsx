@@ -1,8 +1,6 @@
-import {
-  formatHumanFriendlyCurrency,
-  formatHumanFriendlyScalar,
-} from '@/utils/formatters'
+import { formatHumanFriendlyScalar } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   Card,
   CardContent,
@@ -32,7 +30,7 @@ export const MiniMetricChartBox = ({
           {metric &&
             (metric.type === 'scalar'
               ? formatHumanFriendlyScalar(value ?? 0)
-              : formatHumanFriendlyCurrency(value ?? 0, 'usd'))}
+              : formatCurrency('statistics')(value ?? 0, 'usd'))}
         </h3>
       </CardContent>
     </Card>

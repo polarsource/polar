@@ -13,10 +13,11 @@ import { ProductPriceLabel } from './ProductPriceLabel'
 
 export interface ProductRowProps {
   product: schemas['Product']
+  currency: string
   style?: StyleProp<TextStyle>
 }
 
-export const ProductRow = ({ product, style }: ProductRowProps) => {
+export const ProductRow = ({ product, currency, style }: ProductRowProps) => {
   const theme = useTheme()
 
   return (
@@ -82,7 +83,7 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
             </Text>
             {product.is_archived ? <Pill color="red">Archived</Pill> : null}
           </Box>
-          <ProductPriceLabel product={product} />
+          <ProductPriceLabel product={product} currency={currency} />
         </Box>
       </Touchable>
     </Link>

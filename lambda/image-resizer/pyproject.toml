@@ -1,0 +1,48 @@
+[project]
+name = "image-resizer"
+version = "0.0.0"
+readme = "README.md"
+requires-python = ">=3.13.0"
+dependencies = [
+"pillow>=12.0",
+"boto3>=1.38.30",
+"taskipy>=1.10.3",
+]
+
+[dependency-groups]
+dev = [
+"pytest>=8.0",
+"mypy>=1.15",
+"boto3-stubs[s3]>=1.38.30",
+"types-Pillow>=10.0",
+"moto[s3]>=5.1",
+"ruff>=0.15.2",
+]
+
+
+[tool.taskipy.tasks]
+test = { cmd = "python -m pytest tests/ -v", help = "run tests" }
+lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
+lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
+lint_types = { cmd = "mypy .", help = "run mypy type check" }
+
+[tool.mypy]
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_reexport = true
+strict_equality = true
+disallow_untyped_defs = true
+skip_cache_mtime_checks = true
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "T20", "B039", "PT", "RUF022", "RUF023", "RUF10", "RUF20"]
+ignore = [
+  "F841",  # remove unused variables
+  "PT012",
+]

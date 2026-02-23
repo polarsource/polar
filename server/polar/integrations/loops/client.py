@@ -82,7 +82,7 @@ class LoopsClient:
         log.debug("loops.contact.update", email=email, id=id, **properties)
 
         await self._make_request(
-            httpx.Request(
+            self.client.build_request(
                 "POST",
                 "/contacts/update",
                 json={"email": email, "userId": id, **properties},
@@ -105,7 +105,7 @@ class LoopsClient:
         )
 
         await self._make_request(
-            httpx.Request(
+            self.client.build_request(
                 "POST",
                 "/events/send",
                 json={

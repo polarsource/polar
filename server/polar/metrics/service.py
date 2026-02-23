@@ -332,8 +332,6 @@ class MetricsService:
             )
 
             row_count = 0
-            # Get the set of explicitly requested metric slugs (not dependencies)
-            requested_slugs = set(metrics) if metrics else {m.slug for m in METRICS}
 
             with logfire.span("Fetch and process rows"):
                 async for row in result:
@@ -356,15 +354,7 @@ class MetricsService:
                         temp_period_dict[meta_metric.slug] = computed_value
                         period_dict[meta_metric.slug] = computed_value
 
-                    # Filter to only include explicitly requested metrics (not dependencies)
-                    # Always include timestamp
-                    filtered_period_dict = {
-                        k: v
-                        for k, v in period_dict.items()
-                        if k == "timestamp" or k in requested_slugs
-                    }
-
-                    periods.append(MetricsPeriod.model_validate(filtered_period_dict))
+                    periods.append(MetricsPeriod.model_validate(period_dict))
 
             logfire.info("Processed {row_count} rows", row_count=row_count)
 

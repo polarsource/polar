@@ -81,12 +81,11 @@ async def enqueue_benefits_grants(
         customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
             message = CurrentMessage.get_current_message()
-            if (
-                message
-                and message.message_timestamp
-                < datetime.datetime(
+            if message and message.message_timestamp < (
+                datetime.datetime(
                     2025, 2, 20, 17, 0, 0, tzinfo=datetime.UTC
                 ).timestamp()
+                * 1000
             ):
                 log.info(
                     "Old task message encountered for non-existent customer; skipping.",
@@ -217,12 +216,11 @@ async def benefit_revoke(
         )
         if benefit is None:
             message = CurrentMessage.get_current_message()
-            if (
-                message
-                and message.message_timestamp
-                < datetime.datetime(
+            if message and message.message_timestamp < (
+                datetime.datetime(
                     2025, 2, 23, 11, 0, 0, tzinfo=datetime.UTC
                 ).timestamp()
+                * 1000
             ):
                 log.info(
                     "Old task message encountered for non-existent benefit; skipping.",

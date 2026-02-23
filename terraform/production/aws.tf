@@ -12,7 +12,7 @@ variable "aws_sso_user_assignments" {
   description = "List of user assignments with email and permission set name"
   type = list(object({
     email          = string
-    permission_set = string # One of: admin, s3_full_access
+    permission_set = string # One of: admin, s3_full_access, cloudfront_admin
   }))
   default = []
 }
@@ -28,8 +28,9 @@ locals {
 
   # Map permission set names to their ARNs
   permission_set_arns = {
-    admin          = aws_ssoadmin_permission_set.admin.arn
-    s3_full_access = aws_ssoadmin_permission_set.s3_full_access.arn
+    admin            = aws_ssoadmin_permission_set.admin.arn
+    s3_full_access   = aws_ssoadmin_permission_set.s3_full_access.arn
+    cloudfront_admin = aws_ssoadmin_permission_set.cloudfront_admin.arn
   }
 
   # Create a map keyed by email for the user assignments
@@ -37,6 +38,17 @@ locals {
     for assignment in var.aws_sso_user_assignments :
     "${assignment.email}-${assignment.permission_set}" => assignment
   }
+}
+
+# -----------------------------------------------------------------------------
+# IAM roles
+# -----------------------------------------------------------------------------
+
+module "cloudfront_admin" {
+  source = "../modules/iam_roles/cloudfront_admin"
+
+  lambda_artifacts_bucket_arn = aws_s3_bucket.lambda_artifacts.arn
+  lambda_function_arns        = [module.image_resizer.function_arn]
 }
 
 # -----------------------------------------------------------------------------
@@ -73,6 +85,31 @@ resource "aws_ssoadmin_managed_policy_attachment" "admin" {
   instance_arn       = local.sso_instance_arn
   managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
   permission_set_arn = aws_ssoadmin_permission_set.admin.arn
+}
+
+# CloudFront Admin Permission Set
+resource "aws_ssoadmin_permission_set" "cloudfront_admin" {
+  provider         = aws.sso
+  name             = "CloudFrontAdmin"
+  description      = "Assume the CloudfrontAdmin IAM role for managing CDN distributions"
+  instance_arn     = local.sso_instance_arn
+  session_duration = "PT8H"
+}
+
+resource "aws_ssoadmin_permission_set_inline_policy" "cloudfront_admin" {
+  provider           = aws.sso
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.cloudfront_admin.arn
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = module.cloudfront_admin.role_arn
+      },
+    ]
+  })
 }
 
 # -----------------------------------------------------------------------------

@@ -1,0 +1,33 @@
+{
+  "name": "@polar-sh/shift",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "shift": "./bin/shift.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "effect": "^3.19.0",
+    "@effect/cli": "^0.73.0",
+    "@effect/platform": "^0.94.0",
+    "@effect/platform-node": "^0.104.0",
+    "@effect/printer": "^0.47.0",
+    "@effect/printer-ansi": "^0.47.0",
+    "fast-glob": "^3.3.3",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@polar-sh/typescript-config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "latest",
+    "vitest": "^3.0.0"
+  }
+}

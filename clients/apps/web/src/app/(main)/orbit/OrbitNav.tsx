@@ -28,6 +28,7 @@ const nav = [
     items: [
       { label: 'Avatar', href: '/orbit/components/avatar' },
       { label: 'Box', href: '/orbit/components/box' },
+      { label: 'Stack', href: '/orbit/components/stack' },
       { label: 'Headline', href: '/orbit/components/headline' },
       { label: 'Text', href: '/orbit/components/text' },
       { label: 'Button', href: '/orbit/components/button' },

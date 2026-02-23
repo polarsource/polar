@@ -34,7 +34,7 @@ jobs:
           mkdir -p package
           uv pip install \
             --target package \
-            --platform manylinux2014_x86_64 \
+            --python-platform x86_64-manylinux2014 \
             --only-binary=:all: \
             --python-version 3.13 \
             pillow

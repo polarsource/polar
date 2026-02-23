@@ -383,7 +383,7 @@ async def get_organization_detail(
         )
         products_count = await setup_analytics.get_products_count(organization_id)
         benefits_count = await setup_analytics.get_benefits_count(organization_id)
-        active_benefits_count = await setup_analytics.get_active_benefits_count(
+        enabled_benefits_count = await setup_analytics.get_enabled_benefits_count(
             organization_id
         )
 
@@ -439,7 +439,7 @@ async def get_organization_detail(
             "api_keys_count": api_keys_count,
             "products_count": products_count,
             "benefits_count": benefits_count,
-            "active_benefits_count": active_benefits_count,
+            "enabled_benefits_count": enabled_benefits_count,
             "user_verified": user_verified,
             "account_charges_enabled": account_charges_enabled,
             "account_payouts_enabled": account_payouts_enabled,

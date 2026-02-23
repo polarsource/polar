@@ -641,7 +641,7 @@ const BaseCheckoutForm = ({
                             <div className="flex flex-row items-center space-y-0 space-x-2">
                               <FormControl>
                                 <Checkbox
-                                  className="dark:border-polar-600 border-gray-300"
+                                  className="dark:border-polar-600 cursor-pointer border-gray-300"
                                   checked={field.value ? field.value : false}
                                   onCheckedChange={(checked) => {
                                     if (isUpdatePending) return
@@ -650,7 +650,7 @@ const BaseCheckoutForm = ({
                                   }}
                                 />
                               </FormControl>
-                              <FormLabel className="dark:text-polar-400 font-normal text-gray-500">
+                              <FormLabel className="dark:text-polar-400 cursor-pointer font-normal">
                                 {t('checkout.form.purchasingAsBusiness')}
                               </FormLabel>
                             </div>
@@ -869,9 +869,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const isWalletPayment = selectedPaymentMethod
     ? isWalletPaymentMethod(selectedPaymentMethod)
     : false
-  const hideNameField =
-    isWalletPayment ||
-    (termsExperiment === 'treatment' && selectedPaymentMethod === 'link')
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -933,7 +930,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loading={loading}
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
-            isWalletPayment={hideNameField}
+            isWalletPayment={isWalletPayment}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement

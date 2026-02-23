@@ -67,9 +67,6 @@ const Checkout = ({
   const posthog = usePostHog()
 
   const { variant: termsExperiment } = useExperiment('checkout_terms')
-  const { variant: businessCheckboxExperiment } = useExperiment(
-    'checkout_business_checkbox',
-  )
 
 
   const openedTrackedRef = useRef(false)
@@ -248,7 +245,6 @@ const Checkout = ({
           isUpdatePending={isUpdatePending}
           locale={locale}
           termsExperiment={termsExperiment}
-          businessCheckboxExperiment={businessCheckboxExperiment}
         />
       </ShadowBox>
     )
@@ -348,7 +344,6 @@ const Checkout = ({
             isUpdatePending={isUpdatePending}
             locale={locale}
             termsExperiment={termsExperiment}
-            businessCheckboxExperiment={businessCheckboxExperiment}
           />
         </div>
       </ShadowBoxOnMd>

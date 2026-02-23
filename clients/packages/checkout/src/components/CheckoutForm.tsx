@@ -84,7 +84,6 @@ interface BaseCheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   termsExperiment?: 'treatment' | 'control'
-  businessCheckboxExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
 }
 
@@ -101,7 +100,6 @@ const BaseCheckoutForm = ({
   themePreset: themePresetProps,
   locale: localeProp,
   termsExperiment,
-  businessCheckboxExperiment,
   isWalletPayment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
@@ -323,7 +321,7 @@ const BaseCheckoutForm = ({
               {(checkout.isPaymentFormRequired ||
                 checkout.requireBillingAddress) && (
                 <>
-                  {businessCheckboxExperiment !== 'treatment' && (
+                  {termsExperiment !== 'treatment' && (
                     <FormField
                       control={control}
                       name="isBusinessCustomer"
@@ -350,7 +348,7 @@ const BaseCheckoutForm = ({
                     />
                   )}
 
-                  {businessCheckboxExperiment !== 'treatment' &&
+                  {termsExperiment !== 'treatment' &&
                     isBusinessCustomer && (
                       <FormField
                         control={control}
@@ -583,7 +581,7 @@ const BaseCheckoutForm = ({
                     )}
                   </FormItem>
 
-                  {businessCheckboxExperiment !== 'treatment' &&
+                  {termsExperiment !== 'treatment' &&
                     isBusinessCustomer && (
                       <FormField
                         control={control}
@@ -635,7 +633,7 @@ const BaseCheckoutForm = ({
                       />
                     )}
 
-                  {businessCheckboxExperiment === 'treatment' && (
+                  {termsExperiment === 'treatment' && (
                     <>
                       <FormField
                         control={control}
@@ -734,13 +732,6 @@ const BaseCheckoutForm = ({
                               </FormItem>
                             )}
                           />
-                          <CountryPicker
-                            allowedCountries={Object.values(CountryAlpha2Input)}
-                            value={country || undefined}
-                            onChange={() => {}}
-                            disabled
-                            locale={locale}
-                          />
                         </div>
                       )}
                     </>
@@ -804,10 +795,10 @@ const BaseCheckoutForm = ({
           {termsExperiment === 'treatment' && checkout.isPaymentFormRequired ? (
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               {checkout.activeTrialInterval
-                ? t('checkout.footer.mandateSubscriptionTrial')
+                ? t('checkout.footer.mandateSubscriptionTrial', { buttonLabel: checkoutLabel })
                 : interval
-                  ? t('checkout.footer.mandateSubscription')
-                  : t('checkout.footer.mandateOneTime')}
+                  ? t('checkout.footer.mandateSubscription', { buttonLabel: checkoutLabel })
+                  : t('checkout.footer.mandateOneTime', { buttonLabel: checkoutLabel })}
             </p>
           ) : (
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
@@ -845,7 +836,6 @@ interface CheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   termsExperiment?: 'treatment' | 'control'
-  businessCheckboxExperiment?: 'treatment' | 'control'
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -860,7 +850,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     themePreset: themePresetProps,
     locale,
     termsExperiment,
-    businessCheckboxExperiment,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },

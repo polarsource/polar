@@ -5,11 +5,11 @@ export default {
       merchantOfRecord:
         'Denna beställning behandlas av vår online-återförsäljare & Merchant of Record, Polar, som också hanterar beställningsrelaterade frågor och returer.',
       mandateSubscriptionTrial:
-        'Genom att klicka på "Starta provperiod" godkänner du att Polar Software, Inc., vår återförsäljare och ansvariga säljare, debiterar din valda betalningsmetod med beloppet som visas ovan vid slutet av din provperiod och vid varje efterföljande faktureringsdatum tills du säger upp prenumerationen. Du kan säga upp när som helst innan provperioden löper ut för att undvika debitering.',
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår återförsäljare och ansvariga säljare, debiterar din valda betalningsmetod med beloppet som visas ovan vid slutet av din provperiod och vid varje efterföljande faktureringsdatum tills du säger upp prenumerationen. Du kan säga upp när som helst innan provperioden löper ut för att undvika debitering.',
       mandateSubscription:
-        'Genom att klicka på "Prenumerera nu" godkänner du att Polar Software, Inc., vår återförsäljare och ansvariga säljare, omedelbart debiterar din valda betalningsmetod med beloppet som visas ovan och debiterar samma belopp vid varje efterföljande faktureringsdatum tills du säger upp prenumerationen.',
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår återförsäljare och ansvariga säljare, omedelbart debiterar din valda betalningsmetod med beloppet som visas ovan och debiterar samma belopp vid varje efterföljande faktureringsdatum tills du säger upp prenumerationen.',
       mandateOneTime:
-        'Genom att klicka på "Betala nu" godkänner du att Polar Software, Inc., vår återförsäljare och ansvariga säljare, debiterar din valda betalningsmetod med beloppet som visas ovan. Detta är en engångsdebitering.',
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår återförsäljare och ansvariga säljare, debiterar din valda betalningsmetod med beloppet som visas ovan. Detta är en engångsdebitering.',
     },
     form: {
       email: 'Email',

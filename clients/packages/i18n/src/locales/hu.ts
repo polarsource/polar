@@ -5,11 +5,11 @@ export default {
       merchantOfRecord:
         'Ezt a megrendelést online viszonteladónk és hivatalos kereskedőnk, a Polar dolgozza fel, aki a megrendeléssel kapcsolatos kérdéseket és visszaküldéseket is kezeli.',
       mandateSubscriptionTrial:
-        'A „Próbaidőszak indítása” gombra kattintva felhatalmazza a Polar Software, Inc.-et, online viszonteladónkat és bejegyzett kereskedőnket, hogy a próbaidőszak végén, majd azt követően minden számlázási napon megterhelje a kiválasztott fizetési módot a fent feltüntetett összeggel, amíg le nem mondja az előfizetést. A terhelés elkerülése érdekében a próbaidőszak vége előtt bármikor lemondhatja a szolgáltatást.',
+        'A „{buttonLabel}" gombra kattintva felhatalmazza a Polar Software, Inc.-et, online viszonteladónkat és bejegyzett kereskedőnket, hogy a próbaidőszak végén, majd azt követően minden számlázási napon megterhelje a kiválasztott fizetési módot a fent feltüntetett összeggel, amíg le nem mondja az előfizetést. A terhelés elkerülése érdekében a próbaidőszak vége előtt bármikor lemondhatja a szolgáltatást.',
       mandateSubscription:
-        'Az „Előfizetés” gombra kattintva felhatalmazza a Polar Software, Inc.-et, online viszonteladónkat és bejegyzett kereskedőnket, hogy azonnal megterhelje a kiválasztott fizetési módot a fent feltüntetett összeggel, majd ezt követően minden számlázási napon levonja ugyanezt az összeget, amíg le nem mondja az előfizetést.',
+        'A „{buttonLabel}" gombra kattintva felhatalmazza a Polar Software, Inc.-et, online viszonteladónkat és bejegyzett kereskedőnket, hogy azonnal megterhelje a kiválasztott fizetési módot a fent feltüntetett összeggel, majd ezt követően minden számlázási napon levonja ugyanezt az összeget, amíg le nem mondja az előfizetést.',
       mandateOneTime:
-        'A „Fizetés most” gombra kattintva felhatalmazza a Polar Software, Inc.-et, online viszonteladónkat és bejegyzett kereskedőnket, hogy megterhelje a kiválasztott fizetési módot a fent feltüntetett összeggel. Ez egy egyszeri terhelés.',
+        'A „{buttonLabel}" gombra kattintva felhatalmazza a Polar Software, Inc.-et, online viszonteladónkat és bejegyzett kereskedőnket, hogy megterhelje a kiválasztott fizetési módot a fent feltüntetett összeggel. Ez egy egyszeri terhelés.',
     },
     form: {
       email: 'E-mail cím',

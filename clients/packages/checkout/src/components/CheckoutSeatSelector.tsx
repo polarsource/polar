@@ -15,6 +15,7 @@ export interface CheckoutSeatSelectorProps {
   update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   locale?: AcceptedLocale
   compact?: boolean
+  flattenExperiment?: 'treatment' | 'control'
 }
 
 const CheckoutSeatSelector = ({
@@ -22,6 +23,7 @@ const CheckoutSeatSelector = ({
   update,
   locale,
   compact = false,
+  flattenExperiment,
 }: CheckoutSeatSelectorProps) => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -146,6 +148,8 @@ const CheckoutSeatSelector = ({
 
   const seatLimitText = getSeatLimitText()
 
+  const isFlat = flattenExperiment === 'treatment'
+
   if (compact) {
     return (
       <div className="flex flex-col gap-3">
@@ -157,16 +161,26 @@ const CheckoutSeatSelector = ({
               seat
             </span>
           </div>
-          <div className="dark:border-polar-700 flex items-center gap-0 rounded-xl border border-gray-200">
+          <div
+            className={
+              isFlat
+                ? 'dark:border-polar-700 flex items-center gap-0 rounded-lg border border-gray-200'
+                : 'dark:border-polar-700 flex items-center gap-0 rounded-xl border border-gray-200'
+            }
+          >
             <button
               type="button"
               onClick={() => handleUpdateSeats(displaySeats - 1)}
               disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
-              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-9 w-9 cursor-pointer items-center justify-center rounded-l-xl leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className={
+                isFlat
+                  ? 'dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-l-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40'
+                  : 'dark:text-polar-400 dark:hover:bg-polar-800 flex h-9 w-9 cursor-pointer items-center justify-center rounded-l-xl leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40'
+              }
               aria-label="Decrease seats"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className={isFlat ? 'h-3 w-3' : 'h-3.5 w-3.5'}
                 viewBox="0 0 14 14"
                 fill="none"
                 stroke="currentColor"
@@ -187,14 +201,22 @@ const CheckoutSeatSelector = ({
                 autoFocus
                 min={minimumSeats}
                 max={hasMaximumLimit ? maximumSeats : undefined}
-                className="h-9 w-14 cursor-text rounded-none border-x border-y-0 px-1 text-center text-sm font-medium tabular-nums"
+                className={
+                  isFlat
+                    ? 'h-7 w-10 cursor-text rounded-none border-x border-y-0 px-1 text-center text-sm font-medium tabular-nums'
+                    : 'h-9 w-14 cursor-text rounded-none border-x border-y-0 px-1 text-center text-sm font-medium tabular-nums'
+                }
               />
             ) : (
               <button
                 type="button"
                 onClick={handleSeatClick}
                 disabled={isUpdating}
-                className="dark:border-polar-700 dark:hover:bg-polar-800 h-9 w-14 cursor-pointer border-x border-gray-200 text-center text-sm font-medium tabular-nums transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={
+                  isFlat
+                    ? 'dark:border-polar-700 dark:hover:bg-polar-800 h-7 w-10 cursor-pointer border-x border-gray-200 text-center text-sm font-medium tabular-nums transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50'
+                    : 'dark:border-polar-700 dark:hover:bg-polar-800 h-9 w-14 cursor-pointer border-x border-gray-200 text-center text-sm font-medium tabular-nums transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50'
+                }
                 aria-label="Click to edit seat count"
                 title="Click to edit"
               >
@@ -209,11 +231,15 @@ const CheckoutSeatSelector = ({
                 isUpdating ||
                 isEditing
               }
-              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-9 w-9 cursor-pointer items-center justify-center rounded-r-xl leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className={
+                isFlat
+                  ? 'dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-r-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40'
+                  : 'dark:text-polar-400 dark:hover:bg-polar-800 flex h-9 w-9 cursor-pointer items-center justify-center rounded-r-xl leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40'
+              }
               aria-label="Increase seats"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className={isFlat ? 'h-3 w-3' : 'h-3.5 w-3.5'}
                 viewBox="0 0 14 14"
                 fill="none"
                 stroke="currentColor"

@@ -218,7 +218,9 @@ const Checkout = ({
     const isFlat = flattenExperiment === 'treatment'
     const EmbedWrapper = isFlat ? 'div' : ShadowBox
     return (
-      <EmbedWrapper className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
+      <EmbedWrapper
+        className={`dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 md:bg-white dark:divide-transparent ${isFlat ? '' : 'overflow-hidden rounded-3xl'}`}
+      >
         <PaymentNotReadyBanner />
         {hasProductCheckout(checkout) && (
           <>
@@ -276,6 +278,7 @@ const Checkout = ({
                   checkout={checkout}
                   update={update}
                   locale={locale}
+                  collapsible={flattenExperiment === 'treatment'}
                 />
               </div>
             ) : undefined
@@ -409,6 +412,7 @@ const Checkout = ({
                           }
                           locale={locale}
                           compact
+                          flattenExperiment={flattenExperiment}
                         />
                       )}
                       <CheckoutPricingBreakdown

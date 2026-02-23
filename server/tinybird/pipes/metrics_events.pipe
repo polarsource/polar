@@ -1,6 +1,6 @@
 DESCRIPTION >
-    Events metrics endpoint: orders, revenue, subscriptions, cancellations.
-    Call in parallel with metrics_costs and metrics_mrr for best performance.
+    Events metrics endpoint: orders, revenue, subscriptions.
+    Call in parallel with metrics_costs, metrics_mrr, and metrics_cancellations for best performance.
     Supplies the following metrics:
     - orders
     - revenue
@@ -18,15 +18,6 @@ DESCRIPTION >
     - renewed_subscriptions
     - renewed_subscriptions_revenue
     - renewed_subscriptions_net_revenue
-    - canceled_subscriptions
-    - canceled_subscriptions_customer_service
-    - canceled_subscriptions_low_quality
-    - canceled_subscriptions_missing_features
-    - canceled_subscriptions_switched_service
-    - canceled_subscriptions_too_complex
-    - canceled_subscriptions_too_expensive
-    - canceled_subscriptions_unused
-    - canceled_subscriptions_other
     Held balances are not counted toward revenue related metrics.
 
 NODE sub_state
@@ -600,12 +591,10 @@ SQL >
         e.name,
         e.subscription_id,
         e.timestamp AS event_timestamp,
-        e.ingested_at AS event_ingested_at,
-        e.canceled_at,
-        e.customer_cancellation_reason
+        e.ingested_at AS event_ingested_at
     FROM system_events_by_org AS e
     WHERE
-        e.name IN ('subscription.created', 'subscription.canceled')
+        e.name = 'subscription.created'
         AND e.organization_id IN (
             SELECT
                 toUUID(
@@ -730,153 +719,6 @@ SQL >
         )
     GROUP BY day
 
-NODE subscription_canceled_events_raw
-SQL >
-    %
-    SELECT
-        e.id,
-        e.subscription_id,
-        e.timestamp AS event_timestamp,
-        e.ingested_at AS event_ingested_at,
-        e.canceled_at,
-        e.customer_cancellation_reason
-    FROM system_events_by_org AS e
-    WHERE
-        e.name = 'subscription.canceled'
-        AND e.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
-                    )
-                )
-        )
-        {% if defined(customer_ids) and customer_ids != '' and defined(
-            external_customer_ids
-        ) and external_customer_ids != '' %}
-            AND (
-                e.customer_id IN (
-                    SELECT
-                        arrayJoin(
-                            splitByChar(
-                                ',',
-                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
-                            )
-                        )
-                )
-                OR e.external_customer_id IN (
-                    SELECT
-                        arrayJoin(
-                            splitByChar(
-                                ',',
-                                {{
-                                    String(
-                                        external_customer_ids,
-                                        description="Comma-separated external customer IDs",
-                                    )
-                                }}
-                            )
-                        )
-                )
-            )
-        {% elif defined(customer_ids) and customer_ids != '' %}
-            AND e.customer_id IN (
-                SELECT
-                    arrayJoin(
-                        splitByChar(
-                            ',',
-                            {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
-                        )
-                    )
-            )
-        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
-            AND e.external_customer_id IN (
-                SELECT
-                    arrayJoin(
-                        splitByChar(
-                            ',',
-                            {{
-                                String(
-                                    external_customer_ids,
-                                    description="Comma-separated external customer IDs",
-                                )
-                            }}
-                        )
-                    )
-            )
-        {% end %}
-
-NODE latest_canceled
-SQL >
-    %
-    SELECT
-        lc.subscription_id,
-        tupleElement(lc.latest_cancel, 1) AS canceled_at,
-        tupleElement(lc.latest_cancel, 2) AS customer_cancellation_reason
-    FROM
-        (
-            SELECT
-                se.subscription_id,
-                argMax(
-                    tuple(se.canceled_at, se.customer_cancellation_reason),
-                    (
-                        COALESCE(se.canceled_at, toDateTime64(0, 3, 'UTC')),
-                        se.event_timestamp,
-                        se.event_ingested_at
-                    )
-                ) AS latest_cancel
-            FROM subscription_canceled_events_raw AS se
-            WHERE se.canceled_at IS NOT NULL
-            GROUP BY se.subscription_id
-        ) AS lc
-
-NODE canceled
-SQL >
-    %
-    SELECT
-        {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
-        {% elif interval == 'hour' %}
-            toStartOfHour(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
-        {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }}), 1) AS day,
-        {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
-        {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
-        {% else %} toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
-        {% end %}
-        count(*) AS canceled_subscriptions,
-        countIf(
-            lc.customer_cancellation_reason = 'customer_service'
-        ) AS canceled_subscriptions_customer_service,
-        countIf(lc.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
-        countIf(
-            lc.customer_cancellation_reason = 'missing_features'
-        ) AS canceled_subscriptions_missing_features,
-        countIf(
-            lc.customer_cancellation_reason = 'switched_service'
-        ) AS canceled_subscriptions_switched_service,
-        countIf(lc.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
-        countIf(
-            lc.customer_cancellation_reason = 'too_expensive'
-        ) AS canceled_subscriptions_too_expensive,
-        countIf(lc.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
-        countIf(
-            lc.customer_cancellation_reason = 'other'
-            OR lc.customer_cancellation_reason IS NULL
-            OR lc.customer_cancellation_reason = ''
-        ) AS canceled_subscriptions_other
-    FROM latest_canceled AS lc
-    INNER JOIN sub_state ss ON lc.subscription_id = ss.subscription_id
-    WHERE
-        lc.canceled_at
-        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND lc.canceled_at
-        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND ss.ends_at > toDateTime64(0, 3, 'UTC')
-    GROUP BY day
-
 NODE endpoint
 SQL >
     %
@@ -899,26 +741,10 @@ SQL >
         COALESCE(od.new_subscriptions_net_revenue, 0) AS new_subscriptions_net_revenue,
         COALESCE(od.renewed_subscriptions, 0) AS renewed_subscriptions,
         COALESCE(od.renewed_subscriptions_revenue, 0) AS renewed_subscriptions_revenue,
-        COALESCE(od.renewed_subscriptions_net_revenue, 0) AS renewed_subscriptions_net_revenue,
-        COALESCE(c.canceled_subscriptions, 0) AS canceled_subscriptions,
-        COALESCE(
-            c.canceled_subscriptions_customer_service, 0
-        ) AS canceled_subscriptions_customer_service,
-        COALESCE(c.canceled_subscriptions_low_quality, 0) AS canceled_subscriptions_low_quality,
-        COALESCE(
-            c.canceled_subscriptions_missing_features, 0
-        ) AS canceled_subscriptions_missing_features,
-        COALESCE(
-            c.canceled_subscriptions_switched_service, 0
-        ) AS canceled_subscriptions_switched_service,
-        COALESCE(c.canceled_subscriptions_too_complex, 0) AS canceled_subscriptions_too_complex,
-        COALESCE(c.canceled_subscriptions_too_expensive, 0) AS canceled_subscriptions_too_expensive,
-        COALESCE(c.canceled_subscriptions_unused, 0) AS canceled_subscriptions_unused,
-        COALESCE(c.canceled_subscriptions_other, 0) AS canceled_subscriptions_other
+        COALESCE(od.renewed_subscriptions_net_revenue, 0) AS renewed_subscriptions_net_revenue
     FROM intervals w
     LEFT JOIN orders_daily od ON od.day = w.interval
     LEFT JOIN sub_created_daily sc ON sc.day = w.interval
-    LEFT JOIN canceled c ON c.day = w.interval
     CROSS JOIN events_baseline b
     ORDER BY w.interval
 

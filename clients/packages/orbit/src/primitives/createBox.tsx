@@ -53,16 +53,23 @@ export type ThemeSpec = {
   radii: Record<string, RadiusClasses>
 }
 
+// ─── Breakpoint support ───────────────────────────────────────────────────────
+// Each prop can be a plain value or a breakpoint map { default: ..., xl: ... }.
+// "default" maps to no prefix; all other breakpoints get a Tailwind prefix.
+
+export type Breakpoint = 'default' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+export type Responsive<T> = T | Partial<Record<Breakpoint, T>>
+
 // ─── Flex props ───────────────────────────────────────────────────────────────
 // Not theme-dependent — map directly to fixed Tailwind utility classes.
 
 export type FlexProps = {
-  display?: 'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'
-  flexDirection?: 'row' | 'column' | 'row-reverse' | 'column-reverse'
-  alignItems?: 'start' | 'end' | 'center' | 'stretch' | 'baseline'
-  justifyContent?: 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'
-  flexWrap?: 'wrap' | 'nowrap' | 'wrap-reverse'
-  flex?: '1' | 'auto' | 'none' | 'initial'
+  display?: Responsive<'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'>
+  flexDirection?: Responsive<'row' | 'column' | 'row-reverse' | 'column-reverse'>
+  alignItems?: Responsive<'start' | 'end' | 'center' | 'stretch' | 'baseline'>
+  justifyContent?: Responsive<'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'>
+  flexWrap?: Responsive<'wrap' | 'nowrap' | 'wrap-reverse'>
+  flex?: Responsive<'1' | 'auto' | 'none' | 'initial'>
 }
 
 // ─── All Box prop names ───────────────────────────────────────────────────────

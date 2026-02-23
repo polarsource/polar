@@ -3,7 +3,7 @@ import { nextJsConfig } from '@polar-sh/eslint-config/next-js'
 // Elements replaced by Orbit primitives — ban raw JSX usage as a warning.
 const orbitElementRule = (element, replacement) => ({
   selector: `JSXOpeningElement[name.name="${element}"]`,
-  message: `Use ${replacement} from @/components/Orbit instead of <${element}>.`,
+  message: `Use ${replacement} from @polar-sh/orbit instead of <${element}>.`,
 })
 
 /** @type {import("eslint").Linter.Config} */

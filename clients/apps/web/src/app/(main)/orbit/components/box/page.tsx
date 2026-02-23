@@ -66,7 +66,7 @@ const guidelines = [
   },
   {
     rule: 'className is an escape hatch',
-    desc: 'Dimensions (h-12, w-full), responsive prefixes (md:flex-row), and anything not in the token set belong in className. Do not use it to bypass token props.',
+    desc: 'Dimensions (h-12, w-full), and anything not in the token set belong in className. Flex props now accept responsive breakpoint maps directly — no need for md:flex-row in className.',
     do: `<Box
   padding={3}
   className="w-full md:w-1/2"
@@ -98,6 +98,39 @@ const justifyContentExamples = [
   { value: 'end', label: 'end' },
 ] as const
 
+// ─── Responsive examples ───────────────────────────────────────────────────────
+
+const responsiveExamples = [
+  {
+    label: 'flexDirection',
+    code: `<Box
+  display="flex"
+  flexDirection={{ default: 'column', xl: 'row' }}
+  gap={2}
+>`,
+    desc: 'Stacks vertically by default, switches to a row at the xl breakpoint.',
+  },
+  {
+    label: 'alignItems',
+    code: `<Box
+  display="flex"
+  flexDirection="row"
+  alignItems={{ default: 'start', xl: 'center' }}
+  gap={2}
+>`,
+    desc: 'Aligns to the start on small screens, centers at xl.',
+  },
+  {
+    label: 'justifyContent',
+    code: `<Box
+  display="flex"
+  flexDirection="row"
+  justifyContent={{ default: 'start', xl: 'between' }}
+>`,
+    desc: 'Packed left by default, spreads to space-between at xl.',
+  },
+]
+
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
 const props = [
@@ -109,39 +142,39 @@ const props = [
   },
   {
     name: 'display',
-    type: "'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'",
+    type: "Responsive<'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'>",
     default: '—',
-    desc: 'CSS display value.',
+    desc: 'CSS display value. Accepts a plain value or a breakpoint map.',
   },
   {
     name: 'flexDirection',
-    type: "'row' | 'column' | 'row-reverse' | 'column-reverse'",
+    type: "Responsive<'row' | 'column' | 'row-reverse' | 'column-reverse'>",
     default: '—',
-    desc: 'Flex axis direction. Requires display="flex" or display="inline-flex".',
+    desc: 'Flex axis direction. Accepts a plain value or a breakpoint map.',
   },
   {
     name: 'alignItems',
-    type: "'start' | 'end' | 'center' | 'stretch' | 'baseline'",
+    type: "Responsive<'start' | 'end' | 'center' | 'stretch' | 'baseline'>",
     default: '—',
-    desc: 'Cross-axis alignment.',
+    desc: 'Cross-axis alignment. Accepts a plain value or a breakpoint map.',
   },
   {
     name: 'justifyContent',
-    type: "'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'",
+    type: "Responsive<'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'>",
     default: '—',
-    desc: 'Main-axis distribution.',
+    desc: 'Main-axis distribution. Accepts a plain value or a breakpoint map.',
   },
   {
     name: 'flexWrap',
-    type: "'wrap' | 'nowrap' | 'wrap-reverse'",
+    type: "Responsive<'wrap' | 'nowrap' | 'wrap-reverse'>",
     default: '—',
-    desc: 'Whether flex children wrap onto multiple lines.',
+    desc: 'Whether flex children wrap onto multiple lines. Accepts a plain value or a breakpoint map.',
   },
   {
     name: 'flex',
-    type: "'1' | 'auto' | 'none' | 'initial'",
+    type: "Responsive<'1' | 'auto' | 'none' | 'initial'>",
     default: '—',
-    desc: 'flex shorthand for the element itself as a flex child.',
+    desc: 'flex shorthand for the element itself as a flex child. Accepts a plain value or a breakpoint map.',
   },
   {
     name: 'backgroundColor / color / borderColor',
@@ -355,6 +388,104 @@ export default function BoxPage() {
               </Box>
             ))}
           </Box>
+        </Box>
+      </Box>
+
+      {/* Responsive props */}
+      <Box display="flex" flexDirection="column" gap={4}>
+        <OrbitSectionHeader
+          title="Responsive props"
+          description="All flex props accept a breakpoint map in addition to a plain value. Use 'default' for the base (un-prefixed) class, then override at any Tailwind breakpoint. Class strings are pre-built static literals — Tailwind JIT scans them at build time."
+        />
+
+        {/* Live demo */}
+        <Box display="flex" flexDirection="column" className="gap-3">
+          <Text as="span" variant="subtle" fontSize="xs">Live demo — resize the window to see the layout change at xl</Text>
+          <Box
+            backgroundColor="bg-elevated"
+            borderRadius="lg"
+            padding={3}
+          >
+            <Box
+              display="flex"
+              flexDirection={{ default: 'column', xl: 'row' }}
+              alignItems={{ default: 'start', xl: 'center' }}
+              justifyContent={{ default: 'start', xl: 'between' }}
+              gap={2}
+            >
+              {(['A', 'B', 'C'] as const).map((label) => (
+                <Box
+                  key={label}
+                  flex="1"
+                  backgroundColor="bg-surface"
+                  borderRadius="md"
+                  padding={2}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  className="dark:border-polar-700 h-12 border border-neutral-200"
+                >
+                  <Text fontFamily="mono" fontSize="sm">{label}</Text>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
+{`<Box
+  display="flex"
+  flexDirection={{ default: 'column', xl: 'row' }}
+  alignItems={{ default: 'start', xl: 'center' }}
+  justifyContent={{ default: 'start', xl: 'between' }}
+  gap={2}
+>`}
+          </pre>
+        </Box>
+
+        {/* Syntax reference */}
+        <Box display="flex" flexDirection="column" className="dark:divide-polar-800 divide-y divide-neutral-200">
+          {responsiveExamples.map(({ label, code, desc }) => (
+            <Box key={label} className="grid grid-cols-5 items-start gap-8 py-5">
+              <Box display="flex" flexDirection="column" className="col-span-2 gap-1">
+                <Text as="code" fontFamily="mono" fontSize="sm">{label}</Text>
+                <Text variant="subtle" fontSize="xs">{desc}</Text>
+              </Box>
+              <Box className="col-span-3">
+                <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
+                  {code}
+                </pre>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+
+        {/* Breakpoints reference */}
+        <Box
+          backgroundColor="bg-elevated"
+          borderRadius="lg"
+          padding={3}
+          display="flex"
+          flexDirection="column"
+          gap={2}
+        >
+          <Text fontSize="xs" fontWeight="medium">Available breakpoints</Text>
+          <Box display="flex" flexDirection="row" gap={2} flexWrap="wrap">
+            {(['default', 'sm', 'md', 'lg', 'xl', '2xl'] as const).map((bp) => (
+              <Box
+                key={bp}
+                backgroundColor="bg-surface"
+                borderRadius="sm"
+                paddingX={2}
+                paddingY={1}
+                className="dark:border-polar-700 border border-neutral-200"
+              >
+                <Text as="code" fontFamily="mono" fontSize="xs">{bp}</Text>
+              </Box>
+            ))}
+          </Box>
+          <Text variant="subtle" fontSize="xs">
+            <Text as="code" fontFamily="mono" fontSize="xs">&apos;default&apos;</Text>
+            {' '}emits no prefix. All others map to the standard Tailwind responsive prefixes.
+          </Text>
         </Box>
       </Box>
 

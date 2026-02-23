@@ -43,13 +43,14 @@ from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
-from polar.models.order import Order
+from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
+from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
@@ -64,7 +65,6 @@ from .views.modals import DeleteStripeModal, DisconnectStripeModal
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
-from .views.sections.review_section import ReviewSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
 
@@ -365,6 +365,10 @@ async def get_organization_detail(
     # Fetch analytics data for overview section
     setup_data = None
     payment_stats = None
+    orders_count = 0
+    unrefunded_orders_count = 0
+    agent_report = None
+    agent_reviewed_at = None
     if section == "overview":
         setup_analytics = OrganizationSetupAnalyticsService(session)
         payment_analytics = PaymentAnalyticsService(session)
@@ -444,28 +448,73 @@ async def get_organization_detail(
         (
             payment_count,
             total_amount,
-            risk_scores,
+            _risk_scores,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
         )
+        failed_count = await payment_analytics.get_failed_payments_count(
+            organization_id
+        )
+        (
+            dispute_count,
+            dispute_amount,
+            chargeback_count,
+            chargeback_amount,
+        ) = await payment_analytics.get_dispute_stats(organization_id)
 
-        p50_risk, p90_risk = PaymentAnalyticsService.calculate_risk_percentiles(
-            risk_scores
+        total_attempts = payment_count + failed_count
+        auth_rate = (
+            (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
         )
         refund_rate = (refunds_count / payment_count * 100) if payment_count > 0 else 0
+        dispute_rate = (dispute_count / payment_count * 100) if payment_count > 0 else 0
+        chargeback_rate = (
+            (chargeback_count / payment_count * 100) if payment_count > 0 else 0
+        )
 
         payment_stats = {
             "payment_count": payment_count,
-            "total_amount": total_amount / 100,  # Convert cents to dollars
+            "total_amount": total_amount / 100,
             "refunds_count": refunds_count,
-            "refunds_amount": refunds_amount / 100,  # Convert cents to dollars
+            "refunds_amount": refunds_amount / 100,
             "refund_rate": refund_rate,
-            "p50_risk": p50_risk,
-            "p90_risk": p90_risk,
+            "auth_rate": auth_rate,
+            "failed_count": failed_count,
+            "dispute_count": dispute_count,
+            "dispute_amount": dispute_amount / 100,
+            "dispute_rate": dispute_rate,
+            "chargeback_count": chargeback_count,
+            "chargeback_amount": chargeback_amount / 100,
+            "chargeback_rate": chargeback_rate,
             "next_review_threshold": organization.next_review_threshold,
             "total_transfer_sum": total_transfer_sum,
         }
+
+        # Fetch agent review data
+        orders_count_result = await session.execute(
+            select(func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(Customer.organization_id == organization_id)
+        )
+        orders_count = orders_count_result.scalar() or 0
+
+        unrefunded_orders_result = await session.execute(
+            select(func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Order.status.notin_(
+                    [OrderStatus.refunded, OrderStatus.partially_refunded]
+                ),
+            )
+        )
+        unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
+
+        review_repo = OrganizationReviewRepository.from_session(session)
+        agent_review = await review_repo.get_latest_agent_review(organization_id)
+        agent_report = agent_review.report if agent_review else None
+        agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
     # Render based on section
     with layout(
@@ -479,37 +528,16 @@ async def get_organization_detail(
         with detail_view.render(request, section):
             # Render section content
             if section == "overview":
-                overview = OverviewSection(organization)
+                overview = OverviewSection(
+                    organization,
+                    orders_count=orders_count,
+                    unrefunded_orders_count=unrefunded_orders_count,
+                    agent_report=agent_report,
+                    agent_reviewed_at=agent_reviewed_at,
+                )
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats
                 ):
-                    pass
-            elif section == "review":
-                from polar.organization_review.repository import (
-                    OrganizationReviewRepository,
-                )
-
-                orders_count_result = await session.execute(
-                    select(func.count(Order.id))
-                    .join(Customer, Order.customer_id == Customer.id)
-                    .where(Customer.organization_id == organization_id)
-                )
-                orders_count = orders_count_result.scalar() or 0
-
-                review_repo = OrganizationReviewRepository.from_session(session)
-                agent_review = await review_repo.get_latest_agent_review(
-                    organization_id
-                )
-
-                review_section = ReviewSection(
-                    organization,
-                    orders_count=orders_count,
-                    agent_report=agent_review.report if agent_review else None,
-                    agent_reviewed_at=agent_review.reviewed_at
-                    if agent_review
-                    else None,
-                )
-                with review_section.render(request):
                     pass
             elif section == "team":
                 # Get admin user for the organization
@@ -622,7 +650,7 @@ async def run_review_agent(
     return HXRedirectResponse(
         request,
         str(request.url_for("organizations-v2:detail", organization_id=organization_id))
-        + "?section=review",
+        + "?section=overview",
         303,
     )
 

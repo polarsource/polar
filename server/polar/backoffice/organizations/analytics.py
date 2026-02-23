@@ -7,6 +7,7 @@ from polar.models import (
     Benefit,
     CheckoutLink,
     Customer,
+    Dispute,
     Order,
     Organization,
     OrganizationAccessToken,
@@ -15,6 +16,7 @@ from polar.models import (
     Refund,
     WebhookEndpoint,
 )
+from polar.models.dispute import DisputeStatus
 from polar.models.payment import PaymentStatus
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
@@ -74,6 +76,67 @@ class PaymentAnalyticsService:
         if result_row:
             return (result_row[0], result_row[1])
         return (0, 0)
+
+    async def get_failed_payments_count(self, organization_id: UUID4) -> int:
+        """Get count of failed payments for auth rate calculation."""
+        result = await self.session.execute(
+            self.payment_repo.get_base_statement()
+            .where(
+                Payment.organization_id == organization_id,
+                Payment.status == PaymentStatus.failed,
+            )
+            .with_only_columns(func.count(Payment.id))
+        )
+        return result.scalar() or 0
+
+    async def get_dispute_stats(
+        self, organization_id: UUID4
+    ) -> tuple[int, int, int, int]:
+        """Get dispute and chargeback stats for organization.
+
+        Returns (dispute_count, dispute_amount, chargeback_count, chargeback_amount).
+        Disputes = all non-prevented/non-early_warning disputes.
+        Chargebacks = disputes with status 'lost'.
+        """
+        # All actual disputes (excludes prevented and early_warning)
+        actual_dispute_statuses = [
+            DisputeStatus.needs_response,
+            DisputeStatus.under_review,
+            DisputeStatus.lost,
+            DisputeStatus.won,
+        ]
+        result = await self.session.execute(
+            select(
+                func.count(Dispute.id),
+                func.coalesce(func.sum(Dispute.amount), 0),
+            )
+            .join(Payment, Dispute.payment_id == Payment.id)
+            .where(
+                Payment.organization_id == organization_id,
+                Dispute.status.in_(actual_dispute_statuses),
+            )
+        )
+        row = result.first()
+        dispute_count = row[0] if row else 0
+        dispute_amount = row[1] if row else 0
+
+        # Lost disputes = chargebacks
+        cb_result = await self.session.execute(
+            select(
+                func.count(Dispute.id),
+                func.coalesce(func.sum(Dispute.amount), 0),
+            )
+            .join(Payment, Dispute.payment_id == Payment.id)
+            .where(
+                Payment.organization_id == organization_id,
+                Dispute.status == DisputeStatus.lost,
+            )
+        )
+        cb_row = cb_result.first()
+        chargeback_count = cb_row[0] if cb_row else 0
+        chargeback_amount = cb_row[1] if cb_row else 0
+
+        return dispute_count, dispute_amount, chargeback_count, chargeback_amount
 
     @staticmethod
     def calculate_risk_percentiles(risk_scores: list[float]) -> tuple[float, float]:

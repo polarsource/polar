@@ -116,15 +116,15 @@ const sections = [
 
 export default function GuidelinesPage() {
   return (
-    <Stack vertical gap={10}>
+    <Stack vertical gap="spacing-10">
       <OrbitPageHeader
         title="Guidelines"
         description="Principles and rules for how Orbit components behave, and how to use them effectively in product contexts."
       />
 
       {sections.map(({ title, subsections }) => (
-        <Stack vertical key={title} gap={5}>
-          <Stack vertical gap={1.5}>
+        <Stack vertical key={title} gap="spacing-5">
+          <Stack vertical gap="spacing-1.5">
             <Headline as="h3" text={title} />
             <Box className="dark:border-polar-800 border-t border-neutral-200" />
           </Stack>

@@ -7,10 +7,10 @@ import { createBox } from '../primitives/createBox'
  *
  * @example
  * // Token-constrained props
- * <Box padding={3} backgroundColor="bg-surface" borderRadius="lg">…</Box>
+ * <Box padding="spacing-3" backgroundColor="bg-surface" borderRadius="lg">…</Box>
  *
  * // Polymorphic — renders as a <section>
- * <Box as="section" padding={6} gap={4} className="flex flex-col">…</Box>
+ * <Box as="section" padding="spacing-6" gap="spacing-4" className="flex flex-col">…</Box>
  *
  * // Escape hatches for anything not in the token set
  * <Box className="grid grid-cols-3" style={{ aspectRatio: '16/9' }}>…</Box>

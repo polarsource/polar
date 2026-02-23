@@ -374,7 +374,7 @@ export function resolveProperties<T extends ThemeSpec>(
   const classes: string[] = []
 
   const c = theme.colors
-  const sp = (k: keyof T['spacing']) => theme.spacing[k as string | number]
+  const sp = (k: keyof T['spacing']) => theme.spacing[k as string]
   const r = (k: keyof T['radii']) => theme.radii[k as string]
 
   // ── Colors

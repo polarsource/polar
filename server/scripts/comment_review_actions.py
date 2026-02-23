@@ -1,10 +1,14 @@
 """
-Script to post action-required comments on Plain review threads.
+Script to post review messages on Plain "Initial Account Review" threads.
+
+Mirrors the logic in PlainService.create_organization_review_thread so that
+existing threads that were created before we started sending the outbound
+review email can be backfilled with the same message, assignment, and snooze.
 
 For each "Initial Account Review" thread in Plain:
 1. Extract the org slug from the thread preview text
-2. Check the org for issues (missing website, missing socials, unverified admin, test orders)
-3. Post a checklist comment on the thread listing required actions
+2. Check the org for issues (missing website, missing socials, unverified admin)
+3. Post the review message, assign to a support agent, and snooze if action items exist
 
 Usage:
     cd server
@@ -28,6 +32,7 @@ Usage:
 import argparse
 import asyncio
 import dataclasses
+import random
 import re
 import sys
 from datetime import UTC, datetime, timedelta
@@ -35,26 +40,33 @@ from typing import Any
 
 import httpx
 import structlog
-from plain_client import Plain, ReplyToThreadInput, ThreadsFilter, ThreadStatus
+from plain_client import (
+    AssignThreadInput,
+    Plain,
+    ReplyToThreadInput,
+    SnoozeStatusDetail,
+    SnoozeThreadInput,
+    ThreadsFilter,
+    ThreadStatus,
+)
 from plain_client.input_types import DatetimeFilter
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.kit.currency import format_currency
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Customer, Order, Organization, User, UserOrganization
-from polar.models.order import OrderStatus
+from polar.models import Organization, User
 from polar.postgres import AsyncSession, create_async_engine
-
-GUIDELINES_URL = (
-    "https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines"
-)
 
 log = structlog.get_logger()
 
 REVIEW_LABEL_TYPE_ID = "lt_01JFG7F4N67FN3MAWK06FJ8FPG"
 SLUG_PATTERN = re.compile(r"The organization `?(\S+?)`? should be reviewed")
+
+SUPPORT_AGENT_IDS: list[str] = [
+    "u_01K8JEAC8BS0ED0KBCGHYCHA70",  # Isac
+    "u_01K0RC6SY9Q8KSVNAYGD7EY6M5",  # Rishi
+]
 
 
 @dataclasses.dataclass
@@ -63,8 +75,6 @@ class OrgIssues:
     missing_socials: bool = False
     admin_not_verified: bool = False
     admin_verification_status: str = ""
-    test_order_count: int = 0
-    test_order_total: str = ""
 
 
 async def get_review_threads(
@@ -123,8 +133,13 @@ async def get_review_threads(
     return threads
 
 
-async def check_org_issues(session: AsyncSession, slug: str) -> OrgIssues | None:
-    """Check an organization for actionable issues. Returns None if org not found."""
+async def check_org_issues(
+    session: AsyncSession, slug: str
+) -> tuple[OrgIssues, str] | None:
+    """Check an organization for actionable issues.
+
+    Returns a tuple of (issues, org_name) or None if org not found.
+    """
     issues = OrgIssues()
 
     # Load organization with account
@@ -139,11 +154,11 @@ async def check_org_issues(session: AsyncSession, slug: str) -> OrgIssues | None
         log.warning("Organization not found", slug=slug)
         return None
 
-    # Check missing website
+    org_name = org.name or org.slug
+
     if not org.website:
         issues.missing_website = True
 
-    # Check missing socials
     if not org.socials:
         issues.missing_socials = True
 
@@ -156,85 +171,71 @@ async def check_org_issues(session: AsyncSession, slug: str) -> OrgIssues | None
             issues.admin_not_verified = True
             issues.admin_verification_status = admin.identity_verification_status
 
-    # Check for non-refunded test orders (customer email matches an org member email)
-    member_emails_stmt = (
-        select(func.lower(User.email))
-        .join(UserOrganization, UserOrganization.user_id == User.id)
-        .where(UserOrganization.organization_id == org.id)
-    )
-    member_emails_result = await session.execute(member_emails_stmt)
-    member_emails = set(member_emails_result.scalars().all())
-
-    if member_emails:
-        test_orders_stmt = (
-            select(Order)
-            .join(Customer, Customer.id == Order.customer_id)
-            .where(
-                Customer.organization_id == org.id,
-                func.lower(Customer.email).in_(member_emails),
-                Order.status == OrderStatus.paid,
-                Order.net_amount > 0,
-            )
-        )
-        test_orders_result = await session.execute(test_orders_stmt)
-        test_orders = test_orders_result.scalars().all()
-
-        if test_orders:
-            total = sum(o.net_amount for o in test_orders)
-            currency = test_orders[0].currency
-            issues.test_order_count = len(test_orders)
-            issues.test_order_total = format_currency(total, currency)
-
-    return issues
+    return issues, org_name
 
 
-def has_issues(issues: OrgIssues) -> bool:
-    return (
-        issues.missing_website
-        or issues.missing_socials
-        or issues.admin_not_verified
-        or issues.test_order_count > 0
-    )
+def has_action_items(issues: OrgIssues) -> bool:
+    return issues.missing_website or issues.missing_socials or issues.admin_not_verified
 
 
-def build_comment(slug: str, issues: OrgIssues) -> str:
-    """Build a friendly numbered message adapted to the org's specific issues."""
+def build_review_message(organization_name: str, issues: OrgIssues) -> str:
+    """Build a friendly numbered message adapted to the org's specific issues.
+
+    Matches PlainService._build_review_message exactly.
+    """
     lines: list[str] = [
-        "Thank you so much for submitting the form about you, your business & intended use case with Polar.",
-        "However, we have some follow-up questions/requirements for our review:",
+        f"Welcome to Polar! Your organization {organization_name} is currently being reviewed. "
+        "This is a standard step all new organizations go through so we can verify account details and ensure compliance with our policies.",
+        "",
+        "Reviews typically take up to 3 business days (occasionally up to 7). "
+        "You can keep using Polar in the mean time to set up your products and integration.",
         "",
     ]
 
-    item_num = 1
+    has_items = has_action_items(issues)
 
-    if issues.missing_website:
+    if has_items:
+        item_num = 1
+
+        if issues.missing_website:
+            lines.append(
+                f"{item_num}. Please add your product's URL under Settings \u2192 General \u2192 Website."
+            )
+            item_num += 1
+
+        if issues.missing_socials:
+            lines.append(
+                f"{item_num}. Please add your personal social links (not your product's) under Settings \u2192 General \u2192 Social links. "
+                "These are never displayed publicly. We only use them to verify your identity to avoid people impersonating businesses they do not own."
+            )
+            item_num += 1
+
+        if issues.admin_not_verified:
+            lines.append(
+                f"{item_num}. Verify your identity under Finance \u2192 Payout account. "
+                "You'll need an ID document (driver's license, ID, passport, ...) and your phone. "
+                "It's fully secure and only takes a few minutes."
+            )
+
+        lines.append("")
+
+    if has_items:
         lines.append(
-            f"{item_num}. Can you please add your product's URL to the org settings in Polar dashboard? "
-            "You can add or change this by navigating to Settings > General and changing the field named 'Website'."
+            "Once you've completed these steps, please reply to this email and we'll finalize your review."
         )
-        item_num += 1
-
-    if issues.missing_socials:
+    else:
         lines.append(
-            f"{item_num}. Can you please add your personal social links (not the product's) to the org settings in Polar dashboard? "
-            "We associate with the merchant to make sure we know who's behind what. "
-            "In the past, people have used stolen emails to act on behalf of stores that don't even know what's happening in their name."
+            "We'll let you know as soon as you're all set, or if we need anything from you."
         )
-        item_num += 1
-
-    # Always ask for a discount code to test the payment flow
+    lines.append("")
     lines.append(
-        f"{item_num}. Can you share a 100% discount code that I can test the payment flow with?"
+        "You can learn more about our review process on our website: "
+        "https://polar.sh/docs/merchant-of-record/account-reviews. "
+        "Any other questions? Just reply to this message."
     )
-    item_num += 1
-
-    if issues.test_order_count > 0:
-        lines.append(
-            f"{item_num}. Could you please refund all the test sales "
-            "(by going to Sales > Orders > [Particular Order] > Scroll and click Refund order) "
-            f"as per our guidelines - {GUIDELINES_URL}?"
-        )
-        item_num += 1
+    lines.append("")
+    lines.append("Cheers,")
+    lines.append("The customer success team at Polar")
 
     return "\n".join(lines)
 
@@ -263,69 +264,108 @@ async def process_threads(
                     processing=len(threads_limited),
                 )
 
-            comments_to_post = 0
+            processed = 0
             async with AsyncSessionMaker() as session:
                 for thread_data in threads_limited:
                     thread_id = thread_data["thread_id"]
                     slug = thread_data["slug"]
 
-                    issues = await check_org_issues(session, slug)
+                    check_result = await check_org_issues(session, slug)
 
-                    if issues is None:
+                    if check_result is None:
                         continue
 
-                    if not has_issues(issues):
-                        log.info("No issues found, skipping", slug=slug)
-                        continue
-
-                    comment = build_comment(slug, issues)
+                    issues, org_name = check_result
+                    message = build_review_message(org_name, issues)
+                    has_items = has_action_items(issues)
 
                     log.info(
-                        "Issues found",
+                        "Processing thread",
                         slug=slug,
                         thread_id=thread_id,
+                        org_name=org_name,
                         missing_website=issues.missing_website,
                         missing_socials=issues.missing_socials,
                         admin_not_verified=issues.admin_not_verified,
-                        test_orders=issues.test_order_count,
-                        comment=comment,
+                        has_action_items=has_items,
+                        message=message,
                     )
 
                     if dry_run:
                         log.info(
-                            "DRY RUN: Would post comment",
+                            "DRY RUN: Would post message, assign, and snooze",
                             thread_id=thread_id,
                             slug=slug,
+                            would_snooze=has_items,
                         )
                     else:
-                        result = await plain.reply_to_thread(
-                            ReplyToThreadInput(
+                        # 1. Assign thread to a random support agent
+                        agent_id = random.choice(SUPPORT_AGENT_IDS)
+                        assign_result = await plain.assign_thread(
+                            AssignThreadInput(
                                 thread_id=thread_id,
-                                text_content=comment,
-                                markdown_content=comment,
+                                user_id=agent_id,
                             )
                         )
-                        if result.error is not None:
+                        if assign_result.error is not None:
                             log.error(
-                                "Failed to post comment",
+                                "Failed to assign thread",
                                 thread_id=thread_id,
                                 slug=slug,
-                                error=str(result.error),
+                                error=str(assign_result.error),
+                            )
+
+                        # 2. Post the review message as an outbound reply
+                        reply_result = await plain.reply_to_thread(
+                            ReplyToThreadInput(
+                                thread_id=thread_id,
+                                text_content=message,
+                                markdown_content=message,
+                            )
+                        )
+                        if reply_result.error is not None:
+                            log.error(
+                                "Failed to post message",
+                                thread_id=thread_id,
+                                slug=slug,
+                                error=str(reply_result.error),
                             )
                         else:
                             log.info(
-                                "Posted comment",
+                                "Posted review message",
                                 thread_id=thread_id,
                                 slug=slug,
                             )
 
-                    comments_to_post += 1
+                        # 3. Snooze the thread if we asked the customer for more details
+                        if has_items:
+                            snooze_result = await plain.snooze_thread(
+                                SnoozeThreadInput(
+                                    thread_id=thread_id,
+                                    status_detail=SnoozeStatusDetail.WAITING_FOR_CUSTOMER,
+                                )
+                            )
+                            if snooze_result.error is not None:
+                                log.error(
+                                    "Failed to snooze thread",
+                                    thread_id=thread_id,
+                                    slug=slug,
+                                    error=str(snooze_result.error),
+                                )
+                            else:
+                                log.info(
+                                    "Snoozed thread",
+                                    thread_id=thread_id,
+                                    slug=slug,
+                                )
+
+                    processed += 1
 
             log.info(
                 "Summary",
                 threads_found=len(threads),
                 threads_processed=len(threads_limited),
-                comments=comments_to_post,
+                actioned=processed,
                 dry_run=dry_run,
             )
 
@@ -334,12 +374,12 @@ async def process_threads(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Post action-required comments on Plain review threads (defaults to dry-run)"
+        description="Post review messages on Plain review threads (defaults to dry-run)"
     )
     parser.add_argument(
         "--execute",
         action="store_true",
-        help="Actually post comments (by default, runs in dry-run mode)",
+        help="Actually post messages (by default, runs in dry-run mode)",
     )
     parser.add_argument(
         "--limit",
@@ -366,10 +406,10 @@ def main() -> None:
     )
 
     if dry_run:
-        log.info("Running in DRY-RUN mode (no comments will be posted)")
-        log.info("Use --execute to actually post comments")
+        log.info("Running in DRY-RUN mode (no changes will be made)")
+        log.info("Use --execute to actually post messages")
     else:
-        log.warning("Running in EXECUTE mode - comments will be posted!")
+        log.warning("Running in EXECUTE mode - messages will be posted!")
 
     log.info(
         "Processing settings",

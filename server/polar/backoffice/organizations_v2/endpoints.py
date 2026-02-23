@@ -42,6 +42,7 @@ from polar.file.sorting import FileSortProperty
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
 from polar.models.customer import Customer
+from polar.models.member import Member
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
@@ -491,11 +492,26 @@ async def get_organization_detail(
             "total_transfer_sum": total_transfer_sum,
         }
 
-        # Fetch agent review data
+        # Fetch test sales data (self-purchases by org members with positive amounts)
+        member_emails_subquery = (
+            select(func.lower(Member.email))
+            .where(
+                Member.organization_id == organization_id,
+                Member.deleted_at.is_(None),
+            )
+            .correlate(None)
+        )
+
+        test_sales_filter = (
+            Customer.organization_id == organization_id,
+            func.lower(Customer.email).in_(member_emails_subquery),
+            Order.net_amount > 0,
+        )
+
         orders_count_result = await session.execute(
             select(func.count(Order.id))
             .join(Customer, Order.customer_id == Customer.id)
-            .where(Customer.organization_id == organization_id)
+            .where(*test_sales_filter)
         )
         orders_count = orders_count_result.scalar() or 0
 
@@ -503,7 +519,7 @@ async def get_organization_detail(
             select(func.count(Order.id))
             .join(Customer, Order.customer_id == Customer.id)
             .where(
-                Customer.organization_id == organization_id,
+                *test_sales_filter,
                 Order.status.notin_(
                     [OrderStatus.refunded, OrderStatus.partially_refunded]
                 ),

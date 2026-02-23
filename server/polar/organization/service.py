@@ -29,15 +29,12 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
     Customer,
-    Order,
     Organization,
-    Subscription,
     User,
     UserOrganization,
 )
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
-from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -381,23 +378,27 @@ class OrganizationService:
         """Check if an organization can be deleted immediately.
 
         An organization can be deleted immediately if it has:
-        - No orders
-        - No active subscriptions
+        - No paid orders (excludes $0 orders from free/discounted products)
+        - No paid active subscriptions (excludes inherently free or
+          permanently discounted subscriptions)
 
         If it has an account but no orders/subscriptions, we'll attempt to
         delete the Stripe account first.
         """
         blocked_reasons: list[OrganizationDeletionBlockedReason] = []
+        repository = OrganizationRepository.from_session(session)
 
-        # Check for orders
-        order_count = await self._count_orders_by_organization(session, organization.id)
+        # Check for paid orders (excludes $0 orders)
+        order_count = await repository.count_paid_orders_by_organization(
+            organization.id
+        )
         if order_count > 0:
             blocked_reasons.append(OrganizationDeletionBlockedReason.HAS_ORDERS)
 
-        # Check for active subscriptions
+        # Check for paid active subscriptions (excludes free subscriptions)
         active_subscription_count = (
-            await self._count_active_subscriptions_by_organization(
-                session, organization.id
+            await repository.count_paid_active_subscriptions_by_organization(
+                organization.id
             )
         )
         if active_subscription_count > 0:
@@ -560,41 +561,6 @@ class OrganizationService:
             organization_id=organization.id,
             account_id=account.id,
         )
-
-    async def _count_orders_by_organization(
-        self,
-        session: AsyncReadSession,
-        organization_id: UUID,
-    ) -> int:
-        """Count orders for all customers of this organization."""
-        statement = (
-            sql.select(sql.func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
-
-    async def _count_active_subscriptions_by_organization(
-        self,
-        session: AsyncReadSession,
-        organization_id: UUID,
-    ) -> int:
-        """Count active subscriptions for all customers of this organization."""
-        statement = (
-            sql.select(sql.func.count(Subscription.id))
-            .join(Customer, Subscription.customer_id == Customer.id)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
-                Subscription.status.in_(SubscriptionStatus.active_statuses()),
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
 
     async def add_user(
         self,

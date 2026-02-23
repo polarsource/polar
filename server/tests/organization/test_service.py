@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
-from polar.enums import AccountType, InvoiceNumbering
+from polar.enums import AccountType, InvoiceNumbering, SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
@@ -1155,24 +1155,69 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
-    async def test_blocked_with_orders(
+    async def test_blocked_with_paid_orders(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
-        """Organization with orders cannot be immediately deleted."""
+        """Organization with paid orders cannot be immediately deleted."""
         from tests.fixtures.random_objects import create_order
 
-        await create_order(save_fixture, customer=customer)
+        await create_order(save_fixture, customer=customer, subtotal_amount=1000)
 
         result = await organization_service.check_can_delete(session, organization)
 
         assert result.can_delete_immediately is False
         assert "has_orders" in [r.value for r in result.blocked_reasons]
 
-    async def test_blocked_with_active_subscriptions(
+    async def test_not_blocked_with_zero_amount_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only $0 orders can be deleted."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=0,
+            tax_amount=0,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_fully_discounted_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only fully discounted $0 orders can be deleted."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=1000,
+            discount_amount=1000,
+            tax_amount=0,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1180,7 +1225,7 @@ class TestCheckCanDelete:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Organization with active subscriptions cannot be immediately deleted."""
+        """Organization with paid active subscriptions cannot be immediately deleted."""
         from polar.models.subscription import SubscriptionStatus
         from tests.fixtures.random_objects import create_subscription
 
@@ -1189,6 +1234,135 @@ class TestCheckCanDelete:
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_active_subscriptions" in [r.value for r in result.blocked_reasons]
+
+    async def test_not_blocked_with_free_active_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only free active subscriptions can be deleted."""
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_product, create_subscription
+
+        free_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+        )
+        await create_subscription(
+            save_fixture,
+            product=free_product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_forever_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Organization with subscriptions made free by a forever discount can be deleted."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_repeating_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Organization with subscriptions made free by a repeating discount cannot be deleted."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_active_subscriptions" in [r.value for r in result.blocked_reasons]
+
+    async def test_blocked_with_once_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Organization with subscriptions made free by a once discount cannot be deleted."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
         )
 
         result = await organization_service.check_can_delete(session, organization)

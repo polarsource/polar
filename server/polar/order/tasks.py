@@ -11,6 +11,9 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -51,6 +54,29 @@ class OrderDoesNotExist(OrderTaskError):
         self.order_id = order_id
         message = f"The order with id {order_id} does not exist."
         super().__init__(message)
+
+
+@actor(actor_name="order.created", priority=TaskPriority.LOW)
+async def order_created(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        # Store last order on Loops.so to create Organization segment based on sales activity
+        user_organizations = await user_organization_service.list_by_org(
+            session, order.customer.organization_id
+        )
+        for user_organization in user_organizations:
+            enqueue_job(
+                "loops.update_last_order_at",
+                email=user_organization.user.email,
+                id=str(user_organization.user_id),
+                last_order_at=int(order.created_at.timestamp() * 1000),
+            )
 
 
 @actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)

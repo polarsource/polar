@@ -369,33 +369,14 @@ class OrganizationDetailView:
                         with status_badge(self.org.status):
                             pass
 
-                # Top-right menu
-                with tag.div(classes="dropdown dropdown-end"):
-                    with tag.button(
-                        classes="btn btn-circle btn-ghost",
-                        **{"aria-label": "More options"},
-                    ):
-                        text("⋮")
-                    with tag.ul(
-                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-52",
-                    ):
-                        with tag.li():
-                            with tag.a(
-                                href=f"https://app.plain.com/search?q={self.org.email or self.org.slug}",
-                                target="_blank",
-                            ):
-                                text("Search in Plain")
-                        with tag.li():
-                            with tag.a(
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:delete_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Delete Organization")
+                with tag.a(
+                    href=str(
+                        request.url_for("organizations-classic:get", id=self.org.id)
+                    ),
+                    classes="btn btn-ghost btn-sm",
+                ):
+                    text("Switch to Classic View")
+
 
         # Section tabs
         with tag.div(classes="mb-6"):

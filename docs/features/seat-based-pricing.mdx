@@ -17,10 +17,8 @@ Seat-based pricing allows you to sell products where a billing manager purchases
 ## Feature Flag
 
 <Warning>
-Seat-based pricing is currently in **private beta**. We are enabling this feature gradually.
+Seat-based pricing is currently in **private beta**. Contact our support team to enable it for your organization.
 </Warning>
-
-Seat-based pricing is controlled by a feature flag at the organization level. Once enabled by our team, you'll have full access to create and manage seat-based products.
 
 ## How it works
 
@@ -35,14 +33,11 @@ Team members receive an invitation email with a claim link. Once they claim thei
 
 ### Subscriptions vs One-Time Purchases
 
-Seat-based pricing works for both recurring subscriptions and one-time purchases:
-
 | Feature | Subscriptions | One-Time Purchases |
 |---------|--------------|-------------------|
 | **Payment** | Recurring (monthly/yearly) | Single payment |
 | **Seat Duration** | Active while subscribed | Perpetual (never expire) |
 | **Adding Seats** | Modify subscription | Purchase new order |
-| **Billing** | Renews automatically | No renewals |
 | **Benefits** | While subscription active | Forever after claim |
 
 <Tip>
@@ -72,10 +67,12 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
       - **Max seats**: Upper limit for this tier (leave empty for unlimited)
       - **Price per seat**: Amount charged per seat in this tier (in cents)
 
-    Example tiered pricing:
+    Seat-based pricing uses **volume pricing** — the per-seat price is determined by the total number of seats purchased, and that rate applies to all seats. For example, if your tiers are:
     - 1-4 seats: $10/seat per month
     - 5-9 seats: $9/seat per month
     - 10+ seats: $8/seat per month
+
+    A purchase of 6 seats would cost 6 × $9 = $54/month (all seats at the 5-9 tier rate).
   </Step>
   <Step title="Add benefits">
     Configure the benefits that seat holders will receive. These are only granted when a seat is claimed, not when purchased.
@@ -83,249 +80,28 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
 </Steps>
 
 <Info>
-Unlike standard subscriptions, seat-based products **do not grant benefits to the billing manager**. Benefits are only granted to team members who claim their assigned seats.
-</Info>
-
-## Purchasing seats
-
-When a customer purchases a seat-based product, they specify how many seats they want during checkout. The total amount is calculated based on your tiered pricing.
-
-The checkout experience clearly shows:
-- Number of seats being purchased
-- Price per seat based on volume
-- Total amount
-- For subscriptions: recurring billing cycle
-- For one-time: perpetual access indication
-
-Once payment is completed, the billing manager can immediately start assigning seats to their team.
-
-<Info>
-For **one-time purchases**, each order is independent. If customers want more seats later, they purchase a new order with its own seat pool. All purchased seats remain perpetual.
+Unlike standard subscriptions, seat-based products **do not grant benefits to the billing manager**. Benefits are only granted to team members who claim their assigned seats. The billing manager can assign a seat to themselves if they also want to receive benefits — this counts toward the purchased seat total.
 </Info>
 
 ## Managing seats
 
-### Assigning seats
-
-Billing managers can assign seats through:
-
-1. **Customer Portal**: Accessible via the customer portal with billing manager permissions
-2. **API**: Programmatically assign seats using the [Customer Seats API](/api-reference/customer-seats/assign)
-
-To assign a seat, provide:
-- **Subscription ID** (for subscriptions) or **Order ID** (for one-time purchases)
-- **Email address** (creates a new customer if needed)
-- **External customer ID** (optional, for syncing with your system)
-- **Customer ID** (if customer already exists in Polar)
-- **Metadata** (optional, up to 10 keys for custom data like role, department)
-
-An invitation email is automatically sent to the recipient with a secure claim link (valid for 24 hours).
+After purchase, the billing manager can assign and manage seats from the **Customer Portal** or via the API.
 
 ### Seat statuses
-
-Each seat can have one of three statuses:
 
 - **Pending**: Seat assigned, invitation sent, awaiting claim
 - **Claimed**: Seat claimed by team member, benefits granted
 - **Revoked**: Seat revoked, benefits removed, can be reassigned
 
-### Resending invitations
+### Key actions
 
-For pending seats, billing managers can resend the invitation email if it was lost or expired.
-
-### Revoking seats
-
-Billing managers can revoke a claimed seat at any time:
-
-1. Benefits are immediately removed from the seat holder
-2. The seat becomes available for reassignment
-3. The seat holder loses access to all product benefits
-4. The revoked seat can be assigned to a different team member
+- **Assign seats** by email, external customer ID, or existing Polar customer ID
+- **Resend invitations** for pending seats if the link expired (valid for 24 hours)
+- **Revoke seats** to remove benefits and free the seat for reassignment
 
 <Warning>
 Revoking a seat does **not** issue a refund. The billing manager continues to pay for the total number of seats in their subscription.
 </Warning>
-
-## Claiming seats
-
-When a team member receives a seat invitation:
-
-1. They click the claim link in the email
-2. A claim page displays the product details and organization info
-3. They click **Claim Seat** to accept
-4. Benefits are automatically granted
-5. They receive a customer session token for immediate portal access
-6. They can access their benefits through the customer portal
-
-<Info>
-Claim links are single-use and expire after 24 hours for security. If expired, the billing manager can resend the invitation.
-</Info>
-
-## Scaling seats
-
-### Adding seats
-
-**For subscriptions:**
-
-Billing managers can upgrade their subscription to add more seats:
-
-1. The new seat count is applied immediately
-2. Prorated charges are calculated for the current billing period
-3. Future renewals bill at the new seat count
-4. New seats can be assigned right away
-
-If adding seats moves to a different pricing tier, the new per-seat rate applies to **all seats**, not just the additional ones.
-
-**For one-time purchases:**
-
-Billing managers purchase a new order with additional seats:
-
-1. Create a new checkout for the same product with desired seat quantity
-2. Once paid, a new independent order is created
-3. Each order has its own seat pool
-4. All seats remain perpetual across all orders
-
-### Reducing seats
-
-**For subscriptions:**
-
-To reduce seats, the billing manager should:
-
-1. Revoke seats until the desired count is reached
-2. Update the subscription to reflect the lower seat count
-3. The change takes effect at the next renewal
-
-<Warning>
-You cannot reduce subscription seats below the number of currently claimed seats. Revoke seats first before reducing the subscription seat count.
-</Warning>
-
-**For one-time purchases:**
-
-Seats cannot be reduced or refunded as they are perpetual. The billing manager can:
-
-1. Revoke unwanted seats to make them unassigned
-2. The seats remain available for future assignment
-3. No refund is issued for revoked seats
-
-## API Integration
-
-Seat-based pricing provides full API support for:
-
-- Creating seat-based products with tiered pricing
-- Checking out with seat quantities
-- Assigning seats programmatically
-- Listing seats and their statuses
-- Revoking seats
-
-<Note>
-**SDK Version Requirement**
-
-To use seat-based pricing features, ensure you have the latest version of the Polar SDK installed:
-- TypeScript/JavaScript: `npm install @polar-sh/sdk@latest`
-- Python: `pip install --upgrade polar-sdk`
-
-Older SDK versions may not include seat-based pricing support.
-</Note>
-
-See the [Customer Seats API Reference](/api-reference/customer-seats/assign) for complete documentation.
-
-### Example: Assign a seat (subscription)
-
-```typescript
-await polar.customerSeats.assign({
-  subscription_id: "sub_123",
-  email: "engineer@company.com",
-  metadata: {
-    department: "Engineering",
-    role: "Developer"
-  }
-});
-```
-
-### Example: Assign a seat (one-time purchase)
-
-```typescript
-await polar.customerSeats.assign({
-  order_id: "order_456",
-  email: "engineer@company.com",
-  metadata: {
-    department: "Engineering",
-    role: "Developer"
-  }
-});
-```
-
-### Example: List seats for subscription
-
-```typescript
-const seats = await polar.customerSeats.list({
-  subscription_id: "sub_123"
-});
-
-console.log(`Available: ${seats.available_seats}/${seats.total_seats}`);
-```
-
-### Example: List seats for order
-
-```typescript
-const seats = await polar.customerSeats.list({
-  order_id: "order_456"
-});
-
-console.log(`Available: ${seats.available_seats}/${seats.total_seats}`);
-```
-
-## Webhooks
-
-Seat-based pricing triggers webhooks for both subscriptions and orders:
-
-**Subscription events:**
-- `subscription.created` - When seat-based subscription is purchased
-- `subscription.updated` - When seat count changes
-- `subscription.canceled` - When subscription is cancelled
-
-**Order events:**
-- `order.created` - When seat-based one-time purchase is completed
-- `order.updated` - When order is updated
-
-**Seat and benefit events (both types):**
-- `benefit_grant.created` - When a seat is claimed and benefits granted
-- `benefit_grant.revoked` - When a seat is revoked and benefits removed
-
-<Info>
-For both subscriptions and one-time purchases, `benefit_grant.created` events are triggered per seat claim, not at purchase time.
-</Info>
-
-## Best Practices
-
-
-### Use tiered pricing strategically
-
-Structure your tiers to incentivize volume:
-- Lower per-seat prices as quantity increases
-- Create tiers at natural team sizes (5, 10, 25, etc.)
-- Consider flat pricing for very large teams
-
-### Leverage metadata
-
-Use seat metadata to store:
-- Team member roles
-- Departments or cost centers
-
-### Monitor seat utilization
-
-Track how many purchased seats are actually claimed to identify:
-- Organizations that may need more seats
-- Unused capacity that could be reduced
-- Patterns in team adoption
-
-### Communicate clearly
-
-Ensure product pages clearly explain:
-- The billing manager will not get direct access
-- Seats must be assigned to team members
-- Pricing structure and volume discounts
-- Seat assignment and claiming process
 
 ## Limitations
 
@@ -334,4 +110,7 @@ Ensure product pages clearly explain:
 - Billing manager does not receive product benefits
 - Maximum of 1,000 seats per subscription
 - Metadata limited to 10 keys and 1KB total size per seat
-- **Usage-based pricing with shared emails**: If you sell to multiple businesses and different businesses assign seats to the same email address (e.g., "john@gmail.com"), and usage-based pricing is enabled, separate meters should be created for each business to properly segregate usage. This is a rare scenario since employees from different businesses typically don't share the same email address.
+
+## Next steps
+
+For implementation details including API integration, webhook handling, and code examples, see the [Implementing Seat-Based Pricing](/guides/seat-based-pricing) guide.

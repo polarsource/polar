@@ -200,6 +200,10 @@ export default {
       getFree: 'Ingyen megkapom',
       paymentsUnavailable: 'A fizetések jelenleg nem elérhetők',
     },
+    productDescription: {
+      readMore: 'Bővebben',
+      readLess: 'Kevesebb',
+    },
   },
   intervals: {
     short: {

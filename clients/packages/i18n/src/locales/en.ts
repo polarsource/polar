@@ -140,6 +140,10 @@ export default {
       billedRecurring: 'Billed {frequency}',
       oneTimePurchase: 'One-time purchase',
     },
+    productDescription: {
+      readMore: 'Read more',
+      readLess: 'Read less',
+    },
     card: {
       included: 'Included',
     },

@@ -132,7 +132,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -267,7 +269,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -402,7 +406,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -537,7 +543,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -672,7 +680,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -807,7 +817,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -942,7 +954,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1077,7 +1091,9 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1212,6 +1228,8 @@
     "ordinal.two": "nd",
     "ordinal.few": "rd",
     "ordinal.many": "",
-    "ordinal.other": "th"
+    "ordinal.other": "th",
+    "checkout.productDescription.readMore": "Read more",
+    "checkout.productDescription.readLess": "Read less"
   }
 }

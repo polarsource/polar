@@ -34,10 +34,6 @@ class PaymentBase(IDSchema, TimestampedSchema):
         description="Error code, if the payment was declined.",
         examples=["insufficient_funds"],
     )
-    decline_code: str | None = Field(
-        description="Decline code from the payment processor, if the payment was declined.",
-        examples=["stolen_card"],
-    )
     decline_message: str | None = Field(
         description="Human-readable error message, if the payment was declined.",
         examples=["Your card has insufficient funds."],

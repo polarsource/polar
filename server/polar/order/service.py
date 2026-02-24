@@ -108,29 +108,24 @@ from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
 
-# Stripe error codes (from payment_error.code / charge.failure_code)
-# that indicate the payment method is permanently unusable.
-# These are checked against Payment.decline_reason.
-UNRECOVERABLE_STRIPE_ERROR_CODES: set[str] = {
-    "expired_card",
+# Stripe decline codes that indicate the payment method is permanently unusable
+# and should not be retried automatically via the dunning process.
+# Checked against Payment.decline_reason.
+# See: https://docs.stripe.com/declines/codes
+UNRECOVERABLE_DECLINE_CODES: set[str] = {
     "card_not_supported",
-}
-
-# Stripe decline codes (from payment_error.decline_code)
-# that indicate the payment should not be retried automatically.
-# These are checked against Payment.decline_code.
-UNRECOVERABLE_STRIPE_DECLINE_CODES: set[str] = {
-    "stolen_card",
-    "lost_card",
     "do_not_honor",
+    "expired_card",
     "fraudulent",
+    "invalid_account",
+    "lost_card",
     "merchant_blacklist",
     "pickup_card",
     "restricted_card",
-    "security_violation",
-    "invalid_account",
     "revocation_of_all_authorizations",
     "revocation_of_authorization",
+    "security_violation",
+    "stolen_card",
 }
 
 
@@ -1930,7 +1925,6 @@ class OrderService:
                 "Non-recoverable decline code detected, skipping dunning retries",
                 order_id=order.id,
                 decline_reason=latest_payment.decline_reason,
-                decline_code=latest_payment.decline_code,
             )
             return await self._handle_non_recoverable_payment_failure(session, order)
 
@@ -1941,20 +1935,13 @@ class OrderService:
 
     @staticmethod
     def _is_non_recoverable_decline(payment: Payment) -> bool:
-        """Check if a payment's decline info indicates a non-recoverable failure."""
+        """Check if a payment's decline reason indicates a non-recoverable failure."""
         if payment.status != PaymentStatus.failed:
             return False
-        if (
+        return (
             payment.decline_reason is not None
-            and payment.decline_reason in UNRECOVERABLE_STRIPE_ERROR_CODES
-        ):
-            return True
-        if (
-            payment.decline_code is not None
-            and payment.decline_code in UNRECOVERABLE_STRIPE_DECLINE_CODES
-        ):
-            return True
-        return False
+            and payment.decline_reason in UNRECOVERABLE_DECLINE_CODES
+        )
 
     async def _handle_non_recoverable_payment_failure(
         self, session: AsyncSession, order: Order

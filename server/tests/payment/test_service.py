@@ -235,29 +235,6 @@ class TestUpsertFromStripeCharge:
             == "This payment was declined due to suspected fraud"
         )
 
-    async def test_failed_payment_with_failure_code(
-        self, session: AsyncSession, save_fixture: SaveFixture, product: Product
-    ) -> None:
-        """Test that charge failure_code is captured as decline_code."""
-        checkout = await create_checkout(save_fixture, products=[product])
-
-        charge = build_stripe_charge(
-            amount=1000,
-            status="failed",
-            metadata={"checkout_id": str(checkout.id)},
-            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
-            billing_details={"email": "test@example.com"},
-            failure_code="expired_card",
-            failure_message="Your card has expired.",
-        )
-
-        payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, None, None
-        )
-
-        assert payment.status == PaymentStatus.failed
-        assert payment.decline_code == "expired_card"
-
     async def test_unlinked_payment_error(self, session: AsyncSession) -> None:
         # Create a charge without checkout_id or invoice
         charge = build_stripe_charge(
@@ -453,43 +430,6 @@ class TestUpsertFromStripePaymentIntent:
         assert payment_2.decline_message == "3D Secure authentication failed"
         assert payment_2.method == "card"
         assert payment_2.method_metadata == {"brand": "mastercard", "last4": "5555"}
-
-    async def test_decline_code_captured(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Test that decline_code from payment_error is captured separately."""
-        checkout = await create_checkout(save_fixture, products=[product])
-
-        payment_intent = build_stripe_payment_intent(
-            id="pi_decline_test",
-            amount=1000,
-            currency="usd",
-            receipt_email="test@example.com",
-            metadata={"checkout_id": str(checkout.id)},
-            latest_charge=None,
-            last_payment_error={
-                "code": "card_declined",
-                "decline_code": "stolen_card",
-                "message": "Your card was declined.",
-                "payment_method": {
-                    "id": "pm_test123",
-                    "type": "card",
-                    "card": {"brand": "visa", "last4": "4242"},
-                },
-            },
-        )
-
-        payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, payment_intent, checkout, None
-        )
-
-        assert payment.decline_reason == "card_declined"
-        assert payment.decline_code == "stolen_card"
-        assert payment.decline_message == "Your card was declined."
 
     async def test_no_error_code(
         self,

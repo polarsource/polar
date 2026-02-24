@@ -2828,13 +2828,12 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = None
         await save_fixture(order)
 
-        # Create a failed payment with a non-recoverable decline code
+        # Create a failed payment with a non-recoverable decline reason
         await create_payment(
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
-            decline_reason="card_declined",
-            decline_code="stolen_card",
+            decline_reason="stolen_card",
             order=order,
         )
 
@@ -2857,7 +2856,7 @@ class TestHandlePaymentFailure:
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-01-01 12:00:00")
-    async def test_non_recoverable_error_code_skips_dunning(
+    async def test_non_recoverable_expired_card_skips_dunning(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2865,9 +2864,8 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """When a payment fails with a non-recoverable error code (e.g., expired_card),
-        the subscription should be marked as past_due but no dunning retries
-        should be scheduled."""
+        """When a payment fails with expired_card, the subscription should be
+        marked as past_due but no dunning retries should be scheduled."""
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -2884,7 +2882,6 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = None
         await save_fixture(order)
 
-        # Create a failed payment with a non-recoverable error code
         await create_payment(
             save_fixture,
             order.organization,
@@ -2911,7 +2908,7 @@ class TestHandlePaymentFailure:
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-01-01 12:00:00")
-    async def test_recoverable_decline_code_enters_dunning(
+    async def test_recoverable_decline_enters_dunning(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2919,8 +2916,8 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """When a payment fails with a recoverable decline code (e.g., insufficient_funds),
-        the normal dunning retry flow should proceed."""
+        """When a payment fails with a recoverable decline reason
+        (e.g., insufficient_funds), the normal dunning retry flow should proceed."""
         # Given
         subscription = await create_active_subscription(
             save_fixture,
@@ -2937,13 +2934,11 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = None
         await save_fixture(order)
 
-        # Create a failed payment with a recoverable decline code
         await create_payment(
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
-            decline_reason="card_declined",
-            decline_code="insufficient_funds",
+            decline_reason="insufficient_funds",
             order=order,
         )
 
@@ -2971,7 +2966,7 @@ class TestHandlePaymentFailure:
         mocker: MockerFixture,
     ) -> None:
         """When an order already in dunning receives a payment failure with a
-        non-recoverable decline code (e.g., card reported lost during dunning),
+        non-recoverable decline reason (e.g., card reported lost during dunning),
         further retries should stop immediately."""
         # Given
         subscription = await create_active_subscription(
@@ -2990,13 +2985,11 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)
         await save_fixture(order)
 
-        # The latest (and only) failed payment is non-recoverable
         await create_payment(
             save_fixture,
             order.organization,
             status=PaymentStatus.failed,
-            decline_reason="card_declined",
-            decline_code="lost_card",
+            decline_reason="lost_card",
             order=order,
         )
 

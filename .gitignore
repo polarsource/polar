@@ -150,3 +150,6 @@ dev/docker/.env.docker
 # Tinybird
 server/.tinyb
 .tinyb
+
+.turbo
+.claude/worktrees

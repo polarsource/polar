@@ -31,6 +31,7 @@ from .queries import (
     QueryCallable,
 )
 from .queries_tinybird import (
+    TinybirdQuery,
     query_metrics,
 )
 from .schemas import MetricsPeriod, MetricsResponse
@@ -410,6 +411,7 @@ class MetricsService:
         try:
             tb_response = await self._get_metrics_from_tinybird(
                 auth_subject,
+                session,
                 start_timestamp=start_timestamp,
                 end_timestamp=end_timestamp,
                 original_start_timestamp=original_start_timestamp,
@@ -453,6 +455,7 @@ class MetricsService:
     async def _get_metrics_from_tinybird(
         self,
         auth_subject: AuthSubject[User | Organization],
+        session: AsyncReadSession,
         *,
         start_timestamp: datetime,
         end_timestamp: datetime,
@@ -492,6 +495,23 @@ class MetricsService:
             {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
         )
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
+        tinybird_customer_ids: list[uuid.UUID] | None = (
+            list(customer_id) if customer_id is not None else None
+        )
+        if (
+            TinybirdQuery.cancellations in tb_queries
+            and external_customer_id is not None
+            and len(external_customer_id) > 0
+        ):
+            customer_lookup_stmt = select(Customer.id).where(
+                Customer.organization_id.in_(org_ids),
+                Customer.external_id.in_(external_customer_id),
+            )
+            resolved_customer_ids = list(await session.scalars(customer_lookup_stmt))
+            merged_customer_ids = list(tinybird_customer_ids or [])
+            merged_customer_ids.extend(resolved_customer_ids)
+            if merged_customer_ids:
+                tinybird_customer_ids = list(dict.fromkeys(merged_customer_ids))
 
         with logfire.span(
             "Execute Tinybird metric queries",
@@ -508,7 +528,7 @@ class MetricsService:
                 bounds_end=original_end_timestamp,
                 now=now_dt,
                 product_id=product_id,
-                customer_id=customer_id,
+                customer_id=tinybird_customer_ids,
                 external_customer_id=external_customer_id,
                 billing_type=billing_strs,
             )

@@ -9,7 +9,7 @@ from pydantic import Field
 from polar.kit.schemas import Schema
 
 if TYPE_CHECKING:
-    from pydantic_ai.result import Usage
+    from pydantic_ai.result import RunUsage as Usage
 
 # --- Review context ---
 

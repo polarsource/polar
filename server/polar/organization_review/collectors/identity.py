@@ -23,7 +23,8 @@ async def collect_identity_data(account: Account | None) -> IdentityData:
     if account.admin.identity_verification_id is not None:
         try:
             vs = await stripe_service.get_verification_session(
-                account.admin.identity_verification_id
+                account.admin.identity_verification_id,
+                expand=["verified_outputs"],
             )
             if vs.last_error and vs.last_error.code:
                 verification_error_code = vs.last_error.code

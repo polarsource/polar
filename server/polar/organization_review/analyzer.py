@@ -44,8 +44,6 @@ Cross-reference what the organization claims in their setup with what their webs
 Look for mismatches between stated business and actual content, signs of prohibited businesses,
 pricing discrepancies between website and Polar listings.
 
-If website content is not available, flag this as a red flag.
-
 ### 3. Identity & Trust
 Evaluate the identity verification status, account completeness, and social presence. \
 Social link should be linked to the user's profile on the platform, and not the organization's social media accounts. \
@@ -93,8 +91,13 @@ sellers. False approvals can expose Polar to risk. Balance both.
 SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
 No Stripe account, payments, or products exist yet. \
-Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY (website cross-reference), PRIOR_HISTORY. \
+Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, PRIOR_HISTORY. \
 Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0.
+
+Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
+with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
+websites that are under construction, temporarily down, or not yet updated. Only flag website \
+issues if there is a clear and obvious sign of a prohibited business.
 """
 
 SETUP_COMPLETE_PREAMBLE = """\
@@ -107,8 +110,7 @@ Focus on:
 - **Product price anomalies**: Flag one-time products priced above $1,000 or recurring \
 products above $500/month.
 - **Product-business mismatch**: Cross-reference products listed on Polar against the \
-organization's stated business and website. Look for mismatches suggesting a disguised \
-prohibited business.
+organization's stated business. Look for mismatches suggesting a disguised prohibited business.
 - **Identity & account signals**:
   - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
 "document_expired") indicate potential fraud even if verification eventually succeeded.
@@ -133,6 +135,18 @@ Polar organization name and website. Significant mismatches are yellow flags.
 - **Prior history**: Check for prior denials or blocked organizations.
 
 Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred yet.
+
+Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
+with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
+websites that are under construction, temporarily down, or not yet updated. Only flag website \
+issues if there is a clear and obvious sign of a prohibited business.
+"""
+
+
+THRESHOLD_PREAMBLE = """\
+This is a THRESHOLD review triggered when a payment threshold is hit. \
+Perform a comprehensive analysis across ALL five dimensions. \
+If website content is not available, flag this as a red flag.
 """
 
 
@@ -147,7 +161,8 @@ Key areas to cover thoroughly:
 
 - **Policy compliance & product legitimacy**: Cross-reference products listed on Polar \
 against the organization's stated business and website. Look for mismatches suggesting \
-a disguised prohibited business. Flag high-priced items (one-time > $1,000, recurring > $500/month).
+a disguised prohibited business. Flag high-priced items (one-time > $1,000, recurring > $500/month). \
+If website content is not available, flag this as a red flag.
 - **Identity & account signals**:
   - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
 "document_expired") indicate potential fraud even if verification eventually succeeded.
@@ -194,6 +209,7 @@ class ReviewAnalyzer:
         instructions = {
             ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
             ReviewContext.SETUP_COMPLETE: SETUP_COMPLETE_PREAMBLE,
+            ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
             ReviewContext.MANUAL: MANUAL_PREAMBLE,
         }.get(context)
 

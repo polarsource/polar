@@ -310,6 +310,69 @@ SQL >
     FROM payment_events_raw
     GROUP BY subscription_id
 
+NODE subscription_created_fallback
+SQL >
+    %
+    SELECT
+        sca.subscription_id,
+        toInt64(
+            round(
+                toFloat64(sca.created_amount) * if(
+                    countIf(bo.name IS NOT NULL) > 0,
+                    coalesce(
+                        argMin(
+                            multiIf(
+                                bo.exchange_rate IS NOT NULL AND toFloat64(bo.exchange_rate) != 0,
+                                toFloat64(bo.exchange_rate),
+                                bo.presentment_amount IS NOT NULL
+                                AND toInt64(bo.presentment_amount) != 0,
+                                toFloat64(bo.amount) / toFloat64(bo.presentment_amount),
+                                NULL
+                            ),
+                            abs(toInt64(sca.created_ts) - toInt64(bo.timestamp))
+                        ),
+                        1.0
+                    ),
+                    1.0
+                )
+            )
+        ) AS fallback_settlement_amount
+    FROM
+        (
+            SELECT
+                e.subscription_id,
+                argMax(e.amount, (e.timestamp, e.ingested_at)) AS created_amount,
+                argMax(e.timestamp, (e.timestamp, e.ingested_at)) AS created_ts
+            FROM system_events_by_org AS e
+            WHERE
+                e.name = 'subscription.created'
+                AND e.subscription_id IS NOT NULL
+                AND e.organization_id IN (
+                    SELECT
+                        toUUID(
+                            arrayJoin(
+                                splitByChar(
+                                    ',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }}
+                                )
+                            )
+                        )
+                )
+                AND e.subscription_id NOT IN (SELECT DISTINCT subscription_id FROM payment_events_raw)
+            GROUP BY e.subscription_id
+        ) sca
+    LEFT JOIN
+        system_events_by_org bo
+        ON bo.name = 'balance.order'
+        AND bo.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+    GROUP BY sca.subscription_id, sca.created_amount, sca.created_ts
+
 NODE subs_with_mrr
 SQL >
     %
@@ -323,7 +386,12 @@ SQL >
             THEN
                 toInt64(
                     round(
-                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        COALESCE(
+                            lp.nonzero_settlement_amount,
+                            lp.settlement_amount,
+                            scf.fallback_settlement_amount,
+                            0
+                        )
                         / (12 * s.recurring_interval_count)
                     )
                 )
@@ -331,7 +399,12 @@ SQL >
             THEN
                 toInt64(
                     round(
-                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        COALESCE(
+                            lp.nonzero_settlement_amount,
+                            lp.settlement_amount,
+                            scf.fallback_settlement_amount,
+                            0
+                        )
                         / s.recurring_interval_count
                     )
                 )
@@ -339,7 +412,12 @@ SQL >
             THEN
                 toInt64(
                     round(
-                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        COALESCE(
+                            lp.nonzero_settlement_amount,
+                            lp.settlement_amount,
+                            scf.fallback_settlement_amount,
+                            0
+                        )
                         * 52
                         / (12 * s.recurring_interval_count)
                     )
@@ -348,7 +426,12 @@ SQL >
             THEN
                 toInt64(
                     round(
-                        COALESCE(lp.nonzero_settlement_amount, lp.settlement_amount, 0)
+                        COALESCE(
+                            lp.nonzero_settlement_amount,
+                            lp.settlement_amount,
+                            scf.fallback_settlement_amount,
+                            0
+                        )
                         * 365
                         / (12 * s.recurring_interval_count)
                     )
@@ -357,6 +440,7 @@ SQL >
         END AS monthly_amount
     FROM subs s
     LEFT JOIN latest_payment lp ON lp.subscription_id = s.subscription_id
+    LEFT JOIN subscription_created_fallback scf ON scf.subscription_id = s.subscription_id
 
 NODE mrr_by_window
 SQL >

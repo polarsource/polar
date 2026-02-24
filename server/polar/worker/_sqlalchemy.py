@@ -74,7 +74,11 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        global _sqlalchemy_engine, _sqlalchemy_read_engine, _sqlalchemy_async_sessionmaker, _sqlalchemy_async_read_sessionmaker
+        global \
+            _sqlalchemy_engine, \
+            _sqlalchemy_read_engine, \
+            _sqlalchemy_async_sessionmaker, \
+            _sqlalchemy_async_read_sessionmaker
         pool_name = _get_worker_pool_name()
         _sqlalchemy_engine = create_async_engine("worker", pool_logging_name=pool_name)
         _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)

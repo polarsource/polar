@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { parseYamlFile, ParseError } from './yaml.js'
+import { resolveAliases } from '../resolve/aliases.js'
 
 function withTempFiles(
   files: Record<string, string>,
@@ -85,6 +86,25 @@ imports: []
     )
   })
 
+  it('parses hex-only color value objects', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  COLOR_BG:
+    type: color
+    value:
+      hex: "#ffffff"
+imports: []
+`,
+      },
+      (file) => {
+        const result = Effect.runSync(parseYamlFile(file))
+        expect((result as any).COLOR_BG.value.hex).toBe('#ffffff')
+      },
+    )
+  })
+
   it('loads imported token documents and merges them for alias resolution/hoisting', () => {
     withTempFiles(
       {
@@ -98,7 +118,7 @@ imports: []
         'tokens.yaml': `
 props:
   BUTTON__BACKGROUND:
-    value: "{COLORS.PRIMARY}"
+    value: "{COLORS__PRIMARY}"
     type: color
 imports:
   - "./base.yaml"
@@ -107,7 +127,34 @@ imports:
       (file) => {
         const result = Effect.runSync(parseYamlFile(file))
         expect((result as any).COLORS__PRIMARY.value).toBe('#0066ff')
-        expect((result as any).BUTTON__BACKGROUND.value).toBe('{COLORS.PRIMARY}')
+        expect((result as any).BUTTON__BACKGROUND.value).toBe('{COLORS__PRIMARY}')
+      },
+    )
+  })
+
+  it('supports direct token-name aliases with double-underscore separators', () => {
+    withTempFiles(
+      {
+        'radii.yaml': `
+props:
+  RADII__SM:
+    value: "8px"
+    type: dimension
+imports: []
+`,
+        'tokens.yaml': `
+props:
+  BUTTON__RADIUS:
+    value: "{RADII__SM}"
+    type: dimension
+imports:
+  - "./radii.yaml"
+`,
+      },
+      (file) => {
+        const group = Effect.runSync(parseYamlFile(file))
+        const resolved = Effect.runSync(resolveAliases(group))
+        expect(resolved.get('BUTTON.RADIUS')?.value).toBe('8px')
       },
     )
   })
@@ -169,6 +216,27 @@ props:
   STATUS:
     NEUTRAL:
       value: "#fff"
+imports: []
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
+  })
+
+  it('fails when color value defines both hex and components', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  COLOR_BG:
+    type: color
+    value:
+      hex: "#ffffff"
+      colorSpace: srgb
+      components: [1, 1, 1]
 imports: []
 `,
       },

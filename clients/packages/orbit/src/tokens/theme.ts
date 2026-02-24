@@ -1,5 +1,5 @@
 import { tokens } from './vars'
 
-export type OrbitColor = keyof typeof tokens.COLORS
-export type OrbitSpacing = keyof typeof tokens.SPACING
-export type OrbitRadius = keyof typeof tokens.RADII
+export type OrbitColor = Extract<keyof typeof tokens, `COLOR_${string}`>
+export type OrbitSpacing = Extract<keyof typeof tokens, `SPACING_${string}`>
+export type OrbitRadius = Extract<keyof typeof tokens, `RADII_${string}`>

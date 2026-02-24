@@ -17,13 +17,13 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 }
 
 function isColorValue(value: unknown): value is ColorValue {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'colorSpace' in value &&
-    'components' in value &&
-    Array.isArray((value as ColorValue).components)
-  )
+  if (typeof value !== 'object' || value === null) return false
+  const hasHex = typeof (value as { hex?: unknown }).hex === 'string'
+  const hasColorSpace = 'colorSpace' in value
+  const hasComponents = Array.isArray((value as { components?: unknown }).components)
+  if (hasHex && (hasColorSpace || hasComponents)) return false
+  if (hasHex) return true
+  return hasColorSpace && hasComponents
 }
 
 function formatAlpha(alpha?: number): string {
@@ -32,6 +32,9 @@ function formatAlpha(alpha?: number): string {
 }
 
 function serializeColorObject(value: ColorValue): string {
+  if ('hex' in value) {
+    return value.hex
+  }
   const alpha = formatAlpha(value.alpha)
   switch (value.colorSpace) {
     case 'srgb': {
@@ -53,7 +56,7 @@ function serializeColorObject(value: ColorValue): string {
       return `oklch(${roundTo(L, 4)} ${roundTo(C, 4)} ${roundTo(H, 2)}${alpha})`
     }
     default:
-      return value.hex ?? ''
+      return ''
   }
 }
 
@@ -131,6 +134,12 @@ function parseHslRgba(value: string): [number, number, number, number] | null {
 }
 
 function parseColorObjectRgba(value: ColorValue): [number, number, number, number] | null {
+  if ('hex' in value) {
+    const parsed = parseHexRgba(value.hex)
+    if (!parsed) return null
+    if (value.alpha === undefined) return parsed
+    return [parsed[0], parsed[1], parsed[2], value.alpha]
+  }
   const alpha = value.alpha ?? 1
   switch (value.colorSpace) {
     case 'srgb':
@@ -147,7 +156,7 @@ function parseColorObjectRgba(value: ColorValue): [number, number, number, numbe
       return [r, g, b, alpha]
     }
     case 'oklch':
-      return value.hex ? parseHexRgba(value.hex) : null
+      return null
     default:
       return null
   }

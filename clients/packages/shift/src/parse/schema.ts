@@ -15,12 +15,18 @@ export const TokenType = Schema.Literal(
 
 export const ColorSpace = Schema.Literal('srgb', 'display-p3', 'hsl', 'oklch')
 
-export const ColorValue = Schema.Struct({
+const ColorComponentsValue = Schema.Struct({
   colorSpace: ColorSpace,
   components: Schema.Array(Schema.Number),
   alpha: Schema.optional(Schema.Number),
-  hex: Schema.optional(Schema.String),
 })
+
+const ColorHexValue = Schema.Struct({
+  hex: Schema.String,
+  alpha: Schema.optional(Schema.Number),
+})
+
+export const ColorValue = Schema.Union(ColorComponentsValue, ColorHexValue)
 
 export const DimensionValue = Schema.Struct({
   value: Schema.Number,

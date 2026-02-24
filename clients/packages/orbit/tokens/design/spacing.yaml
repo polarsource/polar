@@ -1,51 +1,63 @@
 # Orbit spacing design tokens
 
 props:
-  SPACING__SPACING_0:
+  SPACING_0:
     value: "0px"
     description: No spacing — zero gap.
 
-  SPACING__SPACING_1:
+  SPACING_1:
+    value: "6px"
+    description: Tight — 6 px. Compact vertical control padding.
+
+  SPACING_2:
     value: "8px"
     description: Extra-small — 8 px. Tight gutters and icon padding.
 
-  SPACING__SPACING_2:
+  SPACING_3:
+    value: "12px"
+    description: Small — 12 px. Compact control gutters.
+
+  SPACING_4:
     value: "16px"
     description: Base — 16 px. Default component padding and inline gaps.
 
-  SPACING__SPACING_3:
+  SPACING_5:
+    value: "20px"
+    description: Medium-small — 20 px. Large control horizontal padding.
+
+  SPACING_6:
     value: "24px"
     description: Medium — 24 px. Card padding and section gaps.
 
-  SPACING__SPACING_4:
+  SPACING_7:
     value: "32px"
     description: Large — 32 px. Panel padding and block separation.
 
-  SPACING__SPACING_5:
+  SPACING_8:
     value: "40px"
     description: Extra-large — 40 px.
 
-  SPACING__SPACING_6:
+  SPACING_9:
     value: "48px"
     description: 2x large — 48 px. Generous section padding.
 
-  SPACING__SPACING_8:
+  SPACING_10:
     value: "64px"
     description: 3x large — 64 px. Wide layout gutters.
 
-  SPACING__SPACING_10:
+  SPACING_11:
     value: "80px"
     description: 4x large — 80 px.
 
-  SPACING__SPACING_12:
+  SPACING_12:
     value: "96px"
     description: 5x large — 96 px.
 
-  SPACING__SPACING_16:
+  SPACING_13:
     value: "128px"
     description: 6x large — 128 px. Page-level vertical rhythm.
 
-  SPACING__SPACING_32:
+  SPACING_14:
     value: "256px"
     description: Maximum — 256 px. Full-bleed hero spacing.
 

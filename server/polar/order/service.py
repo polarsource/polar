@@ -1700,6 +1700,8 @@ class OrderService:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
+        previous_status = order.status
+
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict={"status": OrderStatus.void})
 
@@ -1716,6 +1718,7 @@ class OrderService:
                 },
             ),
         )
+        await self._on_order_updated(session, order, previous_status=previous_status)
 
         return order
 

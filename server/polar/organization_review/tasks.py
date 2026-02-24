@@ -5,7 +5,6 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
-from polar.integrations.plain.service import plain as plain_service
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
@@ -155,8 +154,4 @@ async def run_review_agent(
                     organization_id=str(organization_id),
                     slug=organization.slug,
                     verdict=report.verdict.value,
-                )
-
-                await plain_service.create_organization_review_thread(
-                    session, organization
                 )

@@ -12,7 +12,10 @@ function makeMap(tokens: Partial<ResolvedToken>[]): FlatTokenMap {
       value: t.value ?? '',
       type: t.type ?? 'color',
       aliasOf: t.aliasOf,
+      category: t.category,
+      description: t.description,
       themeValues: t.themeValues,
+      breakpointValues: t.breakpointValues,
     }
     map.set(token.rawPath.join('.'), token)
   }
@@ -30,6 +33,31 @@ describe('formatTypescript', () => {
   it('ends with "as const"', () => {
     const output = Effect.runSync(formatTypescript(makeMap([{ rawPath: ['c'], value: '#fff', type: 'color' }])))
     expect(output.trim()).toMatch(/as const\s*$/)
+  })
+
+  it('emits hoisted tokenDefinitions export with metadata', () => {
+    const output = Effect.runSync(
+      formatTypescript(
+        makeMap([
+          {
+            rawPath: ['button', 'background'],
+            value: '#0066ff',
+            aliasOf: 'COLOR_PRIMARY',
+            type: 'color',
+            category: 'COMPONENT',
+            description: 'Button bg',
+            themeValues: { dark: { value: '#000000', aliasOf: 'COLOR_BG_DARK' } },
+            breakpointValues: { sm: { value: '#111111' } },
+          },
+        ]),
+      ),
+    )
+    expect(output).toContain('export const tokenDefinitions =')
+    expect(output).toContain('"button_background"')
+    expect(output).toContain('"aliasOf": "COLOR_PRIMARY"')
+    expect(output).toContain('"type": "color"')
+    expect(output).toContain('"category": "COMPONENT"')
+    expect(output).toContain('"description": "Button bg"')
   })
 
   it('nests tokens by rawPath', () => {
@@ -54,6 +82,7 @@ describe('formatTypescript', () => {
   it('handles empty map', () => {
     const output = Effect.runSync(formatTypescript(new Map()))
     expect(output.trim()).toContain('export const tokens = {} as const')
+    expect(output.trim()).toContain('export const tokenDefinitions = {} as const')
   })
 
   it('handles numeric values unquoted', () => {

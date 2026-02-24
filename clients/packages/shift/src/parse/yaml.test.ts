@@ -44,7 +44,9 @@ imports: []
         'tokens.yaml': `
 props:
   SPACING__BASE:
-    value: "16px"
+    value:
+      value: 16
+      unit: px
 imports: []
 global:
   type: dimension
@@ -138,7 +140,9 @@ imports:
         'radii.yaml': `
 props:
   RADII__SM:
-    value: "8px"
+    value:
+      value: 8
+      unit: px
     type: dimension
 imports: []
 `,
@@ -154,7 +158,7 @@ imports:
       (file) => {
         const group = Effect.runSync(parseYamlFile(file))
         const resolved = Effect.runSync(resolveAliases(group))
-        expect(resolved.get('BUTTON.RADIUS')?.value).toBe('8px')
+        expect(resolved.get('BUTTON.RADIUS')?.value).toEqual({ value: 8, unit: 'px' })
       },
     )
   })
@@ -237,6 +241,24 @@ props:
       hex: "#ffffff"
       colorSpace: srgb
       components: [1, 1, 1]
+imports: []
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
+  })
+
+  it('fails when dimension token uses literal size string', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  SPACING_4:
+    type: dimension
+    value: "16px"
 imports: []
 `,
       },

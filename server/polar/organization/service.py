@@ -42,6 +42,9 @@ from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
+from polar.organization_review.repository import (
+    OrganizationReviewRepository as AgentReviewRepository,
+)
 from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
@@ -797,6 +800,7 @@ class OrganizationService:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
+            became_active = False
             if all(
                 (
                     not organization.is_under_review,
@@ -809,6 +813,7 @@ class OrganizationService:
             ):
                 organization.status = OrganizationStatus.ACTIVE
                 organization.status_updated_at = datetime.now(UTC)
+                became_active = True
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
             if any(
@@ -823,6 +828,10 @@ class OrganizationService:
 
             await self._sync_account_status(session, organization)
             session.add(organization)
+
+            # When org just became ACTIVE, check for setup complete review
+            if became_active:
+                await self.check_setup_complete_review(session, organization)
 
     async def _sync_account_status(
         self, session: AsyncSession, organization: Organization
@@ -1091,6 +1100,59 @@ class OrganizationService:
             },
         )
         return organization
+
+    async def _get_organizations_for_account_admin(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[Organization]:
+        """Get all organizations where the user is the account admin."""
+        repository = OrganizationRepository.from_session(session)
+        return await repository.get_all_by_account_admin(user_id)
+
+    async def check_setup_complete_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """Check if all setup steps are done and trigger a SETUP_COMPLETE review.
+
+        Prerequisites:
+        1. Organization details submitted
+        2. Account exists with is_details_submitted=True
+        3. Account admin has identity_verification_status == verified
+        4. No existing SETUP_COMPLETE review
+        5. Organization is ACTIVE (not already under review/denied)
+        """
+        if not organization.is_active():
+            return
+
+        if not organization.details_submitted_at:
+            return
+
+        if not organization.account_id:
+            return
+
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(
+            organization.account_id, options=(joinedload(Account.admin),)
+        )
+        if not account or not account.is_details_submitted:
+            return
+
+        admin = account.admin
+        if (
+            not admin
+            or admin.identity_verification_status != IdentityVerificationStatus.verified
+        ):
+            return
+
+        # Check for existing SETUP_COMPLETE review
+        agent_review_repository = AgentReviewRepository.from_session(session)
+        if await agent_review_repository.has_setup_complete_review(organization.id):
+            return
+
+        enqueue_job(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            context=ReviewContext.SETUP_COMPLETE,
+        )
 
 
 organization = OrganizationService()

@@ -46,6 +46,16 @@ class OrganizationReviewRepository(
         self.session.add(agent_review)
         return agent_review
 
+    async def has_setup_complete_review(self, organization_id: UUID) -> bool:
+        """Check if a SETUP_COMPLETE agent review already exists."""
+        statement = select(func.count(OrganizationAgentReview.id)).where(
+            OrganizationAgentReview.organization_id == organization_id,
+            OrganizationAgentReview.report["data_snapshot"]["context"].as_string()
+            == "setup_complete",
+        )
+        result = await self.session.execute(statement)
+        return (result.scalar() or 0) > 0
+
     async def get_latest_agent_review(
         self, organization_id: UUID
     ) -> OrganizationAgentReview | None:

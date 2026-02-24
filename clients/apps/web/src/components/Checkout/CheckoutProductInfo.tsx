@@ -1,6 +1,11 @@
 'use client'
 
 import { markdownOptions } from '@/utils/markdown'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import {
@@ -17,10 +22,13 @@ import { Slideshow } from '../Products/Slideshow'
 
 const ExpandableDescription = ({
   description,
+  locale = DEFAULT_LOCALE,
 }: {
   description: string
   productName: string
+  locale?: AcceptedLocale
 }) => {
+  const t = useTranslations(locale)
   const textRef = useRef<HTMLDivElement>(null)
   const [isClamped, setIsClamped] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -48,7 +56,9 @@ const ExpandableDescription = ({
           onClick={() => setIsExpanded((v) => !v)}
           className="dark:text-polar-300 cursor-pointer self-start text-xs text-gray-600 hover:underline"
         >
-          {isExpanded ? 'Read less' : 'Read more'}
+          {isExpanded
+            ? t('checkout.productDescription.readLess')
+            : t('checkout.productDescription.readMore')}
         </button>
       )}
     </div>
@@ -58,9 +68,10 @@ const ExpandableDescription = ({
 interface CheckoutProductInfoProps {
   organization: CheckoutOrganization
   product: CheckoutProduct
+  locale?: AcceptedLocale
 }
 
-const CheckoutProductInfo = ({ product }: CheckoutProductInfoProps) => {
+const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
   const firstImage = product.medias[0]?.publicUrl
   const additionalImages = product.medias.slice(1)
 
@@ -107,6 +118,7 @@ const CheckoutProductInfo = ({ product }: CheckoutProductInfoProps) => {
               <ExpandableDescription
                 description={product.description}
                 productName={product.name}
+                locale={locale}
               />
             )}
           </div>

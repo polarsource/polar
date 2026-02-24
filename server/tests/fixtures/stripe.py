@@ -75,6 +75,8 @@ def build_stripe_charge(
     billing_details: dict[str, Any] | None = None,
     payment_method_details: dict[str, Any] | None = None,
     outcome: dict[str, Any] | None = None,
+    failure_code: str | None = None,
+    failure_message: str | None = None,
 ) -> stripe_lib.Charge:
     metadata = metadata or {}
     obj: dict[str, Any] = {
@@ -96,6 +98,8 @@ def build_stripe_charge(
             "risk_score": 0,
             **(outcome or {}),
         },
+        "failure_code": failure_code,
+        "failure_message": failure_message,
     }
 
     return stripe_lib.Charge.construct_from(obj, None)

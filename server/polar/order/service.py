@@ -75,6 +75,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
+from polar.models.payment import PaymentStatus
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
@@ -106,6 +107,31 @@ from .schemas import OrderInvoice, OrderUpdate
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
+
+# Stripe error codes (from payment_error.code / charge.failure_code)
+# that indicate the payment method is permanently unusable.
+# These are checked against Payment.decline_reason.
+UNRECOVERABLE_STRIPE_ERROR_CODES: set[str] = {
+    "expired_card",
+    "card_not_supported",
+}
+
+# Stripe decline codes (from payment_error.decline_code)
+# that indicate the payment should not be retried automatically.
+# These are checked against Payment.decline_code.
+UNRECOVERABLE_STRIPE_DECLINE_CODES: set[str] = {
+    "stolen_card",
+    "lost_card",
+    "do_not_honor",
+    "fraudulent",
+    "merchant_blacklist",
+    "pickup_card",
+    "restricted_card",
+    "security_violation",
+    "invalid_account",
+    "revocation_of_all_authorizations",
+    "revocation_of_authorization",
+}
 
 
 class OrderError(PolarError): ...
@@ -1893,10 +1919,65 @@ class OrderService:
         if order.subscription is None:
             return order
 
+        # Check if the latest payment has a non-recoverable decline code.
+        # If so, mark as past_due but don't schedule any automatic retries.
+        payment_repository = PaymentRepository.from_session(session)
+        latest_payment = await payment_repository.get_latest_for_order(order.id)
+        if latest_payment is not None and self._is_non_recoverable_decline(
+            latest_payment
+        ):
+            log.info(
+                "Non-recoverable decline code detected, skipping dunning retries",
+                order_id=order.id,
+                decline_reason=latest_payment.decline_reason,
+                decline_code=latest_payment.decline_code,
+            )
+            return await self._handle_non_recoverable_payment_failure(session, order)
+
         if order.next_payment_attempt_at is None:
             return await self._handle_first_dunning_attempt(session, order)
 
         return await self._handle_consecutive_dunning_attempts(session, order)
+
+    @staticmethod
+    def _is_non_recoverable_decline(payment: Payment) -> bool:
+        """Check if a payment's decline info indicates a non-recoverable failure."""
+        if payment.status != PaymentStatus.failed:
+            return False
+        if (
+            payment.decline_reason is not None
+            and payment.decline_reason in UNRECOVERABLE_STRIPE_ERROR_CODES
+        ):
+            return True
+        if (
+            payment.decline_code is not None
+            and payment.decline_code in UNRECOVERABLE_STRIPE_DECLINE_CODES
+        ):
+            return True
+        return False
+
+    async def _handle_non_recoverable_payment_failure(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Handle a payment failure with a non-recoverable decline code.
+
+        Marks the subscription as past_due but does NOT schedule any automatic
+        dunning retries. The customer can still manually update their payment
+        method and retry via the customer portal. The existing past_due_deadline
+        will handle eventual revocation if the customer doesn't act.
+        """
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order, update_dict={"next_payment_attempt_at": None}
+        )
+
+        assert order.subscription is not None
+        if order.subscription.status != SubscriptionStatus.past_due:
+            await subscription_service.mark_past_due(session, order.subscription)
+
+        await subscription_service.enqueue_benefits_grants(session, order.subscription)
+
+        return order
 
     async def _handle_first_dunning_attempt(
         self, session: AsyncSession, order: Order

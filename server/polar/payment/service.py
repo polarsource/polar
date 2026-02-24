@@ -139,6 +139,9 @@ class PaymentService:
                 payment.risk_level = risk_level
                 payment.risk_score = charge.outcome.get("risk_score")
 
+        if charge.failure_code is not None:
+            payment.decline_code = charge.failure_code
+
         payment.checkout = checkout
         payment.order = order
         payment.wallet = wallet
@@ -195,6 +198,7 @@ class PaymentService:
         payment.customer_email = payment_intent.receipt_email
 
         payment.decline_reason = getattr(payment_error, "code", None)
+        payment.decline_code = getattr(payment_error, "decline_code", None)
         payment.decline_message = payment_error.message
 
         payment.checkout = checkout

@@ -58,6 +58,7 @@ class Payment(RecordModel):
     )
 
     decline_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    decline_code: Mapped[str | None] = mapped_column(String, nullable=True)
     decline_message: Mapped[str | None] = mapped_column(String, nullable=True)
 
     risk_level: Mapped[str | None] = mapped_column(String, nullable=True)

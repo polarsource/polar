@@ -2800,6 +2800,233 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at is None
         mock_revoke.assert_called_once()
 
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_non_recoverable_decline_code_skips_dunning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a payment fails with a non-recoverable decline code (e.g., stolen_card),
+        the subscription should be marked as past_due but no dunning retries
+        should be scheduled."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        # Create a failed payment with a non-recoverable decline code
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="card_declined",
+            decline_code="stolen_card",
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        mock_enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — no retries scheduled
+        assert result_order.next_payment_attempt_at is None
+        # Subscription marked as past_due
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_non_recoverable_error_code_skips_dunning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a payment fails with a non-recoverable error code (e.g., expired_card),
+        the subscription should be marked as past_due but no dunning retries
+        should be scheduled."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        # Create a failed payment with a non-recoverable error code
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="expired_card",
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        mock_enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — no retries scheduled
+        assert result_order.next_payment_attempt_at is None
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_recoverable_decline_code_enters_dunning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a payment fails with a recoverable decline code (e.g., insufficient_funds),
+        the normal dunning retry flow should proceed."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        # Create a failed payment with a recoverable decline code
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="card_declined",
+            decline_code="insufficient_funds",
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — normal dunning: retry scheduled
+        assert result_order.next_payment_attempt_at is not None
+        expected_retry_date = utc_now() + timedelta(days=2)
+        assert result_order.next_payment_attempt_at == expected_retry_date
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_non_recoverable_mid_dunning_stops_retries(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a payment that was previously recoverable now fails with a
+        non-recoverable decline code (e.g., card reported lost during dunning),
+        further retries should stop immediately."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        # Already in dunning — has a next payment attempt scheduled
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)
+        await save_fixture(order)
+
+        # First failed payment was recoverable
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="card_declined",
+            decline_code="insufficient_funds",
+            order=order,
+        )
+
+        # Latest failed payment is non-recoverable
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="card_declined",
+            decline_code="lost_card",
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        mock_enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — retries stopped, no next attempt scheduled
+        assert result_order.next_payment_attempt_at is None
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
+
 
 @pytest.mark.asyncio
 class TestProcessDunningOrder:

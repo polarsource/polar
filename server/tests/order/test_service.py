@@ -2970,7 +2970,7 @@ class TestHandlePaymentFailure:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """When a payment that was previously recoverable now fails with a
+        """When an order already in dunning receives a payment failure with a
         non-recoverable decline code (e.g., card reported lost during dunning),
         further retries should stop immediately."""
         # Given
@@ -2990,17 +2990,7 @@ class TestHandlePaymentFailure:
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)
         await save_fixture(order)
 
-        # First failed payment was recoverable
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            decline_reason="card_declined",
-            decline_code="insufficient_funds",
-            order=order,
-        )
-
-        # Latest failed payment is non-recoverable
+        # The latest (and only) failed payment is non-recoverable
         await create_payment(
             save_fixture,
             order.organization,

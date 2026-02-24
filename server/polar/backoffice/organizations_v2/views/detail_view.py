@@ -386,7 +386,6 @@ class OrganizationDetailView:
                 ):
                     text("Switch to Classic View")
 
-
         # Section tabs
         with tag.div(classes="mb-6"):
             with self.section_tabs(request, section):

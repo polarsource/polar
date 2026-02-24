@@ -1,47 +1,212 @@
 # Orbit color design tokens
 
 props:
-  COLORS__BG:
-    value: "#ffffff"
+  COLOR_BG:
+    value:
+      colorSpace: srgb
+      components: [1, 1, 1]
     description: Page background — the outermost canvas.
     themes:
-      dark: "hsl(233, 2%, 3%)"
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 3]
 
-  COLORS__BG_SURFACE:
-    value: "hsl(0, 0%, 97%)"
+  COLOR_BG_SURFACE:
+    value:
+      colorSpace: hsl
+      components: [0, 0, 97]
     description: Surface background — cards, panels, and containers elevated above the page background.
     themes:
-      dark: "hsl(233, 2%, 6.5%)"
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 6.5]
 
-  COLORS__BG_ELEVATED:
-    value: "hsl(0, 0%, 90%)"
+  COLOR_BG_ELEVATED:
+    value:
+      colorSpace: hsl
+      components: [0, 0, 90]
     description: Elevated surface — popovers, dropdowns, tooltips, and floating layers above a surface.
     themes:
-      dark: "hsl(233, 2%, 9.5%)"
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 9.5]
 
-  COLORS__TEXT:
-    value: "#111111"
+  COLOR_TEXT:
+    value:
+      colorSpace: srgb
+      components: [0.067, 0.067, 0.067]
     description: Primary text color.
     themes:
-      dark: "#f0f0f0"
+      dark:
+        colorSpace: srgb
+        components: [0.941, 0.941, 0.941]
 
-  COLORS__TEXT_SUBTLE:
-    value: "hsl(0, 0%, 60%)"
+  COLOR_TEXT_SUBTLE:
+    value:
+      colorSpace: hsl
+      components: [0, 0, 60]
     description: Secondary and muted text — labels, captions, supporting copy.
     themes:
-      dark: "hsl(233, 2%, 52%)"
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 52]
 
-  COLORS__TEXT_DISABLED:
-    value: "hsl(0, 0%, 32%)"
+  COLOR_TEXT_DISABLED:
+    value:
+      colorSpace: hsl
+      components: [0, 0, 32]
     description: Disabled and placeholder text — conveys non-interactive state.
     themes:
-      dark: "hsl(233, 2%, 32%)"
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 32]
 
-  COLORS__DESTRUCTIVE:
-    value: "oklch(0.637 0.237 25.331)"
+  COLOR_DESTRUCTIVE:
+    value:
+      colorSpace: oklch
+      components: [0.637, 0.237, 25.331]
     description: Destructive-action color (red-500). Used for delete, remove, and irreversible operations.
     themes:
-      dark: "oklch(0.577 0.245 27.325)"
+      dark:
+        colorSpace: oklch
+        components: [0.577, 0.245, 27.325]
+
+  COLOR_BUTTON_PRIMARY_BG:
+    value:
+      colorSpace: srgb
+      components: [0, 0, 0]
+    description: Primary button background.
+    themes:
+      dark:
+        colorSpace: srgb
+        components: [1, 1, 1]
+
+  COLOR_BUTTON_PRIMARY_FG:
+    value:
+      colorSpace: srgb
+      components: [1, 1, 1]
+    description: Primary button foreground.
+    themes:
+      dark:
+        colorSpace: srgb
+        components: [0, 0, 0]
+
+  COLOR_BUTTON_SECONDARY_BG:
+    value:
+      colorSpace: oklch
+      components: [0.967, 0.003, 264.542]
+    description: Secondary button background.
+    themes:
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 12]
+
+  COLOR_BUTTON_SECONDARY_FG:
+    value:
+      colorSpace: srgb
+      components: [0, 0, 0]
+    description: Secondary button foreground.
+    themes:
+      dark:
+        colorSpace: srgb
+        components: [1, 1, 1]
+
+  COLOR_BUTTON_DESTRUCTIVE_FG:
+    value:
+      colorSpace: srgb
+      components: [1, 1, 1]
+    description: Destructive button foreground.
+
+  COLOR_BUTTON_GHOST_BG:
+    value:
+      colorSpace: srgb
+      components: [0, 0, 0]
+      alpha: 0
+    description: Ghost button background.
+
+  COLOR_BUTTON_GHOST_FG:
+    value:
+      colorSpace: srgb
+      components: [0, 0, 0]
+    description: Ghost button foreground.
+    themes:
+      dark:
+        colorSpace: srgb
+        components: [1, 1, 1]
+
+  COLOR_STATUS_NEUTRAL_BG:
+    value:
+      colorSpace: oklch
+      components: [0.967, 0.003, 264.542]
+    description: Neutral status background.
+    themes:
+      dark:
+        colorSpace: hsl
+        components: [233, 2, 9.5]
+
+  COLOR_STATUS_NEUTRAL_FG:
+    value:
+      colorSpace: oklch
+      components: [0.551, 0.027, 264.364]
+    description: Neutral status foreground.
+
+  COLOR_STATUS_SUCCESS_BG:
+    value:
+      colorSpace: oklch
+      components: [0.95, 0.052, 163.051]
+    description: Success status background.
+    themes:
+      dark:
+        colorSpace: oklch
+        components: [0.262, 0.051, 172.552]
+
+  COLOR_STATUS_SUCCESS_FG:
+    value:
+      colorSpace: oklch
+      components: [0.696, 0.17, 162.48]
+    description: Success status foreground.
+
+  COLOR_STATUS_WARNING_BG:
+    value:
+      colorSpace: oklch
+      components: [0.962, 0.059, 95.617]
+    description: Warning status background.
+    themes:
+      dark:
+        colorSpace: oklch
+        components: [0.279, 0.077, 45.635]
+
+  COLOR_STATUS_WARNING_FG:
+    value:
+      colorSpace: oklch
+      components: [0.769, 0.188, 70.08]
+    description: Warning status foreground.
+
+  COLOR_STATUS_ERROR_BG:
+    value:
+      colorSpace: oklch
+      components: [0.936, 0.032, 17.717]
+    description: Error status background.
+    themes:
+      dark:
+        colorSpace: oklch
+        components: [0.258, 0.092, 26.042]
+
+  COLOR_STATUS_INFO_BG:
+    value:
+      colorSpace: oklch
+      components: [0.932, 0.032, 255.585]
+    description: Info status background.
+    themes:
+      dark:
+        colorSpace: oklch
+        components: [0.282, 0.091, 267.935]
+
+  COLOR_STATUS_INFO_FG:
+    value:
+      colorSpace: oklch
+      components: [0.623, 0.214, 259.815]
+    description: Info status foreground.
 
 imports: []
 

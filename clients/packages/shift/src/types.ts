@@ -12,12 +12,18 @@ export type TokenType =
 
 export type ColorSpace = 'srgb' | 'display-p3' | 'hsl' | 'oklch'
 
-export interface ColorValue {
+export interface ColorComponentsValue {
   colorSpace: ColorSpace
   components: number[]
   alpha?: number
-  hex?: string
 }
+
+export interface ColorHexValue {
+  hex: string
+  alpha?: number
+}
+
+export type ColorValue = ColorComponentsValue | ColorHexValue
 
 export interface DimensionValue {
   value: number

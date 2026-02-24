@@ -3,32 +3,32 @@
 props:
   CARD__BACKGROUND:
     type: color
-    value: "{COLORS.BG_SURFACE}"
+    value: "{COLOR_BG_SURFACE}"
     description: Card background color — sits one step above the page background.
 
   CARD__PADDING:
     type: dimension
-    value: "{SPACING.SPACING_3}"
+    value: "{SPACING_6}"
     description: Default inset padding applied to the Card root (24 px). Consumers may override per-instance.
 
   CARD__GAP:
     type: dimension
-    value: "{SPACING.SPACING_2}"
+    value: "{SPACING_4}"
     description: Vertical gap between direct children of the Card stack (16 px).
 
   CARD__RADIUS:
     type: dimension
-    value: "{RADII.LG}"
+    value: "{RADII_LG}"
     description: Corner radius of the Card surface (16 px / rounded-2xl).
 
   CARD__FOOTER__GAP:
     type: dimension
-    value: "12px"
+    value: "{SPACING_3}"
     description: Gap between action buttons in CardFooter (12 px).
 
   CARD__FOOTER__PADDING_TOP:
     type: dimension
-    value: "{SPACING.SPACING_2}"
+    value: "{SPACING_4}"
     description: Top padding added to CardFooter when action buttons are present (16 px).
 
 imports:

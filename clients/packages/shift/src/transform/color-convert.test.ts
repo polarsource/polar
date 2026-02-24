@@ -100,6 +100,18 @@ describe('parseColorRgba', () => {
   it('parses white', () => {
     expect(parseColorRgba('#ffffff')).toEqual([1, 1, 1, 1])
   })
+
+  it('parses hex-only structured color objects', () => {
+    const result = parseColorRgba({ hex: '#ff0000' } as any)
+    expect(result).toEqual([1, 0, 0, 1])
+  })
+
+  it('rejects invalid structured objects that combine hex and components', () => {
+    const result = parseColorRgba(
+      { hex: '#ff0000', colorSpace: 'srgb', components: [1, 0, 0] } as any,
+    )
+    expect(result).toBeNull()
+  })
 })
 
 // ── toRgbString ───────────────────────────────────────────────────────────────

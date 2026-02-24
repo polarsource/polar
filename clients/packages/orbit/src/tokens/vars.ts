@@ -1,52 +1,62 @@
 export const tokens = {
-  "COLORS": {
-    "BG": "var(--COLORS-BG)",
-    "BG_SURFACE": "var(--COLORS-BG_SURFACE)",
-    "BG_ELEVATED": "var(--COLORS-BG_ELEVATED)",
-    "TEXT": "var(--COLORS-TEXT)",
-    "TEXT_SUBTLE": "var(--COLORS-TEXT_SUBTLE)",
-    "TEXT_DISABLED": "var(--COLORS-TEXT_DISABLED)",
-    "DESTRUCTIVE": "var(--COLORS-DESTRUCTIVE)"
-  },
-  "SPACING": {
-    "SPACING_0": "var(--SPACING-SPACING_0)",
-    "SPACING_1": "var(--SPACING-SPACING_1)",
-    "SPACING_2": "var(--SPACING-SPACING_2)",
-    "SPACING_3": "var(--SPACING-SPACING_3)",
-    "SPACING_4": "var(--SPACING-SPACING_4)",
-    "SPACING_5": "var(--SPACING-SPACING_5)",
-    "SPACING_6": "var(--SPACING-SPACING_6)",
-    "SPACING_8": "var(--SPACING-SPACING_8)",
-    "SPACING_10": "var(--SPACING-SPACING_10)",
-    "SPACING_12": "var(--SPACING-SPACING_12)",
-    "SPACING_16": "var(--SPACING-SPACING_16)",
-    "SPACING_32": "var(--SPACING-SPACING_32)"
-  },
-  "RADII": {
-    "SM": "var(--RADII-SM)",
-    "MD": "var(--RADII-MD)",
-    "LG": "var(--RADII-LG)",
-    "XL": "var(--RADII-XL)",
-    "2XL": "var(--RADII-2XL)",
-    "FULL": "var(--RADII-FULL)"
+  "COLOR_BG": "var(--COLOR_BG)",
+  "COLOR_BG_SURFACE": "var(--COLOR_BG_SURFACE)",
+  "COLOR_BG_ELEVATED": "var(--COLOR_BG_ELEVATED)",
+  "COLOR_TEXT": "var(--COLOR_TEXT)",
+  "COLOR_TEXT_SUBTLE": "var(--COLOR_TEXT_SUBTLE)",
+  "COLOR_TEXT_DISABLED": "var(--COLOR_TEXT_DISABLED)",
+  "COLOR_DESTRUCTIVE": "var(--COLOR_DESTRUCTIVE)",
+  "COLOR_BUTTON_PRIMARY_BG": "var(--COLOR_BUTTON_PRIMARY_BG)",
+  "COLOR_BUTTON_PRIMARY_FG": "var(--COLOR_BUTTON_PRIMARY_FG)",
+  "COLOR_BUTTON_SECONDARY_BG": "var(--COLOR_BUTTON_SECONDARY_BG)",
+  "COLOR_BUTTON_SECONDARY_FG": "var(--COLOR_BUTTON_SECONDARY_FG)",
+  "COLOR_BUTTON_DESTRUCTIVE_FG": "var(--COLOR_BUTTON_DESTRUCTIVE_FG)",
+  "COLOR_BUTTON_GHOST_BG": "var(--COLOR_BUTTON_GHOST_BG)",
+  "COLOR_BUTTON_GHOST_FG": "var(--COLOR_BUTTON_GHOST_FG)",
+  "COLOR_STATUS_NEUTRAL_BG": "var(--COLOR_STATUS_NEUTRAL_BG)",
+  "COLOR_STATUS_NEUTRAL_FG": "var(--COLOR_STATUS_NEUTRAL_FG)",
+  "COLOR_STATUS_SUCCESS_BG": "var(--COLOR_STATUS_SUCCESS_BG)",
+  "COLOR_STATUS_SUCCESS_FG": "var(--COLOR_STATUS_SUCCESS_FG)",
+  "COLOR_STATUS_WARNING_BG": "var(--COLOR_STATUS_WARNING_BG)",
+  "COLOR_STATUS_WARNING_FG": "var(--COLOR_STATUS_WARNING_FG)",
+  "COLOR_STATUS_ERROR_BG": "var(--COLOR_STATUS_ERROR_BG)",
+  "COLOR_STATUS_INFO_BG": "var(--COLOR_STATUS_INFO_BG)",
+  "COLOR_STATUS_INFO_FG": "var(--COLOR_STATUS_INFO_FG)",
+  "SPACING_0": "var(--SPACING_0)",
+  "SPACING_1": "var(--SPACING_1)",
+  "SPACING_2": "var(--SPACING_2)",
+  "SPACING_3": "var(--SPACING_3)",
+  "SPACING_4": "var(--SPACING_4)",
+  "SPACING_5": "var(--SPACING_5)",
+  "SPACING_6": "var(--SPACING_6)",
+  "SPACING_7": "var(--SPACING_7)",
+  "SPACING_8": "var(--SPACING_8)",
+  "SPACING_9": "var(--SPACING_9)",
+  "SPACING_10": "var(--SPACING_10)",
+  "SPACING_11": "var(--SPACING_11)",
+  "SPACING_12": "var(--SPACING_12)",
+  "SPACING_13": "var(--SPACING_13)",
+  "SPACING_14": "var(--SPACING_14)",
+  "RADII_SM": "var(--RADII_SM)",
+  "RADII_MD": "var(--RADII_MD)",
+  "RADII_LG": "var(--RADII_LG)",
+  "RADII_XL": "var(--RADII_XL)",
+  "RADII_2XL": "var(--RADII_2XL)",
+  "RADII_FULL": "var(--RADII_FULL)",
+  "CARD": {
+    "BACKGROUND": "var(--CARD-BACKGROUND)",
+    "FOOTER": {
+      "GAP": "var(--CARD-FOOTER-GAP)",
+      "PADDING_TOP": "var(--CARD-FOOTER-PADDING_TOP)"
+    },
+    "GAP": "var(--CARD-GAP)",
+    "PADDING": "var(--CARD-PADDING)",
+    "RADIUS": "var(--CARD-RADIUS)"
   },
   "BUTTON": {
-    "SIZE": {
-      "SM": {
-        "HEIGHT": "var(--BUTTON-SIZE-SM-HEIGHT)",
-        "PADDING_X": "var(--BUTTON-SIZE-SM-PADDING_X)",
-        "PADDING_Y": "var(--BUTTON-SIZE-SM-PADDING_Y)"
-      },
-      "DEFAULT": {
-        "HEIGHT": "var(--BUTTON-SIZE-DEFAULT-HEIGHT)",
-        "PADDING_Y": "var(--BUTTON-SIZE-DEFAULT-PADDING_Y)",
-        "PADDING_X": "var(--BUTTON-SIZE-DEFAULT-PADDING_X)"
-      },
-      "LG": {
-        "HEIGHT": "var(--BUTTON-SIZE-LG-HEIGHT)",
-        "PADDING_X": "var(--BUTTON-SIZE-LG-PADDING_X)",
-        "PADDING_Y": "var(--BUTTON-SIZE-LG-PADDING_Y)"
-      }
+    "DESTRUCTIVE": {
+      "BACKGROUND": "var(--BUTTON-DESTRUCTIVE-BACKGROUND)",
+      "FOREGROUND": "var(--BUTTON-DESTRUCTIVE-FOREGROUND)"
     },
     "PRIMARY": {
       "BACKGROUND": "var(--BUTTON-PRIMARY-BACKGROUND)",
@@ -56,27 +66,34 @@ export const tokens = {
       "BACKGROUND": "var(--BUTTON-SECONDARY-BACKGROUND)",
       "FOREGROUND": "var(--BUTTON-SECONDARY-FOREGROUND)"
     },
-    "DESTRUCTIVE": {
-      "FOREGROUND": "var(--BUTTON-DESTRUCTIVE-FOREGROUND)",
-      "BACKGROUND": "var(--BUTTON-DESTRUCTIVE-BACKGROUND)"
-    },
     "GHOST": {
       "BACKGROUND": "var(--BUTTON-GHOST-BACKGROUND)",
       "FOREGROUND": "var(--BUTTON-GHOST-FOREGROUND)"
     },
+    "SIZE": {
+      "SM": {
+        "PADDING_Y": "var(--BUTTON-SIZE-SM-PADDING_Y)",
+        "PADDING_X": "var(--BUTTON-SIZE-SM-PADDING_X)",
+        "HEIGHT": "var(--BUTTON-SIZE-SM-HEIGHT)"
+      },
+      "DEFAULT": {
+        "PADDING_Y": "var(--BUTTON-SIZE-DEFAULT-PADDING_Y)",
+        "PADDING_X": "var(--BUTTON-SIZE-DEFAULT-PADDING_X)",
+        "HEIGHT": "var(--BUTTON-SIZE-DEFAULT-HEIGHT)"
+      },
+      "LG": {
+        "PADDING_Y": "var(--BUTTON-SIZE-LG-PADDING_Y)",
+        "PADDING_X": "var(--BUTTON-SIZE-LG-PADDING_X)",
+        "HEIGHT": "var(--BUTTON-SIZE-LG-HEIGHT)"
+      }
+    },
     "RADIUS": "var(--BUTTON-RADIUS)"
   },
-  "CARD": {
-    "FOOTER": {
-      "GAP": "var(--CARD-FOOTER-GAP)",
-      "PADDING_TOP": "var(--CARD-FOOTER-PADDING_TOP)"
-    },
-    "BACKGROUND": "var(--CARD-BACKGROUND)",
-    "GAP": "var(--CARD-GAP)",
-    "PADDING": "var(--CARD-PADDING)",
-    "RADIUS": "var(--CARD-RADIUS)"
-  },
   "STATUS": {
+    "ERROR": {
+      "FOREGROUND": "var(--STATUS-ERROR-FOREGROUND)",
+      "BACKGROUND": "var(--STATUS-ERROR-BACKGROUND)"
+    },
     "NEUTRAL": {
       "BACKGROUND": "var(--STATUS-NEUTRAL-BACKGROUND)",
       "FOREGROUND": "var(--STATUS-NEUTRAL-FOREGROUND)"
@@ -88,10 +105,6 @@ export const tokens = {
     "WARNING": {
       "BACKGROUND": "var(--STATUS-WARNING-BACKGROUND)",
       "FOREGROUND": "var(--STATUS-WARNING-FOREGROUND)"
-    },
-    "ERROR": {
-      "BACKGROUND": "var(--STATUS-ERROR-BACKGROUND)",
-      "FOREGROUND": "var(--STATUS-ERROR-FOREGROUND)"
     },
     "INFO": {
       "BACKGROUND": "var(--STATUS-INFO-BACKGROUND)",

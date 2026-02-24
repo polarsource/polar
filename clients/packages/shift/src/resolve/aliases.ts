@@ -70,6 +70,10 @@ function extractAliasRefs(input: string): string[] {
   return refs
 }
 
+function canonicalAliasRef(ref: string): string {
+  return ref.includes('__') ? ref.replaceAll('__', '.') : ref
+}
+
 function applyBinaryOp(
   left: Quantity,
   right: Quantity,
@@ -141,11 +145,12 @@ function evaluateArithmeticExpression(
     let normalized = expression
 
     for (const ref of refs) {
-      const resolvedValue = resolved.get(ref)
+      const canonicalRef = canonicalAliasRef(ref)
+      const resolvedValue = resolved.get(canonicalRef)
       if (resolvedValue === undefined) {
         return yield* Effect.fail(
           new ResolveError({
-            ref,
+            ref: canonicalRef,
             message: `Alias not resolved: {${ref}} in token ${tokenKey}`,
           }),
         )
@@ -154,7 +159,7 @@ function evaluateArithmeticExpression(
       if (!quantity) {
         return yield* Effect.fail(
           new ResolveError({
-            ref,
+            ref: canonicalRef,
             message: `Cannot use non-numeric token "{${ref}}" in arithmetic for ${tokenKey}`,
           }),
         )
@@ -303,13 +308,13 @@ function aliasRefs(token: RawToken): Set<string> {
   const refs = new Set<string>()
 
   if (typeof token.value === 'string') {
-    for (const ref of extractAliasRefs(token.value)) refs.add(ref)
+    for (const ref of extractAliasRefs(token.value)) refs.add(canonicalAliasRef(ref))
   }
 
   if (token.themes) {
     for (const themeVal of Object.values(token.themes)) {
       if (typeof themeVal === 'string') {
-        for (const ref of extractAliasRefs(themeVal)) refs.add(ref)
+        for (const ref of extractAliasRefs(themeVal)) refs.add(canonicalAliasRef(ref))
       }
     }
   }
@@ -317,7 +322,7 @@ function aliasRefs(token: RawToken): Set<string> {
   if (token.breakpoints) {
     for (const bpVal of Object.values(token.breakpoints)) {
       if (typeof bpVal === 'string') {
-        for (const ref of extractAliasRefs(bpVal)) refs.add(ref)
+        for (const ref of extractAliasRefs(bpVal)) refs.add(canonicalAliasRef(ref))
       }
     }
   }
@@ -415,13 +420,17 @@ function resolveValue(
     }
 
     const ref = match[1]!
-    if (!resolved.has(ref)) {
+    const canonicalRef = canonicalAliasRef(ref)
+    if (!resolved.has(canonicalRef)) {
       return yield* Effect.fail(
-        new ResolveError({ ref, message: `Alias not resolved: {${ref}} in token ${tokenKey}` }),
+        new ResolveError({
+          ref: canonicalRef,
+          message: `Alias not resolved: {${ref}} in token ${tokenKey}`,
+        }),
       )
     }
 
-    return { value: resolved.get(ref)!, aliasOf: ref }
+    return { value: resolved.get(canonicalRef)!, aliasOf: canonicalRef }
 
   })
 }

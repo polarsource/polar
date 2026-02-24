@@ -36,6 +36,39 @@ function isRawToken(value: unknown): value is RawTokenType {
   )
 }
 
+function validateColorValueObject(value: unknown, path: string[]): void {
+  if (!isObject(value)) return
+  const hasHexKey = 'hex' in value
+  const hasColorSpaceKey = 'colorSpace' in value
+  const hasComponentsKey = 'components' in value
+  if (!hasHexKey && !hasColorSpaceKey && !hasComponentsKey) return
+
+  const hasHex = typeof value.hex === 'string'
+  const hasColorSpace = hasColorSpaceKey
+  const hasComponents = hasComponentsKey
+
+  if (hasHex && (hasColorSpace || hasComponents)) {
+    throw new Error(
+      `Invalid color value at "${path.join('.')}". ` +
+        'Use either { hex } or { colorSpace, components }, not both.',
+    )
+  }
+
+  if (hasColorSpace !== hasComponents) {
+    throw new Error(
+      `Invalid color value at "${path.join('.')}". ` +
+        'colorSpace and components must be provided together.',
+    )
+  }
+
+  if (!hasHex && !(hasColorSpace && hasComponents)) {
+    throw new Error(
+      `Invalid color value at "${path.join('.')}". ` +
+        'Use either { hex } or { colorSpace, components }.',
+    )
+  }
+}
+
 function decodeRawToken(value: unknown, path: string[]): RawTokenType {
   let decoded: RawTokenType
   try {
@@ -51,6 +84,18 @@ function decodeRawToken(value: unknown, path: string[]): RawTokenType {
         `Unexpected token property "${key}" at "${path.join('.')}". ` +
           'Allowed properties: value, type, category, description, themes, breakpoints.',
       )
+    }
+  }
+
+  validateColorValueObject(raw.value, [...path, 'value'])
+  if (isObject(raw.themes)) {
+    for (const [theme, themeValue] of Object.entries(raw.themes)) {
+      validateColorValueObject(themeValue, [...path, 'themes', theme])
+    }
+  }
+  if (isObject(raw.breakpoints)) {
+    for (const [breakpoint, breakpointValue] of Object.entries(raw.breakpoints)) {
+      validateColorValueObject(breakpointValue, [...path, 'breakpoints', breakpoint])
     }
   }
 

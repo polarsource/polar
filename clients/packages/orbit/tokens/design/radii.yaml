@@ -1,27 +1,27 @@
 # Orbit border-radius design tokens
 
 props:
-  RADII__SM:
+  RADII_SM:
     value: "8px"
     description: Small radius (rounded-lg). Buttons, badges, inputs.
 
-  RADII__MD:
+  RADII_MD:
     value: "12px"
     description: Medium radius (rounded-xl). Form controls and small cards.
 
-  RADII__LG:
+  RADII_LG:
     value: "16px"
     description: Large radius (rounded-2xl). Cards and panels.
 
-  RADII__XL:
+  RADII_XL:
     value: "24px"
     description: Extra-large radius (rounded-3xl). Modals and drawers.
 
-  RADII__2XL:
+  RADII_2XL:
     value: "32px"
     description: 2x large radius (rounded-4xl). Hero surfaces and banners.
 
-  RADII__FULL:
+  RADII_FULL:
     value: "9999px"
     description: Fully rounded — pill shape for avatars and tags.
 

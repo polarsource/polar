@@ -92,7 +92,7 @@ type TextPropName =
 
 // ─── createText ──────────────────────────────────────────────────────────────
 // variantColors maps each TextVariant to a CSS value string (typically a
-// CSS variable reference like "var(--colors-text)").
+// CSS variable reference like "var(--COLOR_TEXT)").
 
 export function createText(
   variantColors: Record<TextVariant, string>,

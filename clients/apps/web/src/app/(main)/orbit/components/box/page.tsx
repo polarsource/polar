@@ -1,15 +1,8 @@
-import { Box, Stack, Text, orbitTokens } from '@polar-sh/orbit'
+import { Box, Stack, Text } from '@polar-sh/orbit'
+import { cl, ra, radiiEntries, sp, spacingEntries } from '../../token-compat'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-const sp = orbitTokens.SPACING
-const cl = orbitTokens.COLORS
-const ra = orbitTokens.RADII
-
 // ─── Token data ───────────────────────────────────────────────────────────────
-
-const spacingEntries = Object.entries(orbitTokens.SPACING).map(([key, cssVar]) => ({ key, cssVar }))
-
-const radiiEntries = Object.entries(orbitTokens.RADII).map(([key, cssVar]) => ({ key, cssVar }))
 
 const colorTokens = [
   { key: 'BG' as const,             label: 'BG',            desc: 'Page background' },
@@ -152,7 +145,7 @@ const props = [
     name: 'padding / paddingX / paddingY / paddingTop … paddingLeft',
     type: 'string (CSS value)',
     default: '—',
-    desc: 'Spacing tokens from useOrbit(). E.g. tokens.SPACING["SPACING_3"].',
+    desc: 'Spacing tokens from useOrbit(). E.g. tokens.SPACING_3.',
   },
   {
     name: 'margin / marginX / marginY / marginTop … marginLeft',
@@ -170,7 +163,7 @@ const props = [
     name: 'borderRadius / borderTopLeftRadius … borderBottomRightRadius',
     type: 'string (CSS value)',
     default: '—',
-    desc: 'Radius tokens from useOrbit(). E.g. tokens.RADII.lg.',
+    desc: 'Radius tokens from useOrbit(). E.g. tokens.RADII_LG.',
   },
   {
     name: 'className',
@@ -184,7 +177,7 @@ const props = [
 
 export default function BoxPage() {
   return (
-    <Stack vertical gap={sp['SPACING_16']}>
+    <Stack vertical gap={sp['SPACING_14']}>
       <OrbitPageHeader
         label="Component"
         title="Box"

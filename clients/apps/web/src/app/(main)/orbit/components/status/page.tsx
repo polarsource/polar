@@ -1,8 +1,6 @@
-import { Box, Stack, Status, Text, orbitTokens } from '@polar-sh/orbit'
+import { Box, Stack, Status, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.SPACING
-const cl = orbitTokens.COLORS
-const ra = orbitTokens.RADII
+import { sp, cl, ra } from '../../token-compat'
 
 
 const variants = [

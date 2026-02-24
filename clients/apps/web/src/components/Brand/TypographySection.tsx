@@ -1,4 +1,4 @@
-import { Headline } from '../Orbit'
+import { Headline } from '@polar-sh/orbit'
 import { SectionLayout } from './SectionLayout'
 
 export function TypographySection() {

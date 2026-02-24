@@ -34,7 +34,7 @@ export type StackProps<E extends ElementType = 'div'> = BoxProps<E> &
      * Render children in a column (vertical flex). Equivalent to flex-col.
      *
      * @example
-     * <Stack vertical gap="var(--spacing-SPACING_2)">…</Stack>
+     * <Stack vertical gap="var(--SPACING_2)">…</Stack>
      */
     vertical?: boolean
     /**
@@ -109,14 +109,14 @@ function resolveDirection(
  *
  * @example
  * // Vertical on mobile, horizontal from xl upward
- * <Stack verticalUntil="xl" gap={tokens.SPACING['SPACING_3']}>
+ * <Stack verticalUntil="xl" gap={tokens.SPACING_3}>
  *   <Box>…</Box>
  *   <Box>…</Box>
  * </Stack>
  *
  * @example
  * // Always vertical, centered cross-axis
- * <Stack vertical alignItems="center" gap={tokens.SPACING['SPACING_2']}>…</Stack>
+ * <Stack vertical alignItems="center" gap={tokens.SPACING_2}>…</Stack>
  *
  * @example
  * // Divider between each child

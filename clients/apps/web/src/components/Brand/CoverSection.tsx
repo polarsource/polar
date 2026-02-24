@@ -1,5 +1,5 @@
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import { Headline } from '../Orbit'
+import { Headline } from '@polar-sh/orbit'
 import { PhyllotaxisSunflower } from './PhyllotaxisSunflower'
 
 export function CoverSection() {

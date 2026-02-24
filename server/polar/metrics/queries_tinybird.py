@@ -14,6 +14,7 @@ class TinybirdQuery(StrEnum):
     events = "events"
     costs = "costs"
     cancellations = "cancellations"
+    revenue = "revenue"
 
 
 def _format_dt(dt: datetime) -> str:
@@ -52,18 +53,26 @@ async def _query_cancellations_metrics(
     return await tinybird_client.endpoint("metrics_cancellations", params)
 
 
+async def _query_revenue_metrics(
+    params: dict[str, str],
+) -> list[dict[str, Any]]:
+    return await tinybird_client.endpoint("metrics_revenue", params)
+
+
 def _merge_results(
     metric_types: Sequence[TinybirdQuery],
     events_data: list[dict[str, Any]] | None,
     costs_data: list[dict[str, Any]] | None,
     mrr_data: list[dict[str, Any]] | None,
     cancellations_data: list[dict[str, Any]] | None,
+    revenue_data: list[dict[str, Any]] | None,
 ) -> list[dict[str, Any]]:
     """Merge results from parallel endpoint calls by timestamp."""
     events_by_ts: dict[str, dict[str, Any]] = {}
     costs_by_ts: dict[str, dict[str, Any]] = {}
     mrr_by_ts: dict[str, dict[str, Any]] = {}
     cancellations_by_ts: dict[str, dict[str, Any]] = {}
+    revenue_by_ts: dict[str, dict[str, Any]] = {}
 
     if events_data:
         events_by_ts = {row["timestamp"]: row for row in events_data}
@@ -73,12 +82,15 @@ def _merge_results(
         mrr_by_ts = {row["timestamp"]: row for row in mrr_data}
     if cancellations_data:
         cancellations_by_ts = {row["timestamp"]: row for row in cancellations_data}
+    if revenue_data:
+        revenue_by_ts = {row["timestamp"]: row for row in revenue_data}
 
     all_timestamps = (
         set(events_by_ts.keys())
         | set(costs_by_ts.keys())
         | set(mrr_by_ts.keys())
         | set(cancellations_by_ts.keys())
+        | set(revenue_by_ts.keys())
     )
 
     result: list[dict[str, Any]] = []
@@ -106,6 +118,12 @@ def _merge_results(
         if TinybirdQuery.cancellations in metric_types and ts in cancellations_by_ts:
             cancellations_row = cancellations_by_ts[ts]
             for key, value in cancellations_row.items():
+                if key != "timestamp":
+                    row[key] = value
+
+        if TinybirdQuery.revenue in metric_types and ts in revenue_by_ts:
+            revenue_row = revenue_by_ts[ts]
+            for key, value in revenue_row.items():
                 if key != "timestamp":
                     row[key] = value
 
@@ -208,6 +226,10 @@ async def query_metrics(
         )
         task_types.append(TinybirdQuery.cancellations)
 
+    if TinybirdQuery.revenue in metric_types:
+        tasks.append(asyncio.create_task(_query_revenue_metrics(base_params.copy())))
+        task_types.append(TinybirdQuery.revenue)
+
     if not tasks:
         return []
 
@@ -217,6 +239,7 @@ async def query_metrics(
     costs_data: list[dict[str, Any]] | None = None
     mrr_data: list[dict[str, Any]] | None = None
     cancellations_data: list[dict[str, Any]] | None = None
+    revenue_data: list[dict[str, Any]] | None = None
 
     for i, task_type in enumerate(task_types):
         if task_type == TinybirdQuery.events:
@@ -227,7 +250,14 @@ async def query_metrics(
             mrr_data = results[i]
         elif task_type == TinybirdQuery.cancellations:
             cancellations_data = results[i]
+        elif task_type == TinybirdQuery.revenue:
+            revenue_data = results[i]
 
     return _merge_results(
-        metric_types, events_data, costs_data, mrr_data, cancellations_data
+        metric_types,
+        events_data,
+        costs_data,
+        mrr_data,
+        cancellations_data,
+        revenue_data,
     )

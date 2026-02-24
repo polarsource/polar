@@ -3171,6 +3171,220 @@ class TestProcessDunningOrder:
 
 
 @pytest.mark.asyncio
+class TestScheduleRetryForPastDueOrders:
+    """Test scheduling dunning retries when a customer saves a new payment method."""
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_schedules_retry_for_past_due_no_next_attempt(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """When a customer saves a new payment method and has a past_due subscription
+        with no next_payment_attempt_at, a retry should be scheduled immediately."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 10, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is not None
+        assert order.next_payment_attempt_at == utc_now()
+
+        await session.refresh(subscription)
+        assert subscription.payment_method_id == new_payment_method.id
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_skips_canceled_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry for canceled subscriptions."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        # A past_due subscription that the customer has canceled
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 10, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+            cancel_at_period_end=True,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — no retry scheduled
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is None
+
+    @freeze_time("2024-02-01 12:00:00")
+    async def test_skips_past_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry if the past_due_deadline has already passed."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        # past_due_at on Jan 1 → deadline ~Jan 15 (14 days + 1 min)
+        # Current time is Feb 1 → well past the deadline
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — no retry scheduled (deadline expired)
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is None
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_skips_if_next_attempt_already_set(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry if next_payment_attempt_at is already set
+        (normal dunning in progress)."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        existing_retry_date = datetime(2024, 1, 16, 0, 0, 0, tzinfo=UTC)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 10, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=existing_retry_date,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — existing retry date unchanged
+        await session.refresh(order)
+        assert order.next_payment_attempt_at == existing_retry_date
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_skips_active_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry for active subscriptions (not past_due)."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — no retry scheduled (subscription is active, not past_due)
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is None
+
+
+@pytest.mark.asyncio
 class TestTriggerPayment:
     """Test payment lock mechanism in trigger_payment service method."""
 

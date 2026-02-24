@@ -2124,6 +2124,44 @@ class OrderService:
             tax_rate,
         )
 
+    async def schedule_retry_for_past_due_orders(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Schedule immediate dunning retry for past_due subscriptions when a
+        customer saves a new default payment method.
+
+        This handles the case where automatic retries were stopped (e.g., due to
+        a non-recoverable decline code) but the customer later adds a new card.
+        """
+        repository = OrderRepository.from_session(session)
+        orders = await repository.get_pending_orders_for_past_due_subscriptions(
+            customer.id
+        )
+
+        for order in orders:
+            assert order.subscription is not None
+
+            # Only schedule if no retry is already pending
+            if order.next_payment_attempt_at is not None:
+                continue
+
+            log.info(
+                "Scheduling dunning retry after payment method update",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+                payment_method_id=payment_method.id,
+            )
+
+            await repository.update(
+                order, update_dict={"next_payment_attempt_at": utc_now()}
+            )
+
+            order.subscription.payment_method = payment_method
+            await session.flush()
+
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""
         if order.subscription is None:

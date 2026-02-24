@@ -12,7 +12,7 @@ export default function SharedLayout({
   children?: React.ReactNode
 }) {
   return (
-    <div className="dark:bg-polar-950 flex flex-col gap-12 bg-white pt-16 items-center md:p-16">
+    <div className="dark:bg-polar-950 flex flex-col items-center gap-12 bg-white pt-16 md:p-16">
       <div className="flex w-96 flex-col items-center gap-6">
         <div className="flex flex-row items-center gap-2">
           <LogoType className="h-10" />

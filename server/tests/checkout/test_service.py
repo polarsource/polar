@@ -241,6 +241,20 @@ async def checkout_discount_percentage_100(
 
 
 @pytest_asyncio.fixture
+async def checkout_discount_percentage_100_forever(
+    save_fixture: SaveFixture,
+    product: Product,
+    discount_percentage_100_forever: Discount,
+) -> Checkout:
+    return await create_checkout(
+        save_fixture,
+        products=[product],
+        status=CheckoutStatus.open,
+        discount=discount_percentage_100_forever,
+    )
+
+
+@pytest_asyncio.fixture
 async def product_custom_fields(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -4137,6 +4151,64 @@ class TestConfirm:
         updated_discount = await discount_service.get(
             session,
             discount_percentage_100.id,
+            options=(joinedload(Discount.discount_redemptions),),
+        )
+        assert updated_discount is not None
+        assert len(updated_discount.discount_redemptions) == 1
+        assert updated_discount.discount_redemptions[0].checkout_id == checkout.id
+
+    async def test_valid_fully_discounted_forever_subscription(
+        self,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_discount_percentage_100_forever: Checkout,
+        discount_percentage_100_forever: Discount,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        # A 100% forever discount means no payment form is required
+        assert checkout_discount_percentage_100_forever.is_payment_required is False
+        assert (
+            checkout_discount_percentage_100_forever.is_payment_setup_required is False
+        )
+        assert (
+            checkout_discount_percentage_100_forever.is_payment_form_required is False
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_discount_percentage_100_forever,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.payment_processor_metadata == {
+            "customer_id": "STRIPE_CUSTOMER_ID"
+        }
+
+        stripe_service_mock.create_customer.assert_called_once()
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        stripe_service_mock.create_setup_intent.assert_not_called()
+
+        enqueue_job_mock.assert_called_once_with(
+            "checkout.handle_free_success", checkout_id=checkout.id
+        )
+
+        updated_discount = await discount_service.get(
+            session,
+            discount_percentage_100_forever.id,
             options=(joinedload(Discount.discount_redemptions),),
         )
         assert updated_discount is not None

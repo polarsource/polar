@@ -39,7 +39,7 @@ from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer
-from .discount import Discount
+from .discount import Discount, DiscountDuration, DiscountPercentage
 from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice, ProductPriceSeatUnit
@@ -334,6 +334,16 @@ class Checkout(
             return False
 
         if self.amount == 0 and not self.has_metered_prices:
+            return False
+
+        # A 100% forever percentage discount makes the subscription entirely free
+        # (including metered usage), so no payment setup is needed.
+        if (
+            self.discount is not None
+            and self.discount.duration == DiscountDuration.forever
+            and isinstance(self.discount, DiscountPercentage)
+            and self.discount.basis_points == 10_000
+        ):
             return False
 
         return self.product.is_recurring

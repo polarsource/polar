@@ -87,6 +87,7 @@ dev = [
   "polar-sdk==0.27.3",
   "locust>=2.20.0",
   "debugpy>=1.8.19",
+  "pydantic-evals>=0.7.1",
 ]
 
 [tool.taskipy.tasks]
@@ -97,6 +98,7 @@ worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:sta
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
+eval = { cmd = "python -m evals.organization_review", help = "run organization review evals" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }

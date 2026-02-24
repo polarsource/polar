@@ -9,8 +9,8 @@ import { tokens } from '../tokens/vars'
 export function Card({
   children,
   className,
-  padding = tokens.card.padding,
-  gap = tokens.card.gap,
+  padding = tokens.CARD.PADDING,
+  gap = tokens.CARD.GAP,
 }: {
   children?: ReactNode
   className?: string
@@ -19,7 +19,7 @@ export function Card({
 }) {
   return (
     <Stack vertical
-      borderRadius={tokens.card.radius}
+      borderRadius={tokens.CARD.RADIUS}
       padding={padding}
       gap={gap}
       className={twMerge('bg-(--card-background) rounded-(--card-radius)', className)}
@@ -63,10 +63,10 @@ export function CardFooter({
   actions?: ButtonProps[]
 }) {
   return (
-    <Box paddingTop={actions ? tokens.card.footer['padding-top'] : undefined} className={className}>
+    <Box paddingTop={actions ? tokens.CARD.FOOTER['PADDING_TOP'] : undefined} className={className}>
       {children}
       {actions && (
-        <Stack gap={tokens.card.footer.gap}>
+        <Stack gap={tokens.CARD.FOOTER.GAP}>
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}

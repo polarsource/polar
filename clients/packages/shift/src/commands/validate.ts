@@ -2,6 +2,7 @@ import { Command, Options } from '@effect/cli'
 import { Effect } from 'effect'
 import fg from 'fast-glob'
 import { parseYamlFile } from '../parse/yaml.js'
+import { validateTokenNames } from '../parse/token-names.js'
 import { resolveAliases } from '../resolve/aliases.js'
 import type { TokenGroup } from '../types.js'
 
@@ -33,6 +34,7 @@ export const validateCommand = Command.make(
       )
 
       const merged: TokenGroup = Object.assign({}, ...groups)
+      yield* validateTokenNames(merged)
       yield* resolveAliases(merged)
 
       yield* Effect.log(`All tokens are valid.`)

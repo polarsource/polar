@@ -1,144 +1,144 @@
 export const tokens = {
-  "colors": {
-    "bg": "#ffffff",
-    "bg-surface": "hsl(0, 0%, 97%)",
-    "bg-elevated": "hsl(0, 0%, 90%)",
-    "text": "#111111",
-    "text-subtle": "hsl(0, 0%, 60%)",
-    "text-disabled": "hsl(0, 0%, 32%)",
-    "destructive": "oklch(0.637 0.237 25.331)"
+  "COLORS": {
+    "BG": "#ffffff",
+    "BG_SURFACE": "hsl(0, 0%, 97%)",
+    "BG_ELEVATED": "hsl(0, 0%, 90%)",
+    "TEXT": "#111111",
+    "TEXT_SUBTLE": "hsl(0, 0%, 60%)",
+    "TEXT_DISABLED": "hsl(0, 0%, 32%)",
+    "DESTRUCTIVE": "oklch(0.637 0.237 25.331)"
   },
-  "radii": {
-    "sm": "8px",
-    "md": "12px",
-    "lg": "16px",
-    "xl": "24px",
-    "2xl": "32px",
-    "full": "9999px"
+  "SPACING": {
+    "SPACING_0": "0px",
+    "SPACING_1": "8px",
+    "SPACING_2": "16px",
+    "SPACING_3": "24px",
+    "SPACING_4": "32px",
+    "SPACING_5": "40px",
+    "SPACING_6": "48px",
+    "SPACING_8": "64px",
+    "SPACING_10": "80px",
+    "SPACING_12": "96px",
+    "SPACING_16": "128px",
+    "SPACING_32": "256px"
   },
-  "spacing": {
-    "spacing-0": "0px",
-    "spacing-1": "8px",
-    "spacing-2": "16px",
-    "spacing-3": "24px",
-    "spacing-4": "32px",
-    "spacing-5": "40px",
-    "spacing-6": "48px",
-    "spacing-8": "64px",
-    "spacing-10": "80px",
-    "spacing-12": "96px",
-    "spacing-16": "128px",
-    "spacing-32": "256px"
+  "RADII": {
+    "SM": "8px",
+    "MD": "12px",
+    "LG": "16px",
+    "XL": "24px",
+    "2XL": "32px",
+    "FULL": "9999px"
   },
-  "button": {
-    "size": {
-      "sm": {
-        "height": "32px",
-        "padding-x": "12px",
-        "padding-y": "6px"
+  "BUTTON": {
+    "SIZE": {
+      "SM": {
+        "HEIGHT": "32px",
+        "PADDING_X": "12px",
+        "PADDING_Y": "6px"
       },
-      "default": {
-        "height": "40px",
-        "padding-y": "8px",
-        "padding-x": "16px"
+      "DEFAULT": {
+        "HEIGHT": "40px",
+        "PADDING_Y": "8px",
+        "PADDING_X": "16px"
       },
-      "lg": {
-        "height": "48px",
-        "padding-x": "20px",
-        "padding-y": "16px"
+      "LG": {
+        "HEIGHT": "48px",
+        "PADDING_X": "20px",
+        "PADDING_Y": "16px"
       }
     },
-    "primary": {
-      "background": "#000000",
-      "foreground": "#ffffff"
+    "PRIMARY": {
+      "BACKGROUND": "#000000",
+      "FOREGROUND": "#ffffff"
     },
-    "secondary": {
-      "background": "oklch(0.967 0.003 264.542)",
-      "foreground": "#000000"
+    "SECONDARY": {
+      "BACKGROUND": "oklch(0.967 0.003 264.542)",
+      "FOREGROUND": "#000000"
     },
-    "destructive": {
-      "foreground": "#ffffff",
-      "background": "oklch(0.637 0.237 25.331)"
+    "DESTRUCTIVE": {
+      "FOREGROUND": "#ffffff",
+      "BACKGROUND": "oklch(0.637 0.237 25.331)"
     },
-    "ghost": {
-      "background": "transparent",
-      "foreground": "#000000"
+    "GHOST": {
+      "BACKGROUND": "transparent",
+      "FOREGROUND": "#000000"
     },
-    "radius": "8px"
+    "RADIUS": "8px"
   },
-  "card": {
-    "footer": {
-      "gap": "12px",
-      "padding-top": "16px"
+  "CARD": {
+    "FOOTER": {
+      "GAP": "12px",
+      "PADDING_TOP": "16px"
     },
-    "background": "hsl(0, 0%, 97%)",
-    "radius": "16px",
-    "gap": "16px",
-    "padding": "24px"
+    "BACKGROUND": "hsl(0, 0%, 97%)",
+    "GAP": "16px",
+    "PADDING": "24px",
+    "RADIUS": "16px"
   },
-  "status": {
-    "neutral": {
-      "background": "oklch(0.967 0.003 264.542)",
-      "foreground": "oklch(0.551 0.027 264.364)"
+  "STATUS": {
+    "NEUTRAL": {
+      "BACKGROUND": "oklch(0.967 0.003 264.542)",
+      "FOREGROUND": "oklch(0.551 0.027 264.364)"
     },
-    "success": {
-      "background": "oklch(0.95 0.052 163.051)",
-      "foreground": "oklch(0.696 0.17 162.48)"
+    "SUCCESS": {
+      "BACKGROUND": "oklch(0.95 0.052 163.051)",
+      "FOREGROUND": "oklch(0.696 0.17 162.48)"
     },
-    "warning": {
-      "background": "oklch(0.962 0.059 95.617)",
-      "foreground": "oklch(0.769 0.188 70.08)"
+    "WARNING": {
+      "BACKGROUND": "oklch(0.962 0.059 95.617)",
+      "FOREGROUND": "oklch(0.769 0.188 70.08)"
     },
-    "error": {
-      "background": "oklch(0.936 0.032 17.717)",
-      "foreground": "oklch(0.637 0.237 25.331)"
+    "ERROR": {
+      "BACKGROUND": "oklch(0.936 0.032 17.717)",
+      "FOREGROUND": "oklch(0.637 0.237 25.331)"
     },
-    "info": {
-      "background": "oklch(0.932 0.032 255.585)",
-      "foreground": "oklch(0.623 0.214 259.815)"
+    "INFO": {
+      "BACKGROUND": "oklch(0.932 0.032 255.585)",
+      "FOREGROUND": "oklch(0.623 0.214 259.815)"
     }
   }
 } as const
 
 export const themes = {
   "dark": {
-    "colors": {
-      "bg": "hsl(233, 2%, 3%)",
-      "bg-surface": "hsl(233, 2%, 6.5%)",
-      "bg-elevated": "hsl(233, 2%, 9.5%)",
-      "text": "#f0f0f0",
-      "text-subtle": "hsl(233, 2%, 52%)",
-      "text-disabled": "hsl(233, 2%, 32%)",
-      "destructive": "oklch(0.577 0.245 27.325)"
+    "COLORS": {
+      "BG": "hsl(233, 2%, 3%)",
+      "BG_SURFACE": "hsl(233, 2%, 6.5%)",
+      "BG_ELEVATED": "hsl(233, 2%, 9.5%)",
+      "TEXT": "#f0f0f0",
+      "TEXT_SUBTLE": "hsl(233, 2%, 52%)",
+      "TEXT_DISABLED": "hsl(233, 2%, 32%)",
+      "DESTRUCTIVE": "oklch(0.577 0.245 27.325)"
     },
-    "button": {
-      "primary": {
-        "background": "#ffffff",
-        "foreground": "#000000"
+    "BUTTON": {
+      "PRIMARY": {
+        "BACKGROUND": "#ffffff",
+        "FOREGROUND": "#000000"
       },
-      "secondary": {
-        "background": "hsl(233, 2%, 12%)",
-        "foreground": "#ffffff"
+      "SECONDARY": {
+        "BACKGROUND": "hsl(233, 2%, 12%)",
+        "FOREGROUND": "#ffffff"
       },
-      "ghost": {
-        "foreground": "#ffffff"
+      "GHOST": {
+        "FOREGROUND": "#ffffff"
       }
     },
-    "status": {
-      "neutral": {
-        "background": "hsl(233, 2%, 9.5%)"
+    "STATUS": {
+      "NEUTRAL": {
+        "BACKGROUND": "hsl(233, 2%, 9.5%)"
       },
-      "success": {
-        "background": "oklch(0.262 0.051 172.552)"
+      "SUCCESS": {
+        "BACKGROUND": "oklch(0.262 0.051 172.552)"
       },
-      "warning": {
-        "background": "oklch(0.279 0.077 45.635)"
+      "WARNING": {
+        "BACKGROUND": "oklch(0.279 0.077 45.635)"
       },
-      "error": {
-        "background": "oklch(0.258 0.092 26.042)"
+      "ERROR": {
+        "BACKGROUND": "oklch(0.258 0.092 26.042)"
       },
-      "info": {
-        "background": "oklch(0.282 0.091 267.935)"
+      "INFO": {
+        "BACKGROUND": "oklch(0.282 0.091 267.935)"
       }
     }
   }

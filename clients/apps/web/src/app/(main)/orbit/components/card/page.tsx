@@ -11,14 +11,14 @@ import {
   orbitTokens
 } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 
 export default function CardPage() {
   return (
-    <Stack vertical gap={sp['spacing-10']}>
+    <Stack vertical gap={sp['SPACING_10']}>
       <OrbitPageHeader
         label="Component"
         title="Card"
@@ -35,7 +35,7 @@ export default function CardPage() {
       />
 
       {/* Demos */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Variants" />
 
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
@@ -140,7 +140,7 @@ export default function CardPage() {
       </Stack>
 
       {/* With actions */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="With actions" />
 
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
@@ -244,7 +244,7 @@ export default function CardPage() {
                   </Stack>
                 </CardHeader>
                 <CardContent>
-                  <Stack vertical gap={sp['spacing-1']}>
+                  <Stack vertical gap={sp['SPACING_1']}>
                     <Headline as="h3" text="$49 / mo" />
                     <Text variant="subtle" fontSize="sm">
                       Pro plan · renews Mar 1, 2026
@@ -264,14 +264,14 @@ export default function CardPage() {
       </Stack>
 
       {/* API */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="API" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
             {
               name: 'Card',
               props: 'children, className, padding, gap',
-              desc: 'Root container. bg-surface background, lg radius. padding and gap accept OrbitSpacing keys (default: 3, 2).',
+              desc: 'Root container. BG_SURFACE background, lg radius. padding and gap accept OrbitSpacing keys (default: 3, 2).',
             },
             {
               name: 'CardHeader',

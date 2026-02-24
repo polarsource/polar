@@ -47,6 +47,24 @@ describe('default pipeline', () => {
     const result = applySync('default', [{ rawPath: ['s'], value: '1rem', type: 'dimension' }])
     expect(result.get('s')?.value).toBe('1rem')
   })
+
+  it('serializes structured srgb color values', () => {
+    const result = applySync('default', [
+      {
+        rawPath: ['c'],
+        type: 'color',
+        value: { colorSpace: 'srgb', components: [0.467, 0.467, 0.467] },
+      },
+    ])
+    expect(result.get('c')?.value).toBe('rgb(119, 119, 119)')
+  })
+
+  it('serializes structured dimension values', () => {
+    const result = applySync('default', [
+      { rawPath: ['s'], type: 'dimension', value: { value: 0.5, unit: 'rem' } },
+    ])
+    expect(result.get('s')?.value).toBe('0.5rem')
+  })
 })
 
 // ── color/rgb pipeline ────────────────────────────────────────────────────────
@@ -54,6 +72,17 @@ describe('default pipeline', () => {
 describe('color/rgb value transform', () => {
   it('converts hex to rgb()', () => {
     const result = applySync('web/rgb', [{ rawPath: ['c'], value: '#ff0000', type: 'color' }])
+    expect(result.get('c')?.value).toBe('rgb(255, 0, 0)')
+  })
+
+  it('converts structured srgb color to rgb()', () => {
+    const result = applySync('web/rgb', [
+      {
+        rawPath: ['c'],
+        value: { colorSpace: 'srgb', components: [1, 0, 0] },
+        type: 'color',
+      },
+    ])
     expect(result.get('c')?.value).toBe('rgb(255, 0, 0)')
   })
 
@@ -88,6 +117,17 @@ describe('web pipeline (color/hex)', () => {
   it('converts rgb() to hex', () => {
     const result = applySync('web', [
       { rawPath: ['c'], value: 'rgb(255, 0, 0)', type: 'color' },
+    ])
+    expect(result.get('c')?.value).toBe('#ff0000')
+  })
+
+  it('converts structured hsl color to hex', () => {
+    const result = applySync('web', [
+      {
+        rawPath: ['c'],
+        value: { colorSpace: 'hsl', components: [0, 1, 0.5] },
+        type: 'color',
+      },
     ])
     expect(result.get('c')?.value).toBe('#ff0000')
   })

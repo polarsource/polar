@@ -1,5 +1,5 @@
 import { Effect, Data } from 'effect'
-import type { BreakpointConfig, FlatTokenMap, ThemeConfig } from '../types.js'
+import type { BreakpointConfig, FlatTokenMap, ThemeConfig, TokenValue } from '../types.js'
 
 export class FormatError extends Data.TaggedError('FormatError')<{
   format: string
@@ -20,7 +20,7 @@ function cssVarName(path: string): string {
  * If the token was an alias (aliasOf is set), emit var(--aliased-path).
  * Otherwise emit the concrete value directly.
  */
-function cssValue(value: string | number, aliasOf?: string): string {
+function cssValue(value: TokenValue, aliasOf?: string): string {
   if (aliasOf) {
     return `var(--${cssVarName(aliasOf)})`
   }

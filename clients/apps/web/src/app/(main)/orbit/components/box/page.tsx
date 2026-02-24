@@ -1,24 +1,24 @@
 import { Box, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 // ─── Token data ───────────────────────────────────────────────────────────────
 
-const spacingEntries = Object.entries(orbitTokens.spacing).map(([key, cssVar]) => ({ key, cssVar }))
+const spacingEntries = Object.entries(orbitTokens.SPACING).map(([key, cssVar]) => ({ key, cssVar }))
 
-const radiiEntries = Object.entries(orbitTokens.radii).map(([key, cssVar]) => ({ key, cssVar }))
+const radiiEntries = Object.entries(orbitTokens.RADII).map(([key, cssVar]) => ({ key, cssVar }))
 
 const colorTokens = [
-  { key: 'bg' as const,             label: 'bg',            desc: 'Page background' },
-  { key: 'bg-surface' as const,     label: 'bg-surface',    desc: 'Card / panel' },
-  { key: 'bg-elevated' as const,    label: 'bg-elevated',   desc: 'Divider / raised' },
-  { key: 'text' as const,           label: 'text',          desc: 'Primary text' },
-  { key: 'text-disabled' as const,  label: 'text-disabled', desc: 'Secondary text' },
-  { key: 'text-subtle' as const,    label: 'text-subtle',   desc: 'Placeholder' },
-  { key: 'destructive' as const,    label: 'destructive',   desc: 'Error / danger' },
+  { key: 'BG' as const,             label: 'BG',            desc: 'Page background' },
+  { key: 'BG_SURFACE' as const,     label: 'BG_SURFACE',    desc: 'Card / panel' },
+  { key: 'BG_ELEVATED' as const,    label: 'BG_ELEVATED',   desc: 'Divider / raised' },
+  { key: 'TEXT' as const,           label: 'TEXT',          desc: 'Primary text' },
+  { key: 'TEXT_DISABLED' as const,  label: 'TEXT_DISABLED', desc: 'Secondary text' },
+  { key: 'TEXT_SUBTLE' as const,    label: 'TEXT_SUBTLE',   desc: 'Placeholder' },
+  { key: 'DESTRUCTIVE' as const,    label: 'DESTRUCTIVE',   desc: 'Error / danger' },
 ] as const
 
 // ─── Guidelines ────────────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ const guidelines = [
 
 <Box
   backgroundColor={card.background}
-  padding={spacing['spacing-3']}
+  padding={spacing['SPACING_3']}
   borderRadius={radii.lg}
 >`,
     dont: `<div
@@ -42,10 +42,10 @@ const guidelines = [
   {
     rule: 'Use Stack for flex layouts',
     desc: 'Box is not a flex container. Use Stack for any row/column layout. Box can still carry token styling and flex child props (flex, alignSelf) when nested inside a Stack.',
-    do: `<Stack vertical gap={sp['spacing-2']} verticalUntil="xl">
-  <Box backgroundColor={cl['bg-surface']}
-    padding={sp['spacing-3']}
-    borderRadius={ra.lg}>…</Box>
+    do: `<Stack vertical gap={sp['SPACING_2']} verticalUntil="xl">
+  <Box backgroundColor={cl['BG_SURFACE']}
+    padding={sp['SPACING_3']}
+    borderRadius={ra.LG}>…</Box>
 </Stack>`,
     dont: `<Box
   display="flex"
@@ -58,7 +58,7 @@ const guidelines = [
     do: `<Box
   as="article"
   backgroundColor={card.background}
-  padding={sp['spacing-3']}
+  padding={sp['SPACING_3']}
 >`,
     dont: `<div>
   <article className="...">
@@ -70,7 +70,7 @@ const guidelines = [
     rule: 'className is an escape hatch',
     desc: 'Dimensions (h-12, w-full) and anything not in the token set belong in className. Do not use it to bypass token props.',
     do: `<Box
-  padding={sp['spacing-3']}
+  padding={sp['SPACING_3']}
   className="w-full md:w-1/2"
 >`,
     dont: `<Box
@@ -86,7 +86,7 @@ const flexChildExamples = [
   {
     label: 'flex="1"',
     desc: 'Fill all remaining space in a Stack.',
-    code: `<Stack gap={sp['spacing-2']}>
+    code: `<Stack gap={sp['SPACING_2']}>
   <Box>Fixed</Box>
   <Box flex="1">Fills rest</Box>
 </Stack>`,
@@ -102,7 +102,7 @@ const flexChildExamples = [
   {
     label: 'flexGrow / flexShrink',
     desc: 'Fine-grained grow and shrink control.',
-    code: `<Stack gap={sp['spacing-2']}>
+    code: `<Stack gap={sp['SPACING_2']}>
   <Box flexGrow="1">Grows</Box>
   <Box flexShrink="0">Won't shrink</Box>
 </Stack>`,
@@ -152,7 +152,7 @@ const props = [
     name: 'padding / paddingX / paddingY / paddingTop … paddingLeft',
     type: 'string (CSS value)',
     default: '—',
-    desc: 'Spacing tokens from useOrbit(). E.g. tokens.spacing["spacing-3"].',
+    desc: 'Spacing tokens from useOrbit(). E.g. tokens.SPACING["SPACING_3"].',
   },
   {
     name: 'margin / marginX / marginY / marginTop … marginLeft',
@@ -170,7 +170,7 @@ const props = [
     name: 'borderRadius / borderTopLeftRadius … borderBottomRightRadius',
     type: 'string (CSS value)',
     default: '—',
-    desc: 'Radius tokens from useOrbit(). E.g. tokens.radii.lg.',
+    desc: 'Radius tokens from useOrbit(). E.g. tokens.RADII.lg.',
   },
   {
     name: 'className',
@@ -184,7 +184,7 @@ const props = [
 
 export default function BoxPage() {
   return (
-    <Stack vertical gap={sp['spacing-16']}>
+    <Stack vertical gap={sp['SPACING_16']}>
       <OrbitPageHeader
         label="Component"
         title="Box"
@@ -192,26 +192,26 @@ export default function BoxPage() {
       />
 
       {/* Guidelines */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader
           title="Guidelines"
           description="Four rules for reaching for Box. They keep design values tied to the token system and separate layout concerns (Stack) from styling concerns (Box)."
         />
-        <Stack vertical gap={sp['spacing-2']}>
+        <Stack vertical gap={sp['SPACING_2']}>
           {guidelines.map(({ rule, desc, do: doExample, dont }) => (
             <Box
               key={rule}
-              borderRadius={ra.lg}
-              padding={sp['spacing-3']}
+              borderRadius={ra.LG}
+              padding={sp['SPACING_3']}
               className="dark:border-polar-800 border border-neutral-200"
             >
-              <Stack vertical gap={sp['spacing-2']}>
-                <Stack vertical gap={sp['spacing-1']}>
+              <Stack vertical gap={sp['SPACING_2']}>
+                <Stack vertical gap={sp['SPACING_1']}>
                   <Text fontWeight="medium" fontSize="sm">{rule}</Text>
                   <Text variant="subtle" fontSize="xs" leading="relaxed">{desc}</Text>
                 </Stack>
                 <Box className="grid grid-cols-2 gap-1">
-                  <Stack vertical gap={sp['spacing-1']}>
+                  <Stack vertical gap={sp['SPACING_1']}>
                     <Text fontSize="xs" fontWeight="medium" className="text-green-600 dark:text-green-400">
                       Do
                     </Text>
@@ -219,7 +219,7 @@ export default function BoxPage() {
                       {doExample}
                     </pre>
                   </Stack>
-                  <Stack vertical gap={sp['spacing-1']}>
+                  <Stack vertical gap={sp['SPACING_1']}>
                     <Text fontSize="xs" fontWeight="medium" className="text-red-500">
                       Don&apos;t
                     </Text>
@@ -235,15 +235,15 @@ export default function BoxPage() {
       </Stack>
 
       {/* Flex child props */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader
           title="Flex child props"
           description="When Box is a child inside a Stack, these props control how it participates in the flex layout."
         />
-        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {flexChildExamples.map(({ label, desc, code }) => (
             <Box key={label} className="grid grid-cols-5 items-start gap-8 py-5">
-              <Stack vertical gap={sp['spacing-1']} className="col-span-2">
+              <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
                 <Text as="code" fontFamily="mono" fontSize="sm">{label}</Text>
                 <Text variant="subtle" fontSize="xs">{desc}</Text>
               </Stack>
@@ -258,18 +258,18 @@ export default function BoxPage() {
       </Stack>
 
       {/* Spacing */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader
           title="Spacing"
           description="Numeric keys map to the Orbit spacing scale. Directional variants (paddingX, paddingTop, marginY, gap, …) use the same keys."
         />
-        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {spacingEntries.map(({ key, cssVar }) => (
             <Box
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
             >
-              <Stack vertical gap={sp['spacing-0']} className="col-span-2">
+              <Stack vertical gap={sp['SPACING_0']} className="col-span-2">
                 <Text as="code" fontFamily="mono" fontSize="sm">
                   padding={`{sp['${key}']}`}
                 </Text>
@@ -280,11 +280,11 @@ export default function BoxPage() {
               <Box className="col-span-3">
                 <Box
                   padding={cssVar}
-                  backgroundColor={cl['bg-elevated']}
-                  borderRadius={ra.sm}
+                  backgroundColor={cl['BG_ELEVATED']}
+                  borderRadius={ra.SM}
                   className="inline-flex"
                 >
-                  <Box backgroundColor={cl['bg-surface']} className="h-6 w-6" />
+                  <Box backgroundColor={cl['BG_SURFACE']} className="h-6 w-6" />
                 </Box>
               </Box>
             </Box>
@@ -293,20 +293,20 @@ export default function BoxPage() {
       </Stack>
 
       {/* Colors */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader
           title="Color tokens"
           description="backgroundColor, color, and borderColor accept CSS variable strings from useOrbit(). Dark mode is automatic — no dark: prefix needed."
         />
         <Box className="grid grid-cols-7 gap-3">
           {colorTokens.map(({ key, label, desc }) => (
-            <Stack vertical key={key} gap={sp['spacing-1']}>
+            <Stack vertical key={key} gap={sp['SPACING_1']}>
               <Box
                 backgroundColor={cl[key]}
-                borderRadius={ra.md}
+                borderRadius={ra.MD}
                 className="dark:border-polar-700 h-16 w-full border border-neutral-200"
               />
-              <Stack vertical gap={sp['spacing-0']}>
+              <Stack vertical gap={sp['SPACING_0']}>
                 <Text as="code" fontFamily="mono" fontSize="xs">{label}</Text>
                 <Text as="span" variant="subtle" fontSize="xs">{desc}</Text>
               </Stack>
@@ -316,15 +316,15 @@ export default function BoxPage() {
       </Stack>
 
       {/* Border radius */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Border radius" />
-        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {radiiEntries.map(({ key, cssVar }) => (
             <Box
               key={key}
               className="grid grid-cols-5 items-center gap-8 py-5"
             >
-              <Stack vertical gap={sp['spacing-0']} className="col-span-2">
+              <Stack vertical gap={sp['SPACING_0']} className="col-span-2">
                 <Text as="code" fontFamily="mono" fontSize="sm">
                   borderRadius=&quot;{key}&quot;
                 </Text>
@@ -334,7 +334,7 @@ export default function BoxPage() {
               </Stack>
               <Box className="col-span-3">
                 <Box
-                  backgroundColor={cl['bg-elevated']}
+                  backgroundColor={cl['BG_ELEVATED']}
                   borderRadius={cssVar}
                   className="h-12 w-12"
                 />
@@ -345,28 +345,28 @@ export default function BoxPage() {
       </Stack>
 
       {/* Composition */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader
           title="Composition"
           description="Real-world patterns. Stack drives flex layout; Box handles token-based styling."
         />
-        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
 
           {/* Card */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap={sp['spacing-1']} className="col-span-2">
+            <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
               <Text fontSize="sm">Card</Text>
               <Text variant="subtle" fontSize="xs">Surface · padding · radius</Text>
             </Stack>
             <Box className="col-span-3">
               <Box
                 as="article"
-                backgroundColor={cl['bg-surface']}
-                padding={sp['spacing-3']}
-                borderRadius={ra.lg}
+                backgroundColor={cl['BG_SURFACE']}
+                padding={sp['SPACING_3']}
+                borderRadius={ra.LG}
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Stack vertical gap={sp['spacing-2']}>
+                <Stack vertical gap={sp['SPACING_2']}>
                   <Text fontWeight="medium" fontSize="sm">Card title</Text>
                   <Text variant="subtle" fontSize="xs" leading="relaxed">
                     Supporting description text using the text-muted color token.
@@ -378,25 +378,25 @@ export default function BoxPage() {
 
           {/* Toolbar */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap={sp['spacing-1']} className="col-span-2">
+            <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
               <Text fontSize="sm">Toolbar</Text>
               <Text variant="subtle" fontSize="xs">Surface · Stack handles row layout</Text>
             </Stack>
             <Box className="col-span-3">
               <Box
-                backgroundColor={cl['bg-surface']}
-                paddingX={sp['spacing-3']}
-                paddingY={sp['spacing-2']}
-                borderRadius={ra.lg}
+                backgroundColor={cl['BG_SURFACE']}
+                paddingX={sp['SPACING_3']}
+                paddingY={sp['SPACING_2']}
+                borderRadius={ra.LG}
                 className="dark:border-polar-800 border border-neutral-200"
               >
                 <Stack alignItems="center" justifyContent="between">
                   <Text fontWeight="medium" fontSize="sm">Section title</Text>
                   <Box
-                    backgroundColor={cl['bg-elevated']}
-                    paddingX={sp['spacing-2']}
-                    paddingY={sp['spacing-1']}
-                    borderRadius={ra.sm}
+                    backgroundColor={cl['BG_ELEVATED']}
+                    paddingX={sp['SPACING_2']}
+                    paddingY={sp['SPACING_1']}
+                    borderRadius={ra.SM}
                   >
                     <Text variant="subtle" fontSize="xs">Action</Text>
                   </Box>
@@ -407,7 +407,7 @@ export default function BoxPage() {
 
           {/* Semantic element */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap={sp['spacing-1']} className="col-span-2">
+            <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
               <Text fontSize="sm">Semantic element</Text>
               <Text variant="subtle" fontSize="xs">
                 as=&quot;nav&quot; renders a &lt;nav&gt; — no extra wrapper needed
@@ -416,18 +416,18 @@ export default function BoxPage() {
             <Box className="col-span-3">
               <Box
                 as="nav"
-                backgroundColor={cl['bg-surface']}
-                padding={sp['spacing-2']}
-                borderRadius={ra.lg}
+                backgroundColor={cl['BG_SURFACE']}
+                padding={sp['SPACING_2']}
+                borderRadius={ra.LG}
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Stack vertical gap={sp['spacing-1']}>
+                <Stack vertical gap={sp['SPACING_1']}>
                   {['Overview', 'Settings', 'Billing'].map((item) => (
                     <Box
                       key={item}
-                      paddingX={sp['spacing-2']}
-                      paddingY={sp['spacing-1']}
-                      borderRadius={ra.sm}
+                      paddingX={sp['SPACING_2']}
+                      paddingY={sp['SPACING_1']}
+                      borderRadius={ra.SM}
                       className="cursor-default"
                     >
                       <Text variant="subtle" fontSize="sm" className="hover:text-black dark:hover:text-white">
@@ -443,9 +443,9 @@ export default function BoxPage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['spacing-3']}>
+      <Stack vertical gap={sp['SPACING_3']}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="xs" className="col-span-1">

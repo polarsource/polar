@@ -202,6 +202,10 @@ export default {
       getFree: 'Ottieni gratis',
       paymentsUnavailable: 'Pagamenti attualmente non disponibili',
     },
+    productDescription: {
+      readMore: 'Leggi di più',
+      readLess: 'Mostra meno',
+    },
   },
   intervals: {
     short: {

@@ -199,6 +199,10 @@ export default {
       getFree: 'Skaffa gratis',
       paymentsUnavailable: 'Betalningar är för närvarande otillgängliga',
     },
+    productDescription: {
+      readMore: 'Läs mer',
+      readLess: 'Läs mindre',
+    },
   },
   intervals: {
     short: {

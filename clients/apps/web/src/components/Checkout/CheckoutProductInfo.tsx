@@ -37,7 +37,6 @@ const ExpandableDescription = ({
     const el = textRef.current
     if (!el) return
 
-    // Check after browser has painted the markdown content
     requestAnimationFrame(() => {
       setIsClamped(el.scrollHeight > el.clientHeight)
     })
@@ -108,7 +107,7 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
               </DialogContent>
             </Dialog>
           )}
-          <div className="flex flex-col gap-y-1">
+          <div className="flex flex-col">
             {product.name ? (
               <h1 className="text-2xl font-medium">{product.name}</h1>
             ) : (

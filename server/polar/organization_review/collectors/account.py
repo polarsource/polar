@@ -32,7 +32,8 @@ def collect_account_data(account: Account | None) -> AccountData:
         is_payouts_enabled=account.is_payouts_enabled,
         requirements_currently_due=requirements.get("currently_due") or [],
         requirements_past_due=requirements.get("past_due") or [],
-        requirements_pending_verification=requirements.get("pending_verification") or [],
+        requirements_pending_verification=requirements.get("pending_verification")
+        or [],
         requirements_disabled_reason=requirements.get("disabled_reason"),
         requirements_errors=requirements_errors,
         capabilities=data.get("capabilities") or {},

@@ -1,37 +1,54 @@
 """
-Script to void orders that are eligible based on customer/subscription/organization status.
+Script to void orders that are eligible based on customer/organization status.
 
 This script finds and voids orders that are:
 - Linked to soft-deleted customers
-- Linked to canceled subscriptions
 - Linked to blocked organizations
 
 The script runs in dry-run mode by default and requires explicit --commit flag to make changes.
 """
 
 import asyncio
+import logging.config
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, AsyncIterator
 from functools import wraps
+from typing import Any
 
+import dramatiq
+import structlog
 import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from sqlalchemy import or_, select
+from sqlalchemy import Select, func, or_, select
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import (
     Customer,
     Order,
     Organization,
-    Subscription,
 )
-from polar.models.subscription import SubscriptionStatus
+from polar.order.repository import OrderRepository
 from polar.order.service import OrderService
 from polar.postgres import create_async_engine
+from polar.redis import create_redis
+from polar.worker._enqueue import JobQueueManager
 
 cli = typer.Typer()
+
+
+def drop_all(*args: Any, **kwargs: Any) -> Any:
+    raise structlog.DropEvent
+
+
+structlog.configure(processors=[drop_all])
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": True,
+    }
+)
 
 
 def typer_async(f):  # type: ignore
@@ -43,32 +60,18 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
-async def find_eligible_orders(
-    session: AsyncSession, limit: int | None = None
-) -> Sequence[Order]:
+def get_query() -> Select[tuple[Order]]:
     """
-    Find orders that are eligible for voiding based on:
-    - Soft-deleted customers
-    - Canceled subscriptions
-    - Blocked organizations
+    Build the base query for eligible orders that can be voided.
+
+    Returns a tuple of (base_query, where_clause) that can be used for both
+    count queries and streaming queries.
     """
-    print("[bold yellow]🔍 Finding eligible orders...[/bold yellow]")
-
-    # Base query: only pending orders can be voided
-    base_query = select(Order).where(Order.status == "pending")
-
     # Subquery 1: Orders linked to soft-deleted customers
     deleted_customers_subquery = (
         select(Order.id)
         .join(Customer, Order.customer_id == Customer.id)
         .where(Customer.is_deleted.is_(True))
-    )
-
-    # Subquery 2: Orders linked to canceled subscriptions
-    canceled_subscriptions_subquery = (
-        select(Order.id)
-        .join(Subscription, Order.subscription_id == Subscription.id)
-        .where(Subscription.status == SubscriptionStatus.canceled)
     )
 
     # Subquery 3: Orders linked to blocked organizations
@@ -81,70 +84,66 @@ async def find_eligible_orders(
         )
     )
 
-    # Combine all conditions
-    combined_query = base_query.where(
-        or_(
-            Order.id.in_(deleted_customers_subquery),
-            Order.id.in_(canceled_subscriptions_subquery),
-            Order.id.in_(blocked_organizations_subquery),
-        )
+    # Combine all conditions - this is the core eligibility logic
+    eligibility_conditions = or_(
+        Order.id.in_(deleted_customers_subquery),
+        Order.id.in_(blocked_organizations_subquery),
     )
 
-    # Add limit if specified
-    if limit is not None:
-        combined_query = combined_query.limit(limit)
+    return select(Order).where(Order.status == "pending").where(eligibility_conditions)
 
-    result = await session.execute(combined_query)
-    orders = result.scalars().unique().all()
 
-    print(f"[bold green]✓ Found {len(orders)} eligible orders[/bold green]")
-    return orders
+async def get_eligible_orders_count(session: AsyncSession) -> int:
+    query = get_query().with_only_columns(func.count())
+    result = await session.execute(query)
+    return result.scalar_one()
+
+
+def stream_eligible_orders(session: AsyncSession) -> AsyncGenerator[Order, None]:
+    """
+    Stream orders that are eligible for voiding (memory-efficient).
+    """
+    repository = OrderRepository.from_session(session)
+    query = get_query().options(*repository.get_eager_options())
+    return repository.stream(query)
 
 
 async def void_orders(
     session: AsyncSession,
-    orders: Sequence[Order],
+    order_stream: AsyncIterator[Order],
     order_service: OrderService,
     progress: Progress,
+    total_count: int,
 ) -> dict[str, int]:
     """
-    Void the eligible orders and return statistics.
+    Void the eligible orders from stream and return statistics.
     """
     stats: defaultdict[str, int] = defaultdict(int)
 
-    task_id = progress.add_task("[bold cyan]Voiding orders...", total=len(orders))
+    task_id = progress.add_task("[bold cyan]Voiding orders...", total=total_count)
 
-    for order in orders:
-        try:
-            # Check if order is still pending (might have changed since query)
-            if order.status != "pending":
-                stats["skipped_wrong_status"] += 1
-                progress.update(
-                    task_id,
-                    advance=1,
-                    description="[bold yellow]Skipping non-pending orders...",
-                )
-                continue
-
-            # Void the order
-            await order_service.void(session, order)
-            stats["successfully_voided"] += 1
-
+    processed_count = 0
+    async for order in order_stream:
+        processed_count += 1
+        # Check if order is still pending (might have changed since query)
+        if order.status != "pending":
+            stats["skipped_wrong_status"] += 1
             progress.update(
                 task_id,
                 advance=1,
-                description=f"[bold green]Voided {stats['successfully_voided']}/{len(orders)} orders...",
+                description="[bold yellow]Skipping non-pending orders...",
             )
-
-        except Exception as e:
-            stats["errors"] += 1
-            progress.update(
-                task_id,
-                advance=1,
-                description=f"[bold red]Error: {e} (order {order.id})",
-            )
-            # Continue with next order instead of failing the whole batch
             continue
+
+        # Void the order
+        await order_service.void(session, order)
+        stats["successfully_voided"] += 1
+
+        progress.update(
+            task_id,
+            advance=1,
+            description=f"[bold green]Voided {stats['successfully_voided']}/{processed_count} orders...",
+        )
 
     progress.remove_task(task_id)
     return stats
@@ -182,21 +181,20 @@ async def main(
     commit: bool = typer.Option(
         False, help="Actually void orders (dry-run by default)"
     ),
-    limit: int = typer.Option(None, help="Limit number of orders to process"),
 ) -> None:
     """Main entry point for the void eligible orders script."""
-    try:
-        print("[bold green]Starting void eligible orders script[/bold green]")
-        if not commit:
-            print(
-                "[bold blue]ℹ️  Running in DRY-RUN mode - no changes will be made[/bold blue]"
-            )
-        else:
-            print(
-                "[bold yellow]⚠️  Running in COMMIT mode - orders will be voided[/bold yellow]"
-            )
+    print("[bold green]Starting void eligible orders script[/bold green]")
+    if not commit:
+        print(
+            "[bold blue]ℹ️  Running in DRY-RUN mode - no changes will be made[/bold blue]"
+        )
+    else:
+        print(
+            "[bold yellow]⚠️  Running in COMMIT mode - orders will be voided[/bold yellow]"
+        )
 
-        # Create database session
+    redis = create_redis("app")
+    async with JobQueueManager.open(dramatiq.get_broker(), redis) as manager:
         engine = create_async_engine("script")
         sessionmaker = create_async_sessionmaker(engine)
 
@@ -205,15 +203,19 @@ async def main(
             order_service = OrderService()
 
             # Find eligible orders
-            eligible_orders = await find_eligible_orders(session, limit)
+            # Get count of eligible orders for progress bar
+            total_count = await get_eligible_orders_count(session)
 
-            if not eligible_orders:
+            if total_count == 0:
                 print(
                     "[bold blue]ℹ️  No eligible orders found - nothing to do[/bold blue]"
                 )
                 return
 
-            # Process orders with progress bar
+            print(
+                f"[bold yellow]🔍 Found {total_count} eligible orders to process[/bold yellow]"
+            )
+
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -223,27 +225,26 @@ async def main(
                 TextColumn("[progress.completed]{task.completed}/{task.total}"),
                 transient=True,
             ) as progress:
+                order_stream = stream_eligible_orders(session)
                 stats = await void_orders(
-                    session, eligible_orders, order_service, progress
+                    session, order_stream, order_service, progress, total_count
                 )
 
             # Display summary
-            display_summary(stats, len(eligible_orders))
+            display_summary(stats, total_count)
 
             if commit:
                 await session.commit()
+                await manager.flush(dramatiq.get_broker(), redis)
                 print(
                     "[bold green]✅ Changes have been committed to the database[/bold green]"
                 )
             else:
                 await session.rollback()
+                manager.reset()
                 print("[bold blue]ℹ️  Dry run - no changes have been saved[/bold blue]")
 
-        print("[bold green]✅ Script completed successfully![/bold green]")
-
-    except Exception as e:
-        print(f"[bold red]❌ Script failed: {e}[/bold red]")
-        raise typer.Exit(1)
+    print("[bold green]✅ Script completed successfully![/bold green]")
 
 
 if __name__ == "__main__":

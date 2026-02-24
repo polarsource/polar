@@ -1,5 +1,5 @@
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
-import { Headline } from '../Orbit'
+import { Headline } from '@polar-sh/orbit'
 import { SectionLayout } from './SectionLayout'
 import { ShaderCanvas } from './ShaderCanvas'
 import { CIRCLES_GLSL } from './shaders/geometry/circles'

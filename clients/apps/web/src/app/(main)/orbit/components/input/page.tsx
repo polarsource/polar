@@ -1,10 +1,8 @@
 'use client'
 
-import { Box, Headline, Input, Stack, Text, orbitTokens } from '@polar-sh/orbit'
+import { Box, Headline, Input, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.SPACING
-const cl = orbitTokens.COLORS
-const ra = orbitTokens.RADII
+import { sp, cl, ra } from '../../token-compat'
 
 
 const props = [
@@ -183,7 +181,7 @@ export default function InputPage() {
             </Text>
           </Box>
           <Box className="col-span-3">
-            <Input type="textarea" placeholder="Write something…" rows="SPACING_4" />
+            <Input type="textarea" placeholder="Write something…" rows={4} />
           </Box>
         </Box>
       </Stack>

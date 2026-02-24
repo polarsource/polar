@@ -1,6 +1,6 @@
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Headline } from '../Orbit'
+import { Headline } from '@polar-sh/orbit'
 
 export function SectionLayout({
   label,

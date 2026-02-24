@@ -22,7 +22,7 @@ export function Card({
       borderRadius={tokens.CARD.RADIUS}
       padding={padding}
       gap={gap}
-      className={twMerge('bg-(--card-background) rounded-(--card-radius)', className)}
+      className={twMerge('bg-(--CARD-BACKGROUND) rounded-(--CARD-RADIUS)', className)}
     >
       {children}
     </Stack>

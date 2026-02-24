@@ -1,10 +1,8 @@
 'use client'
 
-import { Box, Button, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
+import { Box, Button, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.SPACING
-const cl = orbitTokens.COLORS
-const ra = orbitTokens.RADII
+import { sp, cl, ra } from '../../token-compat'
 
 
 const variants = [

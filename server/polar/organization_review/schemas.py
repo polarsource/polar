@@ -152,6 +152,37 @@ class HistoryData(Schema):
     has_blocked_orgs: bool = False
 
 
+class CheckoutSuccessUrlData(Schema):
+    unique_urls: list[str] = Field(default_factory=list)
+    domains: list[str] = Field(default_factory=list)
+
+
+class CheckoutLinkBenefitData(Schema):
+    label: str | None = None
+    product_names: list[str] = Field(default_factory=list)
+    has_benefits: bool = False
+
+
+class CheckoutLinksData(Schema):
+    total_links: int = 0
+    links_without_benefits: int = 0
+    links: list[CheckoutLinkBenefitData] = Field(default_factory=list)
+
+
+class IntegrationData(Schema):
+    api_key_count: int = 0
+    webhook_urls: list[str] = Field(default_factory=list)
+    webhook_domains: list[str] = Field(default_factory=list)
+
+
+class SetupData(Schema):
+    checkout_success_urls: CheckoutSuccessUrlData = Field(
+        default_factory=CheckoutSuccessUrlData
+    )
+    checkout_links: CheckoutLinksData = Field(default_factory=CheckoutLinksData)
+    integration: IntegrationData = Field(default_factory=IntegrationData)
+
+
 class WebsitePage(Schema):
     url: str
     title: str | None = None
@@ -181,6 +212,7 @@ class DataSnapshot(Schema):
     account: AccountData
     metrics: PaymentMetrics
     history: HistoryData
+    setup: SetupData = Field(default_factory=SetupData)
     website: WebsiteData | None = None
     collected_at: datetime
 

@@ -18,6 +18,7 @@ from .collectors import (
     collect_metrics_data,
     collect_organization_data,
     collect_products_data,
+    collect_setup_data,
     collect_website_data,
 )
 from .repository import OrganizationReviewRepository
@@ -30,6 +31,7 @@ from .schemas import (
     PaymentMetrics,
     ProductsData,
     ReviewContext,
+    SetupData,
     UsageInfo,
     WebsiteData,
 )
@@ -106,6 +108,18 @@ async def _collect_products(
         repo = OrganizationReviewRepository.from_session(session)
         products = await repo.get_products_with_prices(organization_id)
         return collect_products_data(products)
+
+
+async def _collect_setup(organization_id: UUID, context: ReviewContext) -> SetupData:
+    if context == ReviewContext.SUBMISSION:
+        return SetupData()
+
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationReviewRepository.from_session(session)
+        checkout_links = await repo.get_checkout_links_with_benefits(organization_id)
+        api_key_count = await repo.get_api_key_count(organization_id)
+        webhook_endpoints = await repo.get_webhook_endpoints(organization_id)
+        return collect_setup_data(checkout_links, api_key_count, webhook_endpoints)
 
 
 async def _collect_metrics(
@@ -212,12 +226,14 @@ async def _collect_data(
     # can execute concurrently across separate connections.
     (
         products_data,
+        setup_data,
         metrics_data,
         history_data,
         (account_data, identity_data),
         website_data,
     ) = await asyncio.gather(
         _collect_products(organization.id, context),
+        _collect_setup(organization.id, context),
         _collect_metrics(organization.id, context),
         _collect_history(organization),
         _collect_account_identity(organization, context),
@@ -232,6 +248,7 @@ async def _collect_data(
         account=account_data,
         metrics=metrics_data,
         history=history_data,
+        setup=setup_data,
         website=website_data,
         collected_at=datetime.now(UTC),
     )

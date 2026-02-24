@@ -98,6 +98,9 @@ Website leniency: If the website is inaccessible, returns errors, or has minor d
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
 websites that are under construction, temporarily down, or not yet updated. Only flag website \
 issues if there is a clear and obvious sign of a prohibited business.
+
+Return only APPROVE or DENY, don't return NEEDS_HUMAN_REVIEW. This is only the first step in the review
+process.
 """
 
 SETUP_COMPLETE_PREAMBLE = """\

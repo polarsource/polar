@@ -70,6 +70,7 @@ class OrderStatus(StrEnum):
     paid = "paid"
     refunded = "refunded"
     partially_refunded = "partially_refunded"
+    void = "void"
 
 
 class OrderError(PolarError): ...
@@ -338,6 +339,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         self.status = new_status
         self.refunded_amount = new_amount
         self.refunded_tax_amount = new_tax_amount
+
+    @hybrid_property
+    def is_void(self) -> bool:
+        return self.status == OrderStatus.void
+
+    @is_void.inplace.expression
+    @classmethod
+    def _is_void_expression(cls) -> ColumnElement[bool]:
+        return cls.status == OrderStatus.void
 
     @property
     def is_invoice_generated(self) -> bool:

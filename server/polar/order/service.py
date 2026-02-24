@@ -1895,10 +1895,14 @@ class OrderService:
         now = utc_now()
         subscription = order.subscription
 
-        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS) or (
-            subscription is not None
-            and subscription.past_due_deadline
-            and subscription.past_due_deadline < now
+        if (
+            failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS)
+            or (
+                subscription is not None
+                and subscription.past_due_deadline
+                and subscription.past_due_deadline < now
+            )
+            or order.is_void
         ):
             # No more retries, mark subscription as unpaid and clear retry date
             order = await repository.update(

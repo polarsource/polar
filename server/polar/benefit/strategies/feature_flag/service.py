@@ -49,8 +49,7 @@ class BenefitFeatureFlagService(
     async def requires_update(
         self, benefit: Benefit, previous_properties: BenefitFeatureFlagProperties
     ) -> bool:
-        new_properties = cast(BenefitFeatureFlagProperties, benefit.properties)
-        return new_properties["metadata"] != previous_properties["metadata"]
+        return False
 
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]

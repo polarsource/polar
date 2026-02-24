@@ -159,12 +159,13 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
 }
 
 export const FeatureFlagBenefitForm = () => {
-  const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
+  const { control } =
+    useFormContext<schemas['BenefitFeatureFlagCreate']>()
 
   return (
     <FormField
       control={control}
-      name="properties.metadata"
+      name="metadata"
       defaultValue={{}}
       render={({ field }) => {
         const entries = Object.entries(field.value || {})

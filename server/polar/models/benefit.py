@@ -55,7 +55,7 @@ class BenefitType(StrEnum):
                 BenefitType.downloadables: True,
                 BenefitType.license_keys: True,
                 BenefitType.meter_credit: True,
-                BenefitType.feature_flag: False,
+                BenefitType.feature_flag: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:

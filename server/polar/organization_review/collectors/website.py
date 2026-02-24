@@ -284,9 +284,7 @@ async def _run_browser_agent(base_url: str, base_domain: str) -> WebsiteData:
                 summary=result.output,
                 total_pages_attempted=max(len(deps.pages_visited), 1),
                 total_pages_succeeded=len(deps.pages_visited),
-                usage=UsageInfo.from_agent_usage(
-                    result.usage(), _model.model_name
-                ),
+                usage=UsageInfo.from_agent_usage(result.usage(), _model.model_name),
             )
         finally:
             await browser.close()

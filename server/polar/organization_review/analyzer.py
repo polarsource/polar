@@ -217,9 +217,7 @@ class ReviewAnalyzer:
                 self.agent.run(prompt, instructions=instructions),
                 timeout=timeout_seconds,
             )
-            usage = UsageInfo.from_agent_usage(
-                result.usage(), self.model.model_name
-            )
+            usage = UsageInfo.from_agent_usage(result.usage(), self.model.model_name)
             return result.output, usage
         except TimeoutError:
             log.warning(

@@ -34,13 +34,8 @@ class UsageInfo(Schema):
 
     def __add__(self, other: UsageInfo) -> UsageInfo:
         cost: float | None = None
-        if (
-            self.estimated_cost_usd is not None
-            or other.estimated_cost_usd is not None
-        ):
-            cost = (self.estimated_cost_usd or 0.0) + (
-                other.estimated_cost_usd or 0.0
-            )
+        if self.estimated_cost_usd is not None or other.estimated_cost_usd is not None:
+            cost = (self.estimated_cost_usd or 0.0) + (other.estimated_cost_usd or 0.0)
         return UsageInfo(
             input_tokens=self.input_tokens + other.input_tokens,
             output_tokens=self.output_tokens + other.output_tokens,
@@ -54,9 +49,7 @@ class UsageInfo(Schema):
 
         estimated_cost: float | None = None
         try:
-            price = genai_prices.calc_price(
-                usage, model_name, provider_id="openai"
-            )
+            price = genai_prices.calc_price(usage, model_name, provider_id="openai")
             estimated_cost = float(price.total_price)
         except Exception:
             pass

@@ -60,9 +60,7 @@ async def run_organization_review(
 
         duration = time.monotonic() - start_time
 
-        collector_usage = (
-            snapshot.website.usage if snapshot.website else UsageInfo()
-        )
+        collector_usage = snapshot.website.usage if snapshot.website else UsageInfo()
         usage = analyzer_usage + collector_usage
 
         log.info(

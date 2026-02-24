@@ -1,7 +1,6 @@
 'use client'
 
 import { markdownOptions } from '@/utils/markdown'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import {
@@ -13,7 +12,48 @@ import {
   DialogTrigger,
 } from '@polar-sh/ui/components/ui/dialog'
 import Markdown from 'markdown-to-jsx'
+import { useEffect, useRef, useState } from 'react'
 import { Slideshow } from '../Products/Slideshow'
+
+const ExpandableDescription = ({
+  description,
+}: {
+  description: string
+  productName: string
+}) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isClamped, setIsClamped] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  useEffect(() => {
+    const el = textRef.current
+    if (!el) return
+
+    // Check after browser has painted the markdown content
+    requestAnimationFrame(() => {
+      setIsClamped(el.scrollHeight > el.clientHeight)
+    })
+  }, [description])
+
+  return (
+    <div className="flex flex-col gap-y-1">
+      <div
+        ref={textRef}
+        className={`prose dark:prose-invert prose-headings:mt-2 prose-headings:font-medium prose-headings:text-black prose-h1:text-sm prose-h2:text-sm prose-h3:text-sm dark:prose-headings:text-white dark:text-polar-400 max-w-none text-sm leading-normal text-gray-500 ${!isExpanded ? 'line-clamp-2' : ''}`}
+      >
+        <Markdown options={markdownOptions}>{description}</Markdown>
+      </div>
+      {isClamped && (
+        <button
+          onClick={() => setIsExpanded((v) => !v)}
+          className="dark:text-polar-300 cursor-pointer self-start text-xs text-gray-600 hover:underline"
+        >
+          {isExpanded ? 'Read less' : 'Read more'}
+        </button>
+      )}
+    </div>
+  )
+}
 
 interface CheckoutProductInfoProps {
   organization: CheckoutOrganization
@@ -27,7 +67,7 @@ const CheckoutProductInfo = ({ product }: CheckoutProductInfoProps) => {
   return (
     <div className="contents">
       <div className="flex flex-col gap-y-4">
-        <div className="flex flex-row items-center gap-x-4">
+        <div className="flex flex-row items-start gap-x-4">
           {firstImage && (
             <Dialog>
               <DialogTrigger asChild disabled={additionalImages.length === 0}>
@@ -58,45 +98,17 @@ const CheckoutProductInfo = ({ product }: CheckoutProductInfoProps) => {
             </Dialog>
           )}
           <div className="flex flex-col gap-y-1">
-            <div className="flex flex-row items-center gap-x-2">
-              {product.name ? (
-                <h1 className="text-2xl font-medium">{product.name}</h1>
-              ) : (
-                <div className="dark:bg-polar-700 h-6 w-48 animate-pulse rounded-md bg-gray-200" />
-              )}
-              {product.description && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button className="dark:text-polar-500 dark:hover:text-polar-300 cursor-pointer text-gray-400 hover:text-gray-600">
-                      <InfoOutlined className="h-5 w-5" fontSize="inherit" />
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent
-                    className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto"
-                    style={
-                      {
-                        '--tw-enter-translate-x': '0',
-                        '--tw-enter-translate-y': '0',
-                        '--tw-exit-translate-x': '0',
-                        '--tw-exit-translate-y': '0',
-                      } as React.CSSProperties
-                    }
-                  >
-                    <DialogHeader>
-                      <DialogTitle>{product.name}</DialogTitle>
-                      <DialogDescription className="sr-only">
-                        Product description
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800">
-                      <Markdown options={markdownOptions}>
-                        {product.description}
-                      </Markdown>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
+            {product.name ? (
+              <h1 className="text-2xl font-medium">{product.name}</h1>
+            ) : (
+              <div className="dark:bg-polar-700 h-6 w-48 animate-pulse rounded-md bg-gray-200" />
+            )}
+            {product.description && (
+              <ExpandableDescription
+                description={product.description}
+                productName={product.name}
+              />
+            )}
           </div>
         </div>
       </div>

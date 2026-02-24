@@ -486,6 +486,32 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                 ),
             ),
         ),
+        CustomerScenario(
+            key="trial_subscription_no_balance",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(),
+                    amount=MONTHLY_PRICE,
+                    orders=(
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2026, 1, 15)),
+                            amount=0,
+                            include_balance=False,
+                        ),
+                    ),
+                ),
+                SubscriptionScenario(
+                    product_key="monthly_plus",
+                    order_timestamps=(_dt(date(2026, 1, 15)),),
+                    amount=MONTHLY_PLUS_PRICE,
+                    canceled_at=_dt(date(2026, 1, 20)),
+                    ends_at=_dt(date(2026, 2, 15)),
+                    cancellation_reason=CustomerCancellationReason.other,
+                ),
+            ),
+        ),
     ]
 
     cancellation_reasons = (
@@ -808,6 +834,20 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("renewed_subscriptions", "renewed_subscriptions_net_revenue"),
     ),
     QueryCase(
+        label="alpha_daily_trial_subscription_mrr",
+        organization_key="alpha",
+        start_date=date(2026, 1, 15),
+        end_date=date(2026, 1, 31),
+        interval=TimeInterval.day,
+        customer_keys=("trial_subscription_no_balance",),
+        metrics=(
+            "monthly_recurring_revenue",
+            "committed_monthly_recurring_revenue",
+            "active_subscriptions",
+            "committed_subscriptions",
+        ),
+    ),
+    QueryCase(
         label="beta_monthly_q1",
         organization_key="beta",
         start_date=date(2024, 1, 1),
@@ -883,6 +923,8 @@ async def _create_subscription_created_event(
     customer: Customer,
     subscription: Subscription,
     product: Product,
+    *,
+    amount: int | None = None,
 ) -> Event:
     assert subscription.started_at is not None
     return await create_event(
@@ -896,6 +938,8 @@ async def _create_subscription_created_event(
             "subscription_id": str(subscription.id),
             "product_id": str(product.id),
             "customer_id": str(customer.id),
+            "amount": amount if amount is not None else subscription.amount,
+            "currency": subscription.currency,
             "started_at": subscription.started_at.isoformat(),
             "recurring_interval": product.recurring_interval.value
             if product.recurring_interval
@@ -1225,6 +1269,7 @@ async def _seed_customer_scenario(
                 customer,
                 subscription,
                 product,
+                amount=subscription_scenario.amount,
             )
         )
 
@@ -1789,6 +1834,21 @@ class TestTinybirdMetrics:
         assert (
             tb.renewed_subscriptions_net_revenue == pg.renewed_subscriptions_net_revenue
         )
+
+    def test_trial_subscription_mrr_uses_subscription_created_amount(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots["alpha_daily_trial_subscription_mrr"]
+
+        tb_first = snapshot.tinybird.periods[0]
+
+        expected_mrr = MONTHLY_PRICE + MONTHLY_PLUS_PRICE
+        expected_cmrr = MONTHLY_PRICE
+
+        assert tb_first.active_subscriptions == 2
+        assert tb_first.committed_subscriptions == 1
+        assert tb_first.monthly_recurring_revenue == expected_mrr
+        assert tb_first.committed_monthly_recurring_revenue == expected_cmrr
 
     def test_org_filter_disabled_matches_org_subject_scope(
         self, metrics_harness: MetricsHarness

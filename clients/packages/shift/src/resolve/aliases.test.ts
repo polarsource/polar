@@ -260,4 +260,66 @@ describe('resolveAliases', () => {
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('primary')?.themeValues).toBeUndefined()
   })
+
+  // ── $breakpoints ────────────────────────────────────────────────────────
+
+  it('resolves $breakpoints literal values', () => {
+    const group: TokenGroup = {
+      spacing: {
+        md: { $value: '16px', $type: 'dimension', $breakpoints: { sm: '12px', lg: '20px' } },
+      },
+    }
+    const map = Effect.runSync(resolveAliases(group))
+    const token = map.get('spacing.md')!
+    expect(token.breakpointValues?.['sm']?.value).toBe('12px')
+    expect(token.breakpointValues?.['lg']?.value).toBe('20px')
+  })
+
+  it('resolves $breakpoints alias values', () => {
+    const group: TokenGroup = {
+      scale: {
+        sm: { $value: '12px', $type: 'dimension' },
+        lg: { $value: '20px', $type: 'dimension' },
+      },
+      spacing: {
+        md: {
+          $value: '16px',
+          $type: 'dimension',
+          $breakpoints: { sm: '{scale.sm}', lg: '{scale.lg}' },
+        },
+      },
+    }
+    const map = Effect.runSync(resolveAliases(group))
+    const token = map.get('spacing.md')!
+    expect(token.breakpointValues?.['sm']?.value).toBe('12px')
+    expect(token.breakpointValues?.['sm']?.aliasOf).toBe('scale.sm')
+    expect(token.breakpointValues?.['lg']?.value).toBe('20px')
+  })
+
+  it('$breakpoints literal value has no aliasOf', () => {
+    const group: TokenGroup = {
+      spacing: { md: { $value: '16px', $type: 'dimension', $breakpoints: { sm: '12px' } } },
+    }
+    const map = Effect.runSync(resolveAliases(group))
+    expect(map.get('spacing.md')?.breakpointValues?.['sm']?.aliasOf).toBeUndefined()
+  })
+
+  it('tokens without $breakpoints have no breakpointValues', () => {
+    const group: TokenGroup = {
+      primary: { $value: '#0066ff', $type: 'color' },
+    }
+    const map = Effect.runSync(resolveAliases(group))
+    expect(map.get('primary')?.breakpointValues).toBeUndefined()
+  })
+
+  it('fails with ResolveError when $breakpoints references unknown alias', () => {
+    const group: TokenGroup = {
+      spacing: { md: { $value: '16px', $type: 'dimension', $breakpoints: { sm: '{nonexistent}' } } },
+    }
+    const result = Effect.runSyncExit(resolveAliases(group))
+    expect(result._tag).toBe('Failure')
+    if (result._tag === 'Failure' && result.cause._tag === 'Fail') {
+      expect(result.cause.error).toBeInstanceOf(ResolveError)
+    }
+  })
 })

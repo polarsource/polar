@@ -101,7 +101,17 @@ export class Registry {
           themeValues = newThemeValues
         }
 
-        result.set(key, { ...token, value, themeValues })
+        let breakpointValues = token.breakpointValues
+        if (breakpointValues) {
+          const newBpValues: Record<string, ThemeValue> = {}
+          for (const [bp, bv] of Object.entries(breakpointValues)) {
+            const bvValue = yield* applyToValue(bv.value, token)
+            newBpValues[bp] = { ...bv, value: bvValue }
+          }
+          breakpointValues = newBpValues
+        }
+
+        result.set(key, { ...token, value, themeValues, breakpointValues })
       }
 
       return result

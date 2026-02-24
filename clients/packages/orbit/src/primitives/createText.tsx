@@ -1,6 +1,5 @@
 import React, { type ComponentPropsWithoutRef, type ElementType, type JSX } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { ThemeSpec } from './createBox'
 
 // ─── Text tag union ───────────────────────────────────────────────────────────
 
@@ -92,10 +91,11 @@ type TextPropName =
   | 'tabular'
 
 // ─── createText ──────────────────────────────────────────────────────────────
+// variantColors maps each TextVariant to a CSS value string (typically a
+// CSS variable reference like "var(--colors-text)").
 
-export function createText<T extends ThemeSpec>(
-  theme: T,
-  variantColors: Record<TextVariant, keyof T['colors']>,
+export function createText(
+  variantColors: Record<TextVariant, string>,
 ) {
   type TextProps<E extends TextTag = 'p'> = {
     as?: E
@@ -119,11 +119,8 @@ export function createText<T extends ThemeSpec>(
     ...props
   }: TextProps<E>): JSX.Element {
     const Tag = (as ?? 'p') as ElementType
-    const colorKey = variantColors[variant] as string
 
     const classes: string[] = []
-    const textColor = theme.colors[colorKey].text
-    if (textColor !== undefined) classes.push(textColor)
     if (fontSize !== undefined) classes.push(FONT_SIZE[fontSize])
     if (fontWeight !== undefined) classes.push(FONT_WEIGHT[fontWeight])
     if (leading !== undefined) classes.push(LEADING[leading])
@@ -135,6 +132,7 @@ export function createText<T extends ThemeSpec>(
     return (
       <Tag
         className={twMerge(classes.join(' '), className)}
+        style={{ color: variantColors[variant] }}
         {...(props as object)}
       >
         {children}

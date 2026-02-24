@@ -1,5 +1,9 @@
-import { Avatar, Box, Stack, Text } from '@polar-sh/orbit'
+import { Avatar, Box, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
+const sp = orbitTokens.spacing
+const cl = orbitTokens.colors
+const ra = orbitTokens.radii
+
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
@@ -73,7 +77,7 @@ const props = [
 
 export default function AvatarPage() {
   return (
-    <Stack vertical gap="spacing-10">
+    <Stack vertical gap={sp['spacing-10']}>
       <OrbitPageHeader
         label="Component"
         title="Avatar"
@@ -81,7 +85,7 @@ export default function AvatarPage() {
       />
 
       {/* Sizes */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="Sizes" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {sizes.map(({ size, px }) => (
@@ -101,7 +105,7 @@ export default function AvatarPage() {
       </Stack>
 
       {/* States */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="States" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {states.map(({ label, desc, src, name }) => (
@@ -119,14 +123,14 @@ export default function AvatarPage() {
       </Stack>
 
       {/* Facehash */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="Facehash"
           description="Every unique name produces a unique, deterministic face. The same name always renders the same avatar — across sessions, devices, and renders."
         />
-        <Stack flexWrap="wrap" gap="spacing-2">
+        <Stack flexWrap="wrap" gap={sp['spacing-2']}>
           {facehashExamples.map((name) => (
-            <Stack vertical key={name} alignItems="center" gap="spacing-1">
+            <Stack vertical key={name} alignItems="center" gap={sp['spacing-1']}>
               <Avatar name={name} size="xl" />
               <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">{name}</Text>
             </Stack>
@@ -135,7 +139,7 @@ export default function AvatarPage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap="spacing-3">
+      <Stack vertical gap={sp['spacing-3']}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (

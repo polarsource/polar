@@ -6,7 +6,6 @@ import type {
   FlexContainerProps,
 } from '../primitives/createBox'
 import { resolveContainerClasses } from '../primitives/resolveProperties'
-import { type OrbitTheme } from '../tokens/theme'
 import { Box } from './Box'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -24,10 +23,7 @@ type StackContainerProps = Omit<
   'display' | 'flexDirection'
 >
 
-export type StackProps<E extends ElementType = 'div'> = BoxProps<
-  OrbitTheme,
-  E
-> &
+export type StackProps<E extends ElementType = 'div'> = BoxProps<E> &
   StackContainerProps & {
     /**
      * Render children in a row (horizontal flex). This is the default.
@@ -38,7 +34,7 @@ export type StackProps<E extends ElementType = 'div'> = BoxProps<
      * Render children in a column (vertical flex). Equivalent to flex-col.
      *
      * @example
-     * <Stack vertical gap="spacing-2">…</Stack>
+     * <Stack vertical gap="var(--spacing-spacing-2)">…</Stack>
      */
     vertical?: boolean
     /**
@@ -108,19 +104,19 @@ function resolveDirection(
  *
  * Always renders as `display="flex"`. Defaults to a horizontal row.
  * Use `vertical` for a column, `verticalUntil` / `horizontalUntil` for
- * responsive direction changes. All Box token props (spacing, color, radius)
+ * responsive direction changes. All Box style props (spacing, color, radius)
  * and flex child props (flex, alignSelf, …) are forwarded to the inner Box.
  *
  * @example
  * // Vertical on mobile, horizontal from xl upward
- * <Stack verticalUntil="xl" gap="spacing-3">
+ * <Stack verticalUntil="xl" gap={tokens.spacing['spacing-3']}>
  *   <Box>…</Box>
  *   <Box>…</Box>
  * </Stack>
  *
  * @example
  * // Always vertical, centered cross-axis
- * <Stack vertical alignItems="center" gap="spacing-2">…</Stack>
+ * <Stack vertical alignItems="center" gap={tokens.spacing['spacing-2']}>…</Stack>
  *
  * @example
  * // Divider between each child
@@ -164,7 +160,7 @@ export function Stack<E extends ElementType = 'div'>({
         dividerColor,
         className,
       )}
-      {...(boxProps as BoxProps<OrbitTheme, E>)}
+      {...(boxProps as BoxProps<E>)}
     >
       {children}
     </Box>

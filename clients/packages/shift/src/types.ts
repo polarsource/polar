@@ -16,6 +16,8 @@ export interface RawToken {
   $description?: string
   /** Component token theme overrides: theme name → value (alias or literal) */
   $themes?: Record<string, string | number>
+  /** Responsive breakpoint overrides: breakpoint name → value (alias or literal) */
+  $breakpoints?: Record<string, string | number>
 }
 
 // Recursive: keys are either nested groups or token leafs
@@ -25,7 +27,7 @@ export type TokenGroup = {
   [key: string]: RawToken | TokenGroup | unknown
 }
 
-/** Per-theme value on a resolved token */
+/** Per-theme or per-breakpoint value on a resolved token */
 export interface ThemeValue {
   /** Concrete resolved value */
   value: string | number
@@ -46,6 +48,8 @@ export interface ResolvedToken {
   description?: string
   /** Theme-specific value overrides, keyed by theme name */
   themeValues?: Record<string, ThemeValue>
+  /** Breakpoint-specific value overrides, keyed by breakpoint name */
+  breakpointValues?: Record<string, ThemeValue>
 }
 
 export type FlatTokenMap = Map<string, ResolvedToken>
@@ -55,3 +59,9 @@ export type FlatTokenMap = Map<string, ResolvedToken>
  * e.g. { dark: ':root .dark', 'high-contrast': ':root .high-contrast' }
  */
 export type ThemeConfig = Record<string, string>
+
+/**
+ * Maps breakpoint names to their CSS media query condition (without @media).
+ * e.g. { sm: '(min-width: 640px)', md: '(min-width: 768px)' }
+ */
+export type BreakpointConfig = Record<string, string>

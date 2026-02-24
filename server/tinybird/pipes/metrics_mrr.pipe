@@ -341,6 +341,7 @@ SQL >
         (
             SELECT
                 e.subscription_id,
+                e.organization_id,
                 argMax(e.amount, (e.timestamp, e.ingested_at)) AS created_amount,
                 argMax(e.timestamp, (e.timestamp, e.ingested_at)) AS created_ts
             FROM system_events_by_org AS e
@@ -358,19 +359,12 @@ SQL >
                         )
                 )
                 AND e.subscription_id NOT IN (SELECT DISTINCT subscription_id FROM payment_events_raw)
-            GROUP BY e.subscription_id
+            GROUP BY e.subscription_id, e.organization_id
         ) sca
     LEFT JOIN
         system_events_by_org bo
-        ON bo.name = 'balance.order'
-        AND bo.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
-                    )
-                )
-        )
+        ON sca.organization_id = bo.organization_id
+        AND bo.name = 'balance.order'
     GROUP BY sca.subscription_id, sca.created_amount, sca.created_ts
 
 NODE subs_with_mrr

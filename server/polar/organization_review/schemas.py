@@ -169,7 +169,7 @@ class WebsiteData(Schema):
     scrape_error: str | None = None
     total_pages_attempted: int = 0
     total_pages_succeeded: int = 0
-    usage: UsageInfo = Field(default_factory=UsageInfo)
+    usage: UsageInfo | None = Field(default_factory=UsageInfo)
 
 
 class DataSnapshot(Schema):

@@ -845,8 +845,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Validate Organization Details with AI
-     * @description Validate organization details using AI compliance check.
+     * Get AI Validation Status
+     * @description Get the AI validation status. Review runs asynchronously in the background.
      *
      *     **Scopes**: `organizations:write`
      */
@@ -5771,6 +5771,7 @@ export interface components {
         | 'ZM'
         | 'ZW'
     }
+    AggregateField: string
     /**
      * AggregationFunction
      * @enum {string}
@@ -20582,7 +20583,7 @@ export interface components {
      * OrderStatus
      * @enum {string}
      */
-    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded'
+    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'void'
     /** OrderSubscription */
     OrderSubscription: {
       metadata: components['schemas']['MetadataOutputType']
@@ -28435,7 +28436,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Organization validated with AI. */
+      /** @description AI validation status returned. */
       200: {
         headers: {
           [name: string]: unknown
@@ -36974,7 +36975,7 @@ export interface operations {
         /** @description Query to filter events. */
         query?: string | null
         /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
-        aggregate_fields?: string[]
+        aggregate_fields?: components['schemas']['AggregateField'][]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
         sorting?: components['schemas']['EventStatisticsSortProperty'][] | null
         /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
@@ -43367,7 +43368,7 @@ export const orderSortPropertyValues: ReadonlyArray<
 ]
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
-> = ['pending', 'paid', 'refunded', 'partially_refunded']
+> = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationAccessTokenSortProperty']
 > = [

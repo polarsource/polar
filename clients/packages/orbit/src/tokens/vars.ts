@@ -1,101 +1,101 @@
 export const tokens = {
-  "colors": {
-    "bg": "var(--colors-bg)",
-    "bg-surface": "var(--colors-bg-surface)",
-    "bg-elevated": "var(--colors-bg-elevated)",
-    "text": "var(--colors-text)",
-    "text-subtle": "var(--colors-text-subtle)",
-    "text-disabled": "var(--colors-text-disabled)",
-    "destructive": "var(--colors-destructive)"
+  "COLORS": {
+    "BG": "var(--COLORS-BG)",
+    "BG_SURFACE": "var(--COLORS-BG_SURFACE)",
+    "BG_ELEVATED": "var(--COLORS-BG_ELEVATED)",
+    "TEXT": "var(--COLORS-TEXT)",
+    "TEXT_SUBTLE": "var(--COLORS-TEXT_SUBTLE)",
+    "TEXT_DISABLED": "var(--COLORS-TEXT_DISABLED)",
+    "DESTRUCTIVE": "var(--COLORS-DESTRUCTIVE)"
   },
-  "radii": {
-    "sm": "var(--radii-sm)",
-    "md": "var(--radii-md)",
-    "lg": "var(--radii-lg)",
-    "xl": "var(--radii-xl)",
-    "2xl": "var(--radii-2xl)",
-    "full": "var(--radii-full)"
+  "SPACING": {
+    "SPACING_0": "var(--SPACING-SPACING_0)",
+    "SPACING_1": "var(--SPACING-SPACING_1)",
+    "SPACING_2": "var(--SPACING-SPACING_2)",
+    "SPACING_3": "var(--SPACING-SPACING_3)",
+    "SPACING_4": "var(--SPACING-SPACING_4)",
+    "SPACING_5": "var(--SPACING-SPACING_5)",
+    "SPACING_6": "var(--SPACING-SPACING_6)",
+    "SPACING_8": "var(--SPACING-SPACING_8)",
+    "SPACING_10": "var(--SPACING-SPACING_10)",
+    "SPACING_12": "var(--SPACING-SPACING_12)",
+    "SPACING_16": "var(--SPACING-SPACING_16)",
+    "SPACING_32": "var(--SPACING-SPACING_32)"
   },
-  "spacing": {
-    "spacing-0": "var(--spacing-spacing-0)",
-    "spacing-1": "var(--spacing-spacing-1)",
-    "spacing-2": "var(--spacing-spacing-2)",
-    "spacing-3": "var(--spacing-spacing-3)",
-    "spacing-4": "var(--spacing-spacing-4)",
-    "spacing-5": "var(--spacing-spacing-5)",
-    "spacing-6": "var(--spacing-spacing-6)",
-    "spacing-8": "var(--spacing-spacing-8)",
-    "spacing-10": "var(--spacing-spacing-10)",
-    "spacing-12": "var(--spacing-spacing-12)",
-    "spacing-16": "var(--spacing-spacing-16)",
-    "spacing-32": "var(--spacing-spacing-32)"
+  "RADII": {
+    "SM": "var(--RADII-SM)",
+    "MD": "var(--RADII-MD)",
+    "LG": "var(--RADII-LG)",
+    "XL": "var(--RADII-XL)",
+    "2XL": "var(--RADII-2XL)",
+    "FULL": "var(--RADII-FULL)"
   },
-  "button": {
-    "size": {
-      "sm": {
-        "height": "var(--button-size-sm-height)",
-        "padding-x": "var(--button-size-sm-padding-x)",
-        "padding-y": "var(--button-size-sm-padding-y)"
+  "BUTTON": {
+    "SIZE": {
+      "SM": {
+        "HEIGHT": "var(--BUTTON-SIZE-SM-HEIGHT)",
+        "PADDING_X": "var(--BUTTON-SIZE-SM-PADDING_X)",
+        "PADDING_Y": "var(--BUTTON-SIZE-SM-PADDING_Y)"
       },
-      "default": {
-        "height": "var(--button-size-default-height)",
-        "padding-y": "var(--button-size-default-padding-y)",
-        "padding-x": "var(--button-size-default-padding-x)"
+      "DEFAULT": {
+        "HEIGHT": "var(--BUTTON-SIZE-DEFAULT-HEIGHT)",
+        "PADDING_Y": "var(--BUTTON-SIZE-DEFAULT-PADDING_Y)",
+        "PADDING_X": "var(--BUTTON-SIZE-DEFAULT-PADDING_X)"
       },
-      "lg": {
-        "height": "var(--button-size-lg-height)",
-        "padding-x": "var(--button-size-lg-padding-x)",
-        "padding-y": "var(--button-size-lg-padding-y)"
+      "LG": {
+        "HEIGHT": "var(--BUTTON-SIZE-LG-HEIGHT)",
+        "PADDING_X": "var(--BUTTON-SIZE-LG-PADDING_X)",
+        "PADDING_Y": "var(--BUTTON-SIZE-LG-PADDING_Y)"
       }
     },
-    "primary": {
-      "background": "var(--button-primary-background)",
-      "foreground": "var(--button-primary-foreground)"
+    "PRIMARY": {
+      "BACKGROUND": "var(--BUTTON-PRIMARY-BACKGROUND)",
+      "FOREGROUND": "var(--BUTTON-PRIMARY-FOREGROUND)"
     },
-    "secondary": {
-      "background": "var(--button-secondary-background)",
-      "foreground": "var(--button-secondary-foreground)"
+    "SECONDARY": {
+      "BACKGROUND": "var(--BUTTON-SECONDARY-BACKGROUND)",
+      "FOREGROUND": "var(--BUTTON-SECONDARY-FOREGROUND)"
     },
-    "destructive": {
-      "foreground": "var(--button-destructive-foreground)",
-      "background": "var(--button-destructive-background)"
+    "DESTRUCTIVE": {
+      "FOREGROUND": "var(--BUTTON-DESTRUCTIVE-FOREGROUND)",
+      "BACKGROUND": "var(--BUTTON-DESTRUCTIVE-BACKGROUND)"
     },
-    "ghost": {
-      "background": "var(--button-ghost-background)",
-      "foreground": "var(--button-ghost-foreground)"
+    "GHOST": {
+      "BACKGROUND": "var(--BUTTON-GHOST-BACKGROUND)",
+      "FOREGROUND": "var(--BUTTON-GHOST-FOREGROUND)"
     },
-    "radius": "var(--button-radius)"
+    "RADIUS": "var(--BUTTON-RADIUS)"
   },
-  "card": {
-    "footer": {
-      "gap": "var(--card-footer-gap)",
-      "padding-top": "var(--card-footer-padding-top)"
+  "CARD": {
+    "FOOTER": {
+      "GAP": "var(--CARD-FOOTER-GAP)",
+      "PADDING_TOP": "var(--CARD-FOOTER-PADDING_TOP)"
     },
-    "background": "var(--card-background)",
-    "radius": "var(--card-radius)",
-    "gap": "var(--card-gap)",
-    "padding": "var(--card-padding)"
+    "BACKGROUND": "var(--CARD-BACKGROUND)",
+    "GAP": "var(--CARD-GAP)",
+    "PADDING": "var(--CARD-PADDING)",
+    "RADIUS": "var(--CARD-RADIUS)"
   },
-  "status": {
-    "neutral": {
-      "background": "var(--status-neutral-background)",
-      "foreground": "var(--status-neutral-foreground)"
+  "STATUS": {
+    "NEUTRAL": {
+      "BACKGROUND": "var(--STATUS-NEUTRAL-BACKGROUND)",
+      "FOREGROUND": "var(--STATUS-NEUTRAL-FOREGROUND)"
     },
-    "success": {
-      "background": "var(--status-success-background)",
-      "foreground": "var(--status-success-foreground)"
+    "SUCCESS": {
+      "BACKGROUND": "var(--STATUS-SUCCESS-BACKGROUND)",
+      "FOREGROUND": "var(--STATUS-SUCCESS-FOREGROUND)"
     },
-    "warning": {
-      "background": "var(--status-warning-background)",
-      "foreground": "var(--status-warning-foreground)"
+    "WARNING": {
+      "BACKGROUND": "var(--STATUS-WARNING-BACKGROUND)",
+      "FOREGROUND": "var(--STATUS-WARNING-FOREGROUND)"
     },
-    "error": {
-      "background": "var(--status-error-background)",
-      "foreground": "var(--status-error-foreground)"
+    "ERROR": {
+      "BACKGROUND": "var(--STATUS-ERROR-BACKGROUND)",
+      "FOREGROUND": "var(--STATUS-ERROR-FOREGROUND)"
     },
-    "info": {
-      "background": "var(--status-info-background)",
-      "foreground": "var(--status-info-foreground)"
+    "INFO": {
+      "BACKGROUND": "var(--STATUS-INFO-BACKGROUND)",
+      "FOREGROUND": "var(--STATUS-INFO-FOREGROUND)"
     }
   }
 } as const

@@ -10,27 +10,53 @@ export type TokenType =
   | 'shadow'
   | 'gradient'
 
+export type ColorSpace = 'srgb' | 'display-p3' | 'hsl' | 'oklch'
+
+export interface ColorValue {
+  colorSpace: ColorSpace
+  components: number[]
+  alpha?: number
+  hex?: string
+}
+
+export interface DimensionValue {
+  value: number
+  unit: string
+}
+
+export type TokenValue = string | number | ColorValue | DimensionValue
+
 export interface RawToken {
-  $value: string | number
-  $type?: TokenType
-  $description?: string
+  value: TokenValue
+  type?: TokenType
+  category?: string
+  description?: string
   /** Component token theme overrides: theme name → value (alias or literal) */
-  $themes?: Record<string, string | number>
+  themes?: Record<string, TokenValue>
   /** Responsive breakpoint overrides: breakpoint name → value (alias or literal) */
-  $breakpoints?: Record<string, string | number>
+  breakpoints?: Record<string, TokenValue>
 }
 
 // Recursive: keys are either nested groups or token leafs
 export type TokenGroup = {
-  $type?: TokenType           // inherited type for children
-  $description?: string
   [key: string]: RawToken | TokenGroup | unknown
+}
+
+export interface TokenDocumentGlobal {
+  type?: TokenType
+  category?: string
+}
+
+export interface TokenDocument {
+  props: TokenGroup
+  imports: string[]
+  global?: TokenDocumentGlobal
 }
 
 /** Per-theme or per-breakpoint value on a resolved token */
 export interface ThemeValue {
   /** Concrete resolved value */
-  value: string | number
+  value: TokenValue
   /** Dot-path of the direct alias source, if this was an alias reference */
   aliasOf?: string
 }
@@ -41,10 +67,11 @@ export interface ResolvedToken {
   /** ['colors', 'primary'] */
   rawPath: string[]
   /** Concrete resolved value */
-  value: string | number
+  value: TokenValue
   /** Dot-path of the direct alias source, if $value was an alias */
   aliasOf?: string
   type: TokenType
+  category?: string
   description?: string
   /** Theme-specific value overrides, keyed by theme name */
   themeValues?: Record<string, ThemeValue>

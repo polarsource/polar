@@ -1,5 +1,6 @@
 import { Effect, Data } from 'effect'
-import type { FlatTokenMap, ResolvedToken, ThemeValue } from '../types.js'
+import type { FlatTokenMap, ResolvedToken, ThemeValue, TokenValue } from '../types.js'
+import { stringifyColorValue } from './color-convert.js'
 
 export class TransformError extends Data.TaggedError('TransformError')<{
   path: string
@@ -7,10 +8,10 @@ export class TransformError extends Data.TaggedError('TransformError')<{
 }> {}
 
 function normalizeColor(
-  value: string | number,
+  value: TokenValue,
   path: string,
 ): Effect.Effect<string, TransformError> {
-  const str = String(value).trim()
+  const str = stringifyColorValue(value)
   if (str.length === 0) {
     return Effect.fail(new TransformError({ path, cause: 'Empty color value' }))
   }

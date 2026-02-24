@@ -5,6 +5,7 @@ import { FileSystem } from '@effect/platform'
 import fg from 'fast-glob'
 import { join, resolve } from 'node:path'
 import { parseYamlFile } from '../parse/yaml.js'
+import { validateTokenNames } from '../parse/token-names.js'
 import { resolveAliases } from '../resolve/aliases.js'
 import { defaultRegistry } from '../transform/built-in.js'
 import { formatCss } from '../format/css.js'
@@ -116,6 +117,7 @@ const runBuild = (opts: {
     )
 
     const merged: TokenGroup = Object.assign({}, ...groups)
+    yield* validateTokenNames(merged)
 
     // Pipeline: resolve aliases → apply named transform pipeline → format
     const flatMap = yield* resolveAliases(merged)

@@ -13,10 +13,51 @@ export const TokenType = Schema.Literal(
   'gradient',
 )
 
+export const ColorSpace = Schema.Literal('srgb', 'display-p3', 'hsl', 'oklch')
+
+export const ColorValue = Schema.Struct({
+  colorSpace: ColorSpace,
+  components: Schema.Array(Schema.Number),
+  alpha: Schema.optional(Schema.Number),
+  hex: Schema.optional(Schema.String),
+})
+
+export const DimensionValue = Schema.Struct({
+  value: Schema.Number,
+  unit: Schema.String,
+})
+
 export const RawToken = Schema.Struct({
-  $value: Schema.Union(Schema.String, Schema.Number),
-  $type: Schema.optional(TokenType),
-  $description: Schema.optional(Schema.String),
+  value: Schema.Union(Schema.String, Schema.Number, ColorValue, DimensionValue),
+  type: Schema.optional(TokenType),
+  category: Schema.optional(Schema.String),
+  description: Schema.optional(Schema.String),
+  themes: Schema.optional(
+    Schema.Record({
+      key: Schema.String,
+      value: Schema.Union(Schema.String, Schema.Number, ColorValue, DimensionValue),
+    }),
+  ),
+  breakpoints: Schema.optional(
+    Schema.Record({
+      key: Schema.String,
+      value: Schema.Union(Schema.String, Schema.Number, ColorValue, DimensionValue),
+    }),
+  ),
+})
+
+export const TokenDocumentGlobal = Schema.Struct({
+  type: Schema.optional(TokenType),
+  category: Schema.optional(Schema.String),
+})
+
+export const TokenDocumentSchema = Schema.Struct({
+  props: Schema.Record({
+    key: Schema.String,
+    value: Schema.Unknown,
+  }),
+  imports: Schema.Array(Schema.String),
+  global: Schema.optional(TokenDocumentGlobal),
 })
 
 // A token group is a record of string keys to either tokens or nested groups.
@@ -28,3 +69,4 @@ export const TokenGroupSchema = Schema.Record({
 
 export type TokenTypeEncoded = Schema.Schema.Encoded<typeof TokenType>
 export type RawTokenEncoded = Schema.Schema.Encoded<typeof RawToken>
+export type TokenDocumentEncoded = Schema.Schema.Encoded<typeof TokenDocumentSchema>

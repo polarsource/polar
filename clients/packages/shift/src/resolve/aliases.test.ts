@@ -9,8 +9,8 @@ describe('resolveAliases', () => {
   it('flattens a simple token group', () => {
     const group: TokenGroup = {
       colors: {
-        primary: { $value: '#0066ff', $type: 'color' },
-        secondary: { $value: '#6b7280', $type: 'color' },
+        primary: { value: '#0066ff', type: 'color' },
+        secondary: { value: '#6b7280', type: 'color' },
       },
     }
     const map = Effect.runSync(resolveAliases(group))
@@ -22,8 +22,8 @@ describe('resolveAliases', () => {
   it('resolves simple aliases', () => {
     const group: TokenGroup = {
       colors: {
-        primary: { $value: '#0066ff', $type: 'color' },
-        accent: { $value: '{colors.primary}', $type: 'color' },
+        primary: { value: '#0066ff', type: 'color' },
+        accent: { value: '{colors.primary}', type: 'color' },
       },
     }
     const map = Effect.runSync(resolveAliases(group))
@@ -32,30 +32,28 @@ describe('resolveAliases', () => {
 
   it('resolves chained aliases', () => {
     const group: TokenGroup = {
-      base: { $value: '#ff0000', $type: 'color' },
-      alias1: { $value: '{base}', $type: 'color' },
-      alias2: { $value: '{alias1}', $type: 'color' },
+      base: { value: '#ff0000', type: 'color' },
+      alias1: { value: '{base}', type: 'color' },
+      alias2: { value: '{alias1}', type: 'color' },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('alias2')?.value).toBe('#ff0000')
   })
 
-  it('inherits $type from parent group', () => {
+  it('defaults type to string when type is omitted', () => {
     const group: TokenGroup = {
       colors: {
-        $type: 'color',
-        primary: { $value: '#0066ff' },
+        primary: { value: '#0066ff' },
       },
     }
     const map = Effect.runSync(resolveAliases(group))
-    expect(map.get('colors.primary')?.type).toBe('color')
+    expect(map.get('colors.primary')?.type).toBe('string')
   })
 
-  it('token-level $type overrides group $type', () => {
+  it('uses explicit token-level type', () => {
     const group: TokenGroup = {
       tokens: {
-        $type: 'color',
-        size: { $value: '16px', $type: 'dimension' },
+        size: { value: '16px', type: 'dimension' },
       },
     }
     const map = Effect.runSync(resolveAliases(group))
@@ -65,9 +63,9 @@ describe('resolveAliases', () => {
   it('includes description when present', () => {
     const group: TokenGroup = {
       primary: {
-        $value: '#0066ff',
-        $type: 'color',
-        $description: 'Brand blue',
+        value: '#0066ff',
+        type: 'color',
+        description: 'Brand blue',
       },
     }
     const map = Effect.runSync(resolveAliases(group))
@@ -78,7 +76,7 @@ describe('resolveAliases', () => {
     const group: TokenGroup = {
       colors: {
         text: {
-          default: { $value: '#111827', $type: 'color' },
+          default: { value: '#111827', type: 'color' },
         },
       },
     }
@@ -90,7 +88,7 @@ describe('resolveAliases', () => {
 
   it('fails with ResolveError for unknown alias', () => {
     const group: TokenGroup = {
-      bad: { $value: '{nonexistent.path}', $type: 'color' },
+      bad: { value: '{nonexistent.path}', type: 'color' },
     }
     const result = Effect.runSyncExit(resolveAliases(group))
     expect(result._tag).toBe('Failure')
@@ -101,8 +99,8 @@ describe('resolveAliases', () => {
 
   it('fails with ResolveError for circular aliases', () => {
     const group: TokenGroup = {
-      a: { $value: '{b}', $type: 'color' },
-      b: { $value: '{a}', $type: 'color' },
+      a: { value: '{b}', type: 'color' },
+      b: { value: '{a}', type: 'color' },
     }
     const result = Effect.runSyncExit(resolveAliases(group))
     expect(result._tag).toBe('Failure')
@@ -116,11 +114,11 @@ describe('resolveAliases', () => {
     expect(map.size).toBe(0)
   })
 
-  it('skips $ keys at any level', () => {
+  it('ignores non-object non-token entries in groups', () => {
     const group: TokenGroup = {
-      $type: 'color',
-      $description: 'Root group',
-      primary: { $value: '#0066ff', $type: 'color' },
+      type: 'color',
+      description: 'Root group',
+      primary: { value: '#0066ff', type: 'color' },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.size).toBe(1)
@@ -132,8 +130,8 @@ describe('resolveAliases', () => {
   it('sets aliasOf to the direct alias dot-path', () => {
     const group: TokenGroup = {
       colors: {
-        primary: { $value: '#0066ff', $type: 'color' },
-        accent: { $value: '{colors.primary}', $type: 'color' },
+        primary: { value: '#0066ff', type: 'color' },
+        accent: { value: '{colors.primary}', type: 'color' },
       },
     }
     const map = Effect.runSync(resolveAliases(group))
@@ -144,9 +142,9 @@ describe('resolveAliases', () => {
   it('aliasOf is the direct (one-hop) source in a chain', () => {
     // accent → primary → base: accent.aliasOf should be 'primary', not 'base'
     const group: TokenGroup = {
-      base: { $value: '#ff0000', $type: 'color' },
-      primary: { $value: '{base}', $type: 'color' },
-      accent: { $value: '{primary}', $type: 'color' },
+      base: { value: '#ff0000', type: 'color' },
+      primary: { value: '{base}', type: 'color' },
+      accent: { value: '{primary}', type: 'color' },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('accent')?.aliasOf).toBe('primary')
@@ -155,22 +153,57 @@ describe('resolveAliases', () => {
 
   it('does not set aliasOf for literal tokens', () => {
     const group: TokenGroup = {
-      primary: { $value: '#0066ff', $type: 'color' },
+      primary: { value: '#0066ff', type: 'color' },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('primary')?.aliasOf).toBeUndefined()
   })
 
-  // ── $themes (component tokens) ─────────────────────────────────────────
-
-  it('resolves $themes values to concrete values', () => {
+  it('supports arithmetic on aliased numeric tokens', () => {
     const group: TokenGroup = {
-      colors: { primary: { $value: '#0066ff', $type: 'color' } },
+      BASE: { value: 8, type: 'number' },
+      DOUBLE: { value: '{BASE} * 2', type: 'number' },
+      OFFSET: { value: '{DOUBLE} + 4', type: 'number' },
+    }
+    const map = Effect.runSync(resolveAliases(group))
+    expect(map.get('DOUBLE')?.value).toBe(16)
+    expect(map.get('OFFSET')?.value).toBe(20)
+  })
+
+  it('supports arithmetic on aliased dimension tokens', () => {
+    const group: TokenGroup = {
+      SPACING: {
+        BASE: { value: { value: 0.5, unit: 'rem' }, type: 'dimension' },
+        DOUBLE: { value: '{SPACING.BASE} * 2', type: 'dimension' },
+      },
+    }
+    const map = Effect.runSync(resolveAliases(group))
+    expect(map.get('SPACING.DOUBLE')?.value).toEqual({ value: 1, unit: 'rem' })
+  })
+
+  it('fails arithmetic on incompatible units', () => {
+    const group: TokenGroup = {
+      A: { value: { value: 1, unit: 'rem' }, type: 'dimension' },
+      B: { value: '8px', type: 'dimension' },
+      BAD: { value: '{A} + {B}', type: 'dimension' },
+    }
+    const result = Effect.runSyncExit(resolveAliases(group))
+    expect(result._tag).toBe('Failure')
+    if (result._tag === 'Failure' && result.cause._tag === 'Fail') {
+      expect(result.cause.error).toBeInstanceOf(ResolveError)
+    }
+  })
+
+  // ── themes (component tokens) ─────────────────────────────────────────
+
+  it('resolves themes values to concrete values', () => {
+    const group: TokenGroup = {
+      colors: { primary: { value: '#0066ff', type: 'color' } },
       button: {
         background: {
-          $value: '{colors.primary}',
-          $type: 'color',
-          $themes: { dark: '#1a1a2e' },
+          value: '{colors.primary}',
+          type: 'color',
+          themes: { dark: '#1a1a2e' },
         },
       },
     }
@@ -179,17 +212,17 @@ describe('resolveAliases', () => {
     expect(token.themeValues?.['dark']?.value).toBe('#1a1a2e')
   })
 
-  it('resolves $themes alias values', () => {
+  it('resolves themes alias values', () => {
     const group: TokenGroup = {
       colors: {
-        primary: { $value: '#0066ff', $type: 'color' },
-        secondary: { $value: '#6b7280', $type: 'color' },
+        primary: { value: '#0066ff', type: 'color' },
+        secondary: { value: '#6b7280', type: 'color' },
       },
       button: {
         background: {
-          $value: '{colors.primary}',
-          $type: 'color',
-          $themes: { dark: '{colors.secondary}' },
+          value: '{colors.primary}',
+          type: 'color',
+          themes: { dark: '{colors.secondary}' },
         },
       },
     }
@@ -202,15 +235,15 @@ describe('resolveAliases', () => {
   it('supports multiple themes on one token', () => {
     const group: TokenGroup = {
       colors: {
-        primary: { $value: '#0066ff', $type: 'color' },
-        secondary: { $value: '#6b7280', $type: 'color' },
-        danger: { $value: '#ef4444', $type: 'color' },
+        primary: { value: '#0066ff', type: 'color' },
+        secondary: { value: '#6b7280', type: 'color' },
+        danger: { value: '#ef4444', type: 'color' },
       },
       button: {
         background: {
-          $value: '{colors.primary}',
-          $type: 'color',
-          $themes: {
+          value: '{colors.primary}',
+          type: 'color',
+          themes: {
             dark: '{colors.secondary}',
             danger: '{colors.danger}',
           },
@@ -223,18 +256,18 @@ describe('resolveAliases', () => {
     expect(token.themeValues?.['danger']?.value).toBe('#ef4444')
   })
 
-  it('$themes literal value has no aliasOf', () => {
+  it('themes literal value has no aliasOf', () => {
     const group: TokenGroup = {
-      btn: { $value: '#fff', $type: 'color', $themes: { dark: '#000' } },
+      btn: { value: '#fff', type: 'color', themes: { dark: '#000' } },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('btn')?.themeValues?.['dark']?.aliasOf).toBeUndefined()
     expect(map.get('btn')?.themeValues?.['dark']?.value).toBe('#000')
   })
 
-  it('fails with ResolveError when $themes references unknown alias', () => {
+  it('fails with ResolveError when themes references unknown alias', () => {
     const group: TokenGroup = {
-      btn: { $value: '#fff', $type: 'color', $themes: { dark: '{nonexistent}' } },
+      btn: { value: '#fff', type: 'color', themes: { dark: '{nonexistent}' } },
     }
     const result = Effect.runSyncExit(resolveAliases(group))
     expect(result._tag).toBe('Failure')
@@ -243,30 +276,30 @@ describe('resolveAliases', () => {
     }
   })
 
-  it('fails with ResolveError for cycle involving $themes', () => {
+  it('fails with ResolveError for cycle involving themes', () => {
     const group: TokenGroup = {
-      a: { $value: '#fff', $type: 'color', $themes: { dark: '{b}' } },
-      b: { $value: '#000', $type: 'color', $themes: { dark: '{a}' } },
+      a: { value: '#fff', type: 'color', themes: { dark: '{b}' } },
+      b: { value: '#000', type: 'color', themes: { dark: '{a}' } },
     }
     const result = Effect.runSyncExit(resolveAliases(group))
     // This would produce a cycle in the dependency graph
     expect(result._tag).toBe('Failure')
   })
 
-  it('tokens without $themes have no themeValues', () => {
+  it('tokens without themes have no themeValues', () => {
     const group: TokenGroup = {
-      primary: { $value: '#0066ff', $type: 'color' },
+      primary: { value: '#0066ff', type: 'color' },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('primary')?.themeValues).toBeUndefined()
   })
 
-  // ── $breakpoints ────────────────────────────────────────────────────────
+  // ── breakpoints ────────────────────────────────────────────────────────
 
-  it('resolves $breakpoints literal values', () => {
+  it('resolves breakpoints literal values', () => {
     const group: TokenGroup = {
       spacing: {
-        md: { $value: '16px', $type: 'dimension', $breakpoints: { sm: '12px', lg: '20px' } },
+        md: { value: '16px', type: 'dimension', breakpoints: { sm: '12px', lg: '20px' } },
       },
     }
     const map = Effect.runSync(resolveAliases(group))
@@ -275,17 +308,17 @@ describe('resolveAliases', () => {
     expect(token.breakpointValues?.['lg']?.value).toBe('20px')
   })
 
-  it('resolves $breakpoints alias values', () => {
+  it('resolves breakpoints alias values', () => {
     const group: TokenGroup = {
       scale: {
-        sm: { $value: '12px', $type: 'dimension' },
-        lg: { $value: '20px', $type: 'dimension' },
+        sm: { value: '12px', type: 'dimension' },
+        lg: { value: '20px', type: 'dimension' },
       },
       spacing: {
         md: {
-          $value: '16px',
-          $type: 'dimension',
-          $breakpoints: { sm: '{scale.sm}', lg: '{scale.lg}' },
+          value: '16px',
+          type: 'dimension',
+          breakpoints: { sm: '{scale.sm}', lg: '{scale.lg}' },
         },
       },
     }
@@ -296,25 +329,25 @@ describe('resolveAliases', () => {
     expect(token.breakpointValues?.['lg']?.value).toBe('20px')
   })
 
-  it('$breakpoints literal value has no aliasOf', () => {
+  it('breakpoints literal value has no aliasOf', () => {
     const group: TokenGroup = {
-      spacing: { md: { $value: '16px', $type: 'dimension', $breakpoints: { sm: '12px' } } },
+      spacing: { md: { value: '16px', type: 'dimension', breakpoints: { sm: '12px' } } },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('spacing.md')?.breakpointValues?.['sm']?.aliasOf).toBeUndefined()
   })
 
-  it('tokens without $breakpoints have no breakpointValues', () => {
+  it('tokens without breakpoints have no breakpointValues', () => {
     const group: TokenGroup = {
-      primary: { $value: '#0066ff', $type: 'color' },
+      primary: { value: '#0066ff', type: 'color' },
     }
     const map = Effect.runSync(resolveAliases(group))
     expect(map.get('primary')?.breakpointValues).toBeUndefined()
   })
 
-  it('fails with ResolveError when $breakpoints references unknown alias', () => {
+  it('fails with ResolveError when breakpoints references unknown alias', () => {
     const group: TokenGroup = {
-      spacing: { md: { $value: '16px', $type: 'dimension', $breakpoints: { sm: '{nonexistent}' } } },
+      spacing: { md: { value: '16px', type: 'dimension', breakpoints: { sm: '{nonexistent}' } } },
     }
     const result = Effect.runSyncExit(resolveAliases(group))
     expect(result._tag).toBe('Failure')

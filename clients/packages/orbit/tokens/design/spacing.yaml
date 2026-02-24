@@ -1,71 +1,56 @@
 # Orbit spacing design tokens
-#
-# The Orbit spacing scale uses integer steps.  Each step name matches
-# the OrbitSpacing type accepted by Box/Stack props (padding, margin, gap).
-# Values are the resolved CSS pixel sizes from the underlying Tailwind scale.
-#
-# Orbit token   Tailwind class   px value
-# ──────────────────────────────────────
-# spacing-0     p-0              0px
-# spacing-1     p-2              8px
-# spacing-2     p-4              16px
-# spacing-3     p-6              24px
-# spacing-4     p-8              32px
-# spacing-5     p-10             40px
-# spacing-6     p-12             48px
-# spacing-8     p-16             64px
-# spacing-10    p-20             80px
-# spacing-12    p-24             96px
-# spacing-16    p-32             128px
-# spacing-32    p-64             256px
 
-spacing:
-  $type: dimension
+props:
+  SPACING__SPACING_0:
+    value: "0px"
+    description: No spacing — zero gap.
 
-  "spacing-0":
-    $value: "0px"
-    $description: No spacing — zero gap.
+  SPACING__SPACING_1:
+    value: "8px"
+    description: Extra-small — 8 px. Tight gutters and icon padding.
 
-  "spacing-1":
-    $value: "8px"
-    $description: Extra-small — 8 px. Tight gutters and icon padding.
+  SPACING__SPACING_2:
+    value: "16px"
+    description: Base — 16 px. Default component padding and inline gaps.
 
-  "spacing-2":
-    $value: "16px"
-    $description: Base — 16 px. Default component padding and inline gaps.
+  SPACING__SPACING_3:
+    value: "24px"
+    description: Medium — 24 px. Card padding and section gaps.
 
-  "spacing-3":
-    $value: "24px"
-    $description: Medium — 24 px. Card padding and section gaps.
+  SPACING__SPACING_4:
+    value: "32px"
+    description: Large — 32 px. Panel padding and block separation.
 
-  "spacing-4":
-    $value: "32px"
-    $description: Large — 32 px. Panel padding and block separation.
+  SPACING__SPACING_5:
+    value: "40px"
+    description: Extra-large — 40 px.
 
-  "spacing-5":
-    $value: "40px"
-    $description: Extra-large — 40 px.
+  SPACING__SPACING_6:
+    value: "48px"
+    description: 2x large — 48 px. Generous section padding.
 
-  "spacing-6":
-    $value: "48px"
-    $description: 2× large — 48 px. Generous section padding.
+  SPACING__SPACING_8:
+    value: "64px"
+    description: 3x large — 64 px. Wide layout gutters.
 
-  "spacing-8":
-    $value: "64px"
-    $description: 3× large — 64 px. Wide layout gutters.
+  SPACING__SPACING_10:
+    value: "80px"
+    description: 4x large — 80 px.
 
-  "spacing-10":
-    $value: "80px"
-    $description: 4× large — 80 px.
+  SPACING__SPACING_12:
+    value: "96px"
+    description: 5x large — 96 px.
 
-  "spacing-12":
-    $value: "96px"
-    $description: 5× large — 96 px.
+  SPACING__SPACING_16:
+    value: "128px"
+    description: 6x large — 128 px. Page-level vertical rhythm.
 
-  "spacing-16":
-    $value: "128px"
-    $description: 6× large — 128 px. Page-level vertical rhythm.
+  SPACING__SPACING_32:
+    value: "256px"
+    description: Maximum — 256 px. Full-bleed hero spacing.
 
-  "spacing-32":
-    $value: "256px"
-    $description: Maximum — 256 px. Full-bleed hero spacing.
+imports: []
+
+global:
+  type: dimension
+  category: DESIGN

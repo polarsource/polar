@@ -1,3 +1,5 @@
+import type { ColorValue, TokenValue } from '../types.js'
+
 // ── HSL helper ────────────────────────────────────────────────────────────────
 
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
@@ -12,6 +14,47 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     return p
   }
   return [hue(h + 1 / 3), hue(h), hue(h - 1 / 3)]
+}
+
+function isColorValue(value: unknown): value is ColorValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'colorSpace' in value &&
+    'components' in value &&
+    Array.isArray((value as ColorValue).components)
+  )
+}
+
+function formatAlpha(alpha?: number): string {
+  if (alpha === undefined || alpha === 1) return ''
+  return ` / ${roundTo(alpha, 3)}`
+}
+
+function serializeColorObject(value: ColorValue): string {
+  const alpha = formatAlpha(value.alpha)
+  switch (value.colorSpace) {
+    case 'srgb': {
+      const [r = 0, g = 0, b = 0] = value.components
+      return `rgb(${toByte(r)}, ${toByte(g)}, ${toByte(b)}${alpha})`
+    }
+    case 'display-p3': {
+      const [r = 0, g = 0, b = 0] = value.components
+      return `color(display-p3 ${roundTo(r, 6)} ${roundTo(g, 6)} ${roundTo(b, 6)}${alpha})`
+    }
+    case 'hsl': {
+      const [h = 0, s = 0, l = 0] = value.components
+      const sPct = s <= 1 ? s * 100 : s
+      const lPct = l <= 1 ? l * 100 : l
+      return `hsl(${roundTo(h, 3)} ${roundTo(sPct, 3)}% ${roundTo(lPct, 3)}%${alpha})`
+    }
+    case 'oklch': {
+      const [L = 0, C = 0, H = 0] = value.components
+      return `oklch(${roundTo(L, 4)} ${roundTo(C, 4)} ${roundTo(H, 2)}${alpha})`
+    }
+    default:
+      return value.hex ?? ''
+  }
 }
 
 // ── Parsers ───────────────────────────────────────────────────────────────────
@@ -87,12 +130,38 @@ function parseHslRgba(value: string): [number, number, number, number] | null {
   return [r, g, b, a]
 }
 
+function parseColorObjectRgba(value: ColorValue): [number, number, number, number] | null {
+  const alpha = value.alpha ?? 1
+  switch (value.colorSpace) {
+    case 'srgb':
+    case 'display-p3': {
+      const [r = 0, g = 0, b = 0] = value.components
+      return [r, g, b, alpha]
+    }
+    case 'hsl': {
+      const [hRaw = 0, sRaw = 0, lRaw = 0] = value.components
+      const h = hRaw / 360
+      const s = sRaw <= 1 ? sRaw : sRaw / 100
+      const l = lRaw <= 1 ? lRaw : lRaw / 100
+      const [r, g, b] = hslToRgb(h, s, l)
+      return [r, g, b, alpha]
+    }
+    case 'oklch':
+      return value.hex ? parseHexRgba(value.hex) : null
+    default:
+      return null
+  }
+}
+
 /**
  * Try to parse any CSS color string to [r, g, b, a] in [0, 1].
  * Returns null for values that cannot be parsed: named colors, var(), oklch(),
  * color-mix(), etc.
  */
-export function parseColorRgba(value: string): [number, number, number, number] | null {
+export function parseColorRgba(value: TokenValue): [number, number, number, number] | null {
+  if (isColorValue(value)) {
+    return parseColorObjectRgba(value)
+  }
   const v = String(value).trim()
   return parseHexRgba(v) ?? parseRgbRgba(v) ?? parseHslRgba(v)
 }
@@ -150,11 +219,17 @@ export function toHex8ArgbString(r: number, g: number, b: number, a = 1): string
  * (named colors, var(), oklch(), color-mix(), etc.).
  */
 export function applyColorConvert(
-  value: string | number,
+  value: TokenValue,
   converter: (r: number, g: number, b: number, a: number) => string,
 ): string {
-  const str = String(value).trim()
-  const rgba = parseColorRgba(str)
-  if (!rgba) return str
+  const rgba = parseColorRgba(value)
+  if (!rgba) return stringifyColorValue(value)
   return converter(rgba[0], rgba[1], rgba[2], rgba[3])
+}
+
+export function stringifyColorValue(value: TokenValue): string {
+  if (isColorValue(value)) {
+    return serializeColorObject(value)
+  }
+  return String(value).trim()
 }

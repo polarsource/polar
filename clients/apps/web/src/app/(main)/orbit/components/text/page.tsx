@@ -1,8 +1,8 @@
 import { Box, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 
 const variants: { variant: 'default' | 'subtle' | 'disabled'; label: string; desc: string }[] = [
@@ -115,7 +115,7 @@ const props = [
 
 export default function TextPage() {
   return (
-    <Stack vertical gap={sp['spacing-10']}>
+    <Stack vertical gap={sp['SPACING_10']}>
       <OrbitPageHeader
         label="Component"
         title="Text"
@@ -123,7 +123,7 @@ export default function TextPage() {
       />
 
       {/* Variants */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Variants" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
@@ -143,7 +143,7 @@ export default function TextPage() {
       </Stack>
 
       {/* Font size */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Font Size" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {fontSizes.map(({ size, px }) => (
@@ -163,7 +163,7 @@ export default function TextPage() {
       </Stack>
 
       {/* Font weight */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Font Weight" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {fontWeights.map(({ weight, value }) => (
@@ -183,7 +183,7 @@ export default function TextPage() {
       </Stack>
 
       {/* Leading */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Leading" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {leadings.map(({ leading, value }) => (
@@ -205,7 +205,7 @@ export default function TextPage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['spacing-3']}>
+      <Stack vertical gap={sp['SPACING_3']}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (

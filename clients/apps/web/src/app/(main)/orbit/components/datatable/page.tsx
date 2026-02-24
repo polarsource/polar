@@ -11,9 +11,9 @@ import {
 } from '@polar-sh/orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 
 // ─── Demo data — flat transactions ───────────────────────────────────────────
@@ -186,7 +186,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
         style={{ paddingLeft: `${row.depth * 20}px` }}
       >
         {row.getCanExpand() ? (
-          <Box as="span" color={cl['text-subtle']}>
+          <Box as="span" color={cl['TEXT_SUBTLE']}>
             {row.getIsExpanded() ? (
               <ChevronDown className="h-3.5 w-3.5" />
             ) : (
@@ -225,7 +225,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
 
 export default function DataTablePage() {
   return (
-    <Stack vertical gap={sp['spacing-10']}>
+    <Stack vertical gap={sp['SPACING_10']}>
       <OrbitPageHeader
         label="Component"
         title="DataTable"
@@ -242,13 +242,13 @@ export default function DataTablePage() {
       />
 
       {/* Basic */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Basic" />
         <DataTable columns={columns} data={data} isLoading={false} />
       </Stack>
 
       {/* Expandable rows */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader
           title="Expandable rows"
           description={
@@ -275,19 +275,19 @@ export default function DataTablePage() {
       </Stack>
 
       {/* Loading */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Loading state" />
         <DataTable columns={columns} data={[]} isLoading={true} />
       </Stack>
 
       {/* Empty */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Empty state" />
         <DataTable columns={columns} data={[]} isLoading={false} />
       </Stack>
 
       {/* API */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="API" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[

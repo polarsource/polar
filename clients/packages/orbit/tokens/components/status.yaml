@@ -1,72 +1,59 @@
 # Status component tokens
-#
-# Semantic background and foreground color tokens for each Status variant.
-# Foreground colors are the same in light and dark modes; only backgrounds
-# shift between a tinted wash (light) and a deep tint (dark).
 
-status:
+props:
+  STATUS__NEUTRAL__BACKGROUND:
+    value: "oklch(0.967 0.003 264.542)"
+    description: Neutral status background (gray-100).
+    themes:
+      dark: "hsl(233, 2%, 9.5%)"
 
-  neutral:
-    $description: Default / informational state — no semantic weight.
-    background:
-      $type: color
-      $value: "oklch(0.967 0.003 264.542)"
-      $description: Neutral status background (gray-100).
-      $themes:
-        dark: "hsl(233, 2%, 9.5%)"
-    foreground:
-      $type: color
-      $value: "oklch(0.551 0.027 264.364)"
-      $description: Neutral status text (gray-500).
+  STATUS__NEUTRAL__FOREGROUND:
+    value: "oklch(0.551 0.027 264.364)"
+    description: Neutral status text (gray-500).
 
-  success:
-    $description: Positive outcome — completed, published, active.
-    background:
-      $type: color
-      $value: "oklch(0.95 0.052 163.051)"
-      $description: Success status background (emerald-100).
-      $themes:
-        dark: "oklch(0.262 0.051 172.552)"
-    foreground:
-      $type: color
-      $value: "oklch(0.696 0.17 162.48)"
-      $description: Success status text (emerald-500).
+  STATUS__SUCCESS__BACKGROUND:
+    value: "oklch(0.95 0.052 163.051)"
+    description: Success status background (emerald-100).
+    themes:
+      dark: "oklch(0.262 0.051 172.552)"
 
-  warning:
-    $description: Caution — pending, expiring, review required.
-    background:
-      $type: color
-      $value: "oklch(0.962 0.059 95.617)"
-      $description: Warning status background (amber-100).
-      $themes:
-        dark: "oklch(0.279 0.077 45.635)"
-    foreground:
-      $type: color
-      $value: "oklch(0.769 0.188 70.08)"
-      $description: Warning status text (amber-500).
+  STATUS__SUCCESS__FOREGROUND:
+    value: "oklch(0.696 0.17 162.48)"
+    description: Success status text (emerald-500).
 
-  error:
-    $description: Failure — failed, rejected, payment declined.
-    background:
-      $type: color
-      $value: "oklch(0.936 0.032 17.717)"
-      $description: Error status background (red-100).
-      $themes:
-        dark: "oklch(0.258 0.092 26.042)"
-    foreground:
-      $type: color
-      $value: "{colors.destructive}"
-      $description: Error status text (red-500 / red-600 in dark).
+  STATUS__WARNING__BACKGROUND:
+    value: "oklch(0.962 0.059 95.617)"
+    description: Warning status background (amber-100).
+    themes:
+      dark: "oklch(0.279 0.077 45.635)"
 
-  info:
-    $description: Informational — processing, syncing, awaiting action.
-    background:
-      $type: color
-      $value: "oklch(0.932 0.032 255.585)"
-      $description: Info status background (blue-100).
-      $themes:
-        dark: "oklch(0.282 0.091 267.935)"
-    foreground:
-      $type: color
-      $value: "oklch(0.623 0.214 259.815)"
-      $description: Info status text (blue-500).
+  STATUS__WARNING__FOREGROUND:
+    value: "oklch(0.769 0.188 70.08)"
+    description: Warning status text (amber-500).
+
+  STATUS__ERROR__BACKGROUND:
+    value: "oklch(0.936 0.032 17.717)"
+    description: Error status background (red-100).
+    themes:
+      dark: "oklch(0.258 0.092 26.042)"
+
+  STATUS__ERROR__FOREGROUND:
+    value: "{COLORS.DESTRUCTIVE}"
+    description: Error status text (red-500 / red-600 in dark).
+
+  STATUS__INFO__BACKGROUND:
+    value: "oklch(0.932 0.032 255.585)"
+    description: Info status background (blue-100).
+    themes:
+      dark: "oklch(0.282 0.091 267.935)"
+
+  STATUS__INFO__FOREGROUND:
+    value: "oklch(0.623 0.214 259.815)"
+    description: Info status text (blue-500).
+
+imports:
+  - "../design/colors.yaml"
+
+global:
+  type: color
+  category: COMPONENT

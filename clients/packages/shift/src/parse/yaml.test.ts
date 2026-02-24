@@ -5,61 +5,109 @@ import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { parseYamlFile, ParseError } from './yaml.js'
 
-function withTempFile(content: string, cb: (path: string) => void) {
+function withTempFiles(
+  files: Record<string, string>,
+  cb: (rootFile: string, dir: string) => void,
+) {
   const dir = mkdtempSync(join(tmpdir(), 'shift-test-'))
-  const file = join(dir, 'tokens.yaml')
-  writeFileSync(file, content, 'utf-8')
-  cb(file)
+  for (const [path, content] of Object.entries(files)) {
+    writeFileSync(join(dir, path), content, 'utf-8')
+  }
+  cb(join(dir, 'tokens.yaml'), dir)
 }
 
 describe('parseYamlFile', () => {
-  it('parses a valid token group', () => {
-    withTempFile(
-      `
-colors:
-  primary:
-    $value: "#0066ff"
-    $type: color
+  it('parses a valid token document', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  COLORS__PRIMARY:
+    value: "#0066ff"
+    type: color
+imports: []
 `,
+      },
       (file) => {
         const result = Effect.runSync(parseYamlFile(file))
         expect(result).toMatchObject({
-          colors: {
-            primary: { $value: '#0066ff', $type: 'color' },
-          },
+          COLORS__PRIMARY: { value: '#0066ff', type: 'color' },
         })
       },
     )
   })
 
-  it('parses nested token groups', () => {
-    withTempFile(
-      `
-typography:
-  $type: fontFamily
-  body:
-    $value: "Inter, sans-serif"
-  heading:
-    $value: "Geist, sans-serif"
+  it('applies global defaults to local document tokens', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  SPACING__BASE:
+    value: "16px"
+imports: []
+global:
+  type: dimension
+  category: layout
 `,
+      },
       (file) => {
         const result = Effect.runSync(parseYamlFile(file))
-        expect((result as any).typography.body.$value).toBe('Inter, sans-serif')
+        expect((result as any).SPACING__BASE.type).toBe('dimension')
+        expect((result as any).SPACING__BASE.category).toBe('layout')
       },
     )
   })
 
-  it('parses numeric values', () => {
-    withTempFile(
-      `
-spacing:
-  base:
-    $value: 16
-    $type: number
+  it('parses structured color and dimension values', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  COLORS__FG:
+    type: color
+    value:
+      colorSpace: srgb
+      components: [0.467, 0.467, 0.467]
+  SPACING__HALF:
+    type: dimension
+    value:
+      value: 0.5
+      unit: rem
+imports: []
 `,
+      },
       (file) => {
         const result = Effect.runSync(parseYamlFile(file))
-        expect((result as any).spacing.base.$value).toBe(16)
+        expect((result as any).COLORS__FG.value.colorSpace).toBe('srgb')
+        expect((result as any).SPACING__HALF.value.value).toBe(0.5)
+        expect((result as any).SPACING__HALF.value.unit).toBe('rem')
+      },
+    )
+  })
+
+  it('loads imported token documents and merges them for alias resolution/hoisting', () => {
+    withTempFiles(
+      {
+        'base.yaml': `
+props:
+  COLORS__PRIMARY:
+    value: "#0066ff"
+    type: color
+imports: []
+`,
+        'tokens.yaml': `
+props:
+  BUTTON__BACKGROUND:
+    value: "{COLORS.PRIMARY}"
+    type: color
+imports:
+  - "./base.yaml"
+`,
+      },
+      (file) => {
+        const result = Effect.runSync(parseYamlFile(file))
+        expect((result as any).COLORS__PRIMARY.value).toBe('#0066ff')
+        expect((result as any).BUTTON__BACKGROUND.value).toBe('{COLORS.PRIMARY}')
       },
     )
   })
@@ -77,21 +125,57 @@ spacing:
     }
   })
 
-  it('returns ParseError for invalid YAML (null root)', () => {
-    withTempFile('null\n', (file) => {
-      const result = Effect.runSyncExit(parseYamlFile(file))
-      expect(result._tag).toBe('Failure')
-    })
+  it('fails when top-level schema is invalid', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  COLORS__PRIMARY:
+    value: "#0066ff"
+imports: []
+extra: true
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
   })
 
-  it('returns ParseError for non-object YAML root', () => {
-    withTempFile('- a\n- b\n', (file) => {
-      // Arrays parse as objects in JS but are not TokenGroup — treated as empty group
-      // The YAML parser will return an array; our check requires an object
-      const result = Effect.runSyncExit(parseYamlFile(file))
-      // Arrays are objects in JS so this might pass — that's acceptable
-      // The important thing is we don't crash
-      expect(result._tag).toMatch(/^(Success|Failure)$/)
-    })
+  it('fails when imports contains an absolute path', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  COLORS__PRIMARY:
+    value: "#0066ff"
+imports:
+  - "/tmp/base.yaml"
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
+  })
+
+  it('fails when props contains grouped definitions', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  STATUS:
+    NEUTRAL:
+      value: "#fff"
+imports: []
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
   })
 })

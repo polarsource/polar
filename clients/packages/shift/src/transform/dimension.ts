@@ -1,5 +1,5 @@
 import { Effect, Data } from 'effect'
-import type { FlatTokenMap, ResolvedToken, ThemeValue } from '../types.js'
+import type { DimensionValue, FlatTokenMap, ResolvedToken, ThemeValue, TokenValue } from '../types.js'
 
 export class DimensionTransformError extends Data.TaggedError(
   'DimensionTransformError',
@@ -8,12 +8,27 @@ export class DimensionTransformError extends Data.TaggedError(
   cause: string
 }> {}
 
+function isDimensionValue(value: TokenValue): value is DimensionValue {
+  return typeof value === 'object' && value !== null && 'value' in value && 'unit' in value
+}
+
 function normalizeDimension(
-  value: string | number,
+  value: TokenValue,
   path: string,
 ): Effect.Effect<string, DimensionTransformError> {
+  if (isDimensionValue(value)) {
+    return Effect.succeed(`${value.value}${value.unit}`)
+  }
   if (typeof value === 'number') {
     return Effect.succeed(`${value}px`)
+  }
+  if (typeof value !== 'string') {
+    return Effect.fail(
+      new DimensionTransformError({
+        path,
+        cause: `Invalid dimension value: "${JSON.stringify(value)}"`,
+      }),
+    )
   }
   const str = value.trim()
   if (/^-?[\d.]+$/.test(str)) {

@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  getTranslationLocale,
-  useTranslations,
-  type AcceptedLocale,
-} from '@polar-sh/i18n'
+import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -42,6 +38,7 @@ import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
+import { convertLocaleToStripeElementLocale } from '../utils/locale'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
@@ -909,7 +906,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
-        locale: locale ? getTranslationLocale(locale) : undefined,
+        locale: locale ? convertLocaleToStripeElementLocale(locale) : undefined,
         customerSessionClientSecret: (
           checkout.paymentProcessorMetadata as {
             customer_session_client_secret?: string

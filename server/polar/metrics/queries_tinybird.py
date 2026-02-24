@@ -201,8 +201,10 @@ async def query_metrics(
         task_types.append(TinybirdQuery.mrr)
 
     if TinybirdQuery.cancellations in metric_types:
+        cancellations_params = base_params.copy()
+        cancellations_params.pop("external_customer_ids", None)
         tasks.append(
-            asyncio.create_task(_query_cancellations_metrics(base_params.copy()))
+            asyncio.create_task(_query_cancellations_metrics(cancellations_params))
         )
         task_types.append(TinybirdQuery.cancellations)
 

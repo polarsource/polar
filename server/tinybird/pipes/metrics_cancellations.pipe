@@ -1,7 +1,6 @@
 DESCRIPTION >
     Cancellation metrics endpoint with canonical cancellation state.
-    Fast path reads from subscription_state to avoid duplicate cancellation overcounting.
-    Direct path scans raw events when customer_ids or external_customer_ids are provided.
+    Uses subscription_state to avoid duplicate cancellation overcounting.
     Supplies the following metrics:
     - canceled_subscriptions
     - canceled_subscriptions_customer_service
@@ -18,6 +17,7 @@ SQL >
     %
     SELECT
         ss.subscription_id,
+        argMaxMerge(ss.customer_id) AS customer_id,
         argMaxMerge(ss.canceled_at) AS canceled_at,
         argMaxMerge(ss.customer_cancellation_reason) AS customer_cancellation_reason,
         argMaxMerge(ss.canceled_product_id) AS product_id,
@@ -52,6 +52,10 @@ SQL >
         {% if defined(product_ids) and product_ids != '' %}
             AND product_id
             IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND customer_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(customer_ids) }}))))
         {% end %}
 
 NODE cancellations_fast_by_bucket
@@ -336,11 +340,6 @@ SQL >
 NODE endpoint
 SQL >
     %
-    {% if (defined(customer_ids) and customer_ids != '') or (
-        defined(external_customer_ids) and external_customer_ids != ''
-    ) %} SELECT * FROM cancellations_direct
-    {% else %} SELECT * FROM cancellations_fast
-    {% end %}
-    ORDER BY timestamp
+    SELECT * FROM cancellations_fast ORDER BY timestamp
 
 TYPE ENDPOINT

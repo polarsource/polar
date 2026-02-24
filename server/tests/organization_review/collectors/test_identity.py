@@ -131,9 +131,7 @@ class TestCollectIdentityData:
         assert result.verified_dob is None
 
     async def test_last_error_present(self, mocker: MockerFixture) -> None:
-        account = _build_account(
-            verification_status=IdentityVerificationStatus.failed
-        )
+        account = _build_account(verification_status=IdentityVerificationStatus.failed)
         vs = _build_verification_session(
             {
                 "id": "vs_test_123",

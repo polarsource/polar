@@ -21,6 +21,21 @@ function buildNested(
   return root
 }
 
+function collectThemeNames(
+  map: FlatTokenMap,
+  themes?: ThemeConfig,
+): string[] {
+  const names = new Set<string>()
+  if (themes) {
+    for (const themeName of Object.keys(themes)) names.add(themeName)
+  }
+  for (const token of map.values()) {
+    if (!token.themeValues) continue
+    for (const themeName of Object.keys(token.themeValues)) names.add(themeName)
+  }
+  return [...names]
+}
+
 /**
  * Format a FlatTokenMap as JSON.
  *
@@ -49,26 +64,22 @@ export const formatJson = (
       }
       const root = buildNested(defaultEntries)
 
-      // Per-theme objects
-      if (themes) {
-        const themeObjects: Record<string, Record<string, unknown>> = {}
-
-        for (const [themeName] of Object.entries(themes)) {
-          const themeEntries: [string[], TokenValue][] = []
-          for (const token of map.values()) {
-            const tv = token.themeValues?.[themeName]
-            if (tv !== undefined) {
-              themeEntries.push([token.rawPath, tv.value])
-            }
-          }
-          if (themeEntries.length > 0) {
-            themeObjects[themeName] = buildNested(themeEntries)
+      // Per-theme objects (inferred from token theme keys unless optional config is provided)
+      const themeObjects: Record<string, Record<string, unknown>> = {}
+      for (const themeName of collectThemeNames(map, themes)) {
+        const themeEntries: [string[], TokenValue][] = []
+        for (const token of map.values()) {
+          const tv = token.themeValues?.[themeName]
+          if (tv !== undefined) {
+            themeEntries.push([token.rawPath, tv.value])
           }
         }
-
-        if (Object.keys(themeObjects).length > 0) {
-          root['$themes'] = themeObjects
+        if (themeEntries.length > 0) {
+          themeObjects[themeName] = buildNested(themeEntries)
         }
+      }
+      if (Object.keys(themeObjects).length > 0) {
+        root['$themes'] = themeObjects
       }
 
       // Per-breakpoint objects

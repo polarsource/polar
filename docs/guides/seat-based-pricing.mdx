@@ -19,12 +19,12 @@ Before writing any code, there are three entities you need to understand. They c
 With standard Polar products, one person buys and one person uses — they're the same person. With seat-based products, buying and using are separate concerns, modeled through three distinct entities:
 
 - A **Customer** is the billing entity — who pays. They own subscriptions, orders, and payment methods. On first seat-based purchase, the customer is permanently upgraded to `type: "team"`, which enables members and team management.
-- A **Member** is a person under a customer — who uses. Each member has their own email, role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently. The person who purchases the products is created as an `owner` member.
+- A **Member** is a person under a customer — who uses. Each member has their own email, role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently. The person who purchases the product is created as an `owner` member. Both `owner` and `billing_manager` roles can manage seats, update or cancel the subscription, and manage payment methods. The `owner` role may receive additional management capabilities in the future.
 - A **CustomerSeat** is the link between a product and a member. It tracks assignment status (`pending`, `claimed`, `revoked`), holds the invitation token, and carries optional metadata.
 
 ```
-Customer (Jane — billing manager, type: "team")
-  ├── Member: Jane (role: owner)          → manages team, no seat and no product benefits
+Customer (Jane — purchaser, type: "team")
+  ├── Member: Jane (role: owner)          → manages team, can self-assign a seat for benefits
   ├── Member: Alice (role: member)        → gets benefits via seat
   └── Member: Bob (role: member)          → gets benefits via seat
 
@@ -77,7 +77,7 @@ This guide covers both **subscription** and **one-time purchase** seat-based pro
     - **Pricing type**: Seat-based
     - **Min seats**: 1 (or your minimum team size)
 
-    Define volume-based tiers:
+    Define volume-based tiers. Seat-based pricing uses **volume pricing** — the per-seat price is determined by the total number of seats, and that rate applies to all seats (e.g., 6 seats at the 5-9 tier = 6 × $9 = $54).
 
     | Tier | Max Seats | Price per Seat |
     |------|-----------|----------------|
@@ -141,8 +141,13 @@ Use `immediate_claim: true` when you manage your own user authentication and wan
 
 Listen for benefit webhooks to sync access in your system. Remember: use `grant.member` to identify the recipient, not `grant.customer_id` (which is the buyer).
 
+<Warning>
+Always [verify webhook signatures](/integrate/webhooks/endpoints#verify-signature) before processing events. The example below omits verification for brevity.
+</Warning>
+
 ```typescript
 app.post('/webhooks/polar', async (req, res) => {
+  // Verify webhook signature first — see webhook docs
   const event = req.body;
 
   if (event.type === 'benefit_grant.created') {
@@ -220,7 +225,7 @@ On subscription cancellation, each seat is revoked individually. A subscription 
 
 - **Use `grant.member` everywhere** — not `grant.customer_id` — to identify who has access
 - **Use seat metadata** to store department, role, or cost center for your own tracking
-- **Communicate clearly** to billing managers that they won't receive benefits directly
+- **Communicate clearly** to billing managers that they won't receive benefits automatically — they can assign a seat to themselves if they also want access
 
 ## Troubleshooting
 

@@ -36,3 +36,10 @@ export const useCreateIdentityVerification = () =>
       return api.POST('/v1/users/me/identity-verification')
     },
   })
+
+export const useDeleteUser = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.DELETE('/v1/users/me')
+    },
+  })

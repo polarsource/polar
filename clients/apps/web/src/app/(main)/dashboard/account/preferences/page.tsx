@@ -2,6 +2,7 @@ import AuthenticationSettings from '@/components/Settings/AuthenticationSettings
 import GeneralSettings from '@/components/Settings/GeneralSettings'
 import { NotificationRecipientsSettings } from '@/components/Settings/NotificationRecipientsSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import UserDeleteSettings from '@/components/Settings/UserDeleteSettings'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -32,6 +33,13 @@ export default function Page() {
           description="Manage the devices which receive notifications"
         />
         <NotificationRecipientsSettings />
+      </Section>
+      <Section>
+        <SectionDescription
+          title="Danger Zone"
+          description="Irreversible actions for your account"
+        />
+        <UserDeleteSettings />
       </Section>
     </>
   )

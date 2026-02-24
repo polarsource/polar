@@ -239,7 +239,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         for item in self.items:
             if item.product_price:
                 return item.product_price
-        return self.product.prices[0]
+        return None
 
     @property
     def legacy_product_price_id(self) -> UUID | None:

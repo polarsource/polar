@@ -9,6 +9,7 @@ export const SUPPORTED_LOCALES = [
   'it',
   'pt',
   'pt-PT',
+  'pl',
 ] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en' satisfies SupportedLocale
@@ -62,4 +63,5 @@ export const LOCALE_NAMES: Record<SupportedLocale, string> = {
   it: 'Italian',
   pt: 'Portuguese (Brazilian)',
   'pt-PT': 'Portuguese (Portugal)',
+  pl: 'Polish',
 }

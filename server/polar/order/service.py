@@ -1907,6 +1907,9 @@ class OrderService:
         assert order.subscription is not None
         subscription = order.subscription
 
+        # Mark subscription as past_due first so past_due_deadline is available
+        await subscription_service.mark_past_due(session, subscription)
+
         payment_repository = PaymentRepository.from_session(session)
         latest_payment = await payment_repository.get_latest_for_order(order.id)
 
@@ -1925,8 +1928,6 @@ class OrderService:
         order = await repository.update(
             order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
-
-        await subscription_service.mark_past_due(session, subscription)
 
         # Re-enqueue benefit revocation to check if grace period has expired
         # We might end up here in the event that a user goes via the subscription product

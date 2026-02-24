@@ -3254,15 +3254,15 @@ class TestScheduleRetryForPastDueOrders:
         assert order.next_payment_attempt_at is None
 
     @freeze_time("2024-01-15 12:00:00")
-    async def test_skips_if_next_attempt_already_set(
+    async def test_moves_up_retry_if_next_attempt_already_set(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
         product: Product,
     ) -> None:
-        """Should NOT schedule retry if next_payment_attempt_at is already set
-        (normal dunning in progress)."""
+        """When a customer saves a new payment method, an existing scheduled retry
+        should be moved up to now for immediate recovery."""
         payment_method = await create_payment_method(save_fixture, customer=customer)
         existing_retry_date = datetime(2024, 1, 16, 0, 0, 0, tzinfo=UTC)
         subscription = await create_subscription(
@@ -3291,9 +3291,12 @@ class TestScheduleRetryForPastDueOrders:
             session, customer, new_payment_method
         )
 
-        # Then — existing retry date unchanged
+        # Then — retry moved up to now for immediate recovery
         await session.refresh(order)
-        assert order.next_payment_attempt_at == existing_retry_date
+        assert order.next_payment_attempt_at == utc_now()
+
+        await session.refresh(subscription)
+        assert subscription.payment_method_id == new_payment_method.id
 
     @freeze_time("2024-01-15 12:00:00")
     async def test_skips_active_subscription(

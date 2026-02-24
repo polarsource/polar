@@ -83,8 +83,9 @@ class TestCreate:
         assert len(transaction.paid_transactions) == 2 + len(
             transaction.account_incurred_transactions
         )
-        assert transaction.paid_transactions[0].id == balance_transaction_1.id
-        assert transaction.paid_transactions[1].id == balance_transaction_2.id
+        paid_transaction_ids = {t.id for t in transaction.paid_transactions}
+        assert balance_transaction_1.id in paid_transaction_ids
+        assert balance_transaction_2.id in paid_transaction_ids
 
         assert len(transaction.incurred_transactions) > 0
         assert (

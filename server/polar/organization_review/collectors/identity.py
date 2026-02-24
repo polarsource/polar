@@ -30,14 +30,14 @@ async def collect_identity_data(account: Account | None) -> IdentityData:
                 verification_error_code = vs.last_error.code
             verified_outputs = getattr(vs, "verified_outputs", None)
             if verified_outputs:
-                verified_first_name = verified_outputs.first_name
-                verified_last_name = verified_outputs.last_name
-                if verified_outputs.address:
-                    verified_address_country = verified_outputs.address.country
-                if verified_outputs.dob:
-                    dob = verified_outputs.dob
-                    if dob.year and dob.month and dob.day:
-                        verified_dob = f"{dob.year}-{dob.month:02d}-{dob.day:02d}"
+                verified_first_name = getattr(verified_outputs, "first_name", None)
+                verified_last_name = getattr(verified_outputs, "last_name", None)
+                address = getattr(verified_outputs, "address", None)
+                if address:
+                    verified_address_country = address.country
+                dob = getattr(verified_outputs, "dob", None)
+                if dob and dob.year and dob.month and dob.day:
+                    verified_dob = f"{dob.year}-{dob.month:02d}-{dob.day:02d}"
         except stripe_lib.StripeError:
             log.warning(
                 "collect_identity_data.verification_session_fetch_failed",

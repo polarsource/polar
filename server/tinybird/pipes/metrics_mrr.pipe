@@ -310,59 +310,44 @@ SQL >
     FROM payment_events_raw
     GROUP BY subscription_id
 
-NODE subscription_created_fallback
+NODE subscription_created_info
 SQL >
     %
     SELECT
-        sca.subscription_id,
-        toInt64(
-            round(
-                toFloat64(sca.created_amount) * if(
-                    countIf(bo.name IS NOT NULL) > 0,
-                    coalesce(
-                        argMin(
-                            multiIf(
-                                bo.exchange_rate IS NOT NULL AND toFloat64(bo.exchange_rate) != 0,
-                                toFloat64(bo.exchange_rate),
-                                bo.presentment_amount IS NOT NULL
-                                AND toInt64(bo.presentment_amount) != 0,
-                                toFloat64(bo.amount) / toFloat64(bo.presentment_amount),
-                                NULL
-                            ),
-                            abs(toInt64(sca.created_ts) - toInt64(bo.timestamp))
-                        ),
-                        1.0
-                    ),
-                    1.0
-                )
-            )
-        ) AS fallback_settlement_amount
-    FROM
-        (
+        e.subscription_id, any (e.organization_id) AS organization_id,
+        argMax(e.amount, (e.timestamp, e.ingested_at)) AS sc_amount,
+        argMax(e.timestamp, (e.timestamp, e.ingested_at)) AS sc_timestamp
+    FROM system_events_by_org AS e
+    WHERE
+        e.name = 'subscription.created'
+        AND e.subscription_id IS NOT NULL
+        AND e.organization_id IN (
             SELECT
-                e.subscription_id,
-                argMax(e.amount, (e.timestamp, e.ingested_at)) AS created_amount,
-                argMax(e.timestamp, (e.timestamp, e.ingested_at)) AS created_ts
-            FROM system_events_by_org AS e
-            WHERE
-                e.name = 'subscription.created'
-                AND e.subscription_id IS NOT NULL
-                AND e.organization_id IN (
-                    SELECT
-                        toUUID(
-                            arrayJoin(
-                                splitByChar(
-                                    ',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }}
-                                )
-                            )
-                        )
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
                 )
-                AND e.subscription_id NOT IN (SELECT DISTINCT subscription_id FROM payment_events_raw)
-            GROUP BY e.subscription_id
-        ) sca
-    LEFT JOIN
-        system_events_by_org bo
-        ON bo.name = 'balance.order'
+        )
+        AND e.subscription_id NOT IN (SELECT DISTINCT subscription_id FROM payment_events_raw)
+    GROUP BY e.subscription_id
+
+NODE org_fx_rates
+SQL >
+    %
+    SELECT
+        bo.organization_id,
+        bo.timestamp AS ts,
+        multiIf(
+            bo.exchange_rate IS NOT NULL AND toFloat64(bo.exchange_rate) != 0,
+            toFloat64(bo.exchange_rate),
+            bo.presentment_amount IS NOT NULL AND toInt64(bo.presentment_amount) != 0,
+            toFloat64(bo.amount) / toFloat64(bo.presentment_amount),
+            NULL
+        ) AS rate
+    FROM system_events_by_org AS bo
+    WHERE
+        bo.name = 'balance.order'
         AND bo.organization_id IN (
             SELECT
                 toUUID(
@@ -371,7 +356,16 @@ SQL >
                     )
                 )
         )
-    GROUP BY sca.subscription_id, sca.created_amount, sca.created_ts
+    ORDER BY bo.organization_id ASC, bo.timestamp ASC
+
+NODE subscription_created_fallback
+SQL >
+    %
+    SELECT
+        sci.subscription_id,
+        toInt64(round(toFloat64(sci.sc_amount) * coalesce(fx.rate, 1.0))) AS fallback_settlement_amount
+    FROM subscription_created_info sci ASOF
+    LEFT JOIN org_fx_rates fx ON sci.organization_id = fx.organization_id AND sci.sc_timestamp >= fx.ts
 
 NODE subs_with_mrr
 SQL >

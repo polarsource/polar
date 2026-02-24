@@ -110,7 +110,7 @@ SQL >
         sumState(
             toInt64(
                 if(
-                    name IN ('balance.order', 'balance.credit_order'),
+                    name IN ('balance.order', 'balance.credit_order') AND net_amount IS NULL,
                     toInt64(
                         round(
                             greatest(COALESCE(applied_balance_amount, 0), 0)
@@ -124,7 +124,9 @@ SQL >
         sumState(
             toInt64(
                 if(
-                    name IN ('balance.order', 'balance.credit_order') AND subscription_id IS NULL,
+                    name IN ('balance.order', 'balance.credit_order')
+                    AND subscription_id IS NULL
+                    AND net_amount IS NULL,
                     toInt64(
                         round(
                             greatest(COALESCE(applied_balance_amount, 0), 0)

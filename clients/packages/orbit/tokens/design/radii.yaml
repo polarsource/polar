@@ -2,27 +2,39 @@
 
 props:
   RADII_SM:
-    value: "8px"
+    value:
+      value: 8
+      unit: px
     description: Small radius (rounded-lg). Buttons, badges, inputs.
 
   RADII_MD:
-    value: "12px"
+    value:
+      value: 12
+      unit: px
     description: Medium radius (rounded-xl). Form controls and small cards.
 
   RADII_LG:
-    value: "16px"
+    value:
+      value: 16
+      unit: px
     description: Large radius (rounded-2xl). Cards and panels.
 
   RADII_XL:
-    value: "24px"
+    value:
+      value: 24
+      unit: px
     description: Extra-large radius (rounded-3xl). Modals and drawers.
 
   RADII_2XL:
-    value: "32px"
+    value:
+      value: 32
+      unit: px
     description: 2x large radius (rounded-4xl). Hero surfaces and banners.
 
   RADII_FULL:
-    value: "9999px"
+    value:
+      value: 9999
+      unit: px
     description: Fully rounded — pill shape for avatars and tags.
 
 imports: []

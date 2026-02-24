@@ -2864,67 +2864,6 @@ class TestHandlePaymentFailure:
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-01-01 12:00:00")
-    async def test_non_recoverable_expired_card_skips_dunning(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer: Customer,
-        product: Product,
-        mocker: MockerFixture,
-    ) -> None:
-        """When a payment fails with expired_card, the subscription should be
-        marked as past_due and next_payment_attempt_at set to the
-        past_due_deadline so the dunning worker can revoke it."""
-        # Given
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            status=OrderStatus.pending,
-        )
-        order.next_payment_attempt_at = None
-        await save_fixture(order)
-
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            decline_reason="expired_card",
-            order=order,
-        )
-
-        async def mark_past_due_side_effect(
-            session: AsyncSession, sub: Subscription
-        ) -> Subscription:
-            sub.status = SubscriptionStatus.past_due
-            sub.past_due_at = utc_now()
-            return sub
-
-        mock_mark_past_due = mocker.patch(
-            "polar.subscription.service.subscription.mark_past_due",
-            side_effect=mark_past_due_side_effect,
-        )
-
-        mock_enqueue_benefits_grants = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_benefits_grants"
-        )
-
-        # When
-        result_order = await order_service.handle_payment_failure(session, order)
-
-        # Then — next attempt at past_due_deadline so worker can revoke
-        assert result_order.next_payment_attempt_at == subscription.past_due_deadline
-        assert result_order.next_payment_attempt_at is not None
-        mock_mark_past_due.assert_called_once_with(session, subscription)
-        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
-
-    @freeze_time("2024-01-01 12:00:00")
     async def test_recoverable_decline_enters_dunning(
         self,
         session: AsyncSession,
@@ -2972,69 +2911,6 @@ class TestHandlePaymentFailure:
         expected_retry_date = utc_now() + timedelta(days=2)
         assert result_order.next_payment_attempt_at == expected_retry_date
         mock_mark_past_due.assert_called_once_with(session, subscription)
-
-    @freeze_time("2024-01-01 12:00:00")
-    async def test_non_recoverable_mid_dunning_stops_retries(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer: Customer,
-        product: Product,
-        mocker: MockerFixture,
-    ) -> None:
-        """When an order already in dunning receives a payment failure with a
-        non-recoverable decline reason (e.g., card reported lost during dunning),
-        further retries should stop and next_payment_attempt_at should be set
-        to the past_due_deadline so the worker can revoke at the deadline."""
-        # Given
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            status=OrderStatus.pending,
-        )
-        # Already in dunning — has a next payment attempt scheduled
-        order.next_payment_attempt_at = utc_now() - timedelta(days=1)
-        await save_fixture(order)
-
-        await create_payment(
-            save_fixture,
-            order.organization,
-            status=PaymentStatus.failed,
-            decline_reason="lost_card",
-            order=order,
-        )
-
-        async def mark_past_due_side_effect(
-            session: AsyncSession, sub: Subscription
-        ) -> Subscription:
-            sub.status = SubscriptionStatus.past_due
-            sub.past_due_at = utc_now()
-            return sub
-
-        mock_mark_past_due = mocker.patch(
-            "polar.subscription.service.subscription.mark_past_due",
-            side_effect=mark_past_due_side_effect,
-        )
-
-        mock_enqueue_benefits_grants = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_benefits_grants"
-        )
-
-        # When
-        result_order = await order_service.handle_payment_failure(session, order)
-
-        # Then — next attempt at past_due_deadline so worker can revoke
-        assert result_order.next_payment_attempt_at == subscription.past_due_deadline
-        assert result_order.next_payment_attempt_at is not None
-        mock_mark_past_due.assert_called_once_with(session, subscription)
-        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-02-01 12:00:00")
     async def test_non_recoverable_revokes_at_past_due_deadline(

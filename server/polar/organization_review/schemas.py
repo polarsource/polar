@@ -13,6 +13,7 @@ class ReviewContext(StrEnum):
     SUBMISSION = "submission"  # First review at details submission time
     SETUP_COMPLETE = "setup_complete"  # Review when all setup steps are done
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
+    MANUAL = "manual"  # Full manual review triggered from backoffice
 
 
 # --- Collector output schemas ---

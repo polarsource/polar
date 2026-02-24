@@ -103,8 +103,8 @@ async def _collect_data(
     else:
         products_data = ProductsData()
 
-    # Payment metrics — only for THRESHOLD (no payments exist at submission or setup)
-    if context == ReviewContext.THRESHOLD:
+    # Payment metrics — collected for THRESHOLD and MANUAL reviews
+    if context in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
         total, succeeded, amount = await review_repository.get_payment_stats(
             organization.id
         )

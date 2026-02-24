@@ -136,6 +136,41 @@ Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred ye
 """
 
 
+MANUAL_PREAMBLE = """\
+This is a MANUAL review triggered by a human reviewer from the backoffice. \
+Perform a comprehensive analysis across ALL five dimensions with full detail.
+
+You have access to ALL available data: products, account info, identity verification, \
+payment metrics (if any exist), prior history, and website content.
+
+Key areas to cover thoroughly:
+
+- **Policy compliance & product legitimacy**: Cross-reference products listed on Polar \
+against the organization's stated business and website. Look for mismatches suggesting \
+a disguised prohibited business. Flag high-priced items (one-time > $1,000, recurring > $500/month).
+- **Identity & account signals**:
+  - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
+"document_expired") indicate potential fraud even if verification eventually succeeded.
+  - Compare the account country with the support address country and the verified address \
+country from identity verification — mismatches are yellow flags.
+  - Stripe capabilities that are not "active" (e.g. "restricted", "pending") mean Stripe \
+itself has concerns about this account.
+  - **Stripe verification errors** (requirements.errors) are critical signals. Codes like \
+"verification_document_fraudulent", "verification_document_manipulated", or "rejected.fraud" \
+in disabled_reason are strong fraud indicators.
+  - A non-null **disabled_reason** (especially "rejected.*" values) means Stripe itself has \
+flagged this account.
+  - Compare the verified name (from identity document) with the Stripe business name and \
+the Polar organization name. Significant mismatches are yellow flags.
+- **Financial risk** (if payment data exists):
+  - Evaluate risk scores, refund rates, chargeback rates, and dispute history.
+  - Flag: refund rate > 10%, chargeback rate > 0%, p90 risk score > 75, any disputes.
+  - No payment history is neutral (new org), not negative.
+- **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
+organization after denial is grounds for automatic denial.
+"""
+
+
 class ReviewAnalyzer:
     def __init__(self) -> None:
         provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
@@ -159,6 +194,7 @@ class ReviewAnalyzer:
         instructions = {
             ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
             ReviewContext.SETUP_COMPLETE: SETUP_COMPLETE_PREAMBLE,
+            ReviewContext.MANUAL: MANUAL_PREAMBLE,
         }.get(context)
 
         try:

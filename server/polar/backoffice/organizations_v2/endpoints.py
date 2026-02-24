@@ -665,7 +665,11 @@ async def run_review_agent(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    enqueue_job("organization_review.run_agent", organization_id=organization.id)
+    enqueue_job(
+        "organization_review.run_agent",
+        organization_id=organization.id,
+        context="manual",
+    )
 
     return HXRedirectResponse(
         request,

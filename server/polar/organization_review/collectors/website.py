@@ -20,7 +20,13 @@ log = structlog.get_logger(__name__)
 OVERALL_TIMEOUT_S = 90
 MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 3_000
-PAGE_TIMEOUT_MS = 10_000
+PAGE_TIMEOUT_MS = 15_000
+
+# Realistic Chrome user-agent to avoid bot detection by CDNs (Cloudflare, Vercel, etc.)
+_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
 
 # JS: extract internal links from navigation areas, CTAs, and main content.
 _EXTRACT_LINKS_JS = """
@@ -160,7 +166,11 @@ Max 5 pages."""
 
     deps.pages_navigated += 1
 
-    # Brief wait for JS rendering
+    # Wait for JS rendering / SPA hydration
+    try:
+        await deps.page.wait_for_load_state("networkidle", timeout=5_000)
+    except Exception:
+        pass  # Best-effort; don't fail if network stays busy
     await deps.page.wait_for_timeout(1_000)
 
     # Extract content via trafilatura
@@ -265,15 +275,19 @@ async def _run_browser_agent(
         browser = await pw.chromium.launch(headless=True)
         try:
             context = await browser.new_context(
-                user_agent="PolarBot/1.0 (+https://polar.sh)",
+                user_agent=_USER_AGENT,
                 java_script_enabled=True,
+                viewport={"width": 1280, "height": 720},
+                locale="en-US",
             )
+            # Block heavy resources (images, fonts, media) to save bandwidth.
+            # Keep stylesheets — they are needed for Cloudflare challenges and
+            # SPA hydration to complete correctly.
             await context.route(
                 "**/*",
                 lambda route: (
                     route.abort()
-                    if route.request.resource_type
-                    in ("image", "font", "media", "stylesheet")
+                    if route.request.resource_type in ("image", "font", "media")
                     else route.continue_()
                 ),
             )

@@ -1681,6 +1681,30 @@ class OrderService:
         organization = order.organization
         await webhook_service.send(session, organization, event_type, order)
 
+    async def void(self, session: AsyncSession, order: Order) -> Order:
+        """Mark an order as void, indicating payment cannot be recovered."""
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(order, update_dict={"status": OrderStatus.void})
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_voided,
+                customer=order.customer,
+                organization=order.organization,
+                metadata={
+                    "order_id": str(order.id),
+                    "amount": order.total_amount,
+                    "currency": order.currency,
+                },
+            ),
+        )
+
+        return order
+
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)
         enqueue_job("order.confirmation_email", order.id)

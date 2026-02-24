@@ -27,6 +27,7 @@ class SystemEvent(StrEnum):
     subscription_billing_period_updated = "subscription.billing_period_updated"
     order_paid = "order.paid"
     order_refunded = "order.refunded"
+    order_voided = "order.voided"
     checkout_created = "checkout.created"
     customer_created = "customer.created"
     customer_updated = "customer.updated"
@@ -340,6 +341,19 @@ class OrderRefundedEvent(Event):
         user_metadata: Mapped[OrderRefundedMetadata]  # type: ignore[assignment]
 
 
+class OrderVoidedMetadata(TypedDict):
+    order_id: str
+    amount: int
+    currency: str
+
+
+class OrderVoidedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_voided]]
+        user_metadata: Mapped[OrderVoidedMetadata]  # type: ignore[assignment]
+
+
 class CheckoutCreatedMetadata(TypedDict):
     checkout_id: str
     checkout_status: str
@@ -629,6 +643,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: OrderRefundedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_voided],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderVoidedMetadata,
 ) -> Event: ...
 
 

@@ -66,13 +66,9 @@ async def cmd_export(args: argparse.Namespace) -> None:
 
         # Print breakdown
         verdicts = Counter(c.expected_output for c in dataset.cases)
-        models = Counter(
-            c.metadata.model_used for c in dataset.cases if c.metadata
-        )
+        models = Counter(c.metadata.model_used for c in dataset.cases if c.metadata)
         appeals = sum(
-            1
-            for c in dataset.cases
-            if c.metadata and c.metadata.appeal_decision
+            1 for c in dataset.cases if c.metadata and c.metadata.appeal_decision
         )
 
         print("\nVerdict distribution:")
@@ -144,9 +140,7 @@ async def cmd_run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Eval system for organization reviews"
-    )
+    parser = argparse.ArgumentParser(description="Eval system for organization reviews")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # --- export ---
@@ -191,9 +185,7 @@ def main() -> None:
         default=5,
         help="Max parallel API calls (default: 5)",
     )
-    run_parser.add_argument(
-        "--output", "-o", help="Save report to JSON file"
-    )
+    run_parser.add_argument("--output", "-o", help="Save report to JSON file")
 
     args = parser.parse_args()
 

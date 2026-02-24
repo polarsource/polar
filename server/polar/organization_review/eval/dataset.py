@@ -40,7 +40,9 @@ class ReviewMetadata(Schema):
 ReviewDataset = Dataset[ReviewInput, str, ReviewMetadata]
 
 
-def _review_to_case(review: OrganizationReview) -> Case[ReviewInput, str, ReviewMetadata]:
+def _review_to_case(
+    review: OrganizationReview,
+) -> Case[ReviewInput, str, ReviewMetadata]:
     snapshot = review.organization_details_snapshot
     name = snapshot.get("name", str(review.organization_id))
 

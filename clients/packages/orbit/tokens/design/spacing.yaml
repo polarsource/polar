@@ -2,63 +2,93 @@
 
 props:
   SPACING_0:
-    value: "0px"
+    value:
+      value: 0
+      unit: px
     description: No spacing — zero gap.
 
   SPACING_1:
-    value: "6px"
+    value:
+      value: 6
+      unit: px
     description: Tight — 6 px. Compact vertical control padding.
 
   SPACING_2:
-    value: "8px"
+    value:
+      value: 8
+      unit: px
     description: Extra-small — 8 px. Tight gutters and icon padding.
 
   SPACING_3:
-    value: "12px"
+    value:
+      value: 12
+      unit: px
     description: Small — 12 px. Compact control gutters.
 
   SPACING_4:
-    value: "16px"
+    value:
+      value: 16
+      unit: px
     description: Base — 16 px. Default component padding and inline gaps.
 
   SPACING_5:
-    value: "20px"
+    value:
+      value: 20
+      unit: px
     description: Medium-small — 20 px. Large control horizontal padding.
 
   SPACING_6:
-    value: "24px"
+    value:
+      value: 24
+      unit: px
     description: Medium — 24 px. Card padding and section gaps.
 
   SPACING_7:
-    value: "32px"
+    value:
+      value: 32
+      unit: px
     description: Large — 32 px. Panel padding and block separation.
 
   SPACING_8:
-    value: "40px"
+    value:
+      value: 40
+      unit: px
     description: Extra-large — 40 px.
 
   SPACING_9:
-    value: "48px"
+    value:
+      value: 48
+      unit: px
     description: 2x large — 48 px. Generous section padding.
 
   SPACING_10:
-    value: "64px"
+    value:
+      value: 64
+      unit: px
     description: 3x large — 64 px. Wide layout gutters.
 
   SPACING_11:
-    value: "80px"
+    value:
+      value: 80
+      unit: px
     description: 4x large — 80 px.
 
   SPACING_12:
-    value: "96px"
+    value:
+      value: 96
+      unit: px
     description: 5x large — 96 px.
 
   SPACING_13:
-    value: "128px"
+    value:
+      value: 128
+      unit: px
     description: 6x large — 128 px. Page-level vertical rhythm.
 
   SPACING_14:
-    value: "256px"
+    value:
+      value: 256
+      unit: px
     description: Maximum — 256 px. Full-bleed hero spacing.
 
 imports: []

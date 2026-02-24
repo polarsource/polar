@@ -1,5 +1,11 @@
 import { Effect } from 'effect'
-import type { BreakpointConfig, FlatTokenMap, ThemeConfig, TokenValue } from '../types.js'
+import type {
+  BreakpointConfig,
+  FlatTokenMap,
+  ResolvedToken,
+  ThemeConfig,
+  TokenValue,
+} from '../types.js'
 import { FormatError } from './css.js'
 
 /** Build a nested object from a flat token map's rawPaths */
@@ -19,6 +25,24 @@ function buildNested(
     node[rawPath[rawPath.length - 1]!] = value
   }
   return root
+}
+
+function buildTokenDefinitions(map: FlatTokenMap): Record<string, Omit<ResolvedToken, 'path'>> {
+  const definitions: Record<string, Omit<ResolvedToken, 'path'>> = {}
+  for (const token of map.values()) {
+    const tokenName = token.rawPath.join('_')
+    definitions[tokenName] = {
+      rawPath: token.rawPath,
+      value: token.value,
+      aliasOf: token.aliasOf,
+      type: token.type,
+      category: token.category,
+      description: token.description,
+      themeValues: token.themeValues,
+      breakpointValues: token.breakpointValues,
+    }
+  }
+  return definitions
 }
 
 /**
@@ -51,6 +75,9 @@ export const formatTypescript = (
       }
       parts.push(
         `export const tokens = ${JSON.stringify(buildNested(defaultEntries), null, 2)} as const`,
+      )
+      parts.push(
+        `export const tokenDefinitions = ${JSON.stringify(buildTokenDefinitions(map), null, 2)} as const`,
       )
 
       // Per-theme objects

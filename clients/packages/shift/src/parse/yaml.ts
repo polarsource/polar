@@ -4,7 +4,7 @@ import { dirname, isAbsolute, resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { Schema } from 'effect'
 import { RawToken, TokenDocumentSchema } from './schema.js'
-import type { RawToken as RawTokenType, TokenDocument, TokenGroup } from '../types.js'
+import type { RawToken as RawTokenType, TokenDocument, TokenGroup, TokenType } from '../types.js'
 
 export class ParseError extends Data.TaggedError('ParseError')<{
   file: string
@@ -21,6 +21,7 @@ const RAW_TOKEN_KEYS = new Set([
 ])
 
 const DOCUMENT_KEYS = new Set(['props', 'imports', 'global'])
+const ALIAS_STRING_RE = /^\{[^}]+\}$/
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -66,6 +67,45 @@ function validateColorValueObject(value: unknown, path: string[]): void {
       `Invalid color value at "${path.join('.')}". ` +
         'Use either { hex } or { colorSpace, components }.',
     )
+  }
+}
+
+function isDimensionObject(value: unknown): value is { value: number; unit: string } {
+  return (
+    isObject(value) &&
+    typeof value.value === 'number' &&
+    typeof value.unit === 'string'
+  )
+}
+
+function isDimensionAliasOrExpression(value: string): boolean {
+  const trimmed = value.trim()
+  return ALIAS_STRING_RE.test(trimmed) || /[+\-*/()]/.test(trimmed)
+}
+
+function validateDimensionValue(value: unknown, path: string[]): void {
+  if (isDimensionObject(value)) return
+  if (typeof value === 'string' && isDimensionAliasOrExpression(value)) return
+
+  throw new Error(
+    `Invalid dimension value at "${path.join('.')}". ` +
+      'Dimension tokens must use { value: <number>, unit: <string> } for literals.',
+  )
+}
+
+function validateDimensionToken(token: RawTokenType, path: string[]): void {
+  if (token.type !== 'dimension') return
+  validateDimensionValue(token.value, [...path, 'value'])
+
+  if (token.themes) {
+    for (const [theme, themeValue] of Object.entries(token.themes)) {
+      validateDimensionValue(themeValue, [...path, 'themes', theme])
+    }
+  }
+  if (token.breakpoints) {
+    for (const [breakpoint, breakpointValue] of Object.entries(token.breakpoints)) {
+      validateDimensionValue(breakpointValue, [...path, 'breakpoints', breakpoint])
+    }
   }
 }
 
@@ -116,11 +156,13 @@ function applyGlobalDefaults(group: TokenGroup, docGlobal?: TokenDocument['globa
       )
     }
 
-    out[key] = {
+    const token: RawTokenType = {
       ...value,
       type: value.type ?? docGlobal?.type,
       category: value.category ?? docGlobal?.category,
     }
+    validateDimensionToken(token, ['props', key])
+    out[key] = token
   }
   return out
 }
@@ -204,7 +246,10 @@ function parseTokenDocument(content: string, file: string): TokenDocument {
       }
     }
     docGlobal = {
-      type: typeof decodedDoc.global.type === 'string' ? (decodedDoc.global.type as any) : undefined,
+      type:
+        typeof decodedDoc.global.type === 'string'
+          ? (decodedDoc.global.type as TokenType)
+          : undefined,
       category: typeof decodedDoc.global.category === 'string' ? decodedDoc.global.category : undefined,
     }
   }

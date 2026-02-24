@@ -93,45 +93,76 @@ class OverviewSection:
                 # Fallback: show org.review data if available
                 if self.org.review:
                     review = self.org.review
-                    with tag.div(classes="flex items-center gap-3 mb-3"):
-                        with tag.span(
-                            classes="badge badge-ghost border border-base-300 badge-lg"
-                        ):
-                            text(review.verdict or "N/A")
+
+                    # Verdict badge + risk score
+                    with tag.div(classes="flex items-center gap-4 mb-4"):
+                        verdict_str = (
+                            review.verdict.value
+                            if hasattr(review.verdict, "value")
+                            else str(review.verdict or "N/A")
+                        )
+                        verdict_badge = {
+                            "PASS": "badge-success",
+                            "FAIL": "badge-error",
+                            "UNCERTAIN": "badge-warning",
+                        }.get(verdict_str, "badge-ghost")
+                        with tag.div(classes=f"badge {verdict_badge} badge-lg"):
+                            text(verdict_str)
+
                         if review.risk_score is not None:
                             with tag.span(classes="text-lg font-bold"):
-                                text(f"Risk: {review.risk_score}")
+                                text(f"Risk: {float(review.risk_score):.0f}/100")
 
+                    # Violated sections (as a list for long text)
                     if review.violated_sections:
-                        with tag.div(classes="mb-3"):
+                        with tag.div(classes="mb-4"):
                             with tag.div(classes="text-sm font-semibold mb-1"):
-                                text("Violated Sections:")
-                            with tag.div(classes="flex flex-wrap gap-1"):
+                                text("Violated Sections")
+                            with tag.ul(
+                                classes="list-disc list-inside text-sm space-y-1"
+                            ):
                                 for section in review.violated_sections:
-                                    with tag.span(
-                                        classes="badge badge-ghost border border-base-300 badge-sm"
-                                    ):
+                                    with tag.li():
                                         text(section)
 
+                    # Assessment reason
                     if review.reason:
-                        with tag.div(
-                            classes="text-sm text-base-content/80 p-3 bg-base-200 rounded mt-3"
-                        ):
-                            text(review.reason)
+                        with tag.div(classes="mb-4"):
+                            with tag.div(classes="text-sm font-semibold mb-1"):
+                                text("Assessment")
+                            with tag.div(
+                                classes="text-sm text-base-content/80 p-3 bg-base-200 rounded"
+                            ):
+                                text(review.reason)
 
+                    # Appeal information
                     if review.appeal_submitted_at:
                         with tag.div(
-                            classes="mt-4 p-3 border-l-4 border-base-300 bg-base-100 rounded"
+                            classes="mt-4 p-3 border-l-4 border-base-300 bg-base-200/50 rounded"
                         ):
-                            with tag.div(classes="font-semibold mb-1"):
-                                text("Appeal Submitted")
+                            with tag.div(
+                                classes="flex items-center gap-2 mb-2"
+                            ):
+                                with tag.span(classes="font-semibold"):
+                                    text("Appeal Submitted")
+                                if review.appeal_reviewed_at:
+                                    decision = str(
+                                        review.appeal_decision or ""
+                                    ).capitalize()
+                                    with tag.span(
+                                        classes="badge badge-sm badge-ghost border border-base-300"
+                                    ):
+                                        text(decision or "Under Review")
+                                else:
+                                    with tag.span(
+                                        classes="badge badge-sm badge-ghost border border-base-300"
+                                    ):
+                                        text("Under Review")
                             if review.appeal_reason:
-                                with tag.div(classes="text-sm text-base-content/70"):
+                                with tag.div(
+                                    classes="text-sm text-base-content/70 whitespace-pre-wrap"
+                                ):
                                     text(review.appeal_reason)
-                            if review.appeal_reviewed_at:
-                                with tag.div(classes="mt-2 text-sm"):
-                                    with tag.span(classes="font-semibold"):
-                                        text(f"Decision: {review.appeal_decision}")
                 else:
                     with tag.p(classes="text-sm text-base-content/60 mb-4"):
                         text("No agent review yet")

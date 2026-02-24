@@ -140,9 +140,7 @@ class OverviewSection:
                         with tag.div(
                             classes="mt-4 p-3 border-l-4 border-base-300 bg-base-200/50 rounded"
                         ):
-                            with tag.div(
-                                classes="flex items-center gap-2 mb-2"
-                            ):
+                            with tag.div(classes="flex items-center gap-2 mb-2"):
                                 with tag.span(classes="font-semibold"):
                                     text("Appeal Submitted")
                                 if review.appeal_reviewed_at:

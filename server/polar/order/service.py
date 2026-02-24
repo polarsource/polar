@@ -63,6 +63,7 @@ from polar.models.customer import CustomerType
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -75,7 +76,6 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
-from polar.models.payment import PaymentStatus
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service

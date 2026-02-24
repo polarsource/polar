@@ -19,6 +19,8 @@ from polar.enums import (
     SubscriptionRecurringInterval,
     TaxProcessor,
 )
+from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
@@ -3986,3 +3988,57 @@ class TestUpdateProductBenefitsGrants:
             order_id=ANY,
             delay=ANY,
         )
+
+
+class TestVoidOrder:
+    @pytest.mark.asyncio
+    async def test_void_pending_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test successfully voiding a pending order."""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+        assert result_order.id == order.id
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_voided)
+        assert len(events) == 1
+        assert events[0].user_metadata["order_id"] == str(order.id)
+
+    @pytest.mark.asyncio
+    async def test_void_non_pending_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that voiding a non-pending order raises OrderNotPending exception."""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # When/Then
+        with pytest.raises(OrderNotPending) as exc_info:
+            await order_service.void(session, order)
+
+        assert exc_info.value.order.id == order.id

@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
 from polar.kit.schemas import Schema
+
+if TYPE_CHECKING:
+    from pydantic_ai.result import Usage
 
 # --- Review context ---
 
@@ -14,6 +19,53 @@ class ReviewContext(StrEnum):
     SETUP_COMPLETE = "setup_complete"  # Review when all setup steps are done
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
     MANUAL = "manual"  # Full manual review triggered from backoffice
+
+
+# --- Shared utility schemas ---
+
+
+class UsageInfo(Schema):
+    """Token usage and cost from the AI call."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float | None = None
+
+    def __add__(self, other: UsageInfo) -> UsageInfo:
+        cost: float | None = None
+        if (
+            self.estimated_cost_usd is not None
+            or other.estimated_cost_usd is not None
+        ):
+            cost = (self.estimated_cost_usd or 0.0) + (
+                other.estimated_cost_usd or 0.0
+            )
+        return UsageInfo(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+            estimated_cost_usd=cost,
+        )
+
+    @classmethod
+    def from_agent_usage(cls, usage: Usage, model_name: str) -> UsageInfo:
+        import genai_prices
+
+        estimated_cost: float | None = None
+        try:
+            price = genai_prices.calc_price(
+                usage, model_name, provider_id="openai"
+            )
+            estimated_cost = float(price.total_price)
+        except Exception:
+            pass
+        return cls(
+            input_tokens=usage.input_tokens or 0,
+            output_tokens=usage.output_tokens or 0,
+            total_tokens=(usage.input_tokens or 0) + (usage.output_tokens or 0),
+            estimated_cost_usd=estimated_cost,
+        )
 
 
 # --- Collector output schemas ---
@@ -124,6 +176,7 @@ class WebsiteData(Schema):
     scrape_error: str | None = None
     total_pages_attempted: int = 0
     total_pages_succeeded: int = 0
+    usage: UsageInfo = Field(default_factory=UsageInfo)
 
 
 class DataSnapshot(Schema):
@@ -202,15 +255,6 @@ class ReviewAgentReport(Schema):
     recommended_action: str = Field(
         description="Specific recommended action for human reviewer",
     )
-
-
-class UsageInfo(Schema):
-    """Token usage and cost from the AI call."""
-
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    estimated_cost_usd: float | None = None
 
 
 class AgentReviewResult(Schema):

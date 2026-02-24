@@ -30,6 +30,7 @@ from .schemas import (
     PaymentMetrics,
     ProductsData,
     ReviewContext,
+    UsageInfo,
     WebsiteData,
 )
 
@@ -53,9 +54,16 @@ async def run_organization_review(
     try:
         snapshot = await _collect_data(organization, context)
 
-        report, usage = await review_analyzer.analyze(snapshot, context=context)
+        report, analyzer_usage = await review_analyzer.analyze(
+            snapshot, context=context
+        )
 
         duration = time.monotonic() - start_time
+
+        collector_usage = (
+            snapshot.website.usage if snapshot.website else UsageInfo()
+        )
+        usage = analyzer_usage + collector_usage
 
         log.info(
             "organization_review.agent.complete",

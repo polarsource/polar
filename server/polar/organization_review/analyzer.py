@@ -1,6 +1,5 @@
 import asyncio
 
-import genai_prices
 import structlog
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -218,24 +217,8 @@ class ReviewAnalyzer:
                 self.agent.run(prompt, instructions=instructions),
                 timeout=timeout_seconds,
             )
-            run_usage = result.usage()
-            estimated_cost: float | None = None
-            try:
-                price = genai_prices.calc_price(
-                    run_usage, self.model.model_name, provider_id="openai"
-                )
-                estimated_cost = float(price.total_price)
-            except Exception:
-                log.debug(
-                    "review_analyzer.price_calc_failed",
-                    model=self.model.model_name,
-                )
-            usage = UsageInfo(
-                input_tokens=run_usage.input_tokens or 0,
-                output_tokens=run_usage.output_tokens or 0,
-                total_tokens=(run_usage.input_tokens or 0)
-                + (run_usage.output_tokens or 0),
-                estimated_cost_usd=estimated_cost,
+            usage = UsageInfo.from_agent_usage(
+                result.usage(), self.model.model_name
             )
             return result.output, usage
         except TimeoutError:

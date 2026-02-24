@@ -13,7 +13,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
-from ..schemas import WebsiteData, WebsitePage
+from ..schemas import UsageInfo, WebsiteData, WebsitePage
 
 log = structlog.get_logger(__name__)
 
@@ -231,36 +231,28 @@ async def collect_website_data(website_url: str) -> WebsiteData:
     if not base_url.startswith(("http://", "https://")):
         base_url = "https://" + base_url
 
-    parsed = urlparse(base_url)
-    result = WebsiteData(base_url=base_url)
-
     try:
-        summary, pages = await asyncio.wait_for(
-            _run_browser_agent(base_url, parsed.netloc),
+        return await asyncio.wait_for(
+            _run_browser_agent(base_url, urlparse(base_url).netloc),
             timeout=OVERALL_TIMEOUT_S,
         )
-        result.pages = pages
-        result.total_pages_succeeded = len(pages)
-        result.total_pages_attempted = max(len(pages), 1)
-        result.summary = summary
     except TimeoutError:
         log.warning(
             "website_collector.overall_timeout",
             url=base_url,
             timeout=OVERALL_TIMEOUT_S,
         )
-        result.scrape_error = f"Overall timeout after {OVERALL_TIMEOUT_S}s"
+        return WebsiteData(
+            base_url=base_url,
+            scrape_error=f"Overall timeout after {OVERALL_TIMEOUT_S}s",
+        )
     except Exception as e:
         log.warning("website_collector.failed", url=base_url, error=str(e))
-        result.scrape_error = str(e)[:200]
-
-    return result
+        return WebsiteData(base_url=base_url, scrape_error=str(e)[:200])
 
 
-async def _run_browser_agent(
-    base_url: str, base_domain: str
-) -> tuple[str, list[WebsitePage]]:
-    """Launch browser, run the agent, return summary and visited pages."""
+async def _run_browser_agent(base_url: str, base_domain: str) -> WebsiteData:
+    """Launch browser, run the agent, return website data with usage."""
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
         try:
@@ -286,6 +278,15 @@ async def _run_browser_agent(
                 deps=deps,
             )
 
-            return result.output, deps.pages_visited
+            return WebsiteData(
+                base_url=base_url,
+                pages=deps.pages_visited,
+                summary=result.output,
+                total_pages_attempted=max(len(deps.pages_visited), 1),
+                total_pages_succeeded=len(deps.pages_visited),
+                usage=UsageInfo.from_agent_usage(
+                    result.usage(), _model.model_name
+                ),
+            )
         finally:
             await browser.close()

@@ -35,6 +35,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_event,
     create_order,
+    create_payment_transaction,
     create_product,
     create_subscription,
 )
@@ -223,6 +224,27 @@ async def _create_fixtures(
         orders[key] = order
 
     return products, subscriptions, orders
+
+
+async def _create_payment_transaction_with_fx(
+    save_fixture: SaveFixture,
+    *,
+    order: Order,
+    amount: int,
+    presentment_amount: int,
+    presentment_currency: str,
+    exchange_rate: float | None = None,
+) -> None:
+    transaction = await create_payment_transaction(
+        save_fixture,
+        order=order,
+        amount=amount,
+        currency="usd",
+    )
+    transaction.presentment_amount = presentment_amount
+    transaction.presentment_currency = presentment_currency
+    transaction.exchange_rate = exchange_rate
+    await save_fixture(transaction)
 
 
 @pytest_asyncio.fixture
@@ -1263,6 +1285,231 @@ class TestGetMetrics:
         assert jan.active_subscriptions == 1
         assert jan.monthly_recurring_revenue == expected_mrr
         assert jan.average_revenue_per_user == expected_mrr
+
+    @pytest.mark.auth
+    async def test_mrr_uses_per_currency_per_bucket_average_exchange_rate(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        product_eur = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "eur")],
+        )
+        product_gbp = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "gbp")],
+        )
+
+        subscription_eur = await create_subscription(
+            save_fixture,
+            product=product_eur,
+            currency="eur",
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+        subscription_gbp = await create_subscription(
+            save_fixture,
+            product=product_gbp,
+            currency="gbp",
+            customer=customer_second,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+
+        order_eur_jan_a = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_eur,
+            customer=customer,
+            subscription=subscription_eur,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 5)),
+        )
+        order_eur_jan_b = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_eur,
+            customer=customer,
+            subscription=subscription_eur,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 7)),
+        )
+        order_gbp_jan = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_gbp,
+            customer=customer_second,
+            subscription=subscription_gbp,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 6)),
+        )
+        order_eur_feb = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_eur,
+            customer=customer,
+            subscription=subscription_eur,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 2, 5)),
+        )
+        order_gbp_feb = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_gbp,
+            customer=customer_second,
+            subscription=subscription_gbp,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 2, 6)),
+        )
+
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_eur_jan_a,
+            amount=200_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=2.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_eur_jan_b,
+            amount=400_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=4.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_gbp_jan,
+            amount=500_00,
+            presentment_amount=100_00,
+            presentment_currency="gbp",
+            exchange_rate=5.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_eur_feb,
+            amount=100_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=1.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_gbp_feb,
+            amount=200_00,
+            presentment_amount=100_00,
+            presentment_currency="gbp",
+            exchange_rate=2.0,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 29),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=[
+                "monthly_recurring_revenue",
+                "committed_monthly_recurring_revenue",
+                "average_revenue_per_user",
+            ],
+            now=datetime(2024, 2, 15, tzinfo=UTC),
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 800_00
+        assert jan.committed_monthly_recurring_revenue == 800_00
+        assert jan.average_revenue_per_user == 400_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 300_00
+        assert feb.committed_monthly_recurring_revenue == 300_00
+        assert feb.average_revenue_per_user == 150_00
+
+    @pytest.mark.auth
+    async def test_mrr_bucket_without_fx_uses_identity_multiplier(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "eur")],
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            currency="eur",
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+        january_order = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 5)),
+        )
+
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=january_order,
+            amount=200_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=2.0,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 29),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=[
+                "monthly_recurring_revenue",
+                "committed_monthly_recurring_revenue",
+                "average_revenue_per_user",
+            ],
+            now=datetime(2024, 2, 15, tzinfo=UTC),
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 200_00
+        assert jan.committed_monthly_recurring_revenue == 200_00
+        assert jan.average_revenue_per_user == 200_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 100_00
+        assert feb.committed_monthly_recurring_revenue == 100_00
+        assert feb.average_revenue_per_user == 100_00
 
     @pytest.mark.auth
     async def test_average_revenue_per_user_no_customers(

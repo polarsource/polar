@@ -24,7 +24,7 @@ from ._enqueue import (
 from ._httpx import HTTPXMiddleware
 from ._queues import TaskPriority, TaskQueue
 from ._redis import RedisMiddleware
-from ._sqlalchemy import AsyncSessionMaker
+from ._sqlalchemy import AsyncReadSessionMaker, AsyncSessionMaker
 
 _ = _prometheus_metrics  # for mypy and ruff: ensure import is used
 
@@ -105,6 +105,7 @@ def actor[**P, R](
 
 
 __all__ = [
+    "AsyncReadSessionMaker",
     "AsyncSessionMaker",
     "BulkJobDelayCalculator",
     "CronTrigger",

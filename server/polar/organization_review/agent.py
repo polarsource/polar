@@ -1,11 +1,14 @@
+import asyncio
 import time
 from datetime import UTC, datetime
+from uuid import UUID
 
 import structlog
 
 from polar.models.organization import Organization
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
+from polar.worker import AsyncReadSessionMaker
 
 from .analyzer import review_analyzer
 from .collectors import (
@@ -22,10 +25,12 @@ from .schemas import (
     AccountData,
     AgentReviewResult,
     DataSnapshot,
+    HistoryData,
     IdentityData,
     PaymentMetrics,
     ProductsData,
     ReviewContext,
+    WebsiteData,
 )
 
 log = structlog.get_logger(__name__)
@@ -46,7 +51,7 @@ async def run_organization_review(
     )
 
     try:
-        snapshot = await _collect_data(session, organization, context)
+        snapshot = await _collect_data(organization, context)
 
         report, usage = await review_analyzer.analyze(snapshot, context=context)
 
@@ -81,41 +86,31 @@ async def run_organization_review(
         raise
 
 
-async def _collect_data(
-    session: AsyncSession,
-    organization: Organization,
-    context: ReviewContext,
-) -> DataSnapshot:
-    org_repository = OrganizationRepository.from_session(session)
-    review_repository = OrganizationReviewRepository.from_session(session)
+async def _collect_products(
+    organization_id: UUID, context: ReviewContext
+) -> ProductsData:
+    if context == ReviewContext.SUBMISSION:
+        return ProductsData()
 
-    # Get admin user for history lookup
-    admin_user = await org_repository.get_admin_user(session, organization)
-    admin_user_id = admin_user.id if admin_user else None
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationReviewRepository.from_session(session)
+        products = await repo.get_products_with_prices(organization_id)
+        return collect_products_data(products)
 
-    # Organization data (pure transformation, no DB query) — always collected
-    org_data = collect_organization_data(organization)
 
-    # Products — skip for SUBMISSION (no products exist yet)
-    if context != ReviewContext.SUBMISSION:
-        products = await review_repository.get_products_with_prices(organization.id)
-        products_data = collect_products_data(products)
-    else:
-        products_data = ProductsData()
+async def _collect_metrics(
+    organization_id: UUID, context: ReviewContext
+) -> PaymentMetrics:
+    if context not in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+        return PaymentMetrics()
 
-    # Payment metrics — collected for THRESHOLD and MANUAL reviews
-    if context in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
-        total, succeeded, amount = await review_repository.get_payment_stats(
-            organization.id
-        )
-        risk_scores = await review_repository.get_risk_scores(organization.id)
-        refund_count, refund_amount = await review_repository.get_refund_stats(
-            organization.id
-        )
-        dispute_count, dispute_amount = await review_repository.get_dispute_stats(
-            organization.id
-        )
-        metrics_data = collect_metrics_data(
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationReviewRepository.from_session(session)
+        total, succeeded, amount = await repo.get_payment_stats(organization_id)
+        risk_scores = await repo.get_risk_scores(organization_id)
+        refund_count, refund_amount = await repo.get_refund_stats(organization_id)
+        dispute_count, dispute_amount = await repo.get_dispute_stats(organization_id)
+        return collect_metrics_data(
             total_payments=total,
             succeeded_payments=succeeded,
             total_amount_cents=amount,
@@ -125,57 +120,99 @@ async def _collect_data(
             dispute_count=dispute_count,
             dispute_amount_cents=dispute_amount,
         )
-    else:
-        metrics_data = PaymentMetrics()
 
-    # History — always collected
-    user = (
-        await review_repository.get_user_by_id(admin_user_id) if admin_user_id else None
-    )
-    other_orgs = (
-        await review_repository.get_other_organizations_for_user(
-            admin_user_id, organization.id
+
+async def _collect_history(organization: Organization) -> HistoryData:
+    async with AsyncReadSessionMaker() as session:
+        org_repository = OrganizationRepository.from_session(session)
+        review_repository = OrganizationReviewRepository.from_session(session)
+
+        admin_user = await org_repository.get_admin_user(session, organization)
+        admin_user_id = admin_user.id if admin_user else None
+
+        user = (
+            await review_repository.get_user_by_id(admin_user_id)
+            if admin_user_id
+            else None
         )
-        if admin_user_id
-        else []
-    )
-    history_data = collect_history_data(user, other_orgs)
+        other_orgs = (
+            await review_repository.get_other_organizations_for_user(
+                admin_user_id, organization.id
+            )
+            if admin_user_id
+            else []
+        )
+        return collect_history_data(user, other_orgs)
 
-    # Account & Identity — skip for SUBMISSION (no Stripe account yet)
-    if context != ReviewContext.SUBMISSION:
+
+async def _collect_account_identity(
+    organization: Organization, context: ReviewContext
+) -> tuple[AccountData, IdentityData]:
+    if context == ReviewContext.SUBMISSION:
+        return AccountData(), IdentityData()
+
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationReviewRepository.from_session(session)
         account = (
-            await review_repository.get_account_with_admin(organization.account_id)
+            await repo.get_account_with_admin(organization.account_id)
             if organization.account_id
             else None
         )
-        account_data = collect_account_data(account)
-        identity_data = await collect_identity_data(account)
-    else:
-        account_data = AccountData()
-        identity_data = IdentityData()
+    account_data = collect_account_data(account)
+    identity_data = await collect_identity_data(account)
+    return account_data, identity_data
 
-    # Website content (async I/O, non-fatal) — always collected
-    website_data = None
-    if organization.website:
+
+async def _collect_website(organization: Organization) -> WebsiteData | None:
+    if not organization.website:
+        return None
+
+    log.debug(
+        "organization_review.website_collector.start",
+        organization_id=str(organization.id),
+        website_url=organization.website,
+    )
+    try:
+        website_data = await collect_website_data(organization.website)
         log.debug(
-            "organization_review.website_collector.start",
+            "organization_review.website_collector.complete",
             organization_id=str(organization.id),
-            website_url=organization.website,
+            pages_scraped=website_data.total_pages_succeeded,
+            scrape_error=website_data.scrape_error,
         )
-        try:
-            website_data = await collect_website_data(organization.website)
-            log.debug(
-                "organization_review.website_collector.complete",
-                organization_id=str(organization.id),
-                pages_scraped=website_data.total_pages_succeeded,
-                scrape_error=website_data.scrape_error,
-            )
-        except Exception as e:
-            log.warning(
-                "organization_review.website_collector.failed",
-                organization_id=str(organization.id),
-                error=str(e),
-            )
+        return website_data
+    except Exception as e:
+        log.warning(
+            "organization_review.website_collector.failed",
+            organization_id=str(organization.id),
+            error=str(e),
+        )
+        return None
+
+
+async def _collect_data(
+    organization: Organization,
+    context: ReviewContext,
+) -> DataSnapshot:
+    # Organization data — pure transformation, no I/O
+    org_data = collect_organization_data(organization)
+
+    # Run all collectors in parallel.
+    # Each DB-bound collector creates its own session so queries
+    # can execute concurrently across separate connections.
+    (
+        products_data,
+        metrics_data,
+        history_data,
+        (account_data, identity_data),
+        website_data,
+    ) = await asyncio.gather(
+        _collect_products(organization.id, context),
+        _collect_metrics(organization.id, context),
+        _collect_history(organization),
+        _collect_account_identity(organization, context),
+        _collect_website(organization),
+    )
 
     return DataSnapshot(
         context=context,

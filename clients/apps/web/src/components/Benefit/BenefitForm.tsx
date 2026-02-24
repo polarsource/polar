@@ -23,6 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { XIcon } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -158,8 +159,7 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
 }
 
 export const FeatureFlagBenefitForm = () => {
-  const { control } =
-    useFormContext<schemas['BenefitFeatureFlagCreate']>()
+  const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
 
   return (
     <FormField
@@ -197,23 +197,19 @@ export const FeatureFlagBenefitForm = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
                     onClick={() => {
-                      const newEntries = entries.filter(
-                        (_, i) => i !== index,
-                      )
+                      const newEntries = entries.filter((_, i) => i !== index)
                       field.onChange(Object.fromEntries(newEntries))
                     }}
                   >
-                    Remove
+                    <XIcon className="-mx-1 h-4 w-4" />
                   </Button>
                 </div>
               ))}
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
-                className="self-start"
+                className="w-full"
                 onClick={() => {
                   field.onChange({
                     ...(field.value || {}),
@@ -224,10 +220,6 @@ export const FeatureFlagBenefitForm = () => {
                 Add Metadata
               </Button>
             </div>
-            <FormDescription>
-              Key-value pairs that will be available via API and webhooks when
-              this benefit is granted.
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )

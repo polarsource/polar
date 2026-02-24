@@ -28,34 +28,6 @@ interface BenefitGrantProps {
   locale?: AcceptedLocale
 }
 
-const BenefitGrantFeatureFlag = ({
-  benefitGrant,
-}: {
-  benefitGrant: schemas['CustomerBenefitGrantFeatureFlag']
-}) => {
-  const {
-    benefit: {
-      properties: { metadata },
-    },
-  } = benefitGrant
-  const entries = Object.entries(metadata)
-  if (entries.length === 0) {
-    return null
-  }
-  return (
-    <ShadowBox className="dark:bg-polar-800 bg-white p-6 lg:rounded-3xl">
-      <div className="flex flex-col gap-2">
-        {entries.map(([key, value]) => (
-          <div key={key} className="flex flex-row items-center justify-between text-sm">
-            <span className="dark:text-polar-400 text-gray-500">{key}</span>
-            <span className="font-medium">{value}</span>
-          </div>
-        ))}
-      </div>
-    </ShadowBox>
-  )
-}
-
 const BenefitGrantCustom = ({
   benefitGrant,
 }: {
@@ -423,13 +395,6 @@ export const BenefitGrant = ({
           api={api}
           benefitGrant={benefitGrant as schemas['CustomerBenefitGrantDiscord']}
           locale={locale}
-        />
-      )}
-      {benefit.type === 'feature_flag' && (
-        <BenefitGrantFeatureFlag
-          benefitGrant={
-            benefitGrant as schemas['CustomerBenefitGrantFeatureFlag']
-          }
         />
       )}
     </div>

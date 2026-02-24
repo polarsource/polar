@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import type { FlatTokenMap, ThemeConfig } from '../types.js'
+import type { BreakpointConfig, FlatTokenMap, ThemeConfig } from '../types.js'
 import { FormatError } from './css.js'
 
 /** Build a nested object from a flat token map's rawPaths */
@@ -29,16 +29,16 @@ function buildNested(
  * export const tokens = { ... } as const
  * ```
  *
- * When `themes` is provided and tokens carry theme overrides, also emits:
+ * When `themes` / `breakpoints` are provided and tokens carry overrides, also emits:
  * ```ts
- * export const themes = {
- *   dark: { button: { background: '...' } },
- * } as const
+ * export const themes = { dark: { ... } } as const
+ * export const breakpoints = { sm: { ... } } as const
  * ```
  */
 export const formatTypescript = (
   map: FlatTokenMap,
   themes?: ThemeConfig,
+  breakpoints?: BreakpointConfig,
 ): Effect.Effect<string, FormatError> =>
   Effect.try({
     try: () => {
@@ -73,6 +73,30 @@ export const formatTypescript = (
         if (Object.keys(themeObjects).length > 0) {
           parts.push(
             `export const themes = ${JSON.stringify(themeObjects, null, 2)} as const`,
+          )
+        }
+      }
+
+      // Per-breakpoint objects
+      if (breakpoints) {
+        const bpObjects: Record<string, Record<string, unknown>> = {}
+
+        for (const [bpName] of Object.entries(breakpoints)) {
+          const bpEntries: [string[], string | number][] = []
+          for (const token of map.values()) {
+            const bv = token.breakpointValues?.[bpName]
+            if (bv !== undefined) {
+              bpEntries.push([token.rawPath, bv.value])
+            }
+          }
+          if (bpEntries.length > 0) {
+            bpObjects[bpName] = buildNested(bpEntries)
+          }
+        }
+
+        if (Object.keys(bpObjects).length > 0) {
+          parts.push(
+            `export const breakpoints = ${JSON.stringify(bpObjects, null, 2)} as const`,
           )
         }
       }

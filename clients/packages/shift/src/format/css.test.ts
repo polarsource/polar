@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import { describe, it, expect } from 'vitest'
 import { formatCss } from './css.js'
-import type { FlatTokenMap, ResolvedToken, ThemeConfig } from '../types.js'
+import type { BreakpointConfig, FlatTokenMap, ResolvedToken, ThemeConfig } from '../types.js'
 
 function makeMap(tokens: Partial<ResolvedToken>[]): FlatTokenMap {
   const map: FlatTokenMap = new Map()
@@ -13,6 +13,7 @@ function makeMap(tokens: Partial<ResolvedToken>[]): FlatTokenMap {
       type: t.type ?? 'color',
       aliasOf: t.aliasOf,
       themeValues: t.themeValues,
+      breakpointValues: t.breakpointValues,
       description: t.description,
     }
     map.set(token.rawPath.join('.'), token)
@@ -193,5 +194,133 @@ describe('formatCss', () => {
     ])
     const output = Effect.runSync(formatCss(map, themes))
     expect(output).toContain('[data-theme="dark"] {')
+  })
+
+  // ── Breakpoint blocks ─────────────────────────────────────────────────
+
+  it('emits no @media block when breakpoints config is omitted', () => {
+    const map = makeMap([
+      {
+        path: 'spacing-md',
+        rawPath: ['spacing', 'md'],
+        value: '16px',
+        breakpointValues: { sm: { value: '12px' } },
+        type: 'dimension',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map))
+    expect(output).not.toContain('@media')
+  })
+
+  it('emits @media block for each breakpoint with overrides', () => {
+    const breakpoints: BreakpointConfig = { sm: '(min-width: 640px)' }
+    const map = makeMap([
+      {
+        path: 'spacing-md',
+        rawPath: ['spacing', 'md'],
+        value: '16px',
+        breakpointValues: { sm: { value: '12px' } },
+        type: 'dimension',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map, undefined, breakpoints))
+    expect(output).toContain('@media (min-width: 640px) {')
+    expect(output).toContain('--spacing-md: 12px;')
+  })
+
+  it('@media block wraps overrides in :root', () => {
+    const breakpoints: BreakpointConfig = { sm: '(min-width: 640px)' }
+    const map = makeMap([
+      {
+        path: 'spacing-md',
+        rawPath: ['spacing', 'md'],
+        value: '16px',
+        breakpointValues: { sm: { value: '12px' } },
+        type: 'dimension',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map, undefined, breakpoints))
+    const mediaBlock = output.split('\n\n').find((b) => b.startsWith('@media'))!
+    expect(mediaBlock).toContain(':root {')
+    expect(mediaBlock).toContain('--spacing-md: 12px;')
+  })
+
+  it('@media block only includes tokens with a breakpoint override', () => {
+    const breakpoints: BreakpointConfig = { sm: '(min-width: 640px)' }
+    const map = makeMap([
+      { path: 'a', rawPath: ['a'], value: '16px', type: 'dimension' },
+      {
+        path: 'b',
+        rawPath: ['b'],
+        value: '24px',
+        breakpointValues: { sm: { value: '20px' } },
+        type: 'dimension',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map, undefined, breakpoints))
+    const mediaBlock = output.split('\n\n').find((b) => b.startsWith('@media'))!
+    expect(mediaBlock).toContain('--b:')
+    expect(mediaBlock).not.toContain('--a:')
+  })
+
+  it('omits @media block entirely when no tokens have overrides for that breakpoint', () => {
+    const breakpoints: BreakpointConfig = { sm: '(min-width: 640px)' }
+    const map = makeMap([
+      { path: 'a', rawPath: ['a'], value: '16px', type: 'dimension' },
+    ])
+    const output = Effect.runSync(formatCss(map, undefined, breakpoints))
+    expect(output).not.toContain('@media')
+  })
+
+  it('emits multiple @media blocks for multiple breakpoints', () => {
+    const breakpoints: BreakpointConfig = {
+      sm: '(min-width: 640px)',
+      md: '(min-width: 768px)',
+    }
+    const map = makeMap([
+      {
+        path: 'font-size',
+        rawPath: ['font', 'size'],
+        value: '14px',
+        breakpointValues: { sm: { value: '16px' }, md: { value: '18px' } },
+        type: 'dimension',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map, undefined, breakpoints))
+    expect(output).toContain('@media (min-width: 640px)')
+    expect(output).toContain('@media (min-width: 768px)')
+  })
+
+  it('@media block uses var() for aliased breakpoint values', () => {
+    const breakpoints: BreakpointConfig = { sm: '(min-width: 640px)' }
+    const map = makeMap([
+      {
+        path: 'btn-bg',
+        rawPath: ['btn', 'bg'],
+        value: '#0066ff',
+        breakpointValues: { sm: { value: '#6b7280', aliasOf: 'colors.secondary' } },
+        type: 'color',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map, undefined, breakpoints))
+    expect(output).toContain('--btn-bg: var(--colors-secondary);')
+  })
+
+  it('emits both theme blocks and @media blocks together', () => {
+    const themes: ThemeConfig = { dark: ':root .dark' }
+    const breakpoints: BreakpointConfig = { sm: '(min-width: 640px)' }
+    const map = makeMap([
+      {
+        path: 'spacing',
+        rawPath: ['spacing'],
+        value: '16px',
+        themeValues: { dark: { value: '14px' } },
+        breakpointValues: { sm: { value: '20px' } },
+        type: 'dimension',
+      },
+    ])
+    const output = Effect.runSync(formatCss(map, themes, breakpoints))
+    expect(output).toContain(':root .dark {')
+    expect(output).toContain('@media (min-width: 640px)')
   })
 })

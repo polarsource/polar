@@ -1,5 +1,9 @@
-import { Box, Stack, Text } from '@polar-sh/orbit'
+import { Box, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
+const sp = orbitTokens.spacing
+const cl = orbitTokens.colors
+const ra = orbitTokens.radii
+
 
 // ─── Examples data ────────────────────────────────────────────────────────────
 
@@ -94,7 +98,7 @@ const props = [
 
 export default function StackPage() {
   return (
-    <Stack vertical gap="spacing-10">
+    <Stack vertical gap={sp['spacing-10']}>
       <OrbitPageHeader
         label="Component"
         title="Stack"
@@ -102,25 +106,25 @@ export default function StackPage() {
       />
 
       {/* verticalUntil */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="verticalUntil"
           description="Stacks children in a column by default and switches to a row at the given breakpoint. This is the most common responsive layout pattern."
         />
 
         {/* Live demo */}
-        <Stack vertical gap="spacing-3">
+        <Stack vertical gap={sp['spacing-3']}>
           <Text as="span" variant="subtle" fontSize="xs">
             Live demo — resize the window to see the layout switch at xl
           </Text>
-          <Box backgroundColor="bg-elevated" borderRadius="lg" padding="spacing-3">
-            <Stack verticalUntil="xl" gap="spacing-2">
+          <Box backgroundColor={cl['bg-elevated']} borderRadius={ra.lg} padding={sp['spacing-3']}>
+            <Stack verticalUntil="xl" gap={sp['spacing-2']}>
               {(['A', 'B', 'C'] as const).map((label) => (
                 <Box
                   key={label}
-                  backgroundColor="bg-surface"
-                  borderRadius="md"
-                  padding="spacing-2"
+                  backgroundColor={cl['bg-surface']}
+                  borderRadius={ra.md}
+                  padding={sp['spacing-2']}
                   className="grow dark:border-polar-700 flex h-12 items-center justify-center border border-neutral-200"
                 >
                   <Text fontFamily="mono" fontSize="sm">{label}</Text>
@@ -129,7 +133,7 @@ export default function StackPage() {
             </Stack>
           </Box>
           <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Stack verticalUntil="xl" gap="spacing-2">
+{`<Stack verticalUntil="xl" gap={sp['spacing-2']}>
   <Box>A</Box>
   <Box>B</Box>
   <Box>C</Box>
@@ -138,16 +142,16 @@ export default function StackPage() {
         </Stack>
 
         {/* Breakpoint reference */}
-        <Stack vertical gap="spacing-3">
+        <Stack vertical gap={sp['spacing-3']}>
           <Text as="span" variant="subtle" fontSize="xs">All breakpoints</Text>
-          <Stack vertical gap="spacing-2" flexWrap="wrap">
+          <Stack vertical gap={sp['spacing-2']} flexWrap="wrap">
             {verticalUntilExamples.map(({ bp, label }) => (
               <Box
                 key={bp}
-                backgroundColor="bg-elevated"
-                borderRadius="sm"
-                paddingX="spacing-2"
-                paddingY="spacing-1"
+                backgroundColor={cl['bg-elevated']}
+                borderRadius={ra.sm}
+                paddingX={sp['spacing-2']}
+                paddingY={sp['spacing-1']}
                 className="dark:border-polar-700 border border-neutral-200"
               >
                 <Text as="code" fontFamily="mono" fontSize="xs">
@@ -160,19 +164,19 @@ export default function StackPage() {
       </Stack>
 
       {/* horizontalUntil */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="horizontalUntil"
           description="The inverse of verticalUntil — stacks in a row by default and switches to a column at the given breakpoint."
         />
-        <Box backgroundColor="bg-elevated" borderRadius="lg" padding="spacing-3">
-          <Stack horizontalUntil="lg" gap="spacing-2">
+        <Box backgroundColor={cl['bg-elevated']} borderRadius={ra.lg} padding={sp['spacing-3']}>
+          <Stack horizontalUntil="lg" gap={sp['spacing-2']}>
             {(['A', 'B', 'C'] as const).map((label) => (
               <Box
                 key={label}
-                backgroundColor="bg-surface"
-                borderRadius="md"
-                padding="spacing-2"
+                backgroundColor={cl['bg-surface']}
+                borderRadius={ra.md}
+                padding={sp['spacing-2']}
                 className="grow dark:border-polar-700 flex h-12 items-center justify-center border border-neutral-200"
               >
                 <Text fontFamily="mono" fontSize="sm">{label}</Text>
@@ -181,7 +185,7 @@ export default function StackPage() {
           </Stack>
         </Box>
         <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Stack horizontalUntil="lg" gap="spacing-2">
+{`<Stack horizontalUntil="lg" gap={sp['spacing-2']}>
   <Box>A</Box>
   <Box>B</Box>
   <Box>C</Box>
@@ -190,12 +194,12 @@ export default function StackPage() {
       </Stack>
 
       {/* alignItems */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="alignItems"
           description="Cross-axis alignment of flex children. Accepts a plain value or a responsive breakpoint map."
         />
-        <Stack vertical gap="spacing-2" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {alignItemsExamples.map(({ value, label }) => (
             <Box key={value} className="grid grid-cols-5 items-center gap-8 py-5">
               <Box className="col-span-2">
@@ -206,17 +210,17 @@ export default function StackPage() {
               <Box className="col-span-3">
                 <Stack
                   alignItems={value}
-                  gap="spacing-1"
-                  backgroundColor="bg-elevated"
-                  borderRadius="sm"
-                  padding="spacing-2"
+                  gap={sp['spacing-1']}
+                  backgroundColor={cl['bg-elevated']}
+                  borderRadius={ra.sm}
+                  padding={sp['spacing-2']}
                   className="h-16"
                 >
                   {[4, 6, 8].map((h) => (
                     <Box
                       key={h}
-                      backgroundColor="bg-surface"
-                      borderRadius="sm"
+                      backgroundColor={cl['bg-surface']}
+                      borderRadius={ra.sm}
                       className={`w-6 h-${h}`}
                     />
                   ))}
@@ -228,12 +232,12 @@ export default function StackPage() {
       </Stack>
 
       {/* justifyContent */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="justifyContent"
           description="Main-axis distribution of flex children."
         />
-        <Stack vertical gap="spacing-2" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {justifyContentExamples.map(({ value, label }) => (
             <Box key={value} className="grid grid-cols-5 items-center gap-8 py-5">
               <Box className="col-span-2">
@@ -244,15 +248,15 @@ export default function StackPage() {
               <Box className="col-span-3">
                 <Stack
                   justifyContent={value}
-                  backgroundColor="bg-elevated"
-                  borderRadius="sm"
-                  padding="spacing-2"
+                  backgroundColor={cl['bg-elevated']}
+                  borderRadius={ra.sm}
+                  padding={sp['spacing-2']}
                 >
                   {[0, 1, 2].map((i) => (
                     <Box
                       key={i}
-                      backgroundColor="bg-surface"
-                      borderRadius="sm"
+                      backgroundColor={cl['bg-surface']}
+                      borderRadius={ra.sm}
                       className="h-6 w-6"
                     />
                   ))}
@@ -264,28 +268,28 @@ export default function StackPage() {
       </Stack>
 
       {/* Composition */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="Composition"
           description="Real-world patterns. Stack drives the flex layout; Box handles token-based styling on individual elements."
         />
-        <Stack vertical gap="spacing-2" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
 
           {/* Card */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap="spacing-1" className="col-span-2">
+            <Stack vertical gap={sp['spacing-1']} className="col-span-2">
               <Text fontSize="sm">Card</Text>
               <Text variant="subtle" fontSize="xs">Vertical stack · surface · padding · radius</Text>
             </Stack>
             <Box className="col-span-3">
               <Box
                 as="article"
-                backgroundColor="bg-surface"
-                padding="spacing-3"
-                borderRadius="lg"
+                backgroundColor={cl['bg-surface']}
+                padding={sp['spacing-3']}
+                borderRadius={ra.lg}
                 className="dark:border-polar-800 border border-neutral-200"
               >
-                <Stack vertical gap="spacing-2">
+                <Stack vertical gap={sp['spacing-2']}>
                   <Text fontWeight="medium" fontSize="sm">Card title</Text>
                   <Text variant="subtle" fontSize="xs" leading="relaxed">
                     Supporting description text.
@@ -297,25 +301,25 @@ export default function StackPage() {
 
           {/* Toolbar */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap="spacing-1" className="col-span-2">
+            <Stack vertical gap={sp['spacing-1']} className="col-span-2">
               <Text fontSize="sm">Toolbar</Text>
               <Text variant="subtle" fontSize="xs">Horizontal · space-between · centered</Text>
             </Stack>
             <Box className="col-span-3">
               <Box
-                backgroundColor="bg-surface"
-                paddingX="spacing-3"
-                paddingY="spacing-2"
-                borderRadius="lg"
+                backgroundColor={cl['bg-surface']}
+                paddingX={sp['spacing-3']}
+                paddingY={sp['spacing-2']}
+                borderRadius={ra.lg}
                 className="dark:border-polar-800 border border-neutral-200"
               >
                 <Stack alignItems="center" justifyContent="between">
                   <Text fontWeight="medium" fontSize="sm">Section title</Text>
                   <Box
-                    backgroundColor="bg-elevated"
-                    paddingX="spacing-2"
-                    paddingY="spacing-1"
-                    borderRadius="sm"
+                    backgroundColor={cl['bg-elevated']}
+                    paddingX={sp['spacing-2']}
+                    paddingY={sp['spacing-1']}
+                    borderRadius={ra.sm}
                   >
                     <Text variant="subtle" fontSize="xs">Action</Text>
                   </Box>
@@ -326,21 +330,21 @@ export default function StackPage() {
 
           {/* Responsive card grid */}
           <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap="spacing-1" className="col-span-2">
+            <Stack vertical gap={sp['spacing-1']} className="col-span-2">
               <Text fontSize="sm">Responsive card row</Text>
               <Text variant="subtle" fontSize="xs">
                 Column on mobile · row from xl · each card fills remaining space
               </Text>
             </Stack>
             <Box className="col-span-3">
-              <Stack verticalUntil="xl" gap="spacing-2">
+              <Stack verticalUntil="xl" gap={sp['spacing-2']}>
                 {(['Analytics', 'Revenue', 'Customers'] as const).map((t) => (
                   <Box
                     key={t}
                     flex="1"
-                    backgroundColor="bg-surface"
-                    padding="spacing-2"
-                    borderRadius="md"
+                    backgroundColor={cl['bg-surface']}
+                    padding={sp['spacing-2']}
+                    borderRadius={ra.md}
                     className="dark:border-polar-700 border border-neutral-200"
                   >
                     <Text fontFamily="mono" fontSize="xs" variant="subtle">{t}</Text>
@@ -354,9 +358,9 @@ export default function StackPage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap="spacing-3">
+      <Stack vertical gap={sp['spacing-3']}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical gap="spacing-2" className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={sp['spacing-2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
             <Box key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" fontFamily="mono" fontSize="xs" className="col-span-1">

@@ -1,7 +1,11 @@
 'use client'
 
-import { Box, Headline, Input, Stack, Text } from '@polar-sh/orbit'
+import { Box, Headline, Input, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
+const sp = orbitTokens.spacing
+const cl = orbitTokens.colors
+const ra = orbitTokens.radii
+
 
 const props = [
   {
@@ -44,7 +48,7 @@ const props = [
 
 export default function InputPage() {
   return (
-    <Stack vertical gap="spacing-10">
+    <Stack vertical gap={sp['spacing-10']}>
       <OrbitPageHeader
         label="Component"
         title="Input"
@@ -52,7 +56,7 @@ export default function InputPage() {
       />
 
       {/* Standard types */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="Standard types" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
@@ -83,7 +87,7 @@ export default function InputPage() {
       </Stack>
 
       {/* Prefix / suffix slots */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="Prefix & Suffix" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
@@ -93,7 +97,7 @@ export default function InputPage() {
                 URL scheme, unit label, icon
               </Text>
             </Box>
-            <Stack vertical gap="spacing-1.5" className="col-span-3">
+            <Stack vertical gap={sp['spacing-1']} className="col-span-3">
               <Input
                 type="text"
                 prefix="https://"
@@ -109,7 +113,7 @@ export default function InputPage() {
                 Unit, format hint
               </Text>
             </Box>
-            <Stack vertical gap="spacing-1.5" className="col-span-3">
+            <Stack vertical gap={sp['spacing-1']} className="col-span-3">
               <Input type="number" suffix="%" placeholder="0" />
               <Input type="number" suffix="ms" placeholder="300" />
             </Stack>
@@ -126,7 +130,7 @@ export default function InputPage() {
       </Stack>
 
       {/* Currency */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader
           title="Currency"
           description={
@@ -169,7 +173,7 @@ export default function InputPage() {
       </Stack>
 
       {/* Textarea */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="Textarea" />
         <Box className="grid grid-cols-5 items-start gap-8">
           <Box className="col-span-2">
@@ -185,7 +189,7 @@ export default function InputPage() {
       </Stack>
 
       {/* States */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="States" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           <Box className="grid grid-cols-5 items-center gap-8 py-6">
@@ -208,7 +212,7 @@ export default function InputPage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap="spacing-3">
+      <Stack vertical gap={sp['spacing-3']}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (

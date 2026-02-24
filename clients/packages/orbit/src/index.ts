@@ -4,7 +4,7 @@ export type { AvatarProps, AvatarSize } from './components/Avatar'
 export { BarChart } from './components/BarChart'
 export type { BarChartItem } from './components/BarChart'
 export { Box } from './components/Box'
-export type { BoxProps } from './components/Box'
+export type { BoxProps, BoxStyleProps } from './components/Box'
 export { Stack } from './components/Stack'
 export type { StackProps, StackBreakpoint } from './components/Stack'
 export { Button } from './components/Button'
@@ -31,13 +31,11 @@ export { Text } from './components/Text'
 export type { TextStyleProps, TextVariant } from './components/Text'
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
-export {
-  orbitTheme,
-  orbitColors,
-  orbitSpacing,
-  orbitRadii,
-} from './tokens/theme'
-export type { OrbitTheme, OrbitColor, OrbitSpacing, OrbitRadius } from './tokens/theme'
+export { tokens as orbitTokens } from './tokens/vars'
+export type { OrbitColor, OrbitSpacing, OrbitRadius } from './tokens/theme'
+
+export { OrbitProvider, useOrbit } from './tokens/OrbitProvider'
+export type { OrbitProviderProps, OrbitTokens } from './tokens/OrbitProvider'
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 export { createBox } from './primitives/createBox'

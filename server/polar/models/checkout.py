@@ -333,6 +333,8 @@ class Checkout(
         if self.is_free_product_price:
             return False
 
+        # PWYW set to `0`, with an extra guard for metered prices
+        # (those will still require a payment on next cycle)
         if self.amount == 0 and not self.has_metered_prices:
             return False
 

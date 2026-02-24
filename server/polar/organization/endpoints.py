@@ -227,13 +227,6 @@ async def get_account(
     if organization.account_id is None:
         raise ResourceNotFound()
 
-    if is_user(auth_subject):
-        user = auth_subject.subject
-        if not await account_service.is_user_admin(
-            session, organization.account_id, user
-        ):
-            raise NotPermitted("You are not the admin of this account")
-
     account = await account_service.get(session, auth_subject, organization.account_id)
     if account is None:
         raise ResourceNotFound()

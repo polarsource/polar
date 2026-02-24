@@ -40,14 +40,15 @@ export default function ClientPage({
   const identityVerificationStatus = currentUser?.identity_verification_status
   const identityVerified = identityVerificationStatus === 'verified'
 
-  const { data: organizationAccount, error: accountError } =
+  const { data: organizationAccount } =
     useOrganizationAccount(organization.id)
   const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
 
   const [validationCompleted, setValidationCompleted] = useState(false)
 
-  const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+  const isNotAdmin = organizationAccount
+    ? organizationAccount.admin_id !== currentUser?.id
+    : false
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 

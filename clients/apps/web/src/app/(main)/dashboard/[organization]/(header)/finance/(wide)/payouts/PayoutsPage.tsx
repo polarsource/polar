@@ -1,6 +1,5 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBalance from '@/components/Payouts/AccountBalance'
 import DownloadInvoice, {
   InvoiceModal,
@@ -9,6 +8,7 @@ import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import { platformFeesDisplayNames } from '@/components/Transactions/TransactionsList'
+import { useAuth } from '@/hooks'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { getServerURL } from '@/utils/api'
@@ -52,6 +52,7 @@ export default function ClientPage({
   sorting: DataTableSortingState
   organization: schemas['Organization']
 }) {
+  const { currentUser } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -85,12 +86,8 @@ export default function ClientPage({
     )
   }
 
-  const { data: account, error: accountError } = useOrganizationAccount(
-    organization.id,
-  )
-
-  const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+  const { data: account } = useOrganizationAccount(organization.id)
+  const isAdmin = account?.admin_id === currentUser?.id
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
     ...getAPIParams(pagination, sorting),
@@ -262,20 +259,12 @@ export default function ClientPage({
     },
   ]
 
-  if (isNotAdmin) {
-    return (
-      <div className="flex flex-col gap-y-6">
-        <AccessRestricted message="You are not the admin of the account. Only the account admin can view payout information." />
-      </div>
-    )
-  }
-
   return (
     <PayoutProvider>
       <div className="flex flex-col gap-y-8">
         <AccountBanner organization={organization} />
         {account && (
-          <AccountBalance account={account} organization={organization} />
+          <AccountBalance account={account} organization={organization} isAdmin={isAdmin} />
         )}
         <DataTable
           columns={columns}

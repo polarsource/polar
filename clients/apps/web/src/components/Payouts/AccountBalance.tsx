@@ -11,12 +11,14 @@ import WithdrawModal from './WithdrawModal'
 interface AccountBalanceProps {
   account: schemas['Account']
   organization: schemas['Organization']
+  isAdmin?: boolean
   onWithdrawSuccess?: (payoutId: string) => void
 }
 
 const AccountBalance: React.FC<AccountBalanceProps> = ({
   account,
   organization,
+  isAdmin = true,
   onWithdrawSuccess: _onWithdrawSuccess,
 }) => {
   const {
@@ -52,9 +54,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
       <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
           <h2 className="text-lg font-medium capitalize">Balance</h2>
-          <Button className="self-start" onClick={showPayoutConfirmModal}>
-            Withdraw
-          </Button>
+          {isAdmin && (
+            <Button className="self-start" onClick={showPayoutConfirmModal}>
+              Withdraw
+            </Button>
+          )}
         </WellHeader>
         <WellContent>
           <div className="text-4xl">

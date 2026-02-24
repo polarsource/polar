@@ -145,6 +145,7 @@ class AccountCreateForOrganization(Schema):
 
 class Account(Schema):
     id: UUID
+    admin_id: UUID
     account_type: AccountType
     status: AccountModel.Status
     stripe_id: str | None

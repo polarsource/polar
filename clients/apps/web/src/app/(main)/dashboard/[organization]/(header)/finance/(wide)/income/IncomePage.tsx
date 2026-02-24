@@ -4,6 +4,7 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBalance from '@/components/Payouts/AccountBalance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
+import { useAuth } from '@/hooks'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -56,14 +57,14 @@ export default function ClientPage({
     )
   }
 
+  const { currentUser } = useAuth()
+
   const {
     data: account,
     isLoading: accountIsLoading,
-    error: accountError,
   } = useOrganizationAccount(organization.id)
 
-  const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+  const isNotAdmin = account ? account.admin_id !== currentUser?.id : false
 
   const balancesHook = useSearchTransactions({
     account_id: account?.id,

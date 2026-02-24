@@ -1,3 +1,4 @@
+import { useAuth } from '@/hooks'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { schemas } from '@polar-sh/client'
@@ -61,10 +62,10 @@ interface AccountBannerProps {
 }
 
 const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
+  const { currentUser } = useAuth()
   const {
     data: organizationAccount,
     isLoading: organizationAccountIsLoading,
-    error: accountError,
   } = useOrganizationAccount(organization?.id)
   const setupLink = `/dashboard/${organization.slug}/finance/account`
 
@@ -72,10 +73,9 @@ const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
     return null
   }
 
-  const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+  const isAdmin = organizationAccount?.admin_id === currentUser?.id
 
-  if (isNotAdmin) {
+  if (!isAdmin) {
     return null
   }
 

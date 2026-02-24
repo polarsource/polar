@@ -5127,6 +5127,11 @@ export interface components {
        * Format: uuid
        */
       id: string
+      /**
+       * Admin Id
+       * Format: uuid
+       */
+      admin_id: string
       account_type: components['schemas']['AccountType']
       status: components['schemas']['Status']
       /** Stripe Id */

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, exists, false, select
+from sqlalchemy import Select, exists, false, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -17,7 +17,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.utils import utc_now
-from polar.models import Account, Payout, PayoutAttempt, Transaction
+from polar.models import Account, Payout, PayoutAttempt, Transaction, UserOrganization
 from polar.payout.sorting import PayoutSortProperty
 
 
@@ -80,10 +80,23 @@ class PayoutRepository(
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.join(Payout.account).where(
-                Account.admin_id == user.id
+                or_(
+                    Account.admin_id == user.id,
+                    Account.id.in_(
+                        select(Organization.account_id)
+                        .join(
+                            UserOrganization,
+                            UserOrganization.organization_id == Organization.id,
+                        )
+                        .where(
+                            UserOrganization.user_id == user.id,
+                            UserOrganization.deleted_at.is_(None),
+                            Organization.account_id.isnot(None),
+                        )
+                    ),
+                )
             )
         elif is_organization(auth_subject):
-            # Only the admin of the account can access it
             statement = statement.where(false())
 
         return statement

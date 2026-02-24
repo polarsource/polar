@@ -3,7 +3,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
-from polar.exceptions import ResourceNotFound
+from polar.auth.models import is_user
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -79,6 +80,9 @@ async def get_estimate(
     if account is None:
         raise ResourceNotFound()
 
+    if is_user(auth_subject) and account.admin_id != auth_subject.subject.id:
+        raise NotPermitted("Only the account admin can estimate payouts.")
+
     return await payout_service.estimate(session, account=account)
 
 
@@ -93,6 +97,9 @@ async def create(
     account = await account_service.get(session, auth_subject, account_id)
     if account is None:
         raise ResourceNotFound()
+
+    if is_user(auth_subject) and account.admin_id != auth_subject.subject.id:
+        raise NotPermitted("Only the account admin can create payouts.")
 
     return await payout_service.create(session, locker, account=account)
 
@@ -130,11 +137,14 @@ async def generate_invoice(
     auth_subject: payouts_auth.PayoutsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    """Trigger generation of an order's invoice."""
+    """Trigger generation of a payout's invoice."""
     payout = await payout_service.get(session, auth_subject, id)
 
     if payout is None:
         raise ResourceNotFound()
+
+    if is_user(auth_subject) and payout.account.admin_id != auth_subject.subject.id:
+        raise NotPermitted("Only the account admin can generate invoices.")
 
     await payout_service.trigger_invoice_generation(
         session, payout, payout_generate_invoice

@@ -6,7 +6,7 @@ from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
 from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.enums import AccountType
-from polar.exceptions import InternalServerError, ResourceNotFound
+from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Account
 from polar.openapi import APITag
@@ -89,6 +89,9 @@ async def patch(
     if account is None:
         raise ResourceNotFound()
 
+    if account.admin_id != auth_subject.subject.id:
+        raise NotPermitted("Only the account admin can update billing details.")
+
     return await account_service.update(session, account, account_update)
 
 
@@ -102,6 +105,9 @@ async def onboarding_link(
     account = await account_service.get(session, auth_subject, id)
     if account is None:
         raise ResourceNotFound()
+
+    if account.admin_id != auth_subject.subject.id:
+        raise NotPermitted("Only the account admin can access onboarding.")
 
     if account.account_type != AccountType.stripe:
         raise ResourceNotFound()
@@ -122,6 +128,9 @@ async def dashboard_link(
     account = await account_service.get(session, auth_subject, id)
     if account is None:
         raise ResourceNotFound()
+
+    if account.admin_id != auth_subject.subject.id:
+        raise NotPermitted("Only the account admin can access the dashboard.")
 
     # update stripe account details
     await account_service.sync_to_upstream(session, account)

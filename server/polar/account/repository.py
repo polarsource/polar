@@ -1,7 +1,7 @@
 import uuid
 from uuid import UUID
 
-from sqlalchemy import Select, false
+from sqlalchemy import Select, false, or_, select
 
 from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.kit.repository import (
@@ -10,7 +10,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Account, Organization
+from polar.models import Account, Organization, UserOrganization
 
 
 class AccountRepository(
@@ -67,9 +67,24 @@ class AccountRepository(
 
         if is_user(auth_subject):
             user = auth_subject.subject
-            statement = statement.where(Account.admin_id == user.id)
+            statement = statement.where(
+                or_(
+                    Account.admin_id == user.id,
+                    Account.id.in_(
+                        select(Organization.account_id)
+                        .join(
+                            UserOrganization,
+                            UserOrganization.organization_id == Organization.id,
+                        )
+                        .where(
+                            UserOrganization.user_id == user.id,
+                            UserOrganization.deleted_at.is_(None),
+                            Organization.account_id.isnot(None),
+                        )
+                    ),
+                )
+            )
         elif is_organization(auth_subject):
-            # Only the admin of the account can access it
             statement = statement.where(false())
 
         return statement

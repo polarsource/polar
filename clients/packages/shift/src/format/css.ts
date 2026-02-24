@@ -1,5 +1,5 @@
 import { Effect, Data } from 'effect'
-import type { FlatTokenMap, ThemeConfig } from '../types.js'
+import type { BreakpointConfig, FlatTokenMap, ThemeConfig } from '../types.js'
 
 export class FormatError extends Data.TaggedError('FormatError')<{
   format: string
@@ -33,6 +33,8 @@ function cssValue(value: string | number, aliasOf?: string): string {
  * - `:root { }` contains ALL tokens at their default values.
  * - One block per theme in `themes` containing only tokens that have an override
  *   for that theme.
+ * - One `@media` block per breakpoint in `breakpoints` containing only tokens
+ *   that have an override for that breakpoint.
  *
  * Tokens that alias another token emit `var(--target)` rather than the concrete
  * value, preserving the proxy relationship at runtime.
@@ -40,6 +42,7 @@ function cssValue(value: string | number, aliasOf?: string): string {
 export const formatCss = (
   map: FlatTokenMap,
   themes?: ThemeConfig,
+  breakpoints?: BreakpointConfig,
 ): Effect.Effect<string, FormatError> =>
   Effect.try({
     try: () => {
@@ -68,6 +71,25 @@ export const formatCss = (
 
           if (themeLines.length > 0) {
             blocks.push(`${selector} {\n${themeLines.join('\n')}\n}`)
+          }
+        }
+      }
+
+      // One @media block per breakpoint — only tokens with an override for that breakpoint
+      if (breakpoints) {
+        for (const [bpName, mediaQuery] of Object.entries(breakpoints)) {
+          const bpLines: string[] = []
+
+          for (const token of map.values()) {
+            const bv = token.breakpointValues?.[bpName]
+            if (bv === undefined) continue
+            bpLines.push(
+              `    --${cssVarName(token.path)}: ${cssValue(bv.value, bv.aliasOf)};`,
+            )
+          }
+
+          if (bpLines.length > 0) {
+            blocks.push(`@media ${mediaQuery} {\n  :root {\n${bpLines.join('\n')}\n  }\n}`)
           }
         }
       }

@@ -2,13 +2,11 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const variantClasses = {
-  neutral:
-    'bg-neutral-100 text-neutral-500 dark:bg-polar-800 dark:text-polar-500',
-  success:
-    'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
-  warning: 'bg-amber-100 text-amber-500 dark:bg-amber-950 dark:text-amber-500',
-  error: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-500',
-  info: 'bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-500',
+  neutral:  'bg-(--status-neutral-background) text-(--status-neutral-foreground)',
+  success:  'bg-(--status-success-background) text-(--status-success-foreground)',
+  warning:  'bg-(--status-warning-background) text-(--status-warning-foreground)',
+  error:    'bg-(--status-error-background) text-(--status-error-foreground)',
+  info:     'bg-(--status-info-background) text-(--status-info-foreground)',
 }
 
 const sizeClasses = {

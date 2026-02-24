@@ -57,7 +57,7 @@ function flatten(
 }
 
 /**
- * Collect all unique alias references from a token ($value + all $themes values).
+ * Collect all unique alias references from a token ($value + all $themes + all $breakpoints values).
  * Returns a Set of dot-paths referenced.
  */
 function aliasRefs(token: RawToken): Set<string> {
@@ -70,6 +70,13 @@ function aliasRefs(token: RawToken): Set<string> {
     for (const themeVal of Object.values(token.$themes)) {
       const themeMatch = String(themeVal).match(ALIAS_RE)
       if (themeMatch) refs.add(themeMatch[1]!)
+    }
+  }
+
+  if (token.$breakpoints) {
+    for (const bpVal of Object.values(token.$breakpoints)) {
+      const bpMatch = String(bpVal).match(ALIAS_RE)
+      if (bpMatch) refs.add(bpMatch[1]!)
     }
   }
 
@@ -198,6 +205,20 @@ export const resolveAliases = (
         }
       }
 
+      // Resolve $breakpoints values
+      let breakpointValues: Record<string, ThemeValue> | undefined
+      if (token.$breakpoints) {
+        breakpointValues = {}
+        for (const [bp, rawBpVal] of Object.entries(token.$breakpoints)) {
+          const { value: bv, aliasOf: bAlias } = yield* resolveValue(
+            rawBpVal,
+            resolved,
+            `${key}[$breakpoints.${bp}]`,
+          )
+          breakpointValues[bp] = { value: bv, aliasOf: bAlias }
+        }
+      }
+
       const resolvedToken: ResolvedToken = {
         path: rawPath.join('-'),
         rawPath,
@@ -206,6 +227,7 @@ export const resolveAliases = (
         type: token.$type ?? 'string',
         description: token.$description,
         themeValues,
+        breakpointValues,
       }
       result.set(key, resolvedToken)
     }

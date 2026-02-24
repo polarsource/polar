@@ -8,12 +8,17 @@ import {
   Headline,
   Stack,
   Text,
+  orbitTokens
 } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
+const sp = orbitTokens.spacing
+const cl = orbitTokens.colors
+const ra = orbitTokens.radii
+
 
 export default function CardPage() {
   return (
-    <Stack vertical gap="spacing-10">
+    <Stack vertical gap={sp['spacing-10']}>
       <OrbitPageHeader
         label="Component"
         title="Card"
@@ -30,7 +35,7 @@ export default function CardPage() {
       />
 
       {/* Demos */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="Variants" />
 
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
@@ -135,7 +140,7 @@ export default function CardPage() {
       </Stack>
 
       {/* With actions */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="With actions" />
 
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
@@ -239,7 +244,7 @@ export default function CardPage() {
                   </Stack>
                 </CardHeader>
                 <CardContent>
-                  <Stack vertical gap="spacing-1">
+                  <Stack vertical gap={sp['spacing-1']}>
                     <Headline as="h3" text="$49 / mo" />
                     <Text variant="subtle" fontSize="sm">
                       Pro plan · renews Mar 1, 2026
@@ -259,7 +264,7 @@ export default function CardPage() {
       </Stack>
 
       {/* API */}
-      <Stack vertical gap="spacing-4">
+      <Stack vertical gap={sp['spacing-4']}>
         <OrbitSectionHeader title="API" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[

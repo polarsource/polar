@@ -1,6 +1,10 @@
-import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
+const sp = orbitTokens.spacing
+const cl = orbitTokens.colors
+const ra = orbitTokens.radii
+
 
 // ─── Token data ────────────────────────────────────────────────────────────────
 
@@ -266,15 +270,15 @@ function Mono({ children }: { children: ReactNode }) {
 
 export default function TokensPage() {
   return (
-    <Stack vertical gap="spacing-10">
+    <Stack vertical gap={sp['spacing-10']}>
       <OrbitPageHeader
         title="Design Tokens"
         description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
       />
 
       {/* Color */}
-      <Stack vertical gap="spacing-3">
-        <Stack vertical gap="spacing-1.5">
+      <Stack vertical gap={sp['spacing-3']}>
+        <Stack vertical gap={sp['spacing-1']}>
           <Headline as="h4" text="Color" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -308,8 +312,8 @@ export default function TokensPage() {
       </Stack>
 
       {/* Type scale */}
-      <Stack vertical gap="spacing-3">
-        <Stack vertical gap="spacing-1.5">
+      <Stack vertical gap={sp['spacing-3']}>
+        <Stack vertical gap={sp['spacing-1']}>
           <Headline as="h4" text="Type Scale" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -344,8 +348,8 @@ export default function TokensPage() {
       </Stack>
 
       {/* Motion */}
-      <Stack vertical gap="spacing-3">
-        <Stack vertical gap="spacing-1.5">
+      <Stack vertical gap={sp['spacing-3']}>
+        <Stack vertical gap={sp['spacing-1']}>
           <Headline as="h4" text="Motion" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -366,20 +370,20 @@ export default function TokensPage() {
       </Stack>
 
       {/* Spacing */}
-      <Stack vertical gap="spacing-3">
-        <Stack vertical gap="spacing-1.5">
+      <Stack vertical gap={sp['spacing-3']}>
+        <Stack vertical gap={sp['spacing-1']}>
           <Headline as="h4" text="Spacing" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
           <Text variant="subtle" fontSize="sm">
             All spacing follows a base-8 grid. Use these values exclusively.
           </Text>
         </Stack>
-        <Stack vertical gap="spacing-1.5">
+        <Stack vertical gap={sp['spacing-1']}>
           {spacingTokens.map(({ token, px, rem, usage }) => {
             const size = parseInt(px)
             const barWidth = Math.min(100, (size / 256) * 100)
             return (
-              <Stack key={token} alignItems="center" gap="spacing-3">
+              <Stack key={token} alignItems="center" gap={sp['spacing-3']}>
                 <Box className="w-32 shrink-0">
                   <div
                     className="h-1.5 rounded-full bg-black dark:bg-white"

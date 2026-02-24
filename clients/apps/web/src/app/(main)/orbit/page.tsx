@@ -1,6 +1,10 @@
-import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
+const sp = orbitTokens.spacing
+const cl = orbitTokens.colors
+const ra = orbitTokens.radii
+
 
 const principles = [
   {
@@ -100,7 +104,7 @@ const sections = [
 
 export default function OrbitIntroductionPage() {
   return (
-    <Stack vertical gap="spacing-10">
+    <Stack vertical gap={sp['spacing-10']}>
       <OrbitPageHeader
         label="v0.1 — Polar Software Inc."
         title="Orbit"
@@ -108,10 +112,10 @@ export default function OrbitIntroductionPage() {
       />
 
       {/* What is Orbit */}
-      <Stack vertical gap="spacing-3">
+      <Stack vertical gap={sp['spacing-3']}>
         <Headline as="h5" text="What is Orbit" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical gap="spacing-2">
+        <Stack vertical gap={sp['spacing-2']}>
           <Text variant="subtle" fontSize="sm" leading="relaxed">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently across
@@ -129,7 +133,7 @@ export default function OrbitIntroductionPage() {
       </Stack>
 
       {/* Design principles */}
-      <Stack vertical gap="spacing-3">
+      <Stack vertical gap={sp['spacing-3']}>
         <Headline as="h5" text="Design Principles" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
@@ -147,12 +151,12 @@ export default function OrbitIntroductionPage() {
       </Stack>
 
       {/* What's inside */}
-      <Stack vertical gap="spacing-3">
+      <Stack vertical gap={sp['spacing-3']}>
         <Headline as="h5" text="What's inside" />
         <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical gap="spacing-5">
+        <Stack vertical gap={sp['spacing-5']}>
           {sections.map(({ label, links }) => (
-            <Stack vertical key={label} gap="spacing-1.5">
+            <Stack vertical key={label} gap={sp['spacing-1']}>
               <Text
                 as="span"
                 variant="subtle"

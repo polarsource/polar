@@ -1,57 +1,12 @@
 import React, {
+  type CSSProperties,
   type ComponentPropsWithoutRef,
   type ElementType,
   type JSX,
   type ReactNode,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { resolveProperties } from './resolveProperties'
-
-// ─── Theme Spec ──────────────────────────────────────────────────────────────
-// Each color token exposes three class strings — one per CSS usage.
-// Each spacing token exposes one class string per spacing prop variant.
-// Each radius token exposes one class string per corner variant.
-// All strings must be fully static so Tailwind JIT can scan them.
-
-export type ColorClasses = {
-  background?: string
-  text?: string
-  border?: string
-}
-
-export type SpacingClasses = {
-  padding: string
-  paddingX: string
-  paddingY: string
-  paddingTop: string
-  paddingRight: string
-  paddingBottom: string
-  paddingLeft: string
-  margin: string
-  marginX: string
-  marginY: string
-  marginTop: string
-  marginRight: string
-  marginBottom: string
-  marginLeft: string
-  gap: string
-  rowGap: string
-  columnGap: string
-}
-
-export type RadiusClasses = {
-  all: string
-  tl: string
-  tr: string
-  bl: string
-  br: string
-}
-
-export type ThemeSpec = {
-  colors: Record<string, ColorClasses>
-  spacing: Record<string, SpacingClasses>
-  radii: Record<string, RadiusClasses>
-}
+import { resolveFlexChildClasses } from './resolveProperties'
 
 // ─── Breakpoint support ───────────────────────────────────────────────────────
 // Each flex prop can be a plain value or a breakpoint map { default: ..., xl: ... }.
@@ -85,155 +40,127 @@ export type FlexChildProps = {
   flexShrink?: '0' | '1'
 }
 
-// ─── All Box prop names ───────────────────────────────────────────────────────
-// Hardcoded so we can safely Omit them from native element props.
+// ─── Style props (CSS values applied as inline styles) ────────────────────────
+// Values are any valid CSS value strings, typically CSS variable references
+// from useOrbit() — e.g. "var(--spacing-spacing-3)", "var(--card-background)".
 
-type BoxPropName =
-  | 'backgroundColor'
-  | 'color'
-  | 'borderColor'
-  | 'padding'
-  | 'paddingX'
-  | 'paddingY'
-  | 'paddingTop'
-  | 'paddingRight'
-  | 'paddingBottom'
-  | 'paddingLeft'
-  | 'margin'
-  | 'marginX'
-  | 'marginY'
-  | 'marginTop'
-  | 'marginRight'
-  | 'marginBottom'
-  | 'marginLeft'
-  | 'borderRadius'
-  | 'borderTopLeftRadius'
-  | 'borderTopRightRadius'
-  | 'borderBottomLeftRadius'
-  | 'borderBottomRightRadius'
-  | 'gap'
-  | 'rowGap'
-  | 'columnGap'
-  | 'flex'
-  | 'alignSelf'
-  | 'flexGrow'
-  | 'flexShrink'
-
-// ─── Per-category token prop types ───────────────────────────────────────────
-
-type ColorProps<TColors extends Record<string, ColorClasses>> = {
-  backgroundColor?: Responsive<keyof TColors>
-  color?: Responsive<keyof TColors>
-  borderColor?: Responsive<keyof TColors>
+export type BoxStyleProps = {
+  backgroundColor?: string
+  color?: string
+  borderColor?: string
+  padding?: string
+  paddingX?: string
+  paddingY?: string
+  paddingTop?: string
+  paddingRight?: string
+  paddingBottom?: string
+  paddingLeft?: string
+  margin?: string
+  marginX?: string
+  marginY?: string
+  marginTop?: string
+  marginRight?: string
+  marginBottom?: string
+  marginLeft?: string
+  gap?: string
+  rowGap?: string
+  columnGap?: string
+  borderRadius?: string
+  borderTopLeftRadius?: string
+  borderTopRightRadius?: string
+  borderBottomLeftRadius?: string
+  borderBottomRightRadius?: string
 }
-
-type SpacingProps<TSpacing extends Record<string, SpacingClasses>> = {
-  padding?: Responsive<keyof TSpacing>
-  paddingX?: Responsive<keyof TSpacing>
-  paddingY?: Responsive<keyof TSpacing>
-  paddingTop?: Responsive<keyof TSpacing>
-  paddingRight?: Responsive<keyof TSpacing>
-  paddingBottom?: Responsive<keyof TSpacing>
-  paddingLeft?: Responsive<keyof TSpacing>
-  margin?: Responsive<keyof TSpacing>
-  marginX?: Responsive<keyof TSpacing>
-  marginY?: Responsive<keyof TSpacing>
-  marginTop?: Responsive<keyof TSpacing>
-  marginRight?: Responsive<keyof TSpacing>
-  marginBottom?: Responsive<keyof TSpacing>
-  marginLeft?: Responsive<keyof TSpacing>
-  gap?: Responsive<keyof TSpacing>
-  rowGap?: Responsive<keyof TSpacing>
-  columnGap?: Responsive<keyof TSpacing>
-}
-
-type RadiiProps<TRadii extends Record<string, RadiusClasses>> = {
-  borderRadius?: Responsive<keyof TRadii>
-  borderTopLeftRadius?: Responsive<keyof TRadii>
-  borderTopRightRadius?: Responsive<keyof TRadii>
-  borderBottomLeftRadius?: Responsive<keyof TRadii>
-  borderBottomRightRadius?: Responsive<keyof TRadii>
-}
-
-type TokenProps<T extends ThemeSpec> = ColorProps<T['colors']> &
-  SpacingProps<T['spacing']> &
-  RadiiProps<T['radii']>
 
 // ─── Box props ────────────────────────────────────────────────────────────────
 
-type BoxProps<
-  T extends ThemeSpec,
-  E extends ElementType = 'div',
-> = TokenProps<T> &
+export type BoxProps<E extends ElementType = 'div'> = BoxStyleProps &
   FlexChildProps & {
     as?: E
     className?: string
     children?: ReactNode
   } & Omit<
     ComponentPropsWithoutRef<E>,
-    BoxPropName | 'children' | 'style' | 'className'
+    keyof BoxStyleProps | keyof FlexChildProps | 'children' | 'className'
   >
 
 // ─── createBox ────────────────────────────────────────────────────────────────
 
-export function createBox<T extends ThemeSpec>(theme: T) {
+export function createBox() {
   function Box<E extends ElementType = 'div'>({
     as,
     className,
     children,
-    ...props
-  }: BoxProps<T, E>): JSX.Element {
+    // Style props — applied as inline styles
+    backgroundColor,
+    color,
+    borderColor,
+    padding,
+    paddingX,
+    paddingY,
+    paddingTop,
+    paddingRight,
+    paddingBottom,
+    paddingLeft,
+    margin,
+    marginX,
+    marginY,
+    marginTop,
+    marginRight,
+    marginBottom,
+    marginLeft,
+    gap,
+    rowGap,
+    columnGap,
+    borderRadius,
+    borderTopLeftRadius,
+    borderTopRightRadius,
+    borderBottomLeftRadius,
+    borderBottomRightRadius,
+    // Flex child props — resolved to Tailwind classes
+    flex,
+    alignSelf,
+    flexGrow,
+    flexShrink,
+    ...rest
+  }: BoxProps<E>): JSX.Element {
     const Tag = (as ?? 'div') as ElementType
-    const { ...rest } = props as Record<string, unknown>
 
-    // Extract all Box-managed props, leaving native HTML props in rest
-    const boxPropNames: BoxPropName[] = [
-      'backgroundColor',
-      'color',
-      'borderColor',
-      'padding',
-      'paddingX',
-      'paddingY',
-      'paddingTop',
-      'paddingRight',
-      'paddingBottom',
-      'paddingLeft',
-      'margin',
-      'marginX',
-      'marginY',
-      'marginTop',
-      'marginRight',
-      'marginBottom',
-      'marginLeft',
-      'borderRadius',
-      'borderTopLeftRadius',
-      'borderTopRightRadius',
-      'borderBottomLeftRadius',
-      'borderBottomRightRadius',
-      'gap',
-      'rowGap',
-      'columnGap',
-      'flex',
-      'alignSelf',
-      'flexGrow',
-      'flexShrink',
-    ]
+    const style: CSSProperties = {}
+    if (backgroundColor !== undefined) style.backgroundColor = backgroundColor
+    if (color !== undefined) style.color = color
+    if (borderColor !== undefined) style.borderColor = borderColor
+    if (padding !== undefined) style.padding = padding
+    if (paddingX !== undefined) { style.paddingLeft = paddingX; style.paddingRight = paddingX }
+    if (paddingY !== undefined) { style.paddingTop = paddingY; style.paddingBottom = paddingY }
+    if (paddingTop !== undefined) style.paddingTop = paddingTop
+    if (paddingRight !== undefined) style.paddingRight = paddingRight
+    if (paddingBottom !== undefined) style.paddingBottom = paddingBottom
+    if (paddingLeft !== undefined) style.paddingLeft = paddingLeft
+    if (margin !== undefined) style.margin = margin
+    if (marginX !== undefined) { style.marginLeft = marginX; style.marginRight = marginX }
+    if (marginY !== undefined) { style.marginTop = marginY; style.marginBottom = marginY }
+    if (marginTop !== undefined) style.marginTop = marginTop
+    if (marginRight !== undefined) style.marginRight = marginRight
+    if (marginBottom !== undefined) style.marginBottom = marginBottom
+    if (marginLeft !== undefined) style.marginLeft = marginLeft
+    if (gap !== undefined) style.gap = gap
+    if (rowGap !== undefined) style.rowGap = rowGap
+    if (columnGap !== undefined) style.columnGap = columnGap
+    if (borderRadius !== undefined) style.borderRadius = borderRadius
+    if (borderTopLeftRadius !== undefined) style.borderTopLeftRadius = borderTopLeftRadius
+    if (borderTopRightRadius !== undefined) style.borderTopRightRadius = borderTopRightRadius
+    if (borderBottomLeftRadius !== undefined) style.borderBottomLeftRadius = borderBottomLeftRadius
+    if (borderBottomRightRadius !== undefined) style.borderBottomRightRadius = borderBottomRightRadius
 
-    const boxProps: Record<string, unknown> = {}
-    for (const key of boxPropNames) {
-      if (key in rest) {
-        boxProps[key] = rest[key]
-        delete rest[key]
-      }
-    }
-
-    const tokenClasses = resolveProperties(
-      theme,
-      boxProps as TokenProps<T> & FlexChildProps,
-    )
+    const flexClasses = resolveFlexChildClasses({ flex, alignSelf, flexGrow, flexShrink })
 
     return (
-      <Tag className={twMerge(tokenClasses, className)} {...(rest as object)}>
+      <Tag
+        className={twMerge(flexClasses, className)}
+        style={Object.keys(style).length > 0 ? style : undefined}
+        {...(rest as object)}
+      >
         {children}
       </Tag>
     )
@@ -242,7 +169,3 @@ export function createBox<T extends ThemeSpec>(theme: T) {
   Box.displayName = 'Box'
   return Box
 }
-
-// ─── Exported types ───────────────────────────────────────────────────────────
-
-export type { BoxProps, TokenProps }

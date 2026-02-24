@@ -3,24 +3,25 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const buttonVariants = cva(
-  'relative inline-flex cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-lg font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'relative inline-flex cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-(--button-radius) font-medium tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         primary:
-          'text-white dark:text-black dark:bg-white bg-black transition-opacity duration-50 hover:opacity-85',
+          'bg-(--button-primary-background) text-(--button-primary-foreground) transition-opacity duration-50 hover:opacity-85',
         destructive:
-          'bg-red-500 text-white hover:bg-red-400 dark:bg-red-600 dark:hover:bg-red-500',
+          'bg-(--button-destructive-background) text-(--button-destructive-foreground) hover:opacity-90',
         secondary:
-          'bg-gray-100 text-black hover:bg-gray-200 dark:border-white/5 dark:bg-polar-700 dark:text-white dark:hover:bg-polar-600',
+          'bg-(--button-secondary-background) text-(--button-secondary-foreground) hover:opacity-90',
         ghost:
-          'bg-transparent text-black hover:bg-gray-200 dark:bg-transparent dark:text-white dark:hover:bg-polar-700',
+          'bg-(--button-ghost-background) text-(--button-ghost-foreground) hover:opacity-80',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-8 px-3 py-1.5 text-sm',
-        lg: 'h-12 px-5 py-4',
-        icon: 'h-8 w-8 p-2',
+        default:
+          'h-(--button-size-default-height) px-(--button-size-default-padding-x) py-(--button-size-default-padding-y)',
+        sm: 'h-(--button-size-sm-height) px-(--button-size-sm-padding-x) py-(--button-size-sm-padding-y) text-sm',
+        lg: 'h-(--button-size-lg-height) px-(--button-size-lg-padding-x) py-(--button-size-lg-padding-y)',
+        icon: 'h-(--button-size-sm-height) w-(--button-size-sm-height) p-2',
       },
     },
     defaultVariants: {

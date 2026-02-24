@@ -10,7 +10,8 @@ import { defaultRegistry } from '../transform/built-in.js'
 import { formatCss } from '../format/css.js'
 import { formatJson } from '../format/json.js'
 import { formatTypescript } from '../format/typescript.js'
-import type { FlatTokenMap, ThemeConfig, TokenGroup } from '../types.js'
+import { formatTypescriptVars } from '../format/typescript-vars.js'
+import type { BreakpointConfig, FlatTokenMap, ThemeConfig, TokenGroup } from '../types.js'
 
 const inputOption = Options.text('input').pipe(
   Options.withAlias('i'),
@@ -45,6 +46,15 @@ const themesOption = Options.text('themes').pipe(
   Options.optional,
 )
 
+/** JSON string mapping breakpoint names to CSS media query conditions. */
+const breakpointsOption = Options.text('breakpoints').pipe(
+  Options.withDescription(
+    'JSON map of breakpoint name → CSS media query condition for responsive output. ' +
+      'e.g. \'{"sm":"(min-width: 640px)","md":"(min-width: 768px)"}\'',
+  ),
+  Options.optional,
+)
+
 const transformOption = Options.text('transform').pipe(
   Options.withDescription(
     'Named transform pipeline to apply to token values. ' +
@@ -59,10 +69,11 @@ const runBuild = (opts: {
   format: string
   watch: boolean
   themes: string | undefined
+  breakpoints: string | undefined
   transform: string
 }) =>
   Effect.gen(function* () {
-    const { input, output, format: formatStr, themes: themesJson, transform } = opts
+    const { input, output, format: formatStr, themes: themesJson, breakpoints: breakpointsJson, transform } = opts
     const formats = formatStr.split(',').map((f) => f.trim())
     const outputDir = resolve(output)
 
@@ -73,6 +84,16 @@ const runBuild = (opts: {
         try: () => JSON.parse(themesJson) as ThemeConfig,
         catch: () =>
           new Error(`--themes must be a valid JSON object, e.g. '{"dark":":root .dark"}'`),
+      })
+    }
+
+    // Parse breakpoint config from JSON option
+    let breakpointConfig: BreakpointConfig | undefined
+    if (breakpointsJson) {
+      breakpointConfig = yield* Effect.try({
+        try: () => JSON.parse(breakpointsJson) as BreakpointConfig,
+        catch: () =>
+          new Error(`--breakpoints must be a valid JSON object, e.g. '{"sm":"(min-width: 640px)"}'`),
       })
     }
 
@@ -106,21 +127,27 @@ const runBuild = (opts: {
 
     // Format and write outputs
     if (formats.includes('css')) {
-      const css = yield* formatCss(finalMap, themeConfig)
+      const css = yield* formatCss(finalMap, themeConfig, breakpointConfig)
       yield* fs.writeFileString(join(outputDir, 'tokens.css'), css)
       yield* Effect.log(`Wrote tokens.css`)
     }
 
     if (formats.includes('json')) {
-      const json = yield* formatJson(finalMap, themeConfig)
+      const json = yield* formatJson(finalMap, themeConfig, breakpointConfig)
       yield* fs.writeFileString(join(outputDir, 'tokens.json'), json)
       yield* Effect.log(`Wrote tokens.json`)
     }
 
     if (formats.includes('ts') || formats.includes('typescript')) {
-      const ts = yield* formatTypescript(finalMap, themeConfig)
+      const ts = yield* formatTypescript(finalMap, themeConfig, breakpointConfig)
       yield* fs.writeFileString(join(outputDir, 'tokens.ts'), ts)
       yield* Effect.log(`Wrote tokens.ts`)
+    }
+
+    if (formats.includes('ts-vars')) {
+      const tsVars = yield* formatTypescriptVars(finalMap)
+      yield* fs.writeFileString(join(outputDir, 'vars.ts'), tsVars)
+      yield* Effect.log(`Wrote vars.ts`)
     }
 
     yield* Effect.log(`Done.`)
@@ -134,15 +161,17 @@ export const buildCommand = Command.make(
     format: formatOption,
     watch: watchOption,
     themes: themesOption,
+    breakpoints: breakpointsOption,
     transform: transformOption,
   },
-  ({ input, output, format, watch, themes, transform }) =>
+  ({ input, output, format, watch, themes, breakpoints, transform }) =>
     runBuild({
       input,
       output,
       format,
       watch,
       themes: themes._tag === 'Some' ? themes.value : undefined,
+      breakpoints: breakpoints._tag === 'Some' ? breakpoints.value : undefined,
       transform,
     }),
 ).pipe(Command.withDescription('Build design tokens from YAML source files'))

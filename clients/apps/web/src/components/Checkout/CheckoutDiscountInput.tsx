@@ -45,6 +45,7 @@ export const CheckoutDiscountInput = ({
   const t = useTranslations(locale)
   const [discountCode, setDiscountCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [isAddingDiscount, setIsAddingDiscount] = useState(false)
 
   const hasDiscount = !!checkout.discount
 
@@ -77,18 +78,32 @@ export const CheckoutDiscountInput = ({
     return null
   }
 
+  if (!isAddingDiscount && !hasDiscount) {
+    return (
+      // <button
+      //   className="dark:bg-polar-800 dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-400 h-10 cursor-pointer rounded-lg bg-gray-50 px-3 text-center text-gray-500 hover:bg-gray-100 hover:text-gray-600 md:text-sm"
+      //   onClick={() => setIsAddingDiscount(true)}
+      // >
+      //   {t('checkout.form.discountCode')}
+      // </button>
+      <Button
+        variant="secondary"
+        onClick={() => setIsAddingDiscount(true)}
+        className="dark:text-polar-500 dark:hover:text-polar-400 text-gray-600"
+      >
+        {t('checkout.form.discountCode')}
+      </Button>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex flex-row items-center justify-between text-sm">
-        <span>{t('checkout.form.discountCode')}</span>
-        <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
-          {t('checkout.form.optional')}
-        </span>
-      </label>
       <div className="relative">
         <Input
           type="text"
           autoComplete="off"
+          autoFocus
+          placeholder={t('checkout.form.discountCode')}
           value={hasDiscount ? checkout.discount?.code || '' : discountCode}
           onChange={(e) => setDiscountCode(e.target.value)}
           disabled={hasDiscount}
@@ -96,6 +111,11 @@ export const CheckoutDiscountInput = ({
             if (e.key !== 'Enter') return
             e.preventDefault()
             addDiscountCode()
+          }}
+          onBlur={() => {
+            if (!discountCode && !hasDiscount) {
+              setIsAddingDiscount(false)
+            }
           }}
         />
         <div className="absolute inset-y-0 right-1 z-10 flex items-center">

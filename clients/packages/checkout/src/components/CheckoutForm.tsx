@@ -171,14 +171,6 @@ const BaseCheckoutForm = ({
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
-  const discountCode = watch('discountCode')
-
-  useEffect(() => {
-    if (!discountCode && !checkout.discount) {
-      clearErrors('discountCode')
-    }
-  }, [discountCode, checkout.discount, clearErrors])
-
   const updateBusinessCustomer = useCallback(
     async (isBusinessCustomer: boolean) => {
       try {

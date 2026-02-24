@@ -1,11 +1,12 @@
 import { Effect, Data } from 'effect'
 import type {
+  DimensionValue,
   TokenGroup,
   RawToken,
   FlatTokenMap,
   ResolvedToken,
   ThemeValue,
-  TokenType,
+  TokenValue,
 } from '../types.js'
 
 export class ResolveError extends Data.TaggedError('ResolveError')<{
@@ -14,39 +15,277 @@ export class ResolveError extends Data.TaggedError('ResolveError')<{
 }> {}
 
 const ALIAS_RE = /^\{(.+)\}$/
+const ALIAS_REF_RE = /\{([^}]+)\}/g
+
+type Quantity = { value: number; unit?: string }
 
 function isRawToken(value: unknown): value is RawToken {
   return (
     typeof value === 'object' &&
     value !== null &&
-    '$value' in value &&
-    (typeof (value as RawToken).$value === 'string' ||
-      typeof (value as RawToken).$value === 'number')
+    'value' in value &&
+    ((typeof (value as RawToken).value === 'string' ||
+      typeof (value as RawToken).value === 'number') ||
+      typeof (value as RawToken).value === 'object')
   )
 }
 
-/** Flatten a token group tree into dot-path → RawToken, inheriting $type from parent groups */
+function isDimensionValue(value: TokenValue): value is DimensionValue {
+  return typeof value === 'object' && value !== null && 'value' in value && 'unit' in value
+}
+
+function parseNumericToken(token: string): Quantity | null {
+  const m = token.match(/^(-?\d+(?:\.\d+)?)([a-zA-Z%]+)?$/)
+  if (!m) return null
+  const value = Number.parseFloat(m[1]!)
+  if (Number.isNaN(value)) return null
+  return { value, unit: m[2] }
+}
+
+function toQuantity(value: TokenValue): Quantity | null {
+  if (typeof value === 'number') return { value }
+  if (typeof value === 'string') {
+    return parseNumericToken(value.trim())
+  }
+  if (isDimensionValue(value)) {
+    return { value: value.value, unit: value.unit }
+  }
+  return null
+}
+
+function fromQuantity(quantity: Quantity): TokenValue {
+  if (quantity.unit) {
+    return { value: quantity.value, unit: quantity.unit }
+  }
+  return quantity.value
+}
+
+function extractAliasRefs(input: string): string[] {
+  const refs: string[] = []
+  let match: RegExpExecArray | null
+  ALIAS_REF_RE.lastIndex = 0
+  while ((match = ALIAS_REF_RE.exec(input)) !== null) {
+    refs.push(match[1]!)
+  }
+  return refs
+}
+
+function applyBinaryOp(
+  left: Quantity,
+  right: Quantity,
+  op: '+' | '-' | '*' | '/',
+  path: string,
+): Effect.Effect<Quantity, ResolveError> {
+  const sameUnit = left.unit === right.unit
+  const leftUnitless = left.unit === undefined
+  const rightUnitless = right.unit === undefined
+
+  switch (op) {
+    case '+':
+    case '-': {
+      if (!sameUnit) {
+        return Effect.fail(
+          new ResolveError({
+            ref: path,
+            message: `Unit mismatch in arithmetic: "${left.unit ?? 'number'} ${op} ${right.unit ?? 'number'}"`,
+          }),
+        )
+      }
+      return Effect.succeed({
+        value: op === '+' ? left.value + right.value : left.value - right.value,
+        unit: left.unit,
+      })
+    }
+    case '*': {
+      if (!leftUnitless && !rightUnitless) {
+        return Effect.fail(
+          new ResolveError({
+            ref: path,
+            message: `Invalid multiplication of two unit values in "${path}"`,
+          }),
+        )
+      }
+      if (!leftUnitless) return Effect.succeed({ value: left.value * right.value, unit: left.unit })
+      if (!rightUnitless) return Effect.succeed({ value: left.value * right.value, unit: right.unit })
+      return Effect.succeed({ value: left.value * right.value })
+    }
+    case '/': {
+      if (right.value === 0) {
+        return Effect.fail(
+          new ResolveError({ ref: path, message: `Division by zero in "${path}"` }),
+        )
+      }
+      if (!rightUnitless) {
+        return Effect.fail(
+          new ResolveError({
+            ref: path,
+            message: `Invalid division by unit value in "${path}"`,
+          }),
+        )
+      }
+      return Effect.succeed({
+        value: left.value / right.value,
+        unit: left.unit,
+      })
+    }
+  }
+}
+
+function evaluateArithmeticExpression(
+  expression: string,
+  resolved: Map<string, TokenValue>,
+  tokenKey: string,
+): Effect.Effect<TokenValue, ResolveError> {
+  return Effect.gen(function* () {
+    const refs = extractAliasRefs(expression)
+    let normalized = expression
+
+    for (const ref of refs) {
+      const resolvedValue = resolved.get(ref)
+      if (resolvedValue === undefined) {
+        return yield* Effect.fail(
+          new ResolveError({
+            ref,
+            message: `Alias not resolved: {${ref}} in token ${tokenKey}`,
+          }),
+        )
+      }
+      const quantity = toQuantity(resolvedValue)
+      if (!quantity) {
+        return yield* Effect.fail(
+          new ResolveError({
+            ref,
+            message: `Cannot use non-numeric token "{${ref}}" in arithmetic for ${tokenKey}`,
+          }),
+        )
+      }
+      const literal = `${quantity.value}${quantity.unit ?? ''}`
+      normalized = normalized.replaceAll(`{${ref}}`, literal)
+    }
+
+    const tokens =
+      normalized.match(/-?\d+(?:\.\d+)?[a-zA-Z%]*|[()+\-*/]/g) ?? []
+    if (tokens.length === 0 || tokens.join('') !== normalized.replace(/\s+/g, '')) {
+      return yield* Effect.fail(
+        new ResolveError({
+          ref: tokenKey,
+          message: `Invalid arithmetic expression: "${expression}"`,
+        }),
+      )
+    }
+
+    const values: Quantity[] = []
+    const ops: string[] = []
+    const precedence = (op: string) => (op === '+' || op === '-' ? 1 : 2)
+
+    const applyTop = (): Effect.Effect<void, ResolveError> =>
+      Effect.gen(function* () {
+        const op = ops.pop() as '+' | '-' | '*' | '/' | undefined
+        const right = values.pop()
+        const left = values.pop()
+        if (!op || !right || !left) {
+          return yield* Effect.fail(
+            new ResolveError({
+              ref: tokenKey,
+              message: `Malformed arithmetic expression: "${expression}"`,
+            }),
+          )
+        }
+        const result = yield* applyBinaryOp(left, right, op, tokenKey)
+        values.push(result)
+      })
+
+    for (const token of tokens) {
+      if (token === '(') {
+        ops.push(token)
+        continue
+      }
+      if (token === ')') {
+        while (ops.length && ops[ops.length - 1] !== '(') {
+          yield* applyTop()
+        }
+        if (ops.pop() !== '(') {
+          return yield* Effect.fail(
+            new ResolveError({
+              ref: tokenKey,
+              message: `Unbalanced parentheses in "${expression}"`,
+            }),
+          )
+        }
+        continue
+      }
+      if (token === '+' || token === '-' || token === '*' || token === '/') {
+        while (
+          ops.length &&
+          ops[ops.length - 1] !== '(' &&
+          precedence(ops[ops.length - 1]!) >= precedence(token)
+        ) {
+          yield* applyTop()
+        }
+        ops.push(token)
+        continue
+      }
+
+      const quantity = parseNumericToken(token)
+      if (!quantity) {
+        return yield* Effect.fail(
+          new ResolveError({
+            ref: tokenKey,
+            message: `Invalid arithmetic token "${token}" in "${expression}"`,
+          }),
+        )
+      }
+      values.push(quantity)
+    }
+
+    while (ops.length) {
+      if (ops[ops.length - 1] === '(') {
+        return yield* Effect.fail(
+          new ResolveError({
+            ref: tokenKey,
+            message: `Unbalanced parentheses in "${expression}"`,
+          }),
+        )
+      }
+      yield* applyTop()
+    }
+
+    if (values.length !== 1) {
+      return yield* Effect.fail(
+        new ResolveError({
+          ref: tokenKey,
+          message: `Malformed arithmetic expression: "${expression}"`,
+        }),
+      )
+    }
+
+    return fromQuantity(values[0]!)
+  })
+}
+
+/** Flatten a token group tree into dot-path → RawToken */
 function flatten(
   group: TokenGroup,
   pathParts: string[] = [],
-  inheritedType?: TokenType,
 ): Map<string, { token: RawToken; rawPath: string[] }> {
   const result = new Map<string, { token: RawToken; rawPath: string[] }>()
-  const groupType = (group.$type as TokenType | undefined) ?? inheritedType
 
   for (const key of Object.keys(group)) {
-    if (key.startsWith('$')) continue
     const value = group[key]
-    const currentPath = [...pathParts, key]
 
     if (isRawToken(value)) {
-      const token: RawToken = {
-        ...value,
-        $type: value.$type ?? groupType,
+      const effectivePath = [...pathParts, ...key.split('__')]
+      const dotted = effectivePath.join('.')
+      if (result.has(dotted)) {
+        throw new ResolveError({
+          ref: dotted,
+          message: `Duplicate token path "${dotted}"`,
+        })
       }
-      result.set(currentPath.join('.'), { token, rawPath: currentPath })
+      result.set(dotted, { token: value, rawPath: effectivePath })
     } else if (typeof value === 'object' && value !== null) {
-      const nested = flatten(value as TokenGroup, currentPath, groupType)
+      const currentPath = [...pathParts, key]
+      const nested = flatten(value as TokenGroup, currentPath)
       for (const [k, v] of nested) {
         result.set(k, v)
       }
@@ -57,26 +296,29 @@ function flatten(
 }
 
 /**
- * Collect all unique alias references from a token ($value + all $themes + all $breakpoints values).
+ * Collect all unique alias references from a token (value + all themes + all breakpoints values).
  * Returns a Set of dot-paths referenced.
  */
 function aliasRefs(token: RawToken): Set<string> {
   const refs = new Set<string>()
 
-  const valueMatch = String(token.$value).match(ALIAS_RE)
-  if (valueMatch) refs.add(valueMatch[1]!)
+  if (typeof token.value === 'string') {
+    for (const ref of extractAliasRefs(token.value)) refs.add(ref)
+  }
 
-  if (token.$themes) {
-    for (const themeVal of Object.values(token.$themes)) {
-      const themeMatch = String(themeVal).match(ALIAS_RE)
-      if (themeMatch) refs.add(themeMatch[1]!)
+  if (token.themes) {
+    for (const themeVal of Object.values(token.themes)) {
+      if (typeof themeVal === 'string') {
+        for (const ref of extractAliasRefs(themeVal)) refs.add(ref)
+      }
     }
   }
 
-  if (token.$breakpoints) {
-    for (const bpVal of Object.values(token.$breakpoints)) {
-      const bpMatch = String(bpVal).match(ALIAS_RE)
-      if (bpMatch) refs.add(bpMatch[1]!)
+  if (token.breakpoints) {
+    for (const bpVal of Object.values(token.breakpoints)) {
+      if (typeof bpVal === 'string') {
+        for (const ref of extractAliasRefs(bpVal)) refs.add(ref)
+      }
     }
   }
 
@@ -84,7 +326,7 @@ function aliasRefs(token: RawToken): Set<string> {
 }
 
 /** Build a topological order for alias resolution using Kahn's algorithm.
- *  Includes both $value and $themes alias dependencies. */
+ *  Includes both value and themes alias dependencies. */
 function topoSort(
   flatMap: Map<string, { token: RawToken; rawPath: string[] }>,
 ): Effect.Effect<string[], ResolveError> {
@@ -151,11 +393,22 @@ function topoSort(
 /** Resolve a single value (possibly an alias) against the resolved-values map.
  *  Returns { value, aliasOf } where aliasOf is the direct alias dot-path if applicable. */
 function resolveValue(
-  raw: string | number,
-  resolved: Map<string, string | number>,
+  raw: TokenValue,
+  resolved: Map<string, TokenValue>,
   tokenKey: string,
-): Effect.Effect<{ value: string | number; aliasOf?: string }, ResolveError> {
+): Effect.Effect<{ value: TokenValue; aliasOf?: string }, ResolveError> {
   return Effect.gen(function* () {
+    if (typeof raw !== 'string') {
+      return { value: raw }
+    }
+
+    const hasMathOps = /[+\-*/()]/.test(raw)
+    const hasAliasRefs = extractAliasRefs(raw).length > 0
+    if (hasMathOps && (hasAliasRefs || /^[-\d.(\s]/.test(raw))) {
+      const evaluated = yield* evaluateArithmeticExpression(raw, resolved, tokenKey)
+      return { value: evaluated }
+    }
+
     const match = String(raw).match(ALIAS_RE)
     if (!match) {
       return { value: raw }
@@ -169,6 +422,7 @@ function resolveValue(
     }
 
     return { value: resolved.get(ref)!, aliasOf: ref }
+
   })
 }
 
@@ -180,7 +434,7 @@ export const resolveAliases = (
     const order = yield* topoSort(flatRaw)
 
     /** Tracks the concrete resolved value for each token path (used for alias chaining) */
-    const resolved = new Map<string, string | number>()
+    const resolved = new Map<string, TokenValue>()
     const result: FlatTokenMap = new Map()
 
     for (const key of order) {
@@ -188,32 +442,32 @@ export const resolveAliases = (
       const { token, rawPath } = entry
 
       // Resolve default value
-      const { value, aliasOf } = yield* resolveValue(token.$value, resolved, key)
+      const { value, aliasOf } = yield* resolveValue(token.value, resolved, key)
       resolved.set(key, value)
 
-      // Resolve $themes values
+      // Resolve theme values
       let themeValues: Record<string, ThemeValue> | undefined
-      if (token.$themes) {
+      if (token.themes) {
         themeValues = {}
-        for (const [theme, rawThemeVal] of Object.entries(token.$themes)) {
+        for (const [theme, rawThemeVal] of Object.entries(token.themes)) {
           const { value: tv, aliasOf: tAlias } = yield* resolveValue(
             rawThemeVal,
             resolved,
-            `${key}[$themes.${theme}]`,
+            `${key}[themes.${theme}]`,
           )
           themeValues[theme] = { value: tv, aliasOf: tAlias }
         }
       }
 
-      // Resolve $breakpoints values
+      // Resolve breakpoint values
       let breakpointValues: Record<string, ThemeValue> | undefined
-      if (token.$breakpoints) {
+      if (token.breakpoints) {
         breakpointValues = {}
-        for (const [bp, rawBpVal] of Object.entries(token.$breakpoints)) {
+        for (const [bp, rawBpVal] of Object.entries(token.breakpoints)) {
           const { value: bv, aliasOf: bAlias } = yield* resolveValue(
             rawBpVal,
             resolved,
-            `${key}[$breakpoints.${bp}]`,
+            `${key}[breakpoints.${bp}]`,
           )
           breakpointValues[bp] = { value: bv, aliasOf: bAlias }
         }
@@ -224,8 +478,9 @@ export const resolveAliases = (
         rawPath,
         value,
         aliasOf,
-        type: token.$type ?? 'string',
-        description: token.$description,
+        type: token.type ?? 'string',
+        category: token.category,
+        description: token.description,
         themeValues,
         breakpointValues,
       }

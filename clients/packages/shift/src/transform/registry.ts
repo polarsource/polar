@@ -1,5 +1,5 @@
 import { Effect, Data } from 'effect'
-import type { FlatTokenMap, ResolvedToken, ThemeValue } from '../types.js'
+import type { FlatTokenMap, ResolvedToken, ThemeValue, TokenValue } from '../types.js'
 
 export class TransformError extends Data.TaggedError('TransformError')<{
   name: string
@@ -12,9 +12,9 @@ export interface ValueTransformDef {
   match: (token: ResolvedToken) => boolean
   /** Transform a single value; returns the converted value or fails. */
   transform: (
-    value: string | number,
+    value: TokenValue,
     token: ResolvedToken,
-  ) => Effect.Effect<string | number, TransformError>
+  ) => Effect.Effect<TokenValue, TransformError>
 }
 
 export class Registry {
@@ -74,9 +74,9 @@ export class Registry {
       }
 
       const applyToValue = (
-        value: string | number,
+        value: TokenValue,
         token: ResolvedToken,
-      ): Effect.Effect<string | number, TransformError> =>
+      ): Effect.Effect<TokenValue, TransformError> =>
         Effect.gen(function* () {
           let v = value
           for (const [, def] of transforms) {

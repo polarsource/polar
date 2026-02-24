@@ -1,10 +1,10 @@
 import { Effect } from 'effect'
-import type { BreakpointConfig, FlatTokenMap, ThemeConfig } from '../types.js'
+import type { BreakpointConfig, FlatTokenMap, ThemeConfig, TokenValue } from '../types.js'
 import { FormatError } from './css.js'
 
 /** Build a nested object from a flat token map's rawPaths */
 function buildNested(
-  entries: Iterable<[string[], string | number]>,
+  entries: Iterable<[string[], TokenValue]>,
 ): Record<string, unknown> {
   const root: Record<string, unknown> = {}
   for (const [rawPath, value] of entries) {
@@ -45,7 +45,7 @@ export const formatTypescript = (
       const parts: string[] = []
 
       // Default tokens
-      const defaultEntries: [string[], string | number][] = []
+      const defaultEntries: [string[], TokenValue][] = []
       for (const token of map.values()) {
         defaultEntries.push([token.rawPath, token.value])
       }
@@ -58,7 +58,7 @@ export const formatTypescript = (
         const themeObjects: Record<string, Record<string, unknown>> = {}
 
         for (const [themeName] of Object.entries(themes)) {
-          const themeEntries: [string[], string | number][] = []
+          const themeEntries: [string[], TokenValue][] = []
           for (const token of map.values()) {
             const tv = token.themeValues?.[themeName]
             if (tv !== undefined) {
@@ -82,7 +82,7 @@ export const formatTypescript = (
         const bpObjects: Record<string, Record<string, unknown>> = {}
 
         for (const [bpName] of Object.entries(breakpoints)) {
-          const bpEntries: [string[], string | number][] = []
+          const bpEntries: [string[], TokenValue][] = []
           for (const token of map.values()) {
             const bv = token.breakpointValues?.[bpName]
             if (bv !== undefined) {

@@ -1,5 +1,6 @@
 import { Effect, Data } from 'effect'
-import type { FlatTokenMap, ResolvedToken, ThemeValue } from '../types.js'
+import type { FlatTokenMap, ResolvedToken, ThemeValue, TokenValue } from '../types.js'
+import { parseColorRgba, stringifyColorValue } from './color-convert.js'
 
 export class OklchTransformError extends Data.TaggedError('OklchTransformError')<{
   path: string
@@ -140,11 +141,12 @@ function round(n: number, decimals: number): number {
  * Returns the original value if it is not parseable (named colors, var(), etc.)
  * or is already in oklch() notation.
  */
-export function toOklchString(value: string | number): string {
-  const str = String(value).trim()
+export function toOklchString(value: TokenValue): string {
+  const str = stringifyColorValue(value)
   if (isOklch(str)) return str
 
-  const rgb = parseColor(str)
+  const rgba = parseColorRgba(value)
+  const rgb = rgba ? [rgba[0], rgba[1], rgba[2]] as [number, number, number] : parseColor(str)
   if (!rgb) return str
 
   const [L, C, H] = rgbToOklch(...rgb)
@@ -154,11 +156,11 @@ export function toOklchString(value: string | number): string {
 // ── Transform stage ───────────────────────────────────────────────────────────
 
 function convertValue(
-  value: string | number,
+  value: TokenValue,
   path: string,
 ): Effect.Effect<string, OklchTransformError> {
   const result = toOklchString(value)
-  if (result === String(value).trim() && !isOklch(String(value).trim())) {
+  if (result === stringifyColorValue(value) && !isOklch(stringifyColorValue(value))) {
     // Couldn't parse — pass through silently (named colors, var(), etc.)
     return Effect.succeed(result)
   }

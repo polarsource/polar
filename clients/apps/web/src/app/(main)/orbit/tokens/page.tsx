@@ -1,9 +1,9 @@
 import { Box, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 
 // ─── Token data ────────────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ const colorTokens = [
     usage: 'Page background',
   },
   {
-    token: '--orbit-bg-surface',
+    token: '--orbit-BG_SURFACE',
     light: 'hsl(0,0%,97%)',
     lightLabel: 'neutral-50',
     dark: 'hsl(233,5%,6.5%)',
@@ -26,7 +26,7 @@ const colorTokens = [
     usage: 'Sidebar, card backgrounds',
   },
   {
-    token: '--orbit-bg-elevated',
+    token: '--orbit-BG_ELEVATED',
     light: 'hsl(0,0%,90%)',
     lightLabel: 'neutral-200',
     dark: 'hsl(233,5%,9.5%)',
@@ -50,7 +50,7 @@ const colorTokens = [
     usage: 'Secondary text, captions, labels',
   },
   {
-    token: '--orbit-text-subtle',
+    token: '--orbit-TEXT_SUBTLE',
     light: 'hsl(0,0%,60%)',
     lightLabel: 'neutral-400',
     dark: 'hsl(233,5%,52%)',
@@ -58,12 +58,12 @@ const colorTokens = [
     usage: 'Placeholder, disabled text',
   },
   {
-    token: '--orbit-destructive',
+    token: '--orbit-DESTRUCTIVE',
     light: '#ef4444',
     lightLabel: 'red-500',
     dark: '#dc2626',
     darkLabel: 'red-600',
-    usage: 'Error states, destructive actions',
+    usage: 'Error states, DESTRUCTIVE actions',
   },
 ]
 
@@ -270,15 +270,15 @@ function Mono({ children }: { children: ReactNode }) {
 
 export default function TokensPage() {
   return (
-    <Stack vertical gap={sp['spacing-10']}>
+    <Stack vertical gap={sp['SPACING_10']}>
       <OrbitPageHeader
         title="Design Tokens"
         description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
       />
 
       {/* Color */}
-      <Stack vertical gap={sp['spacing-3']}>
-        <Stack vertical gap={sp['spacing-1']}>
+      <Stack vertical gap={sp['SPACING_3']}>
+        <Stack vertical gap={sp['SPACING_1']}>
           <Headline as="h4" text="Color" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -312,8 +312,8 @@ export default function TokensPage() {
       </Stack>
 
       {/* Type scale */}
-      <Stack vertical gap={sp['spacing-3']}>
-        <Stack vertical gap={sp['spacing-1']}>
+      <Stack vertical gap={sp['SPACING_3']}>
+        <Stack vertical gap={sp['SPACING_1']}>
           <Headline as="h4" text="Type Scale" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -348,8 +348,8 @@ export default function TokensPage() {
       </Stack>
 
       {/* Motion */}
-      <Stack vertical gap={sp['spacing-3']}>
-        <Stack vertical gap={sp['spacing-1']}>
+      <Stack vertical gap={sp['SPACING_3']}>
+        <Stack vertical gap={sp['SPACING_1']}>
           <Headline as="h4" text="Motion" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
@@ -370,20 +370,20 @@ export default function TokensPage() {
       </Stack>
 
       {/* Spacing */}
-      <Stack vertical gap={sp['spacing-3']}>
-        <Stack vertical gap={sp['spacing-1']}>
+      <Stack vertical gap={sp['SPACING_3']}>
+        <Stack vertical gap={sp['SPACING_1']}>
           <Headline as="h4" text="Spacing" />
           <Box className="dark:border-polar-800 border-t border-neutral-200" />
           <Text variant="subtle" fontSize="sm">
             All spacing follows a base-8 grid. Use these values exclusively.
           </Text>
         </Stack>
-        <Stack vertical gap={sp['spacing-1']}>
+        <Stack vertical gap={sp['SPACING_1']}>
           {spacingTokens.map(({ token, px, rem, usage }) => {
             const size = parseInt(px)
             const barWidth = Math.min(100, (size / 256) * 100)
             return (
-              <Stack key={token} alignItems="center" gap={sp['spacing-3']}>
+              <Stack key={token} alignItems="center" gap={sp['SPACING_3']}>
                 <Box className="w-32 shrink-0">
                   <div
                     className="h-1.5 rounded-full bg-black dark:bg-white"

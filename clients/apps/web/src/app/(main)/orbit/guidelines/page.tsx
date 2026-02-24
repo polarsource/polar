@@ -1,8 +1,8 @@
 import { Box, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 
 const sections = [
@@ -62,7 +62,7 @@ const sections = [
       {
         heading: 'Neutral First',
         content:
-          'Orbit defaults to a neutral palette — black, white, and grays. Color is reserved for semantic use: destructive actions use red, interactive elements use blue. Never use color decoratively.',
+          'Orbit defaults to a neutral palette — black, white, and grays. Color is reserved for semantic use: DESTRUCTIVE actions use red, interactive elements use blue. Never use color decoratively.',
       },
       {
         heading: 'Dark Mode',
@@ -120,15 +120,15 @@ const sections = [
 
 export default function GuidelinesPage() {
   return (
-    <Stack vertical gap={sp['spacing-10']}>
+    <Stack vertical gap={sp['SPACING_10']}>
       <OrbitPageHeader
         title="Guidelines"
         description="Principles and rules for how Orbit components behave, and how to use them effectively in product contexts."
       />
 
       {sections.map(({ title, subsections }) => (
-        <Stack vertical key={title} gap={sp['spacing-5']}>
-          <Stack vertical gap={sp['spacing-1']}>
+        <Stack vertical key={title} gap={sp['SPACING_5']}>
+          <Stack vertical gap={sp['SPACING_1']}>
             <Headline as="h3" text={title} />
             <Box className="dark:border-polar-800 border-t border-neutral-200" />
           </Stack>

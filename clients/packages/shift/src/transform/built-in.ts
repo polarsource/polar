@@ -2,13 +2,14 @@ import { Effect } from 'effect'
 import { Registry, TransformError, type ValueTransformDef } from './registry.js'
 import {
   applyColorConvert,
+  stringifyColorValue,
   toRgbString,
   toHexString,
   toHex8RgbaString,
   toHex8ArgbString,
 } from './color-convert.js'
 import { toOklchString } from './oklch.js'
-import type { ResolvedToken } from '../types.js'
+import type { DimensionValue, ResolvedToken, TokenValue } from '../types.js'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -17,9 +18,13 @@ function colorTransform(
 ): ValueTransformDef {
   return {
     match: (token: ResolvedToken) => token.type === 'color',
-    transform: (value: string | number) =>
+    transform: (value: TokenValue) =>
       Effect.succeed(applyColorConvert(value, converter)),
   }
+}
+
+function isDimensionValue(value: TokenValue): value is DimensionValue {
+  return typeof value === 'object' && value !== null && 'value' in value && 'unit' in value
 }
 
 // ── Registry factory ──────────────────────────────────────────────────────────
@@ -28,6 +33,11 @@ export function createDefaultRegistry(): Registry {
   const registry = new Registry()
 
   // ── Color value transforms ─────────────────────────────────────────────────
+
+  registry.register('color/css', {
+    match: (token) => token.type === 'color',
+    transform: (value) => Effect.succeed(stringifyColorValue(value)),
+  })
 
   /** color/rgb — convert any parseable color to rgb() / rgba(). */
   registry.register('color/rgb', colorTransform(toRgbString))
@@ -56,6 +66,7 @@ export function createDefaultRegistry(): Registry {
   registry.register('dimension/px', {
     match: (token) => token.type === 'dimension',
     transform: (value, token) => {
+      if (isDimensionValue(value)) return Effect.succeed(`${value.value}${value.unit}`)
       if (typeof value === 'number') return Effect.succeed(`${value}px`)
       const str = String(value).trim()
       if (/^-?[\d.]+$/.test(str)) return Effect.succeed(`${str}px`)
@@ -73,22 +84,22 @@ export function createDefaultRegistry(): Registry {
   // ── Pipelines ──────────────────────────────────────────────────────────────
 
   /** default — normalize dimensions; colors are passed through unchanged. */
-  registry.define('default', ['dimension/px'])
+  registry.define('default', ['color/css', 'dimension/px'])
 
   /** web — #rrggbb hex colors + normalized dimensions. */
-  registry.define('web', ['color/hex', 'dimension/px'])
+  registry.define('web', ['color/css', 'color/hex', 'dimension/px'])
 
   /** web/rgb — rgb() colors + normalized dimensions. */
-  registry.define('web/rgb', ['color/rgb', 'dimension/px'])
+  registry.define('web/rgb', ['color/css', 'color/rgb', 'dimension/px'])
 
   /** web/oklch — oklch() colors + normalized dimensions. */
-  registry.define('web/oklch', ['color/oklch', 'dimension/px'])
+  registry.define('web/oklch', ['color/css', 'color/oklch', 'dimension/px'])
 
   /** ios — #aarrggbb ARGB hex colors + normalized dimensions. */
-  registry.define('ios', ['color/hex8argb', 'dimension/px'])
+  registry.define('ios', ['color/css', 'color/hex8argb', 'dimension/px'])
 
   /** android — #aarrggbb ARGB hex colors + normalized dimensions. */
-  registry.define('android', ['color/hex8argb', 'dimension/px'])
+  registry.define('android', ['color/css', 'color/hex8argb', 'dimension/px'])
 
   return registry
 }

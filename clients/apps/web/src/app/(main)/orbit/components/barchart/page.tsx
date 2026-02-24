@@ -1,8 +1,8 @@
 import { BarChart, Box, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.spacing
-const cl = orbitTokens.colors
-const ra = orbitTokens.radii
+const sp = orbitTokens.SPACING
+const cl = orbitTokens.COLORS
+const ra = orbitTokens.RADII
 
 
 const props = [
@@ -28,7 +28,7 @@ const props = [
 
 export default function BarChartPage() {
   return (
-    <Stack vertical gap={sp['spacing-10']}>
+    <Stack vertical gap={sp['SPACING_10']}>
       <OrbitPageHeader
         label="Component"
         title="BarChart"
@@ -36,7 +36,7 @@ export default function BarChartPage() {
       />
 
       {/* Demo */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Demo" />
         <Box className="h-96">
           <BarChart
@@ -51,7 +51,7 @@ export default function BarChartPage() {
       </Stack>
 
       {/* Behavior notes */}
-      <Stack vertical gap={sp['spacing-4']}>
+      <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Behavior" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
@@ -89,7 +89,7 @@ export default function BarChartPage() {
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['spacing-3']}>
+      <Stack vertical gap={sp['SPACING_3']}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (

@@ -203,7 +203,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         description="Currency of the platform fee.", examples=["usd"]
     )
     customer: OrderCustomer
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",

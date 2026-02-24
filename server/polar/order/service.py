@@ -1957,21 +1957,41 @@ class OrderService:
     ) -> Order:
         """Handle a payment failure with a non-recoverable decline code.
 
-        Marks the subscription as past_due but does NOT schedule any automatic
-        dunning retries. The customer can still manually update their payment
-        method and retry via the customer portal. The existing past_due_deadline
-        will handle eventual revocation if the customer doesn't act.
+        Marks the subscription as past_due and schedules the next payment
+        attempt at the past_due_deadline. This keeps the order in the dunning
+        pipeline so the worker will pick it up once the deadline expires and
+        revoke the subscription. The customer can still update their payment
+        method before the deadline to trigger an immediate retry.
+
+        If the past_due_deadline has already passed (e.g., worker re-processing
+        at the deadline), the subscription is revoked immediately.
         """
+        assert order.subscription is not None
+        subscription = order.subscription
+
+        if subscription.status != SubscriptionStatus.past_due:
+            await subscription_service.mark_past_due(session, subscription)
+
         repository = OrderRepository.from_session(session)
+
+        # If the deadline has already passed, revoke immediately
+        if (
+            subscription.past_due_deadline is not None
+            and subscription.past_due_deadline <= utc_now()
+        ):
+            order = await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+            if subscription.can_cancel(immediately=True):
+                await subscription_service.revoke(session, subscription)
+            return order
+
         order = await repository.update(
-            order, update_dict={"next_payment_attempt_at": None}
+            order,
+            update_dict={"next_payment_attempt_at": subscription.past_due_deadline},
         )
 
-        assert order.subscription is not None
-        if order.subscription.status != SubscriptionStatus.past_due:
-            await subscription_service.mark_past_due(session, order.subscription)
-
-        await subscription_service.enqueue_benefits_grants(session, order.subscription)
+        await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
 
@@ -2143,10 +2163,6 @@ class OrderService:
 
         for order in orders:
             assert order.subscription is not None
-
-            # Only schedule if no retry is already pending
-            if order.next_payment_attempt_at is not None:
-                continue
 
             log.info(
                 "Scheduling dunning retry after payment method update",

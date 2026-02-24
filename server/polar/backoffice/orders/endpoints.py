@@ -95,6 +95,8 @@ def order_status_badge(status: OrderStatus) -> Generator[None]:
             classes("badge-error")
         elif status == OrderStatus.partially_refunded:
             classes("badge-info")
+        elif status == OrderStatus.void:
+            classes("badge-error")
         text(status.replace("_", " ").title())
     yield
 
@@ -186,6 +188,7 @@ async def list(
                             "Partially Refunded",
                             OrderStatus.partially_refunded.value,
                         ),
+                        ("Void", OrderStatus.void.value),
                     ],
                     status.value if status else "",
                     name="status",
@@ -301,6 +304,14 @@ async def get(
                             hx_target="#modal",
                         ):
                             text("Refund")
+
+                    # Add Void button if order is pending and can be voided
+                    if order.status == OrderStatus.pending:
+                        with button(
+                            hx_get=str(request.url_for("orders:void", id=order.id)),
+                            hx_target="#modal",
+                        ):
+                            text("Void")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Order Details
@@ -739,3 +750,54 @@ async def unblock_refunds(
     await order_service.set_refunds_blocked(session, order, blocked=False)
     await add_toast(request, "Refunds have been unblocked for this order.", "success")
     return HXRedirectResponse(request, str(request.url_for("orders:get", id=id)), 303)
+
+
+@router.api_route("/{id}/void", name="orders:void", methods=["GET", "POST"])
+async def void(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    order = await order_repository.get_by_id(
+        id,
+        options=order_repository.get_eager_options(),
+    )
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    # Check if order can be voided
+    if order.status != OrderStatus.pending:
+        await add_toast(request, "Only pending orders can be voided.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    if request.method == "POST":
+        try:
+            await order_service.void(session, order)
+            await add_toast(request, "Order voided successfully.", "success")
+            return HXRedirectResponse(
+                request, str(request.url_for("orders:get", id=id)), 303
+            )
+        except Exception as e:
+            await add_toast(request, f"Failed to void order: {e}", "error")
+
+    # Show confirmation modal
+    with modal("Void order", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    "Are you sure you want to void this order? This action cannot be undone."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    hx_post=str(request.url_for("orders:void", id=id)),
+                    hx_target="#modal",
+                    variant="error",
+                ):
+                    text("Void Order")

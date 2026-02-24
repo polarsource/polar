@@ -69,7 +69,7 @@ for automatic denial.
 
 ## Verdict Guidelines
 
-- **APPROVE**: All dimensions are low risk (scores < 30), no policy violations, \
+- **APPROVE**: All dimensions are low risk (scores < 40), no policy violations, \
 legitimate products. Most organizations should be approved.
 - **DENY**: Clear policy violations, prior denials with re-creation, confirmed fraud \
 signals, or sanctioned country. Be confident before denying.
@@ -92,7 +92,8 @@ SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
 No Stripe account, payments, or products exist yet. \
 Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, PRIOR_HISTORY. \
-Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0.
+Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0. \
+Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged.
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \

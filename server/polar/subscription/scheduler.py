@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Customer, Organization, Subscription
+from polar.models.organization import OrganizationStatus
 from polar.postgres import create_sync_engine
 
 log: Logger = structlog.get_logger()
@@ -118,6 +119,7 @@ class SubscriptionJobStore(BaseJobStore):
                 Customer.is_deleted.is_(False),
                 Organization.is_deleted.is_(False),
                 Organization.blocked_at.is_(None),
+                Organization.status != OrganizationStatus.DENIED,
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.active.is_(True),
                 Subscription.current_period_end.is_not(None),

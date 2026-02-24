@@ -27,13 +27,14 @@ async def collect_identity_data(account: Account | None) -> IdentityData:
             )
             if vs.last_error and vs.last_error.code:
                 verification_error_code = vs.last_error.code
-            if vs.verified_outputs:
-                verified_first_name = vs.verified_outputs.first_name
-                verified_last_name = vs.verified_outputs.last_name
-                if vs.verified_outputs.address:
-                    verified_address_country = vs.verified_outputs.address.country
-                if vs.verified_outputs.dob:
-                    dob = vs.verified_outputs.dob
+            verified_outputs = getattr(vs, "verified_outputs", None)
+            if verified_outputs:
+                verified_first_name = verified_outputs.first_name
+                verified_last_name = verified_outputs.last_name
+                if verified_outputs.address:
+                    verified_address_country = verified_outputs.address.country
+                if verified_outputs.dob:
+                    dob = verified_outputs.dob
                     if dob.year and dob.month and dob.day:
                         verified_dob = f"{dob.year}-{dob.month:02d}-{dob.day:02d}"
         except stripe_lib.StripeError:

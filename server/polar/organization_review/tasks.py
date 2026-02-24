@@ -5,6 +5,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
+from polar.integrations.plain.service import plain as plain_service
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
@@ -13,6 +14,7 @@ from polar.organization.repository import (
 from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
 )
+from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
@@ -134,4 +136,27 @@ async def run_review_agent(
                     organization_id=str(organization_id),
                     slug=organization.slug,
                     verdict=report.verdict.value,
+                )
+
+        # For SETUP_COMPLETE context: hold payouts and create Plain thread on flag
+        if review_context == ReviewContext.SETUP_COMPLETE:
+            if report.verdict in (
+                ReviewVerdict.DENY,
+                ReviewVerdict.NEEDS_HUMAN_REVIEW,
+            ):
+                organization.status = OrganizationStatus.INITIAL_REVIEW
+                organization.status_updated_at = datetime.now(UTC)
+                session.add(organization)
+
+                await organization_service._sync_account_status(session, organization)
+
+                log.info(
+                    "organization_review.setup_complete.flagged",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    verdict=report.verdict.value,
+                )
+
+                await plain_service.create_organization_review_thread(
+                    session, organization
                 )

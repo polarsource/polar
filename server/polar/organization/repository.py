@@ -115,6 +115,18 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
+    async def get_all_by_account_admin(self, user_id: UUID) -> Sequence[Organization]:
+        """Get all organizations where the user is the account admin."""
+        statement = (
+            self.get_base_statement()
+            .join(Account, Organization.account_id == Account.id)
+            .where(
+                Account.admin_id == user_id,
+                Organization.blocked_at.is_(None),
+            )
+        )
+        return await self.get_all(statement)
+
     def get_sorting_clause(self, property: OrganizationSortProperty) -> SortingClause:
         match property:
             case OrganizationSortProperty.created_at:

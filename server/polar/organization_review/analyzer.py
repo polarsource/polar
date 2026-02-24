@@ -18,8 +18,8 @@ You are an expert compliance and risk analyst for Polar, a Merchant of Record pl
 for digital products. You are reviewing an organization's application to sell on Polar.
 
 Your job is to produce a structured, multi-dimensional risk assessment. You have access \
-to significantly more data than the initial screening — including actual products listed, \
-payment history, identity verification status, and prior history.
+to lot of data, including actual products listed, payment history, identity verification,\
+and prior history of the user.
 
 ## Review Dimensions
 
@@ -33,14 +33,12 @@ software licenses is fine. Evaluate the products, not the company category.
 
 Common false positives to avoid:
 - Template/asset sellers flagged as "human services" — they sell digital products
-- SaaS tools flagged as "marketing services" — they sell software, not services
 - Education platforms flagged as "for minors" — evaluate the actual audience
 - Open source projects with sponsorship — this is explicitly allowed
 
 ### 2. Product Legitimacy
 Cross-reference the products listed on Polar with the organization's stated business \
-and pricing. Look for mismatches that suggest disguised prohibited businesses, \
-unreasonably priced products, or low-quality offerings.
+and pricing. Look for mismatches that suggest disguised prohibited businesses.
 
 Cross-reference what the organization claims in their setup with what their website actually shows.
 Look for mismatches between stated business and actual content, signs of prohibited businesses,
@@ -52,11 +50,19 @@ If website content is not available, flag this as a red flag.
 Evaluate the identity verification status, account completeness, and social presence. \
 Social link should be linked to the user's profile on the platform, and not the organization's social media accounts. \
 Unverified identity is a red flag.
-Countries with high risk of fraud or money laundering are yellow flags.
+Countries with high risk of fraud or money laundering are yellow flags that requires \
+human reviews.
 
 ### 4. Financial Risk
-Assess payment risk scores, refund rates, and dispute history. No payment history is \
-neutral (new org), not negative. High refund rates (>5%) or any disputes are red flags.
+Assess payment risk scores, refund rates, charge back rates, authorization rate, and dispute history. \
+No payment history is neutral (new org), not negative.
+
+The following thresholds needs human review:
+- refund rates (>10%)
+- charge back rate (>0%)
+- p90 radar score (>75)
+- authorization rate (,70%)
+- any dispute created
 
 ### 5. Prior History
 Check if the user has other organizations on Polar, especially denied or blocked ones. \
@@ -85,10 +91,48 @@ sellers. False approvals can expose Polar to risk. Balance both.
 """
 
 SUBMISSION_PREAMBLE = """\
-This is a SUBMISSION review. The organization just submitted their details. \
+This is a SUBMISSION review. The user just created their organization, submitted their details. \
 No Stripe account, payments, or products exist yet. \
 Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY (website cross-reference), PRIOR_HISTORY. \
 Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0.
+"""
+
+SETUP_COMPLETE_PREAMBLE = """\
+This is a SETUP_COMPLETE review. The user just has completed ALL setup steps \
+(product created, organization details submitted, payout account connected, identity verified) but has NOT yet \
+received any payments. You have access to products, account info, identity status, \
+and Stripe account metadata.
+
+Focus on:
+- **Product price anomalies**: Flag one-time products priced above $1,000 or recurring \
+products above $500/month.
+- **Product-business mismatch**: Cross-reference products listed on Polar against the \
+organization's stated business and website. Look for mismatches suggesting a disguised \
+prohibited business.
+- **Identity & account signals**:
+  - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
+"document_expired") indicate potential fraud even if verification eventually succeeded.
+  - Compare the account country with the support address country and the verified address \
+country from identity verification — mismatches are yellow flags.
+  - Stripe capabilities that are not "active" (e.g. "restricted", "pending") mean Stripe \
+itself has concerns about this account.
+  - Outstanding requirements_currently_due items at SETUP_COMPLETE stage are unusual.
+  - **Stripe verification errors** (requirements.errors) are critical signals. Codes like \
+"verification_document_fraudulent", "verification_document_manipulated", or "rejected.fraud" \
+in disabled_reason are strong fraud indicators. "verification_failed_keyed_identity" means \
+Stripe could not verify the person's identity information.
+  - A non-null **disabled_reason** (especially "rejected.*" values) means Stripe itself has \
+flagged this account. "requirements.past_due" items are overdue and more concerning than \
+"currently_due".
+- **Identity cross-reference**: Compare the verified name (from identity document) with \
+the Stripe business name and the Polar organization name. For individual accounts, the \
+verified name should match the business name. Significant mismatches are yellow flags.
+- **Business profile cross-reference**: There are two types of Stripe business, \
+individual and business. Compare the Stripe business name and URL with the \
+Polar organization name and website. Significant mismatches are yellow flags.
+- **Prior history**: Check for prior denials or blocked organizations.
+
+Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred yet.
 """
 
 
@@ -112,9 +156,10 @@ class ReviewAnalyzer:
 
         prompt = self._build_prompt(snapshot, policy_content)
 
-        instructions = (
-            SUBMISSION_PREAMBLE if context == ReviewContext.SUBMISSION else None
-        )
+        instructions = {
+            ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
+            ReviewContext.SETUP_COMPLETE: SETUP_COMPLETE_PREAMBLE,
+        }.get(context)
 
         try:
             result = await asyncio.wait_for(
@@ -159,6 +204,7 @@ class ReviewAnalyzer:
     def _build_prompt(self, snapshot: DataSnapshot, policy_content: str) -> str:
         org = snapshot.organization
         products = snapshot.products
+        identity = snapshot.identity
         account = snapshot.account
         metrics = snapshot.metrics
         history = snapshot.history
@@ -172,7 +218,7 @@ class ReviewAnalyzer:
         if org.website:
             parts.append(f"Website: {org.website}")
         if org.email:
-            parts.append(f"Email: {org.email}")
+            parts.append(f"Org Support Email: {org.email}")
         if org.about:
             parts.append(f"About: {org.about}")
         if org.product_description:
@@ -225,18 +271,65 @@ class ReviewAnalyzer:
             elif not snapshot.website.pages and not snapshot.website.scrape_error:
                 parts.append("No content could be extracted from the website.")
 
-        # Account & Identity
-        parts.append("\n## Account & Identity")
+        # User Identity (from Stripe Identity VerificationSession)
+        parts.append("\n## User Identity")
+        parts.append(
+            f"Verification Status: {identity.verification_status or 'unknown'}"
+        )
+        if identity.verification_error_code:
+            parts.append(f"Verification Last Error: {identity.verification_error_code}")
+        if identity.verified_first_name or identity.verified_last_name:
+            parts.append(
+                f"Verified Name: {identity.verified_first_name or ''} {identity.verified_last_name or ''}".strip()
+            )
+        if identity.verified_address_country:
+            parts.append(
+                f"Verified Address Country: {identity.verified_address_country}"
+            )
+        if identity.verified_dob:
+            parts.append(f"Verified Date of Birth: {identity.verified_dob}")
+
+        # Stripe Connect Account (payout account)
+        parts.append("\n## Stripe Connect Account")
         if account.country:
-            parts.append(f"Country: {account.country}")
+            parts.append(f"Account Country: {account.country}")
         if account.business_type:
             parts.append(f"Business Type: {account.business_type}")
-        parts.append(
-            f"Identity Verification: {account.identity_verification_status or 'unknown'}"
-        )
-        parts.append(f"Stripe Details Submitted: {account.is_details_submitted}")
+        parts.append(f"Details Submitted: {account.is_details_submitted}")
         parts.append(f"Charges Enabled: {account.is_charges_enabled}")
         parts.append(f"Payouts Enabled: {account.is_payouts_enabled}")
+        if account.business_name:
+            parts.append(f"Business Name: {account.business_name}")
+        if account.business_url:
+            parts.append(f"Business URL: {account.business_url}")
+        if account.business_support_address_country:
+            parts.append(
+                f"Support Address Country: {account.business_support_address_country}"
+            )
+        if account.capabilities:
+            cap_strs = [f"{k}={v}" for k, v in account.capabilities.items()]
+            parts.append(f"Capabilities: {', '.join(cap_strs)}")
+        if account.requirements_disabled_reason:
+            parts.append(
+                f"WARNING — Disabled Reason: {account.requirements_disabled_reason}"
+            )
+        if account.requirements_errors:
+            error_strs = [
+                f"{e['code']}: {e['reason']}" for e in account.requirements_errors
+            ]
+            parts.append(f"WARNING — Verification Errors: {'; '.join(error_strs)}")
+        if account.requirements_past_due:
+            parts.append(
+                f"Requirements Past Due: {', '.join(account.requirements_past_due)}"
+            )
+        if account.requirements_currently_due:
+            parts.append(
+                f"Requirements Currently Due: {', '.join(account.requirements_currently_due)}"
+            )
+        if account.requirements_pending_verification:
+            parts.append(
+                f"Requirements Pending Verification: {', '.join(account.requirements_pending_verification)}"
+            )
 
         # Payment Metrics
         parts.append("\n## Payment Metrics")

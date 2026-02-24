@@ -11,13 +11,22 @@ from .analyzer import review_analyzer
 from .collectors import (
     collect_account_data,
     collect_history_data,
+    collect_identity_data,
     collect_metrics_data,
     collect_organization_data,
     collect_products_data,
     collect_website_data,
 )
 from .repository import OrganizationReviewRepository
-from .schemas import AgentReviewResult, DataSnapshot, ReviewContext
+from .schemas import (
+    AccountData,
+    AgentReviewResult,
+    DataSnapshot,
+    IdentityData,
+    PaymentMetrics,
+    ProductsData,
+    ReviewContext,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -77,8 +86,6 @@ async def _collect_data(
     organization: Organization,
     context: ReviewContext,
 ) -> DataSnapshot:
-    from .schemas import AccountData, PaymentMetrics, ProductsData
-
     org_repository = OrganizationRepository.from_session(session)
     review_repository = OrganizationReviewRepository.from_session(session)
 
@@ -90,13 +97,13 @@ async def _collect_data(
     org_data = collect_organization_data(organization)
 
     # Products — skip for SUBMISSION (no products exist yet)
-    if context == ReviewContext.THRESHOLD:
+    if context != ReviewContext.SUBMISSION:
         products = await review_repository.get_products_with_prices(organization.id)
         products_data = collect_products_data(products)
     else:
         products_data = ProductsData()
 
-    # Payment metrics — skip for SUBMISSION (no payments exist yet)
+    # Payment metrics — only for THRESHOLD (no payments exist at submission or setup)
     if context == ReviewContext.THRESHOLD:
         total, succeeded, amount = await review_repository.get_payment_stats(
             organization.id
@@ -134,16 +141,18 @@ async def _collect_data(
     )
     history_data = collect_history_data(user, other_orgs)
 
-    # Account — skip for SUBMISSION (no Stripe account yet)
-    if context == ReviewContext.THRESHOLD:
+    # Account & Identity — skip for SUBMISSION (no Stripe account yet)
+    if context != ReviewContext.SUBMISSION:
         account = (
             await review_repository.get_account_with_admin(organization.account_id)
             if organization.account_id
             else None
         )
         account_data = collect_account_data(account)
+        identity_data = await collect_identity_data(account)
     else:
         account_data = AccountData()
+        identity_data = IdentityData()
 
     # Website content (async I/O, non-fatal) — always collected
     website_data = None
@@ -172,6 +181,7 @@ async def _collect_data(
         context=context,
         organization=org_data,
         products=products_data,
+        identity=identity_data,
         account=account_data,
         metrics=metrics_data,
         history=history_data,

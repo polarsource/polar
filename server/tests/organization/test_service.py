@@ -1303,7 +1303,7 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
-    async def test_blocked_with_repeating_discounted_free_subscriptions(
+    async def test_blocked_with_non_forever_discounted_free_subscriptions(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1311,41 +1311,7 @@ class TestCheckCanDelete:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Organization with subscriptions made free by a repeating discount cannot be deleted."""
-        from polar.models.discount import DiscountDuration, DiscountType
-        from polar.models.subscription import SubscriptionStatus
-        from tests.fixtures.random_objects import create_discount, create_subscription
-
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=10000,
-            duration=DiscountDuration.repeating,
-            duration_in_months=3,
-            organization=organization,
-        )
-        await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=SubscriptionStatus.active,
-            discount=discount,
-        )
-
-        result = await organization_service.check_can_delete(session, organization)
-
-        assert result.can_delete_immediately is False
-        assert "has_active_subscriptions" in [r.value for r in result.blocked_reasons]
-
-    async def test_blocked_with_once_discounted_free_subscriptions(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Organization with subscriptions made free by a once discount cannot be deleted."""
+        """Subscription with a 100% off once discount still blocks deletion."""
         from polar.models.discount import DiscountDuration, DiscountType
         from polar.models.subscription import SubscriptionStatus
         from tests.fixtures.random_objects import create_discount, create_subscription

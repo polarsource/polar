@@ -21,7 +21,12 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.discount import Discount, DiscountDuration
+from polar.models.discount import (
+    Discount,
+    DiscountDuration,
+    DiscountPercentage,
+    DiscountType,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncReadSession
@@ -242,7 +247,11 @@ class OrganizationRepository(
                     (Subscription.amount == 0)
                     & (
                         Subscription.discount_id.is_(None)
-                        | (Discount.duration == DiscountDuration.forever)
+                        | (
+                            (Discount.type == DiscountType.percentage)
+                            & (DiscountPercentage.basis_points == 10000)
+                            & (Discount.duration == DiscountDuration.forever)
+                        )
                     )
                 ),
             )

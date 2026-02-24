@@ -12,7 +12,7 @@ DESCRIPTION >
     - canceled_subscriptions_unused
     - canceled_subscriptions_other
 
-NODE canceled_latest_fast
+NODE canceled_by_subscription
 SQL >
     %
     SELECT
@@ -58,7 +58,7 @@ SQL >
             IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(customer_ids) }}))))
         {% end %}
 
-NODE cancellations_fast_by_bucket
+NODE canceled_by_bucket
 SQL >
     %
     SELECT
@@ -101,7 +101,7 @@ SQL >
                 OR lc.customer_cancellation_reason = ''
             )
         ) AS canceled_subscriptions_other
-    FROM canceled_latest_fast AS lc
+    FROM canceled_by_subscription AS lc
     GROUP BY bucket
 
 NODE cancellations_fast
@@ -131,215 +131,7 @@ SQL >
         COALESCE(c.canceled_subscriptions_unused, toInt64(0)) AS canceled_subscriptions_unused,
         COALESCE(c.canceled_subscriptions_other, toInt64(0)) AS canceled_subscriptions_other
     FROM intervals AS w
-    LEFT JOIN cancellations_fast_by_bucket AS c ON c.bucket = w.interval
-
-NODE canceled_latest_direct
-SQL >
-    %
-    SELECT
-        e.subscription_id,
-        argMax(
-            e.canceled_at,
-            (COALESCE(e.canceled_at, toDateTime64(0, 3, 'UTC')), e.timestamp, e.ingested_at)
-        ) AS canceled_at,
-        argMax(
-            e.customer_cancellation_reason,
-            (COALESCE(e.canceled_at, toDateTime64(0, 3, 'UTC')), e.timestamp, e.ingested_at)
-        ) AS customer_cancellation_reason,
-        argMax(
-            COALESCE(e.product_id, toUUID('00000000-0000-0000-0000-000000000000')),
-            (COALESCE(e.canceled_at, toDateTime64(0, 3, 'UTC')), e.timestamp, e.ingested_at)
-        ) AS product_id
-    FROM system_events_by_org AS e
-    WHERE
-        e.name = 'subscription.canceled'
-        AND e.subscription_id IS NOT NULL
-        AND e.canceled_at IS NOT NULL
-        AND e.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
-                    )
-                )
-        )
-        {% if defined(customer_ids) and customer_ids != '' and defined(
-            external_customer_ids
-        ) and external_customer_ids != '' %}
-            AND (
-                e.customer_id IN (
-                    SELECT
-                        arrayJoin(
-                            splitByChar(
-                                ',',
-                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
-                            )
-                        )
-                )
-                OR e.external_customer_id IN (
-                    SELECT
-                        arrayJoin(
-                            splitByChar(
-                                ',',
-                                {{
-                                    String(
-                                        external_customer_ids,
-                                        description="Comma-separated external customer IDs",
-                                    )
-                                }}
-                            )
-                        )
-                )
-            )
-        {% elif defined(customer_ids) and customer_ids != '' %}
-            AND e.customer_id IN (
-                SELECT
-                    arrayJoin(
-                        splitByChar(
-                            ',',
-                            {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
-                        )
-                    )
-            )
-        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
-            AND e.external_customer_id IN (
-                SELECT
-                    arrayJoin(
-                        splitByChar(
-                            ',',
-                            {{
-                                String(
-                                    external_customer_ids,
-                                    description="Comma-separated external customer IDs",
-                                )
-                            }}
-                        )
-                    )
-            )
-        {% end %}
-    GROUP BY e.subscription_id
-
-NODE uncanceled_latest_direct
-SQL >
-    %
-    SELECT e.subscription_id, max(e.timestamp) AS uncanceled_ts
-    FROM system_events_by_org AS e
-    WHERE
-        e.name = 'subscription.uncanceled'
-        AND e.subscription_id IS NOT NULL
-        AND e.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
-                    )
-                )
-        )
-        {% if defined(customer_ids) and customer_ids != '' and defined(
-            external_customer_ids
-        ) and external_customer_ids != '' %}
-            AND (
-                e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
-                OR e.external_customer_id
-                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
-            )
-        {% elif defined(customer_ids) and customer_ids != '' %}
-            AND e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
-        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
-            AND e.external_customer_id
-            IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
-        {% end %}
-    GROUP BY e.subscription_id
-
-NODE cancellations_direct_by_bucket
-SQL >
-    %
-    SELECT
-        {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
-        {% elif interval == 'hour' %}
-            toStartOfHour(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
-        {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }}), 1) AS bucket,
-        {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
-        {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
-        {% else %} toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
-        {% end %}
-        toInt64(count(*)) AS canceled_subscriptions,
-        toInt64(
-            countIf(lc.customer_cancellation_reason = 'customer_service')
-        ) AS canceled_subscriptions_customer_service,
-        toInt64(
-            countIf(lc.customer_cancellation_reason = 'low_quality')
-        ) AS canceled_subscriptions_low_quality,
-        toInt64(
-            countIf(lc.customer_cancellation_reason = 'missing_features')
-        ) AS canceled_subscriptions_missing_features,
-        toInt64(
-            countIf(lc.customer_cancellation_reason = 'switched_service')
-        ) AS canceled_subscriptions_switched_service,
-        toInt64(
-            countIf(lc.customer_cancellation_reason = 'too_complex')
-        ) AS canceled_subscriptions_too_complex,
-        toInt64(
-            countIf(lc.customer_cancellation_reason = 'too_expensive')
-        ) AS canceled_subscriptions_too_expensive,
-        toInt64(countIf(lc.customer_cancellation_reason = 'unused')) AS canceled_subscriptions_unused,
-        toInt64(
-            countIf(
-                lc.customer_cancellation_reason = 'other'
-                OR lc.customer_cancellation_reason IS NULL
-                OR lc.customer_cancellation_reason = ''
-            )
-        ) AS canceled_subscriptions_other
-    FROM canceled_latest_direct AS lc
-    LEFT JOIN uncanceled_latest_direct AS lu ON lc.subscription_id = lu.subscription_id
-    WHERE
-        (lu.uncanceled_ts IS NULL OR lu.uncanceled_ts <= lc.canceled_at)
-        AND lc.canceled_at
-        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND lc.canceled_at
-        < toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
-        {% if defined(product_ids) and product_ids != '' %}
-            AND lc.product_id
-            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
-        {% end %}
-    GROUP BY bucket
-
-NODE cancellations_direct
-SQL >
-    %
-    SELECT
-        w.interval AS timestamp,
-        COALESCE(d.canceled_subscriptions, toInt64(0)) AS canceled_subscriptions,
-        COALESCE(
-            d.canceled_subscriptions_customer_service, toInt64(0)
-        ) AS canceled_subscriptions_customer_service,
-        COALESCE(
-            d.canceled_subscriptions_low_quality, toInt64(0)
-        ) AS canceled_subscriptions_low_quality,
-        COALESCE(
-            d.canceled_subscriptions_missing_features, toInt64(0)
-        ) AS canceled_subscriptions_missing_features,
-        COALESCE(
-            d.canceled_subscriptions_switched_service, toInt64(0)
-        ) AS canceled_subscriptions_switched_service,
-        COALESCE(
-            d.canceled_subscriptions_too_complex, toInt64(0)
-        ) AS canceled_subscriptions_too_complex,
-        COALESCE(
-            d.canceled_subscriptions_too_expensive, toInt64(0)
-        ) AS canceled_subscriptions_too_expensive,
-        COALESCE(d.canceled_subscriptions_unused, toInt64(0)) AS canceled_subscriptions_unused,
-        COALESCE(d.canceled_subscriptions_other, toInt64(0)) AS canceled_subscriptions_other
-    FROM intervals AS w
-    LEFT JOIN cancellations_direct_by_bucket AS d ON d.bucket = w.interval
-
-NODE endpoint
-SQL >
-    %
-    SELECT * FROM cancellations_fast ORDER BY timestamp
+    LEFT JOIN canceled_by_bucket AS c ON c.bucket = w.interval
+    ORDER BY timestamp
 
 TYPE ENDPOINT

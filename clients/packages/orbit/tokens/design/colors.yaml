@@ -212,4 +212,4 @@ imports: []
 
 global:
   type: color
-  category: DESIGN
+  category: design

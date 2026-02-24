@@ -65,7 +65,7 @@ describe('formatJson', () => {
 
   // ── Theme output ─────────────────────────────────────────────────────
 
-  it('does not include $themes key when no themes config', () => {
+  it('includes $themes key when theme overrides exist even without themes config', () => {
     const map = makeMap([
       {
         rawPath: ['btn', 'bg'],
@@ -75,7 +75,8 @@ describe('formatJson', () => {
       },
     ])
     const parsed = JSON.parse(Effect.runSync(formatJson(map)))
-    expect(parsed['$themes']).toBeUndefined()
+    expect(parsed['$themes']).toBeDefined()
+    expect(parsed['$themes'].dark.btn.bg).toBe('#000')
   })
 
   it('includes $themes key when themes config provided and overrides exist', () => {

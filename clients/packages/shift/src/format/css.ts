@@ -15,6 +15,21 @@ function cssVarName(path: string): string {
   return path.replace(/\./g, '-')
 }
 
+function collectThemeNames(
+  map: FlatTokenMap,
+  themes?: ThemeConfig,
+): string[] {
+  const names = new Set<string>()
+  if (themes) {
+    for (const themeName of Object.keys(themes)) names.add(themeName)
+  }
+  for (const token of map.values()) {
+    if (!token.themeValues) continue
+    for (const themeName of Object.keys(token.themeValues)) names.add(themeName)
+  }
+  return [...names]
+}
+
 /**
  * Resolve the CSS emission value for a token value.
  * If the token was an alias (aliasOf is set), emit var(--aliased-path).
@@ -56,22 +71,21 @@ export const formatCss = (
       rootLines.push('}')
       blocks.push(rootLines.join('\n'))
 
-      // One block per theme — only tokens with an override for that theme
-      if (themes) {
-        for (const [themeName, selector] of Object.entries(themes)) {
-          const themeLines: string[] = []
+      // One block per theme — inferred from token theme keys unless overridden by config
+      for (const themeName of collectThemeNames(map, themes)) {
+        const selector = themes?.[themeName] ?? `:root .${themeName}`
+        const themeLines: string[] = []
 
-          for (const token of map.values()) {
-            const tv = token.themeValues?.[themeName]
-            if (tv === undefined) continue
-            themeLines.push(
-              `  --${cssVarName(token.path)}: ${cssValue(tv.value, tv.aliasOf)};`,
-            )
-          }
+        for (const token of map.values()) {
+          const tv = token.themeValues?.[themeName]
+          if (tv === undefined) continue
+          themeLines.push(
+            `  --${cssVarName(token.path)}: ${cssValue(tv.value, tv.aliasOf)};`,
+          )
+        }
 
-          if (themeLines.length > 0) {
-            blocks.push(`${selector} {\n${themeLines.join('\n')}\n}`)
-          }
+        if (themeLines.length > 0) {
+          blocks.push(`${selector} {\n${themeLines.join('\n')}\n}`)
         }
       }
 

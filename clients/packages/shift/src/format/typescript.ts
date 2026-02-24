@@ -27,6 +27,21 @@ function buildNested(
   return root
 }
 
+function collectThemeNames(
+  map: FlatTokenMap,
+  themes?: ThemeConfig,
+): string[] {
+  const names = new Set<string>()
+  if (themes) {
+    for (const themeName of Object.keys(themes)) names.add(themeName)
+  }
+  for (const token of map.values()) {
+    if (!token.themeValues) continue
+    for (const themeName of Object.keys(token.themeValues)) names.add(themeName)
+  }
+  return [...names]
+}
+
 function buildTokenDefinitions(map: FlatTokenMap): Record<string, Omit<ResolvedToken, 'path'>> {
   const definitions: Record<string, Omit<ResolvedToken, 'path'>> = {}
   for (const token of map.values()) {
@@ -80,28 +95,24 @@ export const formatTypescript = (
         `export const tokenDefinitions = ${JSON.stringify(buildTokenDefinitions(map), null, 2)} as const`,
       )
 
-      // Per-theme objects
-      if (themes) {
-        const themeObjects: Record<string, Record<string, unknown>> = {}
-
-        for (const [themeName] of Object.entries(themes)) {
-          const themeEntries: [string[], TokenValue][] = []
-          for (const token of map.values()) {
-            const tv = token.themeValues?.[themeName]
-            if (tv !== undefined) {
-              themeEntries.push([token.rawPath, tv.value])
-            }
-          }
-          if (themeEntries.length > 0) {
-            themeObjects[themeName] = buildNested(themeEntries)
+      // Per-theme objects (inferred from token theme keys unless optional config is provided)
+      const themeObjects: Record<string, Record<string, unknown>> = {}
+      for (const themeName of collectThemeNames(map, themes)) {
+        const themeEntries: [string[], TokenValue][] = []
+        for (const token of map.values()) {
+          const tv = token.themeValues?.[themeName]
+          if (tv !== undefined) {
+            themeEntries.push([token.rawPath, tv.value])
           }
         }
-
-        if (Object.keys(themeObjects).length > 0) {
-          parts.push(
-            `export const themes = ${JSON.stringify(themeObjects, null, 2)} as const`,
-          )
+        if (themeEntries.length > 0) {
+          themeObjects[themeName] = buildNested(themeEntries)
         }
+      }
+      if (Object.keys(themeObjects).length > 0) {
+        parts.push(
+          `export const themes = ${JSON.stringify(themeObjects, null, 2)} as const`,
+        )
       }
 
       // Per-breakpoint objects

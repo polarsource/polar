@@ -37,4 +37,4 @@ imports:
   - "../design/radii.yaml"
 
 global:
-  category: COMPONENT
+  category: component

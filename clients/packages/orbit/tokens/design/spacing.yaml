@@ -95,4 +95,4 @@ imports: []
 
 global:
   type: dimension
-  category: DESIGN
+  category: design

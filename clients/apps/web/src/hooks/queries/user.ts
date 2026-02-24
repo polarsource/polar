@@ -30,6 +30,13 @@ export const useDeletePersonalAccessToken = () =>
     },
   })
 
+export const useDeleteUser = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.DELETE('/v1/users/me')
+    },
+  })
+
 export const useCreateIdentityVerification = () =>
   useMutation({
     mutationFn: () => {

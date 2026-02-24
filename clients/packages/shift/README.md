@@ -42,7 +42,9 @@ props:
       colorSpace: srgb
       components: [1, 1, 1]
   SPACING_4:
-    value: "16px"
+    value:
+      value: 16
+      unit: px
 imports:
   - "./primitives.yaml"
 global:
@@ -91,6 +93,9 @@ value:
   value: 0.5
   unit: rem
 ```
+
+For `type: dimension`, literal size strings like `"16px"` are invalid.
+Use `{ value, unit }` for literals, or alias/arithmetic strings (for example `"{SPACING_4}"` or `"{SPACING_4} * 2"`).
 
 Color object supports exactly one of these shapes:
 
@@ -214,13 +219,23 @@ props:
       dark:
         colorSpace: srgb
         components: [0, 0, 0]
+  BUTTON__HEIGHT:
+    type: dimension
+    value:
+      value: 40
+      unit: px
     breakpoints:
-      sm: "12px"
+      sm:
+        value: 32
+        unit: px
 ```
 
 - `themes` and `breakpoints` values support the same value forms as `value`
 - Aliases in theme/breakpoint overrides are resolved
 - Their direct alias source is tracked via `aliasOf`
+
+Theme names are inferred automatically from token data (for example `themes.dark`).
+You do not need to pass `--themes` unless you want custom CSS selectors.
 
 ## Transform Pipelines
 
@@ -264,7 +279,9 @@ Supported formatter names:
 ### CSS (`tokens.css`)
 
 - Emits `:root` for defaults
-- Emits one block per theme selector (`--themes` map)
+- Emits one block per theme name found in tokens
+  - Default selector format: `:root .<theme>`
+  - If `--themes` is provided, its selector overrides are used
 - Emits one `@media` block per breakpoint (`--breakpoints` map)
 - Emits alias proxies as `var(--...)`
 
@@ -272,13 +289,17 @@ Supported formatter names:
 
 - Emits nested object built from token raw paths
 - Emits concrete resolved values
-- Optionally includes `$themes` and `$breakpoints` objects
+- Includes `$themes` automatically when theme overrides exist
+- Includes `$breakpoints` when `--breakpoints` is provided and overrides exist
 
 ### TypeScript (`tokens.ts`)
 
 - Emits `export const tokens = ... as const`
 - Emits concrete resolved values
-- Optionally exports `themes` and `breakpoints` objects
+- Emits `export const tokenDefinitions = ... as const` with hoisted per-token metadata (`rawPath`, `value`, `aliasOf`, `type`, `category`, `description`, `themeValues`, `breakpointValues`)
+  - Keys are token names in underscore form (for example `BUTTON_PRIMARY_BACKGROUND`)
+- Exports `themes` automatically when theme overrides exist
+- Exports `breakpoints` when `--breakpoints` is provided and overrides exist
 
 ### TypeScript vars (`vars.ts`)
 
@@ -296,7 +317,6 @@ node clients/packages/shift/bin/shift.js build \
   --output 'clients/packages/orbit/src/tokens' \
   --format 'ts,ts-vars' \
   --transform 'default' \
-  --themes '{"dark":":root .dark"}' \
   --breakpoints '{"sm":"(min-width: 640px)"}'
 ```
 
@@ -306,7 +326,7 @@ Options:
 - `--output`, `-o`: output dir (default `./dist`)
 - `--format`, `-f`: comma-separated formats (default `css,json,ts`)
 - `--transform`: named pipeline (default `default`)
-- `--themes`: JSON map theme -> CSS selector
+- `--themes`: optional JSON map theme -> CSS selector override
 - `--breakpoints`: JSON map breakpoint -> media query condition
 - `--watch`, `-w`: accepted by CLI, currently no watch-loop behavior in implementation
 

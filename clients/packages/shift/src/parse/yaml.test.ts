@@ -268,4 +268,47 @@ imports: []
       },
     )
   })
+
+  it('fails when global category contains uppercase letters', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  SPACING_4:
+    value:
+      value: 16
+      unit: px
+imports: []
+global:
+  type: dimension
+  category: DESIGN
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
+  })
+
+  it('fails when token category contains uppercase letters', () => {
+    withTempFiles(
+      {
+        'tokens.yaml': `
+props:
+  SPACING_4:
+    type: dimension
+    category: COMPONENT
+    value:
+      value: 16
+      unit: px
+imports: []
+`,
+      },
+      (file) => {
+        const result = Effect.runSyncExit(parseYamlFile(file))
+        expect(result._tag).toBe('Failure')
+      },
+    )
+  })
 })

@@ -22,7 +22,9 @@
     }
   },
   "scripts": {
+    "prebuild": "pnpm run tokens:build",
     "build": "rm -rf dist && tsup",
+    "tokens:build": "ORBIT_DIR=$(dirname \"$npm_package_json\") && pnpm --filter @polar-sh/shift exec node bin/shift.js build --input \"$ORBIT_DIR/tokens/**/*.yaml\" --output \"$ORBIT_DIR/src/tokens\" --format 'ts,ts-vars'",
     "lint": "prettier -c .",
     "typecheck": "tsc --noEmit"
   },
@@ -36,6 +38,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@polar-sh/shift": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

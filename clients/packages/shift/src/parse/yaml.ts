@@ -27,6 +27,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function validateCategoryValue(category: string, path: string[]): void {
+  if (/[A-Z]/.test(category)) {
+    throw new Error(
+      `Invalid category at "${path.join('.')}". ` +
+        'Category values must be lowercase (no uppercase letters).',
+    )
+  }
+}
+
 function isRawToken(value: unknown): value is RawTokenType {
   return (
     isObject(value) &&
@@ -125,6 +134,10 @@ function decodeRawToken(value: unknown, path: string[]): RawTokenType {
           'Allowed properties: value, type, category, description, themes, breakpoints.',
       )
     }
+  }
+
+  if (typeof raw.category === 'string') {
+    validateCategoryValue(raw.category, [...path, 'category'])
   }
 
   validateColorValueObject(raw.value, [...path, 'value'])
@@ -244,6 +257,9 @@ function parseTokenDocument(content: string, file: string): TokenDocument {
           `Unexpected "global" property "${key}" in "${file}". Allowed: type, category.`,
         )
       }
+    }
+    if (typeof decodedDoc.global.category === 'string') {
+      validateCategoryValue(decodedDoc.global.category, ['global', 'category'])
     }
     docGlobal = {
       type:

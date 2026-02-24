@@ -46,4 +46,4 @@ imports:
 
 global:
   type: color
-  category: COMPONENT
+  category: component

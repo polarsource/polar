@@ -94,7 +94,7 @@ describe('formatTypescript', () => {
 
   // ── Themes export ─────────────────────────────────────────────────────
 
-  it('does not emit themes export when no themes config', () => {
+  it('emits themes export when theme overrides exist even without themes config', () => {
     const map = makeMap([
       {
         rawPath: ['btn', 'bg'],
@@ -104,7 +104,8 @@ describe('formatTypescript', () => {
       },
     ])
     const output = Effect.runSync(formatTypescript(map))
-    expect(output).not.toContain('export const themes')
+    expect(output).toContain('export const themes =')
+    expect(output).toContain('"dark"')
   })
 
   it('emits export const themes when themes config provided and overrides exist', () => {

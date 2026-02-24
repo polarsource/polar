@@ -779,6 +779,9 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
     devDependencies:
+      '@polar-sh/shift':
+        specifier: workspace:*
+        version: link:../shift
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

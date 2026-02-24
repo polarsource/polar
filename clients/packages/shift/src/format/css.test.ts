@@ -85,7 +85,7 @@ describe('formatCss', () => {
 
   // ── Theme blocks ─────────────────────────────────────────────────────
 
-  it('emits no theme block when themes config is omitted', () => {
+  it('infers theme blocks when themes config is omitted', () => {
     const map = makeMap([
       {
         path: 'btn-bg',
@@ -96,7 +96,8 @@ describe('formatCss', () => {
       },
     ])
     const output = Effect.runSync(formatCss(map))
-    expect(output).not.toContain('.dark')
+    expect(output).toContain(':root .dark {')
+    expect(output).toContain('--btn-bg: #1a1a2e;')
   })
 
   it('emits :root .dark block for dark theme', () => {

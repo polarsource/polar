@@ -1,9 +1,7 @@
-import { Box, Headline, Stack, Text, orbitTokens } from '@polar-sh/orbit'
+import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
-const sp = orbitTokens.SPACING
-const cl = orbitTokens.COLORS
-const ra = orbitTokens.RADII
+import { sp, cl, ra } from './token-compat'
 
 
 const principles = [

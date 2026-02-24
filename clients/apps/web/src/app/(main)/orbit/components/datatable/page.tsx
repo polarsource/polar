@@ -6,14 +6,10 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
   Stack,
-  Text,
-  orbitTokens
-} from '@polar-sh/orbit'
+  Text } from '@polar-sh/orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-const sp = orbitTokens.SPACING
-const cl = orbitTokens.COLORS
-const ra = orbitTokens.RADII
+import { sp, cl, ra } from '../../token-compat'
 
 
 // ─── Demo data — flat transactions ───────────────────────────────────────────
@@ -85,7 +81,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
     ),
     cell: ({ row }) => (
       <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
-        {row.getValue('id')}
+        {String(row.getValue('id'))}
       </Text>
     ),
     size: 120,
@@ -109,7 +105,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="Amount" />
     ),
     cell: ({ row }) => (
-      <Text as="span" fontWeight="medium" tabular>{row.getValue('amount')}</Text>
+      <Text as="span" fontWeight="medium" tabular>{String(row.getValue('amount'))}</Text>
     ),
     size: 120,
   },
@@ -119,7 +115,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
-      const status: Transaction['status'] = row.getValue('status')
+      const status = row.getValue('status') as Transaction['status']
       return (
         <Text
           as="span"
@@ -197,7 +193,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
           <span className="w-3.5" />
         )}
         <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
-          {row.getValue('id') || '—'}
+          {String(row.getValue('id') ?? '—')}
         </Text>
       </div>
     ),
@@ -215,7 +211,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
       <DataTableColumnHeader column={column} title="Total" />
     ),
     cell: ({ row }) => (
-      <Text as="span" fontWeight="medium" tabular>{row.getValue('total')}</Text>
+      <Text as="span" fontWeight="medium" tabular>{String(row.getValue('total'))}</Text>
     ),
     size: 120,
   },

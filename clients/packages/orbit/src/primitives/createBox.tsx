@@ -42,7 +42,7 @@ export type FlexChildProps = {
 
 // ─── Style props (CSS values applied as inline styles) ────────────────────────
 // Values are any valid CSS value strings, typically CSS variable references
-// from useOrbit() — e.g. "var(--spacing-SPACING_3)", "var(--card-background)".
+// from useOrbit() — e.g. "var(--SPACING_3)", "var(--CARD-BACKGROUND)".
 
 export type BoxStyleProps = {
   backgroundColor?: string

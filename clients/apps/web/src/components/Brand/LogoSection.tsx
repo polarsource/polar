@@ -4,7 +4,7 @@ import ArrowDownwardOutlined from '@mui/icons-material/ArrowDownwardOutlined'
 import { useTheme } from 'next-themes'
 import React, { useCallback, useState } from 'react'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
-import { Headline } from '../Orbit'
+import { Headline } from '@polar-sh/orbit'
 import { SectionLayout } from './SectionLayout'
 import { VectorEditor } from './Vector'
 

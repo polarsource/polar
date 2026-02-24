@@ -505,12 +505,11 @@ class StripeService:
     async def get_verification_session(
         self, id: str, *, expand: list[str] | None = None
     ) -> stripe_lib.identity.VerificationSession:
-        params: dict[str, object] = {}
-        if expand:
-            params["expand"] = expand
-        return await stripe_lib.identity.VerificationSession.retrieve_async(
-            id, **params
-        )
+        if expand is not None:
+            return await stripe_lib.identity.VerificationSession.retrieve_async(
+                id, expand=expand
+            )
+        return await stripe_lib.identity.VerificationSession.retrieve_async(id)
 
     async def create_verification_session(
         self, user: "User"

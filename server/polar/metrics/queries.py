@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Protocol, cast
 from sqlalchemy import (
     CTE,
     ColumnElement,
+    Integer,
+    Numeric,
     Select,
     SQLColumnExpression,
     and_,
@@ -21,6 +23,7 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import (
     Checkout,
@@ -31,10 +34,12 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
+    Transaction,
     User,
     UserOrganization,
 )
 from polar.models.product import ProductBillingType
+from polar.models.transaction import TransactionType
 
 if TYPE_CHECKING:
     from .metrics import SQLMetric
@@ -266,6 +271,14 @@ def get_active_subscriptions_cte(
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
+    readable_orders_statement = _get_readable_orders_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
     readable_subscriptions_statement = _get_readable_subscriptions_statement(
         auth_subject,
         organization_id=organization_id,
@@ -274,59 +287,149 @@ def get_active_subscriptions_cte(
         customer_id=customer_id,
     )
 
+    fx_value = func.coalesce(
+        func.nullif(func.cast(Transaction.exchange_rate, Numeric(30, 12)), 0),
+        func.cast(Transaction.amount, Numeric(30, 12))
+        / func.nullif(func.cast(Transaction.presentment_amount, Numeric(30, 12)), 0),
+    )
+    fx_day = interval.sql_date_trunc(Order.created_at)
+    fx_currency = func.lower(Transaction.presentment_currency)
+
+    bucketed_fx = cte(
+        select(
+            fx_day.label("timestamp"),
+            fx_currency.label("presentment_currency"),
+            func.avg(fx_value).label("avg_exchange_rate"),
+        )
+        .select_from(Transaction)
+        .join(Order, Order.id == Transaction.order_id)
+        .where(
+            Transaction.type == TransactionType.payment,
+            Order.created_at >= start_timestamp,
+            Order.created_at <= end_timestamp,
+            Transaction.presentment_currency.is_not(None),
+            Transaction.order_id.in_(readable_orders_statement),
+        )
+        .group_by(fx_day, fx_currency)
+    )
+
+    converted_amount = func.round(
+        Subscription.amount * func.coalesce(bucketed_fx.c.avg_exchange_rate, 1)
+    )
+    monthly_amount = case(
+        (
+            Subscription.recurring_interval == SubscriptionRecurringInterval.year,
+            func.round(converted_amount / (12 * Subscription.recurring_interval_count)),
+        ),
+        (
+            Subscription.recurring_interval == SubscriptionRecurringInterval.month,
+            func.round(converted_amount / Subscription.recurring_interval_count),
+        ),
+        (
+            Subscription.recurring_interval == SubscriptionRecurringInterval.week,
+            func.round(
+                converted_amount * 52 / (12 * Subscription.recurring_interval_count)
+            ),
+        ),
+        (
+            Subscription.recurring_interval == SubscriptionRecurringInterval.day,
+            func.round(
+                converted_amount * 365 / (12 * Subscription.recurring_interval_count)
+            ),
+        ),
+    )
+
+    monthly_recurring_revenue = func.coalesce(func.sum(monthly_amount), 0)
+    committed_monthly_recurring_revenue = func.coalesce(
+        func.sum(monthly_amount).filter(
+            or_(
+                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                interval.sql_date_trunc(
+                    cast(
+                        SQLColumnExpression[datetime],
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at),
+                    )
+                )
+                < interval.sql_date_trunc(now),
+            )
+        ),
+        0,
+    )
+    active_subscriber_count = func.count(Subscription.customer_id.distinct())
+    average_revenue_per_user = func.cast(
+        case(
+            (active_subscriber_count == 0, 0),
+            else_=func.round(monthly_recurring_revenue / active_subscriber_count),
+        ),
+        Integer,
+    )
+
+    active_subscriptions_metrics = [
+        metric for metric in metrics if metric.query == MetricQuery.active_subscriptions
+    ]
+
+    metric_columns: list[ColumnElement[int] | ColumnElement[float]] = []
+    for metric in active_subscriptions_metrics:
+        if metric.slug == "monthly_recurring_revenue":
+            expression: ColumnElement[int] | ColumnElement[float] = (
+                monthly_recurring_revenue
+            )
+        elif metric.slug == "committed_monthly_recurring_revenue":
+            expression = committed_monthly_recurring_revenue
+        elif metric.slug == "average_revenue_per_user":
+            expression = average_revenue_per_user
+        else:
+            expression = metric.get_sql_expression(timestamp_column, interval, now)
+        metric_columns.append(func.coalesce(expression, 0).label(metric.slug))
+
+    from_clause = timestamp_series.join(
+        Subscription,
+        isouter=True,
+        onclause=and_(
+            or_(
+                Subscription.started_at.is_(None),
+                interval.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], Subscription.started_at)
+                )
+                <= interval.sql_date_trunc(timestamp_column),
+            ),
+            or_(
+                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                interval.sql_date_trunc(
+                    cast(
+                        SQLColumnExpression[datetime],
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at),
+                    )
+                )
+                > interval.sql_date_trunc(timestamp_column),
+            ),
+            Subscription.id.in_(readable_subscriptions_statement),
+            # Filter to only include subscriptions that overlap with the original bounds
+            or_(
+                Subscription.started_at.is_(None),
+                Subscription.started_at <= end_timestamp,
+            ),
+            or_(
+                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                >= start_timestamp,
+            ),
+        ),
+    ).join(
+        bucketed_fx,
+        isouter=True,
+        onclause=and_(
+            bucketed_fx.c.timestamp == timestamp_column,
+            bucketed_fx.c.presentment_currency == func.lower(Subscription.currency),
+        ),
+    )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
-            *_get_metrics_columns(
-                MetricQuery.active_subscriptions,
-                timestamp_column,
-                interval,
-                metrics,
-                now,
-            ),
+            *metric_columns,
         )
-        .select_from(
-            timestamp_series.join(
-                Subscription,
-                isouter=True,
-                onclause=and_(
-                    or_(
-                        Subscription.started_at.is_(None),
-                        interval.sql_date_trunc(
-                            cast(SQLColumnExpression[datetime], Subscription.started_at)
-                        )
-                        <= interval.sql_date_trunc(timestamp_column),
-                    ),
-                    or_(
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
-                            None
-                        ),
-                        interval.sql_date_trunc(
-                            cast(
-                                SQLColumnExpression[datetime],
-                                func.coalesce(
-                                    Subscription.ended_at, Subscription.ends_at
-                                ),
-                            )
-                        )
-                        > interval.sql_date_trunc(timestamp_column),
-                    ),
-                    Subscription.id.in_(readable_subscriptions_statement),
-                    # Filter to only include subscriptions that overlap with the original bounds
-                    or_(
-                        Subscription.started_at.is_(None),
-                        Subscription.started_at <= end_timestamp,
-                    ),
-                    or_(
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
-                            None
-                        ),
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at)
-                        >= start_timestamp,
-                    ),
-                ),
-            )
-        )
+        .select_from(from_clause)
         .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )

@@ -1,0 +1,638 @@
+DESCRIPTION >
+    Revenue metrics endpoint.
+    Fast path reads from orders_base_state_by_quarter_hour MV.
+    Direct path scans raw events when customer_ids or external_customer_ids are provided.
+    Both paths overlay refund and dispute adjustments from system events.
+    Supplies the following metrics:
+    - revenue
+    - net_revenue
+    - cumulative_revenue
+    - net_cumulative_revenue
+
+NODE revenue_from_mv
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(
+                toDateTime(m.quarter_hour, {{ String(tz, 'UTC', description="Timezone") }})
+            ) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(m.quarter_hour, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(m.quarter_hour, {{ String(tz, 'UTC') }}), 1) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(m.quarter_hour, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(m.quarter_hour, {{ String(tz, 'UTC') }})) AS day,
+        {% else %} toStartOfDay(toDateTime(m.quarter_hour, {{ String(tz, 'UTC') }})) AS day,
+        {% end %}
+        COALESCE(sumMerge(m.settlement_revenue), 0) AS settlement_revenue,
+        COALESCE(sumMerge(m.settlement_fee), 0) AS settlement_fee,
+        COALESCE(sumMerge(m.applied_balance_settlement), 0) AS applied_balance_settlement
+    FROM orders_base_state_by_quarter_hour AS m
+    WHERE
+        m.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+        AND m.quarter_hour >= toDateTime(
+            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        AND m.quarter_hour <= toDateTime(
+            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        {% if defined(product_ids) and product_ids != '' %}
+            AND m.product_id IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(product_ids, description="Comma-separated product UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+    GROUP BY day
+
+NODE adjustments_by_bucket
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }}), 1
+            ) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% else %}
+            toStartOfDay(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% end %}
+        COALESCE(
+            SUM(
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+                - COALESCE(e.fee, 0)
+            ),
+            0
+        ) AS adjustment_net_amount
+    FROM system_events_by_org AS e
+    WHERE
+        e.name
+        IN ('balance.refund', 'balance.refund_reversal', 'balance.dispute', 'balance.dispute_reversal')
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(e.order_created_at, e.timestamp)
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND COALESCE(e.order_created_at, e.timestamp)
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND e.product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+    GROUP BY day
+
+NODE mv_baseline
+SQL >
+    %
+    SELECT
+        COALESCE(sumMerge(m.settlement_revenue), 0) AS hist_settlement_revenue,
+        COALESCE(sumMerge(m.settlement_fee), 0) AS hist_settlement_fee,
+        COALESCE(sumMerge(m.applied_balance_settlement), 0) AS hist_applied_balance_settlement
+    FROM orders_base_state_by_quarter_hour AS m
+    WHERE
+        m.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND m.quarter_hour
+        < toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND m.product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+
+NODE adj_baseline
+SQL >
+    %
+    SELECT
+        COALESCE(
+            SUM(
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+                - COALESCE(e.fee, 0)
+            ),
+            0
+        ) AS hist_adjustment_net_amount
+    FROM system_events_by_org AS e
+    WHERE
+        e.name
+        IN ('balance.refund', 'balance.refund_reversal', 'balance.dispute', 'balance.dispute_reversal')
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(e.order_created_at, e.timestamp)
+        < toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND e.product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+
+NODE revenue_fast
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0) AS revenue,
+        (COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0))
+        - COALESCE(r.settlement_fee, 0)
+        + COALESCE(a.adjustment_net_amount, 0) AS net_revenue,
+        COALESCE(
+            sum(COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0)) OVER (
+                ORDER BY w.interval
+            ),
+            0
+        )
+        + (mb.hist_settlement_revenue - mb.hist_applied_balance_settlement) AS cumulative_revenue,
+        COALESCE(
+            sum(
+                (COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0))
+                - COALESCE(r.settlement_fee, 0)
+                + COALESCE(a.adjustment_net_amount, 0)
+            ) OVER (ORDER BY w.interval),
+            0
+        ) + (
+            mb.hist_settlement_revenue
+            - mb.hist_applied_balance_settlement
+            - mb.hist_settlement_fee
+            + ab.hist_adjustment_net_amount
+        ) AS net_cumulative_revenue
+    FROM intervals w
+    LEFT JOIN revenue_from_mv r ON r.day = w.interval
+    LEFT JOIN adjustments_by_bucket a ON a.day = w.interval
+    CROSS JOIN mv_baseline mb
+    CROSS JOIN adj_baseline ab
+    ORDER BY w.interval
+
+NODE direct_resolve_fx
+SQL >
+    %
+    SELECT
+        e.organization_id,
+        e.order_id,
+        COALESCE(e.order_created_at, e.timestamp) AS event_ts,
+        e.product_id,
+        e.name,
+        e.net_amount,
+        e.amount,
+        e.fee,
+        e.applied_balance_amount,
+        multiIf(
+            e.exchange_rate IS NOT NULL AND e.exchange_rate != 0,
+            toFloat64(e.exchange_rate),
+            e.presentment_amount IS NOT NULL AND e.presentment_amount != 0,
+            toFloat64(e.amount) / toFloat64(e.presentment_amount),
+            NULL
+        ) AS own_fx,
+        argMax(
+            multiIf(
+                s.exchange_rate IS NOT NULL AND s.exchange_rate != 0,
+                toFloat64(s.exchange_rate),
+                s.presentment_amount IS NOT NULL AND s.presentment_amount != 0,
+                toFloat64(s.amount) / toFloat64(s.presentment_amount),
+                NULL
+            ),
+            tuple(
+                toUInt8(
+                    if(e.subscription_id IS NOT NULL AND s.subscription_id = e.subscription_id, 1, 0)
+                ),
+                s.timestamp
+            )
+        ) AS lookup_fx
+    FROM system_events_by_org AS e
+    LEFT JOIN
+        system_events_by_org AS s
+        ON s.organization_id = e.organization_id
+        AND s.name = 'balance.order'
+        AND s.order_id IS NOT NULL
+        AND s.customer_id = e.customer_id
+        AND s.currency = e.currency
+        AND s.timestamp < e.timestamp
+        AND s.order_id != e.order_id
+    WHERE
+        e.order_id IS NOT NULL
+        AND e.name IN ('order.paid', 'balance.order', 'balance.credit_order')
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(e.order_created_at, e.timestamp)
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                )
+                OR e.external_customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{
+                                    String(
+                                        external_customer_ids,
+                                        description="Comma-separated external customer IDs",
+                                    )
+                                }}
+                            )
+                        )
+                )
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                        )
+                    )
+            )
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND e.external_customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    external_customer_ids,
+                                    description="Comma-separated external customer IDs",
+                                )
+                            }}
+                        )
+                    )
+            )
+        {% end %}
+    GROUP BY
+        e.organization_id,
+        e.order_id,
+        event_ts,
+        e.product_id,
+        e.name,
+        e.subscription_id,
+        e.net_amount,
+        e.amount,
+        e.fee,
+        e.applied_balance_amount,
+        own_fx
+
+NODE direct_revenue_by_bucket
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(rfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(rfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(rfx.event_ts, {{ String(tz, 'UTC') }}), 1) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(rfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(rfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% else %} toStartOfDay(toDateTime(rfx.event_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% end %}
+        COALESCE(
+            SUM(
+                IF(
+                    rfx.name IN ('balance.order', 'balance.credit_order'),
+                    toInt64(COALESCE(rfx.net_amount, rfx.amount, 0)),
+                    toInt64(0)
+                )
+            ),
+            0
+        ) AS settlement_revenue,
+        COALESCE(
+            SUM(
+                IF(
+                    rfx.name IN ('balance.order', 'balance.credit_order'),
+                    toInt64(COALESCE(rfx.fee, 0)),
+                    toInt64(0)
+                )
+            ),
+            0
+        ) AS settlement_fee,
+        COALESCE(
+            SUM(
+                IF(
+                    rfx.name IN ('balance.order', 'balance.credit_order') AND rfx.net_amount IS NULL,
+                    toInt64(
+                        round(
+                            greatest(COALESCE(rfx.applied_balance_amount, 0), 0)
+                            * COALESCE(rfx.own_fx, rfx.lookup_fx, 1.0)
+                        )
+                    ),
+                    toInt64(0)
+                )
+            ),
+            0
+        ) AS applied_balance_settlement
+    FROM direct_resolve_fx AS rfx
+    WHERE
+        rfx.event_ts
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND rfx.event_ts
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND COALESCE(rfx.product_id, toUUID('00000000-0000-0000-0000-000000000000'))
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+    GROUP BY day
+
+NODE direct_revenue_baseline
+SQL >
+    %
+    SELECT
+        COALESCE(
+            SUM(
+                IF(
+                    rfx.name IN ('balance.order', 'balance.credit_order'),
+                    toInt64(COALESCE(rfx.net_amount, rfx.amount, 0)),
+                    toInt64(0)
+                )
+            ),
+            0
+        ) AS hist_settlement_revenue,
+        COALESCE(
+            SUM(
+                IF(
+                    rfx.name IN ('balance.order', 'balance.credit_order'),
+                    toInt64(COALESCE(rfx.fee, 0)),
+                    toInt64(0)
+                )
+            ),
+            0
+        ) AS hist_settlement_fee,
+        COALESCE(
+            SUM(
+                IF(
+                    rfx.name IN ('balance.order', 'balance.credit_order') AND rfx.net_amount IS NULL,
+                    toInt64(
+                        round(
+                            greatest(COALESCE(rfx.applied_balance_amount, 0), 0)
+                            * COALESCE(rfx.own_fx, rfx.lookup_fx, 1.0)
+                        )
+                    ),
+                    toInt64(0)
+                )
+            ),
+            0
+        ) AS hist_applied_balance_settlement
+    FROM direct_resolve_fx AS rfx
+    WHERE
+        rfx.event_ts
+        < toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND COALESCE(rfx.product_id, toUUID('00000000-0000-0000-0000-000000000000'))
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+
+NODE direct_adjustments_by_bucket
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }}), 1
+            ) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% else %}
+            toStartOfDay(
+                toDateTime(COALESCE(e.order_created_at, e.timestamp), {{ String(tz, 'UTC') }})
+            ) AS day,
+        {% end %}
+        COALESCE(
+            SUM(
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+                - COALESCE(e.fee, 0)
+            ),
+            0
+        ) AS adjustment_net_amount
+    FROM system_events_by_org AS e
+    WHERE
+        e.name
+        IN ('balance.refund', 'balance.refund_reversal', 'balance.dispute', 'balance.dispute_reversal')
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(e.order_created_at, e.timestamp)
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND COALESCE(e.order_created_at, e.timestamp)
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND e.product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+                OR e.external_customer_id
+                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND e.external_customer_id
+            IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+        {% end %}
+    GROUP BY day
+
+NODE direct_adj_baseline
+SQL >
+    %
+    SELECT
+        COALESCE(
+            SUM(
+                toInt64(
+                    round(
+                        COALESCE(e.net_amount, e.amount, 0)
+                        * IF(e.exchange_rate IS NULL OR e.exchange_rate = 0, 1, e.exchange_rate)
+                    )
+                )
+                - COALESCE(e.fee, 0)
+            ),
+            0
+        ) AS hist_adjustment_net_amount
+    FROM system_events_by_org AS e
+    WHERE
+        e.name
+        IN ('balance.refund', 'balance.refund_reversal', 'balance.dispute', 'balance.dispute_reversal')
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(e.order_created_at, e.timestamp)
+        < toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(product_ids) and product_ids != '' %}
+            AND e.product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+                OR e.external_customer_id
+                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND e.external_customer_id
+            IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+        {% end %}
+
+NODE revenue_direct
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0) AS revenue,
+        (COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0))
+        - COALESCE(r.settlement_fee, 0)
+        + COALESCE(a.adjustment_net_amount, 0) AS net_revenue,
+        COALESCE(
+            sum(COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0)) OVER (
+                ORDER BY w.interval
+            ),
+            0
+        )
+        + (mb.hist_settlement_revenue - mb.hist_applied_balance_settlement) AS cumulative_revenue,
+        COALESCE(
+            sum(
+                (COALESCE(r.settlement_revenue, 0) - COALESCE(r.applied_balance_settlement, 0))
+                - COALESCE(r.settlement_fee, 0)
+                + COALESCE(a.adjustment_net_amount, 0)
+            ) OVER (ORDER BY w.interval),
+            0
+        ) + (
+            mb.hist_settlement_revenue
+            - mb.hist_applied_balance_settlement
+            - mb.hist_settlement_fee
+            + ab.hist_adjustment_net_amount
+        ) AS net_cumulative_revenue
+    FROM intervals w
+    LEFT JOIN direct_revenue_by_bucket r ON r.day = w.interval
+    LEFT JOIN direct_adjustments_by_bucket a ON a.day = w.interval
+    CROSS JOIN direct_revenue_baseline mb
+    CROSS JOIN direct_adj_baseline ab
+    ORDER BY w.interval
+
+NODE endpoint
+SQL >
+    %
+    {% if (defined(customer_ids) and customer_ids != '') or (
+        defined(external_customer_ids) and external_customer_ids != ''
+    ) %} SELECT * FROM revenue_direct {% else %} SELECT * FROM revenue_fast {% end %} ORDER BY timestamp
+
+TYPE ENDPOINT

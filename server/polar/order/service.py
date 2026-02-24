@@ -62,6 +62,7 @@ from polar.models import (
 from polar.models.customer import CustomerType
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -890,6 +891,19 @@ class OrderService:
     ) -> None:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
+
+        organization = order.organization
+        if (
+            organization.is_blocked()
+            or organization.status == OrganizationStatus.DENIED
+        ):
+            log.info(
+                "Organization is blocked or denied, skipping payment",
+                order_id=order.id,
+                organization_id=organization.id,
+                organization_status=organization.status,
+            )
+            return
 
         if order.payment_lock_acquired_at is not None:
             log.warn("Payment already in progress", order_id=order.id)

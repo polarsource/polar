@@ -52,7 +52,7 @@ from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationStatus
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
@@ -2963,6 +2963,56 @@ class TestProcessDunningOrder:
 @pytest.mark.asyncio
 class TestTriggerPayment:
     """Test payment lock mechanism in trigger_payment service method."""
+
+    async def test_skips_denied_organization(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that trigger_payment skips payment when organization is denied."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+
+    async def test_skips_blocked_organization(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that trigger_payment skips payment when organization is blocked."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        organization.blocked_at = utc_now()
+        await save_fixture(organization)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
 
     async def test_already_locked(
         self,

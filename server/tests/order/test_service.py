@@ -2762,6 +2762,42 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at is None
         mock_revoke.assert_called_once()
 
+    async def test_void_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """
+        Test that order retries are stopped if order is void.
+        """
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.void,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        await save_fixture(order)
+
+        mock_revoke = mocker.patch("polar.subscription.service.subscription.revoke")
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+        mock_revoke.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestProcessDunningOrder:

@@ -87,6 +87,7 @@ dev = [
   "polar-sdk==0.27.3",
   "locust>=2.20.0",
   "debugpy>=1.8.19",
+  "pydantic-evals>=0.7.1",
 ]
 
 [tool.taskipy.tasks]

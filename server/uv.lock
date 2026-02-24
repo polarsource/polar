@@ -2113,6 +2113,7 @@ dev = [
     { name = "minio" },
     { name = "mypy" },
     { name = "polar-sdk" },
+    { name = "pydantic-evals" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -2200,6 +2201,7 @@ dev = [
     { name = "minio", specifier = ">=7.2.9" },
     { name = "mypy", specifier = ">=1.11" },
     { name = "polar-sdk", specifier = "==0.27.3" },
+    { name = "pydantic-evals", specifier = ">=0.7.1" },
     { name = "pytest", specifier = "<10" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
@@ -2430,6 +2432,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/96/5fb7d8c3c17bc8c62fdb031c47d77a1af698f1d7a406b0f79aaa1338f9ad/pydantic_core-2.41.5-cp314-cp314t-win32.whl", hash = "sha256:b4ececa40ac28afa90871c2cc2b9ffd2ff0bf749380fbdf57d165fd23da353aa", size = 1988906, upload-time = "2025-11-04T13:41:56.606Z" },
     { url = "https://files.pythonhosted.org/packages/22/ed/182129d83032702912c2e2d8bbe33c036f342cc735737064668585dac28f/pydantic_core-2.41.5-cp314-cp314t-win_amd64.whl", hash = "sha256:80aa89cad80b32a912a65332f64a4450ed00966111b6615ca6816153d3585a8c", size = 1981607, upload-time = "2025-11-04T13:41:58.889Z" },
     { url = "https://files.pythonhosted.org/packages/9f/ed/068e41660b832bb0b1aa5b58011dea2a3fe0ba7861ff38c4d4904c1c1a99/pydantic_core-2.41.5-cp314-cp314t-win_arm64.whl", hash = "sha256:35b44f37a3199f771c3eaa53051bc8a70cd7b54f333531c59e29fd4db5d15008", size = 1974769, upload-time = "2025-11-04T13:42:01.186Z" },
+]
+
+[[package]]
+name = "pydantic-evals"
+version = "1.57.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "logfire-api" },
+    { name = "pydantic" },
+    { name = "pydantic-ai-slim" },
+    { name = "pyyaml" },
+    { name = "rich" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/22/d6/54df4eb7ac2a76de1538412f500dbc1d053ff49d28f15a627e909d471771/pydantic_evals-1.57.0.tar.gz", hash = "sha256:2906475a8a9609de701e97697208dcc209b4fa76109be030727289795525b685", size = 47214, upload-time = "2026-02-10T00:29:08.971Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/2a/dbe6ce7db6e4e6233a3754328aa677baa76ac84dbc64490474ba07aa4022/pydantic_evals-1.57.0-py3-none-any.whl", hash = "sha256:1e9f64cb6943a95a7a0cda8c941ad406aee251d9d368a89c6a2f841bb1b620ee", size = 56411, upload-time = "2026-02-10T00:29:01.213Z" },
 ]
 
 [[package]]

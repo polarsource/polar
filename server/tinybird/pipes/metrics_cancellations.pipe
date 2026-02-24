@@ -1,6 +1,6 @@
 DESCRIPTION >
-    Cancellation metrics endpoint with uncancellation reversal overlay.
-    Fast path reads from pre-aggregated materialized view and subtracts reversals.
+    Cancellation metrics endpoint with canonical cancellation state.
+    Fast path reads from subscription_state to avoid duplicate cancellation overcounting.
     Direct path scans raw events when customer_ids or external_customer_ids are provided.
     Supplies the following metrics:
     - canceled_subscriptions
@@ -13,36 +13,18 @@ DESCRIPTION >
     - canceled_subscriptions_unused
     - canceled_subscriptions_other
 
-NODE cancellations_from_mv
+NODE canceled_latest_fast
 SQL >
     %
     SELECT
-        {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(
-                toDateTime(c.quarter_hour, {{ String(tz, 'UTC', description="Timezone") }})
-            ) AS bucket,
-        {% elif interval == 'hour' %}
-            toStartOfHour(toDateTime(c.quarter_hour, {{ String(tz, 'UTC') }})) AS bucket,
-        {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(c.quarter_hour, {{ String(tz, 'UTC') }}), 1) AS bucket,
-        {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(c.quarter_hour, {{ String(tz, 'UTC') }})) AS bucket,
-        {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(c.quarter_hour, {{ String(tz, 'UTC') }})) AS bucket,
-        {% else %} toStartOfDay(toDateTime(c.quarter_hour, {{ String(tz, 'UTC') }})) AS bucket,
-        {% end %}
-        sumMerge(c.canceled_subscriptions) AS canceled_subscriptions,
-        sumMerge(c.canceled_subscriptions_customer_service) AS canceled_subscriptions_customer_service,
-        sumMerge(c.canceled_subscriptions_low_quality) AS canceled_subscriptions_low_quality,
-        sumMerge(c.canceled_subscriptions_missing_features) AS canceled_subscriptions_missing_features,
-        sumMerge(c.canceled_subscriptions_switched_service) AS canceled_subscriptions_switched_service,
-        sumMerge(c.canceled_subscriptions_too_complex) AS canceled_subscriptions_too_complex,
-        sumMerge(c.canceled_subscriptions_too_expensive) AS canceled_subscriptions_too_expensive,
-        sumMerge(c.canceled_subscriptions_unused) AS canceled_subscriptions_unused,
-        sumMerge(c.canceled_subscriptions_other) AS canceled_subscriptions_other
-    FROM cancellations_by_quarter_hour AS c
+        ss.subscription_id,
+        argMaxMerge(ss.canceled_at) AS canceled_at,
+        argMaxMerge(ss.customer_cancellation_reason) AS customer_cancellation_reason,
+        argMaxMerge(ss.canceled_product_id) AS product_id,
+        argMaxMerge(ss.uncanceled_at) AS uncanceled_at
+    FROM subscription_state AS ss
     WHERE
-        c.organization_id IN (
+        ss.organization_id IN (
             SELECT
                 toUUID(
                     arrayJoin(
@@ -59,105 +41,63 @@ SQL >
                     )
                 )
         )
-        AND c.quarter_hour >= toDateTime(
-            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
-            {{ String(tz, 'UTC') }}
-        )
-        AND c.quarter_hour < toDateTime(
-            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
-            {{ String(tz, 'UTC') }}
-        )
+    GROUP BY ss.subscription_id
+    HAVING
+        canceled_at IS NOT NULL
+        AND canceled_at
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND canceled_at
+        < toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND (uncanceled_at IS NULL OR uncanceled_at <= canceled_at)
         {% if defined(product_ids) and product_ids != '' %}
-            AND c.product_id IN (
-                SELECT
-                    toUUIDOrNull(
-                        arrayJoin(
-                            splitByChar(
-                                ',',
-                                {{ String(product_ids, description="Comma-separated product UUIDs") }}
-                            )
-                        )
-                    )
-            )
+            AND product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
         {% end %}
-    GROUP BY bucket
 
-NODE reversal_matches
-SQL >
-    %
-    SELECT
-        u.subscription_id,
-        argMax(c.canceled_at, (c.timestamp, c.ingested_at)) AS reversed_canceled_at,
-        argMax(c.customer_cancellation_reason, (c.timestamp, c.ingested_at)) AS reversed_reason,
-        argMax(
-            COALESCE(c.product_id, toUUID('00000000-0000-0000-0000-000000000000')),
-            (c.timestamp, c.ingested_at)
-        ) AS reversed_product_id
-    FROM system_events_by_org AS u
-    INNER JOIN
-        system_events_by_org AS c
-        ON c.subscription_id = u.subscription_id
-        AND c.name = 'subscription.canceled'
-        AND c.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
-                    )
-                )
-        )
-        AND c.canceled_at IS NOT NULL
-        AND c.timestamp < u.timestamp
-    WHERE
-        u.name = 'subscription.uncanceled'
-        AND u.subscription_id IS NOT NULL
-        AND u.organization_id IN (
-            SELECT
-                toUUID(
-                    arrayJoin(
-                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
-                    )
-                )
-        )
-    GROUP BY u.subscription_id, u.timestamp
-
-NODE reversals_by_bucket
+NODE cancellations_fast_by_bucket
 SQL >
     %
     SELECT
         {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(toDateTime(r.reversed_canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+            toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
         {% elif interval == 'hour' %}
-            toStartOfHour(toDateTime(r.reversed_canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+            toStartOfHour(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(r.reversed_canceled_at, {{ String(tz, 'UTC') }}), 1) AS bucket,
+            toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }}), 1) AS bucket,
         {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(r.reversed_canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+            toStartOfMonth(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
         {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(r.reversed_canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
-        {% else %} toStartOfDay(toDateTime(r.reversed_canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+            toStartOfYear(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+        {% else %} toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
         {% end %}
-        count(*) AS rev_canceled,
-        countIf(r.reversed_reason = 'customer_service') AS rev_customer_service,
-        countIf(r.reversed_reason = 'low_quality') AS rev_low_quality,
-        countIf(r.reversed_reason = 'missing_features') AS rev_missing_features,
-        countIf(r.reversed_reason = 'switched_service') AS rev_switched_service,
-        countIf(r.reversed_reason = 'too_complex') AS rev_too_complex,
-        countIf(r.reversed_reason = 'too_expensive') AS rev_too_expensive,
-        countIf(r.reversed_reason = 'unused') AS rev_unused,
-        countIf(
-            r.reversed_reason = 'other' OR r.reversed_reason IS NULL OR r.reversed_reason = ''
-        ) AS rev_other
-    FROM reversal_matches AS r
-    WHERE
-        r.reversed_canceled_at
-        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND r.reversed_canceled_at
-        < toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
-        {% if defined(product_ids) and product_ids != '' %}
-            AND r.reversed_product_id
-            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
-        {% end %}
+        toInt64(count(*)) AS canceled_subscriptions,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'customer_service')
+        ) AS canceled_subscriptions_customer_service,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'low_quality')
+        ) AS canceled_subscriptions_low_quality,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'missing_features')
+        ) AS canceled_subscriptions_missing_features,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'switched_service')
+        ) AS canceled_subscriptions_switched_service,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'too_complex')
+        ) AS canceled_subscriptions_too_complex,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'too_expensive')
+        ) AS canceled_subscriptions_too_expensive,
+        toInt64(countIf(lc.customer_cancellation_reason = 'unused')) AS canceled_subscriptions_unused,
+        toInt64(
+            countIf(
+                lc.customer_cancellation_reason = 'other'
+                OR lc.customer_cancellation_reason IS NULL
+                OR lc.customer_cancellation_reason = ''
+            )
+        ) AS canceled_subscriptions_other
+    FROM canceled_latest_fast AS lc
     GROUP BY bucket
 
 NODE cancellations_fast
@@ -165,55 +105,29 @@ SQL >
     %
     SELECT
         w.interval AS timestamp,
-        toInt64(
-            greatest(COALESCE(c.canceled_subscriptions, 0) - COALESCE(r.rev_canceled, 0), 0)
-        ) AS canceled_subscriptions,
-        toInt64(
-            greatest(
-                COALESCE(c.canceled_subscriptions_customer_service, 0)
-                - COALESCE(r.rev_customer_service, 0),
-                0
-            )
+        COALESCE(c.canceled_subscriptions, toInt64(0)) AS canceled_subscriptions,
+        COALESCE(
+            c.canceled_subscriptions_customer_service, toInt64(0)
         ) AS canceled_subscriptions_customer_service,
-        toInt64(
-            greatest(
-                COALESCE(c.canceled_subscriptions_low_quality, 0) - COALESCE(r.rev_low_quality, 0), 0
-            )
+        COALESCE(
+            c.canceled_subscriptions_low_quality, toInt64(0)
         ) AS canceled_subscriptions_low_quality,
-        toInt64(
-            greatest(
-                COALESCE(c.canceled_subscriptions_missing_features, 0)
-                - COALESCE(r.rev_missing_features, 0),
-                0
-            )
+        COALESCE(
+            c.canceled_subscriptions_missing_features, toInt64(0)
         ) AS canceled_subscriptions_missing_features,
-        toInt64(
-            greatest(
-                COALESCE(c.canceled_subscriptions_switched_service, 0)
-                - COALESCE(r.rev_switched_service, 0),
-                0
-            )
+        COALESCE(
+            c.canceled_subscriptions_switched_service, toInt64(0)
         ) AS canceled_subscriptions_switched_service,
-        toInt64(
-            greatest(
-                COALESCE(c.canceled_subscriptions_too_complex, 0) - COALESCE(r.rev_too_complex, 0), 0
-            )
+        COALESCE(
+            c.canceled_subscriptions_too_complex, toInt64(0)
         ) AS canceled_subscriptions_too_complex,
-        toInt64(
-            greatest(
-                COALESCE(c.canceled_subscriptions_too_expensive, 0) - COALESCE(r.rev_too_expensive, 0),
-                0
-            )
+        COALESCE(
+            c.canceled_subscriptions_too_expensive, toInt64(0)
         ) AS canceled_subscriptions_too_expensive,
-        toInt64(
-            greatest(COALESCE(c.canceled_subscriptions_unused, 0) - COALESCE(r.rev_unused, 0), 0)
-        ) AS canceled_subscriptions_unused,
-        toInt64(
-            greatest(COALESCE(c.canceled_subscriptions_other, 0) - COALESCE(r.rev_other, 0), 0)
-        ) AS canceled_subscriptions_other
+        COALESCE(c.canceled_subscriptions_unused, toInt64(0)) AS canceled_subscriptions_unused,
+        COALESCE(c.canceled_subscriptions_other, toInt64(0)) AS canceled_subscriptions_other
     FROM intervals AS w
-    LEFT JOIN cancellations_from_mv AS c ON c.bucket = w.interval
-    LEFT JOIN reversals_by_bucket AS r ON r.bucket = w.interval
+    LEFT JOIN cancellations_fast_by_bucket AS c ON c.bucket = w.interval
 
 NODE canceled_latest_direct
 SQL >

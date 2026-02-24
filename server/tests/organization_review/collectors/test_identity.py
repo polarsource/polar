@@ -23,7 +23,9 @@ def _build_account(
     return account
 
 
-def _build_verification_session(data: dict) -> stripe_lib.identity.VerificationSession:
+def _build_verification_session(
+    data: dict[str, object],
+) -> stripe_lib.identity.VerificationSession:
     return stripe_lib.identity.VerificationSession.construct_from(data, None)
 
 

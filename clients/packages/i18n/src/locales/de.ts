@@ -222,10 +222,10 @@ export default {
   benefitTypes: {
     custom: 'Benutzerdefiniert',
     license_keys: 'Lizenzschlüssel',
-    github_repository: 'Zugriff auf GitHub-Repository',
+    github_repository: 'GitHub-Repository-Zugang',
     discord: 'Discord-Einladung',
     downloadables: 'Dateidownloads',
-    meter_credit: 'Nutzungsguthaben',
+    meter_credit: 'Verbrauchsguthaben',
     feature_flag: 'Feature-Flag',
   },
   ordinal: {

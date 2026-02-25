@@ -215,11 +215,11 @@ export default {
   benefitTypes: {
     custom: 'Anpassad',
     license_keys: 'Licensnycklar',
-    github_repository: 'Tillgång till GitHub-repository',
+    github_repository: 'Åtkomst till GitHub-repository',
     discord: 'Discord-inbjudan',
     downloadables: 'Filnedladdningar',
-    meter_credit: 'Förbrukningskrediter',
-    feature_flag: 'Funktionsflagga',
+    meter_credit: 'Mätarkrediter',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: ':e',

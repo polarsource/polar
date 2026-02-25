@@ -222,9 +222,9 @@ export default {
     license_keys: 'Clés de licence',
     github_repository: 'Accès au dépôt GitHub',
     discord: 'Invitation Discord',
-    downloadables: 'Téléchargements de fichiers',
-    meter_credit: "Crédits d'utilisation",
-    feature_flag: 'Drapeau de fonctionnalité',
+    downloadables: 'Fichiers',
+    meter_credit: 'Crédits prépayés',
+    feature_flag: 'Accès à une fonctionnalité',
   },
   ordinal: {
     zero: 'e',

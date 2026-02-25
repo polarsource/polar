@@ -218,9 +218,9 @@ export default {
   benefitTypes: {
     custom: 'Personalizzato',
     license_keys: 'Chiavi di licenza',
-    github_repository: 'Accesso al repository GitHub',
+    github_repository: 'Accesso repository GitHub',
     discord: 'Invito Discord',
-    downloadables: 'Download di file',
+    downloadables: 'File scaricabili',
     meter_credit: 'Crediti a consumo',
     feature_flag: 'Feature flag',
   },

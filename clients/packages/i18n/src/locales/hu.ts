@@ -217,9 +217,9 @@ export default {
     custom: 'Egyedi',
     license_keys: 'Licenckulcsok',
     github_repository: 'GitHub repository hozzáférés',
-    discord: 'Discord-meghívó',
+    discord: 'Discord meghívó',
     downloadables: 'Fájlletöltések',
-    meter_credit: 'Használati kreditek',
+    meter_credit: 'Használat alapú kreditek',
     feature_flag: 'Feature flag',
   },
   ordinal: {

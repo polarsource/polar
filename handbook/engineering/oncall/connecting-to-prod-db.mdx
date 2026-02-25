@@ -1,0 +1,17 @@
+HERE BE DRAGONS
+
+## Solution A: Direct connection to DB
+
+1. Add your IP to the allowlist in the database settings Render in [the “Access Control”-section](https://dashboard.render.com/) of the `db`-instance
+2. Connect directly to the database using the database environment variables in Render
+
+## Solution B: SSH connection
+
+1. Add your SSH public key to your Render user in the Account Settings and going to “SSH public keys” and adding your public key there
+2. Check that you are able to connect by doing `ssh {FIND_ON_RENDER}`. This command is the one that is shown if you click on **Connect** on the service page:  https://dashboard.render.com/web/{DB}
+3. Now in Postico or TablePlus, create a new connection and check the “Use SSH tunnel”. Plug in
+    1. Server name: `ssh.ohio.render.com`
+    2. User name: `{FIND_ON_RENDER}`
+    3. Private key: \<select the private key corresponding to the public key you uploaded>
+4. In the same connection plug in the hostname, username, password, and database from the Render environment variables
+5. You should be good to go!

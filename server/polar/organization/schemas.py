@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
+from urllib.parse import urlparse
 
 from pydantic import (
     UUID4,
@@ -154,6 +155,25 @@ PLATFORM_DOMAINS = {
     "discord": ["discord.gg", "discord.com"],
 }
 
+# Reverse mapping: domain -> platform for auto-detection
+DOMAIN_TO_PLATFORM: dict[str, str] = {}
+for _platform, _domains in PLATFORM_DOMAINS.items():
+    for _domain in _domains:
+        DOMAIN_TO_PLATFORM[_domain] = _platform
+
+
+def detect_platform_from_url(url: str) -> str | None:
+    """Detect the social platform from a URL's hostname."""
+    try:
+        parsed = urlparse(url.lower())
+        hostname = parsed.hostname or ""
+        # Strip www. prefix
+        if hostname.startswith("www."):
+            hostname = hostname[4:]
+        return DOMAIN_TO_PLATFORM.get(hostname)
+    except Exception:
+        return None
+
 
 class OrganizationSocialLink(Schema):
     platform: OrganizationSocialPlatforms = Field(
@@ -164,20 +184,13 @@ class OrganizationSocialLink(Schema):
     @model_validator(mode="before")
     @classmethod
     def validate_url(cls, data: dict[str, Any]) -> dict[str, Any]:
-        platform = data.get("platform")
         url = data.get("url", "").lower()
-
-        if not (platform and url):
+        if not url:
             return data
 
-        if platform == "other":
-            return data
-
-        valid_domains = PLATFORM_DOMAINS[platform]
-        if not any(domain in url for domain in valid_domains):
-            raise ValueError(
-                f"Invalid URL for {platform}. Must be from: {', '.join(valid_domains)}"
-            )
+        # Auto-detect platform from URL domain, fallback to "other"
+        detected = detect_platform_from_url(url)
+        data["platform"] = detected or "other"
 
         return data
 

@@ -1256,6 +1256,73 @@ async def block_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/under-review-dialog",
+    name="organizations-v2:under_review_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def under_review_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Set organization under review dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        await organization_service.set_organization_under_review(
+            session, organization, enqueue_review=False
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for(
+                    "organizations-v2:detail", organization_id=organization_id
+                )
+            ),
+            303,
+        )
+
+    with modal("Set Under Review", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-warning"):
+                text("Set Organization Under Review")
+
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status to Ongoing Review")
+                    with tag.li():
+                        text("Block payouts while the organization is under review")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(
+                    hx_post=str(
+                        request.url_for(
+                            "organizations-v2:under_review_dialog",
+                            organization_id=organization_id,
+                        )
+                    ),
+                ):
+                    with button(variant="warning", type="submit"):
+                        text("Set Under Review")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/edit",
     name="organizations-v2:edit",
     methods=["GET", "POST"],

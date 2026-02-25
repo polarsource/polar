@@ -183,7 +183,22 @@ class OrganizationDetailView:
                                 text("Approve")
 
                     elif self.org.status == OrganizationStatus.ACTIVE:
-                        # Active organizations can be denied
+                        # Active organizations can be denied or set under review
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations-v2:under_review_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Under Review")
+
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",

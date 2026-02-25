@@ -214,12 +214,12 @@ export default {
     },
   },
   benefitTypes: {
-    license_keys: 'Chaves de licença',
-    github_repository: 'Acesso a repositório GitHub',
-    discord: 'Convite do Discord',
-    downloadables: 'Download de arquivos',
     custom: 'Personalizado',
-    meter_credit: 'Créditos de uso',
+    license_keys: 'Chaves de licença',
+    github_repository: 'Acesso ao repositório GitHub',
+    discord: 'Convite para o Discord',
+    downloadables: 'Downloads de ficheiros',
+    meter_credit: 'Créditos de utilização',
     feature_flag: 'Feature flag',
   },
   ordinal: {

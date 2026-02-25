@@ -216,12 +216,12 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Aangepast',
     license_keys: 'Licentiesleutels',
     github_repository: 'Toegang tot GitHub-repository',
     discord: 'Discord-uitnodiging',
     downloadables: 'Bestandsdownloads',
-    custom: 'Aangepast',
-    meter_credit: 'Verbruikstegoeden',
+    meter_credit: 'Verbruikstegoed',
     feature_flag: 'Feature flag',
   },
   ordinal: {

@@ -218,13 +218,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Personnalisé',
     license_keys: 'Clés de licence',
     github_repository: 'Accès au dépôt GitHub',
     discord: 'Invitation Discord',
-    downloadables: 'Fichiers',
-    custom: 'Personnalisé',
-    meter_credit: 'Crédits prépayés',
-    feature_flag: 'Feature Flag',
+    downloadables: 'Téléchargements de fichiers',
+    meter_credit: "Crédits d'utilisation",
+    feature_flag: 'Drapeau de fonctionnalité',
   },
   ordinal: {
     zero: 'e',

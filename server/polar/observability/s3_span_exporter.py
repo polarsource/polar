@@ -1,3 +1,4 @@
+import gzip
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -40,13 +41,13 @@ class S3SpanExporter(SpanExporter):
             return SpanExportResult.SUCCESS
 
         lines = [span.to_json() for span in spans]
-        body = "\n".join(lines)
+        body = gzip.compress("\n".join(lines).encode())
 
         now = datetime.now(UTC)
         key = (
             f"spans/{self.service_name}"
             f"/dt={now.strftime('%Y-%m-%d')}"
-            f"/{now.strftime('%H%M%S')}_{uuid.uuid4().hex}.jsonl"
+            f"/{now.strftime('%H%M%S')}_{uuid.uuid4().hex}.jsonl.gz"
         )
 
         try:

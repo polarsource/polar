@@ -1,8 +1,10 @@
 """Organization detail view with horizontal tabs and sidebar."""
 
 import contextlib
+import urllib.parse
 from collections.abc import Generator
 from datetime import UTC, datetime
+from uuid import UUID
 
 from fastapi import Request
 from tagflow import tag, text
@@ -18,6 +20,16 @@ from ...components import (
     tab_nav,
 )
 from ...components._clipboard_button import clipboard_button
+
+
+def _get_logfire_url(organization_id: UUID) -> str:
+    params = {
+        "q": f"attributes->>'subject_id' = '{organization_id}'",
+        "last": "30d",
+    }
+    return (
+        f"https://logfire-us.pydantic.dev/polar/polar?{urllib.parse.urlencode(params)}"
+    )
 
 
 class OrganizationDetailView:
@@ -375,11 +387,13 @@ class OrganizationDetailView:
                 with tag.div(classes="dropdown dropdown-end"):
                     with tag.button(
                         classes="btn btn-circle btn-ghost",
+                        tabindex="0",
                         **{"aria-label": "More options"},
                     ):
                         text("⋮")
                     with tag.ul(
-                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-52",
+                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                        tabindex="0",
                     ):
                         with tag.li():
                             with tag.a(
@@ -388,6 +402,12 @@ class OrganizationDetailView:
                             ):
                                 text("Search in Plain")
                         with tag.li():
+                            with tag.a(
+                                href=_get_logfire_url(self.org.id),
+                                target="_blank",
+                            ):
+                                text("View API Logs in Logfire")
+                        with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
                             with tag.a(
                                 hx_get=str(
                                     request.url_for(

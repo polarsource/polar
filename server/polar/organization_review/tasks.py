@@ -5,6 +5,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
+from polar.integrations.plain.service import plain as plain_service
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
@@ -13,7 +14,6 @@ from polar.organization.repository import (
 from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
 )
-from polar.integrations.plain.service import plain as plain_service
 from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 

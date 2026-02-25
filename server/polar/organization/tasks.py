@@ -18,10 +18,10 @@ from polar.integrations.plain.service import plain as plain_service
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import Customer, CustomerSeat, Organization
-from polar.models.organization import OrganizationStatus
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job

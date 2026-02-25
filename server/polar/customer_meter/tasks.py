@@ -5,7 +5,7 @@ from opentelemetry import trace
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, get_message_timestamp
 
 from .service import customer_meter as customer_meter_service
 
@@ -40,9 +40,18 @@ def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
 async def update_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
-        customer = await repository.get_by_id(customer_id)
+        customer = await repository.get_by_id(customer_id, include_deleted=True)
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
+
+        if customer.is_deleted is not None:
+            assert customer.deleted_at is not None
+            # If the message was enqueued after the customer was deleted, it's a bug
+            if get_message_timestamp() > customer.deleted_at:
+                raise CustomerDoesNotExist(customer_id)
+            # Otherwise, just discard.
+            # It can happen under normal circumstances with race conditions or retries
+            return
 
         span = trace.get_current_span()
         span.set_attribute("organization_id", str(customer.organization_id))

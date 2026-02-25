@@ -35,7 +35,10 @@ def _make_report(
 @pytest.mark.asyncio
 class TestSaveAgentReview:
     async def test_stores_review_type_in_report(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         review = await repo.save_agent_review(
@@ -50,7 +53,10 @@ class TestSaveAgentReview:
         assert review.report["review_type"] == "submission"
 
     async def test_does_not_mutate_original_report(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         original_report: dict = {"report": {"verdict": "APPROVE"}}
         repo = OrganizationReviewRepository.from_session(session)
@@ -66,7 +72,10 @@ class TestSaveAgentReview:
         assert "review_type" not in original_report
 
     async def test_preserves_existing_report_keys(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         review = await repo.save_agent_review(
@@ -86,7 +95,10 @@ class TestSaveAgentReview:
 @pytest.mark.asyncio
 class TestHasSetupCompleteReview:
     async def test_returns_true_for_new_format(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         """New records with top-level review_type are found."""
         repo = OrganizationReviewRepository.from_session(session)
@@ -102,7 +114,10 @@ class TestHasSetupCompleteReview:
         assert await repo.has_setup_complete_review(organization.id) is True
 
     async def test_returns_false_for_other_type(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_agent_review(
@@ -123,7 +138,10 @@ class TestHasSetupCompleteReview:
         assert await repo.has_setup_complete_review(organization.id) is False
 
     async def test_legacy_records_without_review_type(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         """Old records that only have data_snapshot.context are NOT matched.
 
@@ -146,7 +164,10 @@ class TestHasSetupCompleteReview:
 @pytest.mark.asyncio
 class TestGetLatestAgentReview:
     async def test_returns_latest_by_reviewed_at(
-        self, save_fixture: SaveFixture, session: AsyncSession, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
 

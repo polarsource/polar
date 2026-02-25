@@ -213,18 +213,10 @@ resource "render_web_service" "api" {
 
   runtime_source = {
     image = {
-      image_url              = "ghcr.io/polarsource/polar"
-      tag                    = "latest"
+      image_url              = split("@", var.api_service_config.image_url)[0]
       registry_credential_id = var.registry_credential_id
+      digest                 = var.api_service_config.image_digest
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      runtime_source.image.image_url,
-      runtime_source.image.digest,
-      runtime_source.image.tag,
-    ]
   }
 
   autoscaling = var.environment == "production" ? {
@@ -280,23 +272,11 @@ resource "render_web_service" "worker" {
   num_instances     = each.value.num_instances
 
   runtime_source = {
-    image = each.value.digest != null ? {
-      image_url              = each.value.image_url
+    image = {
+      image_url              = split("@", each.value.image_url)[0]
       registry_credential_id = var.registry_credential_id
-      digest                 = each.value.digest
-      } : {
-      image_url              = each.value.image_url
-      registry_credential_id = var.registry_credential_id
-      tag                    = each.value.tag
+      digest                 = each.value.image_digest
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      runtime_source.image.image_url,
-      runtime_source.image.tag,
-      runtime_source.image.digest,
-    ]
   }
 
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null

@@ -105,6 +105,40 @@ resource "render_redis" "redis" {
 }
 
 # =============================================================================
+# Service image data sources
+#
+# We read the current image digest from Render to avoid stale state in
+# Terraform causing "unable to fetch image" errors on service updates.
+#
+# The service IDs are hardcoded because referencing module outputs would
+# create a cyclic dependency (module -> data source -> module).
+#
+# First-time setup: create the services first without the data sources
+# (use a default tag like "latest"), then add the data sources with the
+# service IDs from `terraform state show`.
+# =============================================================================
+
+locals {
+  production_service_ids = {
+    api                    = "srv-ci4r87h8g3ne0dmvvl60"
+    scheduler              = "srv-d4uto5ili9vc73dd37tg"
+    worker                 = "srv-d4k6otfgi27c73cicnpg"
+    worker-medium-priority = "srv-d4k62svpm1nc73af5e3g"
+    worker-high-priority   = "srv-d3hrh1j3fgac73a1t4r0"
+    worker-webhook         = "srv-d5l0oekhg0os73clofm0"
+  }
+}
+
+data "render_web_service" "production_api" {
+  id = local.production_service_ids["api"]
+}
+
+data "render_web_service" "production_worker" {
+  for_each = { for k, v in local.production_service_ids : k => v if k != "api" }
+  id       = each.value
+}
+
+# =============================================================================
 # Production
 # =============================================================================
 
@@ -119,6 +153,8 @@ module "production" {
     allowed_hosts   = "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins    = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains  = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    image_url       = data.render_web_service.production_api.runtime_source.image.image_url
+    image_digest    = data.render_web_service.production_api.runtime_source.image.digest
     plan            = "pro"
     web_concurrency = "4"
   }
@@ -143,28 +179,33 @@ module "production" {
     "scheduler" = {
       start_command      = "uv run python -m polar.worker.scheduler"
       plan               = "starter"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["scheduler"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["scheduler"].runtime_source.image.digest
       dramatiq_prom_port = "10000"
     }
     "worker" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues low_priority"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker"].runtime_source.image.digest
       custom_domains     = [{ name = "worker.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
     "worker-medium-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker-medium-priority"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-medium-priority"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
     }
     "worker-high-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker-high-priority"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-high-priority"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
     }
     "worker-webhook" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker-webhook"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-webhook"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }

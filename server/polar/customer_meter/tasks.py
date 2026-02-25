@@ -44,7 +44,7 @@ async def update_customer(customer_id: uuid.UUID) -> None:
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        if customer.is_deleted is not None:
+        if customer.is_deleted:
             assert customer.deleted_at is not None
             # If the message was enqueued after the customer was deleted, it's a bug
             if get_message_timestamp() > customer.deleted_at:

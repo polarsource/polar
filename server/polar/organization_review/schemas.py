@@ -220,14 +220,13 @@ class DimensionAssessment(Schema):
 class ReviewVerdict(StrEnum):
     APPROVE = "APPROVE"
     DENY = "DENY"
-    NEEDS_HUMAN_REVIEW = "NEEDS_HUMAN_REVIEW"
 
 
 class ReviewAgentReport(Schema):
     """Structured output from the AI review agent."""
 
     verdict: ReviewVerdict = Field(
-        description="Overall review verdict: APPROVE, DENY, or NEEDS_HUMAN_REVIEW"
+        description="Overall review verdict: APPROVE or DENY"
     )
     overall_risk_score: float = Field(
         ge=0,

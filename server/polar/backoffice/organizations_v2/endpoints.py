@@ -502,7 +502,7 @@ async def get_organization_detail(
         (
             payment_count,
             total_amount,
-            _risk_scores,
+            risk_scores,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
@@ -527,6 +527,8 @@ async def get_organization_detail(
             (chargeback_count / payment_count * 100) if payment_count > 0 else 0
         )
 
+        p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
+
         payment_stats = {
             "payment_count": payment_count,
             "total_amount": total_amount / 100,
@@ -543,6 +545,9 @@ async def get_organization_detail(
             "chargeback_rate": chargeback_rate,
             "next_review_threshold": organization.next_review_threshold,
             "total_transfer_sum": total_transfer_sum,
+            "p50_risk": p50_risk,
+            "p90_risk": p90_risk,
+            "risk_scores_count": len(risk_scores),
         }
 
         orders_count, unrefunded_orders_count = await count_test_sales(

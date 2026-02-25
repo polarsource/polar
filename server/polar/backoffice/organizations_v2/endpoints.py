@@ -1267,8 +1267,6 @@ async def under_review_dialog(
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
     """Set organization under review dialog and action."""
-    from polar.models import Account
-
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id, include_blocked=True)
@@ -1276,12 +1274,9 @@ async def under_review_dialog(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        organization.status = OrganizationStatus.ONGOING_REVIEW
-        organization.status_updated_at = datetime.now(UTC)
-
-        # Block payouts by setting account to under review
-        if organization.account:
-            organization.account.status = Account.Status.UNDER_REVIEW
+        await organization_service.set_organization_under_review(
+            session, organization, enqueue_review=False
+        )
 
         return HXRedirectResponse(
             request,

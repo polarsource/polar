@@ -808,13 +808,20 @@ class OrganizationService:
         return organization
 
     async def set_organization_under_review(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        enqueue_review: bool = True,
     ) -> Organization:
         organization.status = OrganizationStatus.ONGOING_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
-        enqueue_job("organization.under_review", organization_id=organization.id)
+        if enqueue_review:
+            enqueue_job(
+                "organization.under_review", organization_id=organization.id
+            )
         return organization
 
     async def update_status_from_stripe_account(

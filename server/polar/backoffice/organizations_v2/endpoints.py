@@ -670,51 +670,157 @@ async def get_organization_detail(
                     text(f"Unknown section: {section}")
 
 
-@router.post("/{organization_id}/approve", name="organizations-v2:approve")
-async def approve_organization(
+def _render_ai_review_summary(report: dict) -> None:
+    """Render a compact AI review summary for use in approve/deny dialogs."""
+    verdict = report.get("verdict", "")
+    risk_score = report.get("overall_risk_score")
+    summary = report.get("summary", "")
+    violated = report.get("violated_sections", [])
+
+    verdict_classes = {
+        "APPROVE": "badge-success",
+        "DENY": "badge-error",
+        "NEEDS_HUMAN_REVIEW": "badge-warning",
+    }
+    badge_class = verdict_classes.get(verdict, "badge-ghost")
+
+    with tag.div(classes="bg-base-200 p-4 rounded-lg space-y-3"):
+        with tag.div(classes="flex items-center gap-3"):
+            with tag.span(classes="text-sm font-semibold"):
+                text("AI Verdict:")
+            with tag.div(classes=f"badge {badge_class} badge-sm"):
+                text(verdict)
+            if risk_score is not None:
+                score_color = (
+                    "text-success"
+                    if risk_score < 30
+                    else "text-warning"
+                    if risk_score < 70
+                    else "text-error"
+                )
+                with tag.span(classes=f"text-sm font-bold {score_color}"):
+                    text(f"Risk: {risk_score:.0f}/100")
+
+        if summary:
+            with tag.p(classes="text-sm"):
+                text(summary)
+
+        if violated:
+            with tag.div(classes="text-sm"):
+                with tag.span(classes="font-medium text-error"):
+                    text("Violated sections: ")
+                with tag.span():
+                    text(", ".join(violated))
+
+
+@router.api_route(
+    "/{organization_id}/approve-dialog",
+    name="organizations-v2:approve_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def approve_dialog(
     request: Request,
     organization_id: UUID4,
-    threshold: int | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
     user_session: UserSession = Depends(get_admin),
-) -> HXRedirectResponse:
-    """Approve an organization with optional threshold."""
+) -> HXRedirectResponse | None:
+    """Approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Check form data for threshold in dollars (from custom approve input)
-    if threshold is None:
-        form_data = await request.form()
-        raw_dollars = form_data.get("threshold_dollars")
-        if raw_dollars:
-            threshold = int(float(str(raw_dollars)) * 100)
+    if request.method == "POST":
+        data = await request.form()
+        raw_threshold = data.get("threshold", "250")
+        threshold = int(float(str(raw_threshold)) * 100)
 
-    # Use provided threshold or default to $250 in cents
-    next_review_threshold = threshold if threshold else 25000
+        override_reason = str(data.get("override_reason", "")).strip() or None
 
-    # Record review feedback before approving
-    await _record_review_feedback(
-        session,
-        organization_id,
-        user_session.user.id,
-        OrganizationReviewFeedback.HumanVerdict.APPROVE,
+        # Record review feedback before approving
+        await _record_review_feedback(
+            session,
+            organization_id,
+            user_session.user.id,
+            OrganizationReviewFeedback.HumanVerdict.APPROVE,
+            override_reason=override_reason,
+        )
+
+        # Approve the organization
+        await organization_service.confirm_organization_reviewed(
+            session, organization, threshold
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for(
+                    "organizations-v2:detail", organization_id=organization_id
+                )
+            ),
+            303,
+        )
+
+    # Fetch AI review for context
+    review_repo = OrganizationReviewRepository(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    report = (
+        agent_review.report.get("report", {}) if agent_review and agent_review.report else {}
     )
 
-    # Approve the organization
-    await organization_service.confirm_organization_reviewed(
-        session, organization, next_review_threshold
-    )
+    with modal("Approve Organization", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations-v2:approve_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            if report:
+                _render_ai_review_summary(report)
 
-    return HXRedirectResponse(
-        request,
-        str(
-            request.url_for("organizations-v2:detail", organization_id=organization_id)
-        ),
-        303,
-    )
+            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
+                with tag.div(classes="form-control"):
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text font-semibold"):
+                            text("Next Review Threshold (in dollars)")
+                    with tag.input(
+                        type="number",
+                        name="threshold",
+                        value="250",
+                        placeholder="250",
+                        classes="input input-bordered",
+                    ):
+                        pass
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text-alt"):
+                            text("Amount in dollars that will trigger next review")
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for approval")
+                with tag.textarea(
+                    name="override_reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Why are you approving this organization?",
+                    rows="3",
+                ):
+                    pass
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="primary", type="submit"):
+                    text("Approve Organization")
+
+    return None
 
 
 @router.post(
@@ -790,10 +896,20 @@ async def deny_dialog(
             303,
         )
 
+    # Fetch AI review for context
+    review_repo = OrganizationReviewRepository(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    report = (
+        agent_review.report.get("report", {}) if agent_review and agent_review.report else {}
+    )
+
     with modal("Deny Organization", open=True):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p(classes="font-semibold text-error"):
                 text("⚠️ Warning: Payments will be blocked")
+
+            if report:
+                _render_ai_review_summary(report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-2"):
@@ -814,7 +930,7 @@ async def deny_dialog(
                 with tag.div(classes="form-control"):
                     with tag.label(classes="label"):
                         with tag.span(classes="label-text"):
-                            text("Reason for override (optional)")
+                            text("Reason for denial")
                     with tag.textarea(
                         name="override_reason",
                         classes="textarea textarea-bordered w-full",
@@ -884,6 +1000,13 @@ async def approve_denied_dialog(
             303,
         )
 
+    # Fetch AI review for context
+    review_repo = OrganizationReviewRepository(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    report = (
+        agent_review.report.get("report", {}) if agent_review and agent_review.report else {}
+    )
+
     with modal("Approve Denied Organization", open=True):
         with tag.form(
             hx_post=str(
@@ -897,6 +1020,9 @@ async def approve_denied_dialog(
         ):
             with tag.p(classes="font-semibold"):
                 text("Approve this previously denied organization")
+
+            if report:
+                _render_ai_review_summary(report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-3"):

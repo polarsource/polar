@@ -1,7 +1,7 @@
 import io
 import logging
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import boto3
 from botocore.exceptions import ClientError
@@ -51,6 +51,14 @@ def get_content_type(key: str) -> str:
         if lower.endswith(ext):
             return ct
     return "application/octet-stream"
+
+
+def uri_to_s3_key(uri: str) -> str:
+    return unquote(urlparse(uri).path).lstrip("/")
+
+
+def s3_key_to_uri(key: str) -> str:
+    return "/" + quote(key, safe="/")
 
 
 def resize_image(
@@ -122,12 +130,13 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         logger.error("Could not determine bucket from origin")
         return request
 
-    original_key = uri.lstrip("/")
+    original_key = uri_to_s3_key(uri)
     resized_key = f"resized/{width}x{height}/{original_key}"
+    resized_uri = s3_key_to_uri(resized_key)
 
     try:
         s3.head_object(Bucket=bucket, Key=resized_key)
-        request["uri"] = f"/{resized_key}"
+        request["uri"] = resized_uri
         request["querystring"] = ""
         return request
     except ClientError as e:
@@ -165,6 +174,6 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         logger.exception("Error storing resized image")
         return request
 
-    request["uri"] = f"/{resized_key}"
+    request["uri"] = resized_uri
     request["querystring"] = ""
     return request

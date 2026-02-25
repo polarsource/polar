@@ -177,3 +177,20 @@ class TestHandler:
 
         assert result["uri"] == "/images/photo.jpg"
         monkeypatch.setattr(aws, "head_object", original_head)
+
+    def test_url_encoded_uri_is_decoded_for_s3_key(self, aws: S3Client) -> None:
+        _upload(
+            aws,
+            "images/my photo.jpg",
+            _make_image(800, 800),
+        )
+
+        event = _make_event(uri="/images/my%20photo.jpg", querystring="width=200")
+        result = handler(event, None)
+
+        assert result["uri"] == "/resized/200x0/images/my%20photo.jpg"
+        assert result["querystring"] == ""
+
+        obj = aws.get_object(Bucket=BUCKET, Key="resized/200x0/images/my photo.jpg")
+        img = Image.open(io.BytesIO(obj["Body"].read()))
+        assert img.size == (200, 200)

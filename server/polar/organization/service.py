@@ -45,7 +45,7 @@ from polar.organization_access_token.repository import OrganizationAccessTokenRe
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
-from polar.organization_review.schemas import ReviewContext
+from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
@@ -65,6 +65,8 @@ if TYPE_CHECKING:
     pass
 
 log = structlog.get_logger()
+
+_AUTO_APPROVE_MIN_THRESHOLD = 25_000  # $250 in cents
 
 
 class PaymentStepID(StrEnum):
@@ -758,6 +760,34 @@ class OrganizationService:
             initial_review=initial_review,
         )
         return organization
+
+    async def handle_ongoing_review_verdict(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        verdict: ReviewVerdict,
+    ) -> bool:
+        """Handle AI agent verdict for an ongoing threshold review.
+
+        Returns True if auto-approved, False if escalated to human review (Plain ticket created).
+        Only auto-approves when: status is ONGOING_REVIEW, threshold >= $250, and verdict is APPROVE.
+        """
+        is_eligible = (
+            organization.status == OrganizationStatus.ONGOING_REVIEW
+            and organization.next_review_threshold >= _AUTO_APPROVE_MIN_THRESHOLD
+            and verdict == ReviewVerdict.APPROVE
+        )
+
+        if is_eligible:
+            next_threshold = organization.next_review_threshold * 2
+            await self.confirm_organization_reviewed(
+                session, organization, next_threshold
+            )
+            return True
+
+        # Not eligible or not approved → create Plain ticket for human review
+        await plain_service.create_organization_review_thread(session, organization)
+        return False
 
     async def deny_organization(
         self, session: AsyncSession, organization: Organization

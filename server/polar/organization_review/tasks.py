@@ -5,6 +5,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
+from polar.integrations.plain.service import plain as plain_service
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
@@ -50,6 +51,7 @@ _VERDICT_MAP: dict[ReviewVerdict, str] = {
 async def run_review_agent(
     organization_id: uuid.UUID,
     context: str = ReviewContext.THRESHOLD,
+    auto_approve_eligible: bool = False,
 ) -> None:
     """Run the organization review agent as a background task.
 
@@ -70,9 +72,22 @@ async def run_review_agent(
             raise OrganizationDoesNotExist(organization_id)
 
         # Run the review agent
-        result = await run_organization_review(
-            session, organization, context=review_context
-        )
+        try:
+            result = await run_organization_review(
+                session, organization, context=review_context
+            )
+        except Exception:
+            if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
+                log.exception(
+                    "organization_review.threshold.agent_failed",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                )
+                await plain_service.create_organization_review_thread(
+                    session, organization
+                )
+                return
+            raise
 
         report = result.report
         log.info(
@@ -97,6 +112,20 @@ async def run_review_agent(
             model_used=result.model_used,
             reviewed_at=datetime.now(UTC),
         )
+
+        # For THRESHOLD context with auto-approve eligibility:
+        # delegate decision to the service layer
+        if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
+            auto_approved = await organization_service.handle_ongoing_review_verdict(
+                session, organization, report.verdict
+            )
+            log.info(
+                "organization_review.threshold.verdict_handled",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+                verdict=report.verdict.value,
+                auto_approved=auto_approved,
+            )
 
         # For SUBMISSION context: also create OrganizationReview record and act
         if review_context == ReviewContext.SUBMISSION:

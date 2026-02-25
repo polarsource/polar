@@ -397,7 +397,7 @@ class OrganizationDetailView:
                     ):
                         with tag.li():
                             with tag.a(
-                                href=f"https://app.plain.com/search?q={self.org.email or self.org.slug}",
+                                href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.org.email or self.org.slug}",
                                 target="_blank",
                             ):
                                 text("Search in Plain")

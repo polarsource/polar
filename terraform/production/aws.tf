@@ -291,10 +291,10 @@ module "application_access_production" {
   source   = "../modules/application_access"
   username = "polar-production-files"
   buckets = {
-    customer_invoices = "polar-customer-invoices"
-    payout_invoices   = "polar-payout-invoices"
-    files             = "polar-production-files"
-    public_files      = "polar-public-files"
+    customer_invoices = { name = "polar-customer-invoices" }
+    payout_invoices   = { name = "polar-payout-invoices" }
+    files             = { name = "polar-production-files", description = "Policy used by our app for downloadable benefits. Keep permissions to a bare minimum." }
+    public_files      = { name = "polar-public-files", description = "Policy used by our app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
   }
 }
 

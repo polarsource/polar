@@ -46,10 +46,10 @@ module "application_access_sandbox" {
   source   = "../modules/application_access"
   username = "polar-sandbox-files"
   buckets = {
-    customer_invoices = "polar-sandbox-customer-invoices"
-    payout_invoices   = "polar-sandbox-payout-invoices"
-    files             = "polar-sandbox-files"
-    public_files      = "polar-public-sandbox-files"
+    customer_invoices = { name = "polar-sandbox-customer-invoices" }
+    payout_invoices   = { name = "polar-sandbox-payout-invoices" }
+    files             = { name = "polar-sandbox-files", description = "Policy used by our SANDBOX app for downloadable benefits. Keep permissions to a bare minimum." }
+    public_files      = { name = "polar-public-sandbox-files", description = "Policy used by our SANDBOX app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
   }
 }
 

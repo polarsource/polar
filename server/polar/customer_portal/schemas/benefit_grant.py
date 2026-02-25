@@ -13,6 +13,12 @@ from polar.benefit.strategies.downloadables.properties import (
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesSubscriber,
 )
+from polar.benefit.strategies.feature_flag.properties import (
+    BenefitGrantFeatureFlagProperties,
+)
+from polar.benefit.strategies.feature_flag.schemas import (
+    BenefitFeatureFlagSubscriber,
+)
 from polar.benefit.strategies.github_repository.properties import (
     BenefitGrantGitHubRepositoryProperties,
 )
@@ -23,12 +29,6 @@ from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
 )
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysSubscriber
-from polar.benefit.strategies.feature_flag.properties import (
-    BenefitGrantFeatureFlagProperties,
-)
-from polar.benefit.strategies.feature_flag.schemas import (
-    BenefitFeatureFlagSubscriber,
-)
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )

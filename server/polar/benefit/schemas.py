@@ -7,14 +7,14 @@ from polar.benefit.strategies.discord.properties import BenefitGrantDiscordPrope
 from polar.benefit.strategies.downloadables.properties import (
     BenefitGrantDownloadablesProperties,
 )
+from polar.benefit.strategies.feature_flag.properties import (
+    BenefitGrantFeatureFlagProperties,
+)
 from polar.benefit.strategies.github_repository.properties import (
     BenefitGrantGitHubRepositoryProperties,
 )
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
-)
-from polar.benefit.strategies.feature_flag.properties import (
-    BenefitGrantFeatureFlagProperties,
 )
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
@@ -46,6 +46,11 @@ from .strategies.downloadables.schemas import (
     BenefitDownloadablesCreate,
     BenefitDownloadablesUpdate,
 )
+from .strategies.feature_flag.schemas import (
+    BenefitFeatureFlag,
+    BenefitFeatureFlagCreate,
+    BenefitFeatureFlagUpdate,
+)
 from .strategies.github_repository.schemas import (
     BenefitGitHubRepository,
     BenefitGitHubRepositoryCreate,
@@ -55,11 +60,6 @@ from .strategies.license_keys.schemas import (
     BenefitLicenseKeys,
     BenefitLicenseKeysCreate,
     BenefitLicenseKeysUpdate,
-)
-from .strategies.feature_flag.schemas import (
-    BenefitFeatureFlag,
-    BenefitFeatureFlagCreate,
-    BenefitFeatureFlagUpdate,
 )
 from .strategies.meter_credit.schemas import (
     BenefitMeterCredit,

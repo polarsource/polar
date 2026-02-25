@@ -109,14 +109,14 @@ function resolveDirection(
  *
  * @example
  * // Vertical on mobile, horizontal from xl upward
- * <Stack verticalUntil="xl" gap={tokens.SPACING_3}>
+ * <Stack verticalUntil="xl" gap={theme.spacing[3]}>
  *   <Box>…</Box>
  *   <Box>…</Box>
  * </Stack>
  *
  * @example
  * // Always vertical, centered cross-axis
- * <Stack vertical alignItems="center" gap={tokens.SPACING_2}>…</Stack>
+ * <Stack vertical alignItems="center" gap={theme.spacing[2]}>…</Stack>
  *
  * @example
  * // Divider between each child

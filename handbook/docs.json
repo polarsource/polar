@@ -43,11 +43,17 @@
         "group": "Engineering",
         "pages": [
           "engineering/introduction",
-          "engineering/rest-api-guidelines",
+          {
+            "group": "Backend Development",
+            "pages": [
+              "engineering/backend-development/rest-api-guidelines",
+              "engineering/backend-development/task-debouncer"
+            ]
+          },
           {
             "group": "Design Documents",
             "pages": [
-              "engineering/design-documents",
+              "engineering/design-documents/index",
               "engineering/design-documents/seat-based-pricing",
               "engineering/design-documents/prorations",
               "engineering/design-documents/subscription-retries",

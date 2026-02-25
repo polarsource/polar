@@ -1,0 +1,26 @@
+## Testing taxes locally
+
+To test tax calculation (Stripe-based):
+
+1. Go to your **Stripe Sandbox** and in there go to Tax > Registrations (https://dashboard.stripe.com/test/tax/registrations).
+2. Create a registration in Ireland
+    1. First select the “I’ve already registered” option
+    2. Then the  “Non-Union One-Stop Shop (OSS)” option  – this matches our production setup.
+    3. Select “Immediately” (on when to start collecting)
+    4. Then click “Close” (no need to set up filing)
+
+You’ll now see VAT applied to EU countries!
+
+- e.g. Ireland itself will have 23%
+- Denmark and Sweden have 25%
+- Greece has 24%
+- Cyprus has 19%
+
+## Speakeasy: How do I run with a local version of the API?
+
+1. Clone the `polar-js` repository
+2. In `polar-js/.speakeasy/workflow.yaml` change `https://api.polar.sh/openapi.json` to `http://127.0.1:8000/openapi.json`
+3. Instal the Speakeasy CLI: https://www.speakeasy.com/docs/speakeasy-reference/cli/getting-started
+4. Run `speakeasy run --skip-versioning` to generate the SDK locally
+5. In the main polar repo, go to `clients/apps/web` and install the local dependency with `pnpm` e.g. `pnpm add "/Users/<user>/Development/polar-js"` (or whatever your local path to the `polar-js` repository is).
+6. Do the same for `clients/packages/checkout`

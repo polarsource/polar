@@ -1,0 +1,163 @@
+import { OpenQuestion } from "/snippets/open-question.jsx";
+
+<Info>
+  **Status**: Postponed
+
+**Created**: October 2025
+
+**Last Updated**: November 7th, 2025
+
+**Postponed**: Decided to postpone for the time being in favour of more emphasis
+on analytics and other feature requests.
+
+</Info>
+
+## Briefing
+
+In this new era of AI-based apps, usage-based billing is becoming the new standard business model. Previously, we added support for usage-based billing in Polar, using a event-based system to track usage and bill customers accordingly. The usage is accrued over the subscription cycle and billed at the end of the cycle.
+
+While this approach is working well technically, we haven't seen lot of adoption for pure usage based vs. using meters as subscription credits (popular). Especially from startups and small business. The main drawback is that "pure" usage-based billing can be frightening and unpredictable for the customer. Internet is full of stories of customers being surprised by a crazy high bill at the end of the month. Besides, it can also be a risk for merchants, as a customer could accrue a large amount of usage in a cycle, and then not being able to pay the invoice, leading to a loss of revenue.
+
+That's why lot of businesses, including AI leaders like OpenAI and Anthropic, are proposing a cash balance approach: customers pre-pay to top-up their balance, and then the usage is deducted from the balance. This way, customers can control their spending and avoid surprises. It also reduces the risk for merchants, as they get paid upfront.
+
+In this document, we'll explore how we can implement a cash balance system in Polar, and how it can complement our existing usage-based billing system. We call that **Wallets**.
+
+## Goals
+
+- Customers on an Organization should be able to have a Wallet with a cash balance.
+- Customers should be able to top-up their Wallet using their credit card or other payment methods.
+- Customers should be able to enable an option to auto top-up their Wallet when the balance goes below a threshold.
+- Customers should be able to use their Wallet balance to pay for usage.
+- Merchants should be able to configure their products so usage is paid from the Wallet balance.
+- Merchants should be able to be informed on the Customer's balance, from the dashboard, API and webhooks.
+
+## Flows
+
+### Product configuration
+
+As we already do today, the merchant configures a Meter, to filter and aggregate usage events they want to bill.
+
+Then, when creating a product, the merchant adds a Metered Price to link a Meter to a corresponding price per unit. The new thing is that the merchant can choose how they want to bill the usage: either at the end of the cycle (the current way), or using the Wallet balance.
+
+This opens up the possibility to handle complex pricing schemes, like a fixed price billed at the end of the cycle, plus usage deducted from the Wallet balance.
+
+### Customer
+
+A customer signs up on a merchant's app. Using the API, the merchant creates a Customer on Polar and creates a subscription for their usage-based product. A new Wallet is created for the Customer, with a 0 balance.
+
+To top-up the Wallet, the merchant redirects the Customer to the Polar's Customer Portal. From there, the Customer can add a payment method and top-up their Wallet with a desired amount of money. The Customer can top-up as many times as they want, and the balance is cumulative. Each top-up creates an Order in the merchant's Organization, and the funds are transferred to the Organization's Account, minus Polar fees.
+
+When the Customer uses the merchant's app, the app tracks the usage and reports it to Polar using the Event Ingestion API. Polar deducts the cost of the usage from the Customer's Wallet balance.
+
+We don't try to have any kind of blocking in case of low balance. It's up to the merchant to decide how to handle that, by estimating the cost of the usage before reporting it and compare it with the balance.
+
+### Tracking the Wallets
+
+From the merchant's perspective, it's key to be able to track the Wallets of their Customers. We propose a few things:
+
+- From the dashboard, on a Customer page, we should have a **Wallet** tab showing the current balance and the transactions history.
+- From the API, we should have `/v1/wallets` endpoints to list/retrieve Wallets (with filters like `customer_id`, `balance_amount`...), and `/v1/wallets/{wallet_id}/transactions` to list the transactions of a Wallet. In the Wallet schema, we should directly have access to the current balance.
+- From the Customer State API and webhook, we should add a `wallets` field to list all the available Wallets for the Customer, with their current balance.
+- We should have `wallet.created`/`wallet.updated` webhooks to notify the merchant of changes to a Wallet, including balance changes.
+
+In the Customer Portal, we should also have the same kind of information/API so we can show the Customer their Wallet balance and transactions.
+
+The design implies that a Customer can have multiple Wallets. We suppose that in the future, we might want to support multiple currencies, or maybe have different Wallets for different purposes. Another idea would be to revamp our "Customer Balance" logic to use Wallets.
+
+### Refunds & Disputes
+
+It's likely that some Customers will want to have a refund for a top-up they made. It's a bit tricky here as the Customer may have already consumed some of their balance. Same thing for disputes.
+
+<OpenQuestion>
+  My proposal is to allow refunds in the limit of the current balance. For
+  example, if the Customer topped-up for \$100, and then used \$30, they can
+  only get a refund of up to \$70.
+</OpenQuestion>
+
+For disputes, I think the only solution is to take back the full amount from the merchant, and let them handle the situation with the Customer. The Wallet is then set to 0.
+
+<OpenQuestion>
+  This opens up the possibility for a malicious Customer to dispute all their
+  top-ups, even if they consumed a lot of their balance. We could consider a
+  mechanism where the merchant could "block" a Customer from making further
+  top-ups.
+</OpenQuestion>
+
+## Implementation details
+
+### Subscription Create endpoint
+
+Currently, the only way to create a Subscription is to take the Customer through a Checkout, so they can add their payment method and billing details. As we see, this is not ideal in this context where the Customer should be able to start right away.
+
+We'll introduce a Subscription create API endpoint allowing the merchant to programmatically create a Subscription for a Customer. This way, we can create the Wallet and start to track Billing Entries for the Customer usage.
+
+<OpenQuestion>
+How should we treat Product including a fixed price? In the case of a new Customer, we won't have any Payment Method to pay the initial cycle.
+
+Stripe's approach is simply to reject the creation of the Subscription if there's no Payment Method. If we do this, the Customer will have to go through a Checkout, as we do today.
+
+</OpenQuestion>
+
+### Wallet model
+
+We'll introduce a new Wallet entity in the database. Principal characteristics:
+
+- A Customer
+- A Currency (currently, only `usd`)
+
+Then, similar to our existing Account model, we'll also introduce a WalletTransaction model to track all changes to the Wallet balance. Principal characteristics:
+
+- A Wallet
+- A timestamp
+- An amount (in cents), positive or negative
+- A type (`top_up`, `usage`, `refund`, `dispute`)
+- A reference to the Order (for `top_up` type)
+
+Similar to Transaction, we should put great efforts in ensuring we can have the full overview of the Wallet from this single table: in particular, the balance should be easily computable by summing the amounts of all transactions.
+
+It's worth to note that Wallet balance should work with real amounts of money, so we shouldn't handle sub-cent amounts.
+
+### "Walletted" metered price and billing entries
+
+As we mentioned, the merchant will configure a Metered Price to be billed using the Wallet balance. We'll call that a "walletted" metered price.
+
+Currently, we have a cron job that runs every 5 minutes to create the Billing Entries for all subscriptions with metered prices, given the events ingested since the last run. Those Billing Entries are then handled and billed at the end of the cycle.
+
+For "walletted" metered prices, we should deduct those Billing Entries from the Wallet balance as soon as they are created. Said another way, we create WalletTransaction of type `usage` for each Billing Entry created.
+
+But there are two problems here.
+
+#### Small unit amounts
+
+It's common for usage-based pricing to have very small unit amounts, like \$0.001 per unit. If the Billing Entry corresponds to 1 unit, we would need to deduct \$0.001 from the Wallet balance, which is not possible.
+
+In that case, we should skip that Billing Entry for that run and reconsider it in the next run, when more events have been ingested. This way, we accumulate the usage until we reach a least a whole cent.
+
+Therefore, we'll introduce a new `wallet_transaction_id` field on the Billing Entry model, to link it to the corresponding WalletTransaction. Similar to `order_item_id`, it'll tell us by which WalletTransaction the Billing Entry has been paid. Effectively, we'll then be able to track for a given wallet deduction, which Billing Entries and Events triggered it.
+
+#### Insufficient balance
+
+The second problem is when the Wallet balance is insufficient to pay for the Billing Entry. We don't want to go negative, as it would defeat the purpose of pre-paid balance.
+
+<OpenQuestion>
+  My proposal is to cover as much as possible of the Billing Entry with the
+  Wallet balance, and lose the rest. This way, we don't have to deal with
+  negative balance, and the Customer can always top-up their Wallet to continue
+  using the service.
+</OpenQuestion>
+
+### Wallet top-up
+
+We'll need a dedicated flow to top-up the wallet. This will be very similar to the existing Checkout flow, as it'll require to:
+
+- Collect a payment method
+- Collect billing details
+- Allow the Customer to choose the amount to top-up
+- Calculate taxes
+- Create an Order to track the payment and transfer the funds to the merchant's Account
+
+### Refunds
+
+Currently, when we issue a Refund, we take care of removing the amount from the merchant's Account balance. When refunding a Wallet top-up Order, we should also take care of removing the corresponding amount from the Wallet's balance.
+
+It means we'll likely need a mechanism to track a Wallet from a given Order. Currently, an Order is mandatory linked to a Product, but in this case, the Order won't be linked to any Product. We could introduce a nullable `wallet_id` field on the Order model, and make `product_id` nullable.

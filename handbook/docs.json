@@ -1,0 +1,80 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Polar Handbook",
+  "favicon": "/images/favicon.png",
+  "logo": {
+    "light": "/images/light.png",
+    "dark": "/images/dark.png"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "colors": {
+    "primary": "#000",
+    "light": "#fff",
+    "dark": "#000"
+  },
+  "background": {
+    "color": {
+      "dark": "#131316"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  },
+  "contextual": {
+    "options": ["copy", "chatgpt", "claude"]
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Company",
+        "pages": ["company/about-polar"]
+      },
+      {
+        "group": "Working at Polar",
+        "pages": [
+          "working-at-polar/introduction",
+          "working-at-polar/onboarding",
+          "working-at-polar/how-we-work",
+          "working-at-polar/project-management-workflow",
+          "working-at-polar/recruitment-process"
+        ]
+      },
+      {
+        "group": "Engineering",
+        "pages": [
+          "engineering/introduction",
+          "engineering/rest-api-guidelines",
+          {
+            "group": "Design Documents",
+            "pages": [
+              "engineering/design-documents",
+              "engineering/design-documents/seat-based-pricing",
+              "engineering/design-documents/prorations",
+              "engineering/design-documents/subscription-retries",
+              "engineering/design-documents/wallets",
+              "engineering/design-documents/multi-currency",
+              "engineering/design-documents/business-entity",
+              "engineering/design-documents/event-storage",
+              "engineering/design-documents/platform-api"
+            ]
+          },
+          "engineering/tech-notes",
+          {
+            "group": "On-Call Procedures",
+            "pages": [
+              "engineering/oncall/introduction",
+              "engineering/oncall/developer-faq",
+              "engineering/oncall/merge-accounts",
+              "engineering/oncall/deploy-infra",
+              "engineering/oncall/trigger-webhooks"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

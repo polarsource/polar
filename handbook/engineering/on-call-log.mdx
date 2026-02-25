@@ -1,0 +1,165 @@
+---
+title: "On-call log"
+description: "A rolling log of on-call incidents and resolutions"
+---
+
+# On-call log
+
+Every week, another engineer will be on-call. They will be responsible for responding to alerts and incidents.
+When everything is running smoothly, the on-call engineer can handle maintenance tasks like updating dependencies, fixing bugs, and improving the codebase.
+
+The goal of this rolling log is to ease handover between on-call for unresolved issues, and keep a log of what's been handled recently.
+
+## Week of 2025-11-17
+
+On-call: Pieter Beulque
+
+### Incidents
+
+#### 2025-11-22
+
+We had a jump scare on Saturday because of the undelivered webhooks monitor, but it was a false alarm, the queue grew up to 17 undelivered webhooks but gradually backed down again.
+I'm not sure there was an actual root cause or just a traffic spike. We can reconsider the threshold for the monitor because it was arbitrarily set to 10 back in the day. 
+
+#### 2025-11-17
+
+Our worker went out of memory because of a huge spike in subscription renewals. We have a merchant that is using daily subscriptions for a use case. This in turn triggered a lot of invoices trying to generate concurrently and the invoice number unique index caused the database to lock.
+
+As a mitigation we moved the merchant to the new customer-based invoice indexing. As a future mitigation we also made this default for new organizations. The same issue may still happen for existing organizations that see sudden spikes in orders but the same fix can then also be applied. 
+
+## Week of 2025-11-10
+
+On-call: Jesper Bränn
+
+### Incidents
+
+#### 2025-11-12
+
+The sandbox environment hit Stripe's rate limit for the Tax API. It was escalated to Stripe, got increased and resolved itself due to time. The sandbox was updated to swallow tax calculation errors to avoid this breaking the environment in the future.
+We now have alerts and a status page configured for the sandbox environment.
+
+#### 2025-11-14
+
+Running out of memory continuously on the workers, causing a crash loop after getting an influx of exceptions in the processing of them. [Read more discussion](https://polar-olw4768.slack.com/archives/C09T5UDPF2Q). Potentially related to the Sentry integration in Dramatiq being reenabled. We have now disabled it again which can be monitored if this continues to happen or if it stops now.
+
+
+#### 2025-11-15
+
+Webhooks were slow to process. Most likely due to an overload of other events causing a delay in processing. [Read more details](https://polar-olw4768.slack.com/archives/C093CJXJXPT/p1763221839002159).
+
+
+### Maintenance
+
+- Sped up the metrics endpoint after being notified of >15s response times. We are now almost back to where we were before the additional metrics being added from Oct 23 going forward in terms of number of slow requests (>5s).
+
+
+## Week of 2025-10-20
+
+On-call: Pieter Beulque
+
+### Incidents
+
+#### 2025-10-20
+
+`us-east-1` went down, so we had some downstream issues because of that (and Vercel running on AWS), but nothing too major (i.e. nothing worse than the rest of the internet)
+
+### Maintenance
+
+- Upgraded to Next.js 16
+- Upgraded to React 19.2
+
+## Week of 2025-10-14
+
+On-call: François Voron
+
+### Incidents
+
+#### 2025-10-14T14:13
+
+**Summary**
+
+Webhooks monitor got down because of delayed webhooks sending. After checking, the reason is that we had a huge spike in `benefit.grant` task to process; because a very successful merchant added a new benefit on an exisiting product, effectively triggering the grant on all their historical customers.
+
+The incident resolved by itself 4 minutes later, when all the grants were processed and the rest of the queue could be processed, including pending webhooks.
+
+**Analysis**
+
+The root cause is similar to the one of the previous incident: a big spike of tasks filling up the queue, preventing other tasks to be processed in a timely manner. This time, however, the incident was much less impactful: with our _high-priority worker_ in place, very important tasks like payment processing were still processed in time. However, this poses the question of the priority of the webhooks. Should they be placed in the high priority queue? In their own queue?
+
+**Reference links**
+
+- `benefit.grant` spike: https://logfire-us.pydantic.dev/polar/production-worker?q=attributes-%3E%3E%27actor%27+%3D+%27benefit.grant%27+AND+attributes-%3E%27message%27-%3E%27kwargs%27-%3E%3E%27benefit_id%27+%3D+%27b6c1005f-cf98-4f3d-8fee-05498ce5fffe%27&since=2025-10-14T12%3A06%3A29.521Z&until=2025-10-14T12%3A18%3A14.482Z
+- High priority tasks being processed during the event: https://logfire-us.pydantic.dev/polar/production-worker?q=attributes-%3E%27message%27-%3E%3E%27queue_name%27+%3D+%27high_priority%27+AND+attributes-%3E%3E%27actor%27+%21%3D+%27eventstream.publish%27&since=2025-10-14T12%3A06%3A29.521Z&until=2025-10-14T12%3A18%3A14.482Z
+
+### Maintenance
+
+- Migrated the backend to Python 3.14 and updated dependencies accordingly.
+  - Free-threading is however not ready yet: https://github.com/polarsource/polar/issues/7342
+
+## Week of 2025-10-06
+
+On-call: Petru Rares Sincraian
+
+**New high_priority worker**
+I updated the render.yaml file to add a new worker to process only the messages from the high_priority queue. This is one of the tasks from the postmortem.
+
+**Bug on usage based when a proration happened**
+I fixed a bug where usage-based pricing was not correctly calculated when a proration happened. This mainly affected the max, min, average, and unique operations.
+
+## Week of 2025-09-29
+
+On-call: Pieter Beulque
+
+### Incidents
+
+#### 2025-10-02T19:48
+
+**Summary**
+
+Delayed processing of background jobs because of a pile-up of failing jobs between 18:00 and 21:00 UTC.
+This caused delays of up to one hour for payment processing across all merchants, but all jobs were eventually picked up and handled.
+No orders or other data was lost.
+
+**Timeline**
+
+- 18:00: A merchant starts to trigger 200–250 event ingestion calls per minute (up from ± 15 per minute max), mostly for the same customer
+- 18:00: For that same customer, `customer_meter.update_customer` jobs starts to fill the queue
+- 18:07: First "Unable to obtain lock" error in Sentry for that `customer_meter.update_customer` job
+- 19:48: Outgoing webhooks start to fail to deliver, triggers monitoring
+- 20:05: Worker is restarted with no effect
+- 20:16: Problem is pinpointed to peak in `customer_meter.update_customer` jobs
+- 20:18: [Number of processes/threads of the worker increased](https://github.com/polarsource/polar/commit/61e5f973ab46c55b1c11a9da744695b760884ad5) with no effect
+- 20:32: [Patch deployed for task `customer_meter.update_customer` to skips retries and exits early if lock is occupied](https://github.com/polarsource/polar/commit/a67530c3d169920fdbad7fc9437bea94d88b9b96)
+- 20:38: Worker queue starts to decrease
+- 21:00: Incident over, backlog processed
+
+**Root cause**
+
+A combination of a lot of events for a single customer, queuing a lot of `customer_meter.update_customer` jobs, combined with that job setting a lock with a long grace period of 5 seconds and the default of 20 retries. This eventually lead to a pile-up of failed jobs waiting to retry and a thundering herd of these jobs ready to run whenever a worker process was available. As these new events came in and failed events queued retries, more and more of the available worker capacity was spend on this failing job (waiting for 5 seconds to obtain the lock), causing other, higher priority workers to stall.
+
+This impact was further amplified by the fact that the worker priority queue's in Dramatiq aren't respected with Redis as your broker, effectively falling back to a FIFO queue.
+
+**Mitigations**
+
+200-250 event ingestion calls per minute are reasonable, so we should support that.
+
+As an immediate fix for the issue: [we're updating our logic so that frequent `customer_meter.update_customer` calls are deduped](https://github.com/polarsource/polar/issues/7146).
+
+We are also looking into another way to set up a [high-priority queue](https://github.com/polarsource/polar/issues/7149) now that we've learned that Dramatiq's built-in priority does nothing on Redis.
+
+### Ongoing issues
+
+- Investigating random 500's and white screens of death on some pages that look related to Vercel / Next.js SSR not being able to reach our API.
+
+### Resolved issues
+
+- Updated the JS SDK & adapters to fix a few bugs, mainly with our Better Auth adapter and Vite builds. It's hard to test locally (I may take a shot at improving this if I have some time this week), but I think I squashed the most blocking bugs.
+- On October 1st, I noticed we hit a lot of 429's since the upgrade to Next.js 15. Our hypothesis is that the `/ingest` routes (for Posthog) started running the middleware before executing (even though this isn't documented new behavior in Next.js 15), so I added `ingest` to the ignored paths regex for that middleware.
+
+### Maintenance
+
+- Updated Tailwind to v4
+- Updated Next.js to v15 (and so, also React to v19). This was a bit scary, since we don't have good front-end tests, so we'll have to monitor Sentry closely for a while.
+  - As part of the React 19 migration, I removed all `forwardRef` calls since that's deprecated syntax. Things look like they're working, but if some interactive element or an infinite scroll or sth stopped working, this is probably related.
+- Updated Rechars to v3
+- Fixed the tests & CI on `polar-adapters`

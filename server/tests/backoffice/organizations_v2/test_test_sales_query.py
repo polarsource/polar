@@ -10,12 +10,13 @@ joined through UserOrganization, causing all customer orders to be
 incorrectly flagged as "test sales" when those customers had Member records.
 """
 
-import pytest
-from sqlalchemy import func, select
+from datetime import UTC, datetime
 
-from polar.models import Organization, User, UserOrganization
-from polar.models.customer import Customer
-from polar.models.order import Order, OrderStatus
+import pytest
+
+from polar.backoffice.organizations_v2.endpoints import count_test_sales
+from polar.models import UserOrganization
+from polar.models.order import OrderStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -27,62 +28,8 @@ from tests.fixtures.random_objects import (
 )
 
 
-def _build_test_sales_query(organization_id: object) -> tuple:
-    """
-    Replicate the test sales query from endpoints.py for testing.
-
-    Returns (team_member_emails_subquery, test_sales_filter) matching
-    the production code.
-    """
-    team_member_emails_subquery = (
-        select(func.lower(User.email))
-        .join(UserOrganization, User.id == UserOrganization.user_id)
-        .where(
-            UserOrganization.organization_id == organization_id,
-            UserOrganization.deleted_at.is_(None),
-        )
-        .correlate(None)
-    )
-
-    test_sales_filter = (
-        Customer.organization_id == organization_id,
-        func.lower(Customer.email).in_(team_member_emails_subquery),
-        Order.net_amount > 0,
-    )
-
-    return team_member_emails_subquery, test_sales_filter
-
-
-async def _count_test_sales(
-    session: AsyncSession, organization_id: object
-) -> tuple[int, int]:
-    """Run the test sales count queries and return (total, unrefunded)."""
-    _, test_sales_filter = _build_test_sales_query(organization_id)
-
-    orders_count_result = await session.execute(
-        select(func.count(Order.id))
-        .join(Customer, Order.customer_id == Customer.id)
-        .where(*test_sales_filter)
-    )
-    orders_count = orders_count_result.scalar() or 0
-
-    unrefunded_orders_result = await session.execute(
-        select(func.count(Order.id))
-        .join(Customer, Order.customer_id == Customer.id)
-        .where(
-            *test_sales_filter,
-            Order.status.notin_(
-                [OrderStatus.refunded, OrderStatus.partially_refunded]
-            ),
-        )
-    )
-    unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
-
-    return orders_count, unrefunded_orders_count
-
-
 @pytest.mark.asyncio
-class TestTestSalesQuery:
+class TestCountTestSales:
     async def test_member_orders_not_counted_as_test_sales(
         self,
         session: AsyncSession,
@@ -122,7 +69,7 @@ class TestTestSalesQuery:
             email="paying-customer@example.com",
         )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         # The customer's order should NOT be counted as a test sale
         assert total == 0
@@ -155,7 +102,7 @@ class TestTestSalesQuery:
             save_fixture, customer=customer, subtotal_amount=1000
         )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         assert total == 1
         assert unrefunded == 1
@@ -185,7 +132,7 @@ class TestTestSalesQuery:
             status=OrderStatus.refunded,
         )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         assert total == 1
         assert unrefunded == 0
@@ -216,7 +163,7 @@ class TestTestSalesQuery:
             discount_amount=1000,
         )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         assert total == 0
         assert unrefunded == 0
@@ -260,7 +207,7 @@ class TestTestSalesQuery:
                 email=f"customer-{i}@example.com",
             )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         # None of the 5 customer orders should be test sales
         assert total == 0
@@ -289,7 +236,7 @@ class TestTestSalesQuery:
             save_fixture, customer=customer, subtotal_amount=1000
         )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         assert total == 1
         assert unrefunded == 1
@@ -304,8 +251,6 @@ class TestTestSalesQuery:
         (deleted UserOrganization) should not be counted.
         """
         org = await create_organization(save_fixture)
-
-        from datetime import UTC, datetime
 
         former_member = await create_user(save_fixture)
         uo = UserOrganization(user=former_member, organization=org)
@@ -324,7 +269,7 @@ class TestTestSalesQuery:
             save_fixture, customer=customer, subtotal_amount=1000
         )
 
-        total, unrefunded = await _count_test_sales(session, org.id)
+        total, unrefunded = await count_test_sales(session, org.id)
 
         assert total == 0
         assert unrefunded == 0

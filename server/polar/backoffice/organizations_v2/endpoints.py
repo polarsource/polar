@@ -131,6 +131,55 @@ async def _record_review_feedback(
     )
 
 
+async def count_test_sales(
+    session: AsyncSession, organization_id: UUID4
+) -> tuple[int, int]:
+    """
+    Count test sales (self-purchases by org team members with positive amounts).
+
+    Uses UserOrganization + User to get actual org team member emails,
+    NOT the Member model which represents customer usage entities.
+
+    Returns (total_count, unrefunded_count).
+    """
+    team_member_emails_subquery = (
+        select(func.lower(User.email))
+        .join(UserOrganization, User.id == UserOrganization.user_id)
+        .where(
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.deleted_at.is_(None),
+        )
+        .correlate(None)
+    )
+
+    test_sales_filter = (
+        Customer.organization_id == organization_id,
+        func.lower(Customer.email).in_(team_member_emails_subquery),
+        Order.net_amount > 0,
+    )
+
+    orders_count_result = await session.execute(
+        select(func.count(Order.id))
+        .join(Customer, Order.customer_id == Customer.id)
+        .where(*test_sales_filter)
+    )
+    orders_count = orders_count_result.scalar() or 0
+
+    unrefunded_orders_result = await session.execute(
+        select(func.count(Order.id))
+        .join(Customer, Order.customer_id == Customer.id)
+        .where(
+            *test_sales_filter,
+            Order.status.notin_(
+                [OrderStatus.refunded, OrderStatus.partially_refunded]
+            ),
+        )
+    )
+    unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
+
+    return orders_count, unrefunded_orders_count
+
+
 @router.get("/", name="organizations-v2:list")
 async def list_organizations(
     request: Request,
@@ -553,43 +602,9 @@ async def get_organization_detail(
             "total_transfer_sum": total_transfer_sum,
         }
 
-        # Fetch test sales data (self-purchases by org team members with positive amounts)
-        # Use UserOrganization + User to get actual org team member emails,
-        # NOT the Member model which represents customer usage entities.
-        team_member_emails_subquery = (
-            select(func.lower(User.email))
-            .join(UserOrganization, User.id == UserOrganization.user_id)
-            .where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.deleted_at.is_(None),
-            )
-            .correlate(None)
+        orders_count, unrefunded_orders_count = await count_test_sales(
+            session, organization_id
         )
-
-        test_sales_filter = (
-            Customer.organization_id == organization_id,
-            func.lower(Customer.email).in_(team_member_emails_subquery),
-            Order.net_amount > 0,
-        )
-
-        orders_count_result = await session.execute(
-            select(func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(*test_sales_filter)
-        )
-        orders_count = orders_count_result.scalar() or 0
-
-        unrefunded_orders_result = await session.execute(
-            select(func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                *test_sales_filter,
-                Order.status.notin_(
-                    [OrderStatus.refunded, OrderStatus.partially_refunded]
-                ),
-            )
-        )
-        unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
 
         review_repo = OrganizationReviewRepository.from_session(session)
         agent_review = await review_repo.get_latest_agent_review(organization_id)

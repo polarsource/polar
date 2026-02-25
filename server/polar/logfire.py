@@ -117,7 +117,9 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
 
 
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
-    resolved_service_name = os.environ.get("RENDER_SERVICE_NAME", service_name)
+    resolved_service_name = os.environ.get(
+        "SERVICE_NAME", os.environ.get("RENDER_SERVICE_NAME", service_name)
+    )
 
     logfire.configure(
         send_to_logfire="if-token-present",

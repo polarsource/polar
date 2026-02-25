@@ -246,6 +246,7 @@ resource "render_web_service" "api" {
   custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
+    SERVICE_NAME                 = { value = "api${local.env_suffix}" }
     WEB_CONCURRENCY              = { value = var.api_service_config.web_concurrency }
     FORWARDED_ALLOW_IPS          = { value = var.api_service_config.forwarded_allow_ips }
     POLAR_ALLOWED_HOSTS          = { value = var.api_service_config.allowed_hosts }
@@ -301,6 +302,7 @@ resource "render_web_service" "worker" {
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
+    SERVICE_NAME                 = { value = each.key }
     dramatiq_prom_port           = { value = each.value.dramatiq_prom_port }
     POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
     POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }

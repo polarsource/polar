@@ -243,6 +243,61 @@ resource "aws_iam_policy" "polar_sh_backups" {
   })
 }
 
+# =============================================================================
+# Application Access (IAM user policies)
+# =============================================================================
+
+import {
+  to = module.application_access_production.aws_iam_policy.customer_invoices
+  id = "arn:aws:iam::975049931254:policy/polar-customer-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_policy.payout_invoices
+  id = "arn:aws:iam::975049931254:policy/polar-payout-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_policy.files
+  id = "arn:aws:iam::975049931254:policy/polar-production-files"
+}
+
+import {
+  to = module.application_access_production.aws_iam_policy.public_files
+  id = "arn:aws:iam::975049931254:policy/polar-public-files"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.customer_invoices
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-customer-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.payout_invoices
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-payout-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.files
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-production-files"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.public_files
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-public-files"
+}
+
+module "application_access_production" {
+  source   = "../modules/application_access"
+  username = "polar-production-files"
+  buckets = {
+    customer_invoices = "polar-customer-invoices"
+    payout_invoices   = "polar-payout-invoices"
+    files             = "polar-production-files"
+    public_files      = "polar-public-files"
+  }
+}
+
 resource "aws_iam_policy" "lambda_artifacts_upload" {
   name = "lambda-artifacts-upload"
   policy = jsonencode({

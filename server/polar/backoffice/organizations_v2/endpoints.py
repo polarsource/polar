@@ -2442,13 +2442,6 @@ async def delete_stripe_account(
     return None
 
 
-# TODO: Implement action endpoints
-# - POST /{organization_id}/quick-approve
-# - GET /{organization_id}/deny-dialog
-# - GET /{organization_id}/plain-thread
-# - etc.
-
-
 # =============================================================================
 # Fee Credit Management Endpoints
 # =============================================================================

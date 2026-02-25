@@ -52,6 +52,56 @@ import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
+const TruncatedDescription = ({
+  description,
+  productName,
+}: {
+  description: string
+  productName: string
+}) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isClamped, setIsClamped] = useState(false)
+
+  useEffect(() => {
+    const el = textRef.current
+    if (!el) return
+    requestAnimationFrame(() => {
+      setIsClamped(el.scrollHeight > el.clientHeight)
+    })
+  }, [description])
+
+  return (
+    <Dialog>
+      <div className="flex flex-col gap-y-0.5">
+        <div
+          ref={textRef}
+          className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 line-clamp-2 max-w-none text-left text-xs text-gray-600"
+        >
+          <Markdown options={markdownOptions}>{description}</Markdown>
+        </div>
+        {isClamped && (
+          <DialogTrigger asChild>
+            <button className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700">
+              Show more
+            </button>
+          </DialogTrigger>
+        )}
+      </div>
+      <DialogContent className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{productName}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Product description
+          </DialogDescription>
+        </DialogHeader>
+        <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800">
+          <Markdown options={markdownOptions}>{description}</Markdown>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
@@ -370,34 +420,14 @@ const Checkout = ({
                         </Dialog>
                       )}
                       <div className="flex min-w-0 flex-col">
-                        <span className="dark:text-polar-400 text-sm text-gray-600">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {checkout.product.name}
                         </span>
                         {checkout.product.description && (
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <button className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 dark:hover:text-polar-300 line-clamp-2 max-w-none cursor-pointer text-left text-xs text-gray-600 hover:text-gray-700">
-                                <Markdown options={markdownOptions}>
-                                  {checkout.product.description}
-                                </Markdown>
-                              </button>
-                            </DialogTrigger>
-                            <DialogContent className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>
-                                  {checkout.product.name}
-                                </DialogTitle>
-                                <DialogDescription className="sr-only">
-                                  Product description
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800">
-                                <Markdown options={markdownOptions}>
-                                  {checkout.product.description}
-                                </Markdown>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <TruncatedDescription
+                            description={checkout.product.description}
+                            productName={checkout.product.name}
+                          />
                         )}
                       </div>
                     </div>

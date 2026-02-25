@@ -141,9 +141,7 @@ class OrganizationListView:
         yield
 
     @contextlib.contextmanager
-    def organization_row(
-        self, request: Request, org: Organization
-    ) -> Generator[None]:
+    def organization_row(self, request: Request, org: Organization) -> Generator[None]:
         """Render a single organization row in the table."""
         days_in_status = self.calculate_days_in_status(org)
         needs_attention = self.is_needs_attention(org)
@@ -576,9 +574,7 @@ class OrganizationListView:
 
                             with tag.tbody():
                                 for org in needs_attention:
-                                    with self.organization_row(
-                                        request, org
-                                    ):
+                                    with self.organization_row(request, org):
                                         pass
 
                     # Divider
@@ -796,9 +792,7 @@ class OrganizationListView:
 
                             with tag.tbody():
                                 for org in needs_attention:
-                                    with self.organization_row(
-                                        request, org
-                                    ):
+                                    with self.organization_row(request, org):
                                         pass
 
                     # Divider

@@ -157,7 +157,7 @@ const CheckoutProductSwitcher = ({
           >
             <RadioGroupItem value={item.value} id={`product-${item.key}`} />
             <div className="min-w-0 flex-1">
-              <span className="truncate text-sm">{item.productName}</span>
+              <span className="line-clamp-2 text-sm">{item.productName}</span>
               <span className="dark:text-polar-500 block text-xs text-gray-500">
                 {getDescription(item.product, item.price)}
               </span>

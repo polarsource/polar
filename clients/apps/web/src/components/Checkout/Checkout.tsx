@@ -131,7 +131,9 @@ const Checkout = ({
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
-  const { variant: flattenExperiment } = useExperiment('checkout_flatten')
+  const { variant: flattenExperiment } = useExperiment('checkout_flatten', {
+    trackExposure: !embed,
+  })
   const t = useTranslations(locale)
 
   const openedTrackedRef = useRef(false)
@@ -271,12 +273,8 @@ const Checkout = ({
   )
 
   if (embed) {
-    const isFlat = flattenExperiment === 'treatment'
-    const EmbedWrapper = isFlat ? 'div' : ShadowBox
     return (
-      <EmbedWrapper
-        className={`dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 md:bg-white dark:divide-transparent ${isFlat ? '' : 'overflow-hidden rounded-3xl'}`}
-      >
+      <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
         <PaymentNotReadyBanner />
         {hasProductCheckout(checkout) && (
           <>
@@ -313,7 +311,6 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
-          flattenExperiment={flattenExperiment}
           beforeSubmit={
             hasProductCheckout(checkout) && !checkout.isFreeProductPrice ? (
               <div className="flex flex-col gap-4">
@@ -334,13 +331,12 @@ const Checkout = ({
                   checkout={checkout}
                   update={update}
                   locale={locale}
-                  collapsible={flattenExperiment === 'treatment'}
                 />
               </div>
             ) : undefined
           }
         />
-      </EmbedWrapper>
+      </ShadowBox>
     )
   }
 

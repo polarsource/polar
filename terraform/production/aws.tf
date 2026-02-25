@@ -184,6 +184,85 @@ module "cloudfront_public_assets" {
   ]
 }
 
+# =============================================================================
+# GitHub Actions OIDC
+# =============================================================================
+
+import {
+  to = module.github_oidc_backup.aws_iam_openid_connect_provider.github
+  id = "arn:aws:iam::975049931254:oidc-provider/token.actions.githubusercontent.com"
+}
+
+import {
+  to = module.github_oidc_backup.aws_iam_role.github_actions
+  id = "github-actions-backup"
+}
+
+import {
+  to = aws_iam_policy.polar_sh_backups
+  id = "arn:aws:iam::975049931254:policy/polar-sh-backups"
+}
+
+import {
+  to = module.github_oidc_backup.aws_iam_role_policy_attachment.policies["backups"]
+  id = "github-actions-backup/arn:aws:iam::975049931254:policy/polar-sh-backups"
+}
+
+module "github_oidc_backup" {
+  source = "../modules/github_oidc"
+
+  role_name   = "github-actions-backup"
+  github_org  = "polarsource"
+  github_repo = "polar"
+  policy_arns = {
+    backups          = aws_iam_policy.polar_sh_backups.arn
+    lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
+  }
+}
+
+resource "aws_iam_policy" "polar_sh_backups" {
+  name = "polar-sh-backups"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "VisualEditor0"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObjectAttributes",
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:GetObjectVersionAttributes",
+          "s3:DeleteObject",
+          "s3:DeleteObjectVersion"
+        ]
+        Resource = "${aws_s3_bucket.backups.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "lambda_artifacts_upload" {
+  name = "lambda-artifacts-upload"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# Backups S3 Bucket
+# =============================================================================
+
 resource "aws_s3_bucket" "backups" {
   bucket = "polar-sh-backups"
 }

@@ -72,6 +72,7 @@
                   "features/benefits/credits",
                   "features/benefits/custom",
                   "features/benefits/discord-access",
+                  "features/benefits/feature-flags",
                   "features/benefits/file-downloads",
                   "features/benefits/github-access",
                   "features/benefits/license-keys"

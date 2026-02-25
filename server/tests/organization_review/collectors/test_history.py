@@ -1,8 +1,6 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
-
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization_review.collectors.history import collect_history_data

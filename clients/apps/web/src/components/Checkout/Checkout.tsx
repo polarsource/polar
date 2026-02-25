@@ -23,7 +23,7 @@ import {
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import { formatCurrency } from '@polar-sh/currency'
-import { AcceptedLocale } from '@polar-sh/i18n'
+import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
@@ -55,9 +55,11 @@ import CheckoutProductInfo from './CheckoutProductInfo'
 const TruncatedDescription = ({
   description,
   productName,
+  readMoreLabel,
 }: {
   description: string
   productName: string
+  readMoreLabel: string
 }) => {
   const textRef = useRef<HTMLDivElement>(null)
   const [isClamped, setIsClamped] = useState(false)
@@ -72,7 +74,7 @@ const TruncatedDescription = ({
 
   return (
     <Dialog>
-      <div className="flex flex-col gap-y-0.5">
+      <div className="flex flex-col gap-y-1">
         <div
           ref={textRef}
           className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 line-clamp-2 max-w-none text-left text-xs text-gray-600"
@@ -82,7 +84,7 @@ const TruncatedDescription = ({
         {isClamped && (
           <DialogTrigger asChild>
             <button className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700">
-              Show more
+              {readMoreLabel}
             </button>
           </DialogTrigger>
         )}
@@ -130,6 +132,7 @@ const Checkout = ({
   const posthog = usePostHog()
 
   const { variant: flattenExperiment } = useExperiment('checkout_flatten')
+  const t = useTranslations(locale)
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -419,7 +422,7 @@ const Checkout = ({
                           </DialogContent>
                         </Dialog>
                       )}
-                      <div className="flex min-w-0 flex-col">
+                      <div className="flex min-w-0 flex-col gap-y-1">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {checkout.product.name}
                         </span>
@@ -427,6 +430,9 @@ const Checkout = ({
                           <TruncatedDescription
                             description={checkout.product.description}
                             productName={checkout.product.name}
+                            readMoreLabel={t(
+                              'checkout.productDescription.readMore',
+                            )}
                           />
                         )}
                       </div>

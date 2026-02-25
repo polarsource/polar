@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Adicionar dados da empresa',
       removeBusinessDetails: 'Remover dados da empresa',
       billingDetails: 'Dados da empresa',
+      addDiscountCode: 'Adicionar código de desconto',
     },
     pricing: {
       subtotal: 'Subtotal',

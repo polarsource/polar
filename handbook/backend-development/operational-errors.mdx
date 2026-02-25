@@ -1,0 +1,76 @@
+---
+title: "Operational Errors"
+description: "Understanding and handling operational errors in Polar backend development"
+---
+
+Operational errors are a category of errors that represent transient or expected failure conditions in distributed systems. Unlike bugs or unexpected failures, operational errors are conditions that can occur during normal operation and should be handled gracefully by the system.
+
+## When to use
+
+Operational errors should be used to categorize and handle:
+
+- **Transient failures**: Temporary conditions that may resolve on retry (e.g., database timeouts, lock contention)
+- **Expected race conditions**: Situations where concurrent operations conflict in predictable ways
+- **External service issues**: Problems with third-party integrations that are outside our control
+- **Resource contention**: When system resources are temporarily unavailable
+
+## How to use
+
+### Identifying operational errors
+
+To add a new operational error type:
+
+1. **Create a matcher function** in `server/polar/operational_errors.py`:
+
+```python
+def _my_operational_error_matcher(exc: BaseException) -> bool:
+    # Check if the exception matches your operational error pattern
+    return isinstance(exc, MyOperationalError)
+```
+
+2. **Register the matcher** in the `_operation_error_matchers` dictionary:
+
+```python
+_operation_error_matchers: dict[str, OperationalErrorMatcher] = {
+    # ... existing matchers ...
+    "my_operational_error": _my_operational_error_matcher,
+}
+```
+
+### Handling operational errors
+
+The system automatically handles operational errors through middleware:
+
+- **API requests**: `OperationalErrorMiddleware` in `server/polar/middlewares.py`
+- **Background jobs**: `OperationalErrorMiddleware` in `server/polar/worker/_broker.py`
+
+When an operational error is detected:
+
+- It's logged as a warning (not an error)
+- A Prometheus counter is incremented for observability
+- Sentry events are marked as operational (and filtered out)
+
+## How it works
+
+### Key components
+
+1. **Matcher functions**: Each operational error type has a matcher function that identifies specific exception patterns
+2. **Registry**: The `_operation_error_matchers` dictionary maps error types to their matchers
+3. **Handler**: `handle_operational_error()` checks exceptions against all registered matchers
+4. **Middleware**: Automatically intercepts exceptions in both API and worker contexts
+5. **Observability**: Prometheus metrics and structured logging provide visibility
+
+### Current operational error types
+
+- **sql_timeout_error**: Database query timeouts from asyncpg
+- **sql_lock_not_available_error**: Database lock contention errors
+- **timeout_lock_error**: Distributed lock acquisition timeouts
+- **external_event_already_handled**: Idempotency conflicts in event processing
+- **loops_client_operational_error**: Issues with the Loops email service integration
+
+### Benefits
+
+- **Reduced noise**: Operational errors don't trigger error alerts
+- **Better observability**: Specific metrics for each error type
+- **Improved debugging**: Clear distinction between bugs and expected conditions
+- **Consistent handling**: Uniform approach across API and worker contexts

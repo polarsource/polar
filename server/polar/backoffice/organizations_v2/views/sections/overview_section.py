@@ -89,7 +89,11 @@ class OverviewSection:
                         with tag.div(classes="flex items-center gap-3"):
                             if review.validated_at:
                                 with tag.span(classes="text-xs text-base-content/60"):
-                                    text(review.validated_at.strftime("%Y-%m-%d %H:%M UTC"))
+                                    text(
+                                        review.validated_at.strftime(
+                                            "%Y-%m-%d %H:%M UTC"
+                                        )
+                                    )
                             with button(
                                 variant="primary",
                                 size="sm",
@@ -168,7 +172,13 @@ class OverviewSection:
                             with tag.pre(
                                 classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
                             ):
-                                text(json.dumps(review.organization_details_snapshot, indent=2, default=str))
+                                text(
+                                    json.dumps(
+                                        review.organization_details_snapshot,
+                                        indent=2,
+                                        default=str,
+                                    )
+                                )
                 else:
                     with tag.div(classes="flex items-center justify-between mb-4"):
                         with tag.h2(classes="text-lg font-bold"):

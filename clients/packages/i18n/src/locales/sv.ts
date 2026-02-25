@@ -219,7 +219,7 @@ export default {
     downloadables: 'Filnedladdningar',
     custom: 'Anpassad',
     meter_credit: 'Mätarkrediter',
-    feature_flag: 'Feature Flag',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: ':e',

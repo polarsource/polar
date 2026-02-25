@@ -222,7 +222,7 @@ export default {
     downloadables: 'Bestandsdownloads',
     custom: 'Aangepast',
     meter_credit: 'Verbruikstegoeden',
-    feature_flag: 'Feature Flag',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: 'de',

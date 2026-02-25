@@ -12,7 +12,6 @@ import { PropsWithChildren, useMemo } from 'react'
 import { hasProductCheckout } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
 import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
-import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
@@ -114,7 +113,10 @@ const CheckoutPricingBreakdown = ({
       case 'year':
         return t('checkout.pricing.everyInterval.year', { count })
       default:
-        unreachable(interval)
+        // With Speakeasy's forward compatibility,
+        // we can't do exhaustive switches anymore.
+        // unreachable(interval)
+        return ''
     }
   }, [interval, intervalCount, t])
 

@@ -220,6 +220,7 @@ export default {
     downloadables: 'Download de arquivos',
     custom: 'Personalizado',
     meter_credit: 'Créditos de uso',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: 'º',

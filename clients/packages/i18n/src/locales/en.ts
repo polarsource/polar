@@ -232,13 +232,13 @@ export default {
     },
   },
   benefitTypes: {
-    license_keys: 'License Keys',
-    github_repository: 'GitHub Repository Access',
-    discord: 'Discord Invite',
-    downloadables: 'File Downloads',
+    license_keys: 'License keys',
+    github_repository: 'GitHub repository access',
+    discord: 'Discord invite',
+    downloadables: 'File downloads',
     custom: 'Custom',
-    meter_credit: 'Meter Credits',
-    feature_flag: 'Feature Flag',
+    meter_credit: 'Meter credits',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: {

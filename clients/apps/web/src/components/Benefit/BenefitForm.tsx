@@ -159,8 +159,7 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
 }
 
 export const FeatureFlagBenefitForm = () => {
-  const { control } =
-    useFormContext<schemas['BenefitFeatureFlagCreate']>()
+  const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
 
   return (
     <FormField
@@ -188,7 +187,7 @@ export const FeatureFlagBenefitForm = () => {
                   />
                   <Input
                     placeholder="Value (e.g. premium)"
-                    value={value}
+                    value={value.toString()}
                     onChange={(e) => {
                       const newEntries = [...entries]
                       newEntries[index] = [key, e.target.value]

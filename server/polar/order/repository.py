@@ -108,7 +108,6 @@ class OrderRepository(
     ) -> Sequence[Order]:
         """Get pending subscription orders where the subscription is past_due
         and still within the dunning window (past_due_deadline not yet expired)."""
-        now = utc_now()
         statement = (
             self.get_base_statement()
             .join(Subscription, Order.subscription_id == Subscription.id)
@@ -118,18 +117,12 @@ class OrderRepository(
                 Order.subscription_id.is_not(None),
                 Subscription.status == SubscriptionStatus.past_due,
                 Subscription.canceled_at.is_(None),
+                Subscription.past_due_deadline.is_not(None),
+                Subscription.past_due_deadline > utc_now(),
             )
             .options(joinedload(Order.subscription))
         )
-        orders = await self.get_all(statement)
-        # Filter in Python: past_due_deadline is a computed property
-        return [
-            order
-            for order in orders
-            if order.subscription is not None
-            and order.subscription.past_due_deadline is not None
-            and order.subscription.past_due_deadline > now
-        ]
+        return await self.get_all(statement)
 
     async def acquire_payment_lock_by_id(self, order_id: UUID) -> bool:
         """

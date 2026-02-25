@@ -1920,6 +1920,11 @@ class OrderService:
                 order_id=order.id,
                 decline_reason=latest_payment.decline_reason,
             )
+            # Immediately schedule retry at past_due_deadline for non-recoverable decline codes.
+            # The next dunning attempt will then move this subscription from
+            # past_due to revoked in the same vein as if all payment attempts failed.
+            # This ensures the same behavior as dunning retries, we just don't retry
+            # for payment methods that will just fail again.
             next_retry_date = subscription.past_due_deadline
         else:
             next_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
@@ -2092,8 +2097,7 @@ class OrderService:
                 order, update_dict={"next_payment_attempt_at": utc_now()}
             )
 
-            order.subscription.payment_method = payment_method
-            await session.flush()
+            order.subscription.payment_method_id = payment_method.id
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

@@ -65,6 +65,23 @@ class OverviewSection:
     # Top-left: Organization Review card
     # ------------------------------------------------------------------
 
+    _REVIEW_CONTEXT_LABELS: dict[str, str] = {
+        "submission": "Submission",
+        "setup_complete": "Setup Complete",
+        "threshold": "Threshold",
+        "manual": "Manual",
+    }
+
+    def _render_review_context_badge(self, review_type: str | None) -> None:
+        """Render a small badge showing the review trigger context."""
+        if not review_type:
+            return
+        label = self._REVIEW_CONTEXT_LABELS.get(
+            review_type, review_type.replace("_", " ").title()
+        )
+        with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
+            text(label)
+
     @contextlib.contextmanager
     def organization_review_card(self, request: Request) -> Generator[None]:
         """Merged agent report + org.review fallback card."""
@@ -200,11 +217,14 @@ class OverviewSection:
             # --- Agent report present ---
             report = self.agent_report.get("report", {})
             usage = self.agent_report.get("usage", {})
+            review_type = self.agent_report.get("review_type")
 
             # Header with timestamp and re-run button
             with tag.div(classes="flex items-center justify-between mb-4"):
-                with tag.h2(classes="text-lg font-bold"):
-                    text("Organization Review")
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Organization Review")
+                    self._render_review_context_badge(review_type)
                 with tag.div(classes="flex items-center gap-3"):
                     if self.agent_reviewed_at:
                         with tag.span(classes="text-xs text-base-content/60"):

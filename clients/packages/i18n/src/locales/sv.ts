@@ -213,12 +213,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Anpassad',
     license_keys: 'Licensnycklar',
     github_repository: 'Åtkomst till GitHub-repository',
     discord: 'Discord-inbjudan',
     downloadables: 'Filnedladdningar',
-    custom: 'Anpassad',
     meter_credit: 'Mätarkrediter',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: ':e',

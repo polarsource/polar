@@ -3,6 +3,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
+import { useRouter } from 'next/navigation'
 import { MouseEvent, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
@@ -22,6 +23,7 @@ const UpdateBenefitModalContent = ({
   benefit,
   hideModal,
 }: UpdateBenefitModalContentProps) => {
+  const router = useRouter()
   const form = useForm<BenefitUpdate>({
     defaultValues: benefit,
   })
@@ -51,9 +53,10 @@ const UpdateBenefitModalContent = ({
         title: 'Benefit Updated',
         description: `Benefit ${benefit.description} updated successfully`,
       })
+      router.refresh()
       hideModal()
     },
-    [hideModal, updateSubscriptionBenefit, benefit, setError],
+    [hideModal, router, updateSubscriptionBenefit, benefit, setError],
   )
 
   const onCancel = (e: MouseEvent<HTMLButtonElement>) => {

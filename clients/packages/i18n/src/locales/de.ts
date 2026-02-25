@@ -220,12 +220,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Benutzerdefiniert',
     license_keys: 'Lizenzschlüssel',
     github_repository: 'GitHub-Repository-Zugang',
     discord: 'Discord-Einladung',
     downloadables: 'Dateidownloads',
-    custom: 'Benutzerdefiniert',
     meter_credit: 'Verbrauchsguthaben',
+    feature_flag: 'Feature-Flag',
   },
   ordinal: {
     zero: '.',

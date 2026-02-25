@@ -214,12 +214,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Egyedi',
     license_keys: 'Licenckulcsok',
-    github_repository: 'GitHub tároló hozzáférés',
+    github_repository: 'GitHub repository hozzáférés',
     discord: 'Discord meghívó',
     downloadables: 'Fájlletöltések',
-    custom: 'Egyedi',
     meter_credit: 'Használat alapú kreditek',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: '.',

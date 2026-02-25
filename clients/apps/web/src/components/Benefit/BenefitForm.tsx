@@ -23,6 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { XIcon } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -115,6 +116,7 @@ export const BenefitForm = ({
       {type === 'meter_credit' && (
         <MeterCreditBenefitForm organization={organization} />
       )}
+      {type === 'feature_flag' && <FeatureFlagBenefitForm />}
     </>
   )
 }
@@ -153,6 +155,76 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
         }}
       />
     </>
+  )
+}
+
+export const FeatureFlagBenefitForm = () => {
+  const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
+
+  return (
+    <FormField
+      control={control}
+      name="metadata"
+      defaultValue={{}}
+      render={({ field }) => {
+        const entries = Object.entries(field.value || {})
+        return (
+          <FormItem>
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Metadata</FormLabel>
+            </div>
+            <div className="flex flex-col gap-2">
+              {entries.map(([key, value], index) => (
+                <div key={index} className="flex flex-row gap-2">
+                  <Input
+                    placeholder="Key (e.g. role)"
+                    value={key}
+                    onChange={(e) => {
+                      const newEntries = [...entries]
+                      newEntries[index] = [e.target.value, value]
+                      field.onChange(Object.fromEntries(newEntries))
+                    }}
+                  />
+                  <Input
+                    placeholder="Value (e.g. premium)"
+                    value={value.toString()}
+                    onChange={(e) => {
+                      const newEntries = [...entries]
+                      newEntries[index] = [key, e.target.value]
+                      field.onChange(Object.fromEntries(newEntries))
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      const newEntries = entries.filter((_, i) => i !== index)
+                      field.onChange(Object.fromEntries(newEntries))
+                    }}
+                  >
+                    <XIcon className="-mx-1 h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  field.onChange({
+                    ...(field.value || {}),
+                    '': '',
+                  })
+                }}
+              >
+                Add Metadata
+              </Button>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }
 

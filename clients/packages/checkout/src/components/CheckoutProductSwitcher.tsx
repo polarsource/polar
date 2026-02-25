@@ -77,10 +77,17 @@ const CheckoutProductSwitcher = ({
     const count = product.recurringIntervalCount ?? 1
 
     if (interval) {
+      if (!['day', 'week', 'month', 'year'].includes(interval)) {
+        throw new Error(`Unsupported interval: ${interval}`)
+      }
+
       const frequency = decapitalize(
-        t(`checkout.pricing.everyInterval.${interval}`, {
-          count,
-        }),
+        t(
+          `checkout.pricing.everyInterval.${interval as 'day' | 'week' | 'month' | 'year'}`,
+          {
+            count,
+          },
+        ),
       )
 
       // We have to capitalize again since {frequency} may come first

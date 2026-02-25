@@ -12,8 +12,23 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Account, Customer, Organization, User, UserOrganization
+from polar.models import (
+    Account,
+    Customer,
+    Order,
+    Organization,
+    Subscription,
+    User,
+    UserOrganization,
+)
+from polar.models.discount import (
+    Discount,
+    DiscountDuration,
+    DiscountPercentage,
+    DiscountType,
+)
 from polar.models.organization_review import OrganizationReview
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncReadSession
 
 from .sorting import OrganizationSortProperty
@@ -203,6 +218,58 @@ class OrganizationRepository(
             org.feature_settings = {**org.feature_settings, "revops_enabled": True}
             self.session.add(org)
         await self.session.flush()
+
+    async def count_paid_orders_by_organization(self, organization_id: UUID) -> int:
+        """Count non-zero orders for all customers of this organization.
+
+        Excludes $0 orders (e.g. free products or fully discounted orders)
+        so that test accounts with only free activity can self-serve delete.
+        """
+        statement = (
+            select(func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.is_deleted.is_(False),
+                Order.total_amount > 0,
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0
+
+    async def count_paid_active_subscriptions_by_organization(
+        self, organization_id: UUID
+    ) -> int:
+        """Count active subscriptions that involve real payments.
+
+        Excludes free subscriptions (amount == 0) when they are inherently
+        free or permanently free via a forever discount. Subscriptions made
+        temporarily free by a once/repeating discount are still counted,
+        since they will become paid when the discount expires.
+        """
+        statement = (
+            select(func.count(Subscription.id))
+            .join(Customer, Subscription.customer_id == Customer.id)
+            .outerjoin(Discount, Subscription.discount_id == Discount.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.is_deleted.is_(False),
+                Subscription.status.in_(SubscriptionStatus.active_statuses()),
+                ~(
+                    (Subscription.amount == 0)
+                    & (
+                        Subscription.discount_id.is_(None)
+                        | (
+                            (Discount.type == DiscountType.percentage)
+                            & (DiscountPercentage.basis_points == 10000)
+                            & (Discount.duration == DiscountDuration.forever)
+                        )
+                    )
+                ),
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0
 
     async def increment_customer_invoice_next_number(
         self, organization_id: UUID

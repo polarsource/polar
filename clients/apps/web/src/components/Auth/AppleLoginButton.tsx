@@ -39,7 +39,7 @@ const AppleLoginButton = ({ returnTo, signup }: AppleLoginButtonProps) => {
         fullWidth
       >
         <Apple />
-        <div>Continue with Apple</div>
+        <div>{signup ? 'Sign up with Apple' : 'Sign in with Apple'}</div>
       </Button>
     </Link>
   )

@@ -79,7 +79,7 @@ const LoginCodeForm = ({ returnTo, signup }: LoginCodeFormProps) => {
                       loading={loading}
                       disabled={loading}
                     >
-                      Login
+                      {signup ? 'Sign up' : 'Log in'}
                     </Button>
                   </div>
                 </FormControl>

@@ -112,8 +112,14 @@ const NavigationContent = ({
           </Link>
         )}
         <div className="flex flex-col">
-          <h3>{authenticatedUser?.name ?? '—'}</h3>
-          <span className="dark:text-polar-500 text-gray-500">
+          {authenticatedUser?.name ? <h3>{authenticatedUser?.name}</h3> : null}
+          <span
+            className={twMerge(
+              authenticatedUser?.name
+                ? 'dark:text-polar-500 text-gray-500'
+                : null,
+            )}
+          >
             {authenticatedUser?.email ?? '—'}
           </span>
         </div>

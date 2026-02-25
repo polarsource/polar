@@ -34,6 +34,8 @@ Summary of the concept you want to explain.
 
 The three sections "When to use this concept", "How to use this concept" and "How it works under the hood" are here to structure the content of the entry. The first section should explain in which situations the concept is useful, the second section should explain how to use the concept in practice, and the third section should explain how the concept works under the hood, with technical details and references to the code base.
 
+Add this page to the navigation by adding an entry under "Backend Development" in `handbook/docs.json`.
+
 ## Step 2: Explore and draft the content of the entry
 
 To write the content of the entry, you will need to explore the code base to find relevant information about the concept you want to explain. Use it to fill the three sections of the entry with accurate and detailed information. You can also add code snippets, diagrams, or any other type of content that you think is relevant to explain the concept.

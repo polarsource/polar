@@ -73,6 +73,7 @@ export const CheckoutDiscountInput = ({
     try {
       await update({ discountCode: null })
       setDiscountCode('')
+      setExpanded(false)
     } catch {}
   }, [update])
 

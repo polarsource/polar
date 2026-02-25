@@ -6,6 +6,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
+import { markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
@@ -43,9 +44,11 @@ import {
 } from '@polar-sh/ui/components/ui/dialog'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -331,11 +334,40 @@ const Checkout = ({
                   <div className="flex flex-col gap-y-2">
                     <div className="flex flex-row items-start gap-x-3">
                       {hasMedia && checkout.product.medias[0]?.publicUrl && (
-                        <img
-                          src={checkout.product.medias[0].publicUrl}
-                          alt={checkout.product.name}
-                          className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                        />
+                        <Dialog>
+                          <DialogTrigger
+                            asChild
+                            disabled={checkout.product.medias.length <= 1}
+                          >
+                            <button
+                              className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              <img
+                                src={checkout.product.medias[0].publicUrl}
+                                alt={checkout.product.name}
+                                className="h-10 w-10 rounded-lg object-cover"
+                              />
+                              {checkout.product.medias.length > 1 && (
+                                <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                                  +{checkout.product.medias.length - 1}
+                                </span>
+                              )}
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="dark:bg-polar-900 max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{checkout.product.name}</DialogTitle>
+                              <DialogDescription className="sr-only">
+                                Product images
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Slideshow
+                              images={checkout.product.medias.map(
+                                (m) => m.publicUrl,
+                              )}
+                            />
+                          </DialogContent>
+                        </Dialog>
                       )}
                       <div className="flex min-w-0 flex-col">
                         <span className="dark:text-polar-400 text-sm text-gray-600">
@@ -344,8 +376,10 @@ const Checkout = ({
                         {checkout.product.description && (
                           <Dialog>
                             <DialogTrigger asChild>
-                              <button className="dark:text-polar-400 dark:hover:text-polar-300 line-clamp-1 cursor-pointer text-left text-xs text-gray-600 hover:text-gray-700">
-                                {checkout.product.description}
+                              <button className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 dark:hover:text-polar-300 line-clamp-2 max-w-none cursor-pointer text-left text-xs text-gray-600 hover:text-gray-700">
+                                <Markdown options={markdownOptions}>
+                                  {checkout.product.description}
+                                </Markdown>
                               </button>
                             </DialogTrigger>
                             <DialogContent className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto">
@@ -357,8 +391,10 @@ const Checkout = ({
                                   Product description
                                 </DialogDescription>
                               </DialogHeader>
-                              <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal whitespace-pre-line text-gray-800">
-                                {checkout.product.description}
+                              <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800">
+                                <Markdown options={markdownOptions}>
+                                  {checkout.product.description}
+                                </Markdown>
                               </div>
                             </DialogContent>
                           </Dialog>

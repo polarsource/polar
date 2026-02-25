@@ -2094,7 +2094,9 @@ class OrderService:
             )
 
             await repository.update(
-                order, update_dict={"next_payment_attempt_at": utc_now()}
+                order,
+                update_dict={"next_payment_attempt_at": utc_now()},
+                flush=True,
             )
 
             order.subscription.payment_method_id = payment_method.id

@@ -15,6 +15,7 @@ from sqlalchemy import (
     String,
     Text,
     Uuid,
+    cast,
     event,
     type_coerce,
 )
@@ -345,11 +346,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @past_due_deadline.inplace.expression
     @classmethod
-    def _past_due_deadline_expression(cls) -> ColumnElement[datetime | None]:
+    def _past_due_deadline_expression(cls) -> ColumnElement[datetime]:
         total_interval = functools.reduce(
             operator.add, settings.DUNNING_RETRY_INTERVALS
         ) + timedelta(minutes=1)
-        return cls.past_due_at + total_interval
+        return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
         if not SubscriptionStatus.is_billable(self.status):

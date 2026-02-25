@@ -1,3 +1,4 @@
+import gzip
 import json
 from collections.abc import Iterator
 from typing import Any
@@ -79,11 +80,11 @@ def test_export_writes_jsonl_to_s3(
 
     key = objects[0].object_name
     assert key is not None
-    assert key.endswith(".jsonl")
+    assert key.endswith(".jsonl.gz")
     assert "/dt=" in key
 
     response = minio_client.get_object(BUCKET_NAME, key)
-    body = response.read().decode()
+    body = gzip.decompress(response.read()).decode()
     response.close()
     response.release_conn()
 

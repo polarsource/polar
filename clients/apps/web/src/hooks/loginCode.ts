@@ -30,10 +30,15 @@ export const useSendLoginCode = () => {
         throw new LoginCodeError(error.detail)
       }
 
-      const searchParams = new URLSearchParams({ email: email })
+      const searchParams = new URLSearchParams({
+        email: email,
+        intent: signup ? 'signup' : 'login',
+      })
+
       if (return_to) {
         searchParams.append('return_to', return_to)
       }
+
       router.push(`/login/code/verify?${searchParams}`)
     },
     [router],

@@ -17,14 +17,16 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-const ClientPage = ({
+const VerifyPage = ({
   return_to,
   error,
   email,
+  intent = 'login',
 }: {
   return_to?: string
   error?: string
   email?: string
+  intent?: 'login' | 'signup'
 }) => {
   const form = useForm<{ code: string }>()
   const { control, setError } = form
@@ -97,11 +99,11 @@ const ClientPage = ({
           }}
         />
         <Button type="submit" size="lg" className="w-full" loading={loading}>
-          Sign in
+          {intent === 'signup' ? 'Sign up' : 'Sign in'}
         </Button>
       </form>
     </Form>
   )
 }
 
-export default ClientPage
+export default VerifyPage

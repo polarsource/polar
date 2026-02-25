@@ -819,9 +819,7 @@ class OrganizationService:
         await self._sync_account_status(session, organization)
         session.add(organization)
         if enqueue_review:
-            enqueue_job(
-                "organization.under_review", organization_id=organization.id
-            )
+            enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
     async def update_status_from_stripe_account(

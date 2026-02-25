@@ -128,7 +128,6 @@ class PaymentMetrics(Schema):
     total_payments: int = 0
     succeeded_payments: int = 0
     total_amount_cents: int = 0
-    risk_scores: list[int] = Field(default_factory=list)
     p50_risk_score: int | None = None
     p90_risk_score: int | None = None
     refund_count: int = 0

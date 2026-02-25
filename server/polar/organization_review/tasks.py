@@ -92,6 +92,7 @@ async def run_review_agent(
         review_repository = OrganizationReviewRepository.from_session(session)
         await review_repository.save_agent_review(
             organization_id=organization_id,
+            review_type=review_context.value,
             report=result.model_dump(mode="json"),
             model_used=result.model_used,
             reviewed_at=datetime.now(UTC),

@@ -101,6 +101,7 @@ resource "render_env_group" "aws_s3" {
     POLAR_S3_FILES_PUBLIC_BUCKET_NAME      = { value = var.aws_s3_config.files_public_bucket_name }
     POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME = { value = var.aws_s3_config.customer_invoices_bucket_name }
     POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME   = { value = var.aws_s3_config.payout_invoices_bucket_name }
+    POLAR_S3_LOGS_BUCKET_NAME              = { value = var.aws_s3_config.logs_bucket_name }
     POLAR_AWS_ACCESS_KEY_ID                = { value = var.aws_s3_secrets.access_key_id }
     POLAR_AWS_SECRET_ACCESS_KEY            = { value = var.aws_s3_secrets.secret_access_key }
     POLAR_S3_FILES_DOWNLOAD_SALT           = { value = var.aws_s3_secrets.files_download_salt }

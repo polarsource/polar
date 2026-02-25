@@ -219,6 +219,7 @@ module "test" {
     files_public_bucket_name      = "polar-public-files"
     customer_invoices_bucket_name = "polar-test-customer-invoices"
     payout_invoices_bucket_name   = "polar-test-payout-invoices"
+    logs_bucket_name              = "polar-test-logs"
   }
 
   aws_s3_secrets = {

@@ -33,14 +33,19 @@ class OrganizationReviewRepository(
     async def save_agent_review(
         self,
         organization_id: UUID,
+        review_type: str,
         report: dict[str, Any],
         model_used: str,
         reviewed_at: datetime,
     ) -> OrganizationAgentReview:
-        """Create a new agent review record for the organization."""
+        """Create a new agent review record for the organization.
+
+        The review_type is stored as a top-level key in the report JSONB column.
+        """
+        report_with_type = {**report, "review_type": review_type}
         agent_review = OrganizationAgentReview(
             organization_id=organization_id,
-            report=report,
+            report=report_with_type,
             model_used=model_used,
             reviewed_at=reviewed_at,
         )
@@ -51,7 +56,7 @@ class OrganizationReviewRepository(
         """Check if a SETUP_COMPLETE agent review already exists."""
         statement = select(func.count(OrganizationAgentReview.id)).where(
             OrganizationAgentReview.organization_id == organization_id,
-            OrganizationAgentReview.report["data_snapshot"]["context"].as_string()
+            OrganizationAgentReview.report["review_type"].as_string()
             == "setup_complete",
         )
         result = await self.session.execute(statement)

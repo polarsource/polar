@@ -84,12 +84,7 @@ const Login = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex w-full flex-col gap-y-4">
-        <GithubLoginButton
-          text="Continue with GitHub"
-          size="large"
-          fullWidth
-          {...loginProps}
-        />
+        <GithubLoginButton size="large" fullWidth {...loginProps} />
         <GoogleLoginButton {...loginProps} />
         <AppleLoginButton {...loginProps} />
         <div className="flex w-full flex-row items-center gap-6">

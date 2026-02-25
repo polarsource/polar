@@ -18,8 +18,7 @@ export const AuthModal = ({
 
   const copy = isSignup ? (
     <p className="dark:text-polar-500 text-xl text-gray-500">
-      Join thousands of developers &amp; startups monetizing their products with
-      Polar.
+      Join thousands of startups running their billing on&nbsp;Polar.
     </p>
   ) : null
 

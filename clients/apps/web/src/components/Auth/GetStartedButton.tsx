@@ -62,7 +62,7 @@ const GetStartedButton = ({
       </Button>
 
       <Modal
-        title="Login"
+        title="Get started"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={

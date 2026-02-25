@@ -7,19 +7,23 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
-const GithubLoginButton = (props: {
+const GithubLoginButton = ({
+  className,
+  returnTo,
+  signup,
+  size,
+  fullWidth,
+}: {
   className?: string
   returnTo?: string
   signup?: schemas['UserSignupAttribution']
   size?: 'large' | 'small'
   fullWidth?: boolean
-  text: string
 }) => {
   const posthog = usePostHog()
-  const signup = props.signup
 
   const authorizeURL = getGitHubAuthorizeLoginURL({
-    return_to: props.returnTo,
+    return_to: returnTo,
     attribution: JSON.stringify(signup),
   })
 
@@ -41,16 +45,16 @@ const GithubLoginButton = (props: {
     <Link href={authorizeURL} onClick={onClick}>
       <Button
         wrapperClassNames={twMerge(
-          props.size === 'large' ? largeStyle : smallStyle,
-          props.className,
+          size === 'large' ? largeStyle : smallStyle,
+          className,
         )}
-        className={twMerge(props.size == 'large' && 'text-md p-5')}
-        fullWidth={props.fullWidth}
+        className={twMerge(size == 'large' && 'text-md p-5')}
+        fullWidth={fullWidth}
       >
         <svg
           className={twMerge(
             'shrink-0',
-            props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4',
+            size === 'large' ? 'h-5 w-5' : 'h-4 w-4',
           )}
           aria-hidden="true"
           fill="currentColor"
@@ -62,7 +66,9 @@ const GithubLoginButton = (props: {
             clipRule="evenodd"
           />
         </svg>
-        <span className="whitespace-nowrap">{props.text}</span>
+        <span className="whitespace-nowrap">
+          {signup ? 'Sign up with GitHub' : 'Sign in with GitHub'}
+        </span>
       </Button>
     </Link>
   )

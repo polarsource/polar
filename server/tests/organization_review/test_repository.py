@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from uuid import uuid4
 
 import pytest
 
@@ -8,7 +7,6 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_organization
 
 
 def _make_report(

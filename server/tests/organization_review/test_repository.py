@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -13,13 +14,13 @@ def _make_report(
     *,
     review_type: str | None = None,
     context: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Build a minimal report dict.
 
     If review_type is given it is set as a top-level key (new format).
     If context is given it is nested under data_snapshot (legacy format).
     """
-    report: dict = {
+    report: dict[str, Any] = {
         "report": {"verdict": "APPROVE", "overall_risk_score": 10.0},
         "model_used": "test-model",
     }
@@ -56,7 +57,7 @@ class TestSaveAgentReview:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        original_report: dict = {"report": {"verdict": "APPROVE"}}
+        original_report: dict[str, Any] = {"report": {"verdict": "APPROVE"}}
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_agent_review(
             organization_id=organization.id,

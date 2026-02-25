@@ -100,8 +100,9 @@ jobs:
         run: |
           export TB_HOST=http://localhost:7181
           export TB_ADMIN_TOKEN=$(curl -s http://localhost:7181/tokens | jq -r .admin_token)
-          tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe
+          tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe endpoints/*.pipe
           tb build
+          tb test run
 
   migration-check:
     name: "Server: Migration Check 📚"

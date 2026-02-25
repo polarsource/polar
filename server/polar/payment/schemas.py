@@ -35,7 +35,7 @@ class PaymentBase(IDSchema, TimestampedSchema):
         examples=["insufficient_funds"],
     )
     decline_message: str | None = Field(
-        description="Human-reasable error message, if the payment was declined.",
+        description="Human-readable error message, if the payment was declined.",
         examples=["Your card has insufficient funds."],
     )
     organization_id: UUID4 = Field(

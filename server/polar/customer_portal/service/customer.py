@@ -12,6 +12,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
 from polar.models import Customer as CustomerModel
 from polar.models import PaymentMethod
+from polar.order.service import order as order_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import InvalidTaxID, to_stripe_tax_id, validate_tax_id
@@ -278,6 +279,9 @@ class CustomerService:
             repository = CustomerRepository.from_session(session)
             customer = await repository.update(
                 customer, update_dict={"default_payment_method": payment_method}
+            )
+            await order_service.schedule_retry_for_past_due_orders(
+                session, customer, payment_method
             )
 
         return CustomerPaymentMethodCreateSucceededResponse.model_validate(

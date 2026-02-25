@@ -1904,21 +1904,40 @@ class OrderService:
         """Handle the first dunning attempt for an order, setting the next payment
         attempt date and marking the subscription as past due.
         """
+        assert order.subscription is not None
+        subscription = order.subscription
 
-        first_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
+        # Mark subscription as past_due first so past_due_deadline is available
+        await subscription_service.mark_past_due(session, subscription)
+
+        payment_repository = PaymentRepository.from_session(session)
+        latest_payment = await payment_repository.get_latest_for_order(order.id)
+
+        if latest_payment is not None and latest_payment.is_non_recoverable:
+            log.info(
+                "Non-recoverable decline code detected, "
+                "scheduling retry at past_due_deadline",
+                order_id=order.id,
+                decline_reason=latest_payment.decline_reason,
+            )
+            # Immediately schedule retry at past_due_deadline for non-recoverable decline codes.
+            # The next dunning attempt will then move this subscription from
+            # past_due to revoked in the same vein as if all payment attempts failed.
+            # This ensures the same behavior as dunning retries, we just don't retry
+            # for payment methods that will just fail again.
+            next_retry_date = subscription.past_due_deadline
+        else:
+            next_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(
-            order, update_dict={"next_payment_attempt_at": first_retry_date}
+            order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
-
-        assert order.subscription is not None
-        await subscription_service.mark_past_due(session, order.subscription)
 
         # Re-enqueue benefit revocation to check if grace period has expired
         # We might end up here in the event that a user goes via the subscription product
         # update flow, so we need to ensure that they don't get benefits they shouldn't have.
-        await subscription_service.enqueue_benefits_grants(session, order.subscription)
+        await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
 
@@ -2046,6 +2065,41 @@ class OrderService:
             taxability_reason,
             tax_rate,
         )
+
+    async def schedule_retry_for_past_due_orders(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Schedule immediate dunning retry for past_due subscriptions when a
+        customer saves a new default payment method.
+
+        This handles the case where automatic retries were stopped (e.g., due to
+        a non-recoverable decline code) but the customer later adds a new card.
+        """
+        repository = OrderRepository.from_session(session)
+        orders = await repository.get_pending_orders_for_past_due_subscriptions(
+            customer.id
+        )
+
+        for order in orders:
+            assert order.subscription is not None
+
+            log.info(
+                "Scheduling dunning retry after payment method update",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+                payment_method_id=payment_method.id,
+            )
+
+            await repository.update(
+                order,
+                update_dict={"next_payment_attempt_at": utc_now()},
+                flush=True,
+            )
+
+            order.subscription.payment_method_id = payment_method.id
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 from sqlalchemy import CursorResult, Select, case, select, update
-from sqlalchemy.orm import joinedload
-from sqlalchemy.orm.strategy_options import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
@@ -36,6 +35,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.order import OrderStatus
+from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
 
@@ -100,6 +100,27 @@ class OrderRepository(
             )
             .order_by(Order.next_payment_attempt_at.asc())
             .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_pending_orders_for_past_due_subscriptions(
+        self, customer_id: UUID
+    ) -> Sequence[Order]:
+        """Get pending subscription orders where the subscription is past_due
+        and still within the dunning window (past_due_deadline not yet expired)."""
+        statement = (
+            self.get_base_statement()
+            .join(Subscription, Order.subscription_id == Subscription.id)
+            .where(
+                Order.customer_id == customer_id,
+                Order.status == OrderStatus.pending,
+                Order.subscription_id.is_not(None),
+                Subscription.status == SubscriptionStatus.past_due,
+                Subscription.canceled_at.is_(None),
+                Subscription.past_due_deadline.is_not(None),
+                Subscription.past_due_deadline > utc_now(),
+            )
+            .options(joinedload(Order.subscription))
         )
         return await self.get_all(statement)
 

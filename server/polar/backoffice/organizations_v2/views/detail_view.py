@@ -200,43 +200,20 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
-                        # Quick approve with $250 default threshold
-                        approve_url = str(
-                            request.url_for(
-                                "organizations-v2:approve",
-                                organization_id=self.org.id,
-                            )
-                        )
-
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_post=approve_url + "?threshold=25000",
-                                hx_confirm="Approve this organization with $250 threshold?",
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations-v2:approve_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
                             ):
-                                text("Approve ($250)")
-
-                        # Custom approve with input
-                        with tag.div(classes="flex gap-2"):
-                            with tag.input(
-                                type="number",
-                                name="threshold_dollars",
-                                id="custom-threshold",
-                                placeholder="Custom $ amount",
-                                classes="input input-bordered input-sm flex-1",
-                            ):
-                                pass
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_post=approve_url,
-                                hx_include="#custom-threshold",
-                                hx_confirm="Approve with custom threshold?",
-                            ):
-                                text("✓")
+                                text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(

@@ -15,6 +15,7 @@ from polar.models.dispute import Dispute
 from polar.models.organization import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
+from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.payment import Payment, PaymentStatus
 from polar.models.product import Product
 from polar.models.refund import Refund, RefundStatus
@@ -177,3 +178,27 @@ class OrganizationReviewRepository(
         )
         result = await self.session.execute(statement)
         return list(result.scalars().unique().all())
+
+    async def save_review_feedback(
+        self,
+        *,
+        agent_review_id: UUID,
+        reviewer_id: UUID,
+        ai_verdict: OrganizationReviewFeedback.AIVerdict,
+        human_verdict: OrganizationReviewFeedback.HumanVerdict,
+        agreement: OrganizationReviewFeedback.Agreement,
+        reviewed_at: datetime,
+        override_reason: str | None = None,
+    ) -> OrganizationReviewFeedback:
+        """Record a human reviewer's feedback on an AI review verdict."""
+        feedback = OrganizationReviewFeedback(
+            agent_review_id=agent_review_id,
+            reviewer_id=reviewer_id,
+            ai_verdict=ai_verdict,
+            human_verdict=human_verdict,
+            agreement=agreement,
+            reviewed_at=reviewed_at,
+            override_reason=override_reason,
+        )
+        self.session.add(feedback)
+        return feedback

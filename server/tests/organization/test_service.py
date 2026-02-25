@@ -446,6 +446,183 @@ class TestConfirmOrganizationReviewed:
 
 
 @pytest.mark.asyncio
+class TestHandleOngoingReviewVerdict:
+    async def test_auto_approve_on_approve_verdict(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500 (50_000 cents)
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: auto-approved, threshold doubled
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 100_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_escalate_on_deny_verdict(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is DENY
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.DENY
+        )
+
+        # Then: escalated, Plain ticket created, status unchanged
+        assert result is False
+        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_escalate_on_needs_human_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is NEEDS_HUMAN_REVIEW
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.NEEDS_HUMAN_REVIEW
+        )
+
+        # Then: escalated, Plain ticket created
+        assert result is False
+        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_eligible_threshold_at_250(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold exactly $250 (25_000 cents)
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 25_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE and threshold is exactly $250
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: eligible, auto-approved, threshold doubled
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 50_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_not_eligible_initial_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is INITIAL_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.next_review_threshold = 50_000
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE but status is INITIAL_REVIEW
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: not eligible, escalated to Plain
+        assert result is False
+        assert organization.status == OrganizationStatus.INITIAL_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_not_eligible_wrong_status(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ACTIVE with threshold=$500
+        organization.status = OrganizationStatus.ACTIVE
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE but status is ACTIVE (not ONGOING_REVIEW)
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: not eligible, escalated to Plain
+        assert result is False
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 class TestDenyOrganization:
     async def test_deny_organization(
         self,

@@ -26,6 +26,11 @@ Usage:
     Repair previously migrated orgs (re-run backfill for orgs with flag already enabled):
         uv run python -m scripts.migrate_organizations_members repair --no-dry-run
         uv run python -m scripts.migrate_organizations_members repair --slug my-org --no-dry-run
+
+    Repair in batches of 1000:
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 0
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 1000
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 2000
 """
 
 import asyncio
@@ -35,7 +40,7 @@ from typing import Any
 
 import structlog
 import typer
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
@@ -260,6 +265,9 @@ async def repair(
     limit: int | None = typer.Option(
         None, help="Maximum number of organizations to repair"
     ),
+    offset: int = typer.Option(
+        0, help="Number of organizations to skip (for batch pagination)"
+    ),
 ) -> None:
     """Re-run backfill for orgs that already have member_model_enabled.
 
@@ -287,11 +295,17 @@ async def repair(
                     .is_(False),
                 ),
             )
-            .order_by(Organization.next_review_threshold.asc())
+            .order_by(
+                Organization.next_review_threshold.asc(),
+                Organization.id.asc(),
+            )
         )
 
         if slug is not None:
             statement = statement.where(Organization.slug == slug)
+
+        if offset > 0:
+            statement = statement.offset(offset)
 
         if limit is not None:
             statement = statement.limit(limit)
@@ -299,11 +313,36 @@ async def repair(
         result = await session.execute(statement)
         organizations = list(result.scalars().all())
 
+        # Get total count (without limit/offset) for progress display
+        count_statement = (
+            select(func.count())
+            .select_from(Organization)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
+                Organization.feature_settings["member_model_enabled"]
+                .as_boolean()
+                .is_(True),
+                or_(
+                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
+                        None
+                    ),
+                    Organization.feature_settings["seat_based_pricing_enabled"]
+                    .as_boolean()
+                    .is_(False),
+                ),
+            )
+        )
+        total_count = await session.scalar(count_statement)
+
     if not organizations:
         typer.echo("No eligible organizations found.")
         return
 
-    typer.echo(f"Found {len(organizations)} organization(s) to repair")
+    typer.echo(
+        f"Found {len(organizations)} organization(s) to repair"
+        f" (offset={offset}, total={total_count})"
+    )
     typer.echo()
 
     if dry_run:

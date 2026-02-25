@@ -137,6 +137,8 @@ class OrganizationSocialPlatforms(StrEnum):
     youtube = "youtube"
     tiktok = "tiktok"
     linkedin = "linkedin"
+    threads = "threads"
+    discord = "discord"
     other = "other"
 
 
@@ -148,6 +150,8 @@ PLATFORM_DOMAINS = {
     "youtube": ["youtube.com", "youtu.be"],
     "tiktok": ["tiktok.com"],
     "linkedin": ["linkedin.com"],
+    "threads": ["threads.net"],
+    "discord": ["discord.gg", "discord.com"],
 }
 
 

@@ -512,7 +512,7 @@ class OverviewSection:
                         with metric_card(
                             "P90 Risk Score",
                             f"{p90_risk:.0f}",
-                            subtitle=f"90th percentile",
+                            subtitle="90th percentile",
                             variant=self._rate_variant(p90_risk, yellow=65, red=75),
                             compact=True,
                         ):

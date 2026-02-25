@@ -26,9 +26,16 @@ class LogCorrelationIdMiddleware:
         structlog.contextvars.bind_contextvars(
             correlation_id=correlation_id, method=scope["method"], path=scope["path"]
         )
+        sentry_sdk.set_tag("correlation_id", correlation_id)
+
         logfire_stack = contextlib.ExitStack()
         logfire_stack.enter_context(logfire.set_baggage(correlation_id=correlation_id))
-        sentry_sdk.set_tag("correlation_id", correlation_id)
+        # The root span was already created by the OTel ASGI middleware
+        # (which runs before this middleware), so baggage won't be picked up
+        # automatically. Set the attribute directly on the root span.
+        root_span = scope.get("logfire.span")
+        if root_span is not None and root_span.is_recording():
+            root_span.set_attribute("correlation_id", correlation_id)
 
         await self.app(scope, receive, send)
 

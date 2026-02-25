@@ -43,11 +43,13 @@ from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_session import UserSession
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
+from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
@@ -64,6 +66,7 @@ from polar.user_organization.service import (
 
 from .. import formatters
 from ..components import accordion, button, datatable, description_list, input, modal
+from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
@@ -1319,6 +1322,7 @@ async def get(
     files_page: int = Query(1, ge=1),
     files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
@@ -1353,19 +1357,42 @@ async def get(
         data = await request.form()
         try:
             account_status = OrganizationStatusFormAdapter.validate_python(data)
+            review_repo = OrganizationReviewRepository.from_session(session)
             if account_status.action == "approve":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision="APPROVE",
+                )
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision="DENY",
+                )
                 await organization_service.deny_organization(session, organization)
             elif account_status.action == "under_review":
                 await organization_service.set_organization_under_review(
                     session, organization
                 )
             elif account_status.action == "approve_appeal":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision="APPROVE",
+                    review_context="appeal",
+                )
                 await organization_service.approve_appeal(session, organization)
             elif account_status.action == "deny_appeal":
+                await review_repo.record_human_decision(
+                    organization_id=id,
+                    reviewer_id=user_session.user.id,
+                    decision="DENY",
+                    review_context="appeal",
+                )
                 await organization_service.deny_appeal(session, organization)
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:

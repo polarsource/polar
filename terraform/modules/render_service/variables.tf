@@ -165,6 +165,7 @@ variable "aws_s3_config" {
     files_public_bucket_name      = string # "polar-public-files"
     customer_invoices_bucket_name = string # "polar-customer-invoices"
     payout_invoices_bucket_name   = string # "polar-payout-invoices"
+    logs_bucket_name              = string # "polar-logs"
   })
 }
 

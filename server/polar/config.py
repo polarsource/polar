@@ -286,6 +286,8 @@ class Settings(BaseSettings):
         "organization_access_token.record_usage",
         "personal_access_token.record_usage",
     }
+    # S3 logs storage
+    S3_LOGS_BUCKET_NAME: str | None = None
 
     # Plain
     PLAIN_REQUEST_SIGNING_SECRET: str | None = None

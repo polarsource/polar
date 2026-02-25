@@ -153,6 +153,7 @@ module "sandbox" {
     files_public_bucket_name      = "polar-public-sandbox-files"
     customer_invoices_bucket_name = "polar-sandbox-customer-invoices"
     payout_invoices_bucket_name   = "polar-sandbox-payout-invoices"
+    logs_bucket_name              = "polar-sandbox-logs"
   }
 
   aws_s3_secrets = {

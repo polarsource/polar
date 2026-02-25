@@ -229,6 +229,7 @@ module "production" {
     files_public_bucket_name      = "polar-public-files"
     customer_invoices_bucket_name = "polar-customer-invoices"
     payout_invoices_bucket_name   = "polar-payout-invoices"
+    logs_bucket_name              = "polar-production-logs"
   }
 
   aws_s3_secrets = {

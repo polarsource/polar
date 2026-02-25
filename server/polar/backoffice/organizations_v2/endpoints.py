@@ -10,6 +10,7 @@ This module provides a modern, three-column layout with:
 
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -670,7 +671,7 @@ async def get_organization_detail(
                     text(f"Unknown section: {section}")
 
 
-def _render_ai_review_summary(report: dict) -> None:
+def _render_ai_review_summary(report: dict[str, Any]) -> None:
     """Render a compact AI review summary for use in approve/deny dialogs."""
     verdict = report.get("verdict", "")
     risk_score = report.get("overall_risk_score")

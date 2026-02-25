@@ -6,6 +6,7 @@ import React, {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { resolveFlexChildClasses } from './resolveProperties'
+import type { Color, Radius, Spacing } from './theme'
 
 // ─── Breakpoint support ───────────────────────────────────────────────────────
 // Each flex prop can be a plain value or a breakpoint map { default: ..., xl: ... }.
@@ -52,31 +53,31 @@ export type FlexChildProps = {
 // from useOrbit() — e.g. "var(--SPACING_3)", "var(--CARD-BACKGROUND)".
 
 export type BoxStyleProps = {
-  backgroundColor?: string
-  color?: string
-  borderColor?: string
-  padding?: string
-  paddingX?: string
-  paddingY?: string
-  paddingTop?: string
-  paddingRight?: string
-  paddingBottom?: string
-  paddingLeft?: string
-  margin?: string
-  marginX?: string
-  marginY?: string
-  marginTop?: string
-  marginRight?: string
-  marginBottom?: string
-  marginLeft?: string
-  gap?: string
-  rowGap?: string
-  columnGap?: string
-  borderRadius?: string
-  borderTopLeftRadius?: string
-  borderTopRightRadius?: string
-  borderBottomLeftRadius?: string
-  borderBottomRightRadius?: string
+  backgroundColor?: Color
+  color?: Color
+  borderColor?: Color
+  padding?: Spacing
+  paddingX?: Spacing
+  paddingY?: Spacing
+  paddingTop?: Spacing
+  paddingRight?: Spacing
+  paddingBottom?: Spacing
+  paddingLeft?: Spacing
+  margin?: Spacing
+  marginX?: Spacing
+  marginY?: Spacing
+  marginTop?: Spacing
+  marginRight?: Spacing
+  marginBottom?: Spacing
+  marginLeft?: Spacing
+  gap?: Spacing
+  rowGap?: Spacing
+  columnGap?: Spacing
+  borderRadius?: Radius
+  borderTopLeftRadius?: Radius
+  borderTopRightRadius?: Radius
+  borderBottomLeftRadius?: Radius
+  borderBottomRightRadius?: Radius
 }
 
 // ─── Box props ────────────────────────────────────────────────────────────────

@@ -37,6 +37,10 @@ export type { OrbitColor, OrbitSpacing, OrbitRadius } from './tokens/theme'
 export { OrbitProvider, useOrbit } from './tokens/OrbitProvider'
 export type { OrbitProviderProps, OrbitTokens } from './tokens/OrbitProvider'
 
+// ─── Theme ────────────────────────────────────────────────────────────────────
+export { theme } from './primitives/theme'
+export type { Color, Spacing, Radius, FontSize, FontWeight, Theme } from './primitives/theme'
+
 // ─── Primitives ───────────────────────────────────────────────────────────────
 export { createBox } from './primitives/createBox'
 export type { BoxProps as CreateBoxProps } from './primitives/createBox'

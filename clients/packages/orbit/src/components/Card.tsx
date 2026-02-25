@@ -1,28 +1,33 @@
-import React from 'react'
 import type { ReactNode } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { Spacing } from '../primitives/theme'
+import { theme } from '../primitives/theme'
 import { Box } from './Box'
-import { Stack } from './Stack'
 import { Button, type ButtonProps } from './Button'
-import { tokens } from '../tokens/vars'
+import { Stack } from './Stack'
 
 export function Card({
   children,
   className,
-  padding = tokens.CARD.PADDING,
-  gap = tokens.CARD.GAP,
+  padding = theme.spacing[6],
+  gap = theme.spacing[4],
 }: {
   children?: ReactNode
   className?: string
-  padding?: string
-  gap?: string
+  padding?: Spacing
+  gap?: Spacing
 }) {
   return (
-    <Stack vertical
-      borderRadius={tokens.CARD.RADIUS}
+    <Stack
+      vertical
+      borderRadius={theme.radius.lg}
       padding={padding}
       gap={gap}
-      className={twMerge('bg-(--CARD-BACKGROUND) rounded-(--CARD-RADIUS)', className)}
+      className={twMerge(
+        'rounded-(--CARD-RADIUS) bg-(--CARD-BACKGROUND)',
+        className,
+      )}
     >
       {children}
     </Stack>
@@ -63,10 +68,13 @@ export function CardFooter({
   actions?: ButtonProps[]
 }) {
   return (
-    <Box paddingTop={actions ? tokens.CARD.FOOTER['PADDING_TOP'] : undefined} className={className}>
+    <Box
+      paddingTop={actions ? theme.spacing[4] : undefined}
+      className={className}
+    >
       {children}
       {actions && (
-        <Stack gap={tokens.CARD.FOOTER.GAP}>
+        <Stack gap={theme.spacing[3]}>
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}

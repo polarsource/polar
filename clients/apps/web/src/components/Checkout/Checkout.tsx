@@ -1,10 +1,12 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
+import { markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
@@ -12,6 +14,7 @@ import {
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
   CheckoutSeatSelector,
+  ProductPriceLabel,
 } from '@polar-sh/checkout/components'
 import {
   hasProductCheckout,
@@ -19,7 +22,8 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { AcceptedLocale } from '@polar-sh/i18n'
+import { formatCurrency } from '@polar-sh/currency'
+import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
@@ -30,13 +34,75 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@polar-sh/ui/components/ui/dialog'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import CheckoutProductInfo from './CheckoutProductInfo'
+
+const TruncatedDescription = ({
+  description,
+  productName,
+  readMoreLabel,
+}: {
+  description: string
+  productName: string
+  readMoreLabel: string
+}) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isClamped, setIsClamped] = useState(false)
+
+  useEffect(() => {
+    const el = textRef.current
+    if (!el) return
+    requestAnimationFrame(() => {
+      setIsClamped(el.scrollHeight > el.clientHeight)
+    })
+  }, [description])
+
+  return (
+    <Dialog>
+      <div className="flex flex-col gap-y-1">
+        <div
+          ref={textRef}
+          className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 line-clamp-2 max-w-none text-left text-xs text-gray-600"
+        >
+          <Markdown options={markdownOptions}>{description}</Markdown>
+        </div>
+        {isClamped && (
+          <DialogTrigger asChild>
+            <button className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700">
+              {readMoreLabel}
+            </button>
+          </DialogTrigger>
+        )}
+      </div>
+      <DialogContent className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{productName}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Product description
+          </DialogDescription>
+        </DialogHeader>
+        <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800">
+          <Markdown options={markdownOptions}>{description}</Markdown>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export interface CheckoutProps {
   embed?: boolean
@@ -64,6 +130,11 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
+
+  const { variant: flattenExperiment } = useExperiment('checkout_flatten', {
+    trackExposure: !embed,
+  })
+  const t = useTranslations(locale)
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -269,28 +340,193 @@ const Checkout = ({
     )
   }
 
-  return (
-    <div className="flex w-full flex-col gap-y-6">
-      <div className="flex flex-row items-center gap-x-4">
-        {checkout.returnUrl && (
-          <Link
-            href={checkout.returnUrl}
-            className="dark:text-polar-500 text-gray-500"
-          >
-            <ArrowBackOutlined fontSize="small" />
-          </Link>
-        )}
-        <div className="flex flex-row items-center gap-x-3">
-          <Avatar
-            avatar_url={checkout.organization.avatarUrl}
-            name={checkout.organization.name}
-            className="h-8 w-8"
-          />
-          <span className="font-medium dark:text-white">
-            {checkout.organization.name}
-          </span>
+  const isFlat = flattenExperiment === 'treatment'
+  const hasMedia =
+    hasProductCheckout(checkout) && checkout.product.medias.length > 0
+
+  const orgHeader = (
+    <div className="flex flex-row items-center gap-x-4">
+      {checkout.returnUrl && (
+        <Link
+          href={checkout.returnUrl}
+          className={`dark:text-polar-500 ${isFlat ? 'text-gray-600' : 'text-gray-500'}`}
+        >
+          <ArrowBackOutlined fontSize="small" />
+        </Link>
+      )}
+      <div className="flex flex-row items-center gap-x-2">
+        <Avatar
+          avatar_url={checkout.organization.avatarUrl}
+          name={checkout.organization.name}
+          className={isFlat ? 'h-6 w-6' : 'h-8 w-8'}
+        />
+        <span
+          className={
+            isFlat ? 'text-sm dark:text-white' : 'font-medium dark:text-white'
+          }
+        >
+          {checkout.organization.name}
+        </span>
+      </div>
+    </div>
+  )
+
+  if (isFlat) {
+    return (
+      <div className="md:grid md:min-h-screen md:grid-cols-2">
+        <div className="md:flex md:justify-end">
+          <div className="flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:py-12 md:pr-12 md:pl-4">
+            {orgHeader}
+            <div className="flex flex-col gap-y-8 md:sticky md:top-8">
+              {hasProductCheckout(checkout) && (
+                <>
+                  <div className="flex flex-col gap-y-2">
+                    <div className="flex flex-row items-start gap-x-3">
+                      {hasMedia && checkout.product.medias[0]?.publicUrl && (
+                        <Dialog>
+                          <DialogTrigger
+                            asChild
+                            disabled={checkout.product.medias.length <= 1}
+                          >
+                            <button
+                              className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              <img
+                                src={checkout.product.medias[0].publicUrl}
+                                alt={checkout.product.name}
+                                className="h-10 w-10 rounded-lg object-cover"
+                              />
+                              {checkout.product.medias.length > 1 && (
+                                <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                                  +{checkout.product.medias.length - 1}
+                                </span>
+                              )}
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="dark:bg-polar-900 max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{checkout.product.name}</DialogTitle>
+                              <DialogDescription className="sr-only">
+                                Product images
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Slideshow
+                              images={checkout.product.medias.map(
+                                (m) => m.publicUrl,
+                              )}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      <div className="flex min-w-0 flex-col gap-y-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {checkout.product.name}
+                        </span>
+                        {checkout.product.description && (
+                          <TruncatedDescription
+                            description={checkout.product.description}
+                            productName={checkout.product.name}
+                            readMoreLabel={t(
+                              'checkout.productDescription.readMore',
+                            )}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-3xl font-medium">
+                      {checkout.productPrice.amountType === 'seat_based' ? (
+                        formatCurrency('compact', locale)(
+                          checkout.netAmount || 0,
+                          checkout.productPrice.priceCurrency,
+                        )
+                      ) : (
+                        <ProductPriceLabel
+                          product={checkout.product}
+                          price={checkout.productPrice}
+                          locale={locale}
+                        />
+                      )}
+                    </span>
+                  </div>
+                  <CheckoutProductSwitcher
+                    checkout={checkout}
+                    update={
+                      update as (
+                        data: CheckoutUpdatePublic,
+                      ) => Promise<ProductCheckoutPublic>
+                    }
+                    themePreset={themePreset}
+                    locale={locale}
+                    flattenExperiment={flattenExperiment}
+                  />
+                  {checkout.productPrice.amountType === 'custom' && (
+                    <CheckoutPWYWForm
+                      checkout={checkout}
+                      update={update}
+                      productPrice={checkout.productPrice as ProductPriceCustom}
+                      themePreset={themePreset}
+                      locale={locale}
+                    />
+                  )}
+                  {!checkout.isFreeProductPrice && (
+                    <div className="flex flex-col gap-4 text-sm">
+                      {checkout.productPrice.amountType === 'seat_based' && (
+                        <CheckoutSeatSelector
+                          checkout={checkout}
+                          update={
+                            update as (
+                              data: CheckoutUpdatePublic,
+                            ) => Promise<ProductCheckoutPublic>
+                          }
+                          locale={locale}
+                          compact
+                          flattenExperiment={flattenExperiment}
+                        />
+                      )}
+                      <CheckoutPricingBreakdown
+                        checkout={checkout}
+                        locale={locale}
+                        flattenExperiment={flattenExperiment}
+                      />
+                      <CheckoutDiscountInput
+                        checkout={checkout}
+                        update={update}
+                        locale={locale}
+                        collapsible
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="dark:md:bg-polar-900 md:bg-white">
+          <div className="flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:py-12 md:pr-4 md:pl-12">
+            <PaymentNotReadyBanner />
+            <CheckoutForm
+              form={form}
+              checkout={checkout}
+              update={update}
+              confirm={confirm}
+              loading={loading}
+              loadingLabel={label}
+              theme={theme}
+              themePreset={themePreset}
+              disabled={shouldBlockCheckout}
+              isUpdatePending={isUpdatePending}
+              locale={locale}
+              flattenExperiment={flattenExperiment}
+            />
+          </div>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-y-6">
+      {orgHeader}
       <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-clip md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
         <div className="md:dark:bg-polar-950 md:bg-gray-50 md:p-12">
           <div className="flex flex-col gap-y-8 md:sticky md:top-8">

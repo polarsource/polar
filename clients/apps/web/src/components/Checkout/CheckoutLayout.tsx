@@ -6,16 +6,27 @@ interface CheckoutLayoutProps {
   checkout: CheckoutPublic
   embed: boolean
   theme?: 'light' | 'dark'
+  flat?: boolean
 }
 
 const CheckoutLayout: React.FC<
   React.PropsWithChildren<CheckoutLayoutProps>
-> = ({ children, checkout, embed, theme }) => {
+> = ({ children, checkout, embed, theme, flat }) => {
   if (embed) {
     return (
       <CheckoutEmbedLayout checkout={checkout} theme={theme}>
         {children}
       </CheckoutEmbedLayout>
+    )
+  }
+
+  if (flat) {
+    return (
+      <PolarThemeProvider>
+        <div className="md:dark:bg-polar-950 dark:bg-polar-900 h-full min-h-screen bg-white md:bg-gray-50 dark:text-white">
+          {children}
+        </div>
+      </PolarThemeProvider>
     )
   }
 

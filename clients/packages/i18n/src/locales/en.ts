@@ -40,6 +40,7 @@ export default {
       },
       taxId: 'Tax ID',
       discountCode: 'Discount code',
+      addDiscountCode: 'Add discount code',
       optional: 'Optional',
       apply: {
         value: 'Apply',

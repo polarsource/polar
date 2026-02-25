@@ -135,7 +135,16 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "intervals.long.day.=1": "day",
+    "intervals.long.day.other": "days",
+    "intervals.long.week.=1": "week",
+    "intervals.long.week.other": "weeks",
+    "intervals.long.month.=1": "month",
+    "intervals.long.month.other": "months",
+    "intervals.long.year.=1": "year",
+    "intervals.long.year.other": "years",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -273,7 +282,16 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "intervals.long.day.=1": "day",
+    "intervals.long.day.other": "days",
+    "intervals.long.week.=1": "week",
+    "intervals.long.week.other": "weeks",
+    "intervals.long.month.=1": "month",
+    "intervals.long.month.other": "months",
+    "intervals.long.year.=1": "year",
+    "intervals.long.year.other": "years",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -411,7 +429,16 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "intervals.long.day.=1": "day",
+    "intervals.long.day.other": "days",
+    "intervals.long.week.=1": "week",
+    "intervals.long.week.other": "weeks",
+    "intervals.long.month.=1": "month",
+    "intervals.long.month.other": "months",
+    "intervals.long.year.=1": "year",
+    "intervals.long.year.other": "years",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -549,7 +576,16 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "intervals.long.day.=1": "day",
+    "intervals.long.day.other": "days",
+    "intervals.long.week.=1": "week",
+    "intervals.long.week.other": "weeks",
+    "intervals.long.month.=1": "month",
+    "intervals.long.month.other": "months",
+    "intervals.long.year.=1": "year",
+    "intervals.long.year.other": "years",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -687,7 +723,16 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "intervals.long.day.=1": "day",
+    "intervals.long.day.other": "days",
+    "intervals.long.week.=1": "week",
+    "intervals.long.week.other": "weeks",
+    "intervals.long.month.=1": "month",
+    "intervals.long.month.other": "months",
+    "intervals.long.year.=1": "year",
+    "intervals.long.year.other": "years",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -825,7 +870,8 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -963,7 +1009,8 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1101,7 +1148,8 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "checkout.form.addDiscountCode": "Add discount code"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1239,6 +1287,7 @@
     "ordinal.other": "th",
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
-    "benefitTypes.feature_flag": "Feature flag"
+    "benefitTypes.feature_flag": "Feature flag",
+    "checkout.form.addDiscountCode": "Add discount code"
   }
 }

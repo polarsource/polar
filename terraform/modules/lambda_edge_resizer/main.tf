@@ -30,6 +30,7 @@ data "aws_iam_policy_document" "this" {
       "s3:GetObject",
       "s3:PutObject",
       "s3:HeadObject",
+      "s3:ListBucket",
     ]
     resources = ["${var.source_bucket_arn}/*"]
   }

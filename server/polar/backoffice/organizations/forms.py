@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from annotated_types import Ge
 from fastapi import UploadFile
@@ -7,6 +7,7 @@ from pydantic import (
     Field,
     StringConstraints,
     TypeAdapter,
+    model_validator,
 )
 
 from polar.kit.schemas import HttpUrlToStr
@@ -144,6 +145,14 @@ class UpdateOrganizationInternalNotesForm(forms.BaseForm):
 
 class UpdateOrganizationSocialsForm(forms.BaseForm):
     """Form for editing organization social media links."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def empty_strings_to_none(cls, data: dict[str, Any]) -> dict[str, Any]:
+        for key, value in data.items():
+            if isinstance(value, str) and value.strip() == "":
+                data[key] = None
+        return data
 
     youtube_url: Annotated[
         HttpUrlToStr | None,

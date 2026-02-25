@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
 
 import structlog
 import trafilatura
@@ -124,7 +123,6 @@ class BrowserDeps:
     """Dependencies injected into the agent — holds browser state."""
 
     page: Page
-    base_domain: str
     pages_visited: list[WebsitePage] = field(default_factory=list)
     pages_navigated: int = 0
 
@@ -145,15 +143,10 @@ _website_agent: Agent[BrowserDeps, str] = Agent(
 @_website_agent.tool
 async def visit_page(ctx: RunContext[BrowserDeps], url: str) -> str:
     """Navigate to a URL, extract the main text content, and return it along with \
-page metadata and available navigation links. Only same-domain URLs are allowed. \
-Max 5 pages."""
+page metadata and available navigation links. Max 5 pages."""
     deps = ctx.deps
     if deps.pages_navigated >= MAX_PAGES:
         return "Page limit reached. Produce your summary now."
-
-    parsed = urlparse(url)
-    if parsed.netloc and parsed.netloc != deps.base_domain:
-        return f"Error: Cannot visit external domain {parsed.netloc}."
 
     try:
         response = await deps.page.goto(
@@ -243,7 +236,7 @@ async def collect_website_data(website_url: str) -> WebsiteData:
 
     try:
         return await asyncio.wait_for(
-            _run_browser_agent(base_url, urlparse(base_url).netloc),
+            _run_browser_agent(base_url),
             timeout=OVERALL_TIMEOUT_S,
         )
     except TimeoutError:
@@ -261,7 +254,7 @@ async def collect_website_data(website_url: str) -> WebsiteData:
         return WebsiteData(base_url=base_url, scrape_error=str(e)[:200])
 
 
-async def _run_browser_agent(base_url: str, base_domain: str) -> WebsiteData:
+async def _run_browser_agent(base_url: str) -> WebsiteData:
     """Launch browser, run the agent, return website data with usage."""
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
@@ -285,7 +278,7 @@ async def _run_browser_agent(base_url: str, base_domain: str) -> WebsiteData:
             )
             page = await context.new_page()
 
-            deps = BrowserDeps(page=page, base_domain=base_domain)
+            deps = BrowserDeps(page=page)
 
             result = await _website_agent.run(
                 f"Analyze the website at: {base_url}",

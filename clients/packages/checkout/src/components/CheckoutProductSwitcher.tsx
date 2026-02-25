@@ -156,9 +156,12 @@ const CheckoutProductSwitcher = ({
             htmlFor={`product-${item.key}`}
           >
             <RadioGroupItem value={item.value} id={`product-${item.key}`} />
-            <span className="min-w-0 flex-1 truncate text-sm">
-              {item.productName}
-            </span>
+            <div className="min-w-0 flex-1">
+              <span className="truncate text-sm">{item.productName}</span>
+              <span className="dark:text-polar-500 block text-xs text-gray-500">
+                {getDescription(item.product, item.price)}
+              </span>
+            </div>
             <span className="dark:text-polar-400 shrink-0 text-sm text-gray-500">
               {item.isSelected && item.price.amountType === 'seat_based' ? (
                 <AmountLabel

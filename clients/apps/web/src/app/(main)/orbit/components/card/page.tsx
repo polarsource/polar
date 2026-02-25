@@ -7,10 +7,10 @@ import {
   CardHeader,
   Headline,
   Stack,
-  Text } from '@polar-sh/orbit'
+  Text,
+} from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
-
+import { sp } from '../../token-compat'
 
 export default function CardPage() {
   return (
@@ -22,10 +22,18 @@ export default function CardPage() {
           <>
             A surface for grouping related content. Composed of three optional
             sub-components —{' '}
-            <Text as="code" fontFamily="mono" fontSize="sm">CardHeader</Text>,{' '}
-            <Text as="code" fontFamily="mono" fontSize="sm">CardContent</Text>, and{' '}
-            <Text as="code" fontFamily="mono" fontSize="sm">CardFooter</Text> — each
-            separated by a dividing border.
+            <Text as="code" fontFamily="mono" fontSize="sm">
+              CardHeader
+            </Text>
+            ,{' '}
+            <Text as="code" fontFamily="mono" fontSize="sm">
+              CardContent
+            </Text>
+            , and{' '}
+            <Text as="code" fontFamily="mono" fontSize="sm">
+              CardFooter
+            </Text>{' '}
+            — each separated by a dividing border.
           </>
         }
       />
@@ -34,7 +42,10 @@ export default function CardPage() {
       <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="Variants" />
 
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {/* Full */}
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
@@ -139,7 +150,10 @@ export default function CardPage() {
       <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="With actions" />
 
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {/* Single primary action in footer */}
           <Box className="grid grid-cols-5 gap-8 py-8">
             <Stack vertical className="col-span-2 gap-1">
@@ -262,7 +276,10 @@ export default function CardPage() {
       {/* API */}
       <Stack vertical gap={sp['SPACING_4']}>
         <OrbitSectionHeader title="API" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {[
             {
               name: 'Card',
@@ -289,7 +306,13 @@ export default function CardPage() {
               <Text as="code" fontFamily="mono" fontSize="sm">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text
+                as="code"
+                variant="subtle"
+                fontFamily="mono"
+                fontSize="xs"
+                className="col-span-2"
+              >
                 {props}
               </Text>
               <Text variant="subtle" fontSize="xs" className="col-span-2">

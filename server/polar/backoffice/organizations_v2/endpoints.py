@@ -767,7 +767,9 @@ async def approve_dialog(
     review_repo = OrganizationReviewRepository(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
-        agent_review.report.get("report", {}) if agent_review and agent_review.report else {}
+        agent_review.report.get("report", {})
+        if agent_review and agent_review.report
+        else {}
     )
 
     with modal("Approve Organization", open=True):
@@ -900,7 +902,9 @@ async def deny_dialog(
     review_repo = OrganizationReviewRepository(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
-        agent_review.report.get("report", {}) if agent_review and agent_review.report else {}
+        agent_review.report.get("report", {})
+        if agent_review and agent_review.report
+        else {}
     )
 
     with modal("Deny Organization", open=True):
@@ -1004,7 +1008,9 @@ async def approve_denied_dialog(
     review_repo = OrganizationReviewRepository(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
-        agent_review.report.get("report", {}) if agent_review and agent_review.report else {}
+        agent_review.report.get("report", {})
+        if agent_review and agent_review.report
+        else {}
     )
 
     with modal("Approve Denied Organization", open=True):

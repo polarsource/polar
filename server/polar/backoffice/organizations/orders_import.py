@@ -28,6 +28,7 @@ from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.worker import enqueue_job
+from polar.worker._enqueue import JobQueueManager
 
 from ..components import alert
 
@@ -341,6 +342,9 @@ async def orders_import(
         yield i, total_rows
 
     if errors:
+        await session.rollback()
+        job_queue_manager = JobQueueManager.get()
+        job_queue_manager.reset()
         raise OrdersImportError(errors)
     else:
         await session.commit()

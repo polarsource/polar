@@ -472,7 +472,7 @@ class OverviewSection:
                 dispute_rate = payment_stats.get("dispute_rate", 0)
                 chargeback_rate = payment_stats.get("chargeback_rate", 0)
 
-                with tag.div(classes="grid grid-cols-2 gap-3"):
+                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
                     with metric_card(
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
@@ -492,6 +492,35 @@ class OverviewSection:
                         compact=True,
                     ):
                         pass
+
+                # Row 4: P50 + P90 Risk Scores
+                risk_scores_count = payment_stats.get("risk_scores_count", 0)
+                if risk_scores_count > 0:
+                    p50_risk = payment_stats.get("p50_risk", 0)
+                    p90_risk = payment_stats.get("p90_risk", 0)
+
+                    with tag.div(classes="grid grid-cols-2 gap-3"):
+                        with metric_card(
+                            "P50 Risk Score",
+                            f"{p50_risk:.0f}",
+                            subtitle=f"median of {risk_scores_count} payments",
+                            variant=self._rate_variant(
+                                p50_risk, yellow=50, red=65
+                            ),
+                            compact=True,
+                        ):
+                            pass
+
+                        with metric_card(
+                            "P90 Risk Score",
+                            f"{p90_risk:.0f}",
+                            subtitle=f"90th percentile",
+                            variant=self._rate_variant(
+                                p90_risk, yellow=65, red=75
+                            ),
+                            compact=True,
+                        ):
+                            pass
 
             yield
 

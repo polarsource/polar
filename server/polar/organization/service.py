@@ -780,7 +780,9 @@ class OrganizationService:
 
         if is_eligible:
             next_threshold = organization.next_review_threshold * 2
-            await self.confirm_organization_reviewed(session, organization, next_threshold)
+            await self.confirm_organization_reviewed(
+                session, organization, next_threshold
+            )
             return True
 
         # Not eligible or not approved → create Plain ticket for human review

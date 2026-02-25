@@ -3,18 +3,21 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, Uuid
+from sqlalchemy import TIMESTAMP, Boolean, Float, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
+    from polar.models.organization import Organization
     from polar.models.organization_agent_review import OrganizationAgentReview
     from polar.models.user import User
 
 
 class OrganizationReviewFeedback(RecordModel):
-    """Captures the relationship between an AI review verdict and a human reviewer's decision."""
+    """Captures review decisions for organizations — both AI agent and human reviewer."""
+
+    # --- Existing enums (kept for backward compat during expand phase) ---
 
     class AIVerdict(StrEnum):
         APPROVE = "APPROVE"
@@ -30,33 +33,74 @@ class OrganizationReviewFeedback(RecordModel):
         OVERRIDE_TO_APPROVE = "OVERRIDE_TO_APPROVE"
         OVERRIDE_TO_DENY = "OVERRIDE_TO_DENY"
 
+    # --- New enums ---
+
+    class ActorType(StrEnum):
+        AGENT = "agent"
+        HUMAN = "human"
+
+    class DecisionType(StrEnum):
+        APPROVE = "APPROVE"
+        DENY = "DENY"
+        ESCALATE = "ESCALATE"
+
     __tablename__ = "organization_review_feedback"
 
-    agent_review_id: Mapped[UUID] = mapped_column(
+    # --- Existing columns (now nullable for agent decisions) ---
+
+    agent_review_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("organization_agent_reviews.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
-    reviewer_id: Mapped[UUID] = mapped_column(
+    reviewer_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("users.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
-    ai_verdict: Mapped[AIVerdict] = mapped_column(String, nullable=False)
-    human_verdict: Mapped[HumanVerdict] = mapped_column(String, nullable=False)
-    agreement: Mapped[Agreement] = mapped_column(String, nullable=False)
+    ai_verdict: Mapped[str | None] = mapped_column(String, nullable=True)
+    human_verdict: Mapped[str | None] = mapped_column(String, nullable=True)
+    agreement: Mapped[str | None] = mapped_column(String, nullable=True)
 
     override_reason: Mapped[str | None] = mapped_column(
         Text, nullable=True, default=None
     )
 
-    reviewed_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False
+    reviewed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
     )
+
+    # --- New columns ---
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    actor_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    decision: Mapped[str | None] = mapped_column(String, nullable=True)
+    verdict: Mapped[str | None] = mapped_column(String, nullable=True)
+    risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    review_context: Mapped[str | None] = mapped_column(String, nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_current: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, server_default="false"
+    )
+
+    # Note: partial unique index (organization_review_feedback_one_current_per_org)
+    # is managed via migration, not __table_args__, to avoid test/create_all conflicts.
+
+    # --- Relationships ---
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     @declared_attr
     def agent_review(cls) -> Mapped["OrganizationAgentReview"]:
@@ -69,6 +113,7 @@ class OrganizationReviewFeedback(RecordModel):
     def __repr__(self) -> str:
         return (
             f"OrganizationReviewFeedback(id={self.id}, "
-            f"agent_review_id={self.agent_review_id}, "
-            f"agreement={self.agreement})"
+            f"organization_id={self.organization_id}, "
+            f"actor_type={self.actor_type}, "
+            f"decision={self.decision})"
         )

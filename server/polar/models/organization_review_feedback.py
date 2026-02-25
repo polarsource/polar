@@ -3,7 +3,17 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, Float, ForeignKey, String, Text, Uuid
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    Uuid,
+    text,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -45,6 +55,15 @@ class OrganizationReviewFeedback(RecordModel):
         ESCALATE = "ESCALATE"
 
     __tablename__ = "organization_review_feedback"
+
+    __table_args__ = (
+        Index(
+            "organization_review_feedback_one_current_per_org",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("is_current = true AND deleted_at IS NULL"),
+        ),
+    )
 
     # --- Existing columns (now nullable for agent decisions) ---
 
@@ -92,9 +111,6 @@ class OrganizationReviewFeedback(RecordModel):
     is_current: Mapped[bool | None] = mapped_column(
         Boolean, nullable=True, server_default="false"
     )
-
-    # Note: partial unique index (organization_review_feedback_one_current_per_org)
-    # is managed via migration, not __table_args__, to avoid test/create_all conflicts.
 
     # --- Relationships ---
 

@@ -146,3 +146,7 @@ resource "aws_s3_bucket_cors_configuration" "public_files" {
     expose_headers  = ["ETag"]
   }
 }
+
+resource "aws_s3_bucket" "logs" {
+  bucket = "${local.full_name_prefix}-logs"
+}

@@ -33,9 +33,11 @@ def snap_to_size(value: int) -> int:
 
 def get_bucket_from_origin(request: dict[str, Any]) -> str | None:
     origin = request.get("origin", {})
-    s3_origin = origin.get("s3", {})
-    domain = s3_origin.get("domainName", "")
-    return domain.split(".")[0] if domain else None
+    for origin_type in ("s3", "custom"):
+        domain = origin.get(origin_type, {}).get("domainName", "")
+        if domain:
+            return domain.split(".")[0]
+    return None
 
 
 def is_image(uri: str) -> bool:
@@ -55,6 +57,7 @@ def resize_image(
     image_bytes: bytes, width: int | None, height: int | None
 ) -> bytes | None:
     img = Image.open(io.BytesIO(image_bytes))
+    orig_format = img.format
     orig_w, orig_h = img.size
 
     if width and width >= orig_w and not height:
@@ -74,7 +77,7 @@ def resize_image(
         img = img.resize((int(orig_w * ratio), height), Resampling.LANCZOS)
 
     buf = io.BytesIO()
-    fmt = img.format or "JPEG"
+    fmt = orig_format or "JPEG"
     save_kwargs: dict[str, Any] = {}
     if fmt.upper() in ("JPEG", "JPG"):
         fmt = "JPEG"
@@ -92,6 +95,8 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     request: dict[str, Any] = event["Records"][0]["cf"]["request"]
     uri: str = request["uri"]
     querystring: str = request.get("querystring", "")
+
+    logger.info("uri=%s querystring=%s", uri, querystring)
 
     if not querystring or not is_image(uri):
         return request

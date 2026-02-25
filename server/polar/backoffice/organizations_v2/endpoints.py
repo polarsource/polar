@@ -44,7 +44,6 @@ from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
-from polar.models.member import Member
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
@@ -554,19 +553,22 @@ async def get_organization_detail(
             "total_transfer_sum": total_transfer_sum,
         }
 
-        # Fetch test sales data (self-purchases by org members with positive amounts)
-        member_emails_subquery = (
-            select(func.lower(Member.email))
+        # Fetch test sales data (self-purchases by org team members with positive amounts)
+        # Use UserOrganization + User to get actual org team member emails,
+        # NOT the Member model which represents customer usage entities.
+        team_member_emails_subquery = (
+            select(func.lower(User.email))
+            .join(UserOrganization, User.id == UserOrganization.user_id)
             .where(
-                Member.organization_id == organization_id,
-                Member.deleted_at.is_(None),
+                UserOrganization.organization_id == organization_id,
+                UserOrganization.deleted_at.is_(None),
             )
             .correlate(None)
         )
 
         test_sales_filter = (
             Customer.organization_id == organization_id,
-            func.lower(Customer.email).in_(member_emails_subquery),
+            func.lower(Customer.email).in_(team_member_emails_subquery),
             Order.net_amount > 0,
         )
 

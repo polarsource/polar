@@ -307,6 +307,8 @@ resource "aws_iam_policy" "lambda_artifacts_upload" {
       {
         Effect = "Allow"
         Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
           "s3:PutObject"
         ]
         Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"

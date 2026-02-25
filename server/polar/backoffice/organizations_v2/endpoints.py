@@ -1298,14 +1298,14 @@ async def under_review_dialog(
             with tag.p(classes="font-semibold text-warning"):
                 text("Set Organization Under Review")
 
-            with tag.div(classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"):
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
                 with tag.p(classes="font-semibold mb-2"):
                     text("This action will:")
                 with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
                     with tag.li():
-                        text(
-                            "Change the organization status to Ongoing Review"
-                        )
+                        text("Change the organization status to Ongoing Review")
                     with tag.li():
                         text("Block payouts while the organization is under review")
 

@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { FieldEvents, FieldFormat, FieldUrl } from './WebhookForm'
+import { FieldEvents, FieldFormat, FieldName, FieldUrl } from './WebhookForm'
 
 export default function NewWebhookModal({
   organization,
@@ -81,6 +81,7 @@ export default function NewWebhookModal({
             onSubmit={handleSubmit(onSubmit)}
             className="max-w-[700px] space-y-8"
           >
+            <FieldName />
             <FieldUrl />
             <FieldFormat />
             <FieldEvents />

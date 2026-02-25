@@ -26270,6 +26270,11 @@ export interface components {
        * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */
       url: string
+      /**
+       * Name
+       * @description An optional name for the webhook endpoint to help organize and identify it.
+       */
+      name?: string | null
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -26307,6 +26312,11 @@ export interface components {
        * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */
       url: string
+      /**
+       * Name
+       * @description An optional name for the webhook endpoint to help organize and identify it.
+       */
+      name?: string | null
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -26327,6 +26337,11 @@ export interface components {
     WebhookEndpointUpdate: {
       /** Url */
       url?: string | null
+      /**
+       * Name
+       * @description An optional name for the webhook endpoint to help organize and identify it.
+       */
+      name?: string | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null

@@ -24,6 +24,32 @@ type CreateOrUpdate =
   | schemas['WebhookEndpointCreate']
   | schemas['WebhookEndpointUpdate']
 
+export const FieldName = () => {
+  const { control } = useFormContext<CreateOrUpdate>()
+
+  return (
+    <FormField
+      control={control}
+      name="name"
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-1">
+          <div className="flex flex-row items-center justify-between">
+            <FormLabel>Name</FormLabel>
+          </div>
+          <FormControl>
+            <Input
+              {...field}
+              value={field.value || ''}
+              placeholder="My Webhook (optional)"
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
 export const FieldUrl = () => {
   const { control } = useFormContext<CreateOrUpdate>()
 

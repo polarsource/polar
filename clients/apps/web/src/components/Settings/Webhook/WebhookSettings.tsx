@@ -82,11 +82,32 @@ const Endpoint = ({
   organization: schemas['Organization']
   endpoint: schemas['WebhookEndpoint']
 }) => {
+  const hasName = endpoint.name && endpoint.name.length > 0
+
   return (
     <div className="flex items-center justify-between overflow-hidden">
       <div className="flex w-2/3 flex-col gap-y-1">
-        <p className="truncate font-mono text-sm">{endpoint.url}</p>
-        <p className="dark:text-polar-400 text-sm text-gray-500">
+        <div className="flex items-center gap-x-2">
+          <span
+            className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+              endpoint.enabled
+                ? 'bg-emerald-500'
+                : 'dark:bg-polar-500 bg-gray-400'
+            }`}
+            title={endpoint.enabled ? 'Enabled' : 'Disabled'}
+          />
+          {hasName ? (
+            <p className="truncate text-sm font-medium">{endpoint.name}</p>
+          ) : (
+            <p className="truncate font-mono text-sm">{endpoint.url}</p>
+          )}
+        </div>
+        {hasName && (
+          <p className="dark:text-polar-400 truncate pl-4 font-mono text-xs text-gray-500">
+            {endpoint.url}
+          </p>
+        )}
+        <p className="dark:text-polar-400 pl-4 text-sm text-gray-500">
           <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
         </p>
       </div>

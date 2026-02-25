@@ -54,6 +54,10 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
     """
 
     url: EndpointURL
+    name: str | None = Field(
+        default=None,
+        description="An optional name for the webhook endpoint to help organize and identify it.",
+    )
     format: EndpointFormat
     secret: EndpointSecret
     organization_id: UUID4 = Field(
@@ -71,6 +75,10 @@ class WebhookEndpointCreate(Schema):
     """
 
     url: EndpointURL
+    name: str | None = Field(
+        default=None,
+        description="An optional name for the webhook endpoint to help organize and identify it.",
+    )
     secret: SkipJsonSchema[EndpointSecret | None] = Field(
         default=None,
         deprecated="The secret is now generated on the backend.",
@@ -100,6 +108,10 @@ class WebhookEndpointUpdate(Schema):
     """
 
     url: EndpointURL | None = None
+    name: str | None = Field(
+        default=None,
+        description="An optional name for the webhook endpoint to help organize and identify it.",
+    )
     secret: SkipJsonSchema[EndpointSecret | None] = Field(
         default=None,
         deprecated="The secret should is now generated on the backend.",

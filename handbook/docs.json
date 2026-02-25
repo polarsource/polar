@@ -20,10 +20,6 @@
       "dark": "#131316"
     }
   },
-  "feedback": {
-    "thumbsRating": true,
-    "suggestEdit": true
-  },
   "contextual": {
     "options": ["copy", "chatgpt", "claude"]
   },

@@ -48,7 +48,8 @@
             "pages": [
               "engineering/backend-development/rest-api-guidelines",
               "engineering/backend-development/task-debouncer",
-              "engineering/backend-development/operational-errors"
+              "engineering/backend-development/operational-errors",
+              "engineering/backend-development/metadata"
             ]
           },
           {

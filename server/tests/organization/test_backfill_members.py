@@ -1945,3 +1945,280 @@ class TestBackfillMembersB2B:
         billing_refreshed = await session.get(Customer, billing.id)
         assert billing_refreshed is not None
         assert billing_refreshed.deleted_at is None
+
+
+@pytest.mark.asyncio
+class TestBackfillBenefitGrantsDuplicates:
+    """When a member-linked grant already exists for the same
+    (subscription, member, benefit), the old unlinked grant should be
+    soft-deleted to avoid violating the benefit_grants_smb_key constraint.
+    Properties from the old grant are carried over if the existing one has none."""
+
+    async def test_soft_deletes_old_grant_when_member_linked_grant_exists(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Old grant (member_id=NULL) should be soft-deleted when a
+        member-linked grant already exists for the same unique key."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="dup@test.com",
+            stripe_customer_id="stripe_dup",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+
+        # Pre-create the owner member (as if a prior migration already ran)
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Old grant: no member_id, granted (stale — subscription is canceled)
+        old_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+
+        # New grant: has member_id, revoked (created post-migration)
+        new_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            member=owner_member,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Old grant should be soft-deleted
+        refreshed_old = await session.get(BenefitGrant, old_grant.id)
+        assert refreshed_old is not None
+        assert refreshed_old.deleted_at is not None
+
+        # New grant should be kept untouched
+        refreshed_new = await session.get(BenefitGrant, new_grant.id)
+        assert refreshed_new is not None
+        assert refreshed_new.deleted_at is None
+        assert refreshed_new.member_id == owner_member.id
+
+    async def test_carries_over_properties_from_old_grant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When the old grant has properties but the existing member-linked
+        grant has empty properties, the properties should be carried over."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="props@test.com",
+            stripe_customer_id="stripe_props",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Old grant with properties (e.g. file references)
+        old_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            properties={"files": ["abc-123"]},
+            subscription=subscription,
+        )
+
+        # New grant: member-linked but empty properties (created during revocation)
+        new_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            member=owner_member,
+            properties={},
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Old grant should be soft-deleted
+        refreshed_old = await session.get(BenefitGrant, old_grant.id)
+        assert refreshed_old is not None
+        assert refreshed_old.deleted_at is not None
+
+        # New grant should have inherited the properties
+        refreshed_new = await session.get(BenefitGrant, new_grant.id)
+        assert refreshed_new is not None
+        assert refreshed_new.deleted_at is None
+        assert dict(refreshed_new.properties) == {"files": ["abc-123"]}
+
+    async def test_does_not_overwrite_existing_properties(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When both grants have properties, the existing grant's
+        properties should not be overwritten."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="both-props@test.com",
+            stripe_customer_id="stripe_both_props",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Old grant with old properties
+        old_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=False,
+            properties={"license_key_id": "old-key"},
+            subscription=subscription,
+        )
+
+        # New grant with its own properties
+        new_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            member=owner_member,
+            properties={"license_key_id": "new-key"},
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Old grant soft-deleted
+        refreshed_old = await session.get(BenefitGrant, old_grant.id)
+        assert refreshed_old is not None
+        assert refreshed_old.deleted_at is not None
+
+        # New grant keeps its own properties (not overwritten)
+        refreshed_new = await session.get(BenefitGrant, new_grant.id)
+        assert refreshed_new is not None
+        assert dict(refreshed_new.properties) == {"license_key_id": "new-key"}
+
+    async def test_no_duplicate_links_normally_when_no_conflict(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When there is no conflicting member-linked grant, the old
+        grant should be linked to the member normally."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="no-conflict@test.com",
+            stripe_customer_id="stripe_no_conflict",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        assert grant.member_id is None
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed = await session.get(BenefitGrant, grant.id)
+        assert refreshed is not None
+        assert refreshed.deleted_at is None
+        assert refreshed.member_id is not None
+
+        member = await session.get(Member, refreshed.member_id)
+        assert member is not None
+        assert member.customer_id == customer.id
+        assert member.role == MemberRole.owner

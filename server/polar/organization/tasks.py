@@ -578,6 +578,7 @@ async def _backfill_benefit_grants(
 
     grants_found = 0
     count = 0
+    duplicates_deleted = 0
     try:
         async for grant in results:
             grants_found += 1
@@ -594,6 +595,7 @@ async def _backfill_benefit_grants(
                 grant.customer_id = billing_customer_id
 
             # Link to seat member or owner member
+            target_member_id: uuid.UUID | None = None
             seat_member_id = await _find_seat_member_for_grant(
                 session,
                 member_repository,
@@ -602,8 +604,7 @@ async def _backfill_benefit_grants(
                 old_customer_id=old_customer_id,
             )
             if seat_member_id is not None:
-                grant.member_id = seat_member_id
-                count += 1
+                target_member_id = seat_member_id
             else:
                 if grant.customer_id not in owner_members_map:
                     owner = await member_repository.get_owner_by_customer_id(
@@ -613,7 +614,35 @@ async def _backfill_benefit_grants(
                         owner_members_map[grant.customer_id] = owner
                 owner = owner_members_map.get(grant.customer_id)
                 if owner is not None:
-                    grant.member_id = owner.id
+                    target_member_id = owner.id
+
+            if target_member_id is not None:
+                # Check for an existing grant with the same unique key
+                # to avoid violating the benefit_grants_smb_key constraint
+                existing_id = await session.scalar(
+                    select(BenefitGrant.id).where(
+                        BenefitGrant.subscription_id == grant.subscription_id,
+                        BenefitGrant.member_id == target_member_id,
+                        BenefitGrant.benefit_id == grant.benefit_id,
+                        BenefitGrant.id != grant.id,
+                        BenefitGrant.is_deleted.is_(False),
+                    )
+                )
+                if existing_id is not None:
+                    existing_grant = await session.get(BenefitGrant, existing_id)
+                    assert existing_grant is not None
+                    # The existing member-linked grant is the one the system
+                    # actively manages. The old unlinked grant is stale
+                    # (e.g. never revoked because it had no member_id when
+                    # the cancellation flow ran post-migration).
+                    # Keep the existing grant, but carry over any properties
+                    # the old grant had (e.g. file refs, license keys).
+                    if grant.properties and not existing_grant.properties:
+                        existing_grant.properties = grant.properties
+                    grant.set_deleted_at()
+                    duplicates_deleted += 1
+                else:
+                    grant.member_id = target_member_id
                     count += 1
 
             # Transfer benefit records now that we know the member
@@ -628,7 +657,9 @@ async def _backfill_benefit_grants(
                     {grant.benefit_id},
                 )
 
-            if count > 0 and count % _BACKFILL_BATCH_SIZE == 0:
+            if (count + duplicates_deleted) > 0 and (
+                count + duplicates_deleted
+            ) % _BACKFILL_BATCH_SIZE == 0:
                 await session.flush()
     finally:
         await results.close()
@@ -640,6 +671,7 @@ async def _backfill_benefit_grants(
         organization_id=str(organization.id),
         grants_found=grants_found,
         grants_linked=count,
+        duplicates_deleted=duplicates_deleted,
     )
     return count
 

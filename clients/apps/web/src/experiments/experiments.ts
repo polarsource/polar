@@ -18,10 +18,4 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  checkout_terms: {
-    description:
-      'Move terms and conditions text from inside payment element to below the form',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
 } as const

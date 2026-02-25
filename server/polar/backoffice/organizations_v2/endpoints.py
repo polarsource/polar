@@ -170,9 +170,7 @@ async def count_test_sales(
         .join(Customer, Order.customer_id == Customer.id)
         .where(
             *test_sales_filter,
-            Order.status.notin_(
-                [OrderStatus.refunded, OrderStatus.partially_refunded]
-            ),
+            Order.status.notin_([OrderStatus.refunded, OrderStatus.partially_refunded]),
         )
     )
     unrefunded_orders_count = unrefunded_orders_result.scalar() or 0

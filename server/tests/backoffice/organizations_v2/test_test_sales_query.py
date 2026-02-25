@@ -56,9 +56,7 @@ class TestCountTestSales:
             email="paying-customer@example.com",
             stripe_customer_id="STRIPE_CUST_1",
         )
-        await create_order(
-            save_fixture, customer=customer, subtotal_amount=3900
-        )
+        await create_order(save_fixture, customer=customer, subtotal_amount=3900)
 
         # Create a Member record for this customer (usage entity)
         # This is the normal flow — customers get Member records for product access
@@ -98,9 +96,7 @@ class TestCountTestSales:
             email=team_user.email,
             stripe_customer_id="STRIPE_CUST_TEAM",
         )
-        await create_order(
-            save_fixture, customer=customer, subtotal_amount=1000
-        )
+        await create_order(save_fixture, customer=customer, subtotal_amount=1000)
 
         total, unrefunded = await count_test_sales(session, org.id)
 
@@ -197,9 +193,7 @@ class TestCountTestSales:
                 email=f"customer-{i}@example.com",
                 stripe_customer_id=f"STRIPE_CUST_{i}",
             )
-            await create_order(
-                save_fixture, customer=cust, subtotal_amount=3900
-            )
+            await create_order(save_fixture, customer=cust, subtotal_amount=3900)
             await create_member(
                 save_fixture,
                 customer=cust,
@@ -232,9 +226,7 @@ class TestCountTestSales:
             email=team_user.email.upper(),
             stripe_customer_id="STRIPE_CUST_CASE",
         )
-        await create_order(
-            save_fixture, customer=customer, subtotal_amount=1000
-        )
+        await create_order(save_fixture, customer=customer, subtotal_amount=1000)
 
         total, unrefunded = await count_test_sales(session, org.id)
 
@@ -265,9 +257,7 @@ class TestCountTestSales:
             email=former_member.email,
             stripe_customer_id="STRIPE_CUST_FORMER",
         )
-        await create_order(
-            save_fixture, customer=customer, subtotal_amount=1000
-        )
+        await create_order(save_fixture, customer=customer, subtotal_amount=1000)
 
         total, unrefunded = await count_test_sales(session, org.id)
 

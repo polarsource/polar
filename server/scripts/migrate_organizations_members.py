@@ -324,9 +324,9 @@ async def repair(
                 .as_boolean()
                 .is_(True),
                 or_(
-                    Organization.feature_settings[
-                        "seat_based_pricing_enabled"
-                    ].is_(None),
+                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
+                        None
+                    ),
                     Organization.feature_settings["seat_based_pricing_enabled"]
                     .as_boolean()
                     .is_(False),

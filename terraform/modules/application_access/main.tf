@@ -21,6 +21,7 @@ variable "buckets" {
     payout_invoices   = object({ name = string, description = optional(string) })
     files             = object({ name = string, description = optional(string) })
     public_files      = object({ name = string, description = optional(string) })
+    logs              = object({ name = string, description = optional(string) })
   })
 }
 
@@ -84,6 +85,16 @@ data "aws_iam_policy_document" "public_files" {
   }
 }
 
+data "aws_iam_policy_document" "logs" {
+  statement {
+    sid = "AllowWriteLogs"
+    actions = [
+      "s3:PutObject",
+    ]
+    resources = ["arn:aws:s3:::${var.buckets.logs.name}/*"]
+  }
+}
+
 resource "aws_iam_policy" "customer_invoices" {
   name        = var.buckets.customer_invoices.name
   description = var.buckets.customer_invoices.description
@@ -108,6 +119,12 @@ resource "aws_iam_policy" "public_files" {
   policy      = data.aws_iam_policy_document.public_files.json
 }
 
+resource "aws_iam_policy" "logs" {
+  name        = var.buckets.logs.name
+  description = var.buckets.logs.description
+  policy      = data.aws_iam_policy_document.logs.json
+}
+
 resource "aws_iam_user_policy_attachment" "customer_invoices" {
   user       = var.username
   policy_arn = aws_iam_policy.customer_invoices.arn
@@ -126,4 +143,9 @@ resource "aws_iam_user_policy_attachment" "files" {
 resource "aws_iam_user_policy_attachment" "public_files" {
   user       = var.username
   policy_arn = aws_iam_policy.public_files.arn
+}
+
+resource "aws_iam_user_policy_attachment" "logs" {
+  user       = var.username
+  policy_arn = aws_iam_policy.logs.arn
 }

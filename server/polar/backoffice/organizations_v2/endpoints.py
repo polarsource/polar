@@ -46,7 +46,6 @@ from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
-from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
@@ -54,7 +53,6 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
-from polar.organization_review.schemas import ReviewVerdict
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
@@ -76,60 +74,6 @@ from .views.sections.team_section import TeamSection
 router = APIRouter(prefix="/organizations-v2", tags=["organizations-v2"])
 
 logger = structlog.getLogger(__name__)
-
-# Mapping from ReviewVerdict to AIVerdict enum
-# Includes NEEDS_HUMAN_REVIEW for backward compatibility with old agent reviews
-_AI_VERDICT_MAP: dict[str, OrganizationReviewFeedback.AIVerdict] = {
-    ReviewVerdict.APPROVE: OrganizationReviewFeedback.AIVerdict.APPROVE,
-    ReviewVerdict.DENY: OrganizationReviewFeedback.AIVerdict.DENY,
-    "NEEDS_HUMAN_REVIEW": OrganizationReviewFeedback.AIVerdict.NEEDS_HUMAN_REVIEW,
-}
-
-
-def _compute_agreement(
-    ai_verdict: OrganizationReviewFeedback.AIVerdict,
-    human_verdict: OrganizationReviewFeedback.HumanVerdict,
-) -> OrganizationReviewFeedback.Agreement:
-    """Determine if the human agreed with the AI or overrode it."""
-    if human_verdict == OrganizationReviewFeedback.HumanVerdict.APPROVE:
-        if ai_verdict == OrganizationReviewFeedback.AIVerdict.APPROVE:
-            return OrganizationReviewFeedback.Agreement.AGREE
-        return OrganizationReviewFeedback.Agreement.OVERRIDE_TO_APPROVE
-    else:  # DENY
-        if ai_verdict == OrganizationReviewFeedback.AIVerdict.DENY:
-            return OrganizationReviewFeedback.Agreement.AGREE
-        return OrganizationReviewFeedback.Agreement.OVERRIDE_TO_DENY
-
-
-async def _record_review_feedback(
-    session: AsyncSession,
-    organization_id: UUID4,
-    reviewer_id: UUID4,
-    human_verdict: OrganizationReviewFeedback.HumanVerdict,
-    override_reason: str | None = None,
-) -> None:
-    """Record feedback if an agent review exists for this organization."""
-    repository = OrganizationReviewRepository(session)
-    agent_review = await repository.get_latest_agent_review(organization_id)
-    if agent_review is None:
-        return
-
-    report = agent_review.report.get("report", {})
-    raw_verdict = report.get("verdict")
-    ai_verdict = _AI_VERDICT_MAP.get(raw_verdict)
-    if ai_verdict is None:
-        return
-
-    agreement = _compute_agreement(ai_verdict, human_verdict)
-    await repository.save_review_feedback(
-        agent_review_id=agent_review.id,
-        reviewer_id=reviewer_id,
-        ai_verdict=ai_verdict,
-        human_verdict=human_verdict,
-        agreement=agreement,
-        reviewed_at=datetime.now(UTC),
-        override_reason=override_reason,
-    )
 
 
 async def count_test_sales(
@@ -756,13 +700,13 @@ async def approve_dialog(
 
         override_reason = str(data.get("override_reason", "")).strip() or None
 
-        # Record review feedback before approving
-        await _record_review_feedback(
-            session,
-            organization_id,
-            user_session.user.id,
-            OrganizationReviewFeedback.HumanVerdict.APPROVE,
-            override_reason=override_reason,
+        # Record review decision before approving
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="APPROVE",
+            reason=override_reason,
         )
 
         # Approve the organization
@@ -781,7 +725,7 @@ async def approve_dialog(
         )
 
     # Fetch AI review for context
-    review_repo = OrganizationReviewRepository(session)
+    review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
         agent_review.report.get("report", {})
@@ -893,13 +837,13 @@ async def deny_dialog(
         form_data = await request.form()
         override_reason = str(form_data.get("override_reason", "")).strip() or None
 
-        # Record review feedback before denying
-        await _record_review_feedback(
-            session,
-            organization_id,
-            user_session.user.id,
-            OrganizationReviewFeedback.HumanVerdict.DENY,
-            override_reason=override_reason,
+        # Record review decision before denying
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="DENY",
+            reason=override_reason,
         )
 
         # Deny the organization
@@ -916,7 +860,7 @@ async def deny_dialog(
         )
 
     # Fetch AI review for context
-    review_repo = OrganizationReviewRepository(session)
+    review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
         agent_review.report.get("report", {})
@@ -997,13 +941,13 @@ async def approve_denied_dialog(
 
         override_reason = str(data.get("override_reason", "")).strip() or None
 
-        # Record review feedback before approving
-        await _record_review_feedback(
-            session,
-            organization_id,
-            user_session.user.id,
-            OrganizationReviewFeedback.HumanVerdict.APPROVE,
-            override_reason=override_reason,
+        # Record review decision before approving denied org
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="APPROVE",
+            reason=override_reason,
         )
 
         # Approve the organization
@@ -1022,7 +966,7 @@ async def approve_denied_dialog(
         )
 
     # Fetch AI review for context
-    review_repo = OrganizationReviewRepository(session)
+    review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
         agent_review.report.get("report", {})
@@ -1102,6 +1046,7 @@ async def unblock_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -1115,6 +1060,14 @@ async def unblock_approve_dialog(
         # Convert dollars to cents (user enters 250, we store 25000)
         raw_threshold = data.get("threshold", "250")
         threshold = int(float(str(raw_threshold)) * 100)
+
+        # Record review decision before unblocking
+        review_repo = OrganizationReviewRepository.from_session(session)
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="APPROVE",
+        )
 
         # Unblock the organization (set blocked_at to None)
         organization.blocked_at = None

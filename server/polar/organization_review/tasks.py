@@ -103,7 +103,7 @@ async def run_review_agent(
 
         # Persist agent report to its own table (both contexts)
         review_repository = OrganizationReviewRepository.from_session(session)
-        await review_repository.save_agent_review(
+        agent_review = await review_repository.save_agent_review(
             organization_id=organization_id,
             review_type=review_context.value,
             report=result.model_dump(mode="json"),
@@ -124,6 +124,15 @@ async def run_review_agent(
                 verdict=report.verdict.value,
                 auto_approved=auto_approved,
             )
+            if auto_approved:
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review.id,
+                    decision="APPROVE",
+                    review_context="threshold",
+                    verdict=report.verdict.value,
+                    risk_score=report.overall_risk_score,
+                )
 
         # For SUBMISSION context: also create OrganizationReview record and act
         if review_context == ReviewContext.SUBMISSION:
@@ -155,6 +164,15 @@ async def run_review_agent(
                 organization.status_updated_at = datetime.now(UTC)
                 session.add(organization)
 
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review.id,
+                    decision="DENY",
+                    review_context="submission",
+                    verdict=report.verdict.value,
+                    risk_score=report.overall_risk_score,
+                )
+
                 log.info(
                     "organization_review.submission.denied",
                     organization_id=str(organization_id),
@@ -170,6 +188,15 @@ async def run_review_agent(
                 session.add(organization)
 
                 await organization_service._sync_account_status(session, organization)
+
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review.id,
+                    decision="ESCALATE",
+                    review_context="setup_complete",
+                    verdict=report.verdict.value,
+                    risk_score=report.overall_risk_score,
+                )
 
                 log.info(
                     "organization_review.setup_complete.flagged",

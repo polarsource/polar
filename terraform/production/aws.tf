@@ -154,7 +154,7 @@ module "image_resizer" {
   s3_bucket         = aws_s3_bucket.lambda_artifacts.id
   s3_key            = data.aws_s3_object.image_resizer_package.key
   s3_object_version = data.aws_s3_object.image_resizer_package.version_id
-  source_bucket_arn = module.s3_buckets.public_assets_bucket_arn
+  source_bucket_arn = module.s3_buckets.public_files_bucket_arn
 }
 
 

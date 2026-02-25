@@ -621,6 +621,21 @@ async def get(
                                                         }"
                                                     )
 
+                                        if order.platform_fee_amount > 0:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3", classes="text-right"
+                                                ):
+                                                    text("Platform Fee")
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        formatters.currency(
+                                                            order.platform_fee_amount,
+                                                            order.platform_fee_currency
+                                                            or order.currency,
+                                                        )
+                                                    )
+
                 # Payments section
                 if payments:
                     with tag.div(classes="card card-border w-full shadow-sm"):

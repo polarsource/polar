@@ -21,7 +21,6 @@ from .dataset import ReviewInput
 _VERDICT_MAP = {
     "APPROVE": "PASS",
     "DENY": "FAIL",
-    "NEEDS_HUMAN_REVIEW": "UNCERTAIN",
 }
 
 

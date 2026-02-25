@@ -78,10 +78,11 @@ router = APIRouter(prefix="/organizations-v2", tags=["organizations-v2"])
 logger = structlog.getLogger(__name__)
 
 # Mapping from ReviewVerdict to AIVerdict enum
+# Includes NEEDS_HUMAN_REVIEW for backward compatibility with old agent reviews
 _AI_VERDICT_MAP: dict[str, OrganizationReviewFeedback.AIVerdict] = {
     ReviewVerdict.APPROVE: OrganizationReviewFeedback.AIVerdict.APPROVE,
     ReviewVerdict.DENY: OrganizationReviewFeedback.AIVerdict.DENY,
-    ReviewVerdict.NEEDS_HUMAN_REVIEW: OrganizationReviewFeedback.AIVerdict.NEEDS_HUMAN_REVIEW,
+    "NEEDS_HUMAN_REVIEW": OrganizationReviewFeedback.AIVerdict.NEEDS_HUMAN_REVIEW,
 }
 
 

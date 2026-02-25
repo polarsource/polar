@@ -58,7 +58,7 @@ The following thresholds needs human review:
 - refund rates (>10%)
 - charge back rate (>0%)
 - p90 radar score (>75)
-- authorization rate (,70%)
+- authorization rate (70%)
 - any dispute created
 
 ### 5. Prior History
@@ -71,17 +71,17 @@ for automatic denial.
 - **APPROVE**: All dimensions are low risk (scores < 40), no policy violations, \
 legitimate products. Most organizations should be approved.
 - **DENY**: Clear policy violations, prior denials with re-creation, confirmed fraud \
-signals, or sanctioned country. Be confident before denying.
-- **NEEDS_HUMAN_REVIEW**: Mixed signals, borderline cases, or insufficient data to \
-make a confident automated decision. When in doubt, flag for human review rather than \
-auto-denying.
+signals, sanctioned country, or edgy payment metrics. Be confident before denying. When you deny, a human \
+reviewer will review the decision.
+
+You MUST return only APPROVE or DENY. Never return any other verdict.
 
 ## Important Notes
 
 - Polar is a Merchant of Record for DIGITAL products. Physical goods and pure human \
 services are not supported.
-- Be fair and give benefit of the doubt for borderline cases. Flag for human review \
-rather than auto-denying.
+- Be fair and give benefit of the doubt for borderline cases. Approve rather than \
+denying — denied cases are always reviewed by a human.
 - Your assessment directly impacts real businesses. False denials harm legitimate \
 sellers. False approvals can expose Polar to risk. Balance both.
 - Provide specific, actionable findings — not vague concerns.
@@ -143,6 +143,8 @@ Website leniency: If the website is inaccessible, returns errors, or has minor d
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
 websites that are under construction, temporarily down, or not yet updated. Only flag website \
 issues if there is a clear and obvious sign of a prohibited business.
+
+Return only APPROVE or DENY.
 """
 
 
@@ -150,6 +152,8 @@ THRESHOLD_PREAMBLE = """\
 This is a THRESHOLD review triggered when a payment threshold is hit. \
 Perform a comprehensive analysis across ALL five dimensions. \
 If website content is not available, flag this as a red flag.
+
+Return only APPROVE or DENY.
 """
 
 
@@ -186,6 +190,8 @@ the Polar organization name. Significant mismatches are yellow flags.
   - No payment history is neutral (new org), not negative.
 - **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
 organization after denial is grounds for automatic denial.
+
+Return only APPROVE or DENY.
 """
 
 
@@ -431,9 +437,9 @@ def _timeout_report() -> ReviewAgentReport:
     from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict
 
     return ReviewAgentReport(
-        verdict=ReviewVerdict.NEEDS_HUMAN_REVIEW,
+        verdict=ReviewVerdict.DENY,
         overall_risk_score=50.0,
-        summary="Analysis timed out. Manual review required.",
+        summary="Analysis timed out. Denied for human review.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
@@ -441,10 +447,10 @@ def _timeout_report() -> ReviewAgentReport:
                 score=50.0,
                 confidence=0.0,
                 findings=["Analysis timed out"],
-                recommendation="Manual review required",
+                recommendation="Human review required",
             )
         ],
-        recommended_action="Manual review required due to timeout.",
+        recommended_action="Human review required due to timeout.",
     )
 
 
@@ -452,9 +458,9 @@ def _error_report(error: str) -> ReviewAgentReport:
     from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict
 
     return ReviewAgentReport(
-        verdict=ReviewVerdict.NEEDS_HUMAN_REVIEW,
+        verdict=ReviewVerdict.DENY,
         overall_risk_score=50.0,
-        summary=f"Analysis failed with error: {error[:200]}. Manual review required.",
+        summary=f"Analysis failed with error: {error[:200]}. Denied for human review.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
@@ -462,10 +468,10 @@ def _error_report(error: str) -> ReviewAgentReport:
                 score=50.0,
                 confidence=0.0,
                 findings=[f"Analysis error: {error[:200]}"],
-                recommendation="Manual review required",
+                recommendation="Human review required",
             )
         ],
-        recommended_action="Manual review required due to analysis error.",
+        recommended_action="Human review required due to analysis error.",
     )
 
 

@@ -524,9 +524,9 @@ class TestHandleOngoingReviewVerdict:
 
         from polar.organization_review.schemas import ReviewVerdict
 
-        # When: verdict is NEEDS_HUMAN_REVIEW
+        # When: verdict is DENY
         result = await organization_service.handle_ongoing_review_verdict(
-            session, organization, ReviewVerdict.NEEDS_HUMAN_REVIEW
+            session, organization, ReviewVerdict.DENY
         )
 
         # Then: escalated, Plain ticket created

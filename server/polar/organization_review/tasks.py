@@ -38,7 +38,6 @@ class OrganizationDoesNotExist(OrganizationReviewTaskError):
 _VERDICT_MAP: dict[ReviewVerdict, str] = {
     ReviewVerdict.APPROVE: OrganizationReview.Verdict.PASS,
     ReviewVerdict.DENY: OrganizationReview.Verdict.FAIL,
-    ReviewVerdict.NEEDS_HUMAN_REVIEW: OrganizationReview.Verdict.UNCERTAIN,
 }
 
 
@@ -55,8 +54,7 @@ async def run_review_agent(
 ) -> None:
     """Run the organization review agent as a background task.
 
-    For SUBMISSION context: creates an OrganizationReview record and auto-denies
-    on DENY or NEEDS_HUMAN_REVIEW.
+    For SUBMISSION context: creates an OrganizationReview record and auto-denies on DENY.
     For THRESHOLD context: log-only, persists to OrganizationAgentReview table.
     """
     review_context = ReviewContext(context)
@@ -151,11 +149,8 @@ async def run_review_agent(
                 )
                 session.add(org_review)
 
-            # Auto-deny on DENY or NEEDS_HUMAN_REVIEW
-            if report.verdict in (
-                ReviewVerdict.DENY,
-                ReviewVerdict.NEEDS_HUMAN_REVIEW,
-            ):
+            # Auto-deny on DENY — human will review the denial
+            if report.verdict == ReviewVerdict.DENY:
                 organization.status = OrganizationStatus.DENIED
                 organization.status_updated_at = datetime.now(UTC)
                 session.add(organization)
@@ -167,12 +162,9 @@ async def run_review_agent(
                     verdict=report.verdict.value,
                 )
 
-        # For SETUP_COMPLETE context: hold payouts and create Plain thread on flag
+        # For SETUP_COMPLETE context: hold payouts and create Plain thread on denial
         if review_context == ReviewContext.SETUP_COMPLETE:
-            if report.verdict in (
-                ReviewVerdict.DENY,
-                ReviewVerdict.NEEDS_HUMAN_REVIEW,
-            ):
+            if report.verdict == ReviewVerdict.DENY:
                 organization.status = OrganizationStatus.INITIAL_REVIEW
                 organization.status_updated_at = datetime.now(UTC)
                 session.add(organization)

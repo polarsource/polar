@@ -504,9 +504,7 @@ class OverviewSection:
                             "P50 Risk Score",
                             f"{p50_risk:.0f}",
                             subtitle=f"median of {risk_scores_count} payments",
-                            variant=self._rate_variant(
-                                p50_risk, yellow=50, red=65
-                            ),
+                            variant=self._rate_variant(p50_risk, yellow=50, red=65),
                             compact=True,
                         ):
                             pass
@@ -515,9 +513,7 @@ class OverviewSection:
                             "P90 Risk Score",
                             f"{p90_risk:.0f}",
                             subtitle=f"90th percentile",
-                            variant=self._rate_variant(
-                                p90_risk, yellow=65, red=75
-                            ),
+                            variant=self._rate_variant(p90_risk, yellow=65, red=75),
                             compact=True,
                         ):
                             pass

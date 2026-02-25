@@ -527,9 +527,7 @@ async def get_organization_detail(
             (chargeback_count / payment_count * 100) if payment_count > 0 else 0
         )
 
-        p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(
-            risk_scores
-        )
+        p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
 
         payment_stats = {
             "payment_count": payment_count,

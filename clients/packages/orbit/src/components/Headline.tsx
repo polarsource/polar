@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useInView } from 'framer-motion'
+import { motion } from 'framer-motion'
 import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -26,24 +26,6 @@ const motionTags: Record<HeadingTag, React.ElementType> = {
   span: motion.span,
 }
 
-const lineVariants = {
-  hidden: { y: '130%' },
-  visible: {
-    y: 0,
-    transition: {
-      duration: 1.7,
-      ease: [0.7, 0, 0.3, 1] as [number, number, number, number],
-    },
-  },
-}
-
-function containerVariants(lineCount: number) {
-  return {
-    hidden: {},
-    visible: { transition: { staggerChildren: 0.2 / lineCount } },
-  }
-}
-
 type HeadlineProps<T extends HeadingTag = 'h2'> = {
   as?: T
   text: string | string[]
@@ -55,7 +37,6 @@ export function Headline<T extends HeadingTag>({
   as,
   text,
   size,
-  animate,
   className,
   style,
   ...props
@@ -65,7 +46,6 @@ export function Headline<T extends HeadingTag>({
   const lines = Array.isArray(text) ? text : [text]
 
   const ref = useRef<HTMLElement>(null)
-  const isInView = useInView(ref, { once: true, amount: 0 })
 
   const sharedClassName = twMerge(
     'text-black dark:text-white font-display',
@@ -75,37 +55,6 @@ export function Headline<T extends HeadingTag>({
   const sharedStyle = {
     fontFeatureSettings: "'ss07' 1, 'ss08' 1, 'zero' 1, 'liga' 0",
     ...style,
-  }
-
-  if (animate) {
-    const MotionTag = motionTags[Tag]
-    return (
-      <MotionTag
-        ref={ref}
-        className={sharedClassName}
-        style={sharedStyle}
-        variants={containerVariants(lines.length)}
-        initial="hidden"
-        animate={isInView ? 'visible' : 'hidden'}
-        {...(props as object)}
-      >
-        {lines.map((line, i) => (
-          <span
-            key={i}
-            style={{
-              display: 'block',
-              overflow: 'hidden',
-              paddingBottom: '0.25em',
-              marginBottom: '-0.25em',
-            }}
-          >
-            <motion.span variants={lineVariants} style={{ display: 'block' }}>
-              {line}
-            </motion.span>
-          </span>
-        ))}
-      </MotionTag>
-    )
   }
 
   return (

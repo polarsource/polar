@@ -8,7 +8,15 @@ import { twMerge } from 'tailwind-merge'
 
 // ─── Text tag union ───────────────────────────────────────────────────────────
 
-type TextTag = 'p' | 'span' | 'label' | 'strong' | 'em' | 'small' | 'code' | 'div'
+type TextTag =
+  | 'p'
+  | 'span'
+  | 'label'
+  | 'strong'
+  | 'em'
+  | 'small'
+  | 'code'
+  | 'div'
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
 // All styling is encoded here — consumers pick a semantic variant, not raw props.
@@ -28,6 +36,13 @@ const textVariants = cva('', {
       disabled: 'text-sm text-gray-400 dark:text-polar-600',
       /** Inline code and technical values — monospace, 12 px. */
       mono: 'font-mono text-xs text-gray-900 dark:text-white',
+    },
+    color: {
+      /** Inherits color from variant (default behavior). */
+      default: '',
+      error: 'text-red-500 dark:text-red-500',
+      warning: 'text-amber-500 dark:text-amber-500',
+      success: 'text-emerald-500 dark:text-emerald-500',
     },
     align: {
       left: 'text-left',
@@ -49,7 +64,10 @@ const textVariants = cva('', {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type TextVariant = NonNullable<VariantProps<typeof textVariants>['variant']>
+export type TextVariant = NonNullable<
+  VariantProps<typeof textVariants>['variant']
+>
+export type TextColor = NonNullable<VariantProps<typeof textVariants>['color']>
 export type TextStyleProps = VariantProps<typeof textVariants>
 
 type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
@@ -62,6 +80,7 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
 function Text<E extends TextTag = 'p'>({
   as,
   variant,
+  color,
   align,
   wrap,
   className,
@@ -71,7 +90,10 @@ function Text<E extends TextTag = 'p'>({
   const Tag = (as ?? 'p') as ElementType
   return (
     <Tag
-      className={twMerge(textVariants({ variant, align, wrap }), className)}
+      className={twMerge(
+        textVariants({ variant, color, align, wrap }),
+        className,
+      )}
       {...(props as object)}
     >
       {children}

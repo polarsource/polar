@@ -177,8 +177,10 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
             self.href_getter = external_href
             self.external_href = True
         elif href_route_name is not None:
+            _route_name = href_route_name
+            _attr = attr
             self.href_getter = lambda r, i: str(
-                r.url_for(href_route_name, id=getattr(i, "id"))
+                r.url_for(_route_name, id=getattr(i, _attr))
             )
 
         super().__init__(label or attr, sorting)

@@ -371,9 +371,7 @@ async def get(
                             "benefit_id",
                             "ID",
                             clipboard=True,
-                            external_href=lambda r, i: str(
-                                r.url_for("benefits:get", id=i.benefit_id)
-                            ),
+                            href_route_name="benefits:get",
                         ),
                         datatable.DatatableAttrColumn(
                             "benefit.description", "Description"

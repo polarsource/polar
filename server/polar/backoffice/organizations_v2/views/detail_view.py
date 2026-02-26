@@ -449,6 +449,28 @@ class OrganizationDetailView:
                                 target="_blank",
                             ):
                                 text("View API Logs in Logfire")
+                        with tag.li():
+                            with tag.a(
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:import_orders",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Import Orders")
+                        with tag.li():
+                            with tag.a(
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:add_payment_method_domain",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Add Domain to Allowlist")
                         with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
                             with tag.a(
                                 hx_get=str(

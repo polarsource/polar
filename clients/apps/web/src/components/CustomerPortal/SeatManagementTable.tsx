@@ -10,7 +10,6 @@ import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +81,7 @@ export const SeatManagementTable = ({
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string>()
   const [isSending, setIsSending] = useState(false)
+  const [isInviting, setIsInviting] = useState(false)
   const [loadingSeats, setLoadingSeats] = useState<Set<string>>(new Set())
 
   const totalSeats = seatsData?.total_seats || 0
@@ -117,6 +117,7 @@ export const SeatManagementTable = ({
         )
       } else {
         setEmail('')
+        setIsInviting(false)
       }
     } catch {
       setError('Failed to send invitation')
@@ -176,120 +177,156 @@ export const SeatManagementTable = ({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-y-2">
-        <h3 className="text-lg">Invite Members</h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          {availableSeats} of {totalSeats} seats available
-        </p>
-      </div>
-      <div className="flex flex-col gap-y-3">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <Input
-              type="email"
-              placeholder="email@example.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                setError(undefined)
-              }}
-              disabled={isSending || availableSeats === 0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAssignSeat()
-                }
-              }}
-            />
-            {error && (
-              <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
-                {error}
-              </p>
-            )}
-          </div>
-          <Button
-            onClick={handleAssignSeat}
-            disabled={!email.trim() || availableSeats === 0 || isSending}
-            loading={isSending}
-          >
-            Invite
-          </Button>
-        </div>
+        <h3 className="text-lg">Seat Management</h3>
       </div>
 
-      {!isLoadingSeats && seats.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg">Assigned Seats</h3>
-          <DataTable
-            data={seats.sort((a, b) => {
-              const order = ['claimed', 'pending', 'revoked']
-              return order.indexOf(a.status) - order.indexOf(b.status)
-            })}
-            isLoading={false}
-            columns={[
-              {
-                accessorKey: 'customer_email',
-                header: 'Email',
-                cell: ({ row }) => (
-                  <span className="text-sm">
-                    {row.original.customer_email || '—'}
-                  </span>
-                ),
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                cell: ({ row }) => {
-                  const status = row.original.status
-                  const [label, className] = seatStatusToDisplayName[status]
+      {!isLoadingSeats && (seats.length > 0 || availableSeats > 0) && (
+        <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="[&_tr]:border-b">
+              <tr className="dark:bg-polar-800 border-b bg-gray-50">
+                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
+                  Email
+                </th>
+                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
+                  Status
+                </th>
+                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium" />
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {seats
+                .sort((a, b) => {
+                  const order = ['claimed', 'pending', 'revoked']
+                  return order.indexOf(a.status) - order.indexOf(b.status)
+                })
+                .map((seat) => {
+                  const [label, statusClassName] =
+                    seatStatusToDisplayName[seat.status]
+                  const isSeatLoading = loadingSeats.has(seat.id)
+
                   return (
-                    <Status
-                      className={twMerge(className, 'w-fit text-xs')}
-                      status={label}
-                    />
+                    <tr key={seat.id} className="border-b transition-colors">
+                      <td className="p-4 align-middle">
+                        <span className="text-sm">
+                          {seat.customer_email || '—'}
+                        </span>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <Status
+                          className={twMerge(statusClassName, 'w-fit text-sm')}
+                          status={label}
+                        />
+                      </td>
+                      <td className="p-4 align-middle">
+                        {seat.status !== 'revoked' && (
+                          <div className="flex justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                asChild
+                                disabled={isSeatLoading}
+                              >
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertOutlined fontSize="inherit" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {seat.status === 'pending' && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleResendInvitation(seat.id)
+                                    }
+                                    disabled={isSeatLoading}
+                                  >
+                                    Resend Invitation
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleRevokeSeat(seat.id)}
+                                  disabled={isSeatLoading}
+                                >
+                                  Revoke Seat
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
                   )
-                },
-              },
-              {
-                id: 'actions',
-                header: '',
-                cell: ({ row }) => {
-                  const seat = row.original
-                  const isLoading = loadingSeats.has(seat.id)
-
-                  if (seat.status === 'revoked') {
-                    return null
-                  }
-
-                  return (
-                    <div className="flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild disabled={isLoading}>
-                          <Button className="h-8 w-8" variant="secondary">
-                            <MoreVertOutlined fontSize="inherit" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {seat.status === 'pending' && (
-                            <DropdownMenuItem
-                              onClick={() => handleResendInvitation(seat.id)}
-                              disabled={isLoading}
-                            >
-                              Resend Invitation
-                            </DropdownMenuItem>
+                })}
+              {availableSeats > 0 && (
+                <tr className="border-b transition-colors">
+                  <td colSpan={3} className="p-0">
+                    {isInviting ? (
+                      <div className="flex items-start gap-4 p-4">
+                        <div className="flex-1">
+                          <Input
+                            type="email"
+                            placeholder="email@example.com"
+                            value={email}
+                            autoFocus
+                            onChange={(e) => {
+                              setEmail(e.target.value)
+                              setError(undefined)
+                            }}
+                            disabled={isSending}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleAssignSeat()
+                              }
+                              if (e.key === 'Escape') {
+                                setIsInviting(false)
+                                setEmail('')
+                                setError(undefined)
+                              }
+                            }}
+                          />
+                          {error && (
+                            <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
+                              {error}
+                            </p>
                           )}
-                          <DropdownMenuItem
-                            onClick={() => handleRevokeSeat(seat.id)}
-                            disabled={isLoading}
-                          >
-                            Revoke Seat
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  )
-                },
-              },
-            ]}
-          />
+                        </div>
+                        <Button
+                          onClick={handleAssignSeat}
+                          disabled={!email.trim() || isSending}
+                          loading={isSending}
+                        >
+                          Invite
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setIsInviting(false)
+                            setEmail('')
+                            setError(undefined)
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-4 py-4 text-left transition-colors"
+                        onClick={() => setIsInviting(true)}
+                      >
+                        <span className="dark:text-polar-400 text-gray-500">
+                          {availableSeats === 1
+                            ? 'One more seat available'
+                            : `${availableSeats} more seats available`}
+                        </span>
+                        <span className="dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 cursor-pointer items-center rounded-xl border border-black/4 bg-gray-100 px-3 text-sm font-medium text-black hover:bg-gray-200 dark:border-white/5 dark:text-white">
+                          Invite member
+                        </span>
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

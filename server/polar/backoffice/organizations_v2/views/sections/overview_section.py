@@ -99,11 +99,7 @@ class OverviewSection:
                             text("Organization Review")
                         if review.validated_at:
                             with tag.span(classes="text-xs text-base-content/60"):
-                                text(
-                                    review.validated_at.strftime(
-                                        "%Y-%m-%d %H:%M UTC"
-                                    )
-                                )
+                                text(review.validated_at.strftime("%Y-%m-%d %H:%M UTC"))
 
                     # Verdict badge + risk score
                     with tag.div(classes="flex items-center gap-4 mb-4"):
@@ -113,9 +109,7 @@ class OverviewSection:
                             else str(review.verdict or "N/A")
                         )
                         fallback_badge = (
-                            "badge-error"
-                            if verdict_str == "FAIL"
-                            else "badge-neutral"
+                            "badge-error" if verdict_str == "FAIL" else "badge-neutral"
                         )
                         with tag.div(classes=f"badge {fallback_badge} badge-lg"):
                             text(verdict_str)
@@ -135,7 +129,9 @@ class OverviewSection:
                     # Violated sections (inline comma-separated)
                     if review.violated_sections:
                         with tag.div(classes="mb-4"):
-                            with tag.span(classes="text-sm font-medium text-base-content/70"):
+                            with tag.span(
+                                classes="text-sm font-medium text-base-content/70"
+                            ):
                                 text("Violated sections: ")
                             with tag.span(classes="text-sm"):
                                 text(", ".join(review.violated_sections))

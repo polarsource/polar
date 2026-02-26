@@ -103,6 +103,19 @@ class TestCreate:
         with pytest.raises(NotReadyAccount):
             await payout_service.create(session, locker, account=account)
 
+    async def test_disconnected_stripe_account(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user, stripe_id=None)
+
+        with pytest.raises(NotReadyAccount):
+            await payout_service.create(session, locker, account=account)
+
     async def test_valid(
         self,
         save_fixture: SaveFixture,

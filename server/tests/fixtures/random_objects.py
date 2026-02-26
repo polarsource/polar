@@ -2052,7 +2052,7 @@ async def create_account(
     country: str = "US",
     currency: str = "usd",
     account_type: AccountType = AccountType.stripe,
-    stripe_id: str = "STRIPE_ID",
+    stripe_id: str | None = "STRIPE_ID",
     processor_fees_applicable: bool = True,
     fee_basis_points: int | None = None,
     fee_fixed: int | None = None,

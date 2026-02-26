@@ -148,10 +148,12 @@ class Account(RecordModel):
 
     def is_payout_ready(self) -> bool:
         return self.is_active() and (
-            # For Stripe accounts, check if payouts are enabled.
-            # Normally, the account shouldn't be active if payouts are not enabled
-            # but let's be extra cautious
-            self.account_type != AccountType.stripe or self.is_payouts_enabled
+            # For Stripe accounts, check if payouts are enabled
+            # and that a Stripe account is actually connected.
+            # After a disconnect, stripe_id is cleared but the account
+            # may still be active with is_payouts_enabled=True.
+            self.account_type != AccountType.stripe
+            or (self.is_payouts_enabled and self.stripe_id is not None)
         )
 
     def get_associations_names(self) -> list[str]:

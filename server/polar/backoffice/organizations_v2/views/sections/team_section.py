@@ -51,7 +51,16 @@ class TeamSection:
 
                                     with tag.div():
                                         with tag.div(classes="font-semibold"):
-                                            text(member.user.email or "Unknown")
+                                            with tag.a(
+                                                href=str(
+                                                    request.url_for(
+                                                        "users:get",
+                                                        id=member.user_id,
+                                                    )
+                                                ),
+                                                classes="hover:text-primary hover:underline",
+                                            ):
+                                                text(member.user.email or "Unknown")
                                         with tag.div(
                                             classes="text-sm text-base-content/60"
                                         ):

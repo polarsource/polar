@@ -253,21 +253,27 @@ class OrganizationDetailView:
                                 ),
                                 classes="w-full",
                             ):
-                                with tag.div(classes="join w-full"):
+                                with tag.label(
+                                    classes="text-xs text-base-content/50 mb-1 block"
+                                ):
+                                    text("Next review threshold")
+                                with tag.div(
+                                    classes="flex items-stretch w-full rounded-lg border border-base-300 overflow-hidden h-9"
+                                ):
                                     with tag.span(
-                                        classes="join-item flex items-center px-3 bg-base-200 border border-base-300 text-sm text-base-content/60"
+                                        classes="flex items-center px-2.5 bg-base-200 text-sm text-base-content/50 border-r border-base-300"
                                     ):
                                         text("$")
                                     with tag.input(
                                         type="number",
                                         name="threshold",
                                         value=str(threshold_dollars),
-                                        classes="input input-bordered input-sm join-item flex-1 w-0",
+                                        classes="flex-1 w-0 px-2.5 text-sm bg-base-100 outline-none border-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                                     ):
                                         pass
                                     with tag.button(
                                         type="submit",
-                                        classes="btn btn-sm btn-secondary btn-outline join-item",
+                                        classes="px-4 text-sm font-semibold bg-base-100 text-secondary border-l border-base-300 hover:bg-base-200 transition-colors cursor-pointer",
                                     ):
                                         text("Approve")
 

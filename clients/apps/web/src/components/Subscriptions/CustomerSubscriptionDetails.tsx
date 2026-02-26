@@ -61,46 +61,6 @@ const CustomerSubscriptionDetails = ({
   const uncancelSubscription = useCustomerUncancelSubscription(api)
   const router = useRouter()
 
-  const primaryAction = useMemo(() => {
-    if (
-      showSubscriptionUpdates &&
-      !isCanceled &&
-      subscription.status !== 'trialing'
-    ) {
-      return {
-        label: 'Change Plan',
-        onClick: () => {
-          setShowChangePlanModal(true)
-        },
-      }
-    }
-
-    if (
-      isCanceled &&
-      subscription.cancel_at_period_end &&
-      subscription.current_period_end &&
-      new Date(subscription.current_period_end) > new Date()
-    ) {
-      return {
-        label: 'Uncancel',
-        loading: uncancelSubscription.isPending,
-        onClick: async () => {
-          await uncancelSubscription.mutateAsync({ id: subscription.id })
-          await revalidate(`customer_portal`)
-          router.refresh()
-        },
-      }
-    }
-
-    return null
-  }, [
-    subscription,
-    isCanceled,
-    showSubscriptionUpdates,
-    uncancelSubscription,
-    router,
-  ])
-
   const subscriptionBaseAmount = useMemo(() => {
     const price = subscription.product.prices.find(
       ({ amount_type }) => amount_type === 'fixed' || amount_type === 'custom',
@@ -237,27 +197,43 @@ const CustomerSubscriptionDetails = ({
       </div>
 
       <div className="flex flex-row gap-4">
-        {primaryAction && (
-          <Button
-            onClick={primaryAction.onClick}
-            loading={primaryAction.loading}
-          >
-            {primaryAction.label}
-          </Button>
-        )}
-        <Button
-          className="hidden md:flex"
-          variant="secondary"
-          onClick={showBenefitGrantsModal}
-        >
-          View Subscription
+        {isCanceled &&
+          subscription.cancel_at_period_end &&
+          subscription.current_period_end &&
+          new Date(subscription.current_period_end) > new Date() && (
+            <Button
+              onClick={async () => {
+                await uncancelSubscription.mutateAsync({ id: subscription.id })
+                await revalidate(`customer_portal`)
+                router.refresh()
+              }}
+              loading={uncancelSubscription.isPending}
+            >
+              Uncancel
+            </Button>
+          )}
+
+        <Button className="hidden md:flex" onClick={showBenefitGrantsModal}>
+          Manage subscription
         </Button>
         <Link
           className="md:hidden"
           href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
         >
-          <Button variant="secondary">View Subscription</Button>
+          <Button>Manage subscription</Button>
         </Link>
+
+        {showSubscriptionUpdates &&
+          !isCanceled &&
+          subscription.status !== 'trialing' && (
+            <Button
+              onClick={() => setShowChangePlanModal(true)}
+              variant="secondary"
+            >
+              Change plan
+            </Button>
+          )}
+
         <CustomerCancellationModal
           isShown={showCancelModal}
           hide={() => setShowCancelModal(false)}

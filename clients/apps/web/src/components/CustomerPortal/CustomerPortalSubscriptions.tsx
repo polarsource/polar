@@ -181,7 +181,7 @@ export const InactiveSubscriptionsOverview = ({
                     size="sm"
                     onClick={() => openRetryPaymentModal(row.original)}
                   >
-                    Retry Payment
+                    Retry payment
                   </Button>
                 )}
                 <Button
@@ -189,7 +189,7 @@ export const InactiveSubscriptionsOverview = ({
                   size="sm"
                   onClick={() => openSubscriptionModal(row.original)}
                 >
-                  View Subscription
+                  Manage subscription
                 </Button>
               </span>
             ),

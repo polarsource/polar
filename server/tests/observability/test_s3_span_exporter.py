@@ -2,6 +2,7 @@ import gzip
 import json
 from collections.abc import Iterator
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from minio import Minio
@@ -9,7 +10,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from polar.config import settings
-from polar.observability.s3_span_exporter import S3SpanExporter
+from polar.observability.s3_span_exporter import REDACTED, S3SpanExporter
 
 BUCKET_NAME = "testing-s3-span-exporter"
 
@@ -90,3 +91,89 @@ def test_export_writes_jsonl_to_s3(
 
     span_data = json.loads(body)
     assert span_data["name"] == "test-span"
+
+
+@pytest.fixture
+def scrubbing_exporter() -> S3SpanExporter:
+    with patch("polar.observability.s3_span_exporter.boto3"):
+        return S3SpanExporter(
+            bucket_name="unused",
+            service_name="test",
+            scrub_patterns=[r"email", r"user\.?name", r"cookie"],
+        )
+
+
+class TestScrubbing:
+    def test_scrubs_matching_attributes(
+        self, scrubbing_exporter: S3SpanExporter
+    ) -> None:
+        span_json = json.dumps(
+            {
+                "name": "GET /users",
+                "attributes": {
+                    "user.email": "alice@example.com",
+                    "username": "alice",
+                    "http.method": "GET",
+                    "http.route": "/users",
+                },
+            }
+        )
+        result = json.loads(scrubbing_exporter._scrub_span_json(span_json))
+        assert result["attributes"]["user.email"] == REDACTED
+        assert result["attributes"]["username"] == REDACTED
+        assert result["attributes"]["http.method"] == "GET"
+        assert result["attributes"]["http.route"] == "/users"
+        assert result["name"] == "GET /users"
+
+    def test_scrubs_event_attributes(self, scrubbing_exporter: S3SpanExporter) -> None:
+        span_json = json.dumps(
+            {
+                "name": "request",
+                "attributes": {},
+                "events": [
+                    {
+                        "name": "log",
+                        "attributes": {
+                            "email": "bob@example.com",
+                            "message": "hello",
+                        },
+                    }
+                ],
+            }
+        )
+        result = json.loads(scrubbing_exporter._scrub_span_json(span_json))
+        assert result["events"][0]["attributes"]["email"] == REDACTED
+        assert result["events"][0]["attributes"]["message"] == "hello"
+
+    def test_scrubs_nested_dicts(self, scrubbing_exporter: S3SpanExporter) -> None:
+        span_json = json.dumps(
+            {
+                "name": "request",
+                "attributes": {
+                    "http.request.header.cookie": "session=abc123",
+                    "nested": {"email": "nested@example.com"},
+                },
+            }
+        )
+        result = json.loads(scrubbing_exporter._scrub_span_json(span_json))
+        assert result["attributes"]["http.request.header.cookie"] == REDACTED
+        assert result["attributes"]["nested"]["email"] == REDACTED
+
+    def test_case_insensitive(self, scrubbing_exporter: S3SpanExporter) -> None:
+        span_json = json.dumps(
+            {
+                "name": "request",
+                "attributes": {"Email": "test@test.com", "USERNAME": "test"},
+            }
+        )
+        result = json.loads(scrubbing_exporter._scrub_span_json(span_json))
+        assert result["attributes"]["Email"] == REDACTED
+        assert result["attributes"]["USERNAME"] == REDACTED
+
+    def test_no_scrubbing_without_patterns(self) -> None:
+        with patch("polar.observability.s3_span_exporter.boto3"):
+            exporter = S3SpanExporter(
+                bucket_name="unused",
+                service_name="test",
+            )
+        assert exporter._scrub_re is None

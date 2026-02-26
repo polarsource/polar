@@ -21355,12 +21355,6 @@ export interface components {
        */
       tinybird_compare: boolean
       /**
-       * Presentment Currencies Enabled
-       * @description If this organization has multiple presentment currencies enabled
-       * @default false
-       */
-      presentment_currencies_enabled: boolean
-      /**
        * Checkout Localization Enabled
        * @description If this organization has checkout localization enabled
        * @default false

@@ -35,8 +35,9 @@ def _get_logfire_url(organization_id: UUID) -> str:
 class OrganizationDetailView:
     """Render the organization detail view with horizontal section tabs."""
 
-    def __init__(self, organization: Organization):
+    def __init__(self, organization: Organization, ai_verdict: str = ""):
         self.org = organization
+        self.ai_verdict = ai_verdict
 
     @contextlib.contextmanager
     def section_tabs(
@@ -217,20 +218,58 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
-                        with tag.div(classes="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
+                        # Compute suggested threshold: double current or $250 min
+                        current_threshold = self.org.next_review_threshold or 0
+                        suggested_threshold = max(25000, current_threshold * 2)
+                        threshold_dollars = suggested_threshold // 100
+                        is_override = self.ai_verdict == "DENY"
+
+                        if is_override:
+                            # AI disagrees: open modal for reason + threshold
+                            with tag.div(classes="w-full"):
+                                with button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:approve_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Approve")
+                        else:
+                            # AI agrees: threshold input + approve button
+                            with tag.form(
+                                hx_post=str(
                                     request.url_for(
                                         "organizations:approve_dialog",
                                         organization_id=self.org.id,
                                     )
                                 ),
-                                hx_target="#modal",
+                                classes="w-full flex gap-2",
                             ):
-                                text("Approve")
+                                with tag.label(
+                                    classes="input input-bordered input-sm flex items-center gap-1 flex-1"
+                                ):
+                                    with tag.span(classes="text-base-content/40"):
+                                        text("$")
+                                    with tag.input(
+                                        type="number",
+                                        name="threshold",
+                                        value=str(threshold_dollars),
+                                        classes="w-full bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                                    ):
+                                        pass
+                                with button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    type="submit",
+                                ):
+                                    text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(

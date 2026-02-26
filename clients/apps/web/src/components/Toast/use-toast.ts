@@ -135,6 +135,7 @@ function dispatch(action: Action) {
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Toast extends Omit<ToasterToast, 'id'> {}
 
 function toast({ ...props }: Toast) {

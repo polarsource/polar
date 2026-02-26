@@ -40,6 +40,7 @@ const OpenGraphImageCreator = ({
         fontWeight: 600,
         fontSize: '48px',
         textAlign: 'center',
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         /** @ts-ignore */
         textWrap: 'balance',
       }}

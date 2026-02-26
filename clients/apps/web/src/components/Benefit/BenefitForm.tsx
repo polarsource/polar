@@ -125,6 +125,7 @@ interface CustomBenefitFormProps {
   update?: boolean
 }
 
+// eslint-disable-next-line no-empty-pattern
 export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
 

@@ -267,6 +267,7 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
       <FieldLabel customField={customField} />
       <FormControl>
         <InputComponent
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           customField={customField}
           required={required}

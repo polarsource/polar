@@ -38,6 +38,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
   )
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     isShown
       ? (document.body.style.overflow = 'hidden')
       : (document.body.style.overflow = 'unset')

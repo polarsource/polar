@@ -56,6 +56,7 @@ const DummyCheckoutContextProvider = ({
           value: checkout as CheckoutPublicConfirmed,
           error: undefined,
         }),
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         client: {},
       }}
@@ -63,6 +64,7 @@ const DummyCheckoutContextProvider = ({
       <CheckoutFormContext.Provider
         value={{
           checkout,
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           client: {},
           form,

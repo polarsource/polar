@@ -17,6 +17,7 @@ const stub = (): never => {
 }
 
 export const AuthContext = React.createContext<AuthContextValue>(
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   stub,
 )

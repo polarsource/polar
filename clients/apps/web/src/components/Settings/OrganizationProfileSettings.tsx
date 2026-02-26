@@ -157,6 +157,7 @@ const OrganizationSocialLinks = ({
       }
       newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
         'other') as schemas['OrganizationSocialPlatforms']
+      // eslint-disable-next-line no-empty
     } catch {}
 
     // Update the socials array

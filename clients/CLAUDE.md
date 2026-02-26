@@ -13,6 +13,10 @@ pnpm generate     # Generate API client from OpenAPI
 pnpm typecheck    # Type checking (in apps/web)
 ```
 
+## Post-Feature Checklist
+
+After finishing a feature, always run `pnpm lint` and check for any new errors or warnings introduced by your changes. Fix them before considering the feature complete.
+
 ## Project Structure
 
 ```

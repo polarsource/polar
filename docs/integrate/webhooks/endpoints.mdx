@@ -34,21 +34,6 @@ formatting. Making it a breeze to setup in-chat notifications for your team.
 
     <img className="block dark:hidden" src="/assets/integrate/webhooks/url.light.png" />
     <img className="hidden dark:block" src="/assets/integrate/webhooks/url.dark.png" />
-
-    <Tip>
-    **Developing locally?**
-
-    Use a tool like [ngrok](https://ngrok.com/) to tunnel webhook events to your local development environment. This will allow you to test your webhook handlers without deploying them to a live server.
-
-    Once you have `ngrok` you can easily start a tunnel:
-
-    ```bash Terminal
-    ngrok http 3000
-    ```
-
-    Just be sure to provide the URL ngrok gives you as the webhook endpoint on
-    Polar.
-    </Tip>
   </Step>
   <Step title="Choose a delivery format">
     For standard, custom integrations, leave this parameter on **Raw**. This will send a payload in JSON format.
@@ -74,6 +59,38 @@ formatting. Making it a breeze to setup in-chat notifications for your team.
     Finally, select all the events you want to be notified about and you're done 🎉
   </Step>
 </Steps>
+
+
+
+<Tip>
+  **Developing locally?**
+
+  Install Polar CLI to use the listening command. This will allow you to test your webhook handlers without deploying them to a live server.
+
+  Install the Polar CLI
+
+  ```bash Terminal
+  curl -fsSL https://polar.sh/install.sh | bash
+  ```
+
+  Once you have installed the Polar CLI, you can easily start a tunnel:
+
+  ```bash Terminal
+  polar listen http://localhost:3000/
+  ```
+
+  This will relay webhooks automatically to the speicified URL.
+
+  ```bash
+  ✔ Select Organization …  My Organization
+
+    Connected  My Organization
+    Secret     6t3c8ce2247c493a3ade20uea4484d64
+    Forwarding http://localhost:3000
+
+    Waiting for events...
+  ```
+  </Tip>
 
 [Now, it's time to integrate our endpoint to receive events
 &rarr;](/integrate/webhooks/delivery)

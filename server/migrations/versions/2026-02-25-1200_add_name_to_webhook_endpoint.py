@@ -19,9 +19,7 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "webhook_endpoints", sa.Column("name", sa.String(), nullable=True)
-    )
+    op.add_column("webhook_endpoints", sa.Column("name", sa.String(), nullable=True))
 
 
 def downgrade() -> None:

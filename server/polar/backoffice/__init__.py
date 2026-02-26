@@ -46,8 +46,8 @@ app.mount(
     name="static",
 )
 app.include_router(users_router, prefix="/users")
-app.include_router(organizations_router, prefix="/organizations")
-app.include_router(organizations_v2_router)  # New redesigned interface
+app.include_router(organizations_v2_router)  # Primary organizations interface
+app.include_router(organizations_router, prefix="/organizations-classic")
 app.include_router(customers_router, prefix="/customers")
 app.include_router(benefits_router, prefix="/benefits")
 app.include_router(products_router, prefix="/products")

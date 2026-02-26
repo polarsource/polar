@@ -87,7 +87,7 @@ class OverviewSection:
         """Merged agent report + org.review fallback card."""
         run_agent_url = str(
             request.url_for(
-                "organizations-v2:run_review_agent",
+                "organizations:run_review_agent",
                 organization_id=self.org.id,
             )
         )

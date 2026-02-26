@@ -183,7 +183,7 @@ class AccountSection:
                                         size="sm",
                                         hx_get=str(
                                             request.url_for(
-                                                "organizations-v2:disconnect_stripe_account",
+                                                "organizations:disconnect_stripe_account",
                                                 organization_id=self.org.id,
                                             )
                                         ),
@@ -196,7 +196,7 @@ class AccountSection:
                                         size="sm",
                                         hx_get=str(
                                             request.url_for(
-                                                "organizations-v2:delete_stripe_account",
+                                                "organizations:delete_stripe_account",
                                                 organization_id=self.org.id,
                                             )
                                         ),
@@ -220,7 +220,7 @@ class AccountSection:
                             variant="primary",
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:setup_account",
+                                    "organizations:setup_account",
                                     organization_id=self.org.id,
                                 )
                             ),
@@ -258,7 +258,7 @@ class AccountSection:
                             size="sm",
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:grant_credit",
+                                    "organizations:grant_credit",
                                     organization_id=self.org.id,
                                 )
                             ),
@@ -326,7 +326,7 @@ class AccountSection:
                                                         ghost=True,
                                                         hx_get=str(
                                                             request.url_for(
-                                                                "organizations-v2:revoke_credit",
+                                                                "organizations:revoke_credit",
                                                                 organization_id=self.org.id,
                                                                 credit_id=credit.id,
                                                             )

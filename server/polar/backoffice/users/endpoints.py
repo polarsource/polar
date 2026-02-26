@@ -277,7 +277,7 @@ async def get(
                     "organization.id",
                     "ID",
                     external_href=lambda r, i: str(
-                        r.url_for("organizations:get", id=i.organization_id)
+                        r.url_for("organizations-classic:get", id=i.organization_id)
                     ),
                     clipboard=True,
                 ),
@@ -303,7 +303,9 @@ async def get(
                     datatable.DatatableActionHTMX[UserOrganization](
                         "Delete Organization",
                         lambda r, i: str(
-                            r.url_for("organizations:delete", id=i.organization_id)
+                            r.url_for(
+                                "organizations-classic:delete", id=i.organization_id
+                            )
                         ),
                         target="#modal",
                         hidden=lambda _, i: i.organization.is_deleted,

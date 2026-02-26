@@ -59,7 +59,7 @@ class ReviewSection:
         """Render the combined agent review report and account checklist card."""
         run_agent_url = str(
             request.url_for(
-                "organizations-v2:run_review_agent",
+                "organizations:run_review_agent",
                 organization_id=self.org.id,
             )
         )

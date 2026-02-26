@@ -57,7 +57,7 @@ class OrganizationColumn(
     def __init__(self) -> None:
         super().__init__("product.organization.name", "Organization")
         self.href_getter = lambda r, i: str(
-            r.url_for("organizations:get", id=i.product.organization_id)
+            r.url_for("organizations-classic:get", id=i.product.organization_id)
         )
 
 
@@ -318,7 +318,7 @@ async def get(
                                 "Organization",
                                 href_getter=lambda r, i: str(
                                     r.url_for(
-                                        "organizations:get",
+                                        "organizations-classic:get",
                                         id=i.product.organization_id,
                                     )
                                 ),

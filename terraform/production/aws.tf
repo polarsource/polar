@@ -188,26 +188,6 @@ module "cloudfront_public_assets" {
 # GitHub Actions OIDC
 # =============================================================================
 
-import {
-  to = module.github_oidc_backup.aws_iam_openid_connect_provider.github
-  id = "arn:aws:iam::975049931254:oidc-provider/token.actions.githubusercontent.com"
-}
-
-import {
-  to = module.github_oidc_backup.aws_iam_role.github_actions
-  id = "github-actions-backup"
-}
-
-import {
-  to = aws_iam_policy.polar_sh_backups
-  id = "arn:aws:iam::975049931254:policy/polar-sh-backups"
-}
-
-import {
-  to = module.github_oidc_backup.aws_iam_role_policy_attachment.policies["backups"]
-  id = "github-actions-backup/arn:aws:iam::975049931254:policy/polar-sh-backups"
-}
-
 resource "aws_iam_policy" "lambda_artifacts_upload" {
   name = "lambda-artifacts-upload"
   policy = jsonencode({
@@ -264,46 +244,6 @@ resource "aws_iam_policy" "polar_sh_backups" {
 # =============================================================================
 # Application Access (IAM user policies)
 # =============================================================================
-
-import {
-  to = module.application_access_production.aws_iam_policy.customer_invoices
-  id = "arn:aws:iam::975049931254:policy/polar-customer-invoices"
-}
-
-import {
-  to = module.application_access_production.aws_iam_policy.payout_invoices
-  id = "arn:aws:iam::975049931254:policy/polar-payout-invoices"
-}
-
-import {
-  to = module.application_access_production.aws_iam_policy.files
-  id = "arn:aws:iam::975049931254:policy/polar-production-files"
-}
-
-import {
-  to = module.application_access_production.aws_iam_policy.public_files
-  id = "arn:aws:iam::975049931254:policy/polar-public-files"
-}
-
-import {
-  to = module.application_access_production.aws_iam_user_policy_attachment.customer_invoices
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-customer-invoices"
-}
-
-import {
-  to = module.application_access_production.aws_iam_user_policy_attachment.payout_invoices
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-payout-invoices"
-}
-
-import {
-  to = module.application_access_production.aws_iam_user_policy_attachment.files
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-production-files"
-}
-
-import {
-  to = module.application_access_production.aws_iam_user_policy_attachment.public_files
-  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-public-files"
-}
 
 module "application_access_production" {
   source   = "../modules/application_access"

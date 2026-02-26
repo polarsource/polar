@@ -357,7 +357,7 @@ async def get(
                         with button(
                             hx_get=str(
                                 request.url_for(
-                                    "customers:revoke_benefits_modal", id=customer.id
+                                    "customers:revoke_benefits", id=customer.id
                                 )
                             ),
                             hx_target="#modal",
@@ -367,6 +367,14 @@ async def get(
 
                 if benefit_grants:
                     with datatable.Datatable[BenefitGrant, Any](
+                        datatable.DatatableAttrColumn(
+                            "benefit_id",
+                            "ID",
+                            clipboard=True,
+                            external_href=lambda r, i: str(
+                                r.url_for("benefits:get", id=i.benefit_id)
+                            ),
+                        ),
                         datatable.DatatableAttrColumn(
                             "benefit.description", "Description"
                         ),
@@ -461,11 +469,13 @@ async def generate_portal_link_modal(
     return HTMLResponse(str(doc))
 
 
-@router.get("/{id}/revoke_benefits_modal", name="customers:revoke_benefits_modal")
-async def revoke_benefits_modal(
+@router.api_route(
+    "/{id}/revoke_benefits", name="customers:revoke_benefits", methods=["GET", "POST"]
+)
+async def revoke_benefits(
     request: Request,
     id: UUID4,
-    session: AsyncSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(id)
@@ -473,6 +483,20 @@ async def revoke_benefits_modal(
     if customer is None:
         raise HTTPException(status_code=404)
 
+    if request.method == "POST":
+        enqueue_job("benefit.revoke_customer", customer_id=customer.id)
+
+        await add_toast(
+            request,
+            f"Benefit revocation task enqueued for {customer.email}.",
+            "success",
+        )
+
+        with tag.div(hx_redirect=str(request.url_for("customers:get", id=customer.id))):
+            pass
+        return
+
+    # GET method - show confirmation modal
     with document() as doc:
         with tag.div(id="modal"):
             with confirmation_dialog(
@@ -488,35 +512,5 @@ async def revoke_benefits_modal(
                     str(request.url_for("customers:revoke_benefits", id=customer.id)),
                 )
                 attr("hx-target", "#modal")
-
-    return HTMLResponse(str(doc))
-
-
-@router.post("/{id}/revoke_benefits", name="customers:revoke_benefits")
-async def revoke_benefits(
-    request: Request,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    customer_repository = CustomerRepository.from_session(session)
-    customer = await customer_repository.get_by_id(id)
-
-    if customer is None:
-        raise HTTPException(status_code=404)
-
-    enqueue_job("benefit.revoke_customer", customer_id=customer.id)
-
-    await add_toast(
-        request,
-        f"Benefit revocation task enqueued for {customer.email}.",
-        "success",
-    )
-
-    with document() as doc:
-        with tag.div(
-            id="modal",
-            hx_redirect=str(request.url_for("customers:get", id=customer.id)),
-        ):
-            pass
 
     return HTMLResponse(str(doc))

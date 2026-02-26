@@ -11,7 +11,8 @@ from PIL.Image import Resampling
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-ALLOWED_SIZES = [50, 100, 200, 400, 800, 1200, 1920, 2560]
+# Must match the frontend defined list in clients/apps/web/src/utils/getResizedImage.ts
+ALLOWED_SIZES = [48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1440, 1920]
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 CONTENT_TYPES = {
     ".jpg": "image/jpeg",

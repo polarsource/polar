@@ -6,6 +6,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
+import { getResizedImage } from '@/utils/getResizedImage'
 import { markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
@@ -392,7 +393,10 @@ const Checkout = ({
                               className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
                             >
                               <img
-                                src={checkout.product.medias[0].publicUrl}
+                                src={getResizedImage(
+                                  checkout.product.medias[0].publicUrl,
+                                  40,
+                                )}
                                 alt={checkout.product.name}
                                 className="h-10 w-10 rounded-lg object-cover"
                               />
@@ -411,8 +415,8 @@ const Checkout = ({
                               </DialogDescription>
                             </DialogHeader>
                             <Slideshow
-                              images={checkout.product.medias.map(
-                                (m) => m.publicUrl,
+                              images={checkout.product.medias.map((m) =>
+                                getResizedImage(m.publicUrl, 672),
                               )}
                             />
                           </DialogContent>

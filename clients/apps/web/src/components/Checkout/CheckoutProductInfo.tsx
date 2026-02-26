@@ -1,5 +1,6 @@
 'use client'
 
+import { getResizedImage } from '@/utils/getResizedImage'
 import { markdownOptions } from '@/utils/markdown'
 import {
   DEFAULT_LOCALE,
@@ -85,7 +86,7 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
                   className={`relative h-[70px] w-[70px] flex-shrink-0 ${additionalImages.length > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                 >
                   <img
-                    src={firstImage}
+                    src={getResizedImage(firstImage, 70)}
                     alt={product.name}
                     className="h-[70px] w-[70px] rounded-lg object-cover"
                   />
@@ -103,7 +104,11 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
                     Product images
                   </DialogDescription>
                 </DialogHeader>
-                <Slideshow images={product.medias.map((m) => m.publicUrl)} />
+                <Slideshow
+                  images={product.medias.map((m) =>
+                    getResizedImage(m.publicUrl, 672),
+                  )}
+                />
               </DialogContent>
             </Dialog>
           )}

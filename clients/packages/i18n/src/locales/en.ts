@@ -40,6 +40,7 @@ export default {
       },
       taxId: 'Tax ID',
       discountCode: 'Discount code',
+      addDiscountCode: 'Add discount code',
       optional: 'Optional',
       apply: {
         value: 'Apply',
@@ -140,6 +141,10 @@ export default {
       billedRecurring: 'Billed {frequency}',
       oneTimePurchase: 'One-time purchase',
     },
+    productDescription: {
+      readMore: 'Read more',
+      readLess: 'Read less',
+    },
     card: {
       included: 'Included',
     },
@@ -228,12 +233,13 @@ export default {
     },
   },
   benefitTypes: {
-    license_keys: 'License Keys',
-    github_repository: 'GitHub Repository Access',
-    discord: 'Discord Invite',
-    downloadables: 'File Downloads',
+    license_keys: 'License keys',
+    github_repository: 'GitHub repository access',
+    discord: 'Discord invite',
+    downloadables: 'File downloads',
     custom: 'Custom',
-    meter_credit: 'Meter Credits',
+    meter_credit: 'Meter credits',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: {

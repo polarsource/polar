@@ -1,10 +1,65 @@
+from __future__ import annotations
+
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
 
 from polar.kit.schemas import Schema
+
+if TYPE_CHECKING:
+    from pydantic_ai.usage import RunUsage as Usage
+
+# --- Review context ---
+
+
+class ReviewContext(StrEnum):
+    SUBMISSION = "submission"  # First review at details submission time
+    SETUP_COMPLETE = "setup_complete"  # Review when all setup steps are done
+    THRESHOLD = "threshold"  # Following reviews when payment threshold hit
+    MANUAL = "manual"  # Full manual review triggered from backoffice
+
+
+# --- Shared utility schemas ---
+
+
+class UsageInfo(Schema):
+    """Token usage and cost from the AI call."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float | None = None
+
+    def __add__(self, other: UsageInfo) -> UsageInfo:
+        cost: float | None = None
+        if self.estimated_cost_usd is not None or other.estimated_cost_usd is not None:
+            cost = (self.estimated_cost_usd or 0.0) + (other.estimated_cost_usd or 0.0)
+        return UsageInfo(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+            estimated_cost_usd=cost,
+        )
+
+    @classmethod
+    def from_agent_usage(cls, usage: Usage, model_name: str) -> UsageInfo:
+        import genai_prices
+
+        estimated_cost: float | None = None
+        try:
+            price = genai_prices.calc_price(usage, model_name, provider_id="openai")
+            estimated_cost = float(price.total_price)
+        except Exception:
+            pass
+        return cls(
+            input_tokens=usage.input_tokens or 0,
+            output_tokens=usage.output_tokens or 0,
+            total_tokens=(usage.input_tokens or 0) + (usage.output_tokens or 0),
+            estimated_cost_usd=estimated_cost,
+        )
+
 
 # --- Collector output schemas ---
 
@@ -41,6 +96,15 @@ class ProductsData(Schema):
     total_count: int = 0
 
 
+class IdentityData(Schema):
+    verification_status: str | None = None
+    verification_error_code: str | None = None
+    verified_first_name: str | None = None
+    verified_last_name: str | None = None
+    verified_address_country: str | None = None
+    verified_dob: str | None = None
+
+
 class AccountData(Schema):
     country: str | None = None
     currency: str | None = None
@@ -48,14 +112,22 @@ class AccountData(Schema):
     is_details_submitted: bool = False
     is_charges_enabled: bool = False
     is_payouts_enabled: bool = False
-    identity_verification_status: str | None = None
+
+    requirements_currently_due: list[str] = Field(default_factory=list)
+    requirements_past_due: list[str] = Field(default_factory=list)
+    requirements_pending_verification: list[str] = Field(default_factory=list)
+    requirements_disabled_reason: str | None = None
+    requirements_errors: list[dict[str, str]] = Field(default_factory=list)
+    capabilities: dict[str, str] = Field(default_factory=dict)
+    business_name: str | None = None
+    business_url: str | None = None
+    business_support_address_country: str | None = None
 
 
 class PaymentMetrics(Schema):
     total_payments: int = 0
     succeeded_payments: int = 0
     total_amount_cents: int = 0
-    risk_scores: list[int] = Field(default_factory=list)
     p50_risk_score: int | None = None
     p90_risk_score: int | None = None
     refund_count: int = 0
@@ -96,13 +168,16 @@ class WebsiteData(Schema):
     scrape_error: str | None = None
     total_pages_attempted: int = 0
     total_pages_succeeded: int = 0
+    usage: UsageInfo | None = Field(default_factory=UsageInfo)
 
 
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
+    context: ReviewContext
     organization: OrganizationData
     products: ProductsData
+    identity: IdentityData
     account: AccountData
     metrics: PaymentMetrics
     history: HistoryData
@@ -145,14 +220,13 @@ class DimensionAssessment(Schema):
 class ReviewVerdict(StrEnum):
     APPROVE = "APPROVE"
     DENY = "DENY"
-    NEEDS_HUMAN_REVIEW = "NEEDS_HUMAN_REVIEW"
 
 
 class ReviewAgentReport(Schema):
     """Structured output from the AI review agent."""
 
     verdict: ReviewVerdict = Field(
-        description="Overall review verdict: APPROVE, DENY, or NEEDS_HUMAN_REVIEW"
+        description="Overall review verdict: APPROVE or DENY"
     )
     overall_risk_score: float = Field(
         ge=0,
@@ -172,15 +246,6 @@ class ReviewAgentReport(Schema):
     recommended_action: str = Field(
         description="Specific recommended action for human reviewer",
     )
-
-
-class UsageInfo(Schema):
-    """Token usage and cost from the AI call."""
-
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    estimated_cost_usd: float | None = None
 
 
 class AgentReviewResult(Schema):

@@ -12,6 +12,35 @@ from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StrEnumType
 
+# Stripe decline codes that indicate the payment method is permanently unusable
+# and should not be retried automatically via the dunning process.
+# Checked against Payment.decline_reason.
+# See: https://docs.stripe.com/declines/codes
+UNRECOVERABLE_DECLINE_CODES: set[str] = {
+    "card_not_supported",
+    "do_not_honor",
+    "expired_card",
+    "fraudulent",
+    "incorrect_cvc",
+    "incorrect_number",
+    "invalid_account",
+    "invalid_cvc",
+    "invalid_expiry_year",
+    "invalid_pin",
+    "live_mode_test_card",
+    "lost_card",
+    "merchant_blacklist",
+    "not_permitted",
+    "pickup_card",
+    "previously_declined_do_not_retry",
+    "restricted_card",
+    "revocation_of_all_authorizations",
+    "revocation_of_authorization",
+    "security_violation",
+    "stolen_card",
+    "stop_payment_order",
+}
+
 if TYPE_CHECKING:
     from .checkout import Checkout
     from .order import Order
@@ -124,3 +153,15 @@ class Payment(RecordModel):
     @classmethod
     def _is_failed_expression(cls) -> ColumnElement[bool]:
         return cls.status == PaymentStatus.failed
+
+    @property
+    def is_non_recoverable(self) -> bool:
+        """Check if the payment's decline reason indicates a non-recoverable failure."""
+        if self.processor != PaymentProcessor.stripe:
+            return True
+        if self.status != PaymentStatus.failed:
+            return False
+        return (
+            self.decline_reason is not None
+            and self.decline_reason in UNRECOVERABLE_DECLINE_CODES
+        )

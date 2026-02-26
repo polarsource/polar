@@ -1,0 +1,243 @@
+<Info>
+**Status**: Draft
+
+**Created**: 2025-11-07
+
+**Last Updated**: 2026-01-08
+
+</Info>
+
+# Multi-Currency Support in Polar
+
+## Problem Statement
+
+Historically, Polar has operated using a single base currency (USD) for all transactions and accounting. However, as our user base expands globally, there is a growing need to support multiple currencies natively within the platform. This design document will explore the requirements, challenges, and proposed solutions for implementing multi-currency support in Polar.
+
+## Background
+
+### Key terms
+
+- Presentment Currency: The currency in which a payment/transaction is done, i.e. the price shown on the checkout page and customer's invoice.
+- Settlement Currency: The currency in which funds are shown on the merchant's side.
+- Payout Currency: The currency in which funds are paid out to the merchant's bank account.
+
+### Current state
+
+Currently, we only support USD as **presentment** and **settlement** currency. We support multiple **payout** currencies: merchants can connect any bank account supported by Stripe Connect and receive payouts in that currency. Stripe handles the currency conversion internally.
+
+### Comparison with Stripe
+
+Stripe has both the concepts of Presentment and Settlement currencies, with the following capabilities, given that Polar runs a **Stripe US account**.
+
+#### Presentment Currency: 135+ currencies supported
+
+In the current context, if we trigger a payment in a currency different than USD, Stripe will implicitly convert the funds to USD before settling them to our Stripe account.
+
+That said, they still show it up in the transactions list as the original currency. However, balance and analytics are all in USD.
+
+Ref: https://docs.stripe.com/currencies#presentment-currencies
+
+#### Settlement Currency
+
+For US-based Stripe accounts, Stripe allows us to wire bank account for the following settlement currencies:
+
+- CAD
+- EUR
+- GBP
+
+After enabling another settlement currency, payments made in that currency will be settled in that currency, and funds will be shown in that currency in the balance.
+
+Ref: https://docs.stripe.com/payouts/multicurrency-settlement?account-country=US#attach-bank-accounts-to-receive-payouts-in-local-currencies
+
+## Proposed Solutions
+
+Depending on how far we want to go, given the constraints we have with Stripe, we can consider several scenarios detailed below.
+
+### Scenario 1: Multiple Presentment Currencies, USD Settlement currency
+
+In this scenario, we would allow merchants to set prices in multiple currencies, and customers would be able to pay in their local currency. However, all funds would still be settled in USD.
+
+#### Implementation details
+
+- Allow to set other presentment currencies than `usd` when creating products (only a validation constraint to change).
+
+**Implementation A**
+
+- To allow to display and track the presentment currency in the dashboard, add the following columns to Payment, Order, OrderItem, Refund and Subscription models:
+  - `presentment_currency`: `str`
+  - `presentment_amount`: `int`
+- When receiving a payment or refund from Stripe, we'll need to get the converted amount in `usd` Stripe calculated (from the balance transaction), to fill our original amount fields.
+- Prefer `presentment_amount` and `presentment_currency` when displaying amounts in the dashboard.
+
+Since original amounts field are still using `usd`, analytics and account transactions are working unchanged.
+
+**Implementation B**
+
+- Store presentment amount and currency in the current amount fields.
+- When receiving a payment or refund from Stripe, we'll need to get the converted amount in `usd` Stripe calculated (from the balance transaction), to impact the merchant's Account balance.
+- Revamp metrics so amount are always computed in `usd`, directly from the Account transactions amount.
+
+This is more or less the Stripe way of doing things.
+
+### Scenario 2: Multiple Presentment Currencies, One Settlement Currency
+
+In this scenario, we would allow merchants to set prices in multiple currencies, and customers would be able to pay in their local currency. However, merchants would choose a single settlement currency for their account.
+
+#### Implementation details
+
+Similar to Scenario 1, but with the ability to set an Organization's settlement currency.
+
+- Add `currency` field to Organization model.
+  - Only currencies supported by Stripe for settlement can be chosen here (for US-based accounts: USD, CAD, EUR, GBP); provided Polar has enabled the settlement currency in Stripe account (with a proper bank account attached).
+- Allow to set other presentment currencies than `usd` when creating products (only a validation constraint to change).
+
+**Implementation A**
+
+- To allow to display and track the presentment currency in the dashboard, add the following columns to Payment, Order, OrderItem, Refund and Subscription models:
+  - `presentment_currency`: `str`
+  - `presentment_amount`: `int`
+- When receiving a payment or refund from Stripe, we'll need to get the converted amount in `Organization.currency` Stripe calculated (from the balance transaction), to fill our original amount fields.
+- Prefer `presentment_amount` and `presentment_currency` when displaying amounts in the dashboard.
+
+Since original amounts field are still using `Organization.currency`, analytics and account transactions are working unchanged.
+
+**Implementation B**
+
+- Store presentment amount and currency in the current amount fields.
+- When receiving a payment or refund from Stripe, we'll need to get the converted amount in `usd` Stripe calculated (from the balance transaction), to impact the merchant's Account balance.
+- Revamp metrics so amount are always computed in `Organization.currency`, directly from the Account transactions amount.
+
+This is more or less the Stripe way of doing things.
+
+### Scenario 3: Single Presentment and Settlement Currency per Merchant
+
+In this scenario, we would allow merchants to choose a single presentment and settlement currency for their account. All prices would be shown in that currency, and all funds would be settled in that currency. For example, if they choose EUR, all prices would be shown in EUR, and all funds would be settled in EUR.
+
+#### Implementation details
+
+This is somehow a generalization of our current single-currency model.
+
+- Add `currency` field to Organization model.
+  - Only currencies supported by Stripe for settlement can be chosen here (for US-based accounts: USD, CAD, EUR, GBP); provided Polar has enabled the settlement currency in Stripe account (with a proper bank account attached).
+
+### Scenario 4: Multiple Presentment and Settlement Currencies
+
+In this scenario, we would allow merchants to set prices in multiple currencies, and customers would be able to pay in their local currency. Merchants would also be able to choose multiple settlement currencies for their account.
+
+**Implementation details**
+
+This is the most complex scenario, as it requires significant changes to our data model and business logic. In particular, an Organization should be able to have several Account (one per settlement currency). It means then we'll need to extract the payout logic from that (since merchants will still likely want to have a single bank account for payouts, regardless of settlement currency).
+
+- Allow to create multiple Account in different settlement currencies for an Organization.
+  - Only currencies supported by Stripe for settlement can be chosen here (for US-based accounts: USD, CAD, EUR, GBP); provided Polar has enabled the settlement currency in Stripe account (with a proper bank account attached).
+- Create a new PayoutAccount entity that'll hold all the payout information (Stripe Connect). Payout entity will be linked to this new PayoutAccount entity as well.
+- Add a mandatory `currency` parameter when computing metrics _or_ generate metrics in every enabled settlement currency.
+- Allow to set other presentment currencies than `usd` when creating products (only a validation constraint to change).
+
+**Variant 1: limited presentment currencies per Organization**
+
+Only allow to set presentment currencies that match one of the settlement currencies defined for the Organization. This is similar to Scenario 3.
+
+- When receiving a payment or refund from Stripe, match the currency with one of the Organization's settlement currencies, and impact it on the corresponding Account.
+
+**Variant 2: unrestricted presentment currencies**
+
+Allow to set any presentment currency when creating products. This is similar to Scenario 2.
+
+**Implementation A**
+
+- To allow to display and track the presentment currency in the dashboard, add the following columns to Payment, Order, OrderItem, Refund and Subscription models:
+  - `presentment_currency`: `str`
+  - `presentment_amount`: `int`
+- When receiving a payment or refund from Stripe: if it matches one of the Organization's settlement currencies, impact it on the corresponding Account; otherwise, impact it on the currency which Stripe converted it to (most likely `usd`).
+  - It means Organization will probably always have a `usd` Account by default.
+- Prefer `presentment_amount` and `presentment_currency` when displaying amounts in the dashboard.
+
+**Implementation B**
+
+- Store presentment amount and currency in the current amount fields.
+- When receiving a payment or refund from Stripe, if it matches one of the Organization's settlement currencies, impact it on the corresponding Account; otherwise, impact it on the currency which Stripe converted it to (most likely `usd`).
+- Revamp metrics so amount are always computed using the amounts from Account's transaction.
+
+This is more or less the Stripe way of doing things.
+
+## Scenario Comparison
+
+When we look at those scenarios, one interesting thing to note is that Scenario 1, 2 and 4 Variant 2 are relatively similar from an implementation standpoint. We can almost already see the iterations there:
+
+1. Scenario 1: multiple presentment currencies, single settlement currency (usd)
+2. Scenario 2: multiple presentment currencies, single settlement currency (configurable)
+3. Scenario 4 Variant 2: multiple presentment currencies, multiple settlement currencies
+
+I think we can quickly rule out Scenario 3 as it's locking too much the merchant to a single currency, which is not what users expect when asking for multi-currency support. Similar for Scenario 4 Variant 1, which is adding complexity without much added value.
+
+#### Implementation A or B
+
+In those three scenarios, I've described two possible implementation strategies: Implementation A (adding presentment fields) and Implementation B (metrics from Account transactions).
+
+Implementation A has the advantage of being simpler to implement, as we don't need to revamp all the metrics calculations. The drawback is that we'll need to introduce a new set of fields in our models, and use them a bit everywhere in the dashboard and in lot of places in the codebase (e.g. refunds creation or invoice generation). It feels a bit weird to have those fields as "second-class citizens".
+
+Implementation B feels cleaner from a data model standpoint and consistency: amounts are shown in the currency the customer paid it. Most of the code we have today should naturally work out-of-the-box (except a few currency formatting quirks). However, it requires to revamp all the metrics calculations to compute them from Account transactions, which is a significant amount of work and might lead to poorer performance as we need to do more joins.
+
+## Recommendation
+
+Given our current time constraints, I would recommend to go with **Scenario 1** as a first step. It would allow us to deliver multi-currency support relatively quickly, while still providing significant value to our merchants.
+
+Then, we can quite quickly iterate to Scenario 2. Longer-term, we still have the possibility to expand easily towards Scenario 4 Variant 2 if we see a strong demand for it.
+
+From a technical standpoint, I would recommend to go with **Implementation B**. It feels cleaner and more consistent, and will save us from having to maintain two sets of amount fields in our models; even if it requires more work upfront.
+
+## Technical Considerations and Open Questions
+
+### Polar fees
+
+Our fees is a percentage + fixed amount per payment. We should define if we want to compute it:
+
+- On the presentment amount
+- On the settlement amount
+
+We should also decide if we want to charge conversion fees when the presentment currency is different than the settlement currency.
+
+#### Comparison with Stripe
+
+Here is what Stripe does:
+
+- If the presentment currency is not supported as settlement currency, Stripe first converts to the settlement currency (usd for us), then computes the fee on that basis, and add a conversion fee percentage.
+  - Conversion: 12 EUR -> 13.89 USD
+  - Stripe fee: 13.89 \* 2.9% + 0.30 = 0.70 USD
+  - Conversion fee: 13.89 \* 1% = 0.14 USD
+  - Total fee: 0.84 USD
+- If the presentment currency is supported as settlement currency, Stripe computes the fee directly in that currency.
+  - Amount: 60 EUR
+  - Stripe fee: 60 \* 2.9% + 0.30 = 2.04 EUR
+
+### Exchange Rate Management
+
+Whenever we receive a payment in a presentment currency different than the supported settlement currency, we rely on Stripe to perform the currency conversion. The exchange rate applied is opaque and only known by Stripe.
+
+### Exchange Rate and Refunds
+
+When issuing a refund, we'll issue it in the original presentment currency. If the exchange rate has changed since the original payment, we might have to withdwraw more money from the merchant's balance than the original payment amount (in settlement currency).
+
+For example, if a customer paid 100 EUR when the exchange rate was 1 EUR = 1.1 USD, the merchant received 110 USD. If we refund the customer later when the exchange rate is 1 EUR = 1.2 USD, we need to withdraw 120 USD from the merchant's balance to refund the customer.
+
+## Appendix A: currency selection at Checkout
+
+Since a single Product can now have price sets in different currencies, we need to define how the currency is selected at Checkout time.
+
+The proposal is to add a `currency` parameter to `CheckoutCreate`. It can take the following values:
+
+- A valid ISO currency code (e.g. `eur`, `gbp`, etc.): in this case, the Checkout session will use that currency if the Product has a price set in that currency; otherwise, it will return an error.
+- `auto` (the default):
+  1. Infer the customer's currency from their location (based on IP).
+  2. If the Product has a price set in the inferred currency, use that currency.
+  3. Otherwise, fall back to the Organization's default currency.
+  4. If the Product does not have a price set in the Organization's default currency, use the first available currency found in the Product's price sets.
+
+If the Checkout has several Products, when switching:
+
+1. Find a price set matching the currently selected currency.
+2. If not found, fall back to the Organization's default currency.
+3. If still not found, use the first available currency found in the Product's price sets.
+
+For Checkout Links, the `auto` behavior is applied.

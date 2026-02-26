@@ -1,16 +1,12 @@
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
-from pydantic_ai import models
-from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
-from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
-from polar.enums import AccountType, InvoiceNumbering
+from polar.enums import AccountType, InvoiceNumbering, SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
@@ -20,11 +16,6 @@ from polar.models.organization import (
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
-from polar.organization.ai_validation import (
-    OrganizationAIValidationResult,
-    OrganizationAIValidationVerdict,
-    OrganizationAIValidator,
-)
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
@@ -33,9 +24,6 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from tests.fixtures.database import SaveFixture
-
-# Disable real model requests to avoid costs
-models.ALLOW_MODEL_REQUESTS = False
 
 
 @pytest.mark.asyncio
@@ -458,6 +446,183 @@ class TestConfirmOrganizationReviewed:
 
 
 @pytest.mark.asyncio
+class TestHandleOngoingReviewVerdict:
+    async def test_auto_approve_on_approve_verdict(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500 (50_000 cents)
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: auto-approved, threshold doubled
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 100_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_escalate_on_deny_verdict(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is DENY
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.DENY
+        )
+
+        # Then: escalated, Plain ticket created, status unchanged
+        assert result is False
+        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_escalate_on_needs_human_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is DENY
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.DENY
+        )
+
+        # Then: escalated, Plain ticket created
+        assert result is False
+        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_eligible_threshold_at_250(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold exactly $250 (25_000 cents)
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 25_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE and threshold is exactly $250
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: eligible, auto-approved, threshold doubled
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 50_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_not_eligible_initial_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is INITIAL_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.next_review_threshold = 50_000
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE but status is INITIAL_REVIEW
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: not eligible, escalated to Plain
+        assert result is False
+        assert organization.status == OrganizationStatus.INITIAL_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_not_eligible_wrong_status(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ACTIVE with threshold=$500
+        organization.status = OrganizationStatus.ACTIVE
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        from polar.organization_review.schemas import ReviewVerdict
+
+        # When: verdict is APPROVE but status is ACTIVE (not ONGOING_REVIEW)
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: not eligible, escalated to Plain
+        assert result is False
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 class TestDenyOrganization:
     async def test_deny_organization(
         self,
@@ -749,274 +914,48 @@ class TestGetPaymentStatus:
 
 
 @pytest.mark.asyncio
-class TestValidateWithAI:
-    """Test AI validation integration in OrganizationService."""
+class TestGetAIReview:
+    """Test AI review retrieval in OrganizationService."""
 
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_success(
+    async def test_get_ai_review_no_review(
         self,
-        mock_fetch_policy: MagicMock,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test successful AI validation through service layer."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
+        """Test returns None when no review exists."""
+        result = await organization_service.get_ai_review(session, organization)
+        assert result is None
 
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                result = await organization_service.validate_with_ai(
-                    session, organization
-                )
-
-        # Then
-        assert isinstance(result, OrganizationReview)
-        assert result.verdict in ["PASS", "FAIL", "UNCERTAIN"]
-        assert isinstance(result.risk_score, float)
-        assert 0 <= result.risk_score <= 100
-        assert result.timed_out is False
-        assert isinstance(result.violated_sections, list)
-        assert isinstance(result.reason, str)
-
-        # Verify database record was created
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        assert db_record.verdict == result.verdict
-        assert db_record.risk_score == result.risk_score
-        assert db_record.organization_id == organization.id
-        assert db_record.organization_details_snapshot is not None
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_fail_verdict(
+    async def test_get_ai_review_existing_review(
         self,
-        mock_fetch_policy: MagicMock,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test AI validation flow works with TestModel."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                result = await organization_service.validate_with_ai(
-                    session, organization
-                )
-
-        # Then - TestModel provides structured responses, verify format
-        assert isinstance(result, OrganizationReview)
-        assert result.verdict in ["PASS", "FAIL", "UNCERTAIN"]
-        assert isinstance(result.risk_score, float)
-        assert 0 <= result.risk_score <= 100
-        assert isinstance(result.violated_sections, list)
-        assert isinstance(result.reason, str)
-
-        # Verify database storage
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        assert db_record.verdict == result.verdict
-        assert db_record.violated_sections == result.violated_sections
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_timeout(
-        self,
-        mock_fetch_policy: MagicMock,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test AI validation timeout handling."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When - simulate timeout with very short timeout
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            # Mock the validate_organization_details method to simulate timeout
-            async def mock_validate(
-                *args: object, **kwargs: object
-            ) -> OrganizationAIValidationResult:
-                timeout_result = OrganizationAIValidationResult(
-                    verdict=OrganizationAIValidationVerdict(
-                        verdict="UNCERTAIN",
-                        risk_score=50.0,
-                        violated_sections=[],
-                        reason="Validation timed out. Manual review required.",
-                    ),
-                    timed_out=True,
-                    model="test",
-                )
-                return timeout_result
-
-            with patch.object(
-                validator, "validate_organization_details", side_effect=mock_validate
-            ):
-                with patch(
-                    "polar.organization.service.organization_validator", validator
-                ):
-                    result = await organization_service.validate_with_ai(
-                        session, organization
-                    )
-
-        # Then
-        assert result.timed_out is True
-        assert result.verdict == "UNCERTAIN"
-        assert "timed out" in result.reason.lower()
-
-        # Verify timeout flag stored in database
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        assert db_record.timed_out is True
-
-    async def test_validate_with_ai_validator_exception(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        """Test AI validation handles validator exceptions."""
-        # Given
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When - simulate an error
-        validator = OrganizationAIValidator()
-        with patch.object(validator, "validate_organization_details") as mock_validate:
-            mock_validate.side_effect = Exception("AI service error")
-
-            with patch("polar.organization.service.organization_validator", validator):
-                # Should raise the exception (service doesn't handle validator errors)
-                with pytest.raises(Exception, match="AI service error"):
-                    await organization_service.validate_with_ai(session, organization)
-
-        # Then - verify no database record was created
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == organization.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is None
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_organization_snapshot(
-        self, mock_fetch_policy: MagicMock, session: AsyncSession
-    ) -> None:
-        """Test organization details snapshot is stored correctly."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-
-        # Create organization with detailed information
-        org = Organization(
-            name="Test Company",
-            slug="test-company",
-            website="https://test-company.com",
-            customer_invoice_prefix="TEST",
-            details={
-                "description": "A comprehensive software development company",
-                "industry": "Technology",
-                "services": ["Web Development", "Mobile Apps", "Consulting"],
+        """Test returns existing review when one exists."""
+        # Create a review record
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Looks good.",
+            timed_out=False,
+            organization_details_snapshot={
+                "name": organization.name,
+                "website": organization.website,
+                "details": organization.details,
+                "socials": organization.socials,
             },
+            model_used="test-model",
         )
-        session.add(org)
+        session.add(review)
         await session.flush()
 
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                result = await organization_service.validate_with_ai(session, org)
+        result = await organization_service.get_ai_review(session, organization)
 
-        # Then - verify snapshot contains expected data
-        db_records = await session.execute(
-            select(OrganizationReview).where(
-                OrganizationReview.organization_id == org.id
-            )
-        )
-        db_record = db_records.scalar_one_or_none()
-
-        assert db_record is not None
-        snapshot = db_record.organization_details_snapshot
-        assert snapshot["name"] == "Test Company"
-        assert snapshot["website"] == "https://test-company.com"
-        assert (
-            snapshot["details"]["description"]
-            == "A comprehensive software development company"
-        )
-        assert snapshot["details"]["industry"] == "Technology"
-        assert "Web Development" in snapshot["details"]["services"]
-
-    @patch("polar.organization.ai_validation._fetch_policy_content")
-    async def test_validate_with_ai_multiple_validations(
-        self,
-        mock_fetch_policy: MagicMock,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test multiple AI validations for the same organization."""
-        # Given
-        mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
-        session.add(organization)
-        await session.flush()
-
-        # When
-        validator = OrganizationAIValidator()
-        with validator.agent.override(model=TestModel()):
-            with patch("polar.organization.service.organization_validator", validator):
-                # First validation
-                result1 = await organization_service.validate_with_ai(
-                    session, organization
-                )
-                assert isinstance(result1, OrganizationReview)
-
-                # Second validation should return the same cached result
-                result2 = await organization_service.validate_with_ai(
-                    session, organization
-                )
-                assert isinstance(result2, OrganizationReview)
-                assert result1.id == result2.id  # Should be same record
-
-        # Then - verify only one record exists (cached behavior)
-        db_records = await session.execute(
-            select(OrganizationReview)
-            .where(OrganizationReview.organization_id == organization.id)
-            .order_by(OrganizationReview.created_at)
-        )
-        records = db_records.scalars().all()
-
-        assert len(records) == 1
-        # Record should have valid verdict
-        assert records[0].verdict in ["PASS", "FAIL", "UNCERTAIN"]
+        assert result is not None
+        assert result.id == review.id
+        assert result.verdict == OrganizationReview.Verdict.PASS
 
 
 @pytest.mark.asyncio
@@ -1393,24 +1332,69 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
-    async def test_blocked_with_orders(
+    async def test_blocked_with_paid_orders(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
-        """Organization with orders cannot be immediately deleted."""
+        """Organization with paid orders cannot be immediately deleted."""
         from tests.fixtures.random_objects import create_order
 
-        await create_order(save_fixture, customer=customer)
+        await create_order(save_fixture, customer=customer, subtotal_amount=1000)
 
         result = await organization_service.check_can_delete(session, organization)
 
         assert result.can_delete_immediately is False
         assert "has_orders" in [r.value for r in result.blocked_reasons]
 
-    async def test_blocked_with_active_subscriptions(
+    async def test_not_blocked_with_zero_amount_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only $0 orders can be deleted."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=0,
+            tax_amount=0,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_fully_discounted_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only fully discounted $0 orders can be deleted."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=1000,
+            discount_amount=1000,
+            tax_amount=0,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1418,7 +1402,7 @@ class TestCheckCanDelete:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Organization with active subscriptions cannot be immediately deleted."""
+        """Organization with paid active subscriptions cannot be immediately deleted."""
         from polar.models.subscription import SubscriptionStatus
         from tests.fixtures.random_objects import create_subscription
 
@@ -1427,6 +1411,101 @@ class TestCheckCanDelete:
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_active_subscriptions" in [r.value for r in result.blocked_reasons]
+
+    async def test_not_blocked_with_free_active_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only free active subscriptions can be deleted."""
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_product, create_subscription
+
+        free_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+        )
+        await create_subscription(
+            save_fixture,
+            product=free_product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_forever_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Organization with subscriptions made free by a forever discount can be deleted."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_non_forever_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Subscription with a 100% off once discount still blocks deletion."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
         )
 
         result = await organization_service.check_can_delete(session, organization)

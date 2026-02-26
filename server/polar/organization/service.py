@@ -29,20 +29,20 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
     Customer,
-    Order,
     Organization,
-    Subscription,
     User,
     UserOrganization,
 )
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
-from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.organization.ai_validation import validator as organization_validator
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
+from polar.organization_review.repository import (
+    OrganizationReviewRepository as AgentReviewRepository,
+)
+from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
@@ -62,6 +62,8 @@ if TYPE_CHECKING:
     pass
 
 log = structlog.get_logger()
+
+_AUTO_APPROVE_MIN_THRESHOLD = 25_000  # $250 in cents
 
 
 class PaymentStepID(StrEnum):
@@ -317,6 +319,11 @@ class OrganizationService:
         if not previous_details and update_schema.details:
             organization.details = update_schema.details.model_dump()
             organization.details_submitted_at = datetime.now(UTC)
+            enqueue_job(
+                "organization_review.run_agent",
+                organization_id=organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
 
         organization = await repository.update(organization, update_dict=update_dict)
 
@@ -376,23 +383,27 @@ class OrganizationService:
         """Check if an organization can be deleted immediately.
 
         An organization can be deleted immediately if it has:
-        - No orders
-        - No active subscriptions
+        - No paid orders (excludes $0 orders from free/discounted products)
+        - No paid active subscriptions (excludes inherently free or
+          permanently discounted subscriptions)
 
         If it has an account but no orders/subscriptions, we'll attempt to
         delete the Stripe account first.
         """
         blocked_reasons: list[OrganizationDeletionBlockedReason] = []
+        repository = OrganizationRepository.from_session(session)
 
-        # Check for orders
-        order_count = await self._count_orders_by_organization(session, organization.id)
+        # Check for paid orders (excludes $0 orders)
+        order_count = await repository.count_paid_orders_by_organization(
+            organization.id
+        )
         if order_count > 0:
             blocked_reasons.append(OrganizationDeletionBlockedReason.HAS_ORDERS)
 
-        # Check for active subscriptions
+        # Check for paid active subscriptions (excludes free subscriptions)
         active_subscription_count = (
-            await self._count_active_subscriptions_by_organization(
-                session, organization.id
+            await repository.count_paid_active_subscriptions_by_organization(
+                organization.id
             )
         )
         if active_subscription_count > 0:
@@ -556,41 +567,6 @@ class OrganizationService:
             account_id=account.id,
         )
 
-    async def _count_orders_by_organization(
-        self,
-        session: AsyncReadSession,
-        organization_id: UUID,
-    ) -> int:
-        """Count orders for all customers of this organization."""
-        statement = (
-            sql.select(sql.func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
-
-    async def _count_active_subscriptions_by_organization(
-        self,
-        session: AsyncReadSession,
-        organization_id: UUID,
-    ) -> int:
-        """Count active subscriptions for all customers of this organization."""
-        statement = (
-            sql.select(sql.func.count(Subscription.id))
-            .join(Customer, Subscription.customer_id == Customer.id)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
-                Subscription.status.in_(SubscriptionStatus.active_statuses()),
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
-
     async def add_user(
         self,
         session: AsyncSession,
@@ -751,6 +727,34 @@ class OrganizationService:
         )
         return organization
 
+    async def handle_ongoing_review_verdict(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        verdict: ReviewVerdict,
+    ) -> bool:
+        """Handle AI agent verdict for an ongoing threshold review.
+
+        Returns True if auto-approved, False if escalated to human review (Plain ticket created).
+        Only auto-approves when: status is ONGOING_REVIEW, threshold >= $250, and verdict is APPROVE.
+        """
+        is_eligible = (
+            organization.status == OrganizationStatus.ONGOING_REVIEW
+            and organization.next_review_threshold >= _AUTO_APPROVE_MIN_THRESHOLD
+            and verdict == ReviewVerdict.APPROVE
+        )
+
+        if is_eligible:
+            next_threshold = organization.next_review_threshold * 2
+            await self.confirm_organization_reviewed(
+                session, organization, next_threshold
+            )
+            return True
+
+        # Not eligible or not approved → create Plain ticket for human review
+        await plain_service.create_organization_review_thread(session, organization)
+        return False
+
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
@@ -770,13 +774,18 @@ class OrganizationService:
         return organization
 
     async def set_organization_under_review(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        enqueue_review: bool = True,
     ) -> Organization:
         organization.status = OrganizationStatus.ONGOING_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
-        enqueue_job("organization.under_review", organization_id=organization.id)
+        if enqueue_review:
+            enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
     async def update_status_from_stripe_account(
@@ -792,6 +801,7 @@ class OrganizationService:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
+            became_active = False
             if all(
                 (
                     not organization.is_under_review,
@@ -804,6 +814,7 @@ class OrganizationService:
             ):
                 organization.status = OrganizationStatus.ACTIVE
                 organization.status_updated_at = datetime.now(UTC)
+                became_active = True
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
             if any(
@@ -818,6 +829,10 @@ class OrganizationService:
 
             await self._sync_account_status(session, organization)
             session.add(organization)
+
+            # When org just became ACTIVE, check for setup complete review
+            if became_active:
+                await self.check_setup_complete_review(session, organization)
 
     async def _sync_account_status(
         self, session: AsyncSession, organization: Organization
@@ -977,42 +992,16 @@ class OrganizationService:
 
         return True
 
-    async def validate_with_ai(
+    async def get_ai_review(
         self, session: AsyncSession, organization: Organization
-    ) -> OrganizationReview:
-        """Validate organization details using AI and store the result."""
+    ) -> OrganizationReview | None:
+        """Get the existing AI review for an organization, if any.
+
+        The actual AI review is now triggered asynchronously via a background
+        task when organization details are first submitted (see update()).
+        """
         repository = OrganizationReviewRepository.from_session(session)
-        previous_validation = await repository.get_by_organization(organization.id)
-
-        if previous_validation is not None:
-            return previous_validation
-
-        result = await organization_validator.validate_organization_details(
-            organization
-        )
-
-        ai_validation = OrganizationReview(
-            organization_id=organization.id,
-            verdict=result.verdict.verdict,
-            risk_score=result.verdict.risk_score,
-            violated_sections=result.verdict.violated_sections,
-            reason=result.verdict.reason,
-            timed_out=result.timed_out,
-            organization_details_snapshot={
-                "name": organization.name,
-                "website": organization.website,
-                "details": organization.details,
-                "socials": organization.socials,
-            },
-            model_used=organization_validator.model.model_name,
-        )
-
-        if result.verdict.verdict in ["FAIL", "UNCERTAIN"]:
-            await self.deny_organization(session, organization)
-
-        session.add(ai_validation)
-
-        return ai_validation
+        return await repository.get_by_organization(organization.id)
 
     async def submit_appeal(
         self, session: AsyncSession, organization: Organization, appeal_reason: str
@@ -1112,6 +1101,59 @@ class OrganizationService:
             },
         )
         return organization
+
+    async def _get_organizations_for_account_admin(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[Organization]:
+        """Get all organizations where the user is the account admin."""
+        repository = OrganizationRepository.from_session(session)
+        return await repository.get_all_by_account_admin(user_id)
+
+    async def check_setup_complete_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """Check if all setup steps are done and trigger a SETUP_COMPLETE review.
+
+        Prerequisites:
+        1. Organization details submitted
+        2. Account exists with is_details_submitted=True
+        3. Account admin has identity_verification_status == verified
+        4. No existing SETUP_COMPLETE review
+        5. Organization is ACTIVE (not already under review/denied)
+        """
+        if not organization.is_active():
+            return
+
+        if not organization.details_submitted_at:
+            return
+
+        if not organization.account_id:
+            return
+
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(
+            organization.account_id, options=(joinedload(Account.admin),)
+        )
+        if not account or not account.is_details_submitted:
+            return
+
+        admin = account.admin
+        if (
+            not admin
+            or admin.identity_verification_status != IdentityVerificationStatus.verified
+        ):
+            return
+
+        # Check for existing SETUP_COMPLETE review
+        agent_review_repository = AgentReviewRepository.from_session(session)
+        if await agent_review_repository.has_setup_complete_review(organization.id):
+            return
+
+        enqueue_job(
+            "organization_review.run_agent",
+            organization_id=organization.id,
+            context=ReviewContext.SETUP_COMPLETE,
+        )
 
 
 organization = OrganizationService()

@@ -52,6 +52,41 @@ locals {
 # Sandbox
 # =============================================================================
 
+# =============================================================================
+# Service image data sources
+#
+# We read the current image digest from Render to avoid stale state in
+# Terraform causing "unable to fetch image" errors on service updates.
+#
+# The service IDs are hardcoded because referencing module outputs would
+# create a cyclic dependency (module -> data source -> module).
+#
+# First-time setup: create the services first without the data sources
+# (use a default tag like "latest"), then add the data sources with the
+# service IDs from `terraform state show`.
+# =============================================================================
+
+locals {
+  sandbox_service_ids = {
+    api                    = "srv-crkocgbtq21c73ddsdbg"
+    worker-sandbox         = "srv-d089jj7diees73934kgg"
+    worker-sandbox-webhook = "srv-d62q7vh4tr6s73fk44ng"
+  }
+}
+
+data "render_web_service" "sandbox_api" {
+  id = local.sandbox_service_ids["api"]
+}
+
+data "render_web_service" "sandbox_worker" {
+  for_each = { for k, v in local.sandbox_service_ids : k => v if k != "api" }
+  id       = each.value
+}
+
+# =============================================================================
+# Sandbox
+# =============================================================================
+
 module "sandbox" {
   source = "../modules/render_service"
 
@@ -79,6 +114,8 @@ module "sandbox" {
     allowed_hosts          = "[\"sandbox.polar.sh\"]"
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
+    image_url              = data.render_web_service.sandbox_api.runtime_source.image.image_url
+    image_digest           = data.render_web_service.sandbox_api.runtime_source.image.digest
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"
@@ -91,13 +128,14 @@ module "sandbox" {
   workers = {
     worker-sandbox = {
       start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority"
-      image_url          = "ghcr.io/polarsource/polar-playwright"
-      tag                = "latest"
+      image_url          = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.sandbox_worker["worker-sandbox"].runtime_source.image.digest
       dramatiq_prom_port = "10000"
     }
     worker-sandbox-webhook = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
-      tag                = "latest"
+      image_url          = data.render_web_service.sandbox_worker["worker-sandbox-webhook"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.sandbox_worker["worker-sandbox-webhook"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }

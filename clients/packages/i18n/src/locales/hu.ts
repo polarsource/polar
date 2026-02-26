@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Céges adatok hozzáadása',
       removeBusinessDetails: 'Céges adatok eltávolítása',
       billingDetails: 'Cégadatok',
+      addDiscountCode: 'Kedvezménykód hozzáadása',
     },
     pricing: {
       subtotal: 'Részösszeg',
@@ -200,6 +201,10 @@ export default {
       getFree: 'Ingyen megkapom',
       paymentsUnavailable: 'A fizetések jelenleg nem elérhetők',
     },
+    productDescription: {
+      readMore: 'Bővebben',
+      readLess: 'Kevesebb',
+    },
   },
   intervals: {
     short: {
@@ -210,12 +215,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Egyedi',
     license_keys: 'Licenckulcsok',
-    github_repository: 'GitHub tároló hozzáférés',
+    github_repository: 'GitHub repository hozzáférés',
     discord: 'Discord meghívó',
     downloadables: 'Fájlletöltések',
-    custom: 'Egyedi',
     meter_credit: 'Használat alapú kreditek',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: '.',

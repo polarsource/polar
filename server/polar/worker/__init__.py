@@ -1,3 +1,4 @@
+import datetime
 import functools
 from collections.abc import Awaitable, Callable
 from typing import Any, ParamSpec
@@ -24,7 +25,7 @@ from ._enqueue import (
 from ._httpx import HTTPXMiddleware
 from ._queues import TaskPriority, TaskQueue
 from ._redis import RedisMiddleware
-from ._sqlalchemy import AsyncSessionMaker
+from ._sqlalchemy import AsyncReadSessionMaker, AsyncSessionMaker
 
 _ = _prometheus_metrics  # for mypy and ruff: ensure import is used
 
@@ -52,6 +53,13 @@ def can_retry() -> bool:
     message = middleware.CurrentMessage.get_current_message()
     assert message is not None
     return get_retries() < message.options["max_retries"]
+
+
+def get_message_timestamp() -> datetime.datetime:
+    message = middleware.CurrentMessage.get_current_message()
+    assert message is not None
+    timestamp = message.message_timestamp
+    return datetime.datetime.fromtimestamp(timestamp / 1000.0, tz=datetime.UTC)
 
 
 broker = get_broker()
@@ -105,6 +113,7 @@ def actor[**P, R](
 
 
 __all__ = [
+    "AsyncReadSessionMaker",
     "AsyncSessionMaker",
     "BulkJobDelayCalculator",
     "CronTrigger",
@@ -117,6 +126,7 @@ __all__ = [
     "can_retry",
     "enqueue_events",
     "enqueue_job",
+    "get_message_timestamp",
     "get_retries",
     "make_bulk_job_delay_calculator",
 ]

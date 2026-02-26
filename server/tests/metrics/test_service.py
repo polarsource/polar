@@ -1,6 +1,5 @@
 from datetime import UTC, date, datetime
 from typing import TYPE_CHECKING, NotRequired, TypedDict
-from unittest.mock import AsyncMock, MagicMock, patch
 
 if TYPE_CHECKING:
     from .conftest import TinybirdTestHelper
@@ -10,10 +9,8 @@ import pytest_asyncio
 from apscheduler.util import ZoneInfo
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
-from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
     Customer,
@@ -38,6 +35,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_event,
     create_order,
+    create_payment_transaction,
     create_product,
     create_subscription,
 )
@@ -226,6 +224,27 @@ async def _create_fixtures(
         orders[key] = order
 
     return products, subscriptions, orders
+
+
+async def _create_payment_transaction_with_fx(
+    save_fixture: SaveFixture,
+    *,
+    order: Order,
+    amount: int,
+    presentment_amount: int,
+    presentment_currency: str,
+    exchange_rate: float | None = None,
+) -> None:
+    transaction = await create_payment_transaction(
+        save_fixture,
+        order=order,
+        amount=amount,
+        currency="usd",
+    )
+    transaction.presentment_amount = presentment_amount
+    transaction.presentment_currency = presentment_currency
+    transaction.exchange_rate = exchange_rate
+    await save_fixture(transaction)
 
 
 @pytest_asyncio.fixture
@@ -1266,6 +1285,231 @@ class TestGetMetrics:
         assert jan.active_subscriptions == 1
         assert jan.monthly_recurring_revenue == expected_mrr
         assert jan.average_revenue_per_user == expected_mrr
+
+    @pytest.mark.auth
+    async def test_mrr_uses_per_currency_per_bucket_average_exchange_rate(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        product_eur = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "eur")],
+        )
+        product_gbp = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "gbp")],
+        )
+
+        subscription_eur = await create_subscription(
+            save_fixture,
+            product=product_eur,
+            currency="eur",
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+        subscription_gbp = await create_subscription(
+            save_fixture,
+            product=product_gbp,
+            currency="gbp",
+            customer=customer_second,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+
+        order_eur_jan_a = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_eur,
+            customer=customer,
+            subscription=subscription_eur,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 5)),
+        )
+        order_eur_jan_b = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_eur,
+            customer=customer,
+            subscription=subscription_eur,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 7)),
+        )
+        order_gbp_jan = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_gbp,
+            customer=customer_second,
+            subscription=subscription_gbp,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 6)),
+        )
+        order_eur_feb = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_eur,
+            customer=customer,
+            subscription=subscription_eur,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 2, 5)),
+        )
+        order_gbp_feb = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product_gbp,
+            customer=customer_second,
+            subscription=subscription_gbp,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 2, 6)),
+        )
+
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_eur_jan_a,
+            amount=200_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=2.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_eur_jan_b,
+            amount=400_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=4.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_gbp_jan,
+            amount=500_00,
+            presentment_amount=100_00,
+            presentment_currency="gbp",
+            exchange_rate=5.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_eur_feb,
+            amount=100_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=1.0,
+        )
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=order_gbp_feb,
+            amount=200_00,
+            presentment_amount=100_00,
+            presentment_currency="gbp",
+            exchange_rate=2.0,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 29),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=[
+                "monthly_recurring_revenue",
+                "committed_monthly_recurring_revenue",
+                "average_revenue_per_user",
+            ],
+            now=datetime(2024, 2, 15, tzinfo=UTC),
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 800_00
+        assert jan.committed_monthly_recurring_revenue == 800_00
+        assert jan.average_revenue_per_user == 400_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 300_00
+        assert feb.committed_monthly_recurring_revenue == 300_00
+        assert feb.average_revenue_per_user == 150_00
+
+    @pytest.mark.auth
+    async def test_mrr_bucket_without_fx_uses_identity_multiplier(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "eur")],
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            currency="eur",
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+        january_order = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            subtotal_amount=100_00,
+            created_at=_date_to_datetime(date(2024, 1, 5)),
+        )
+
+        await _create_payment_transaction_with_fx(
+            save_fixture,
+            order=january_order,
+            amount=200_00,
+            presentment_amount=100_00,
+            presentment_currency="eur",
+            exchange_rate=2.0,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 29),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=[
+                "monthly_recurring_revenue",
+                "committed_monthly_recurring_revenue",
+                "average_revenue_per_user",
+            ],
+            now=datetime(2024, 2, 15, tzinfo=UTC),
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 200_00
+        assert jan.committed_monthly_recurring_revenue == 200_00
+        assert jan.average_revenue_per_user == 200_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 100_00
+        assert feb.committed_monthly_recurring_revenue == 100_00
+        assert feb.average_revenue_per_user == 100_00
 
     @pytest.mark.auth
     async def test_average_revenue_per_user_no_customers(
@@ -2742,135 +2986,3 @@ class TestCheckoutMetrics:
         # Only the checkout opened within range should be counted
         total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
         assert total_checkouts == 1
-
-
-@pytest.mark.asyncio
-@pytest.mark.auth(AuthSubjectFixture(subject="user"))
-class TestTinybirdDualRead:
-    async def test_uses_pg_when_tinybird_globally_disabled(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        organization: Organization,
-    ) -> None:
-        tb_mock = AsyncMock()
-        with (
-            patch.object(settings, "TINYBIRD_EVENTS_READ", False),
-            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
-        ):
-            result = await metrics_service.get_metrics(
-                session,
-                auth_subject,
-                start_date=date(2024, 1, 1),
-                end_date=date(2024, 1, 31),
-                timezone=ZoneInfo("UTC"),
-                interval=TimeInterval.month,
-                organization_id=[organization.id],
-            )
-        tb_mock.assert_not_called()
-        assert result.periods is not None
-
-    async def test_uses_pg_when_org_tinybird_disabled(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "tinybird_read": False,
-            "tinybird_compare": False,
-        }
-        await save_fixture(organization)
-
-        tb_mock = AsyncMock()
-        with (
-            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
-            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
-        ):
-            result = await metrics_service.get_metrics(
-                session,
-                auth_subject,
-                start_date=date(2024, 1, 1),
-                end_date=date(2024, 1, 31),
-                timezone=ZoneInfo("UTC"),
-                interval=TimeInterval.month,
-                organization_id=[organization.id],
-            )
-        tb_mock.assert_not_called()
-        assert result.periods is not None
-
-    async def test_shadow_mode_returns_pg_and_logs(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "tinybird_compare": True,
-        }
-        await save_fixture(organization)
-
-        mock_tb_response = MetricsResponse.model_validate(
-            {"periods": [], "totals": {}, "metrics": {}}
-        )
-        tb_mock = AsyncMock(return_value=mock_tb_response)
-        log_mock = MagicMock()
-
-        with (
-            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
-            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
-            patch.object(metrics_service, "_log_tinybird_comparison", log_mock),
-        ):
-            result = await metrics_service.get_metrics(
-                session,
-                auth_subject,
-                start_date=date(2024, 1, 1),
-                end_date=date(2024, 1, 31),
-                timezone=ZoneInfo("UTC"),
-                interval=TimeInterval.month,
-                organization_id=[organization.id],
-            )
-
-        tb_mock.assert_called_once()
-        log_mock.assert_called_once()
-        assert result.periods is not None
-
-    async def test_fallback_on_tinybird_error(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "tinybird_compare": True,
-        }
-        await save_fixture(organization)
-
-        tb_mock = AsyncMock(side_effect=Exception("Tinybird error"))
-
-        with (
-            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
-            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
-        ):
-            result = await metrics_service.get_metrics(
-                session,
-                auth_subject,
-                start_date=date(2024, 1, 1),
-                end_date=date(2024, 1, 31),
-                timezone=ZoneInfo("UTC"),
-                interval=TimeInterval.month,
-                organization_id=[organization.id],
-            )
-
-        tb_mock.assert_called_once()
-        assert result.periods is not None

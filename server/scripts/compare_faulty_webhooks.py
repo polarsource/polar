@@ -474,11 +474,7 @@ async def send_webhooks(
                 sorted_customer_ids[start_idx:], start=start_idx
             ):
                 try:
-                    enqueue_job(
-                        "customer.webhook",
-                        WebhookEventType.customer_state_changed,
-                        customer_id,
-                    )
+                    enqueue_job("customer.state_changed", customer_id)
                 except Exception as e:
                     console.print(
                         f"[red]Error enqueueing webhook for customer {customer_id}: {e}[/red]"

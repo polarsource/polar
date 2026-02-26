@@ -1,0 +1,49 @@
+NODE materialize
+SQL >
+    SELECT
+        organization_id,
+        toStartOfFifteenMinutes(canceled_at) AS quarter_hour,
+        COALESCE(product_id, toUUID('00000000-0000-0000-0000-000000000000')) AS product_id,
+        sumState(toUInt64(1)) AS canceled_subscriptions,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'customer_service', 1, 0))
+        ) AS canceled_subscriptions_customer_service,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'low_quality', 1, 0))
+        ) AS canceled_subscriptions_low_quality,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'missing_features', 1, 0))
+        ) AS canceled_subscriptions_missing_features,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'switched_service', 1, 0))
+        ) AS canceled_subscriptions_switched_service,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'too_complex', 1, 0))
+        ) AS canceled_subscriptions_too_complex,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'too_expensive', 1, 0))
+        ) AS canceled_subscriptions_too_expensive,
+        sumState(
+            toUInt64(if(customer_cancellation_reason = 'unused', 1, 0))
+        ) AS canceled_subscriptions_unused,
+        sumState(
+            toUInt64(
+                if(
+                    customer_cancellation_reason = 'other'
+                    OR customer_cancellation_reason IS NULL
+                    OR customer_cancellation_reason = '',
+                    1,
+                    0
+                )
+            )
+        ) AS canceled_subscriptions_other
+    FROM events_by_ingested_at
+    WHERE
+        source = 'system'
+        AND name = 'subscription.canceled'
+        AND subscription_id IS NOT NULL
+        AND canceled_at IS NOT NULL
+    GROUP BY organization_id, quarter_hour, product_id
+
+TYPE MATERIALIZED
+DATASOURCE cancellations_by_quarter_hour

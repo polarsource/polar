@@ -130,6 +130,7 @@ class SubscriptionScenario:
     ends_at: datetime | None = None
     cancellation_reason: CustomerCancellationReason | None = None
     canceled_event_ends_at: datetime | None = None
+    duplicate_canceled_event_timestamp: datetime | None = None
     cancel_at_period_end: bool = False
     revoked_at: datetime | None = None
 
@@ -345,6 +346,23 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
             ),
         ),
         CustomerScenario(
+            key="stockholm_duplicate_canceled_events",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(datetime(2026, 1, 20, 12, 0, tzinfo=UTC),),
+                    amount=MONTHLY_PRICE,
+                    canceled_at=datetime(2026, 1, 26, 17, 15, 42, tzinfo=UTC),
+                    ends_at=datetime(2026, 2, 24, 12, 15, 19, tzinfo=UTC),
+                    cancellation_reason=CustomerCancellationReason.other,
+                    cancel_at_period_end=True,
+                    duplicate_canceled_event_timestamp=datetime(
+                        2026, 2, 24, 12, 15, 19, tzinfo=UTC
+                    ),
+                ),
+            ),
+        ),
+        CustomerScenario(
             key="stockholm_trial_orders_without_balance",
             one_time_orders=(
                 OrderScenario(
@@ -483,6 +501,32 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                             emit_balance_credit_order=True,
                         ),
                     ),
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="trial_subscription_no_balance",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(),
+                    amount=MONTHLY_PRICE,
+                    orders=(
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2026, 1, 15)),
+                            amount=0,
+                            include_balance=False,
+                        ),
+                    ),
+                ),
+                SubscriptionScenario(
+                    product_key="monthly_plus",
+                    order_timestamps=(_dt(date(2026, 1, 15)),),
+                    amount=MONTHLY_PLUS_PRICE,
+                    canceled_at=_dt(date(2026, 1, 20)),
+                    ends_at=_dt(date(2026, 2, 15)),
+                    cancellation_reason=CustomerCancellationReason.other,
                 ),
             ),
         ),
@@ -729,6 +773,18 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("orders",),
     ),
     QueryCase(
+        label="alpha_daily_kolkata_duplicate_canceled_events",
+        organization_key="alpha",
+        start_date=date(2026, 1, 25),
+        end_date=date(2026, 2, 24),
+        interval=TimeInterval.day,
+        timezone="Asia/Kolkata",
+        metrics=(
+            "canceled_subscriptions",
+            "canceled_subscriptions_other",
+        ),
+    ),
+    QueryCase(
         label="alpha_daily_stockholm_trial_orders_without_balance",
         organization_key="alpha",
         start_date=date(2026, 2, 1),
@@ -808,6 +864,20 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("renewed_subscriptions", "renewed_subscriptions_net_revenue"),
     ),
     QueryCase(
+        label="alpha_daily_trial_subscription_mrr",
+        organization_key="alpha",
+        start_date=date(2026, 1, 15),
+        end_date=date(2026, 1, 31),
+        interval=TimeInterval.day,
+        customer_keys=("trial_subscription_no_balance",),
+        metrics=(
+            "monthly_recurring_revenue",
+            "committed_monthly_recurring_revenue",
+            "active_subscriptions",
+            "committed_subscriptions",
+        ),
+    ),
+    QueryCase(
         label="beta_monthly_q1",
         organization_key="beta",
         start_date=date(2024, 1, 1),
@@ -883,6 +953,8 @@ async def _create_subscription_created_event(
     customer: Customer,
     subscription: Subscription,
     product: Product,
+    *,
+    amount: int | None = None,
 ) -> Event:
     assert subscription.started_at is not None
     return await create_event(
@@ -896,6 +968,8 @@ async def _create_subscription_created_event(
             "subscription_id": str(subscription.id),
             "product_id": str(product.id),
             "customer_id": str(customer.id),
+            "amount": amount if amount is not None else subscription.amount,
+            "currency": subscription.currency,
             "started_at": subscription.started_at.isoformat(),
             "recurring_interval": product.recurring_interval.value
             if product.recurring_interval
@@ -915,6 +989,7 @@ async def _create_subscription_canceled_event(
     ends_at: datetime,
     customer_cancellation_reason: str,
     cancel_at_period_end: bool = False,
+    event_timestamp: datetime | None = None,
 ) -> Event:
     return await create_event(
         save_fixture,
@@ -922,7 +997,7 @@ async def _create_subscription_canceled_event(
         customer=customer,
         source=EventSource.system,
         name=SystemEvent.subscription_canceled.value,
-        timestamp=canceled_at,
+        timestamp=event_timestamp or canceled_at,
         metadata={
             "subscription_id": str(subscription.id),
             "canceled_at": canceled_at.isoformat(),
@@ -1225,6 +1300,7 @@ async def _seed_customer_scenario(
                 customer,
                 subscription,
                 product,
+                amount=subscription_scenario.amount,
             )
         )
 
@@ -1301,6 +1377,24 @@ async def _seed_customer_scenario(
                         subscription,
                         product,
                         revoked_at=subscription_scenario.revoked_at,
+                    )
+                )
+            if subscription_scenario.duplicate_canceled_event_timestamp is not None:
+                events.append(
+                    await _create_subscription_canceled_event(
+                        save_fixture,
+                        organization,
+                        customer,
+                        subscription,
+                        canceled_at=subscription_scenario.canceled_at,
+                        ends_at=canceled_event_ends_at,
+                        customer_cancellation_reason=(
+                            subscription_scenario.cancellation_reason.value
+                        ),
+                        cancel_at_period_end=subscription_scenario.cancel_at_period_end,
+                        event_timestamp=(
+                            subscription_scenario.duplicate_canceled_event_timestamp
+                        ),
                     )
                 )
 
@@ -1789,6 +1883,21 @@ class TestTinybirdMetrics:
         assert (
             tb.renewed_subscriptions_net_revenue == pg.renewed_subscriptions_net_revenue
         )
+
+    def test_trial_subscription_mrr_uses_subscription_created_amount(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots["alpha_daily_trial_subscription_mrr"]
+
+        tb_first = snapshot.tinybird.periods[0]
+
+        expected_mrr = MONTHLY_PRICE + MONTHLY_PLUS_PRICE
+        expected_cmrr = MONTHLY_PRICE
+
+        assert tb_first.active_subscriptions == 2
+        assert tb_first.committed_subscriptions == 1
+        assert tb_first.monthly_recurring_revenue == expected_mrr
+        assert tb_first.committed_monthly_recurring_revenue == expected_cmrr
 
     def test_org_filter_disabled_matches_org_subject_scope(
         self, metrics_harness: MetricsHarness

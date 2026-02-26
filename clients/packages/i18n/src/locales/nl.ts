@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Bedrijfsgegevens toevoegen',
       removeBusinessDetails: 'Bedrijfsgegevens verwijderen',
       billingDetails: 'Bedrijfsgegevens',
+      addDiscountCode: 'Kortingscode toevoegen',
     },
     pricing: {
       subtotal: 'Subtotaal',
@@ -202,6 +203,10 @@ export default {
       getFree: 'Gratis verkrijgen',
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
+    productDescription: {
+      readMore: 'Lees meer',
+      readLess: 'Lees minder',
+    },
   },
   intervals: {
     short: {
@@ -212,12 +217,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Aangepast',
     license_keys: 'Licentiesleutels',
     github_repository: 'Toegang tot GitHub-repository',
     discord: 'Discord-uitnodiging',
     downloadables: 'Bestandsdownloads',
-    custom: 'Aangepast',
-    meter_credit: 'Verbruikstegoeden',
+    meter_credit: 'Verbruikstegoed',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: 'de',

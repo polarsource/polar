@@ -1074,14 +1074,21 @@ class CheckoutService:
                 }
             )
 
-        # Check if organization can accept payments (only block paid transactions)
-        if (
-            checkout.is_payment_required
-            and not await organization_service.is_organization_ready_for_payment(
-                session, checkout.organization
-            )
+        # Check if organization can accept payments
+        if not await organization_service.is_organization_ready_for_payment(
+            session, checkout.organization
         ):
-            raise PaymentNotReady()
+            if checkout.is_payment_required:
+                raise PaymentNotReady()
+            # When a discount makes a checkout free, ensure it's a permanent
+            # (forever) discount to avoid starting charges once it expires
+            # without the organization having been reviewed.
+            if (
+                checkout.is_payment_setup_required
+                and checkout.discount is not None
+                and checkout.discount.duration != DiscountDuration.forever
+            ):
+                raise PaymentNotReady()
 
         # For wallet payments (Apple Pay, Google Pay), we hide the customer name field
         # for better UX and instead extract the name from Stripe's confirmation token.
@@ -1358,11 +1365,25 @@ class CheckoutService:
                 event="storefront:subscriptions:checkout:complete",
                 properties={
                     "checkout_id": str(checkout.id),
+                    "organization_id": str(checkout.organization_id),
                     "organization_slug": checkout.organization.slug,
                     "product_id": str(checkout.product_id)
                     if checkout.product_id
                     else None,
                     "amount": checkout.amount,
+                    "is_embedded": checkout.embed_origin is not None,
+                    "embed_origin": checkout.embed_origin,
+                    "currency": checkout.currency,
+                    "has_discount": checkout.discount_id is not None,
+                    "is_subscription": checkout.product.is_recurring
+                    if checkout.product
+                    else None,
+                    "has_trial": checkout.trial_end is not None,
+                    "is_free": checkout.is_free_product_price,
+                    "country": checkout.customer_billing_address.country
+                    if checkout.customer_billing_address
+                    else None,
+                    "is_returning_customer": checkout.customer_id is not None,
                 },
             )
         except Exception as e:
@@ -1445,11 +1466,25 @@ class CheckoutService:
                 event="storefront:subscriptions:checkout:open",
                 properties={
                     "checkout_id": str(checkout.id),
+                    "organization_id": str(checkout.organization_id),
                     "organization_slug": checkout.organization.slug,
                     "product_id": str(checkout.product_id)
                     if checkout.product_id
                     else None,
                     "amount": checkout.amount,
+                    "is_embedded": checkout.embed_origin is not None,
+                    "embed_origin": checkout.embed_origin,
+                    "currency": checkout.currency,
+                    "has_discount": checkout.discount_id is not None,
+                    "is_subscription": checkout.product.is_recurring
+                    if checkout.product
+                    else None,
+                    "has_trial": checkout.trial_end is not None,
+                    "is_free": checkout.is_free_product_price,
+                    "country": checkout.customer_billing_address.country
+                    if checkout.customer_billing_address
+                    else None,
+                    "is_returning_customer": checkout.customer_id is not None,
                 },
             )
         except Exception as e:

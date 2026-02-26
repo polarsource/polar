@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Añadir datos de empresa',
       removeBusinessDetails: 'Eliminar datos de empresa',
       billingDetails: 'Datos de la empresa',
+      addDiscountCode: 'Añadir código de descuento',
     },
     pricing: {
       subtotal: 'Subtotal',
@@ -202,6 +203,10 @@ export default {
       getFree: 'Obtener gratis',
       paymentsUnavailable: 'Los pagos no están disponibles actualmente',
     },
+    productDescription: {
+      readMore: 'Leer más',
+      readLess: 'Leer menos',
+    },
   },
   intervals: {
     short: {
@@ -212,12 +217,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Personalizado',
     license_keys: 'Claves de licencia',
     github_repository: 'Acceso a repositorio de GitHub',
     discord: 'Invitación a Discord',
     downloadables: 'Descargas de archivos',
-    custom: 'Personalizado',
     meter_credit: 'Créditos de consumo',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: 'º',

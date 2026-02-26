@@ -65,6 +65,23 @@ class OverviewSection:
     # Top-left: Organization Review card
     # ------------------------------------------------------------------
 
+    _REVIEW_CONTEXT_LABELS: dict[str, str] = {
+        "submission": "Submission",
+        "setup_complete": "Setup Complete",
+        "threshold": "Threshold",
+        "manual": "Manual",
+    }
+
+    def _render_review_context_badge(self, review_type: str | None) -> None:
+        """Render a small badge showing the review trigger context."""
+        if not review_type:
+            return
+        label = self._REVIEW_CONTEXT_LABELS.get(
+            review_type, review_type.replace("_", " ").title()
+        )
+        with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
+            text(label)
+
     @contextlib.contextmanager
     def organization_review_card(self, request: Request) -> Generator[None]:
         """Merged agent report + org.review fallback card."""
@@ -78,47 +95,68 @@ class OverviewSection:
         with card(bordered=True):
             # --- No agent report: show fallback from org.review ---
             if self.agent_report is None:
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Organization Review")
-                    with button(
-                        variant="primary",
-                        size="sm",
-                        outline=True,
-                        hx_post=run_agent_url,
-                        hx_confirm="Run organization review agent?",
-                    ):
-                        text("Run Agent")
-
                 # Fallback: show org.review data if available
                 if self.org.review:
                     review = self.org.review
-                    with tag.div(classes="flex items-center gap-3 mb-3"):
-                        with tag.span(
-                            classes="badge badge-ghost border border-base-300 badge-lg"
-                        ):
-                            text(review.verdict or "N/A")
+
+                    # Header with timestamp and run agent button
+                    with tag.div(classes="flex items-center justify-between mb-4"):
+                        with tag.h2(classes="text-lg font-bold"):
+                            text("Organization Review")
+                        with tag.div(classes="flex items-center gap-3"):
+                            if review.validated_at:
+                                with tag.span(classes="text-xs text-base-content/60"):
+                                    text(
+                                        review.validated_at.strftime(
+                                            "%Y-%m-%d %H:%M UTC"
+                                        )
+                                    )
+                            with button(
+                                variant="primary",
+                                size="sm",
+                                outline=True,
+                                hx_post=run_agent_url,
+                                hx_confirm="Run organization review agent?",
+                            ):
+                                text("Run Agent")
+
+                    # Verdict badge + risk score
+                    with tag.div(classes="flex items-center gap-4 mb-4"):
+                        verdict_str = (
+                            review.verdict.value
+                            if hasattr(review.verdict, "value")
+                            else str(review.verdict or "N/A")
+                        )
+                        verdict_classes = {
+                            "PASS": "badge-success",
+                            "FAIL": "badge-error",
+                            "UNCERTAIN": "badge-warning",
+                        }
+                        badge_class = verdict_classes.get(verdict_str, "badge-ghost")
+                        with tag.div(classes=f"badge {badge_class} badge-lg"):
+                            text(verdict_str)
+
                         if review.risk_score is not None:
-                            with tag.span(classes="text-lg font-bold"):
-                                text(f"Risk: {review.risk_score}")
+                            with tag.div(classes="flex items-center gap-1"):
+                                with tag.span(classes="text-sm font-medium"):
+                                    text("Risk:")
+                                with tag.span(classes="text-sm font-bold"):
+                                    text(f"{float(review.risk_score):.0f}/100")
 
-                    if review.violated_sections:
-                        with tag.div(classes="mb-3"):
-                            with tag.div(classes="text-sm font-semibold mb-1"):
-                                text("Violated Sections:")
-                            with tag.div(classes="flex flex-wrap gap-1"):
-                                for section in review.violated_sections:
-                                    with tag.span(
-                                        classes="badge badge-ghost border border-base-300 badge-sm"
-                                    ):
-                                        text(section)
-
+                    # Assessment reason (as summary paragraph)
                     if review.reason:
-                        with tag.div(
-                            classes="text-sm text-base-content/80 p-3 bg-base-200 rounded mt-3"
-                        ):
+                        with tag.p(classes="text-sm mb-4"):
                             text(review.reason)
 
+                    # Violated sections (inline comma-separated)
+                    if review.violated_sections:
+                        with tag.div(classes="mb-4"):
+                            with tag.span(classes="text-sm font-medium text-error"):
+                                text("Violated sections: ")
+                            with tag.span(classes="text-sm"):
+                                text(", ".join(review.violated_sections))
+
+                    # Appeal information
                     if review.appeal_submitted_at:
                         with tag.div(
                             classes="mt-4 p-3 border-l-4 border-base-300 bg-base-100 rounded"
@@ -132,7 +170,44 @@ class OverviewSection:
                                 with tag.div(classes="mt-2 text-sm"):
                                     with tag.span(classes="font-semibold"):
                                         text(f"Decision: {review.appeal_decision}")
+
+                    # Model info
+                    if review.model_used:
+                        with tag.div(
+                            classes="flex flex-wrap gap-3 text-xs text-base-content/60 pt-3 border-t border-base-200"
+                        ):
+                            with tag.span():
+                                text(f"Model: {review.model_used}")
+
+                    # Organization details snapshot (collapsible)
+                    if review.organization_details_snapshot:
+                        with tag.details(classes="mt-4"):
+                            with tag.summary(
+                                classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
+                            ):
+                                text("View data snapshot used for this review")
+                            with tag.pre(
+                                classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
+                            ):
+                                text(
+                                    json.dumps(
+                                        review.organization_details_snapshot,
+                                        indent=2,
+                                        default=str,
+                                    )
+                                )
                 else:
+                    with tag.div(classes="flex items-center justify-between mb-4"):
+                        with tag.h2(classes="text-lg font-bold"):
+                            text("Organization Review")
+                        with button(
+                            variant="primary",
+                            size="sm",
+                            outline=True,
+                            hx_post=run_agent_url,
+                            hx_confirm="Run organization review agent?",
+                        ):
+                            text("Run Agent")
                     with tag.p(classes="text-sm text-base-content/60 mb-4"):
                         text("No agent review yet")
 
@@ -142,11 +217,14 @@ class OverviewSection:
             # --- Agent report present ---
             report = self.agent_report.get("report", {})
             usage = self.agent_report.get("usage", {})
+            review_type = self.agent_report.get("review_type")
 
             # Header with timestamp and re-run button
             with tag.div(classes="flex items-center justify-between mb-4"):
-                with tag.h2(classes="text-lg font-bold"):
-                    text("Organization Review")
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Organization Review")
+                    self._render_review_context_badge(review_type)
                 with tag.div(classes="flex items-center gap-3"):
                     if self.agent_reviewed_at:
                         with tag.span(classes="text-xs text-base-content/60"):
@@ -414,7 +492,7 @@ class OverviewSection:
                 dispute_rate = payment_stats.get("dispute_rate", 0)
                 chargeback_rate = payment_stats.get("chargeback_rate", 0)
 
-                with tag.div(classes="grid grid-cols-2 gap-3"):
+                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
                     with metric_card(
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
@@ -434,6 +512,31 @@ class OverviewSection:
                         compact=True,
                     ):
                         pass
+
+                # Row 4: P50 + P90 Risk Scores
+                risk_scores_count = payment_stats.get("risk_scores_count", 0)
+                if risk_scores_count > 0:
+                    p50_risk = payment_stats.get("p50_risk", 0)
+                    p90_risk = payment_stats.get("p90_risk", 0)
+
+                    with tag.div(classes="grid grid-cols-2 gap-3"):
+                        with metric_card(
+                            "P50 Risk Score",
+                            f"{p50_risk:.0f}",
+                            subtitle=f"median of {risk_scores_count} payments",
+                            variant=self._rate_variant(p50_risk, yellow=50, red=65),
+                            compact=True,
+                        ):
+                            pass
+
+                        with metric_card(
+                            "P90 Risk Score",
+                            f"{p90_risk:.0f}",
+                            subtitle="90th percentile",
+                            variant=self._rate_variant(p90_risk, yellow=65, red=75),
+                            compact=True,
+                        ):
+                            pass
 
             yield
 

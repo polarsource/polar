@@ -3,9 +3,12 @@
 import traceback
 from collections.abc import Callable
 
+import asyncpg.exceptions
 import sentry_sdk
 import structlog
+from sqlalchemy.exc import DBAPIError
 
+from polar.locker import TimeoutLockError
 from polar.logging import Logger
 from polar.observability import OPERATIONAL_ERROR_TOTAL
 
@@ -31,6 +34,24 @@ def _sql_timeout_error_matcher(exc: BaseException) -> bool:
     return "asyncpg/protocol/protocol.pyx" in tb_str
 
 
+def _sql_lock_not_available_error_matcher(exc: BaseException) -> bool:
+    """Match asyncpg.exceptions.LockNotAvailableError wrapped in a SQLAlchemy DBAPIError."""
+    if not isinstance(exc, DBAPIError):
+        return False
+
+    cause = exc.__cause__
+    while cause is not None:
+        if isinstance(cause, asyncpg.exceptions.LockNotAvailableError):
+            return True
+        cause = cause.__cause__
+
+    return False
+
+
+def _timeout_lock_error_matcher(exc: BaseException) -> bool:
+    return isinstance(exc, TimeoutLockError)
+
+
 def _external_event_already_handled_error_matcher(exc: BaseException) -> bool:
     # Import deferred to avoid circular dependency with polar.worker
     from polar.external_event.service import ExternalEventAlreadyHandled
@@ -38,9 +59,19 @@ def _external_event_already_handled_error_matcher(exc: BaseException) -> bool:
     return isinstance(exc, ExternalEventAlreadyHandled)
 
 
+def _loops_client_operational_error_matcher(exc: BaseException) -> bool:
+    # Import deferred to avoid circular dependency with polar.worker
+    from polar.integrations.loops.client import LoopsClientOperationalError
+
+    return isinstance(exc, LoopsClientOperationalError)
+
+
 _operation_error_matchers: dict[str, OperationalErrorMatcher] = {
     "sql_timeout_error": _sql_timeout_error_matcher,
+    "sql_lock_not_available_error": _sql_lock_not_available_error_matcher,
+    "timeout_lock_error": _timeout_lock_error_matcher,
     "external_event_already_handled": _external_event_already_handled_error_matcher,
+    "loops_client_operational_error": _loops_client_operational_error_matcher,
 }
 
 

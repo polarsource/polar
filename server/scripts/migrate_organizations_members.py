@@ -22,6 +22,15 @@ Usage:
 
     Limit how many organizations to migrate:
         uv run python -m scripts.migrate_organizations_members --limit 10 --no-dry-run
+
+    Repair previously migrated orgs (re-run backfill for orgs with flag already enabled):
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run
+        uv run python -m scripts.migrate_organizations_members repair --slug my-org --no-dry-run
+
+    Repair in batches of 1000:
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 0
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 1000
+        uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 2000
 """
 
 import asyncio
@@ -31,7 +40,7 @@ from typing import Any
 
 import structlog
 import typer
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
@@ -192,6 +201,7 @@ async def migrate_organizations(
                 owner_members_created = await _backfill_owner_members(
                     session, organization
                 )
+                await session.commit()
 
             # Step B: Migrate active seats
             async with sessionmaker() as session:
@@ -202,6 +212,7 @@ async def migrate_organizations(
                 seats_migrated, orphaned_customer_ids = await _backfill_seats(
                     session, organization
                 )
+                await session.commit()
 
             # Step C: Link benefit grants to correct members
             async with sessionmaker() as session:
@@ -210,6 +221,7 @@ async def migrate_organizations(
                 ).get_by_id(org.id)
                 assert organization is not None
                 grants_linked = await _backfill_benefit_grants(session, organization)
+                await session.commit()
 
             # Step D: Soft-delete orphaned seat-holder customers
             async with sessionmaker() as session:
@@ -220,6 +232,7 @@ async def migrate_organizations(
                 customers_deleted = await _cleanup_orphaned_seat_customers(
                     session, organization, orphaned_customer_ids
                 )
+                await session.commit()
 
             migrated_count += 1
             typer.echo(
@@ -239,6 +252,182 @@ async def migrate_organizations(
     typer.echo()
     typer.echo("Migration complete:")
     typer.echo(f"  - Migrated: {migrated_count}")
+    typer.echo(f"  - Failed: {failed_count}")
+
+
+@cli.command()
+@typer_async
+async def repair(
+    dry_run: bool = typer.Option(
+        True, help="If True, only show what would be done without making changes"
+    ),
+    slug: str | None = typer.Option(None, help="Repair a single organization by slug"),
+    limit: int | None = typer.Option(
+        None, help="Maximum number of organizations to repair"
+    ),
+    offset: int = typer.Option(
+        0, help="Number of organizations to skip (for batch pagination)"
+    ),
+) -> None:
+    """Re-run backfill for orgs that already have member_model_enabled.
+
+    This is safe to run on all enabled orgs — every backfill step is idempotent
+    and skips customers/seats/grants that already have members.
+    """
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        statement = (
+            select(Organization)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
+                Organization.feature_settings["member_model_enabled"]
+                .as_boolean()
+                .is_(True),
+                or_(
+                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
+                        None
+                    ),
+                    Organization.feature_settings["seat_based_pricing_enabled"]
+                    .as_boolean()
+                    .is_(False),
+                ),
+            )
+            .order_by(
+                Organization.next_review_threshold.asc(),
+                Organization.id.asc(),
+            )
+        )
+
+        if slug is not None:
+            statement = statement.where(Organization.slug == slug)
+
+        if offset > 0:
+            statement = statement.offset(offset)
+
+        if limit is not None:
+            statement = statement.limit(limit)
+
+        result = await session.execute(statement)
+        organizations = list(result.scalars().all())
+
+        # Get total count (without limit/offset) for progress display
+        count_statement = (
+            select(func.count())
+            .select_from(Organization)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
+                Organization.feature_settings["member_model_enabled"]
+                .as_boolean()
+                .is_(True),
+                or_(
+                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
+                        None
+                    ),
+                    Organization.feature_settings["seat_based_pricing_enabled"]
+                    .as_boolean()
+                    .is_(False),
+                ),
+            )
+        )
+        total_count = await session.scalar(count_statement)
+
+    if not organizations:
+        typer.echo("No eligible organizations found.")
+        return
+
+    typer.echo(
+        f"Found {len(organizations)} organization(s) to repair"
+        f" (offset={offset}, total={total_count})"
+    )
+    typer.echo()
+
+    if dry_run:
+        typer.echo("DRY RUN - No changes will be made.")
+        typer.echo(f"Would repair {len(organizations)} organization(s).")
+        return
+
+    typer.echo(f"Repairing {len(organizations)} organization(s)...")
+    typer.echo()
+
+    repaired_count = 0
+    failed_count = 0
+    skipped_count = 0
+
+    for org in organizations:
+        try:
+            # Step A: Create owner members for all customers without one
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                owner_members_created = await _backfill_owner_members(
+                    session, organization
+                )
+                await session.commit()
+
+            # Step B: Migrate active seats
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                seats_migrated, orphaned_customer_ids = await _backfill_seats(
+                    session, organization
+                )
+                await session.commit()
+
+            # Step C: Link benefit grants to correct members
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                grants_linked = await _backfill_benefit_grants(session, organization)
+                await session.commit()
+
+            # Step D: Soft-delete orphaned seat-holder customers
+            async with sessionmaker() as session:
+                organization = await OrganizationRepository.from_session(
+                    session
+                ).get_by_id(org.id)
+                assert organization is not None
+                customers_deleted = await _cleanup_orphaned_seat_customers(
+                    session, organization, orphaned_customer_ids
+                )
+                await session.commit()
+
+            if (
+                owner_members_created == 0
+                and seats_migrated == 0
+                and grants_linked == 0
+                and customers_deleted == 0
+            ):
+                skipped_count += 1
+            else:
+                repaired_count += 1
+                typer.echo(
+                    f"  [{repaired_count}] "
+                    f"{org.slug} (threshold={org.next_review_threshold}) "
+                    f"owners={owner_members_created} seats={seats_migrated} "
+                    f"grants={grants_linked} deleted={customers_deleted}"
+                )
+
+        except Exception as e:
+            failed_count += 1
+            typer.echo(
+                f"  FAILED: {org.slug} - {e}",
+                err=True,
+            )
+
+    typer.echo()
+    typer.echo("Repair complete:")
+    typer.echo(f"  - Repaired: {repaired_count}")
+    typer.echo(f"  - Already OK: {skipped_count}")
     typer.echo(f"  - Failed: {failed_count}")
 
 

@@ -8,10 +8,10 @@ import logfire
 import structlog
 from sqlalchemy import ColumnElement, FromClause, select, text
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models import Customer, Organization, Product, User
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -31,6 +31,7 @@ from .queries import (
     QueryCallable,
 )
 from .queries_tinybird import (
+    TinybirdQuery,
     query_metrics,
 )
 from .schemas import MetricsPeriod, MetricsResponse
@@ -226,47 +227,235 @@ def _is_current_period(
 
 
 class MetricsService:
-    async def _get_tinybird_enabled_org(
+    async def get_metrics(
         self,
         session: AsyncSession | AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
-        organization_id: Sequence[uuid.UUID] | None,
-    ) -> Organization | None:
-        if not settings.TINYBIRD_EVENTS_READ:
-            return None
+        *,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        interval: TimeInterval,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        billing_type: Sequence[ProductBillingType] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        metrics: Sequence[str] | None = None,
+        now: datetime | None = None,
+    ) -> MetricsResponse:
+        await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
+        await session.execute(text("SET LOCAL plan_cache_mode = 'force_custom_plan'"))
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
 
-        org: Organization | None
-        if is_organization(auth_subject):
-            org = auth_subject.subject
-        elif is_user(auth_subject):
-            if not organization_id:
-                return None
-            statement = select(Organization).where(
-                Organization.id == organization_id[0],
-                Organization.id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == auth_subject.subject.id,
-                        UserOrganization.is_deleted.is_(False),
-                    )
-                ),
-            )
-            result = await session.execute(statement)
-            org = result.scalar_one_or_none()
-            if org is None:
-                return None
-        else:
-            return None
+        # Store original bounds before truncation for filtering queries
+        original_start_timestamp = start_timestamp
+        original_end_timestamp = end_timestamp
 
-        if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
-            "tinybird_compare", True
+        # Truncate start_timestamp to the beginning of the interval period
+        # This ensures the timestamp series aligns with how daily metrics are grouped
+        if interval == TimeInterval.week:
+            start_timestamp -= timedelta(days=start_timestamp.weekday())
+        elif interval == TimeInterval.month:
+            start_timestamp = start_timestamp.replace(day=1)
+        elif interval == TimeInterval.year:
+            start_timestamp = start_timestamp.replace(month=1, day=1)
+
+        timestamp_series = get_timestamp_series_cte(
+            start_timestamp, end_timestamp, interval
+        )
+        timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+        # Determine which queries to run based on metrics
+        now_dt = now or datetime.now(tz=timezone)
+
+        # Determine which queries to run based on metrics
+        required_queries = _get_required_queries(metrics)
+        filtered_query_fns = _get_filtered_queries(required_queries)
+        filtered_metrics_sql = _get_filtered_metrics(metrics)
+        filtered_post_compute = _get_filtered_post_compute_metrics(metrics)
+        filtered_all_metrics = _get_filtered_all_metrics(metrics)
+
+        with logfire.span(
+            "Build metrics query",
+            metrics=metrics,
+            required_queries=[q.value for q in required_queries]
+            if required_queries
+            else None,
+            num_query_functions=len(filtered_query_fns),
         ):
-            return org
+            queries = [
+                query_fn(
+                    timestamp_series,
+                    interval,
+                    auth_subject,
+                    filtered_metrics_sql,
+                    now_dt,
+                    bounds=(original_start_timestamp, original_end_timestamp),
+                    organization_id=organization_id,
+                    product_id=product_id,
+                    billing_type=billing_type,
+                    customer_id=customer_id,
+                )
+                for query_fn in filtered_query_fns
+            ]
 
-        return None
+        from_query: FromClause = timestamp_series
+        for query in queries:
+            from_query = from_query.join(
+                query,
+                onclause=query.c.timestamp == timestamp_column,
+            )
+
+        statement = (
+            select(
+                timestamp_column.label("timestamp"),
+                *queries,
+            )
+            .select_from(from_query)
+            .order_by(timestamp_column.asc())
+        )
+
+        periods: list[MetricsPeriod] = []
+        with logfire.span(
+            "Stream and process metrics query",
+            start_date=str(start_date),
+            end_date=str(end_date),
+            metrics=metrics,
+        ):
+            result = await session.stream(
+                statement,
+                execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+            )
+
+            row_count = 0
+
+            with logfire.span("Fetch and process rows"):
+                async for row in result:
+                    row_count += 1
+                    period_dict = row._asdict()
+
+                    # Compute meta metrics with cascading dependencies
+                    # Each metric can depend on previously computed metrics
+                    temp_period_dict = dict(period_dict)
+
+                    # Initialize all computed metrics to 0 first to satisfy Pydantic schema
+                    for meta_metric in filtered_post_compute:
+                        temp_period_dict[meta_metric.slug] = 0
+
+                    # Now compute each metric, updating the dict as we go
+                    # This allows later metrics to depend on earlier computed metrics
+                    for meta_metric in filtered_post_compute:
+                        temp_period = MetricsPeriod.model_validate(temp_period_dict)
+                        computed_value = meta_metric.compute_from_period(temp_period)
+                        temp_period_dict[meta_metric.slug] = computed_value
+                        period_dict[meta_metric.slug] = computed_value
+
+                    periods.append(MetricsPeriod.model_validate(period_dict))
+
+            logfire.info("Processed {row_count} rows", row_count=row_count)
+
+        totals: dict[str, int | float] = {}
+        with logfire.span(
+            "Get cumulative metrics",
+            start_date=str(start_date),
+            end_date=str(end_date),
+        ):
+            for metric in filtered_all_metrics:
+                totals[metric.slug] = metric.get_cumulative(periods)
+
+        pg_response = MetricsResponse.model_validate(
+            {
+                "periods": periods,
+                "totals": totals,
+                "metrics": {m.slug: m for m in filtered_all_metrics},
+            }
+        )
+
+        external_customer_id: list[str] | None = None
+        if customer_id is not None:
+            customer_stmt = select(Customer.external_id).where(
+                Customer.id.in_(customer_id),
+                Customer.external_id.is_not(None),
+                Customer.external_id != "",
+            )
+            external_ids = [eid for eid in await session.scalars(customer_stmt) if eid]
+            if external_ids:
+                external_customer_id = external_ids
+
+        tb_product_id = product_id
+        if billing_type is not None:
+            org_filter: list[uuid.UUID] = []
+            if organization_id is not None:
+                org_filter = list(organization_id)
+            elif is_organization(auth_subject):
+                org_filter = [auth_subject.subject.id]
+
+            product_stmt = select(Product.id).where(
+                Product.organization_id.in_(org_filter),
+                Product.billing_type.in_(billing_type),
+                Product.is_deleted.is_(False),
+            )
+            billing_type_product_ids = list(await session.scalars(product_stmt))
+            if product_id is not None:
+                tb_product_id = [
+                    pid for pid in product_id if pid in billing_type_product_ids
+                ]
+            else:
+                tb_product_id = billing_type_product_ids
+
+        try:
+            tb_response = await self._get_metrics_from_tinybird(
+                auth_subject,
+                session,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                original_start_timestamp=original_start_timestamp,
+                original_end_timestamp=original_end_timestamp,
+                timezone=timezone,
+                interval=interval,
+                organization_id=organization_id,
+                product_id=tb_product_id,
+                billing_type=billing_type,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                metrics=metrics,
+                now=now_dt,
+            )
+        except Exception as e:
+            log.error(
+                "tinybird.metrics.query.failed",
+                organization_id=str(organization_id),
+                error=str(e),
+            )
+            return pg_response
+
+        comparison_org_id: uuid.UUID | None = None
+        if organization_id:
+            comparison_org_id = organization_id[0]
+        elif is_organization(auth_subject):
+            comparison_org_id = auth_subject.subject.id
+
+        if comparison_org_id is not None:
+            self._log_tinybird_comparison(
+                comparison_org_id,
+                pg_response,
+                tb_response,
+                interval=interval,
+                timezone=timezone,
+                now=now_dt,
+            )
+
+        return self._merge_tinybird_over_pg(pg_response, tb_response, metrics)
 
     async def _get_metrics_from_tinybird(
         self,
         auth_subject: AuthSubject[User | Organization],
+        session: AsyncReadSession,
         *,
         start_timestamp: datetime,
         end_timestamp: datetime,
@@ -306,6 +495,23 @@ class MetricsService:
             {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
         )
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
+        tinybird_customer_ids: list[uuid.UUID] | None = (
+            list(customer_id) if customer_id is not None else None
+        )
+        if (
+            TinybirdQuery.cancellations in tb_queries
+            and external_customer_id is not None
+            and len(external_customer_id) > 0
+        ):
+            customer_lookup_stmt = select(Customer.id).where(
+                Customer.organization_id.in_(org_ids),
+                Customer.external_id.in_(external_customer_id),
+            )
+            resolved_customer_ids = list(await session.scalars(customer_lookup_stmt))
+            merged_customer_ids = list(tinybird_customer_ids or [])
+            merged_customer_ids.extend(resolved_customer_ids)
+            if merged_customer_ids:
+                tinybird_customer_ids = list(dict.fromkeys(merged_customer_ids))
 
         with logfire.span(
             "Execute Tinybird metric queries",
@@ -322,7 +528,7 @@ class MetricsService:
                 bounds_end=original_end_timestamp,
                 now=now_dt,
                 product_id=product_id,
-                customer_id=customer_id,
+                customer_id=tinybird_customer_ids,
                 external_customer_id=external_customer_id,
                 billing_type=billing_strs,
             )
@@ -480,241 +686,6 @@ class MetricsService:
                 "metrics": {m.slug: m for m in all_metrics},
             }
         )
-
-    async def get_metrics(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        start_date: date,
-        end_date: date,
-        timezone: ZoneInfo,
-        interval: TimeInterval,
-        organization_id: Sequence[uuid.UUID] | None = None,
-        product_id: Sequence[uuid.UUID] | None = None,
-        billing_type: Sequence[ProductBillingType] | None = None,
-        customer_id: Sequence[uuid.UUID] | None = None,
-        metrics: Sequence[str] | None = None,
-        now: datetime | None = None,
-    ) -> MetricsResponse:
-        await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
-        await session.execute(text("SET LOCAL plan_cache_mode = 'force_custom_plan'"))
-        start_timestamp = datetime(
-            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
-        )
-        end_timestamp = datetime(
-            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
-        )
-
-        # Store original bounds before truncation for filtering queries
-        original_start_timestamp = start_timestamp
-        original_end_timestamp = end_timestamp
-
-        # Truncate start_timestamp to the beginning of the interval period
-        # This ensures the timestamp series aligns with how daily metrics are grouped
-        if interval == TimeInterval.week:
-            start_timestamp -= timedelta(days=start_timestamp.weekday())
-        elif interval == TimeInterval.month:
-            start_timestamp = start_timestamp.replace(day=1)
-        elif interval == TimeInterval.year:
-            start_timestamp = start_timestamp.replace(month=1, day=1)
-
-        timestamp_series = get_timestamp_series_cte(
-            start_timestamp, end_timestamp, interval
-        )
-        timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
-
-        # Determine which queries to run based on metrics
-        now_dt = now or datetime.now(tz=timezone)
-
-        # Determine which queries to run based on metrics
-        required_queries = _get_required_queries(metrics)
-        filtered_query_fns = _get_filtered_queries(required_queries)
-        filtered_metrics_sql = _get_filtered_metrics(metrics)
-        filtered_post_compute = _get_filtered_post_compute_metrics(metrics)
-        filtered_all_metrics = _get_filtered_all_metrics(metrics)
-
-        with logfire.span(
-            "Build metrics query",
-            metrics=metrics,
-            required_queries=[q.value for q in required_queries]
-            if required_queries
-            else None,
-            num_query_functions=len(filtered_query_fns),
-        ):
-            queries = [
-                query_fn(
-                    timestamp_series,
-                    interval,
-                    auth_subject,
-                    filtered_metrics_sql,
-                    now_dt,
-                    bounds=(original_start_timestamp, original_end_timestamp),
-                    organization_id=organization_id,
-                    product_id=product_id,
-                    billing_type=billing_type,
-                    customer_id=customer_id,
-                )
-                for query_fn in filtered_query_fns
-            ]
-
-        from_query: FromClause = timestamp_series
-        for query in queries:
-            from_query = from_query.join(
-                query,
-                onclause=query.c.timestamp == timestamp_column,
-            )
-
-        statement = (
-            select(
-                timestamp_column.label("timestamp"),
-                *queries,
-            )
-            .select_from(from_query)
-            .order_by(timestamp_column.asc())
-        )
-
-        periods: list[MetricsPeriod] = []
-        with logfire.span(
-            "Stream and process metrics query",
-            start_date=str(start_date),
-            end_date=str(end_date),
-            metrics=metrics,
-        ):
-            result = await session.stream(
-                statement,
-                execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
-            )
-
-            row_count = 0
-            # Get the set of explicitly requested metric slugs (not dependencies)
-            requested_slugs = set(metrics) if metrics else {m.slug for m in METRICS}
-
-            with logfire.span("Fetch and process rows"):
-                async for row in result:
-                    row_count += 1
-                    period_dict = row._asdict()
-
-                    # Compute meta metrics with cascading dependencies
-                    # Each metric can depend on previously computed metrics
-                    temp_period_dict = dict(period_dict)
-
-                    # Initialize all computed metrics to 0 first to satisfy Pydantic schema
-                    for meta_metric in filtered_post_compute:
-                        temp_period_dict[meta_metric.slug] = 0
-
-                    # Now compute each metric, updating the dict as we go
-                    # This allows later metrics to depend on earlier computed metrics
-                    for meta_metric in filtered_post_compute:
-                        temp_period = MetricsPeriod.model_validate(temp_period_dict)
-                        computed_value = meta_metric.compute_from_period(temp_period)
-                        temp_period_dict[meta_metric.slug] = computed_value
-                        period_dict[meta_metric.slug] = computed_value
-
-                    # Filter to only include explicitly requested metrics (not dependencies)
-                    # Always include timestamp
-                    filtered_period_dict = {
-                        k: v
-                        for k, v in period_dict.items()
-                        if k == "timestamp" or k in requested_slugs
-                    }
-
-                    periods.append(MetricsPeriod.model_validate(filtered_period_dict))
-
-            logfire.info("Processed {row_count} rows", row_count=row_count)
-
-        totals: dict[str, int | float] = {}
-        with logfire.span(
-            "Get cumulative metrics",
-            start_date=str(start_date),
-            end_date=str(end_date),
-        ):
-            for metric in filtered_all_metrics:
-                totals[metric.slug] = metric.get_cumulative(periods)
-
-        pg_response = MetricsResponse.model_validate(
-            {
-                "periods": periods,
-                "totals": totals,
-                "metrics": {m.slug: m for m in filtered_all_metrics},
-            }
-        )
-
-        org = await self._get_tinybird_enabled_org(
-            session, auth_subject, organization_id
-        )
-        if org is None:
-            return pg_response
-
-        tinybird_compare = org.feature_settings.get("tinybird_compare", False)
-        tinybird_read = org.feature_settings.get("tinybird_read", True)
-
-        external_customer_id: list[str] | None = None
-        if customer_id is not None:
-            customer_stmt = select(Customer.external_id).where(
-                Customer.id.in_(customer_id),
-                Customer.external_id.is_not(None),
-                Customer.external_id != "",
-            )
-            external_ids = [eid for eid in await session.scalars(customer_stmt) if eid]
-            if external_ids:
-                external_customer_id = external_ids
-
-        tb_product_id = product_id
-        if billing_type is not None:
-            product_stmt = select(Product.id).where(
-                Product.organization_id == org.id,
-                Product.billing_type.in_(billing_type),
-                Product.is_deleted.is_(False),
-            )
-            billing_type_product_ids = list(await session.scalars(product_stmt))
-            if product_id is not None:
-                tb_product_id = [
-                    pid for pid in product_id if pid in billing_type_product_ids
-                ]
-            else:
-                tb_product_id = billing_type_product_ids
-
-        try:
-            tb_response = await self._get_metrics_from_tinybird(
-                auth_subject,
-                start_timestamp=start_timestamp,
-                end_timestamp=end_timestamp,
-                original_start_timestamp=original_start_timestamp,
-                original_end_timestamp=original_end_timestamp,
-                timezone=timezone,
-                interval=interval,
-                organization_id=organization_id,
-                product_id=tb_product_id,
-                billing_type=billing_type,
-                customer_id=customer_id,
-                external_customer_id=external_customer_id,
-                metrics=metrics,
-                now=now_dt,
-            )
-        except Exception as e:
-            log.error(
-                "tinybird.metrics.query.failed",
-                organization_id=str(org.id),
-                error=str(e),
-            )
-            return pg_response
-
-        if tinybird_compare:
-            self._log_tinybird_comparison(
-                org.id,
-                pg_response,
-                tb_response,
-                interval=interval,
-                timezone=timezone,
-                now=now_dt,
-            )
-            return pg_response
-
-        if tinybird_read:
-            return self._merge_tinybird_over_pg(pg_response, tb_response, metrics)
-
-        return pg_response
 
 
 metrics = MetricsService()

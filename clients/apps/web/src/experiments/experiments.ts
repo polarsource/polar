@@ -18,9 +18,9 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  checkout_terms: {
+  checkout_flatten: {
     description:
-      'Move terms and conditions text from inside payment element to below the form',
+      'Flatten checkout UI by removing visual containers for a more minimal layout',
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },

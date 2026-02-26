@@ -8,6 +8,7 @@ from pydantic import (
     UrlConstraints,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
@@ -70,7 +71,7 @@ class WebhookEndpointCreate(Schema):
     """
 
     url: EndpointURL
-    secret: EndpointSecret | None = Field(
+    secret: SkipJsonSchema[EndpointSecret | None] = Field(
         default=None,
         deprecated="The secret is now generated on the backend.",
         min_length=32,
@@ -99,7 +100,7 @@ class WebhookEndpointUpdate(Schema):
     """
 
     url: EndpointURL | None = None
-    secret: EndpointSecret | None = Field(
+    secret: SkipJsonSchema[EndpointSecret | None] = Field(
         default=None,
         deprecated="The secret should is now generated on the backend.",
         min_length=32,

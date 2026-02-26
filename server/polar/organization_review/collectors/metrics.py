@@ -19,7 +19,6 @@ def collect_metrics_data(
         total_payments=total_payments,
         succeeded_payments=succeeded_payments,
         total_amount_cents=total_amount_cents,
-        risk_scores=risk_scores,
         p50_risk_score=p50,
         p90_risk_score=p90,
         refund_count=refund_count,

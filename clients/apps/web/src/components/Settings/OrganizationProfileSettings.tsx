@@ -71,15 +71,20 @@ const SwitchingFromOptions = {
   other: 'Other',
 }
 
-const SOCIAL_PLATFORM_DOMAINS = {
+const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
   'x.com': 'x',
   'twitter.com': 'x',
   'instagram.com': 'instagram',
   'facebook.com': 'facebook',
+  'fb.com': 'facebook',
   'youtube.com': 'youtube',
-  'linkedin.com': 'linkedin',
   'youtu.be': 'youtube',
+  'linkedin.com': 'linkedin',
   'github.com': 'github',
+  'threads.net': 'threads',
+  'tiktok.com': 'tiktok',
+  'discord.gg': 'discord',
+  'discord.com': 'discord',
 }
 
 interface OrganizationSocialLinksProps {
@@ -146,7 +151,10 @@ const OrganizationSocialLinks = ({
     let newPlatform: schemas['OrganizationSocialPlatforms'] = 'other'
     try {
       const url = new URL(value)
-      const hostname = url.hostname as keyof typeof SOCIAL_PLATFORM_DOMAINS
+      let hostname = url.hostname
+      if (hostname.startsWith('www.')) {
+        hostname = hostname.slice(4)
+      }
       newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
         'other') as schemas['OrganizationSocialPlatforms']
     } catch {}

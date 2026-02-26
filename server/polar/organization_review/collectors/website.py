@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
 
 import structlog
 import trafilatura
@@ -13,14 +12,20 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
-from ..schemas import WebsiteData, WebsitePage
+from ..schemas import UsageInfo, WebsiteData, WebsitePage
 
 log = structlog.get_logger(__name__)
 
 OVERALL_TIMEOUT_S = 90
 MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 3_000
-PAGE_TIMEOUT_MS = 10_000
+PAGE_TIMEOUT_MS = 15_000
+
+# Realistic Chrome user-agent to avoid bot detection by CDNs (Cloudflare, Vercel, etc.)
+_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
 
 # JS: extract internal links from navigation areas, CTAs, and main content.
 _EXTRACT_LINKS_JS = """
@@ -118,7 +123,6 @@ class BrowserDeps:
     """Dependencies injected into the agent — holds browser state."""
 
     page: Page
-    base_domain: str
     pages_visited: list[WebsitePage] = field(default_factory=list)
     pages_navigated: int = 0
 
@@ -139,15 +143,10 @@ _website_agent: Agent[BrowserDeps, str] = Agent(
 @_website_agent.tool
 async def visit_page(ctx: RunContext[BrowserDeps], url: str) -> str:
     """Navigate to a URL, extract the main text content, and return it along with \
-page metadata and available navigation links. Only same-domain URLs are allowed. \
-Max 5 pages."""
+page metadata and available navigation links. Max 5 pages."""
     deps = ctx.deps
     if deps.pages_navigated >= MAX_PAGES:
         return "Page limit reached. Produce your summary now."
-
-    parsed = urlparse(url)
-    if parsed.netloc and parsed.netloc != deps.base_domain:
-        return f"Error: Cannot visit external domain {parsed.netloc}."
 
     try:
         response = await deps.page.goto(
@@ -160,7 +159,11 @@ Max 5 pages."""
 
     deps.pages_navigated += 1
 
-    # Brief wait for JS rendering
+    # Wait for JS rendering / SPA hydration
+    try:
+        await deps.page.wait_for_load_state("networkidle", timeout=5_000)
+    except Exception:
+        pass  # Best-effort; don't fail if network stays busy
     await deps.page.wait_for_timeout(1_000)
 
     # Extract content via trafilatura
@@ -231,61 +234,64 @@ async def collect_website_data(website_url: str) -> WebsiteData:
     if not base_url.startswith(("http://", "https://")):
         base_url = "https://" + base_url
 
-    parsed = urlparse(base_url)
-    result = WebsiteData(base_url=base_url)
-
     try:
-        summary, pages = await asyncio.wait_for(
-            _run_browser_agent(base_url, parsed.netloc),
+        return await asyncio.wait_for(
+            _run_browser_agent(base_url),
             timeout=OVERALL_TIMEOUT_S,
         )
-        result.pages = pages
-        result.total_pages_succeeded = len(pages)
-        result.total_pages_attempted = max(len(pages), 1)
-        result.summary = summary
     except TimeoutError:
         log.warning(
             "website_collector.overall_timeout",
             url=base_url,
             timeout=OVERALL_TIMEOUT_S,
         )
-        result.scrape_error = f"Overall timeout after {OVERALL_TIMEOUT_S}s"
+        return WebsiteData(
+            base_url=base_url,
+            scrape_error=f"Overall timeout after {OVERALL_TIMEOUT_S}s",
+        )
     except Exception as e:
         log.warning("website_collector.failed", url=base_url, error=str(e))
-        result.scrape_error = str(e)[:200]
-
-    return result
+        return WebsiteData(base_url=base_url, scrape_error=str(e)[:200])
 
 
-async def _run_browser_agent(
-    base_url: str, base_domain: str
-) -> tuple[str, list[WebsitePage]]:
-    """Launch browser, run the agent, return summary and visited pages."""
+async def _run_browser_agent(base_url: str) -> WebsiteData:
+    """Launch browser, run the agent, return website data with usage."""
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
         try:
             context = await browser.new_context(
-                user_agent="PolarBot/1.0 (+https://polar.sh)",
+                user_agent=_USER_AGENT,
                 java_script_enabled=True,
+                viewport={"width": 1280, "height": 720},
+                locale="en-US",
             )
+            # Block heavy resources (images, fonts, media) to save bandwidth.
+            # Keep stylesheets — they are needed for Cloudflare challenges and
+            # SPA hydration to complete correctly.
             await context.route(
                 "**/*",
                 lambda route: (
                     route.abort()
-                    if route.request.resource_type
-                    in ("image", "font", "media", "stylesheet")
+                    if route.request.resource_type in ("image", "font", "media")
                     else route.continue_()
                 ),
             )
             page = await context.new_page()
 
-            deps = BrowserDeps(page=page, base_domain=base_domain)
+            deps = BrowserDeps(page=page)
 
             result = await _website_agent.run(
                 f"Analyze the website at: {base_url}",
                 deps=deps,
             )
 
-            return result.output, deps.pages_visited
+            return WebsiteData(
+                base_url=base_url,
+                pages=deps.pages_visited,
+                summary=result.output,
+                total_pages_attempted=max(len(deps.pages_visited), 1),
+                total_pages_succeeded=len(deps.pages_visited),
+                usage=UsageInfo.from_agent_usage(result.usage(), _model.model_name),
+            )
         finally:
             await browser.close()

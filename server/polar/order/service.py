@@ -37,7 +37,6 @@ from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.file.s3 import S3_SERVICES
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -63,6 +62,7 @@ from polar.models import (
 from polar.models.customer import CustomerType
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -95,9 +95,6 @@ from polar.transaction.service.balance import (
 )
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
-)
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
 )
 from polar.wallet.repository import WalletTransactionRepository
 from polar.wallet.service import wallet as wallet_service
@@ -895,6 +892,19 @@ class OrderService:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
+        organization = order.organization
+        if (
+            organization.is_blocked()
+            or organization.status == OrganizationStatus.DENIED
+        ):
+            log.info(
+                "Organization is blocked or denied, skipping payment",
+                order_id=order.id,
+                organization_id=organization.id,
+                organization_status=organization.status,
+            )
+            return
+
         if order.payment_lock_acquired_at is not None:
             log.warn("Payment already in progress", order_id=order.id)
             raise PaymentAlreadyInProgress(order)
@@ -1685,7 +1695,35 @@ class OrderService:
         organization = order.organization
         await webhook_service.send(session, organization, event_type, order)
 
+    async def void(self, session: AsyncSession, order: Order) -> Order:
+        """Mark an order as void, indicating payment cannot be recovered."""
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        previous_status = order.status
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(order, update_dict={"status": OrderStatus.void})
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_voided,
+                customer=order.customer,
+                organization=order.organization,
+                metadata={
+                    "order_id": str(order.id),
+                    "amount": order.total_amount,
+                    "currency": order.currency,
+                },
+            ),
+        )
+        await self._on_order_updated(session, order, previous_status=previous_status)
+
+        return order
+
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
+        enqueue_job("order.created", order.id)
         enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
@@ -1700,17 +1738,6 @@ class OrderService:
         if order.checkout:
             await publish_checkout_event(
                 order.checkout.client_secret, CheckoutEvent.order_created
-            )
-
-        # Store last order on Loops.so to create Organization segment based on sales activity
-        user_organizations = await user_organization_service.list_by_org(
-            session, order.customer.organization_id
-        )
-        for user_organization in user_organizations:
-            await loops_service.user_update(
-                session,
-                user_organization.user,
-                lastOrderAt=int(order.created_at.timestamp() * 1000),
             )
 
     async def _on_order_updated(
@@ -1877,21 +1904,40 @@ class OrderService:
         """Handle the first dunning attempt for an order, setting the next payment
         attempt date and marking the subscription as past due.
         """
+        assert order.subscription is not None
+        subscription = order.subscription
 
-        first_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
+        # Mark subscription as past_due first so past_due_deadline is available
+        await subscription_service.mark_past_due(session, subscription)
+
+        payment_repository = PaymentRepository.from_session(session)
+        latest_payment = await payment_repository.get_latest_for_order(order.id)
+
+        if latest_payment is not None and latest_payment.is_non_recoverable:
+            log.info(
+                "Non-recoverable decline code detected, "
+                "scheduling retry at past_due_deadline",
+                order_id=order.id,
+                decline_reason=latest_payment.decline_reason,
+            )
+            # Immediately schedule retry at past_due_deadline for non-recoverable decline codes.
+            # The next dunning attempt will then move this subscription from
+            # past_due to revoked in the same vein as if all payment attempts failed.
+            # This ensures the same behavior as dunning retries, we just don't retry
+            # for payment methods that will just fail again.
+            next_retry_date = subscription.past_due_deadline
+        else:
+            next_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(
-            order, update_dict={"next_payment_attempt_at": first_retry_date}
+            order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
-
-        assert order.subscription is not None
-        await subscription_service.mark_past_due(session, order.subscription)
 
         # Re-enqueue benefit revocation to check if grace period has expired
         # We might end up here in the event that a user goes via the subscription product
         # update flow, so we need to ensure that they don't get benefits they shouldn't have.
-        await subscription_service.enqueue_benefits_grants(session, order.subscription)
+        await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
 
@@ -1909,10 +1955,14 @@ class OrderService:
         now = utc_now()
         subscription = order.subscription
 
-        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS) or (
-            subscription is not None
-            and subscription.past_due_deadline
-            and subscription.past_due_deadline < now
+        if (
+            failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS)
+            or (
+                subscription is not None
+                and subscription.past_due_deadline
+                and subscription.past_due_deadline < now
+            )
+            or order.is_void
         ):
             # No more retries, mark subscription as unpaid and clear retry date
             order = await repository.update(
@@ -2015,6 +2065,41 @@ class OrderService:
             taxability_reason,
             tax_rate,
         )
+
+    async def schedule_retry_for_past_due_orders(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Schedule immediate dunning retry for past_due subscriptions when a
+        customer saves a new default payment method.
+
+        This handles the case where automatic retries were stopped (e.g., due to
+        a non-recoverable decline code) but the customer later adds a new card.
+        """
+        repository = OrderRepository.from_session(session)
+        orders = await repository.get_pending_orders_for_past_due_subscriptions(
+            customer.id
+        )
+
+        for order in orders:
+            assert order.subscription is not None
+
+            log.info(
+                "Scheduling dunning retry after payment method update",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+                payment_method_id=payment_method.id,
+            )
+
+            await repository.update(
+                order,
+                update_dict={"next_payment_attempt_at": utc_now()},
+                flush=True,
+            )
+
+            order.subscription.payment_method_id = payment_method.id
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

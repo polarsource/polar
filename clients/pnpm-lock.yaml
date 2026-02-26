@@ -329,8 +329,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mdx
       '@polar-sh/sdk':
-        specifier: ^0.43.1
-        version: 0.43.1
+        specifier: ^0.44.0
+        version: 0.44.0
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -576,8 +576,8 @@ importers:
         specifier: workspace:*
         version: link:../i18n
       '@polar-sh/sdk':
-        specifier: ^0.43.1
-        version: 0.43.1
+        specifier: ^0.44.0
+        version: 0.44.0
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -2915,8 +2915,8 @@ packages:
     resolution: {integrity: sha512-h104Kh26rR8tm+a3Qkc5S4VLYint3FE48as7+/5oCEcKR2idC/pF1G6AhIXKI+eHPJa/3J9i5z0Al47IeGHPkA==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.43.1':
-    resolution: {integrity: sha512-/JvFqmmj7Bb8HJ+zSbBtwJdESMUY8dQBXUGTpIQSI6dHDFjIGkGfrFGAjC/EOWSx/JIimeBkfXV4o1j7/2QIVg==}
+  '@polar-sh/sdk@0.44.0':
+    resolution: {integrity: sha512-r9/9lmLJTAzkkbFQB66bCEQZ62VUwJwMp31UOB6Kqg3fgAqtph/m+jfzj2aVsMapbQl0xuJX+MpkPFTCdQXejA==}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -13675,7 +13675,7 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.43.1':
+  '@polar-sh/sdk@0.44.0':
     dependencies:
       standardwebhooks: 1.0.0
       zod: 4.3.6

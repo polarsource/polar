@@ -2,11 +2,12 @@
 
 import { useAssignSeatFromCheckout } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react'
+import { PlusIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 
@@ -36,12 +37,10 @@ const CheckoutSeatInvitations = ({
   ])
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
-  const [selfInvited, setSelfInvited] = useState(false)
-  const [isSendingSelf, setIsSendingSelf] = useState(false)
 
   const assignSeat = useAssignSeatFromCheckout(checkoutId)
 
-  const availableSeats = (seats || 1) - sentCount - (selfInvited ? 1 : 0)
+  const availableSeats = (seats || 1) - sentCount
   const canAddMore = emailInputs.length < availableSeats
 
   const addEmailInput = () => {
@@ -107,20 +106,6 @@ const CheckoutSeatInvitations = ({
     setIsSending(false)
   }
 
-  const inviteSelf = async () => {
-    if (!checkout.customerEmail || selfInvited || isSendingSelf) return
-
-    setIsSendingSelf(true)
-    try {
-      await assignSeat.mutateAsync({ email: checkout.customerEmail })
-      setSelfInvited(true)
-    } catch (error) {
-      console.error('Failed to invite yourself:', error)
-    } finally {
-      setIsSendingSelf(false)
-    }
-  }
-
   const validEmails = emailInputs.filter(
     (input) => input.value.trim() && !input.error && !input.sent,
   ).length
@@ -132,7 +117,7 @@ const CheckoutSeatInvitations = ({
 
   return (
     <Well className="dark:border-polar-700 w-full border border-gray-200 bg-transparent dark:bg-transparent">
-      <WellHeader className="gap-y-4">
+      <WellHeader className="gap-y-4 text-left">
         <h2 className="text-xl">Invite team members</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           You purchased {seats} {seats === 1 ? 'seat' : 'seats'}. Invite team
@@ -142,38 +127,13 @@ const CheckoutSeatInvitations = ({
           <p className="text-sm">
             {availableSeats} {availableSeats === 1 ? 'seat' : 'seats'} available
           </p>
-          {checkout.customerEmail && !selfInvited && availableSeats > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={inviteSelf}
-              loading={isSendingSelf}
-              disabled={isSendingSelf}
-              className="dark:text-polar-400 text-xs text-gray-600"
-            >
-              Assign seat to yourself
-            </Button>
-          )}
         </div>
       </WellHeader>
 
       <WellContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          {selfInvited && (
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <Input
-                  type="email"
-                  value={checkout.customerEmail || ''}
-                  disabled
-                  className="dark:bg-polar-800 bg-gray-50"
-                />
-              </div>
-              <CheckCircleIcon className="dark:text-polar-500 mt-2 h-6 w-6 text-gray-400" />
-            </div>
-          )}
           {emailInputs.map((input) => (
-            <div key={input.id} className="flex items-start gap-2">
+            <div key={input.id} className="flex items-center gap-4">
               <div className="flex-1">
                 <Input
                   type="email"
@@ -188,7 +148,7 @@ const CheckoutSeatInvitations = ({
                 )}
               </div>
               {input.sent ? (
-                <CheckCircleIcon className="dark:text-polar-500 mt-2 h-6 w-6 text-gray-400" />
+                <CheckOutlined fontSize="small" />
               ) : (
                 emailInputs.length > 1 &&
                 !input.sent && (
@@ -230,10 +190,10 @@ const CheckoutSeatInvitations = ({
           {validEmails === 1 ? 'Invitation' : 'Invitations'}
         </Button>
 
-        {(sentCount > 0 || selfInvited) && (
+        {sentCount > 0 && (
           <p className="dark:text-polar-500 text-center text-sm text-gray-500">
-            Successfully assigned {sentCount + (selfInvited ? 1 : 0)}{' '}
-            {sentCount + (selfInvited ? 1 : 0) === 1 ? 'seat' : 'seats'}
+            Successfully assigned {sentCount}{' '}
+            {sentCount === 1 ? 'seat' : 'seats'}
           </p>
         )}
       </WellContent>

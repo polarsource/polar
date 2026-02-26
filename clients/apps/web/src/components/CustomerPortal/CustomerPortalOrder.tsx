@@ -23,7 +23,15 @@ import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 import { SeatManagementTable } from './SeatManagementTable'
 
-const statusColors = {
+const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
+  paid: 'Paid',
+  pending: 'Pending',
+  refunded: 'Refunded',
+  partially_refunded: 'Partially Refunded',
+  void: 'Void',
+}
+
+const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
   pending:
     'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
@@ -31,6 +39,7 @@ const statusColors = {
     'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
   partially_refunded:
     'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
+  void: 'bg-red-100 text-red-500 dark:bg-red-950 dark:text-red-400',
 }
 
 const CustomerPortalOrder = ({
@@ -144,8 +153,8 @@ const CustomerPortalOrder = ({
         <div className="flex flex-row flex-wrap gap-x-4">
           <h3 className="text-2xl">{order.description}</h3>
           <Status
-            status={order.status.split('_').join(' ')}
-            className={twMerge(statusColors[order.status], 'capitalize')}
+            status={OrderStatusDisplayTitle[order.status]}
+            className={twMerge(OrderStatusDisplayColor[order.status])}
           />
 
           {/* Retry button */}

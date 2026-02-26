@@ -93,6 +93,36 @@ locals {
   redis_port = "6379"
 }
 
+# =============================================================================
+# Service image data sources
+#
+# We read the current image digest from Render to avoid stale state in
+# Terraform causing "unable to fetch image" errors on service updates.
+#
+# The service IDs are hardcoded because referencing module outputs would
+# create a cyclic dependency (module -> data source -> module).
+#
+# First-time setup: create the services first without the data sources
+# (use a default tag like "latest"), then add the data sources with the
+# service IDs from `terraform state show`.
+# =============================================================================
+
+locals {
+  test_service_ids = {
+    api         = "srv-d4nuq6ur433s73eerdeg"
+    worker-test = "srv-d4nvmabe5dus738l4ui0"
+  }
+}
+
+data "render_web_service" "test_api" {
+  id = local.test_service_ids["api"]
+}
+
+data "render_web_service" "test_worker" {
+  for_each = { for k, v in local.test_service_ids : k => v if k != "api" }
+  id       = each.value
+}
+
 module "test" {
   source = "../modules/render_service"
 
@@ -120,6 +150,8 @@ module "test" {
     allowed_hosts          = "[\"test.polar.sh\"]"
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
+    image_url              = data.render_web_service.test_api.runtime_source.image.image_url
+    image_digest           = data.render_web_service.test_api.runtime_source.image.digest
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"
@@ -132,7 +164,8 @@ module "test" {
   workers = {
     worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
-      tag                = "latest"
+      image_url          = data.render_web_service.test_worker["worker-test"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.test_worker["worker-test"].runtime_source.image.digest
       dramatiq_prom_port = "10000"
     }
   }

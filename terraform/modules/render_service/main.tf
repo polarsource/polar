@@ -213,18 +213,10 @@ resource "render_web_service" "api" {
 
   runtime_source = {
     image = {
-      image_url              = "ghcr.io/polarsource/polar"
-      tag                    = "latest"
+      image_url              = split("@", var.api_service_config.image_url)[0]
       registry_credential_id = var.registry_credential_id
+      digest                 = var.api_service_config.image_digest
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      runtime_source.image.image_url,
-      runtime_source.image.digest,
-      runtime_source.image.tag,
-    ]
   }
 
   autoscaling = var.environment == "production" ? {
@@ -246,6 +238,7 @@ resource "render_web_service" "api" {
   custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
+    SERVICE_NAME                 = { value = "api${local.env_suffix}" }
     WEB_CONCURRENCY              = { value = var.api_service_config.web_concurrency }
     FORWARDED_ALLOW_IPS          = { value = var.api_service_config.forwarded_allow_ips }
     POLAR_ALLOWED_HOSTS          = { value = var.api_service_config.allowed_hosts }
@@ -279,28 +272,17 @@ resource "render_web_service" "worker" {
   num_instances     = each.value.num_instances
 
   runtime_source = {
-    image = each.value.digest != null ? {
-      image_url              = each.value.image_url
+    image = {
+      image_url              = split("@", each.value.image_url)[0]
       registry_credential_id = var.registry_credential_id
-      digest                 = each.value.digest
-      } : {
-      image_url              = each.value.image_url
-      registry_credential_id = var.registry_credential_id
-      tag                    = each.value.tag
+      digest                 = each.value.image_digest
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      runtime_source.image.image_url,
-      runtime_source.image.tag,
-      runtime_source.image.digest,
-    ]
   }
 
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
+    SERVICE_NAME                 = { value = each.key }
     dramatiq_prom_port           = { value = each.value.dramatiq_prom_port }
     POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
     POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }

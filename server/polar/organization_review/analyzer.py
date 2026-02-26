@@ -1,15 +1,14 @@
 import asyncio
 
-import genai_prices
 import structlog
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
-from polar.organization.ai_validation import _fetch_policy_content
 
-from .schemas import DataSnapshot, ReviewAgentReport, UsageInfo
+from .policy import fetch_policy_content
+from .schemas import DataSnapshot, ReviewAgentReport, ReviewContext, UsageInfo
 
 log = structlog.get_logger(__name__)
 
@@ -18,8 +17,8 @@ You are an expert compliance and risk analyst for Polar, a Merchant of Record pl
 for digital products. You are reviewing an organization's application to sell on Polar.
 
 Your job is to produce a structured, multi-dimensional risk assessment. You have access \
-to significantly more data than the initial screening — including actual products listed, \
-payment history, identity verification status, and prior history.
+to lot of data, including actual products listed, payment history, identity verification,\
+and prior history of the user.
 
 ## Review Dimensions
 
@@ -33,30 +32,34 @@ software licenses is fine. Evaluate the products, not the company category.
 
 Common false positives to avoid:
 - Template/asset sellers flagged as "human services" — they sell digital products
-- SaaS tools flagged as "marketing services" — they sell software, not services
 - Education platforms flagged as "for minors" — evaluate the actual audience
 - Open source projects with sponsorship — this is explicitly allowed
 
 ### 2. Product Legitimacy
 Cross-reference the products listed on Polar with the organization's stated business \
-and pricing. Look for mismatches that suggest disguised prohibited businesses, \
-unreasonably priced products, or low-quality offerings.
+and pricing. Look for mismatches that suggest disguised prohibited businesses.
 
 Cross-reference what the organization claims in their setup with what their website actually shows.
 Look for mismatches between stated business and actual content, signs of prohibited businesses,
 pricing discrepancies between website and Polar listings.
 
-If website content is not available, flag this as a red flag.
-
 ### 3. Identity & Trust
 Evaluate the identity verification status, account completeness, and social presence. \
 Social link should be linked to the user's profile on the platform, and not the organization's social media accounts. \
 Unverified identity is a red flag.
-Countries with high risk of fraud or money laundering are yellow flags.
+Countries with high risk of fraud or money laundering are yellow flags that requires \
+human reviews.
 
 ### 4. Financial Risk
-Assess payment risk scores, refund rates, and dispute history. No payment history is \
-neutral (new org), not negative. High refund rates (>5%) or any disputes are red flags.
+Assess payment risk scores, refund rates, charge back rates, authorization rate, and dispute history. \
+No payment history is neutral (new org), not negative.
+
+The following thresholds needs human review:
+- refund rates (>10%)
+- charge back rate (>0%)
+- p90 radar score (>75)
+- authorization rate (70%)
+- any dispute created
 
 ### 5. Prior History
 Check if the user has other organizations on Polar, especially denied or blocked ones. \
@@ -65,23 +68,130 @@ for automatic denial.
 
 ## Verdict Guidelines
 
-- **APPROVE**: All dimensions are low risk (scores < 30), no policy violations, \
+- **APPROVE**: All dimensions are low risk (scores < 40), no policy violations, \
 legitimate products. Most organizations should be approved.
 - **DENY**: Clear policy violations, prior denials with re-creation, confirmed fraud \
-signals, or sanctioned country. Be confident before denying.
-- **NEEDS_HUMAN_REVIEW**: Mixed signals, borderline cases, or insufficient data to \
-make a confident automated decision. When in doubt, flag for human review rather than \
-auto-denying.
+signals, sanctioned country, or edgy payment metrics. Be confident before denying. When you deny, a human \
+reviewer will review the decision.
+
+You MUST return only APPROVE or DENY. Never return any other verdict.
 
 ## Important Notes
 
 - Polar is a Merchant of Record for DIGITAL products. Physical goods and pure human \
 services are not supported.
-- Be fair and give benefit of the doubt for borderline cases. Flag for human review \
-rather than auto-denying.
+- Be fair and give benefit of the doubt for borderline cases. Approve rather than \
+denying — denied cases are always reviewed by a human.
 - Your assessment directly impacts real businesses. False denials harm legitimate \
 sellers. False approvals can expose Polar to risk. Balance both.
 - Provide specific, actionable findings — not vague concerns.
+"""
+
+SUBMISSION_PREAMBLE = """\
+This is a SUBMISSION review. The user just created their organization, submitted their details. \
+No Stripe account, payments, or products exist yet. \
+Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, PRIOR_HISTORY. \
+Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0. \
+Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged.
+
+Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
+with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
+websites that are under construction, temporarily down, or not yet updated. Only flag website \
+issues if there is a clear and obvious sign of a prohibited business.
+
+Return only APPROVE or DENY, don't return NEEDS_HUMAN_REVIEW. This is only the first step in the review
+process.
+"""
+
+SETUP_COMPLETE_PREAMBLE = """\
+This is a SETUP_COMPLETE review. The user just has completed ALL setup steps \
+(product created, organization details submitted, payout account connected, identity verified) but has NOT yet \
+received any payments. You have access to products, account info, identity status, \
+and Stripe account metadata.
+
+Focus on:
+- **Product price anomalies**: Flag one-time products priced above $1,000 or recurring \
+products above $500/month.
+- **Product-business mismatch**: Cross-reference products listed on Polar against the \
+organization's stated business. Look for mismatches suggesting a disguised prohibited business.
+- **Identity & account signals**:
+  - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
+"document_expired") indicate potential fraud even if verification eventually succeeded.
+  - Compare the account country with the support address country and the verified address \
+country from identity verification — mismatches are yellow flags.
+  - Stripe capabilities that are not "active" (e.g. "restricted", "pending") mean Stripe \
+itself has concerns about this account.
+  - Outstanding requirements_currently_due items at SETUP_COMPLETE stage are unusual.
+  - **Stripe verification errors** (requirements.errors) are critical signals. Codes like \
+"verification_document_fraudulent", "verification_document_manipulated", or "rejected.fraud" \
+in disabled_reason are strong fraud indicators. "verification_failed_keyed_identity" means \
+Stripe could not verify the person's identity information.
+  - A non-null **disabled_reason** (especially "rejected.*" values) means Stripe itself has \
+flagged this account. "requirements.past_due" items are overdue and more concerning than \
+"currently_due".
+- **Identity cross-reference**: Compare the verified name (from identity document) with \
+the Stripe business name and the Polar organization name. For individual accounts, the \
+verified name should match the business name. Significant mismatches are yellow flags.
+- **Business profile cross-reference**: There are two types of Stripe business, \
+individual and business. Compare the Stripe business name and URL with the \
+Polar organization name and website. Significant mismatches are yellow flags.
+- **Prior history**: Check for prior denials or blocked organizations.
+
+Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred yet.
+
+Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
+with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
+websites that are under construction, temporarily down, or not yet updated. Only flag website \
+issues if there is a clear and obvious sign of a prohibited business.
+
+Return only APPROVE or DENY.
+"""
+
+
+THRESHOLD_PREAMBLE = """\
+This is a THRESHOLD review triggered when a payment threshold is hit. \
+Perform a comprehensive analysis across ALL five dimensions. \
+If website content is not available, flag this as a red flag.
+
+Return only APPROVE or DENY.
+"""
+
+
+MANUAL_PREAMBLE = """\
+This is a MANUAL review triggered by a human reviewer from the backoffice. \
+Perform a comprehensive analysis across ALL five dimensions with full detail.
+
+You have access to ALL available data: products, account info, identity verification, \
+payment metrics (if any exist), prior history, and website content.
+
+Key areas to cover thoroughly:
+
+- **Policy compliance & product legitimacy**: Cross-reference products listed on Polar \
+against the organization's stated business and website. Look for mismatches suggesting \
+a disguised prohibited business. Flag high-priced items (one-time > $1,000, recurring > $500/month). \
+If website content is not available, flag this as a red flag.
+- **Identity & account signals**:
+  - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
+"document_expired") indicate potential fraud even if verification eventually succeeded.
+  - Compare the account country with the support address country and the verified address \
+country from identity verification — mismatches are yellow flags.
+  - Stripe capabilities that are not "active" (e.g. "restricted", "pending") mean Stripe \
+itself has concerns about this account.
+  - **Stripe verification errors** (requirements.errors) are critical signals. Codes like \
+"verification_document_fraudulent", "verification_document_manipulated", or "rejected.fraud" \
+in disabled_reason are strong fraud indicators.
+  - A non-null **disabled_reason** (especially "rejected.*" values) means Stripe itself has \
+flagged this account.
+  - Compare the verified name (from identity document) with the Stripe business name and \
+the Polar organization name. Significant mismatches are yellow flags.
+- **Financial risk** (if payment data exists):
+  - Evaluate risk scores, refund rates, chargeback rates, and dispute history.
+  - Flag: refund rate > 10%, chargeback rate > 0%, p90 risk score > 75, any disputes.
+  - No payment history is neutral (new org), not negative.
+- **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
+organization after denial is grounds for automatic denial.
+
+Return only APPROVE or DENY.
 """
 
 
@@ -96,35 +206,28 @@ class ReviewAnalyzer:
         )
 
     async def analyze(
-        self, snapshot: DataSnapshot, timeout_seconds: int = 60
+        self,
+        snapshot: DataSnapshot,
+        context: ReviewContext = ReviewContext.THRESHOLD,
+        timeout_seconds: int = 60,
     ) -> tuple[ReviewAgentReport, UsageInfo]:
-        policy_content = await _fetch_policy_content()
+        policy_content = await fetch_policy_content()
 
         prompt = self._build_prompt(snapshot, policy_content)
 
+        instructions = {
+            ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
+            ReviewContext.SETUP_COMPLETE: SETUP_COMPLETE_PREAMBLE,
+            ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
+            ReviewContext.MANUAL: MANUAL_PREAMBLE,
+        }.get(context)
+
         try:
             result = await asyncio.wait_for(
-                self.agent.run(prompt), timeout=timeout_seconds
+                self.agent.run(prompt, instructions=instructions),
+                timeout=timeout_seconds,
             )
-            run_usage = result.usage()
-            estimated_cost: float | None = None
-            try:
-                price = genai_prices.calc_price(
-                    run_usage, self.model.model_name, provider_id="openai"
-                )
-                estimated_cost = float(price.total_price)
-            except Exception:
-                log.debug(
-                    "review_analyzer.price_calc_failed",
-                    model=self.model.model_name,
-                )
-            usage = UsageInfo(
-                input_tokens=run_usage.input_tokens or 0,
-                output_tokens=run_usage.output_tokens or 0,
-                total_tokens=(run_usage.input_tokens or 0)
-                + (run_usage.output_tokens or 0),
-                estimated_cost_usd=estimated_cost,
-            )
+            usage = UsageInfo.from_agent_usage(result.usage(), self.model.model_name)
             return result.output, usage
         except TimeoutError:
             log.warning(
@@ -144,6 +247,7 @@ class ReviewAnalyzer:
     def _build_prompt(self, snapshot: DataSnapshot, policy_content: str) -> str:
         org = snapshot.organization
         products = snapshot.products
+        identity = snapshot.identity
         account = snapshot.account
         metrics = snapshot.metrics
         history = snapshot.history
@@ -157,7 +261,7 @@ class ReviewAnalyzer:
         if org.website:
             parts.append(f"Website: {org.website}")
         if org.email:
-            parts.append(f"Email: {org.email}")
+            parts.append(f"Org Support Email: {org.email}")
         if org.about:
             parts.append(f"About: {org.about}")
         if org.product_description:
@@ -210,18 +314,65 @@ class ReviewAnalyzer:
             elif not snapshot.website.pages and not snapshot.website.scrape_error:
                 parts.append("No content could be extracted from the website.")
 
-        # Account & Identity
-        parts.append("\n## Account & Identity")
+        # User Identity (from Stripe Identity VerificationSession)
+        parts.append("\n## User Identity")
+        parts.append(
+            f"Verification Status: {identity.verification_status or 'unknown'}"
+        )
+        if identity.verification_error_code:
+            parts.append(f"Verification Last Error: {identity.verification_error_code}")
+        if identity.verified_first_name or identity.verified_last_name:
+            parts.append(
+                f"Verified Name: {identity.verified_first_name or ''} {identity.verified_last_name or ''}".strip()
+            )
+        if identity.verified_address_country:
+            parts.append(
+                f"Verified Address Country: {identity.verified_address_country}"
+            )
+        if identity.verified_dob:
+            parts.append(f"Verified Date of Birth: {identity.verified_dob}")
+
+        # Stripe Connect Account (payout account)
+        parts.append("\n## Stripe Connect Account")
         if account.country:
-            parts.append(f"Country: {account.country}")
+            parts.append(f"Account Country: {account.country}")
         if account.business_type:
             parts.append(f"Business Type: {account.business_type}")
-        parts.append(
-            f"Identity Verification: {account.identity_verification_status or 'unknown'}"
-        )
-        parts.append(f"Stripe Details Submitted: {account.is_details_submitted}")
+        parts.append(f"Details Submitted: {account.is_details_submitted}")
         parts.append(f"Charges Enabled: {account.is_charges_enabled}")
         parts.append(f"Payouts Enabled: {account.is_payouts_enabled}")
+        if account.business_name:
+            parts.append(f"Business Name: {account.business_name}")
+        if account.business_url:
+            parts.append(f"Business URL: {account.business_url}")
+        if account.business_support_address_country:
+            parts.append(
+                f"Support Address Country: {account.business_support_address_country}"
+            )
+        if account.capabilities:
+            cap_strs = [f"{k}={v}" for k, v in account.capabilities.items()]
+            parts.append(f"Capabilities: {', '.join(cap_strs)}")
+        if account.requirements_disabled_reason:
+            parts.append(
+                f"WARNING — Disabled Reason: {account.requirements_disabled_reason}"
+            )
+        if account.requirements_errors:
+            error_strs = [
+                f"{e['code']}: {e['reason']}" for e in account.requirements_errors
+            ]
+            parts.append(f"WARNING — Verification Errors: {'; '.join(error_strs)}")
+        if account.requirements_past_due:
+            parts.append(
+                f"Requirements Past Due: {', '.join(account.requirements_past_due)}"
+            )
+        if account.requirements_currently_due:
+            parts.append(
+                f"Requirements Currently Due: {', '.join(account.requirements_currently_due)}"
+            )
+        if account.requirements_pending_verification:
+            parts.append(
+                f"Requirements Pending Verification: {', '.join(account.requirements_pending_verification)}"
+            )
 
         # Payment Metrics
         parts.append("\n## Payment Metrics")
@@ -286,9 +437,9 @@ def _timeout_report() -> ReviewAgentReport:
     from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict
 
     return ReviewAgentReport(
-        verdict=ReviewVerdict.NEEDS_HUMAN_REVIEW,
+        verdict=ReviewVerdict.DENY,
         overall_risk_score=50.0,
-        summary="Analysis timed out. Manual review required.",
+        summary="Analysis timed out. Denied for human review.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
@@ -296,10 +447,10 @@ def _timeout_report() -> ReviewAgentReport:
                 score=50.0,
                 confidence=0.0,
                 findings=["Analysis timed out"],
-                recommendation="Manual review required",
+                recommendation="Human review required",
             )
         ],
-        recommended_action="Manual review required due to timeout.",
+        recommended_action="Human review required due to timeout.",
     )
 
 
@@ -307,9 +458,9 @@ def _error_report(error: str) -> ReviewAgentReport:
     from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict
 
     return ReviewAgentReport(
-        verdict=ReviewVerdict.NEEDS_HUMAN_REVIEW,
+        verdict=ReviewVerdict.DENY,
         overall_risk_score=50.0,
-        summary=f"Analysis failed with error: {error[:200]}. Manual review required.",
+        summary=f"Analysis failed with error: {error[:200]}. Denied for human review.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
@@ -317,10 +468,10 @@ def _error_report(error: str) -> ReviewAgentReport:
                 score=50.0,
                 confidence=0.0,
                 findings=[f"Analysis error: {error[:200]}"],
-                recommendation="Manual review required",
+                recommendation="Human review required",
             )
         ],
-        recommended_action="Manual review required due to analysis error.",
+        recommended_action="Human review required due to analysis error.",
     )
 
 

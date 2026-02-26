@@ -19,6 +19,8 @@ from polar.enums import (
     SubscriptionRecurringInterval,
     TaxProcessor,
 )
+from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
@@ -50,7 +52,7 @@ from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationStatus
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
@@ -2762,6 +2764,202 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at is None
         mock_revoke.assert_called_once()
 
+    async def test_void_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """
+        Test that order retries are stopped if order is void.
+        """
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.void,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        await save_fixture(order)
+
+        mock_revoke = mocker.patch("polar.subscription.service.subscription.revoke")
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+        mock_revoke.assert_called_once()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_non_recoverable_decline_code_skips_dunning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a payment fails with a non-recoverable decline code (e.g., stolen_card),
+        the subscription should be marked as past_due and next_payment_attempt_at
+        set to the past_due_deadline so the dunning worker can revoke it."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        # Create a failed payment with a non-recoverable decline reason
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="stolen_card",
+            order=order,
+        )
+
+        async def mark_past_due_side_effect(
+            session: AsyncSession, sub: Subscription
+        ) -> Subscription:
+            sub.status = SubscriptionStatus.past_due
+            sub.past_due_at = utc_now()
+            return sub
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due",
+            side_effect=mark_past_due_side_effect,
+        )
+
+        mock_enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — next attempt at past_due_deadline so worker can revoke
+        assert result_order.next_payment_attempt_at == subscription.past_due_deadline
+        assert result_order.next_payment_attempt_at is not None
+        # Subscription marked as past_due
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_recoverable_decline_enters_dunning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a payment fails with a recoverable decline reason
+        (e.g., insufficient_funds), the normal dunning retry flow should proceed."""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="insufficient_funds",
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — normal dunning: retry scheduled
+        assert result_order.next_payment_attempt_at is not None
+        expected_retry_date = utc_now() + timedelta(days=2)
+        assert result_order.next_payment_attempt_at == expected_retry_date
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-02-01 12:00:00")
+    async def test_non_recoverable_revokes_at_past_due_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When the dunning worker re-processes a non-recoverable order after
+        the past_due_deadline has passed, the subscription should be revoked."""
+        # Given — subscription already past_due with deadline in the past
+        past_due_at = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.past_due,
+            past_due_at=past_due_at,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        # Was scheduled at past_due_deadline (now in the past)
+        order.next_payment_attempt_at = subscription.past_due_deadline
+        await save_fixture(order)
+
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="stolen_card",
+            order=order,
+        )
+
+        mock_revoke = mocker.patch("polar.subscription.service.subscription.revoke")
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then — subscription revoked, no further retries
+        assert result_order.next_payment_attempt_at is None
+        mock_revoke.assert_called_once_with(session, subscription)
+
 
 @pytest.mark.asyncio
 class TestProcessDunningOrder:
@@ -2923,8 +3121,275 @@ class TestProcessDunningOrder:
 
 
 @pytest.mark.asyncio
+class TestScheduleRetryForPastDueOrders:
+    """Test scheduling dunning retries when a customer saves a new payment method."""
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_schedules_retry_for_past_due_no_next_attempt(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """When a customer saves a new payment method and has a past_due subscription
+        with no next_payment_attempt_at, a retry should be scheduled immediately."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 10, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is not None
+        assert order.next_payment_attempt_at == utc_now()
+
+        await session.refresh(subscription)
+        assert subscription.payment_method_id == new_payment_method.id
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_skips_canceled_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry for canceled subscriptions."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        # A past_due subscription that the customer has canceled
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 10, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+            cancel_at_period_end=True,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — no retry scheduled
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is None
+
+    @freeze_time("2024-02-01 12:00:00")
+    async def test_skips_past_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry if the past_due_deadline has already passed."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        # past_due_at on Jan 1 → deadline ~Jan 15 (14 days + 1 min)
+        # Current time is Feb 1 → well past the deadline
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — no retry scheduled (deadline expired)
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is None
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_moves_up_retry_if_next_attempt_already_set(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """When a customer saves a new payment method, an existing scheduled retry
+        should be moved up to now for immediate recovery."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        existing_retry_date = datetime(2024, 1, 16, 0, 0, 0, tzinfo=UTC)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2024, 1, 10, 0, 0, 0, tzinfo=UTC),
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=existing_retry_date,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — retry moved up to now for immediate recovery
+        await session.refresh(order)
+        assert order.next_payment_attempt_at == utc_now()
+
+        await session.refresh(subscription)
+        assert subscription.payment_method_id == new_payment_method.id
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_skips_active_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Should NOT schedule retry for active subscriptions (not past_due)."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=None,
+        )
+
+        new_payment_method = await create_payment_method(
+            save_fixture, customer=customer
+        )
+
+        # When
+        await order_service.schedule_retry_for_past_due_orders(
+            session, customer, new_payment_method
+        )
+
+        # Then — no retry scheduled (subscription is active, not past_due)
+        await session.refresh(order)
+        assert order.next_payment_attempt_at is None
+
+
+@pytest.mark.asyncio
 class TestTriggerPayment:
     """Test payment lock mechanism in trigger_payment service method."""
+
+    async def test_skips_denied_organization(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that trigger_payment skips payment when organization is denied."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+
+    async def test_skips_blocked_organization(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that trigger_payment skips payment when organization is blocked."""
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        organization.blocked_at = utc_now()
+        await save_fixture(organization)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
 
     async def test_already_locked(
         self,
@@ -3950,3 +4415,57 @@ class TestUpdateProductBenefitsGrants:
             order_id=ANY,
             delay=ANY,
         )
+
+
+class TestVoidOrder:
+    @pytest.mark.asyncio
+    async def test_void_pending_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test successfully voiding a pending order."""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+        assert result_order.id == order.id
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_voided)
+        assert len(events) == 1
+        assert events[0].user_metadata["order_id"] == str(order.id)
+
+    @pytest.mark.asyncio
+    async def test_void_non_pending_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that voiding a non-pending order raises OrderNotPending exception."""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # When/Then
+        with pytest.raises(OrderNotPending) as exc_info:
+            await order_service.void(session, order)
+
+        assert exc_info.value.order.id == order.id

@@ -262,16 +262,6 @@ export const useOrganizationPaymentStatus = (
     enabled: enabled && !!id,
   })
 
-export const useOrganizationAIValidation = (id: string) =>
-  useMutation({
-    mutationFn: () =>
-      unwrap(
-        api.POST('/v1/organizations/{id}/ai-validation', {
-          params: { path: { id } },
-        }),
-      ),
-  })
-
 export const useOrganizationAppeal = (id: string) =>
   useMutation({
     mutationFn: ({ reason }: { reason: string }) => {

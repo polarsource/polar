@@ -6,6 +6,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import { OrderStatus } from '@/components/Orders/OrderStatus'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
 import { ProductListItem } from '@/components/Products/ProductListItem'
@@ -38,21 +39,6 @@ import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { Separator } from '@radix-ui/react-dropdown-menu'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-
-const OrderStatusDisplayName: Record<schemas['OrderStatus'], string> = {
-  pending: 'Pending payment',
-  paid: 'Paid',
-  refunded: 'Refunded',
-  partially_refunded: 'Partially Refunded',
-}
-
-const OrderStatusDisplayColor: Record<schemas['OrderStatus'], string> = {
-  pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
-  paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  refunded: 'bg-blue-100 text-blue-400 dark:bg-blue-950',
-  partially_refunded:
-    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
-}
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -106,10 +92,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
             <h2 className="text-xl font-normal">Order</h2>
-            <Status
-              status={OrderStatusDisplayName[order.status]}
-              className={OrderStatusDisplayColor[order.status]}
-            />
+            <OrderStatus status={order.status} />
           </div>
         </div>
       }
@@ -163,15 +146,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             />
             <DetailRow
               label="Status"
-              value={
-                <Status
-                  status={OrderStatusDisplayName[order.status]}
-                  className={twMerge(
-                    OrderStatusDisplayColor[order.status],
-                    'w-fit',
-                  )}
-                />
-              }
+              value={<OrderStatus status={order.status} />}
             />
 
             <DetailRow

@@ -1,0 +1,233 @@
+---
+title: "Task Debouncer"
+description: "How to use task debouncing to avoid duplicate task execution in Polar's background worker system."
+---
+
+Task debouncing is a mechanism used in Polar's background worker system to prevent duplicate execution of tasks that are triggered multiple times in a short amount of time. This is particularly useful for operations that might be triggered by multiple events or user actions.
+
+## When to use task debouncing
+
+Use task debouncing when you have background tasks that:
+
+- Might be triggered multiple times for the same logical operation
+- Have some tolerance for delayed execution
+- Would benefit from reduced database load and resource usage
+
+**Common use cases:**
+
+- Updating customer metrics after multiple usage events
+- Processing webhook events that might arrive in quick succession
+- Any operation where you want to "batch" multiple triggers into a single execution
+
+## How to use task debouncing
+
+To add debouncing to a Dramatiq task, you need to:
+
+1. **Define a debounce key function**: This function generates a unique key that identifies the logical operation being debounced. It takes the same arguments as your task and returns a string key.
+
+2. **Configure the actor with debounce options**: Set the debounce key function and thresholds.
+
+### Example implementation
+
+```python
+from polar.worker import actor
+from polar.config import settings
+
+def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
+    return f"customer_meter.update_customer:{customer_id}"
+
+@actor(
+    actor_name="customer_meter.update_customer",
+    priority=TaskPriority.LOW,
+    max_retries=1,
+    min_backoff=30_000,
+    # Debounce configuration
+    debounce_key=_update_customer_debounce_key,
+)
+async def update_customer(customer_id: uuid.UUID) -> None:
+    # Task implementation
+    async with AsyncSessionMaker() as session:
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.get_by_id(customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+
+        await customer_meter_service.update_customer(session, customer)
+```
+
+### Configuration options
+
+- `debounce_key`: A function that takes the same arguments as your task and returns a string key
+- `debounce_min_threshold`: Minimum delay (in seconds) before the task can execute. Defaults to `WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD` if not set.
+- `debounce_max_threshold`: Maximum delay (in seconds) before the task must execute. Defaults to `WORKER_DEFAULT_DEBOUNCE_MAX_THRESHOLD` if not set.
+
+### Optional debouncing
+
+If you want to make debouncing optional based on runtime conditions, you can set the debounce key function to return `None` when you don't want to debounce. For example:
+
+```python
+def _optional_debounce_key(event_type: Literal["critical", "info"], event_id: str) -> str | None:
+    if event_type == "critical":
+        return None  # No debouncing for critical events
+    return f"event_debounce:{event_id}"
+```
+
+## How it works
+
+### Architecture overview
+
+The task debouncer consists of several components:
+
+1. **Debounce key storage**: Uses Redis to store debounce state with a 1-hour TTL
+2. **Middleware**: `DebounceMiddleware` that intercepts task processing
+3. **Enqueue logic**: `set_debounce_key()` function that sets up debounce state when tasks are enqueued
+4. **Metrics**: Tracks debounced tasks and execution delays
+
+### Debounce key structure
+
+Debounce keys are stored in Redis as hash objects with this structure:
+
+```
+Key: "debounce:{your_key}"
+Fields:
+- "enqueue_timestamp": Unix timestamp when the first task was enqueued
+- "message_id": ID of the message that currently "owns" the debounce key
+- "executed": Flag indicating if a task with this key has been executed
+```
+
+### Execution flow
+
+1. **Task enqueue**: When a debounced task is enqueued:
+   - The `set_debounce_key()` function creates/updates a Redis hash
+   - The first enqueue sets the `enqueue_timestamp`
+   - Subsequent enqueues update the `message_id` but preserve the original timestamp. They take the "ownership" of the task.
+   - A minimum delay is applied to the task
+
+2. **Task processing**: When a worker picks up a debounced task:
+   - `DebounceMiddleware.before_process_message()` checks the debounce state
+   - If the key was already executed, the task is skipped
+   - If the current message owns the key (message_id matches), it executes
+   - If another message owns the key, it checks if max threshold is reached
+   - If max threshold is reached, the current task executes and becomes the new owner
+
+3. **Post-execution**: After successful execution:
+   - The `executed` flag is set to prevent further executions from tasks in the same debounce window
+   - Metrics are recorded for monitoring
+
+### Debounce scenarios
+
+The following scenarios illustrate how the debouncer behaves in common situations. In all examples, `min_threshold` is 10s and `max_threshold` is 60s.
+
+#### Scenario 1: Single enqueue — basic execution
+
+The simplest case: one task is enqueued, delayed by `min_threshold`, and executed.
+
+```
+T=0s    Enqueue M1
+        Redis: {enqueue_timestamp: 0, message_id: M1, executed: 0}
+
+T=10s   Worker picks up M1
+        → M1 is the owner → EXECUTE
+        Redis: {executed: 1, message_id: M1}
+
+Result: M1 executes once after the minimum delay.
+```
+
+#### Scenario 2: Multiple enqueues coalesce into one execution
+
+Three tasks are enqueued for the same debounce key in quick succession. Only the last one (the owner) executes; the others are skipped.
+
+```
+T=0s    Enqueue M1
+        Redis: {enqueue_timestamp: 0, message_id: M1, executed: 0}
+
+T=3s    Enqueue M2 (same debounce key)
+        Redis: {enqueue_timestamp: 0, message_id: M2, executed: 0}
+        ↑ hsetnx preserves T=0, but M2 takes ownership
+
+T=7s    Enqueue M3 (same debounce key)
+        Redis: {enqueue_timestamp: 0, message_id: M3, executed: 0}
+        ↑ M3 takes ownership
+
+T=10s   Worker picks up M1
+        → Owner is M3, not M1
+        → enqueue_timestamp(0) + max_threshold(60) > now(10) → max threshold NOT reached
+        → SKIP
+
+T=13s   Worker picks up M2
+        → Owner is M3, not M2 → same check → SKIP
+
+T=17s   Worker picks up M3
+        → M3 is the owner → EXECUTE
+        Redis: {executed: 1, message_id: M3}
+
+Result: Only M3 executes. M1 and M2 are debounced away.
+         3 enqueues → 1 execution.
+```
+
+#### Scenario 3: Max threshold prevents starvation
+
+When tasks are continuously enqueued, ownership keeps shifting and the owner never gets a chance to run. The max threshold guarantees execution after a bounded delay.
+
+```
+T=0s    Enqueue M1
+        Redis: {enqueue_timestamp: 0, message_id: M1, executed: 0}
+
+T=20s   Enqueue M2 → ownership shifts to M2
+
+T=40s   Enqueue M3 → ownership shifts to M3
+
+T=55s   Enqueue M4 → ownership shifts to M4
+
+        Workers pick up M1, M2, M3 — none are the owner, and
+        enqueue_timestamp(0) + 60 > now → max threshold NOT reached → all SKIP
+
+T=65s   Enqueue M5 → ownership shifts to M5
+        Redis: {enqueue_timestamp: 0, message_id: M5, executed: 0}
+
+T=70s   Worker picks up M4
+        → Owner is M5, not M4
+        → enqueue_timestamp(0) + max_threshold(60) < now(70) → max threshold REACHED
+        → EXECUTE (max threshold execution)
+        Redis: {enqueue_timestamp: 70, message_id: M5, executed: 0}
+        ↑ enqueue_timestamp bumped to now, but executed is NOT set to 1
+
+T=75s   Worker picks up M5
+        → M5 is still the owner → EXECUTE
+        Redis: {executed: 1, message_id: M5}
+
+Result: 5 enqueues → 2 executions (M4 via max threshold, M5 as owner).
+         The max threshold ensures progress even under continuous load,
+         at the cost of an occasional extra execution.
+```
+
+#### Scenario 4: Re-enqueue after execution starts a new window
+
+Once a task has executed and marked `executed: 1`, a new enqueue resets the debounce state and starts a fresh window.
+
+```
+T=0s    Enqueue M1
+        Redis: {enqueue_timestamp: 0, message_id: M1, executed: 0}
+
+T=10s   Worker picks up M1 → owner → EXECUTE
+        Redis: {executed: 1, message_id: M1}
+        ↑ enqueue_timestamp deleted, executed set to 1
+
+T=25s   Enqueue M2 (same debounce key)
+        Redis: {enqueue_timestamp: 25, message_id: M2, executed: 0}
+        ↑ hsetnx sets new timestamp (field was deleted), executed reset to 0
+
+T=35s   Worker picks up M2 → owner → EXECUTE
+        Redis: {executed: 1, message_id: M2}
+
+Result: Both M1 and M2 execute — they belong to separate debounce windows.
+```
+
+### Monitoring and metrics
+
+The debouncer emits two key metrics:
+
+- `polar_task_debounced_total`: Counter of tasks that were skipped due to debouncing
+- `polar_task_debounce_delay_seconds`: Histogram of delays between first enqueue and execution
+
+Both metrics are labeled with `queue` and `task_name` for filtering.

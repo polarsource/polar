@@ -117,6 +117,209 @@ module "s3_buckets" {
   allowed_origins = ["https://polar.sh"]
 }
 
+# =============================================================================
+# Lambda Artifacts S3 Bucket
+# =============================================================================
+
+resource "aws_s3_bucket" "lambda_artifacts" {
+  provider = aws.us_east_1
+  bucket   = "polar-lambda-artifacts"
+}
+
+resource "aws_s3_bucket_versioning" "lambda_artifacts" {
+  provider = aws.us_east_1
+  bucket   = aws_s3_bucket.lambda_artifacts.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# =============================================================================
+# Image Resizer Lambda@Edge
+# =============================================================================
+
+data "aws_s3_object" "image_resizer_package" {
+  provider = aws.us_east_1
+  bucket   = aws_s3_bucket.lambda_artifacts.id
+  key      = "image-resizer/package.zip"
+}
+
+module "image_resizer" {
+  source = "../modules/lambda_edge_resizer"
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  function_name     = "polar-image-resizer"
+  s3_bucket         = aws_s3_bucket.lambda_artifacts.id
+  s3_key            = data.aws_s3_object.image_resizer_package.key
+  s3_object_version = data.aws_s3_object.image_resizer_package.version_id
+  source_bucket_arn = module.s3_buckets.public_files_bucket_arn
+}
+
+
+# =============================================================================
+# CloudFront Distribution (Public Assets)
+# =============================================================================
+
+module "cloudfront_public_assets" {
+  source = "../modules/cloudfront_distribution"
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  name                           = "polar-public-files"
+  domain                         = "uploads.polar.sh"
+  cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
+  s3_bucket_id                   = module.s3_buckets.public_files_bucket_id
+  s3_bucket_regional_domain_name = module.s3_buckets.public_files_bucket_regional_domain_name
+  s3_bucket_arn                  = module.s3_buckets.public_files_bucket_arn
+
+  lambda_function_associations = [
+    {
+      event_type = "origin-request"
+      lambda_arn = module.image_resizer.qualified_arn
+    },
+  ]
+}
+
+# =============================================================================
+# GitHub Actions OIDC
+# =============================================================================
+
+import {
+  to = module.github_oidc_backup.aws_iam_openid_connect_provider.github
+  id = "arn:aws:iam::975049931254:oidc-provider/token.actions.githubusercontent.com"
+}
+
+import {
+  to = module.github_oidc_backup.aws_iam_role.github_actions
+  id = "github-actions-backup"
+}
+
+import {
+  to = aws_iam_policy.polar_sh_backups
+  id = "arn:aws:iam::975049931254:policy/polar-sh-backups"
+}
+
+import {
+  to = module.github_oidc_backup.aws_iam_role_policy_attachment.policies["backups"]
+  id = "github-actions-backup/arn:aws:iam::975049931254:policy/polar-sh-backups"
+}
+
+module "github_oidc_backup" {
+  source = "../modules/github_oidc"
+
+  role_name   = "github-actions-backup"
+  github_org  = "polarsource"
+  github_repo = "polar"
+  policy_arns = {
+    backups          = aws_iam_policy.polar_sh_backups.arn
+    lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
+  }
+}
+
+resource "aws_iam_policy" "polar_sh_backups" {
+  name = "polar-sh-backups"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "VisualEditor0"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObjectAttributes",
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:GetObjectVersionAttributes",
+          "s3:DeleteObject",
+          "s3:DeleteObjectVersion"
+        ]
+        Resource = "${aws_s3_bucket.backups.arn}/*"
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# Application Access (IAM user policies)
+# =============================================================================
+
+import {
+  to = module.application_access_production.aws_iam_policy.customer_invoices
+  id = "arn:aws:iam::975049931254:policy/polar-customer-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_policy.payout_invoices
+  id = "arn:aws:iam::975049931254:policy/polar-payout-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_policy.files
+  id = "arn:aws:iam::975049931254:policy/polar-production-files"
+}
+
+import {
+  to = module.application_access_production.aws_iam_policy.public_files
+  id = "arn:aws:iam::975049931254:policy/polar-public-files"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.customer_invoices
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-customer-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.payout_invoices
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-payout-invoices"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.files
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-production-files"
+}
+
+import {
+  to = module.application_access_production.aws_iam_user_policy_attachment.public_files
+  id = "polar-production-files/arn:aws:iam::975049931254:policy/polar-public-files"
+}
+
+module "application_access_production" {
+  source   = "../modules/application_access"
+  username = "polar-production-files"
+  buckets = {
+    customer_invoices = { name = "polar-customer-invoices" }
+    payout_invoices   = { name = "polar-payout-invoices" }
+    files             = { name = "polar-production-files", description = "Policy used by our app for downloadable benefits. Keep permissions to a bare minimum." }
+    public_files      = { name = "polar-public-files", description = "Policy used by our app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
+    logs              = { name = "polar-production-logs", description = "Policy used by our app to write OpenTelemetry spans to S3 for long-term backup." }
+  }
+}
+
+resource "aws_iam_policy" "lambda_artifacts_upload" {
+  name = "lambda-artifacts-upload"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# Backups S3 Bucket
+# =============================================================================
 
 resource "aws_s3_bucket" "backups" {
   bucket = "polar-sh-backups"

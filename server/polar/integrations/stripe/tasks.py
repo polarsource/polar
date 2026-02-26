@@ -349,9 +349,21 @@ async def identity_verification_session_verified(event_id: uuid.UUID) -> None:
             verification_session = cast(
                 stripe_lib.identity.VerificationSession, event.stripe_data.data.object
             )
-            await user_service.identity_verification_verified(
+            user = await user_service.identity_verification_verified(
                 session, verification_session
             )
+
+            # Check if any org where this user is account admin is ready for
+            # a SETUP_COMPLETE review (identity verification is often the last step)
+            from polar.organization.service import organization as organization_service
+
+            organizations = (
+                await organization_service._get_organizations_for_account_admin(
+                    session, user.id
+                )
+            )
+            for org in organizations:
+                await organization_service.check_setup_complete_review(session, org)
 
 
 @actor(

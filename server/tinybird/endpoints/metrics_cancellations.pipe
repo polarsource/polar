@@ -1,0 +1,137 @@
+DESCRIPTION >
+    Cancellation metrics endpoint with canonical cancellation state.
+    Uses subscription_state to avoid duplicate cancellation overcounting.
+    Supplies the following metrics:
+    - canceled_subscriptions
+    - canceled_subscriptions_customer_service
+    - canceled_subscriptions_low_quality
+    - canceled_subscriptions_missing_features
+    - canceled_subscriptions_switched_service
+    - canceled_subscriptions_too_complex
+    - canceled_subscriptions_too_expensive
+    - canceled_subscriptions_unused
+    - canceled_subscriptions_other
+
+NODE canceled_by_subscription
+SQL >
+    %
+    SELECT
+        ss.subscription_id,
+        argMaxMerge(ss.customer_id) AS customer_id,
+        argMaxMerge(ss.canceled_at) AS canceled_at,
+        argMaxMerge(ss.customer_cancellation_reason) AS customer_cancellation_reason,
+        argMaxMerge(ss.canceled_product_id) AS product_id,
+        argMaxMerge(ss.uncanceled_at) AS uncanceled_at
+    FROM subscription_state AS ss
+    WHERE
+        ss.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+    GROUP BY ss.subscription_id
+    HAVING
+        canceled_at IS NOT NULL
+        AND canceled_at
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND canceled_at
+        < toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND (uncanceled_at IS NULL OR uncanceled_at <= canceled_at)
+        {% if defined(product_ids) and product_ids != '' %}
+            AND product_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
+        {% end %}
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND customer_id
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(customer_ids) }}))))
+        {% end %}
+
+NODE canceled_by_bucket
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }}), 1) AS bucket,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+        {% else %} toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS bucket,
+        {% end %}
+        toInt64(count(*)) AS canceled_subscriptions,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'customer_service')
+        ) AS canceled_subscriptions_customer_service,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'low_quality')
+        ) AS canceled_subscriptions_low_quality,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'missing_features')
+        ) AS canceled_subscriptions_missing_features,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'switched_service')
+        ) AS canceled_subscriptions_switched_service,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'too_complex')
+        ) AS canceled_subscriptions_too_complex,
+        toInt64(
+            countIf(lc.customer_cancellation_reason = 'too_expensive')
+        ) AS canceled_subscriptions_too_expensive,
+        toInt64(countIf(lc.customer_cancellation_reason = 'unused')) AS canceled_subscriptions_unused,
+        toInt64(
+            countIf(
+                lc.customer_cancellation_reason = 'other'
+                OR lc.customer_cancellation_reason IS NULL
+                OR lc.customer_cancellation_reason = ''
+            )
+        ) AS canceled_subscriptions_other
+    FROM canceled_by_subscription AS lc
+    GROUP BY bucket
+
+NODE cancellations_fast
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        COALESCE(c.canceled_subscriptions, toInt64(0)) AS canceled_subscriptions,
+        COALESCE(
+            c.canceled_subscriptions_customer_service, toInt64(0)
+        ) AS canceled_subscriptions_customer_service,
+        COALESCE(
+            c.canceled_subscriptions_low_quality, toInt64(0)
+        ) AS canceled_subscriptions_low_quality,
+        COALESCE(
+            c.canceled_subscriptions_missing_features, toInt64(0)
+        ) AS canceled_subscriptions_missing_features,
+        COALESCE(
+            c.canceled_subscriptions_switched_service, toInt64(0)
+        ) AS canceled_subscriptions_switched_service,
+        COALESCE(
+            c.canceled_subscriptions_too_complex, toInt64(0)
+        ) AS canceled_subscriptions_too_complex,
+        COALESCE(
+            c.canceled_subscriptions_too_expensive, toInt64(0)
+        ) AS canceled_subscriptions_too_expensive,
+        COALESCE(c.canceled_subscriptions_unused, toInt64(0)) AS canceled_subscriptions_unused,
+        COALESCE(c.canceled_subscriptions_other, toInt64(0)) AS canceled_subscriptions_other
+    FROM intervals AS w
+    LEFT JOIN canceled_by_bucket AS c ON c.bucket = w.interval
+    ORDER BY timestamp
+
+TYPE ENDPOINT

@@ -20,6 +20,7 @@ variable "registry_credential_id" {
   sensitive   = true
 }
 
+
 # Variables for configuring the services and workers
 variable "api_service_config" {
   description = "API service configuration"
@@ -27,6 +28,8 @@ variable "api_service_config" {
     allowed_hosts          = string # "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins           = string # "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = list(object({ name = string }))
+    image_url              = optional(string, "ghcr.io/polarsource/polar")
+    image_digest           = string
     web_concurrency        = optional(string, "2")
     forwarded_allow_ips    = optional(string, "*")
     database_pool_size     = optional(string, "20")
@@ -41,23 +44,14 @@ variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
     start_command      = string
-    image_url          = optional(string, "ghcr.io/polarsource/polar")
-    digest             = optional(string)
-    tag                = optional(string)
+    image_url          = string
+    image_digest       = string
     custom_domains     = optional(list(object({ name = string })), [])
     dramatiq_prom_port = optional(string, "10000")
     plan               = optional(string, "pro")
     num_instances      = optional(number, 1)
     database_pool_size = optional(string, "5")
   }))
-
-  validation {
-    condition = alltrue([
-      for name, worker in var.workers :
-      (worker.digest != null) != (worker.tag != null)
-    ])
-    error_message = "Each worker must specify exactly one of 'digest' or 'tag', not both or neither."
-  }
 }
 
 variable "postgres_config" {

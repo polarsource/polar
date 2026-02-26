@@ -4,7 +4,6 @@ from typing import Literal, Unpack
 
 import structlog
 from dramatiq import Retry
-from dramatiq.middleware import CurrentMessage
 
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
@@ -20,6 +19,7 @@ from polar.worker import (
     TaskPriority,
     actor,
     enqueue_job,
+    get_message_timestamp,
     get_retries,
 )
 
@@ -78,21 +78,14 @@ async def enqueue_benefits_grants(
 ) -> None:
     async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(customer_id)
+        customer = await customer_repository.get_by_id(
+            customer_id, include_deleted=True
+        )
         if customer is None:
-            message = CurrentMessage.get_current_message()
-            if message and message.message_timestamp < (
-                datetime.datetime(
-                    2025, 2, 20, 17, 0, 0, tzinfo=datetime.UTC
-                ).timestamp()
-                * 1000
-            ):
-                log.info(
-                    "Old task message encountered for non-existent customer; skipping.",
-                    "Should not happen after 2025-02-20",
-                    customer_id=str(customer_id),
-                )
-                return
+            raise CustomerDoesNotExist(customer_id)
+
+        # Allow deleted customers to be processed for revocation tasks
+        if customer.is_deleted and task == "grant":
             raise CustomerDoesNotExist(customer_id)
 
         product_repository = ProductRepository.from_session(session)
@@ -215,12 +208,8 @@ async def benefit_revoke(
             benefit_id, options=benefit_repository.get_eager_options()
         )
         if benefit is None:
-            message = CurrentMessage.get_current_message()
-            if message and message.message_timestamp < (
-                datetime.datetime(
-                    2025, 2, 23, 11, 0, 0, tzinfo=datetime.UTC
-                ).timestamp()
-                * 1000
+            if get_message_timestamp() < datetime.datetime(
+                2025, 2, 23, 11, 0, 0, tzinfo=datetime.UTC
             ):
                 log.info(
                     "Old task message encountered for non-existent benefit; skipping.",

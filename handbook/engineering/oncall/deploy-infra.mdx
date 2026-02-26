@@ -1,0 +1,91 @@
+---
+title: "Deploy Infrastructure Changes"
+description: "Procedure for syncing and deploying infrastructure changes"
+---
+
+## Context
+
+The `render.yaml` blueprint is **not synced automatically**. Any changes to workers, environment variables, or new services require manual synchronization through the Render dashboard.
+
+## When to Use
+
+- After making changes to `render.yaml`
+
+## Procedure
+
+### Step 1: Sync Blueprint in Render Dashboard
+
+Navigate to the Render Blueprint dashboard and manually sync:
+
+```
+https://dashboard.render.com/blueprint/exs-cgvt2qiut4mc4kajuf6g
+```
+
+<Steps>
+  <Step title="Open Blueprint URL">
+    Go to the URL above and log in to Render if needed
+  </Step>
+
+<Step title="Click Manual Sync">
+  Click the "Sync" button to manually sync the blueprint.
+</Step>
+
+<Step title="Review Changes">
+  Review the proposed changes carefully. Render will show you a diff of what
+  will be updated.
+</Step>
+
+<Step title="Apply Changes">
+  Click the sync/apply button to deploy the infrastructure changes
+</Step>
+
+  <Step title="Monitor Deployment">
+    Watch the deployment logs to ensure all services start successfully
+  </Step>
+</Steps>
+
+### Step 2: Update Deploy Workflow (For New Services)
+
+If you created a new service, you **must** add its `serviceId` to the deployment workflow:
+
+<Steps>
+  <Step title="Locate the Service ID">
+    After creating the service in Render, copy its service ID from the service settings or URL
+  </Step>
+
+<Step title="Edit Deploy Workflow">
+  Open `.github/workflows/deploy.yml` and add the new service ID to the
+  appropriate section
+</Step>
+
+  <Step title="Commit Changes">
+    Commit and push the changes to the deploy workflow
+  </Step>
+</Steps>
+
+Example structure in `deploy.yml`:
+
+```yaml
+deploy-sandbox:
+  name: "Deploy to Sandbox 🧪"
+  uses: ./.github/workflows/deploy-environment.yml
+  with:
+    environment: sandbox
+    docker-digest: ${{ needs.build.outputs.digest }}
+    # Modify render-service-ids
+    render-service-ids: "srv-crkocgbtq21c73ddsdbg,srv-d089jj7diees73934kgg"
+    # more config ...
+```
+
+## Post-Procedure
+
+- [ ] Verify all services are running
+- [ ] Test critical functionality
+- [ ] Document the changes in the on-call log
+- [ ] Notify the team of infrastructure changes
+- [ ] Monitor error rates and performance metrics
+
+## Related Documentation
+
+- [Render Blueprint Documentation](https://render.com/docs/infrastructure-as-code)
+- [GitHub Actions Deploy Workflow](https://github.com/polarsource/polar/blob/main/.github/workflows/deploy.yml)

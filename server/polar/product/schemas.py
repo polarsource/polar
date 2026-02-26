@@ -520,14 +520,14 @@ class ProductPriceBase(TimestampedSchema):
     )
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
-    type: ProductPriceType = Field(
+    type: SkipJsonSchema[ProductPriceType] = Field(
         validation_alias=AliasChoices("legacy_type", "type"),
         deprecated=(
             "This field is actually set from Product. "
             "It's only kept for backward compatibility."
         ),
     )
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
+    recurring_interval: SkipJsonSchema[SubscriptionRecurringInterval | None] = Field(
         validation_alias=AliasChoices(
             "legacy_recurring_interval", "recurring_interval"
         ),

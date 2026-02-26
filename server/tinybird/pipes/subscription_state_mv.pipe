@@ -1,27 +1,64 @@
 NODE materialize
 SQL >
     SELECT
-        subscription_id,
-        organization_id,
-        argMaxState(customer_id, timestamp) AS customer_id,
-        argMaxState(COALESCE(new_product_id, product_id), timestamp) AS product_id,
-        minState(started_at) AS started_at,
+        e.subscription_id,
+        e.organization_id,
+        argMaxState(e.customer_id, e.timestamp) AS customer_id,
+        argMaxState(COALESCE(e.new_product_id, e.product_id), e.timestamp) AS product_id,
+        minState(e.started_at) AS started_at,
         argMaxState(
             CASE
-                WHEN name = 'subscription.revoked'
-                THEN timestamp
-                WHEN name = 'subscription.canceled'
-                THEN COALESCE(ends_at, canceled_at, timestamp)
-                ELSE COALESCE(ends_at, toDateTime64(0, 3, 'UTC'))
+                WHEN e.name = 'subscription.revoked'
+                THEN e.timestamp
+                WHEN e.name = 'subscription.canceled'
+                THEN COALESCE(e.ends_at, e.canceled_at, e.timestamp)
+                ELSE COALESCE(e.ends_at, toDateTime64(0, 3, 'UTC'))
             END,
-            timestamp
+            e.timestamp
         ) AS ends_at,
-        argMaxState(recurring_interval, timestamp) AS recurring_interval,
-        argMaxState(recurring_interval_count, timestamp) AS recurring_interval_count
-    FROM events_by_ingested_at
+        argMaxState(e.recurring_interval, e.timestamp) AS recurring_interval,
+        argMaxState(e.recurring_interval_count, e.timestamp) AS recurring_interval_count,
+        argMaxState(
+            CASE WHEN e.name = 'subscription.canceled' THEN e.canceled_at ELSE NULL END,
+            (
+                CASE WHEN e.name = 'subscription.canceled' THEN toUInt8(1) ELSE toUInt8(0) END,
+                COALESCE(e.canceled_at, toDateTime64(0, 3, 'UTC')),
+                e.timestamp,
+                e.ingested_at
+            )
+        ) AS canceled_at,
+        argMaxState(
+            CASE
+                WHEN e.name = 'subscription.canceled' THEN e.customer_cancellation_reason ELSE NULL
+            END,
+            (
+                CASE WHEN e.name = 'subscription.canceled' THEN toUInt8(1) ELSE toUInt8(0) END,
+                COALESCE(e.canceled_at, toDateTime64(0, 3, 'UTC')),
+                e.timestamp,
+                e.ingested_at
+            )
+        ) AS customer_cancellation_reason,
+        argMaxState(
+            CASE WHEN e.name = 'subscription.canceled' THEN e.product_id ELSE NULL END,
+            (
+                CASE WHEN e.name = 'subscription.canceled' THEN toUInt8(1) ELSE toUInt8(0) END,
+                COALESCE(e.canceled_at, toDateTime64(0, 3, 'UTC')),
+                e.timestamp,
+                e.ingested_at
+            )
+        ) AS canceled_product_id,
+        argMaxState(
+            CASE WHEN e.name = 'subscription.uncanceled' THEN e.timestamp ELSE NULL END,
+            (
+                CASE WHEN e.name = 'subscription.uncanceled' THEN toUInt8(1) ELSE toUInt8(0) END,
+                e.timestamp,
+                e.ingested_at
+            )
+        ) AS uncanceled_at
+    FROM events_by_ingested_at AS e
     WHERE
-        source = 'system'
-        AND name IN (
+        e.source = 'system'
+        AND e.name IN (
             'subscription.created',
             'subscription.canceled',
             'subscription.revoked',
@@ -29,8 +66,8 @@ SQL >
             'subscription.cycled',
             'subscription.product_updated'
         )
-        AND subscription_id IS NOT NULL
-    GROUP BY subscription_id, organization_id
+        AND e.subscription_id IS NOT NULL
+    GROUP BY e.subscription_id, e.organization_id
 
 TYPE MATERIALIZED
 DATASOURCE subscription_state

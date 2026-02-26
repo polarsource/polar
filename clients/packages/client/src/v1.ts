@@ -845,8 +845,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Validate Organization Details with AI
-     * @description Validate organization details using AI compliance check.
+     * Get AI Validation Status
+     * @description Get the AI validation status. Review runs asynchronously in the background.
      *
      *     **Scopes**: `organizations:write`
      */
@@ -5771,6 +5771,7 @@ export interface components {
         | 'ZM'
         | 'ZW'
     }
+    AggregateField: string
     /**
      * AggregationFunction
      * @enum {string}
@@ -6687,6 +6688,7 @@ export interface components {
       | components['schemas']['BenefitDownloadables']
       | components['schemas']['BenefitLicenseKeys']
       | components['schemas']['BenefitMeterCredit']
+      | components['schemas']['BenefitFeatureFlag']
     BenefitCreate:
       | components['schemas']['BenefitCustomCreate']
       | components['schemas']['BenefitDiscordCreate']
@@ -6694,6 +6696,7 @@ export interface components {
       | components['schemas']['BenefitDownloadablesCreate']
       | components['schemas']['BenefitLicenseKeysCreate']
       | components['schemas']['BenefitMeterCreditCreate']
+      | components['schemas']['BenefitFeatureFlagCreate']
     /**
      * BenefitCustom
      * @description A benefit of type `custom`.
@@ -7381,6 +7384,215 @@ export interface components {
         | null
     }
     /**
+     * BenefitFeatureFlag
+     * @description A benefit of type `feature_flag`.
+     *
+     *     Use it to grant feature flags with key-value metadata
+     *     that can be queried via the API and webhooks.
+     */
+    BenefitFeatureFlag: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['BenefitFeatureFlagProperties']
+    }
+    /**
+     * BenefitFeatureFlagCreate
+     * @description Schema to create a benefit of type `feature_flag`.
+     */
+    BenefitFeatureFlagCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      properties: components['schemas']['BenefitFeatureFlagCreateProperties']
+    }
+    /**
+     * BenefitFeatureFlagCreateProperties
+     * @description Properties for creating a benefit of type `feature_flag`.
+     */
+    BenefitFeatureFlagCreateProperties: {
+      /**
+       * Metadata
+       * @description Key-value metadata for this feature flag benefit.
+       */
+      metadata: {
+        [key: string]: string
+      }
+    }
+    /**
+     * BenefitFeatureFlagProperties
+     * @description Properties for a benefit of type `feature_flag`.
+     */
+    BenefitFeatureFlagProperties: {
+      /**
+       * Metadata
+       * @description Key-value metadata for this feature flag benefit.
+       */
+      metadata: {
+        [key: string]: string
+      }
+    }
+    /** BenefitFeatureFlagSubscriber */
+    BenefitFeatureFlagSubscriber: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'feature_flag'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      organization: components['schemas']['BenefitSubscriberOrganization']
+      properties: components['schemas']['BenefitFeatureFlagSubscriberProperties']
+    }
+    /**
+     * BenefitFeatureFlagSubscriberProperties
+     * @description Properties available to subscribers for a benefit of type `feature_flag`.
+     */
+    BenefitFeatureFlagSubscriberProperties: {
+      /** Metadata */
+      metadata: {
+        [key: string]: string
+      }
+    }
+    /** BenefitFeatureFlagUpdate */
+    BenefitFeatureFlagUpdate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description?: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'feature_flag'
+      properties?: components['schemas']['BenefitFeatureFlagProperties'] | null
+    }
+    /**
      * BenefitGitHubRepository
      * @description A benefit of type `github_repository`.
      *
@@ -7696,6 +7908,7 @@ export interface components {
         | components['schemas']['BenefitGrantDownloadablesProperties']
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
+        | components['schemas']['BenefitGrantFeatureFlagProperties']
     }
     /** BenefitGrantCustomProperties */
     BenefitGrantCustomProperties: Record<string, never>
@@ -7951,6 +8164,84 @@ export interface components {
       type: string
       /** Timestamp */
       timestamp: string
+    }
+    /** BenefitGrantFeatureFlagProperties */
+    BenefitGrantFeatureFlagProperties: Record<string, never>
+    /** BenefitGrantFeatureFlagWebhook */
+    BenefitGrantFeatureFlagWebhook: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the grant.
+       */
+      id: string
+      /**
+       * Granted At
+       * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+       */
+      granted_at?: string | null
+      /**
+       * Is Granted
+       * @description Whether the benefit is granted.
+       */
+      is_granted: boolean
+      /**
+       * Revoked At
+       * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+       */
+      revoked_at?: string | null
+      /**
+       * Is Revoked
+       * @description Whether the benefit is revoked.
+       */
+      is_revoked: boolean
+      /**
+       * Subscription Id
+       * @description The ID of the subscription that granted this benefit.
+       */
+      subscription_id: string | null
+      /**
+       * Order Id
+       * @description The ID of the order that granted this benefit.
+       */
+      order_id: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer concerned by this grant.
+       */
+      customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The ID of the benefit concerned by this grant.
+       */
+      benefit_id: string
+      /** @description The error information if the benefit grant failed with an unrecoverable error. */
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
+      benefit: components['schemas']['BenefitFeatureFlag']
+      properties: components['schemas']['BenefitGrantFeatureFlagProperties']
+      previous_properties?:
+        | components['schemas']['BenefitGrantFeatureFlagProperties']
+        | null
     }
     /** BenefitGrantGitHubRepositoryProperties */
     BenefitGrantGitHubRepositoryProperties: {
@@ -8242,6 +8533,7 @@ export interface components {
       | components['schemas']['BenefitGrantDownloadablesWebhook']
       | components['schemas']['BenefitGrantLicenseKeysWebhook']
       | components['schemas']['BenefitGrantMeterCreditWebhook']
+      | components['schemas']['BenefitGrantFeatureFlagWebhook']
     /**
      * BenefitGrantedEvent
      * @description An event created by Polar when a benefit is granted to a customer.
@@ -8949,6 +9241,7 @@ export interface components {
       | 'downloadables'
       | 'license_keys'
       | 'meter_credit'
+      | 'feature_flag'
     /**
      * BenefitUpdatedEvent
      * @description An event created by Polar when a benefit is updated.
@@ -12881,6 +13174,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantLicenseKeys']
       | components['schemas']['CustomerBenefitGrantCustom']
       | components['schemas']['CustomerBenefitGrantMeterCredit']
+      | components['schemas']['CustomerBenefitGrantFeatureFlag']
     /** CustomerBenefitGrantCustom */
     CustomerBenefitGrantCustom: {
       /**
@@ -13054,6 +13348,62 @@ export interface components {
        * @enum {string}
        */
       benefit_type: 'downloadables'
+    }
+    /** CustomerBenefitGrantFeatureFlag */
+    CustomerBenefitGrantFeatureFlag: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Granted At */
+      granted_at: string | null
+      /** Revoked At */
+      revoked_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /** Member Id */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       */
+      benefit_id: string
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Order Id */
+      order_id: string | null
+      /** Is Granted */
+      is_granted: boolean
+      /** Is Revoked */
+      is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['CustomerPortalCustomer']
+      benefit: components['schemas']['BenefitFeatureFlagSubscriber']
+      properties: components['schemas']['BenefitGrantFeatureFlagProperties']
+    }
+    /** CustomerBenefitGrantFeatureFlagUpdate */
+    CustomerBenefitGrantFeatureFlagUpdate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      benefit_type: 'feature_flag'
     }
     /** CustomerBenefitGrantGitHubRepository */
     CustomerBenefitGrantGitHubRepository: {
@@ -13249,6 +13599,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantLicenseKeysUpdate']
       | components['schemas']['CustomerBenefitGrantCustomUpdate']
       | components['schemas']['CustomerBenefitGrantMeterCreditUpdate']
+      | components['schemas']['CustomerBenefitGrantFeatureFlagUpdate']
     /**
      * CustomerCancellationReason
      * @enum {string}
@@ -14872,6 +15223,7 @@ export interface components {
         | components['schemas']['BenefitGrantDownloadablesProperties']
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | components['schemas']['BenefitGrantCustomProperties']
+        | components['schemas']['BenefitGrantFeatureFlagProperties']
     }
     /**
      * CustomerStateMeter
@@ -20582,7 +20934,7 @@ export interface components {
      * OrderStatus
      * @enum {string}
      */
-    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded'
+    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded' | 'void'
     /** OrderSubscription */
     OrderSubscription: {
       metadata: components['schemas']['MetadataOutputType']
@@ -28435,7 +28787,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Organization validated with AI. */
+      /** @description AI validation status returned. */
       200: {
         headers: {
           [name: string]: unknown
@@ -29548,6 +29900,7 @@ export interface operations {
           | components['schemas']['BenefitDownloadablesUpdate']
           | components['schemas']['BenefitLicenseKeysUpdate']
           | components['schemas']['BenefitMeterCreditUpdate']
+          | components['schemas']['BenefitFeatureFlagUpdate']
       }
     }
     responses: {
@@ -36974,7 +37327,7 @@ export interface operations {
         /** @description Query to filter events. */
         query?: string | null
         /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
-        aggregate_fields?: string[]
+        aggregate_fields?: components['schemas']['AggregateField'][]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
         sorting?: components['schemas']['EventStatisticsSortProperty'][] | null
         /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
@@ -42342,6 +42695,12 @@ export const benefitDownloadablesTypeValues: ReadonlyArray<
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDownloadablesCreate']['type']
 > = ['downloadables']
+export const benefitFeatureFlagTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitFeatureFlag']['type']
+> = ['feature_flag']
+export const benefitFeatureFlagCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitFeatureFlagCreate']['type']
+> = ['feature_flag']
 export const benefitGitHubRepositoryTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepository']['type']
 > = ['github_repository']
@@ -42409,6 +42768,7 @@ export const benefitTypeValues: ReadonlyArray<
   'downloadables',
   'license_keys',
   'meter_credit',
+  'feature_flag',
 ]
 export const benefitUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
@@ -43020,6 +43380,9 @@ export const customerBenefitGrantDiscordUpdateBenefit_typeValues: ReadonlyArray<
 export const customerBenefitGrantDownloadablesUpdateBenefit_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantDownloadablesUpdate']['benefit_type']
 > = ['downloadables']
+export const customerBenefitGrantFeatureFlagUpdateBenefit_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantFeatureFlagUpdate']['benefit_type']
+> = ['feature_flag']
 export const customerBenefitGrantGitHubRepositoryUpdateBenefit_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']['benefit_type']
 > = ['github_repository']
@@ -43367,7 +43730,7 @@ export const orderSortPropertyValues: ReadonlyArray<
 ]
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
-> = ['pending', 'paid', 'refunded', 'partially_refunded']
+> = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationAccessTokenSortProperty']
 > = [

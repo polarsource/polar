@@ -24,6 +24,22 @@ class CustomerDoesNotExist(CustomerTaskError):
         super().__init__(message)
 
 
+@actor(actor_name="customer.state_changed", priority=TaskPriority.HIGH)
+async def customer_state_changed(customer_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.get_by_id(
+            customer_id,
+            include_deleted=True,
+            options=(joinedload(Customer.organization),),
+        )
+
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+
+        await customer_service.state_changed(session, RedisMiddleware.get(), customer)
+
+
 def _customer_webhook_debounce_key(
     event_type: CustomerWebhookEventType, customer_id: uuid.UUID
 ) -> str | None:

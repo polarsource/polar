@@ -1,0 +1,117 @@
+---
+title: "Merge Accounts"
+description: "Procedure for merging multiple merchant accounts"
+---
+
+## Context
+
+In the past, merchants had the ability to create multiple accounts. This caused issues where some orders were linked to one account and others to another account. This procedure consolidates all transactions and data into a single account.
+
+## When to Use
+
+- A merchant reports having multiple accounts with split orders
+- Support has identified duplicate accounts for the same merchant
+- Transactions are distributed across multiple account IDs
+
+## Prerequisites
+
+- Account IDs for all accounts to be merged
+- Confirmation from the merchant or support team
+- Database access credentials
+
+## Procedure
+
+### Step 1: Identify Accounts with Orders
+
+First, check which accounts have associated transactions:
+
+```sql
+SELECT
+    account_id,
+    count(*)
+FROM
+    transactions
+WHERE
+    account_id IN (
+        'cb8e3716-194a-4156-9979-1689ac114dfc',
+        '3b69fd41-82f2-449e-8de8-87991f8473fe',
+        'b03562b6-d45f-4f2c-a808-24177910094c',
+        'd7701470-46ed-455e-bcbb-92b9eb887e0c'
+    )
+GROUP BY
+    account_id;
+```
+
+<Note>
+  Replace the account IDs in the `IN` clause with the actual account IDs you need to check.
+</Note>
+
+### Step 2: Check Accounts with Payouts
+
+Verify which accounts have associated payouts:
+
+```sql
+SELECT
+    account_id,
+    count(*)
+FROM
+    payouts
+WHERE
+    account_id IN (
+        'cb8e3716-194a-4156-9979-1689ac114dfc',
+        '3b69fd41-82f2-449e-8de8-87991f8473fe',
+        'b03562b6-d45f-4f2c-a808-24177910094c',
+        'd7701470-46ed-455e-bcbb-92b9eb887e0c'
+    )
+GROUP BY
+    account_id;
+```
+
+### Step 3: Soft Delete Old Account
+
+Determine which account should be the primary account (the one to keep) and soft delete the old account(s):
+
+```sql
+UPDATE accounts
+SET
+    deleted_at = now()
+WHERE
+    id = '3b69fd41-82f2-449e-8de8-87991f8473fe';
+```
+
+### Step 4: Migrate Transactions
+
+Move all transactions from the old account to the new (primary) account:
+
+```sql
+UPDATE transactions
+SET
+    account_id = 'cb8e3716-194a-4156-9979-1689ac114dfc' -- new account
+WHERE
+    account_id = '3b69fd41-82f2-449e-8de8-87991f8473fe'; -- old account with orders
+```
+
+<Note>
+  - The first account ID is the **new/primary** account (destination)
+  - The second account ID is the **old** account (source) being merged
+</Note>
+
+### Step 5: Verify Migration
+
+Confirm the migration was successful:
+
+```sql
+-- Verify no transactions remain on old account
+SELECT count(*) FROM transactions
+WHERE account_id = '3b69fd41-82f2-449e-8de8-87991f8473fe';
+
+-- Verify transactions moved to new account
+SELECT count(*) FROM transactions
+WHERE account_id = 'cb8e3716-194a-4156-9979-1689ac114dfc';
+```
+
+## Post-Procedure
+
+- [ ] Document the merge in the on-call log
+- [ ] Notify support team of completion
+- [ ] Confirm with merchant that orders are now visible in their primary account

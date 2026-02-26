@@ -1,8 +1,10 @@
 """Organization detail view with horizontal tabs and sidebar."""
 
 import contextlib
+import urllib.parse
 from collections.abc import Generator
 from datetime import UTC, datetime
+from uuid import UUID
 
 from fastapi import Request
 from tagflow import tag, text
@@ -18,6 +20,16 @@ from ...components import (
     tab_nav,
 )
 from ...components._clipboard_button import clipboard_button
+
+
+def _get_logfire_url(organization_id: UUID) -> str:
+    params = {
+        "q": f"attributes->>'subject_id' = '{organization_id}'",
+        "last": "30d",
+    }
+    return (
+        f"https://logfire-us.pydantic.dev/polar/polar?{urllib.parse.urlencode(params)}"
+    )
 
 
 class OrganizationDetailView:
@@ -173,7 +185,22 @@ class OrganizationDetailView:
                                 text("Approve")
 
                     elif self.org.status == OrganizationStatus.ACTIVE:
-                        # Active organizations can be denied
+                        # Active organizations can be denied or set under review
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:under_review_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Under Review")
+
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
@@ -190,43 +217,20 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
-                        # Quick approve with $250 default threshold
-                        approve_url = str(
-                            request.url_for(
-                                "organizations:approve",
-                                organization_id=self.org.id,
-                            )
-                        )
-
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_post=approve_url + "?threshold=25000",
-                                hx_confirm="Approve this organization with $250 threshold?",
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:approve_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
                             ):
-                                text("Approve ($250)")
-
-                        # Custom approve with input
-                        with tag.div(classes="flex gap-2"):
-                            with tag.input(
-                                type="number",
-                                name="threshold_dollars",
-                                id="custom-threshold",
-                                placeholder="Custom $ amount",
-                                classes="input input-bordered input-sm flex-1",
-                            ):
-                                pass
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_post=approve_url,
-                                hx_include="#custom-threshold",
-                                hx_confirm="Approve with custom threshold?",
-                            ):
-                                text("✓")
+                                text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(
@@ -370,6 +374,42 @@ class OrganizationDetailView:
                     classes="btn btn-ghost btn-sm",
                 ):
                     text("Switch to Classic View")
+
+                # Top-right menu
+                with tag.div(classes="dropdown dropdown-end"):
+                    with tag.button(
+                        classes="btn btn-circle btn-ghost",
+                        tabindex="0",
+                        **{"aria-label": "More options"},
+                    ):
+                        text("⋮")
+                    with tag.ul(
+                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                        tabindex="0",
+                    ):
+                        with tag.li():
+                            with tag.a(
+                                href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.org.email or self.org.slug}",
+                                target="_blank",
+                            ):
+                                text("Search in Plain")
+                        with tag.li():
+                            with tag.a(
+                                href=_get_logfire_url(self.org.id),
+                                target="_blank",
+                            ):
+                                text("View API Logs in Logfire")
+                        with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
+                            with tag.a(
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:delete_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Delete Organization")
 
         # Section tabs
         with tag.div(classes="mb-6"):

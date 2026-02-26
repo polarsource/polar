@@ -4,6 +4,7 @@ import revalidate from '@/app/actions'
 import { useCustomerPaymentMethods } from '@/hooks/queries'
 import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
@@ -13,11 +14,13 @@ import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 import { AddPaymentMethodModal } from './AddPaymentMethodModal'
+import { CustomerPortalTeamSection } from './CustomerPortalTeam'
 import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
 
 interface CustomerPortalSettingsProps {
   customerSessionToken?: string
+  organization: schemas['CustomerOrganization']
   setupIntentParams?: {
     setup_intent_client_secret: string
     setup_intent: string
@@ -26,6 +29,7 @@ interface CustomerPortalSettingsProps {
 
 export const CustomerPortalSettings = ({
   customerSessionToken,
+  organization,
   setupIntentParams,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
@@ -48,7 +52,7 @@ export const CustomerPortalSettings = ({
 
   return (
     <div className="flex flex-col gap-y-8">
-      <h3 className="text-2xl">Settings</h3>
+      <h3 className="text-2xl">Billing Settings</h3>
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
@@ -92,6 +96,25 @@ export const CustomerPortalSettings = ({
           />
         </WellContent>
       </Well>
+
+      {customer.type === 'team' &&
+        organization.organization_features?.member_model_enabled && (
+          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
+            <WellHeader className="flex-row items-start justify-between">
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text-xl">Billing Managers</h3>
+                <p className="dark:text-polar-500 text-gray-500">
+                  Billing Managers can manage billing details, payment methods,
+                  and subscriptions.
+                </p>
+              </div>
+            </WellHeader>
+            <Separator className="dark:bg-polar-700" />
+            <WellContent>
+              <CustomerPortalTeamSection api={api} />
+            </WellContent>
+          </Well>
+        )}
 
       <Modal
         title="Add Payment Method"

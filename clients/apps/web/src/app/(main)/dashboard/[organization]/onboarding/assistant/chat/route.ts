@@ -45,7 +45,8 @@ You can sell various things on Polar, typically configured as "Products" that gr
  - License keys for software
  - Access to private GitHub repositories or Discord servers
  - File downloads of any kind
- - Custom benefits, which can be used for general software access or other unique offerings
+ - Feature flags for software access, which can be queried via the API to verify customer entitlements
+ - Custom benefits, which can be used for other unique offerings
  - Meter credits for usage-based billing
 
 What kind of product or service are you looking to sell?
@@ -91,6 +92,7 @@ Polar has these benefit types:
  - GitHub repository access: automatically invite subscribers to private GitHub repo(s)
  - Discord server access: automatic role assignment and server invites for community access
  - Meter credits: allows you to credit a customer's Usage Meter balance
+ - Feature flag: a benefit that grants feature flags to customers, which can be queried via the Polar API and webhooks to verify access and entitlements in your software
  - Custom benefit: a catch-all benefit that allows you to optionally attach a custom Markdown note which is made available to your customers when they purchase your product
 
 ### Unsupported benefit types
@@ -103,7 +105,7 @@ and you should route the user to manual setup instead.
 
 ### Setting up subscriptions for software businesses
 
-For software subscriptions, it's considered best practice to use a Custom benefit, e.g. "{Product} Access", and use
+For software subscriptions, it's considered best practice to use a Feature Flag benefit, e.g. "{Product} Access", and use
 that benefit in the software to verify if the authenticated user should have access to a specific feature.
 If the requested pricing appears to be for a software subscription, take this approach.
 

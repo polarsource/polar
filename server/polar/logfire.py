@@ -137,6 +137,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                     region_name=settings.AWS_REGION,
                 ),
+                max_export_batch_size=2048,
                 schedule_delay_millis=60_000,
             )
         )

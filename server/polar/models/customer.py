@@ -209,7 +209,7 @@ class Customer(MetadataMixin, RecordModel):
         return relationship("Organization", lazy="raise")
 
     @declared_attr
-    def payment_methods(cls) -> Mapped[Sequence["PaymentMethod"]]:
+    def payment_methods(cls) -> Mapped[list["PaymentMethod"]]:
         return relationship(
             "PaymentMethod",
             lazy="raise",
@@ -219,7 +219,7 @@ class Customer(MetadataMixin, RecordModel):
         )
 
     @declared_attr
-    def members(cls) -> Mapped[Sequence["Member"]]:
+    def members(cls) -> Mapped[list["Member"]]:
         return relationship(
             "Member",
             lazy="raise",

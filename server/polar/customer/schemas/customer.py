@@ -22,7 +22,7 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
-from polar.member import Member, OwnerCreate
+from polar.member import OwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
 from polar.tax.tax_id import TaxID
@@ -176,12 +176,3 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
 
 class Customer(CustomerBase):
     """A customer in an organization."""
-
-
-class CustomerWithMembers(Customer):
-    """A customer in an organization with their members loaded."""
-
-    members: list[Member] = Field(
-        default_factory=list,
-        description="List of members belonging to this customer.",
-    )

@@ -35,8 +35,11 @@ def _get_logfire_url(organization_id: UUID) -> str:
 class OrganizationDetailView:
     """Render the organization detail view with horizontal section tabs."""
 
-    def __init__(self, organization: Organization):
+    def __init__(
+        self, organization: Organization, ai_verdict: str = ""
+    ):
         self.org = organization
+        self.ai_verdict = ai_verdict
 
     @contextlib.contextmanager
     def section_tabs(
@@ -217,20 +220,45 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
-                        with tag.div(classes="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:approve_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Approve")
+                        # Compute suggested threshold: double current or $250 min
+                        current_threshold = self.org.next_review_threshold or 0
+                        suggested_threshold = max(25000, current_threshold * 2)
+                        threshold_dollars = suggested_threshold // 100
+                        is_override = self.ai_verdict == "DENY"
+
+                        if is_override:
+                            # AI disagrees: open modal for reason + threshold
+                            with tag.div(classes="w-full"):
+                                with button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:approve_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text(f"Approve (${threshold_dollars})")
+                        else:
+                            # AI agrees: 1-click approve with default threshold
+                            with tag.div(classes="w-full"):
+                                with button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_post=str(
+                                        request.url_for(
+                                            "organizations:approve_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_vals=f'{{"threshold": "{threshold_dollars}"}}',
+                                    hx_confirm=f"Approve with ${threshold_dollars} threshold?",
+                                ):
+                                    text(f"Approve (${threshold_dollars})")
 
                         with tag.div(classes="w-full"):
                             with button(

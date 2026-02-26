@@ -409,8 +409,15 @@ async def get_organization_detail(
     members_result = await session.execute(members_stmt)
     organization.members = list(members_result.scalars().unique().all())  # type: ignore[attr-defined]
 
+    # Fetch AI verdict for action buttons (needed regardless of section)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    ai_verdict = ""
+    if agent_review and agent_review.report:
+        ai_verdict = agent_review.report.get("report", {}).get("verdict", "")
+
     # Create views
-    detail_view = OrganizationDetailView(organization)
+    detail_view = OrganizationDetailView(organization, ai_verdict=ai_verdict)
 
     # Fetch analytics data for overview section
     setup_data = None
@@ -554,8 +561,6 @@ async def get_organization_detail(
             session, organization_id
         )
 
-        review_repo = OrganizationReviewRepository.from_session(session)
-        agent_review = await review_repo.get_latest_agent_review(organization_id)
         agent_report = agent_review.report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
@@ -709,22 +714,21 @@ async def approve_dialog(
     verdict = report.get("verdict", "")
     is_override = verdict == "DENY"
 
-    # When AI agrees with approval, skip the modal and approve directly
-    if not is_override:
-        if request.method == "POST":
-            data = await request.form()
-            raw_threshold = data.get("threshold", "250")
-            threshold = int(float(str(raw_threshold)) * 100)
-            override_reason = str(data.get("override_reason", "")).strip() or None
-        else:
-            threshold = 25000  # Default $250
-            override_reason = None
+    # Suggested threshold: double current or $250 min
+    current_threshold = organization.next_review_threshold or 0
+    suggested_threshold_cents = max(25000, current_threshold * 2)
+    suggested_threshold_dollars = suggested_threshold_cents // 100
+
+    # When AI agrees with approval, process POST directly (1-click from button)
+    if not is_override and request.method == "POST":
+        data = await request.form()
+        raw_threshold = data.get("threshold", str(suggested_threshold_dollars))
+        threshold = int(float(str(raw_threshold)) * 100)
 
         await review_repo.record_human_decision(
             organization_id=organization_id,
             reviewer_id=user_session.user.id,
             decision="APPROVE",
-            reason=override_reason,
         )
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
@@ -744,7 +748,7 @@ async def approve_dialog(
 
     if request.method == "POST":
         data = await request.form()
-        raw_threshold = data.get("threshold", "250")
+        raw_threshold = data.get("threshold", str(suggested_threshold_dollars))
         threshold = int(float(str(raw_threshold)) * 100)
 
         override_reason = str(data.get("override_reason", "")).strip() or None
@@ -799,8 +803,8 @@ async def approve_dialog(
                     with tag.input(
                         type="number",
                         name="threshold",
-                        value="250",
-                        placeholder="250",
+                        value=str(suggested_threshold_dollars),
+                        placeholder=str(suggested_threshold_dollars),
                         classes="input input-bordered",
                     ):
                         pass

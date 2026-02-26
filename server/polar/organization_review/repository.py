@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -340,19 +340,24 @@ class OrganizationReviewRepository(
         )
         await self.session.execute(statement)
 
-    async def get_checkout_return_urls(self, organization_id: UUID) -> list[str]:
-        """Get distinct non-null return URLs from checkouts.
+    async def get_checkout_return_urls(
+        self, organization_id: UUID, *, months: int = 3
+    ) -> list[str]:
+        """Get distinct non-null return URLs from recent checkouts.
 
         Uses SELECT DISTINCT on just the return_url column to avoid loading
         full checkout rows from this large table. The organization_id index
-        keeps this efficient.
+        keeps this efficient. Only looks at checkouts from the last *months*
+        months to bound the scan on high-volume organizations.
         """
+        cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
             select(Checkout.return_url)
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout.return_url.is_not(None),
                 Checkout.is_deleted.is_(False),
+                Checkout.created_at >= cutoff,
             )
             .distinct()
         )

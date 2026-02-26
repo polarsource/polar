@@ -59,6 +59,49 @@ resource "aws_ssoadmin_managed_policy_attachment" "s3_full_access" {
   permission_set_arn = aws_ssoadmin_permission_set.s3_full_access.arn
 }
 
+data "aws_iam_policy_document" "athena_query_access" {
+  statement {
+    sid = "AthenaQueryAccess"
+    actions = [
+      "athena:BatchGetQueryExecution",
+      "athena:GetDataCatalog",
+      "athena:GetQueryExecution",
+      "athena:GetQueryResults",
+      "athena:GetTableMetadata",
+      "athena:GetWorkGroup",
+      "athena:ListDataCatalogs",
+      "athena:ListDatabases",
+      "athena:ListQueryExecutions",
+      "athena:ListTableMetadata",
+      "athena:ListWorkGroups",
+      "athena:StartQueryExecution",
+      "athena:StopQueryExecution",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "GlueReadAccess"
+    actions = [
+      "glue:BatchGetPartition",
+      "glue:GetDatabase",
+      "glue:GetDatabases",
+      "glue:GetPartition",
+      "glue:GetPartitions",
+      "glue:GetTable",
+      "glue:GetTables",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_ssoadmin_permission_set_inline_policy" "athena_query_access" {
+  provider           = aws.sso
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.s3_full_access.arn
+  inline_policy      = data.aws_iam_policy_document.athena_query_access.json
+}
+
 # Administrator Access Permission Set (for admin users)
 resource "aws_ssoadmin_permission_set" "admin" {
   provider         = aws.sso

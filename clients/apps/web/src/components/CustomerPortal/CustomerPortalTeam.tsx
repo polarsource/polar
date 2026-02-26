@@ -7,12 +7,11 @@ import {
   useRemoveCustomerPortalMember,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries'
-import { createClientSideAPI } from '@/utils/client'
 import { validateEmail } from '@/utils/validation'
 import GroupOutlined from '@mui/icons-material/GroupOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,56 +19,41 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'
 import { EmptyState } from './EmptyState'
 
-interface CustomerPortalTeamProps {
-  customerSessionToken?: string
+interface CustomerPortalTeamSectionProps {
+  api: Client
 }
 
-const roleDisplayNames: Record<string, [string, string]> = {
-  owner: [
-    'Owner',
-    'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
-  ],
-  billing_manager: [
-    'Billing Manager',
-    'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
-  ],
-  member: [
-    'Member',
-    'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400',
-  ],
+const roleDisplayNames: Record<string, string> = {
+  owner: 'Owner',
+  billing_manager: 'Billing Manager',
+  member: 'Member',
 }
 
 const availableRoles = [
-  { value: 'owner', label: 'Make Owner' },
-  { value: 'billing_manager', label: 'Make Billing Manager' },
-  { value: 'member', label: 'Make Member' },
+  { value: 'owner', label: 'Owner' },
+  { value: 'billing_manager', label: 'Billing Manager' },
+  { value: 'member', label: 'Member' },
 ] as const
 
 const roleToDisplayName = (role: string): string => {
-  const display = roleDisplayNames[role]
-  return display ? display[0] : role
+  return roleDisplayNames[role] || role
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-export const CustomerPortalTeam = ({
-  customerSessionToken,
-}: CustomerPortalTeamProps) => {
-  const api = createClientSideAPI(customerSessionToken)
-
+export const CustomerPortalTeamSection = ({
+  api,
+}: CustomerPortalTeamSectionProps) => {
   const { data: members, isLoading: isLoadingMembers } =
     useCustomerPortalMembers(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
@@ -86,9 +70,7 @@ export const CustomerPortalTeam = ({
   const [isAddingMember, setIsAddingMember] = useState(false)
 
   const currentMemberId =
-    authenticatedUser?.type === 'member'
-      ? (authenticatedUser as any).member_id
-      : null
+    authenticatedUser?.type === 'member' ? authenticatedUser.member_id : null
 
   const handleAddMember = async () => {
     if (!newMemberEmail.trim()) {
@@ -106,19 +88,19 @@ export const CustomerPortalTeam = ({
     try {
       await addMember.mutateAsync({
         email: newMemberEmail,
-        role: 'member',
+        role: 'billing_manager',
       })
       toast({
-        title: 'Member added',
-        description: `${newMemberEmail} has been added to the team.`,
+        title: 'Billing manager added',
+        description: `${newMemberEmail} has been added as a billing manager.`,
       })
       setNewMemberEmail('')
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Failed to add member'
+        error instanceof Error ? error.message : 'Failed to add billing manager'
       setAddMemberError(errorMessage)
       toast({
-        title: 'Failed to add member',
+        title: 'Failed to add billing manager',
         description: errorMessage,
         variant: 'error',
       })
@@ -189,21 +171,8 @@ export const CustomerPortalTeam = ({
   const otherMembers = membersList.filter((m) => m.id !== currentMemberId)
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-lg">Team Members</h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          Manage your team members and their roles
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-y-4">
-        <div className="flex flex-col gap-y-2">
-          <h4 className="text-md font-medium">Add Member</h4>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Invite someone to join your team
-          </p>
-        </div>
         <div className="flex items-start gap-4">
           <div className="flex-1">
             <Input
@@ -230,7 +199,7 @@ export const CustomerPortalTeam = ({
             disabled={!newMemberEmail.trim() || isAddingMember}
             loading={isAddingMember}
           >
-            Add
+            Invite
           </Button>
         </div>
       </div>
@@ -242,111 +211,97 @@ export const CustomerPortalTeam = ({
           description="You are the only member of this team."
         />
       ) : (
-        <DataTable
-          data={membersList}
-          isLoading={isLoadingMembers}
-          columns={[
-            {
-              accessorKey: 'name',
-              header: 'Member',
-              cell: ({ row }) => (
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">
-                    {row.original.name || '—'}
-                  </span>
-                  <span className="dark:text-polar-500 text-xs text-gray-500">
-                    {row.original.email}
-                  </span>
-                </div>
-              ),
-            },
-            {
-              accessorKey: 'role',
-              header: 'Role',
-              cell: ({ row }) => {
-                const member = row.original
-                const isCurrentUser = member.id === currentMemberId
-                const [label, className] =
-                  roleDisplayNames[member.role] || roleDisplayNames.member
-
-                return (
-                  <div className="flex items-center gap-2">
-                    <Status
-                      className={twMerge(className, 'w-fit text-xs')}
-                      status={label}
-                    />
-                    {isCurrentUser && (
-                      <span className="dark:text-polar-500 text-xs text-gray-500">
-                        (you)
-                      </span>
-                    )}
-                  </div>
-                )
-              },
-            },
-            {
-              accessorKey: 'created_at',
-              header: 'Joined',
-              cell: ({ row }) => (
-                <span className="dark:text-polar-500 text-sm text-gray-500">
-                  {formatDate(row.original.created_at)}
-                </span>
-              ),
-            },
-            {
-              id: 'actions',
-              header: '',
-              cell: ({ row }) => {
-                const member = row.original
+        <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">
+          <table className="w-full table-fixed caption-bottom text-sm">
+            <thead className="[&_tr]:border-b">
+              <tr className="dark:bg-polar-800 border-b bg-gray-50 transition-colors">
+                <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
+                  Member
+                </th>
+                <th className="text-muted-foreground h-12 w-[180px] px-4 text-left align-middle font-medium">
+                  Role
+                </th>
+                <th className="text-muted-foreground h-12 w-[60px] px-4 text-left align-middle font-medium" />
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {membersList.map((member) => {
                 const isCurrentUser = member.id === currentMemberId
                 const isLoading = loadingMembers.has(member.id)
 
-                // Current user can't modify themselves
-                if (isCurrentUser) {
-                  return null
-                }
-
                 return (
-                  <div className="flex justify-end">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild disabled={isLoading}>
-                        <Button className="h-8 w-8" variant="secondary">
-                          <MoreVertOutlined fontSize="inherit" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {availableRoles
-                          .filter((role) => role.value !== member.role)
-                          .map((role) => (
-                            <DropdownMenuItem
-                              key={role.value}
-                              onClick={() =>
-                                handleRoleChange(
-                                  member.id,
-                                  member.name,
-                                  role.value,
-                                )
-                              }
-                              disabled={isLoading}
-                            >
+                  <tr key={member.id} className="border-b transition-colors">
+                    <td className="p-4 align-middle">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {member.name || member.email}
+                          </span>
+                          {isCurrentUser && (
+                            <span className="dark:text-polar-500 text-xs text-gray-500">
+                              (you)
+                            </span>
+                          )}
+                        </div>
+                        {member.name && (
+                          <span className="dark:text-polar-500 text-xs text-gray-500">
+                            {member.email}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4 align-middle">
+                      <Select
+                        value={member.role}
+                        onValueChange={(newRole) =>
+                          handleRoleChange(member.id, member.name, newRole)
+                        }
+                        disabled={isCurrentUser || isLoading}
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableRoles.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
                               {role.label}
-                            </DropdownMenuItem>
+                            </SelectItem>
                           ))}
-                        <DropdownMenuItem
-                          onClick={() => setMemberToRemove(member.id)}
-                          disabled={isLoading}
-                          className="text-red-500 focus:text-red-500"
-                        >
-                          Remove from Team
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="p-4 align-middle">
+                      {!isCurrentUser && (
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild disabled={isLoading}>
+                              <Button
+                                className="h-8 w-8"
+                                variant="ghost"
+                                size="icon"
+                              >
+                                <MoreVertOutlined fontSize="inherit" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => setMemberToRemove(member.id)}
+                                disabled={isLoading}
+                                className="text-red-500 focus:text-red-500"
+                              >
+                                Remove from Team
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 )
-              },
-            },
-          ]}
-        />
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <ConfirmModal

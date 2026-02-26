@@ -225,33 +225,11 @@ export default function ClientPage({
     <div className="flex flex-col items-center">
       <ShadowBox className="flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12">
         <div className="flex flex-col gap-4">
-          <h2 className="text-xl">Claim Your Seat</h2>
+          <h2 className="text-xl">Claim your seat</h2>
           <p className="dark:text-polar-500 text-gray-500">
-            You&apos;ve been invited to access {claimInfo.product_name}
+            You&apos;ve been invited to {claimInfo.product_name} on{' '}
+            {claimInfo.organization_name}.
           </p>
-        </div>
-
-        <div className="dark:bg-polar-800 flex flex-col gap-4 rounded-2xl bg-white p-6">
-          <div className="flex flex-col gap-1">
-            <span className="dark:text-polar-400 text-sm text-gray-500">
-              Product
-            </span>
-            <span>{claimInfo.product_name}</span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="dark:text-polar-400 text-sm text-gray-500">
-              Organization
-            </span>
-            <span>{claimInfo.organization_name}</span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="dark:text-polar-400 text-sm text-gray-500">
-              Your Email
-            </span>
-            <span>{claimInfo.customer_email}</span>
-          </div>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -261,7 +239,7 @@ export default function ClientPage({
             disabled={claimingState !== 'idle'}
             size="lg"
           >
-            {claimingState !== 'idle' ? 'Claiming...' : 'Claim Seat'}
+            {claimingState !== 'idle' ? 'Claiming...' : 'Claim seat'}
           </Button>
 
           {(claimError || claimMutation.error) && (

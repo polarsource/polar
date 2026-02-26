@@ -2,12 +2,11 @@
 
 import { useAssignSeatFromCheckout } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { PlusIcon, XIcon } from 'lucide-react'
+import { MailCheckIcon, PlusIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 
@@ -32,9 +31,14 @@ const CheckoutSeatInvitations = ({
     hasProductCheckout(checkout) &&
     checkout.productPrice.amountType === 'seat_based'
 
-  const [emailInputs, setEmailInputs] = useState<EmailInput[]>([
-    { id: '1', value: '' },
-  ])
+  const [emailInputs, setEmailInputs] = useState<EmailInput[]>(
+    checkout.customerEmail
+      ? [
+          { id: '1', value: checkout.customerEmail },
+          { id: '2', value: '' },
+        ]
+      : [{ id: '1', value: '' }],
+  )
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
 
@@ -116,12 +120,11 @@ const CheckoutSeatInvitations = ({
   }
 
   return (
-    <Well className="dark:border-polar-700 w-full border border-gray-200 bg-transparent dark:bg-transparent">
+    <Well className="dark:border-polar-700 dark:bg-polar-800 w-full border border-gray-200 bg-white">
       <WellHeader className="gap-y-4 text-left">
         <h2 className="text-xl">Invite team members</h2>
         <p className="dark:text-polar-500 text-sm text-gray-500">
-          You purchased {seats} {seats === 1 ? 'seat' : 'seats'}. Invite team
-          members to access the benefits.
+          Invite team members to access your purchase.
         </p>
         <div className="flex items-center justify-between">
           <p className="text-sm">
@@ -148,7 +151,9 @@ const CheckoutSeatInvitations = ({
                 )}
               </div>
               {input.sent ? (
-                <CheckOutlined fontSize="small" />
+                <div className="flex h-8 w-8 items-center justify-center">
+                  <MailCheckIcon className="dark:text-polar-400 h-5 w-5 text-gray-700" />
+                </div>
               ) : (
                 emailInputs.length > 1 &&
                 !input.sent && (
@@ -157,7 +162,7 @@ const CheckoutSeatInvitations = ({
                     size="icon"
                     onClick={() => removeEmailInput(input.id)}
                     disabled={isSending}
-                    className="mt-1"
+                    className="dark:text-polar-500 dark:hover:text-polar-400 mt-0.5 text-gray-500 hover:text-gray-600"
                   >
                     <XIcon className="h-5 w-5" />
                   </Button>
@@ -180,20 +185,32 @@ const CheckoutSeatInvitations = ({
           )}
         </div>
 
-        <Button
-          onClick={sendInvitations}
-          disabled={!canSend}
-          loading={isSending}
-          fullWidth
-        >
-          Send {validEmails > 0 ? `${validEmails} ` : ''}
-          {validEmails === 1 ? 'Invitation' : 'Invitations'}
-        </Button>
+        {availableSeats > 0 && (
+          <Button
+            onClick={sendInvitations}
+            disabled={!canSend}
+            loading={isSending}
+            fullWidth
+          >
+            Send {validEmails > 0 ? `${validEmails} ` : ''}
+            {validEmails === 1 ? 'Invitation' : 'Invitations'}
+          </Button>
+        )}
 
         {sentCount > 0 && (
-          <p className="dark:text-polar-500 text-center text-sm text-gray-500">
+          <p className="dark:text-polar-500 mx-auto max-w-xs text-center text-xs text-pretty text-gray-500">
             Successfully assigned {sentCount}{' '}
-            {sentCount === 1 ? 'seat' : 'seats'}
+            {sentCount === 1 ? 'seat' : 'seats'}.
+            {availableSeats > 0 && (
+              <>
+                {' '}
+                You can assign{' '}
+                {availableSeats === 1
+                  ? 'one more seat'
+                  : `${availableSeats} more seats`}
+                , or do that later through the Customer Portal.
+              </>
+            )}
           </p>
         )}
       </WellContent>

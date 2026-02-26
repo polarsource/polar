@@ -166,7 +166,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   }
 
   return (
-    <div className="mt-1.5 flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-row gap-4 gap-x-6">
         <FormField
           control={control}
@@ -265,7 +265,8 @@ export interface ProductPriceSeatBasedItemProps {
 export const ProductPriceSeatBasedItem: React.FC<
   ProductPriceSeatBasedItemProps
 > = ({ index, currency }) => {
-  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const { control, setValue, watch, getValues } =
+    useFormContext<ProductFormType>()
   const { fields, append, remove } = useFieldArray({
     control,
     name: `prices.${index}.seat_tiers.tiers` as const,
@@ -273,26 +274,43 @@ export const ProductPriceSeatBasedItem: React.FC<
 
   const tiers = watch(`prices.${index}.seat_tiers.tiers`)
 
+  // Derive all max_seats from min_seats: tier[i].max_seats = tier[i+1].min_seats - 1, last = null
+  const syncMaxSeats = useCallback(() => {
+    const currentTiers = getValues(`prices.${index}.seat_tiers.tiers`)
+    if (!currentTiers || currentTiers.length === 0) return
+
+    if (currentTiers.length === 1) {
+      setValue(`prices.${index}.seat_tiers.tiers.0.max_seats`, null)
+      return
+    }
+
+    for (let i = 0; i < currentTiers.length; i++) {
+      const expectedMax =
+        i === currentTiers.length - 1
+          ? null
+          : (currentTiers[i + 1]?.min_seats ?? 1) - 1
+      setValue(`prices.${index}.seat_tiers.tiers.${i}.max_seats`, expectedMax)
+    }
+  }, [getValues, setValue, index])
+
   const addTier = useCallback(() => {
     const lastTier = tiers?.[tiers.length - 1]
-    const minSeats = lastTier?.max_seats ? lastTier.max_seats + 1 : 1
+    const newMinSeats = lastTier?.max_seats
+      ? lastTier.max_seats + 1
+      : (lastTier?.min_seats ?? 1) + 10
 
-    // Update the current last tier to have a specific max_seats value
+    // Set previous last tier's max_seats before appending (append hasn't committed yet)
     if (tiers && tiers.length > 0) {
-      const lastTierIndex = tiers.length - 1
       setValue(
-        `prices.${index}.seat_tiers.tiers.${lastTierIndex}.max_seats`,
-        minSeats - 1,
-        { shouldValidate: true },
+        `prices.${index}.seat_tiers.tiers.${tiers.length - 1}.max_seats`,
+        newMinSeats - 1,
       )
     }
 
-    // Add the new tier with max_seats: null (unlimited)
-    // The LAST tier should ALWAYS have null max_seats
     append({
-      min_seats: minSeats,
+      min_seats: newMinSeats,
       max_seats: null,
-      price_per_seat: 0,
+      price_per_seat: lastTier?.price_per_seat ?? 0,
     })
     setValue(`prices.${index}.id`, '')
   }, [tiers, append, setValue, index])
@@ -301,19 +319,9 @@ export const ProductPriceSeatBasedItem: React.FC<
     (tierIndex: number) => {
       remove(tierIndex)
       setValue(`prices.${index}.id`, '')
-
-      // If only one tier remains after removal, set its max_seats to null (unlimited)
-      if (tiers && tiers.length === 2) {
-        // After removal there will be 1 tier left
-        const remainingTierIndex = tierIndex === 0 ? 1 : 0
-        setValue(
-          `prices.${index}.seat_tiers.tiers.${remainingTierIndex}.max_seats`,
-          null,
-          { shouldValidate: true },
-        )
-      }
+      syncMaxSeats()
     },
-    [remove, setValue, index, tiers],
+    [remove, setValue, index, syncMaxSeats],
   )
 
   const hasSingleTier = fields.length === 1
@@ -322,52 +330,66 @@ export const ProductPriceSeatBasedItem: React.FC<
     tierIndex: number,
     tier: { min_seats?: number; max_seats?: number | null } | undefined,
   ) => {
-    if (!tier) return `Tier ${tierIndex + 1}`
+    if (!tier) return `${tierIndex + 1} seats`
 
-    const isLast = tierIndex === fields.length - 1
-    const range = isLast
-      ? `${tier.min_seats}+ seats`
-      : `${tier.min_seats}–${tier.max_seats || tier.min_seats} seats`
+    const plural = tier.min_seats !== 1
+    const range = !tier.max_seats
+      ? `${tier.min_seats} or more seat${plural ? 's' : ''}`
+      : tier.max_seats === tier.min_seats
+        ? `${tier.min_seats} seat${plural ? 's' : ''}`
+        : `between ${tier.min_seats} and ${tier.max_seats} seats`
 
-    return `Tier ${tierIndex + 1} (${range})`
+    return `Buying ${range}`
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {!hasSingleTier && (
+        <span className="dark:text-polar-400 text-xs font-medium tracking-wider text-gray-500 uppercase">
+          Volume pricing
+        </span>
+      )}
+
       {fields.map((field, tierIndex) => {
-        const isLast = tierIndex === fields.length - 1
         const isFirst = tierIndex === 0
         const currentTier = tiers?.[tierIndex]
 
         return (
           <div
             key={field.id}
-            className="dark:bg-polar-900 group dark:border-polar-800 relative rounded-2xl border border-gray-200 bg-white"
+            className={twMerge(
+              'group relative',
+              hasSingleTier
+                ? ''
+                : 'dark:bg-polar-900 dark:border-polar-800 rounded-2xl border border-gray-200 bg-white p-3',
+            )}
             role="group"
             aria-labelledby={`tier-title-${index}-${tierIndex}`}
           >
-            <div className="flex items-center justify-between p-4">
-              <span
-                id={`tier-title-${index}-${tierIndex}`}
-                className="text-sm font-medium text-gray-900 dark:text-white"
-              >
-                {getTierTitle(tierIndex, currentTier)}
-              </span>
-              {!isFirst && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="dark:text-polar-400 -mr-2 h-7 w-7 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 dark:hover:text-gray-300"
-                  onClick={() => removeTier(tierIndex)}
-                  aria-label={`Remove ${getTierTitle(tierIndex, currentTier)}`}
+            {!hasSingleTier && (
+              <div className="mb-3 flex items-center justify-between">
+                <span
+                  id={`tier-title-${index}-${tierIndex}`}
+                  className="dark:text-polar-300 text-sm font-medium text-gray-500"
                 >
-                  <CloseOutlined className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
+                  {getTierTitle(tierIndex, currentTier)}
+                </span>
+                {!isFirst && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="dark:text-polar-400 h-7 w-7 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={() => removeTier(tierIndex)}
+                    aria-label={`Remove ${getTierTitle(tierIndex, currentTier)}`}
+                  >
+                    <CloseOutlined className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
 
-            <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={control}
                 name={
@@ -376,21 +398,51 @@ export const ProductPriceSeatBasedItem: React.FC<
                 rules={{
                   required: 'Required',
                   min: { value: 1, message: 'Must be at least 1' },
+                  validate: (value) => {
+                    if (isFirst || value == null) return true
+                    const prevTier = tiers?.[tierIndex - 1]
+                    if (
+                      prevTier &&
+                      prevTier.min_seats &&
+                      value <= prevTier.min_seats
+                    ) {
+                      return `Must be greater than ${prevTier.min_seats}`
+                    }
+                    return true
+                  },
                 }}
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
-                      From
-                    </FormLabel>
+                  <FormItem className={hasSingleTier ? 'hidden' : ''}>
+                    <FormLabel>Starting from</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="number"
-                        min={1}
-                        disabled={!isFirst}
+                        min={
+                          tierIndex > 0
+                            ? (tiers?.[tierIndex - 1]?.min_seats ?? 1) + 1
+                            : 1
+                        }
+                        disabled={isFirst}
                         onChange={(e) => {
-                          field.onChange(parseInt(e.target.value) || 1)
+                          const parsed = parseInt(e.target.value)
+                          field.onChange(isNaN(parsed) ? '' : parsed)
                           setValue(`prices.${index}.id`, '')
+                          syncMaxSeats()
+                        }}
+                        onBlur={(e) => {
+                          field.onBlur()
+                          const minAllowed =
+                            tierIndex > 0
+                              ? (tiers?.[tierIndex - 1]?.min_seats ?? 1) + 1
+                              : 1
+                          const parsed = parseInt(e.target.value)
+                          const clamped = Math.max(
+                            isNaN(parsed) ? minAllowed : parsed,
+                            minAllowed,
+                          )
+                          field.onChange(clamped)
+                          syncMaxSeats()
                         }}
                       />
                     </FormControl>
@@ -399,71 +451,19 @@ export const ProductPriceSeatBasedItem: React.FC<
                 )}
               />
 
+              {/* Hidden max_seats field — value is auto-derived by syncMaxSeats */}
               <FormField
                 control={control}
                 name={
                   `prices.${index}.seat_tiers.tiers.${tierIndex}.max_seats` as const
                 }
-                rules={{
-                  validate: (value) => {
-                    if (isLast) return true // Last tier is always unlimited (null)
-
-                    const minSeats = tiers?.[tierIndex]?.min_seats
-
-                    // max_seats must exist for non-last tiers
-                    if (value === null || value === undefined) {
-                      return 'Max seats is required'
-                    }
-
-                    // max_seats must be >= min_seats
-                    if (minSeats && value < minSeats) {
-                      return `Max seats must be at least ${minSeats}`
-                    }
-
-                    return true
-                  },
-                }}
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
-                      To
-                    </FormLabel>
-                    <FormControl>
-                      {isLast ? (
-                        <div className="dark:bg-polar-800 dark:text-polar-500 dark:border-polar-800 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500">
-                          ∞
-                        </div>
-                      ) : (
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          type="number"
-                          min={tiers?.[tierIndex]?.min_seats ?? 1}
-                          onChange={(e) => {
-                            const value = e.target.value
-                              ? parseInt(e.target.value)
-                              : null
-                            field.onChange(value)
-                            setValue(`prices.${index}.id`, '')
-
-                            // Update next tier's min_seats immediately
-                            if (
-                              value &&
-                              tiers &&
-                              tierIndex < tiers.length - 1
-                            ) {
-                              setValue(
-                                `prices.${index}.seat_tiers.tiers.${tierIndex + 1}.min_seats`,
-                                value + 1,
-                                { shouldValidate: true },
-                              )
-                            }
-                          }}
-                        />
-                      )}
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                  <input
+                    type="hidden"
+                    name={field.name}
+                    value={field.value ?? ''}
+                    ref={field.ref}
+                  />
                 )}
               />
 
@@ -481,9 +481,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
-                      Price per seat
-                    </FormLabel>
+                    <FormLabel>Price per seat</FormLabel>
                     <FormControl>
                       <div ref={field.ref} tabIndex={-1}>
                         <MoneyInput
@@ -507,16 +505,6 @@ export const ProductPriceSeatBasedItem: React.FC<
         )
       })}
 
-      <FormField
-        control={control}
-        name={`prices.${index}.seat_tiers.tiers` as const}
-        render={() => (
-          <FormItem>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       <Button
         type="button"
         variant="secondary"
@@ -524,7 +512,9 @@ export const ProductPriceSeatBasedItem: React.FC<
         onClick={addTier}
         className="self-start"
       >
-        {hasSingleTier ? 'Add Volume Tier' : 'Add Another Tier'}
+        {hasSingleTier
+          ? 'Add volume discount'
+          : 'Add volume discount threshold'}
       </Button>
     </div>
   )

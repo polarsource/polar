@@ -51,7 +51,7 @@ export default function NewWebhookModal({
         `/dashboard/${organization.slug}/settings/webhooks/endpoints/${data.id}`,
       )
     },
-    [hide, createWebhookEndpoint, setCreated],
+    [createWebhookEndpoint, router, organization.slug],
   )
 
   return (

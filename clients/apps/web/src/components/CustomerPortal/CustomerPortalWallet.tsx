@@ -4,13 +4,11 @@ import WalletCard from '../Wallet/WalletCard'
 export interface CustomerPortalWalletProps {
   organization: schemas['CustomerOrganization']
   wallet: schemas['CustomerWallet']
-  customerSessionToken: string
 }
 
 export const CustomerPortalWallet = ({
   organization,
   wallet,
-  customerSessionToken,
 }: CustomerPortalWalletProps) => {
   return (
     <div className="flex flex-col gap-y-4">

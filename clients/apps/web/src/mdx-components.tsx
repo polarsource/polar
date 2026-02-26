@@ -52,7 +52,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         console.warn(
           ` 🌄 Absolute image path detected, this is not recommended for performance reasons: ${props.src}\n Tip: place the image file beside the MDX file and use a relative import.`,
         )
-        // eslint-disable-next-line no-restricted-syntax
+        // eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element
         return <img {...props} />
       }
       /* Otherwise, the `rehype-mdx-import-media` was able to `import` it locally: optimize with next/image */

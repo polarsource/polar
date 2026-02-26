@@ -91,7 +91,6 @@ export default async function Page(props: {
     <WalletPage
       organization={organization}
       wallets={wallets.items}
-      customerSessionToken={token as string}
     />
   )
 }

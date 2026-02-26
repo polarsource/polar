@@ -1,5 +1,6 @@
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { schemas } from '@polar-sh/client'
+import { UploadImage } from '../Image/Image'
 
 const generatePostOGFallbackPath = (slug: string, maxInt: number) => {
   let sum = 0
@@ -46,11 +47,9 @@ const OpenGraphImageCreator = ({
       }}
     >
       {organization.avatar_url && (
-        // eslint-disable-next-line no-restricted-syntax
-        <img
+        <UploadImage
           src={organization.avatar_url}
-          height={160}
-          width={160}
+          approximateWidth={160}
           style={{
             height: 160,
             width: 160,

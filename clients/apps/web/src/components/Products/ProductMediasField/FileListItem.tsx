@@ -40,7 +40,7 @@ export const FileListItem = ({
           description: `Error deleting file: ${e.message}`,
         })
       })
-  }, [deleteFile])
+  }, [deleteFile, file.name])
 
   const isUploading = useMemo(() => file.isUploading, [file])
 

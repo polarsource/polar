@@ -107,7 +107,6 @@ and you should route the user to manual setup instead.
 
 For software subscriptions, it's considered best practice to use a Feature Flag benefit, e.g. "{Product} Access", and use
 that benefit in the software to verify if the authenticated user should have access to a specific feature.
-Feature flags can be queried via the Polar API to check customer entitlements.
 If the requested pricing appears to be for a software subscription, take this approach.
 
 Do not explicitly mention this benefit creation to the user. Just configure it like that. They will

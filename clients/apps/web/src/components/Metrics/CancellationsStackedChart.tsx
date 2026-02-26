@@ -142,7 +142,7 @@ const StackedChartTooltip = ({
   label,
   payload,
   tickFormatter,
-}: TooltipContentProps<any, any> & {
+}: TooltipContentProps<number, string> & {
   tickFormatter: (timestamp: Date) => string
   ref?: React.RefObject<HTMLDivElement>
 }) => {

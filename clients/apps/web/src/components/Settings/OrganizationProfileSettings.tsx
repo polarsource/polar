@@ -38,7 +38,7 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
-import { useForm, useFormContext } from 'react-hook-form'
+import { ControllerRenderProps, useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
@@ -213,7 +213,7 @@ const CompactTextArea = ({
   placeholder,
   rows = 3,
 }: {
-  field: any
+  field: ControllerRenderProps
   placeholder: string
   rows?: number
 }) => (

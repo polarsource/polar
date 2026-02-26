@@ -15,7 +15,7 @@ import {
 } from '@/hooks/queries'
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { loadStripe } from '@stripe/stripe-js'
@@ -47,7 +47,7 @@ export default function ClientPage({
   const [validationCompleted, setValidationCompleted] = useState(false)
 
   const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 
@@ -92,9 +92,13 @@ export default function ClientPage({
     const { data, error } = await createIdentityVerification.mutateAsync()
     if (error) {
       // Handle specific error cases
-      const errorDetail = (error as any).detail
+      const errorDetail =
+        'detail' in error
+          ? (error.detail as string | { error?: string; detail?: string })
+          : undefined
       if (
-        errorDetail?.error === 'IdentityVerificationProcessing' ||
+        (typeof errorDetail === 'object' &&
+          errorDetail?.error === 'IdentityVerificationProcessing') ||
         errorDetail === 'Your identity verification is still processing.'
       ) {
         toast({

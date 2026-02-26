@@ -22,7 +22,7 @@ const PROPERTY_DISPLAY_NAMES: Record<PropertyType, string> = {
 }
 
 interface MeterFilterInputPropertyProps {
-  field: ControllerRenderProps<any, any>
+  field: ControllerRenderProps
 }
 
 const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {

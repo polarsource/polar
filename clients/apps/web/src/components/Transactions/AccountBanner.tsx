@@ -1,6 +1,6 @@
 import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
-import { schemas } from '@polar-sh/client'
+import { ClientResponseError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { CircleAlertIcon } from 'lucide-react'
@@ -73,7 +73,7 @@ const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
   }
 
   const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
 
   if (isNotAdmin) {
     return null

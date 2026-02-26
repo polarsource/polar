@@ -4,9 +4,9 @@ import { headers } from 'next/headers'
 import { cache } from 'react'
 
 async function retryWithBackoff<T>(
-  fn: () => Promise<{ data?: T; error?: any }>,
+  fn: () => Promise<{ data?: T; error?: unknown }>,
   maxRetries = 3,
-): Promise<{ data?: T; error?: any }> {
+): Promise<{ data?: T; error?: unknown }> {
   let delay = 100
   let lastResult
 
@@ -53,27 +53,26 @@ const _getUserOrganizations = async (
     return []
   }
 
-  const requestOptions: any = {
-    params: {
-      query: {
-        limit: 100,
-        sorting: ['name'],
-      },
+  const params = {
+    query: {
+      limit: 100,
+      sorting: ['name'] as const,
     },
   }
 
-  if (bypassCache) {
-    requestOptions.cache = 'no-cache'
-  } else {
-    requestOptions.next = {
-      tags: [`users:${user.id}:organizations`],
-      revalidate: 600,
-    }
-  }
-
-  const { data, error } = await retryWithBackoff(() =>
-    api.GET('/v1/organizations/', requestOptions),
-  )
+  const { data, error } = bypassCache
+    ? await retryWithBackoff(() =>
+        api.GET('/v1/organizations/', { params, cache: 'no-cache' }),
+      )
+    : await retryWithBackoff(() =>
+        api.GET('/v1/organizations/', {
+          params,
+          next: {
+            tags: [`users:${user.id}:organizations`],
+            revalidate: 600,
+          },
+        }),
+      )
 
   if (error) {
     console.error('getUserOrganizations failed after retries:', user.id, error)

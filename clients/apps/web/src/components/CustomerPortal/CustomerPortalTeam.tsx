@@ -8,6 +8,7 @@ import {
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
+import { schemas } from '@polar-sh/client'
 import { validateEmail } from '@/utils/validation'
 import GroupOutlined from '@mui/icons-material/GroupOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
@@ -87,7 +88,7 @@ export const CustomerPortalTeam = ({
 
   const currentMemberId =
     authenticatedUser?.type === 'member'
-      ? (authenticatedUser as any).member_id
+      ? authenticatedUser.member_id
       : null
 
   const handleAddMember = async () => {
@@ -136,7 +137,7 @@ export const CustomerPortalTeam = ({
     try {
       await updateMember.mutateAsync({
         id: memberId,
-        body: { role: newRole as any },
+        body: { role: newRole as schemas['MemberRole'] },
       })
       toast({
         title: 'Role updated',

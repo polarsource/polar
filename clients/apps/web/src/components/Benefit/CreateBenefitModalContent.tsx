@@ -51,7 +51,7 @@ const CreateBenefitModalContent = ({
       type: type ? type : 'custom',
       description: description ? description : undefined,
       properties: {
-        ...(properties as any),
+        ...(properties as Record<string, string | undefined>),
       },
     },
   })

@@ -11,7 +11,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
+import { ClientResponseError, schemas } from '@polar-sh/client'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
@@ -63,7 +63,7 @@ export default function ClientPage({
   } = useOrganizationAccount(organization.id)
 
   const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
 
   const balancesHook = useSearchTransactions({
     account_id: account?.id,

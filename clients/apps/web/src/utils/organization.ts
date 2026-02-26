@@ -7,24 +7,25 @@ const _getOrganizationBySlug = async (
   slug: string,
   bypassCache: boolean = false,
 ): Promise<schemas['Organization'] | undefined> => {
-  const requestOptions: any = {
-    params: {
-      query: {
-        slug,
-      },
+  const params = {
+    query: {
+      slug,
     },
   }
 
-  if (bypassCache) {
-    requestOptions.cache = 'no-cache'
-  } else {
-    requestOptions.next = {
-      tags: [`organizations:${slug}`],
-      revalidate: 600,
-    }
-  }
-
-  const data = await unwrap(api.GET('/v1/organizations/', requestOptions))
+  const data = bypassCache
+    ? await unwrap(
+        api.GET('/v1/organizations/', { params, cache: 'no-cache' }),
+      )
+    : await unwrap(
+        api.GET('/v1/organizations/', {
+          params,
+          next: {
+            tags: [`organizations:${slug}`],
+            revalidate: 600,
+          },
+        }),
+      )
   return data.items[0]
 }
 

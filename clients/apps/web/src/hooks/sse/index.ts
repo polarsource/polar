@@ -5,9 +5,7 @@ import { useEffect } from 'react'
 import { onBenefitGranted, onBenefitRevoked } from './benefits'
 import { onOrganizationUpdated } from './organizations'
 
-const ACTIONS: {
-  [key: string]: (payload: any) => Promise<void>
-} = {
+const ACTIONS: Record<string, (payload: unknown) => Promise<void>> = {
   'organization.updated': onOrganizationUpdated,
   'benefit.granted': onBenefitGranted,
   'benefit.revoked': onBenefitRevoked,
@@ -24,7 +22,7 @@ const useSSE = (streamURL: string, token?: string): EventEmitter => {
 
     const controller = eventSource.listen({
       onMessage: async (message) => {
-        const data = JSON.parse(message.data)
+        const data: { key: string; payload: unknown } = JSON.parse(message.data)
         const handler = ACTIONS[data.key]
         if (handler) {
           await handler(data.payload)

@@ -18,9 +18,9 @@ import {
 import { useFormContext } from 'react-hook-form'
 
 type AggregationFunction =
-  | enums.CountAggregationFunc
-  | enums.PropertyAggregationFunc
-  | enums.UniqueAggregationFunc
+  | (typeof enums.countAggregationFuncValues)[number]
+  | (typeof enums.propertyAggregationFuncValues)[number]
+  | (typeof enums.uniqueAggregationFuncValues)[number]
 
 interface AggregationOption {
   value: AggregationFunction

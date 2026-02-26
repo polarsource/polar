@@ -95,15 +95,15 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
 
   const onFileProcessing = (tempId: string, file: File) => {
     const processingFile = {
-      ...buildFileObject({
-        id: tempId,
-        name: file.name,
-        size: file.size,
-        mime_type: file.type || 'application/octet-stream',
-        is_uploaded: false,
-      } as any),
+      id: tempId,
+      name: file.name,
+      size: file.size,
+      mime_type: file.type || 'application/octet-stream',
+      is_uploaded: false,
       isProcessing: true,
-    }
+      isUploading: false,
+      uploadedBytes: 0,
+    } as FileObject<T>
     setFiles((prev) => [...prev, processingFile])
   }
 

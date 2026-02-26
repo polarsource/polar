@@ -143,7 +143,7 @@ const Item = ({
 }: {
   iconClasses: string
   n: NotificationSchema
-  children: { icon: React.ReactElement<any>; text: React.ReactElement<any> }
+  children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
     <div className="flex space-x-2.5 text-sm transition-colors duration-100">
@@ -302,7 +302,7 @@ export const Notification = ({
 
 const InternalLink = (props: {
   href: string
-  children: React.ReactElement<any>
+  children: React.ReactElement
 }) => {
   return (
     <Link className="font-bold hover:underline" href={props.href}>

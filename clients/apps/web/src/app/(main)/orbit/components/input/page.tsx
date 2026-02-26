@@ -1,8 +1,7 @@
 'use client'
 
-import { Box, Headline, Input, Stack, Text } from '@polar-sh/orbit'
+import { Headline, Input, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 const props = [
@@ -46,7 +45,7 @@ const props = [
 
 export default function InputPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Input"
@@ -54,7 +53,7 @@ export default function InputPage() {
       />
 
       {/* Standard types */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Standard types" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
@@ -66,36 +65,36 @@ export default function InputPage() {
               { label: 'Search', type: 'search', placeholder: 'Search…' },
             ] as const
           ).map(({ label, type, placeholder }) => (
-            <Box
+            <div
               key={type}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
-              <Box className="col-span-2">
+              <div className="col-span-2">
                 <Headline as="h6" text={label} />
-                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+                <Text as="code" variant="mono">
                   type=&quot;{type}&quot;
                 </Text>
-              </Box>
-              <Box className="col-span-3">
+              </div>
+              <div className="col-span-3">
                 <Input type={type} placeholder={placeholder} />
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Prefix / suffix slots */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Prefix & Suffix" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Box className="col-span-2">
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2">
               <Headline as="h6" text="Prefix" />
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 URL scheme, unit label, icon
               </Text>
-            </Box>
-            <Stack vertical gap={sp['SPACING_1']} className="col-span-3">
+            </div>
+            <Stack vertical gap={1} className="col-span-3">
               <Input
                 type="text"
                 prefix="https://"
@@ -103,39 +102,39 @@ export default function InputPage() {
               />
               <Input type="number" prefix="px" placeholder="16" />
             </Stack>
-          </Box>
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Box className="col-span-2">
+          </div>
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2">
               <Headline as="h6" text="Suffix" />
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 Unit, format hint
               </Text>
-            </Box>
-            <Stack vertical gap={sp['SPACING_1']} className="col-span-3">
+            </div>
+            <Stack vertical gap={1} className="col-span-3">
               <Input type="number" suffix="%" placeholder="0" />
               <Input type="number" suffix="ms" placeholder="300" />
             </Stack>
-          </Box>
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Box className="col-span-2">
+          </div>
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2">
               <Headline as="h6" text="Both" />
-            </Box>
-            <Box className="col-span-3">
+            </div>
+            <div className="col-span-3">
               <Input type="number" prefix="$" suffix="USD" placeholder="0.00" />
-            </Box>
-          </Box>
+            </div>
+          </div>
         </Stack>
       </Stack>
 
       {/* Currency */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Currency"
           description={
             <>
               Values are stored and emitted in smallest currency units (cents
               for USD, whole units for JPY). Arrow keys step by{' '}
-              <Text as="code" fontFamily="mono" fontSize="sm">step</Text> (default 0.1).
+              <Text as="code" variant="mono">step</Text> (default 0.1).
             </>
           }
         />
@@ -151,83 +150,83 @@ export default function InputPage() {
               },
             ] as const
           ).map(({ currency, placeholder, label }) => (
-            <Box
+            <div
               key={currency}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
-              <Box className="col-span-2">
+              <div className="col-span-2">
                 <Headline as="h6" text={label} />
-              </Box>
-              <Box className="col-span-3">
+              </div>
+              <div className="col-span-3">
                 <Input
                   type="currency"
                   currency={currency}
                   placeholder={placeholder}
                 />
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Textarea */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Textarea" />
-        <Box className="grid grid-cols-5 items-start gap-8">
-          <Box className="col-span-2">
+        <div className="grid grid-cols-5 items-start gap-8">
+          <div className="col-span-2">
             <Headline as="h6" text="Multiline" />
-            <Text as="span" variant="subtle" fontSize="xs">
+            <Text as="span" variant="caption">
               Resizable vertically
             </Text>
-          </Box>
-          <Box className="col-span-3">
+          </div>
+          <div className="col-span-3">
             <Input type="textarea" placeholder="Write something…" rows={4} />
-          </Box>
-        </Box>
+          </div>
+        </div>
       </Stack>
 
       {/* States */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="States" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Box className="col-span-2">
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2">
               <Headline as="h6" text="Disabled" />
-            </Box>
-            <Box className="col-span-3">
+            </div>
+            <div className="col-span-3">
               <Input type="text" placeholder="Disabled field" disabled />
-            </Box>
-          </Box>
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
-            <Box className="col-span-2">
+            </div>
+          </div>
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
+            <div className="col-span-2">
               <Headline as="h6" text="With value" />
-            </Box>
-            <Box className="col-span-3">
+            </div>
+            <div className="col-span-3">
               <Input type="text" defaultValue="Polar Software Inc" readOnly />
-            </Box>
-          </Box>
+            </div>
+          </div>
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">
+              <Text variant="caption">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

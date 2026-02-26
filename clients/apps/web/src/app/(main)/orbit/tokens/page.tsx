@@ -1,7 +1,6 @@
-import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Headline, Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
-import { sp, cl, ra } from '../token-compat'
 
 
 // ─── Token data ────────────────────────────────────────────────────────────────
@@ -222,10 +221,8 @@ function TableHeader({ cols }: { cols: string[] }) {
         <Text
           key={col}
           as="span"
-          variant="subtle"
-          fontSize="xs"
-          tracking="widest"
-          transform="uppercase"
+          variant="caption"
+          className="uppercase tracking-widest"
         >
           {col}
         </Text>
@@ -258,7 +255,7 @@ function Swatch({ color }: { color: string }) {
 
 function Mono({ children }: { children: ReactNode }) {
   return (
-    <Text as="code" fontFamily="mono" fontSize="xs" variant="subtle">
+    <Text as="code" variant="mono">
       {children}
     </Text>
   )
@@ -268,17 +265,17 @@ function Mono({ children }: { children: ReactNode }) {
 
 export default function TokensPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         title="Design Tokens"
         description="The raw values that underpin every visual decision in Orbit. Tokens are the single source of truth for color, typography, motion, and spacing."
       />
 
       {/* Color */}
-      <Stack vertical gap={sp['SPACING_3']}>
-        <Stack vertical gap={sp['SPACING_1']}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1}>
           <Headline as="h4" text="Color" />
-          <Box className="dark:border-polar-800 border-t border-neutral-200" />
+          <div className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
         <TableHeader cols={['Token', 'Light', 'Dark', 'Usage']} />
         {colorTokens.map(
@@ -290,17 +287,17 @@ export default function TokensPage() {
                 <Mono key="token">{token}</Mono>,
                 <span key="light" className="inline-flex items-center gap-2">
                   <Swatch color={light} />
-                  <Text as="span" variant="subtle" fontSize="xs">
+                  <Text as="span" variant="caption">
                     {lightLabel}
                   </Text>
                 </span>,
                 <span key="dark" className="inline-flex items-center gap-2">
                   <Swatch color={dark} />
-                  <Text as="span" variant="subtle" fontSize="xs">
+                  <Text as="span" variant="caption">
                     {darkLabel}
                   </Text>
                 </span>,
-                <Text key="usage" as="span" variant="subtle" fontSize="xs">
+                <Text key="usage" as="span" variant="caption">
                   {usage}
                 </Text>,
               ]}
@@ -310,10 +307,10 @@ export default function TokensPage() {
       </Stack>
 
       {/* Type scale */}
-      <Stack vertical gap={sp['SPACING_3']}>
-        <Stack vertical gap={sp['SPACING_1']}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1}>
           <Headline as="h4" text="Type Scale" />
-          <Box className="dark:border-polar-800 border-t border-neutral-200" />
+          <div className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
         <TableHeader
           cols={['Level', 'Mobile', 'Desktop', 'Weight', 'Tracking']}
@@ -324,32 +321,32 @@ export default function TokensPage() {
             cols={5}
             cells={[
               <Mono key="level">{level}</Mono>,
-              <Text key="mobile" as="span" variant="subtle" fontSize="xs">
+              <Text key="mobile" as="span" variant="caption">
                 {mobile}
               </Text>,
-              <Text key="desktop" as="span" variant="subtle" fontSize="xs">
+              <Text key="desktop" as="span" variant="caption">
                 {desktop}
               </Text>,
-              <Text key="weight" as="span" variant="subtle" fontSize="xs">
+              <Text key="weight" as="span" variant="caption">
                 {weight}
               </Text>,
-              <Text key="tracking" as="span" variant="subtle" fontSize="xs">
+              <Text key="tracking" as="span" variant="caption">
                 {tracking}
               </Text>,
             ]}
           />
         ))}
-        <Text variant="subtle" fontSize="xs">
+        <Text variant="caption">
           All heading levels use font-feature-settings: &apos;ss07&apos; 1,
           &apos;ss08&apos; 1, &apos;zero&apos; 1, &apos;liga&apos; 0
         </Text>
       </Stack>
 
       {/* Motion */}
-      <Stack vertical gap={sp['SPACING_3']}>
-        <Stack vertical gap={sp['SPACING_1']}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1}>
           <Headline as="h4" text="Motion" />
-          <Box className="dark:border-polar-800 border-t border-neutral-200" />
+          <div className="dark:border-polar-800 border-t border-neutral-200" />
         </Stack>
         <TableHeader cols={['Token', 'Value', 'Usage']} />
         {motionTokens.map(({ token, value, usage }) => (
@@ -359,7 +356,7 @@ export default function TokensPage() {
             cells={[
               <Mono key="token">{token}</Mono>,
               <Mono key="value">{value}</Mono>,
-              <Text key="usage" as="span" variant="subtle" fontSize="xs">
+              <Text key="usage" as="span" variant="caption">
                 {usage}
               </Text>,
             ]}
@@ -368,29 +365,29 @@ export default function TokensPage() {
       </Stack>
 
       {/* Spacing */}
-      <Stack vertical gap={sp['SPACING_3']}>
-        <Stack vertical gap={sp['SPACING_1']}>
+      <Stack vertical gap={3}>
+        <Stack vertical gap={1}>
           <Headline as="h4" text="Spacing" />
-          <Box className="dark:border-polar-800 border-t border-neutral-200" />
-          <Text variant="subtle" fontSize="sm">
+          <div className="dark:border-polar-800 border-t border-neutral-200" />
+          <Text variant="subtle">
             All spacing follows a base-8 grid. Use these values exclusively.
           </Text>
         </Stack>
-        <Stack vertical gap={sp['SPACING_1']}>
+        <Stack vertical gap={1}>
           {spacingTokens.map(({ token, px, rem, usage }) => {
             const size = parseInt(px)
             const barWidth = Math.min(100, (size / 256) * 100)
             return (
-              <Stack key={token} alignItems="center" gap={sp['SPACING_3']}>
-                <Box className="w-32 shrink-0">
+              <Stack key={token} alignItems="center" gap={3}>
+                <div className="w-32 shrink-0">
                   <div
                     className="h-1.5 rounded-full bg-black dark:bg-white"
                     style={{ width: `${barWidth}%` }}
                   />
-                </Box>
+                </div>
                 <Mono>{px}</Mono>
                 <Mono>{rem}</Mono>
-                <Text as="span" variant="subtle" fontSize="xs" className="flex-1">
+                <Text as="span" variant="caption" className="flex-1">
                   {usage}
                 </Text>
               </Stack>

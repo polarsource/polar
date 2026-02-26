@@ -1,6 +1,5 @@
-import { Box, Stack, Text } from '@polar-sh/orbit'
+import { Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 // ─── Examples data ────────────────────────────────────────────────────────────
@@ -96,284 +95,244 @@ const props = [
 
 export default function StackPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Stack"
-        description="The primary flex layout primitive in Orbit. Stack is always display:flex and defaults to a horizontal row. Add vertical for a column, or use verticalUntil / horizontalUntil to flip the axis at a breakpoint. Use Box for token-constrained styling of individual elements."
+        description="The primary flex layout primitive in Orbit. Stack is always display:flex and defaults to a horizontal row. Add vertical for a column, or use verticalUntil / horizontalUntil to flip the axis at a breakpoint. Use className with Tailwind for token-constrained styling of individual elements."
       />
 
       {/* verticalUntil */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="verticalUntil"
           description="Stacks children in a column by default and switches to a row at the given breakpoint. This is the most common responsive layout pattern."
         />
 
         {/* Live demo */}
-        <Stack vertical gap={sp['SPACING_3']}>
-          <Text as="span" variant="subtle" fontSize="xs">
+        <Stack vertical gap={3}>
+          <Text as="span" variant="caption">
             Live demo — resize the window to see the layout switch at xl
           </Text>
-          <Box backgroundColor={cl['BG_ELEVATED']} borderRadius={ra.LG} padding={sp['SPACING_3']}>
-            <Stack verticalUntil="xl" gap={sp['SPACING_2']}>
+          <div className="bg-gray-100 dark:bg-polar-800 rounded-2xl p-6">
+            <Stack verticalUntil="xl" gap={2}>
               {(['A', 'B', 'C'] as const).map((label) => (
-                <Box
+                <div
                   key={label}
-                  backgroundColor={cl['BG_SURFACE']}
-                  borderRadius={ra.MD}
-                  padding={sp['SPACING_2']}
-                  className="grow dark:border-polar-700 flex h-12 items-center justify-center border border-neutral-200"
+                  className="grow dark:border-polar-700 dark:bg-polar-900 flex h-12 items-center justify-center rounded-xl border border-neutral-200 bg-gray-50 p-4"
                 >
-                  <Text fontFamily="mono" fontSize="sm">{label}</Text>
-                </Box>
+                  <Text variant="mono">{label}</Text>
+                </div>
               ))}
             </Stack>
-          </Box>
+          </div>
           <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Stack verticalUntil="xl" gap={sp['SPACING_2']}>
-  <Box>A</Box>
-  <Box>B</Box>
-  <Box>C</Box>
+{`<Stack verticalUntil="xl" gap={2}>
+  <div>A</div>
+  <div>B</div>
+  <div>C</div>
 </Stack>`}
           </pre>
         </Stack>
 
         {/* Breakpoint reference */}
-        <Stack vertical gap={sp['SPACING_3']}>
-          <Text as="span" variant="subtle" fontSize="xs">All breakpoints</Text>
-          <Stack vertical gap={sp['SPACING_2']} flexWrap="wrap">
+        <Stack vertical gap={3}>
+          <Text as="span" variant="caption">All breakpoints</Text>
+          <Stack gap={2} flexWrap="wrap">
             {verticalUntilExamples.map(({ bp, label }) => (
-              <Box
+              <div
                 key={bp}
-                backgroundColor={cl['BG_ELEVATED']}
-                borderRadius={ra.SM}
-                paddingX={sp['SPACING_2']}
-                paddingY={sp['SPACING_1']}
-                className="dark:border-polar-700 border border-neutral-200"
+                className="bg-gray-100 dark:bg-polar-800 dark:border-polar-700 rounded-lg border border-neutral-200 px-4 py-2"
               >
-                <Text as="code" fontFamily="mono" fontSize="xs">
+                <Text as="code" variant="mono">
                   verticalUntil=&quot;{label}&quot;
                 </Text>
-              </Box>
+              </div>
             ))}
           </Stack>
         </Stack>
       </Stack>
 
       {/* horizontalUntil */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="horizontalUntil"
           description="The inverse of verticalUntil — stacks in a row by default and switches to a column at the given breakpoint."
         />
-        <Box backgroundColor={cl['BG_ELEVATED']} borderRadius={ra.LG} padding={sp['SPACING_3']}>
-          <Stack horizontalUntil="lg" gap={sp['SPACING_2']}>
+        <div className="bg-gray-100 dark:bg-polar-800 rounded-2xl p-6">
+          <Stack horizontalUntil="lg" gap={2}>
             {(['A', 'B', 'C'] as const).map((label) => (
-              <Box
+              <div
                 key={label}
-                backgroundColor={cl['BG_SURFACE']}
-                borderRadius={ra.MD}
-                padding={sp['SPACING_2']}
-                className="grow dark:border-polar-700 flex h-12 items-center justify-center border border-neutral-200"
+                className="grow dark:border-polar-700 dark:bg-polar-900 flex h-12 items-center justify-center rounded-xl border border-neutral-200 bg-gray-50 p-4"
               >
-                <Text fontFamily="mono" fontSize="sm">{label}</Text>
-              </Box>
+                <Text variant="mono">{label}</Text>
+              </div>
             ))}
           </Stack>
-        </Box>
+        </div>
         <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Stack horizontalUntil="lg" gap={sp['SPACING_2']}>
-  <Box>A</Box>
-  <Box>B</Box>
-  <Box>C</Box>
+{`<Stack horizontalUntil="lg" gap={2}>
+  <div>A</div>
+  <div>B</div>
+  <div>C</div>
 </Stack>`}
         </pre>
       </Stack>
 
       {/* alignItems */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="alignItems"
           description="Cross-axis alignment of flex children. Accepts a plain value or a responsive breakpoint map."
         />
-        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {alignItemsExamples.map(({ value, label }) => (
-            <Box key={value} className="grid grid-cols-5 items-center gap-8 py-5">
-              <Box className="col-span-2">
-                <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={value} className="grid grid-cols-5 items-center gap-8 py-5">
+              <div className="col-span-2">
+                <Text as="code" variant="mono">
                   alignItems=&quot;{label}&quot;
                 </Text>
-              </Box>
-              <Box className="col-span-3">
+              </div>
+              <div className="col-span-3">
                 <Stack
                   alignItems={value}
-                  gap={sp['SPACING_1']}
-                  backgroundColor={cl['BG_ELEVATED']}
-                  borderRadius={ra.SM}
-                  padding={sp['SPACING_2']}
-                  className="h-16"
+                  gap={1}
+                  className="bg-gray-100 dark:bg-polar-800 h-16 rounded-lg p-4"
                 >
                   {[4, 6, 8].map((h) => (
-                    <Box
+                    <div
                       key={h}
-                      backgroundColor={cl['BG_SURFACE']}
-                      borderRadius={ra.SM}
-                      className={`w-6 h-${h}`}
+                      className={`bg-gray-50 dark:bg-polar-900 rounded-lg w-6 h-${h}`}
                     />
                   ))}
                 </Stack>
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* justifyContent */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="justifyContent"
           description="Main-axis distribution of flex children."
         />
-        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {justifyContentExamples.map(({ value, label }) => (
-            <Box key={value} className="grid grid-cols-5 items-center gap-8 py-5">
-              <Box className="col-span-2">
-                <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={value} className="grid grid-cols-5 items-center gap-8 py-5">
+              <div className="col-span-2">
+                <Text as="code" variant="mono">
                   justifyContent=&quot;{label}&quot;
                 </Text>
-              </Box>
-              <Box className="col-span-3">
+              </div>
+              <div className="col-span-3">
                 <Stack
                   justifyContent={value}
-                  backgroundColor={cl['BG_ELEVATED']}
-                  borderRadius={ra.SM}
-                  padding={sp['SPACING_2']}
+                  className="bg-gray-100 dark:bg-polar-800 rounded-lg p-4"
                 >
                   {[0, 1, 2].map((i) => (
-                    <Box
+                    <div
                       key={i}
-                      backgroundColor={cl['BG_SURFACE']}
-                      borderRadius={ra.SM}
-                      className="h-6 w-6"
+                      className="bg-gray-50 dark:bg-polar-900 h-6 w-6 rounded-lg"
                     />
                   ))}
                 </Stack>
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Composition */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Composition"
-          description="Real-world patterns. Stack drives the flex layout; Box handles token-based styling on individual elements."
+          description="Real-world patterns. Stack drives the flex layout; className handles styling on individual elements."
         />
-        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
 
           {/* Card */}
-          <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
-              <Text fontSize="sm">Card</Text>
-              <Text variant="subtle" fontSize="xs">Vertical stack · surface · padding · radius</Text>
+          <div className="grid grid-cols-5 items-start gap-8 py-6">
+            <Stack vertical gap={1} className="col-span-2">
+              <Text variant="body">Card</Text>
+              <Text variant="subtle">Vertical stack · surface · padding · radius</Text>
             </Stack>
-            <Box className="col-span-3">
-              <Box
-                as="article"
-                backgroundColor={cl['BG_SURFACE']}
-                padding={sp['SPACING_3']}
-                borderRadius={ra.LG}
-                className="dark:border-polar-800 border border-neutral-200"
-              >
-                <Stack vertical gap={sp['SPACING_2']}>
-                  <Text fontWeight="medium" fontSize="sm">Card title</Text>
-                  <Text variant="subtle" fontSize="xs" leading="relaxed">
+            <div className="col-span-3">
+              <article className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-neutral-200 bg-gray-50 p-6">
+                <Stack vertical gap={2}>
+                  <Text variant="label">Card title</Text>
+                  <Text variant="subtle">
                     Supporting description text.
                   </Text>
                 </Stack>
-              </Box>
-            </Box>
-          </Box>
+              </article>
+            </div>
+          </div>
 
           {/* Toolbar */}
-          <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
-              <Text fontSize="sm">Toolbar</Text>
-              <Text variant="subtle" fontSize="xs">Horizontal · space-between · centered</Text>
+          <div className="grid grid-cols-5 items-start gap-8 py-6">
+            <Stack vertical gap={1} className="col-span-2">
+              <Text variant="body">Toolbar</Text>
+              <Text variant="subtle">Horizontal · space-between · centered</Text>
             </Stack>
-            <Box className="col-span-3">
-              <Box
-                backgroundColor={cl['BG_SURFACE']}
-                paddingX={sp['SPACING_3']}
-                paddingY={sp['SPACING_2']}
-                borderRadius={ra.LG}
-                className="dark:border-polar-800 border border-neutral-200"
-              >
+            <div className="col-span-3">
+              <div className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-neutral-200 bg-gray-50 px-6 py-4">
                 <Stack alignItems="center" justifyContent="between">
-                  <Text fontWeight="medium" fontSize="sm">Section title</Text>
-                  <Box
-                    backgroundColor={cl['BG_ELEVATED']}
-                    paddingX={sp['SPACING_2']}
-                    paddingY={sp['SPACING_1']}
-                    borderRadius={ra.SM}
-                  >
-                    <Text variant="subtle" fontSize="xs">Action</Text>
-                  </Box>
+                  <Text variant="label">Section title</Text>
+                  <div className="bg-gray-100 dark:bg-polar-800 rounded-lg px-4 py-2">
+                    <Text variant="subtle">Action</Text>
+                  </div>
                 </Stack>
-              </Box>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
 
           {/* Responsive card grid */}
-          <Box className="grid grid-cols-5 items-start gap-8 py-6">
-            <Stack vertical gap={sp['SPACING_1']} className="col-span-2">
-              <Text fontSize="sm">Responsive card row</Text>
-              <Text variant="subtle" fontSize="xs">
+          <div className="grid grid-cols-5 items-start gap-8 py-6">
+            <Stack vertical gap={1} className="col-span-2">
+              <Text variant="body">Responsive card row</Text>
+              <Text variant="subtle">
                 Column on mobile · row from xl · each card fills remaining space
               </Text>
             </Stack>
-            <Box className="col-span-3">
-              <Stack verticalUntil="xl" gap={sp['SPACING_2']}>
+            <div className="col-span-3">
+              <Stack verticalUntil="xl" gap={2}>
                 {(['Analytics', 'Revenue', 'Customers'] as const).map((t) => (
-                  <Box
+                  <div
                     key={t}
-                    flex="1"
-                    backgroundColor={cl['BG_SURFACE']}
-                    padding={sp['SPACING_2']}
-                    borderRadius={ra.MD}
-                    className="dark:border-polar-700 border border-neutral-200"
+                    className="dark:border-polar-700 dark:bg-polar-900 flex-1 rounded-xl border border-neutral-200 bg-gray-50 p-4"
                   >
-                    <Text fontFamily="mono" fontSize="xs" variant="subtle">{t}</Text>
-                  </Box>
+                    <Text variant="mono">{t}</Text>
+                  </div>
                 ))}
               </Stack>
-            </Box>
-          </Box>
+            </div>
+          </div>
 
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical gap={sp['SPACING_2']} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="xs" className="col-span-1">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono" className="col-span-1">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="subtle">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

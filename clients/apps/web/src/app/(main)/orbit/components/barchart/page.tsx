@@ -1,6 +1,5 @@
-import { BarChart, Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { BarChart, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 const props = [
@@ -26,7 +25,7 @@ const props = [
 
 export default function BarChartPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="BarChart"
@@ -34,9 +33,9 @@ export default function BarChartPage() {
       />
 
       {/* Demo */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Demo" />
-        <Box className="h-96">
+        <div className="h-96">
           <BarChart
             animated
             data={[
@@ -45,11 +44,11 @@ export default function BarChartPage() {
               { label: 'Customer Satisfaction', value: 81 },
             ]}
           />
-        </Box>
+        </div>
       </Stack>
 
       {/* Behavior notes */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Behavior" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
@@ -74,37 +73,37 @@ export default function BarChartPage() {
                 'Text color flips between near-white and near-black at the 45% lightness threshold to maintain readability against any bar color.',
             },
           ].map(({ heading, content }) => (
-            <Box key={heading} className="grid grid-cols-5 gap-8 py-6">
-              <Box className="col-span-2">
+            <div key={heading} className="grid grid-cols-5 gap-8 py-6">
+              <div className="col-span-2">
                 <Headline as="h6" text={heading} />
-              </Box>
-              <Text variant="subtle" fontSize="sm" leading="relaxed" className="col-span-3">
+              </div>
+              <Text variant="subtle" className="col-span-3">
                 {content}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono" className="col-span-1">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">
+              <Text variant="caption">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

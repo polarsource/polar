@@ -37,6 +37,18 @@ async def get(
     if organization is None:
         raise ResourceNotFound()
 
-    return CustomerOrganizationData.model_validate(
+    has_meters = await customer_organization_service.has_active_meters(
+        session, organization.id
+    )
+
+    data = CustomerOrganizationData.model_validate(
         {"organization": organization, "products": organization.products}
     )
+
+    if not has_meters:
+        data.organization.customer_portal_settings = {
+            **data.organization.customer_portal_settings,
+            "usage": {"show": False},
+        }
+
+    return data

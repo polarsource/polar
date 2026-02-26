@@ -110,7 +110,7 @@ export default function AvatarPage() {
               <div className="col-span-3">
                 <Avatar
                   name={name}
-                  avatar_url={avatar_url}
+                  src={avatar_url}
                   className="h-8 w-8 text-xs"
                 />
               </div>
@@ -130,7 +130,7 @@ export default function AvatarPage() {
             <Stack vertical key={name} alignItems="center" gap={1}>
               <Avatar
                 name={name}
-                avatar_url={avatar_url}
+                src={avatar_url}
                 className="h-8 w-8 text-xs"
               />
               <Text as="span" variant="mono">

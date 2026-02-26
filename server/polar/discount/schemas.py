@@ -96,6 +96,16 @@ MaxRedemptions = Annotated[
     ),
     Ge(1),
 ]
+MaxRedemptionsPerCustomer = Annotated[
+    int | None,
+    Field(
+        description=(
+            "Optional maximum number of times the discount can be redeemed "
+            "by the same customer."
+        ),
+    ),
+    Ge(1),
+]
 DurationOnceForever = Annotated[
     Literal[DiscountDuration.once, DiscountDuration.forever],
     Field(
@@ -167,6 +177,7 @@ class DiscountCreateBase(MetadataInputMixin, Schema):
     starts_at: StartsAt = None
     ends_at: EndsAt = None
     max_redemptions: MaxRedemptions = None
+    max_redemptions_per_customer: MaxRedemptionsPerCustomer = None
 
     duration: DiscountDuration
 
@@ -249,6 +260,7 @@ class DiscountUpdate(MetadataInputMixin, Schema):
     starts_at: StartsAt = None
     ends_at: EndsAt = None
     max_redemptions: MaxRedemptions = None
+    max_redemptions_per_customer: MaxRedemptionsPerCustomer = None
 
     duration: DiscountDuration | None = None
     duration_in_months: DurationInMonths | None = None
@@ -293,6 +305,11 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     )
     max_redemptions: int | None = Field(
         description="Maximum number of times the discount can be redeemed."
+    )
+    max_redemptions_per_customer: int | None = Field(
+        description=(
+            "Maximum number of times the discount can be redeemed by the same customer."
+        )
     )
 
     redemptions_count: int = Field(

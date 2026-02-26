@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Uuid
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Discount, Subscription
+    from polar.models import Checkout, Customer, Discount, Subscription
 
 
 class DiscountRedemption(RecordModel):
@@ -38,3 +38,15 @@ class DiscountRedemption(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
+
+    customer_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True, index=True
+    )
+
+    customer_email: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
+
+    @declared_attr
+    def customer(cls) -> Mapped["Customer | None"]:
+        return relationship("Customer", lazy="raise")

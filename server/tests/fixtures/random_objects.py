@@ -690,6 +690,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
@@ -706,6 +707,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
@@ -723,6 +725,7 @@ async def create_discount(
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
+    max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
 ) -> Discount:
     model = type.get_model()
@@ -737,6 +740,7 @@ async def create_discount(
         ends_at=ends_at,
         discount_products=[],
         max_redemptions=max_redemptions,
+        max_redemptions_per_customer=max_redemptions_per_customer,
         redemptions_count=0,
     )
     if isinstance(custom_field, DiscountFixed):

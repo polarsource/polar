@@ -234,6 +234,11 @@ const CustomerChangePlanModal = ({
     api,
   ])
 
+  const availableProducts = useMemo(
+    () => products.filter((product) => product.id !== subscription.product_id),
+    [products, subscription],
+  )
+
   return (
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
@@ -251,10 +256,13 @@ const CustomerChangePlanModal = ({
           />
         </List>
         <h3 className="font-medium">Available Plans</h3>
-        <List size="small">
-          {products
-            .filter((product) => product.id !== subscription.product_id)
-            .map((product) => (
+        {availableProducts.length === 0 ? (
+          <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
+            No other plans available
+          </p>
+        ) : (
+          <List size="small">
+            {availableProducts.map((product) => (
               <ProductPriceListItem
                 key={product.id}
                 product={product}
@@ -263,7 +271,8 @@ const CustomerChangePlanModal = ({
                 onSelect={() => setSelectedProduct(product)}
               />
             ))}
-        </List>
+          </List>
+        )}
         <div className="flex flex-col gap-y-6">
           {addedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">

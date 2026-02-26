@@ -33,6 +33,7 @@ from polar.kit.schemas import (
     Schema,
     SelectorWidget,
     SetSchemaReference,
+    StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
@@ -60,6 +61,7 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
+PRODUCT_NAME_MAX_LENGTH = 64
 
 # PostgreSQL int4 range limit
 INT_MAX_VALUE = 2_147_483_647
@@ -101,8 +103,10 @@ PriceCurrency = Annotated[
 ]
 ProductName = Annotated[
     str,
+    StripValidator,
     Field(
         min_length=PRODUCT_NAME_MIN_LENGTH,
+        max_length=PRODUCT_NAME_MAX_LENGTH,
         description="The name of the product.",
     ),
 ]

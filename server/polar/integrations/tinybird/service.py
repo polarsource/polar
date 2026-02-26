@@ -30,12 +30,15 @@ metadata = MetaData()
 events_table = Table(
     "events_by_ingested_at",
     metadata,
+    Column("id", String),
     Column("name", String),
     Column("source", String),
     Column("organization_id", String),
     Column("customer_id", String),
     Column("external_customer_id", String),
     Column("parent_id", String),
+    Column("root_id", String),
+    Column("event_type_id", String),
     Column("timestamp", DateTime),
 )
 
@@ -304,6 +307,33 @@ class TinybirdEventsQuery:
         self._filters.append(events_table.c.source == source.value)
         return self
 
+    def filter_sources(self, sources: Sequence[EventSource]) -> Self:
+        if sources:
+            self._filters.append(events_table.c.source.in_([s.value for s in sources]))
+        return self
+
+    def filter_name_query(self, query: str) -> Self:
+        self._filters.append(events_table.c.name.ilike(f"%{query}%"))
+        return self
+
+    def filter_timestamp_range(
+        self, start: datetime | None = None, end: datetime | None = None
+    ) -> Self:
+        if start is not None:
+            self._filters.append(events_table.c.timestamp > start)
+        if end is not None:
+            self._filters.append(events_table.c.timestamp < end)
+        return self
+
+    def filter_names(self, names: Sequence[str]) -> Self:
+        if names:
+            self._filters.append(events_table.c.name.in_(list(names)))
+        return self
+
+    def filter_event_type_id(self, event_type_id: UUID) -> Self:
+        self._filters.append(events_table.c.event_type_id == str(event_type_id))
+        return self
+
     _SORT_COLUMN_MAP = {
         "name": events_table.c.name,
         "first_seen": func.min(events_table.c.timestamp),
@@ -348,6 +378,45 @@ class TinybirdEventsQuery:
             log.error("tinybird.get_event_type_stats.failed", error=str(e))
             raise
 
+    async def get_event_ids_and_count(
+        self, limit: int, offset: int, descending: bool = True
+    ) -> tuple[list[str], int]:
+        base_filter = events_table.c.organization_id == self._organization_id
+
+        count_statement = (
+            select(func.count().label("total"))
+            .select_from(events_table)
+            .where(base_filter)
+        )
+        for f in self._filters:
+            count_statement = count_statement.where(f)
+
+        order = (
+            events_table.c.timestamp.desc()
+            if descending
+            else events_table.c.timestamp.asc()
+        )
+        ids_statement = (
+            select(events_table.c.id)
+            .where(base_filter)
+            .order_by(order)
+            .limit(limit)
+            .offset(offset)
+        )
+        for f in self._filters:
+            ids_statement = ids_statement.where(f)
+
+        count_sql, count_template = _compile(count_statement)
+        ids_sql, ids_template = _compile(ids_statement)
+
+        count_rows = await client.query(count_sql, db_statement=count_template)
+        total = count_rows[0]["total"] if count_rows else 0
+
+        id_rows = await client.query(ids_sql, db_statement=ids_template)
+        event_ids = [row["id"] for row in id_rows]
+
+        return event_ids, total
+
 
 class TinybirdEventTypesQuery:
     """
@@ -391,3 +460,83 @@ class TinybirdEventTypesQuery:
         except Exception as e:
             log.error("tinybird.get_event_type_stats_from_mv.failed", error=str(e))
             raise
+
+
+DENORMALIZED_AGG_FIELDS = {
+    "_cost.amount",
+    "_cost.currency",
+    "_llm.input_tokens",
+    "_llm.output_tokens",
+}
+
+
+@dataclass
+class TinybirdTimeseriesBucket:
+    name: str
+    bucket: datetime
+    occurrences: int
+    customers: int
+    field_sum: float
+    field_avg: float
+    field_p10: float
+    field_p90: float
+    field_p99: float
+
+
+def _build_agg_field_params(field_path: str) -> dict[str, str]:
+    if field_path in DENORMALIZED_AGG_FIELDS:
+        return {"agg_field": field_path}
+    parts = field_path.split(".")
+    params: dict[str, str] = {"agg_depth": str(len(parts))}
+    for i, part in enumerate(parts, 1):
+        params[f"agg_key_{i}"] = part
+    return params
+
+
+async def get_timeseries_occurrences(
+    organization_id: UUID,
+    start_timestamp: datetime,
+    end_timestamp: datetime,
+    interval: str,
+    timezone: str,
+    *,
+    aggregate_field: str = "_cost.amount",
+    customer_id: Sequence[UUID] | None = None,
+    external_customer_id: Sequence[str] | None = None,
+    name: Sequence[str] | None = None,
+    event_type_id: UUID | None = None,
+) -> list[TinybirdTimeseriesBucket]:
+    params: dict[str, Any] = {
+        "organization_id": str(organization_id),
+        "start_dt": start_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_dt": end_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        "interval": interval,
+        "tz": timezone,
+        **_build_agg_field_params(aggregate_field),
+    }
+
+    if customer_id:
+        params["customer_ids"] = ",".join(str(c) for c in customer_id)
+    if external_customer_id:
+        params["external_customer_ids"] = ",".join(external_customer_id)
+    if name:
+        params["names"] = ",".join(name)
+    if event_type_id:
+        params["event_type_id"] = str(event_type_id)
+
+    rows = await client.endpoint("event_timeseries_endpoint", params)
+
+    return [
+        TinybirdTimeseriesBucket(
+            name=row["name"],
+            bucket=_parse_datetime(row["bucket"]),
+            occurrences=row["occurrences"],
+            customers=row["customers"],
+            field_sum=float(row.get("field_sum", 0) or 0),
+            field_avg=float(row.get("field_avg", 0) or 0),
+            field_p10=float(row.get("field_p10", 0) or 0),
+            field_p90=float(row.get("field_p90", 0) or 0),
+            field_p99=float(row.get("field_p99", 0) or 0),
+        )
+        for row in rows
+    ]

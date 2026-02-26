@@ -1377,20 +1377,52 @@ async def get(
         try:
             account_status = OrganizationStatusFormAdapter.validate_python(data)
             review_repo = OrganizationReviewRepository.from_session(session)
+
+            # Fetch the AI verdict to determine if this is an override
+            agent_review = await review_repo.get_latest_agent_review(id)
+            ai_verdict: str | None = None
+            if agent_review and agent_review.report:
+                report = agent_review.report.get("report", {})
+                ai_verdict = report.get("verdict")
+
+            reason = getattr(account_status, "reason", None)
+            reason = reason.strip() if reason else None
+
+            def _is_override(human_decision: str) -> bool:
+                """Check if the human decision contradicts the AI verdict."""
+                if ai_verdict is None:
+                    return False
+                return (
+                    (human_decision == "APPROVE" and ai_verdict == "DENY")
+                    or (human_decision == "DENY" and ai_verdict == "APPROVE")
+                )
+
             if account_status.action == "approve":
+                if _is_override("APPROVE") and not reason:
+                    raise PydanticCustomError(
+                        "override_reason_required",
+                        "A reason is required when overriding the AI recommendation.",
+                    )
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
                     decision="APPROVE",
+                    reason=reason,
                 )
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
+                if _is_override("DENY") and not reason:
+                    raise PydanticCustomError(
+                        "override_reason_required",
+                        "A reason is required when overriding the AI recommendation.",
+                    )
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
                     decision="DENY",
+                    reason=reason,
                 )
                 await organization_service.deny_organization(session, organization)
             elif account_status.action == "under_review":
@@ -1398,22 +1430,36 @@ async def get(
                     session, organization
                 )
             elif account_status.action == "approve_appeal":
+                if _is_override("APPROVE") and not reason:
+                    raise PydanticCustomError(
+                        "override_reason_required",
+                        "A reason is required when overriding the AI recommendation.",
+                    )
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
                     decision="APPROVE",
                     review_context="appeal",
+                    reason=reason,
                 )
                 await organization_service.approve_appeal(session, organization)
             elif account_status.action == "deny_appeal":
+                if _is_override("DENY") and not reason:
+                    raise PydanticCustomError(
+                        "override_reason_required",
+                        "A reason is required when overriding the AI recommendation.",
+                    )
                 await review_repo.record_human_decision(
                     organization_id=id,
                     reviewer_id=user_session.user.id,
                     decision="DENY",
                     review_context="appeal",
+                    reason=reason,
                 )
                 await organization_service.deny_appeal(session, organization)
             return HXRedirectResponse(request, request.url, 303)
+        except PydanticCustomError as e:
+            await add_toast(request, str(e.message_template), variant="error")
         except ValidationError as e:
             validation_error = e
 

@@ -1,6 +1,6 @@
 // ─── Components ───────────────────────────────────────────────────────────────
 export { Avatar } from './components/Avatar'
-export type { AvatarProps, AvatarSize } from './components/Avatar'
+export type { AvatarProps } from './components/Avatar'
 export { BarChart } from './components/BarChart'
 export type { BarChartItem } from './components/BarChart'
 export { Button } from './components/Button'

@@ -171,7 +171,9 @@ class TestCollectSetupDataCheckoutLinks:
         link_without1 = _build_checkout_link(products=[("B", False)])
         link_without2 = _build_checkout_link(products=[("C", False)])
 
-        result = collect_setup_data([link_with, link_without1, link_without2], [], 0, [])
+        result = collect_setup_data(
+            [link_with, link_without1, link_without2], [], 0, []
+        )
 
         assert result.checkout_links.total_links == 3
         assert result.checkout_links.links_without_benefits == 2

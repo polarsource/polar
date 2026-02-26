@@ -224,25 +224,51 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   )
 }
 
-const getInputComponent = (customField: schemas['CustomField']) => {
-  switch (customField.type) {
-    case 'text':
-      return CustomFieldTextInput
-    case 'number':
-      return CustomFieldNumberInput
-    case 'date':
-      return CustomFieldDateInput
-    case 'checkbox':
-      return CustomFieldCheckboxInput
-    case 'select':
-      return CustomFieldSelectInput
-  }
-}
-
 interface CustomFieldInputProps {
   customField: schemas['CustomField']
   required: boolean
   field: ControllerRenderProps
+}
+
+const CustomFieldInputContent = ({
+  customField,
+  required,
+  field,
+}: CustomFieldInputProps) => {
+  switch (customField.type) {
+    case 'text':
+      return (
+        <CustomFieldTextInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'number':
+      return (
+        <CustomFieldNumberInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'date':
+      return (
+        <CustomFieldDateInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'select':
+      return (
+        <CustomFieldSelectInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+  }
 }
 
 const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
@@ -250,8 +276,6 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
   required,
   field,
 }) => {
-  const InputComponent = getInputComponent(customField)
-
   if (customField.type === 'checkbox') {
     return (
       <CustomFieldCheckboxInput
@@ -266,9 +290,7 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
     <FormItem>
       <FieldLabel customField={customField} />
       <FormControl>
-        <InputComponent
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
+        <CustomFieldInputContent
           customField={customField}
           required={required}
           field={field}

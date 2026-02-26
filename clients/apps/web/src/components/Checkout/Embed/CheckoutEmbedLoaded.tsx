@@ -16,7 +16,7 @@ const CheckoutEmbedLoaded: React.FC<
       return
     }
     PolarEmbedCheckout.postMessage({ event: 'loaded' }, checkout.embedOrigin)
-  }, [])
+  }, [checkout.embedOrigin])
 
   return null
 }

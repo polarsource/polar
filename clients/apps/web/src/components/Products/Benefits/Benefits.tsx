@@ -56,6 +56,7 @@ export const Benefits = ({
     parseAsBoolean.withDefault(false),
   )
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reacting to querystring-driven command to open modal
   useEffect(() => {
     if (createBenefitQuerystring) {
       setCreateBenefitType(undefined)

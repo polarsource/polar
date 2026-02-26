@@ -7,7 +7,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDetails'
@@ -122,16 +122,12 @@ export const InactiveSubscriptionsOverview = ({
     sorting: ['-created_at'],
   })
 
-  const pastDueOrder = useMemo(() => {
-    if (
-      !retryPaymentSubscription ||
-      retryPaymentSubscription.status !== 'past_due' ||
-      !orders?.items
-    ) {
-      return null
-    }
-    return orders.items.find((order) => order.status === 'pending')
-  }, [retryPaymentSubscription, orders?.items])
+  const pastDueOrder =
+    retryPaymentSubscription &&
+    retryPaymentSubscription.status === 'past_due' &&
+    orders?.items
+      ? (orders.items.find((order) => order.status === 'pending') ?? null)
+      : null
 
   return (
     <div className="flex flex-col gap-y-4">

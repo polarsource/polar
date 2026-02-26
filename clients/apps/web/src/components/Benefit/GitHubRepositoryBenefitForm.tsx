@@ -110,17 +110,12 @@ export const GitHubRepositoryBenefitForm = ({
     })
   }, [repositories])
 
-  const [selectedRepository, setSelectedRepository] = useState<
-    GitHubInvitesBenefitRepositoryWithKey | undefined
-  >()
-
   const onRepositoryChange = useCallback(
     (key: string, onChange: (value: string) => void) => {
       const repo = repos.find((r) => r.key == key)
       if (!repo) {
         return
       }
-      setSelectedRepository(repo)
       setValue('properties.repository_owner', repo.repository_owner)
       onChange(repo.repository_name)
     },
@@ -128,6 +123,13 @@ export const GitHubRepositoryBenefitForm = ({
   )
 
   const formRepoOwner = watch('properties.repository_owner')
+  const formRepoName = watch('properties.repository_name')
+
+  const selectedRepository = useMemo(() => {
+    if (!formRepoOwner || !formRepoName) return undefined
+    const key = `${formRepoOwner}/${formRepoName}`
+    return repos.find((r) => r.key === key)
+  }, [formRepoOwner, formRepoName, repos])
 
   useEffect(() => {
     const org = repositories?.organizations.find(

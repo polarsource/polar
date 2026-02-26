@@ -19,6 +19,7 @@ const getIsDismissed = (): boolean => {
 export const IOSAppBanner = () => {
   const [isDismissed, setIsDismissed] = useState(() => getIsDismissed())
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only localStorage read after SSR hydration
   useEffect(() => {
     setIsDismissed(getIsDismissed())
   }, [])

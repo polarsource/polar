@@ -107,10 +107,8 @@ const UpdateProduct = ({
     [allProducts, activePriceIds, subscription],
   )
 
-  const selectedProductId = watch('product_id')
-  const selectedProduct = useMemo(
-    () => products.find((product) => product.id === selectedProductId),
-    [products, selectedProductId],
+  const selectedProduct = products.find(
+    (product) => product.id === watch('product_id'),
   )
 
   const onSubmit = useCallback(

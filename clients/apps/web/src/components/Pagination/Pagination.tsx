@@ -4,13 +4,7 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
-import {
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { PropsWithChildren, useCallback, useMemo } from 'react'
 
 interface PaginationProps extends PropsWithChildren {
   totalCount: number
@@ -36,19 +30,11 @@ export default Pagination
 export const usePagination = () => {
   const router = useRouter()
   const search = useSearchParams()
-  const initialPage = useMemo(() => Number(search?.get('page')) || 1, [search])
-  const [currentPage, setCurrentPage] = useState<number>(initialPage)
-
-  useEffect(() => {
-    if (!search?.has('page')) {
-      setCurrentPage(1)
-    }
-  }, [search])
+  const currentPage = useMemo(() => Number(search?.get('page')) || 1, [search])
 
   const handleSetCurrentPage = useCallback(
     (page: number) => {
       if (search) {
-        setCurrentPage(page)
         const params = new URLSearchParams(search)
         params.set('page', page.toString())
 

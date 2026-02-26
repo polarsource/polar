@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { ControllerRenderProps } from 'react-hook-form'
 
 const STANDARD_FIELDS = ['name', 'timestamp'] as const
@@ -47,19 +47,10 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
     return { type: 'metadata', metadataPath }
   }
 
-  const [propertyType, setPropertyType] = useState<PropertyType>(
-    () => parseValue(field.value).type,
+  const { type: propertyType, metadataPath } = useMemo(
+    () => parseValue(field.value),
+    [field.value],
   )
-  const [metadataPath, setMetadataPath] = useState<string>(
-    () => parseValue(field.value).metadataPath,
-  )
-
-  // Sync state when field value changes externally
-  useEffect(() => {
-    const parsed = parseValue(field.value)
-    setPropertyType(parsed.type)
-    setMetadataPath(parsed.metadataPath)
-  }, [field.value])
 
   // Update form value when property type or metadata path changes
   const updateFieldValue = (type: PropertyType, path: string) => {
@@ -73,12 +64,10 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
   }
 
   const handleTypeChange = (newType: PropertyType) => {
-    setPropertyType(newType)
     updateFieldValue(newType, metadataPath)
   }
 
   const handleMetadataPathChange = (path: string) => {
-    setMetadataPath(path)
     updateFieldValue('metadata', path)
   }
 

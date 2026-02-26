@@ -17,7 +17,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
 
 const AuthenticationMethod = ({
@@ -160,14 +160,14 @@ const AuthenticationSettings = () => {
   const [updateEmailStage, setUpdateEmailStage] = useState<
     'off' | 'form' | 'request' | 'verified'
   >((searchParams.get('update_email') as 'verified' | null) || 'off')
-  const [userReloaded, setUserReloaded] = useState(false)
+  const userReloadedRef = useRef(false)
 
   useEffect(() => {
-    if (!userReloaded && updateEmailStage === 'verified') {
+    if (!userReloadedRef.current && updateEmailStage === 'verified') {
+      userReloadedRef.current = true
       reloadUser()
-      setUserReloaded(true)
     }
-  }, [updateEmailStage, reloadUser, userReloaded])
+  }, [updateEmailStage, reloadUser])
 
   const updateEmailContent: Record<
     'off' | 'form' | 'request' | 'verified',

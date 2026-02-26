@@ -229,7 +229,9 @@ export function VectorEditor({
   // Set of "pi:ci" keys for multi-selected vertices
   const [selection, setSelection] = useState<Set<string>>(new Set())
   const selectionRef = useRef<Set<string>>(selection)
-  selectionRef.current = selection
+  useEffect(() => {
+    selectionRef.current = selection
+  }, [selection])
   // The last-clicked vertex, used to show control handles
   const [focused, setFocused] = useState<{
     pathIndex: number
@@ -322,13 +324,21 @@ export function VectorEditor({
 
   const skipNextClick = useRef(false)
   const draggingRef = useRef(dragging)
-  draggingRef.current = dragging
   const marqueeRef = useRef(marquee)
-  marqueeRef.current = marquee
   const pathsRef = useRef(paths)
-  pathsRef.current = paths
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  useEffect(() => {
+    draggingRef.current = dragging
+  }, [dragging])
+  useEffect(() => {
+    marqueeRef.current = marquee
+  }, [marquee])
+  useEffect(() => {
+    pathsRef.current = paths
+  }, [paths])
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   // Window-level mousemove/mouseup for drag and marquee so they work outside the SVG
   useEffect(() => {
@@ -521,7 +531,7 @@ export function VectorEditor({
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [getSVGPoint])
+  }, [getSVGPoint, svg, viewBox])
 
   // Detect dark mode
   const [isDark, setIsDark] = useState(false)

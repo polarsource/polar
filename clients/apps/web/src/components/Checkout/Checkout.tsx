@@ -194,24 +194,18 @@ const Checkout = ({
     posthog,
   ])
 
-  const PaymentNotReadyBanner = () => {
-    if (!shouldBlockCheckout) return null
-
-    const isDenied = paymentStatus?.organization_status === 'denied'
-
-    return (
-      <Alert color="red">
-        <div className="flex flex-col gap-y-2 p-2">
-          <div className="font-medium">Payments are currently unavailable</div>
-          <div className="text-sm">
-            {isDenied
-              ? `${checkout.organization.name} doesn't allow payments.`
-              : `${checkout.organization.name} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
-          </div>
+  const paymentNotReadyBanner = shouldBlockCheckout ? (
+    <Alert color="red">
+      <div className="flex flex-col gap-y-2 p-2">
+        <div className="font-medium">Payments are currently unavailable</div>
+        <div className="text-sm">
+          {paymentStatus?.organization_status === 'denied'
+            ? `${checkout.organization.name} doesn't allow payments.`
+            : `${checkout.organization.name} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
         </div>
-      </Alert>
-    )
-  }
+      </div>
+    </Alert>
+  ) : null
 
   const [fullLoading, setFullLoading] = useState(false)
   const loading = useMemo(
@@ -277,7 +271,7 @@ const Checkout = ({
   if (embed) {
     return (
       <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
-        <PaymentNotReadyBanner />
+        {paymentNotReadyBanner}
         {hasProductCheckout(checkout) && (
           <>
             <CheckoutProductSwitcher
@@ -506,7 +500,7 @@ const Checkout = ({
         </div>
         <div className="dark:md:bg-polar-900 md:bg-white">
           <div className="flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:py-12 md:pr-4 md:pl-12">
-            <PaymentNotReadyBanner />
+            {paymentNotReadyBanner}
             <CheckoutForm
               form={form}
               checkout={checkout}
@@ -588,7 +582,7 @@ const Checkout = ({
           </div>
         </div>
         <div className="flex flex-col gap-y-8 md:p-12">
-          <PaymentNotReadyBanner />
+          {paymentNotReadyBanner}
           <CheckoutForm
             form={form}
             checkout={checkout}

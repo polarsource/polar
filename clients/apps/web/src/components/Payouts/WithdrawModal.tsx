@@ -58,6 +58,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     }
   }, [account, canWithdraw])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- setState calls in getPayoutEstimate are after async API calls
   useEffect(() => {
     if (isShown) {
       getPayoutEstimate()

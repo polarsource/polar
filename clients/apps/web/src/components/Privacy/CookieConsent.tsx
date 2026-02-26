@@ -43,6 +43,7 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
     setConsentGiven('no')
   }, [setConsentGiven])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only localStorage read to avoid SSR hydration mismatch
   useEffect(() => {
     // We want this to only run once the client loads
     // or else it causes a hydration error

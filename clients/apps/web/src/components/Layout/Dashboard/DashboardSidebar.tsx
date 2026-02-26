@@ -57,8 +57,9 @@ export const DashboardSidebar = ({
     router.push(`/dashboard/${org.slug}`)
   }
 
-  // Annoying useEffect hack to allow access to client-side cookies from Server-Side component
+  // Client-only cookie read: isImpersonating() accesses document.cookie which is unavailable during SSR
   const [_isImpersonating, setIsImpersonating] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setIsImpersonating(isImpersonating())
   }, [])

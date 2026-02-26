@@ -18,7 +18,7 @@ import {
   type StripeError,
 } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 export interface AddPaymentMethodModalProps {
   api: Client
   onPaymentMethodAdded: () => void
@@ -165,11 +165,11 @@ export const AddPaymentMethodModal = ({
   )
 
   // Handle next action after a redirection
-  const [confirmed, setConfirmed] = useState(false)
+  const confirmedRef = useRef(false)
   const router = useRouter()
   useEffect(() => {
-    if (setupIntentParams && !confirmed) {
-      setConfirmed(true)
+    if (setupIntentParams && !confirmedRef.current) {
+      confirmedRef.current = true
       ;(async () => {
         await confirm(setupIntentParams.setup_intent)
         // Remove setup intent params from the URL but keep customer_session_token
@@ -179,7 +179,7 @@ export const AddPaymentMethodModal = ({
         router.replace(`${window.location.pathname}?${searchParams.toString()}`)
       })()
     }
-  }, [setupIntentParams, confirm, confirmed])
+  }, [setupIntentParams, confirm, router])
 
   return (
     <div className="flex flex-col gap-6 p-8">

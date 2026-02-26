@@ -91,11 +91,10 @@ export default function ClientPage({
   const startIdentityVerification = useCallback(async () => {
     const { data, error } = await createIdentityVerification.mutateAsync()
     if (error) {
-      // Handle specific error cases
-      const errorDetail =
-        'detail' in error
-          ? (error.detail as string | { error?: string; detail?: string })
-          : undefined
+      // Handle specific error cases — error is typed as `never` by the OpenAPI spec
+      // but the API can still return error responses in practice
+      const err = error as { detail?: string | { error?: string; detail?: string } }
+      const errorDetail = err.detail
       if (
         (typeof errorDetail === 'object' &&
           errorDetail?.error === 'IdentityVerificationProcessing') ||

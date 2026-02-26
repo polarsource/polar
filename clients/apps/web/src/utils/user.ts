@@ -53,20 +53,16 @@ const _getUserOrganizations = async (
     return []
   }
 
-  const params = {
-    query: {
-      limit: 100,
-      sorting: ['name'] as const,
-    },
-  }
-
   const { data, error } = bypassCache
     ? await retryWithBackoff(() =>
-        api.GET('/v1/organizations/', { params, cache: 'no-cache' }),
+        api.GET('/v1/organizations/', {
+          params: { query: { limit: 100, sorting: ['name'] } },
+          cache: 'no-cache',
+        }),
       )
     : await retryWithBackoff(() =>
         api.GET('/v1/organizations/', {
-          params,
+          params: { query: { limit: 100, sorting: ['name'] } },
           next: {
             tags: [`users:${user.id}:organizations`],
             revalidate: 600,
@@ -74,7 +70,7 @@ const _getUserOrganizations = async (
         }),
       )
 
-  if (error) {
+  if (error || !data) {
     console.error('getUserOrganizations failed after retries:', user.id, error)
     Sentry.captureException(
       new Error('Failed to fetch organizations after retries'),

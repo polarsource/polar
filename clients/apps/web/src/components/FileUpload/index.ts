@@ -94,6 +94,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   }
 
   const onFileProcessing = (tempId: string, file: File) => {
+    // Placeholder object for a file being processed — doesn't have all T fields yet
     const processingFile = {
       id: tempId,
       name: file.name,
@@ -103,7 +104,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
       isProcessing: true,
       isUploading: false,
       uploadedBytes: 0,
-    } as FileObject<T>
+    } as unknown as FileObject<T>
     setFiles((prev) => [...prev, processingFile])
   }
 

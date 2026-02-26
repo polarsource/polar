@@ -51,9 +51,9 @@ const CreateBenefitModalContent = ({
       type: type ? type : 'custom',
       description: description ? description : undefined,
       properties: {
-        ...(properties as Record<string, string | undefined>),
+        ...properties,
       },
-    },
+    } as schemas['BenefitCreate'],
   })
 
   const { toast } = useToast()

@@ -14,9 +14,7 @@ const _getOrganizationBySlug = async (
   }
 
   const data = bypassCache
-    ? await unwrap(
-        api.GET('/v1/organizations/', { params, cache: 'no-cache' }),
-      )
+    ? await unwrap(api.GET('/v1/organizations/', { params, cache: 'no-cache' }))
     : await unwrap(
         api.GET('/v1/organizations/', {
           params,

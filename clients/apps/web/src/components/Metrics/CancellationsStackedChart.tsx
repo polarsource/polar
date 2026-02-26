@@ -15,6 +15,10 @@ import {
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
+import type {
+  NameType,
+  ValueType,
+} from 'recharts/types/component/DefaultTooltipContent'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import {
@@ -142,7 +146,7 @@ const StackedChartTooltip = ({
   label,
   payload,
   tickFormatter,
-}: TooltipContentProps<number, string> & {
+}: TooltipContentProps<ValueType, NameType> & {
   tickFormatter: (timestamp: Date) => string
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -157,7 +161,10 @@ const StackedChartTooltip = ({
     return null
   }
 
-  const total = payload.reduce((acc, item) => acc + item.value, 0)
+  const total = payload.reduce(
+    (acc: number, item: { value: number }) => acc + item.value,
+    0,
+  )
 
   return (
     <div
@@ -169,7 +176,7 @@ const StackedChartTooltip = ({
         <span className="font-medium tabular-nums">{total}</span>
       </div>
       <div className="flex flex-col gap-1.5">
-        {payload.map((item) => {
+        {payload.map((item: { dataKey: string; color: string; name: string; value: number }) => {
           return (
             <div
               key={item.dataKey}

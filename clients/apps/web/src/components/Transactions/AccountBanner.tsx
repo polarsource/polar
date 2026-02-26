@@ -73,7 +73,9 @@ const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
   }
 
   const isNotAdmin =
-    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
+    accountError &&
+    accountError instanceof ClientResponseError &&
+    accountError.response?.status === 403
 
   if (isNotAdmin) {
     return null

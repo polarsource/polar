@@ -157,6 +157,9 @@ class WebsitePage(Schema):
     title: str | None = None
     content: str = Field(default="", description="Extracted text content")
     content_truncated: bool = False
+    method: str = Field(
+        default="http", description="How the page was fetched: 'http' or 'browser'"
+    )
 
 
 class WebsiteData(Schema):

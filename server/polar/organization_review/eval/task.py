@@ -39,7 +39,6 @@ def build_snapshot(review_input: ReviewInput) -> DataSnapshot:
         product_description=details.get("product_description"),
         intended_use=details.get("intended_use"),
         customer_acquisition=details.get("customer_acquisition", []),
-        future_annual_revenue=details.get("future_annual_revenue"),
         switching_from=details.get("switching_from"),
         previous_annual_revenue=details.get("previous_annual_revenue"),
         socials=review_input.socials,

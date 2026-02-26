@@ -290,8 +290,6 @@ class ReviewAnalyzer:
             parts.append(f"Intended Use: {org.intended_use}")
         if org.customer_acquisition:
             parts.append(f"Customer Acquisition: {', '.join(org.customer_acquisition)}")
-        if org.future_annual_revenue is not None:
-            parts.append(f"Expected Annual Revenue: ${org.future_annual_revenue:,}")
         if org.switching_from:
             parts.append(f"Switching From: {org.switching_from}")
         if org.socials:

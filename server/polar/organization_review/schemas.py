@@ -73,7 +73,6 @@ class OrganizationData(Schema):
     product_description: str | None = None
     intended_use: str | None = None
     customer_acquisition: list[str] = Field(default_factory=list)
-    future_annual_revenue: int | None = None
     switching_from: str | None = None
     previous_annual_revenue: int | None = None
     socials: list[dict[str, str]] = Field(default_factory=list)

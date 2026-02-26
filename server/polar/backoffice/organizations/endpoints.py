@@ -1392,9 +1392,8 @@ async def get(
                 """Check if the human decision contradicts the AI verdict."""
                 if ai_verdict is None:
                     return False
-                return (
-                    (human_decision == "APPROVE" and ai_verdict == "DENY")
-                    or (human_decision == "DENY" and ai_verdict == "APPROVE")
+                return (human_decision == "APPROVE" and ai_verdict == "DENY") or (
+                    human_decision == "DENY" and ai_verdict == "APPROVE"
                 )
 
             if account_status.action == "approve":

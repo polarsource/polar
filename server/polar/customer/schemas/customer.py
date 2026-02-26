@@ -124,7 +124,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
     )
     external_id: str | None = Field(
-        description=_external_id_description, examples=[_external_id_example]
+        default=None,
+        description=_external_id_description,
+        examples=[_external_id_example],
+        validation_alias="saved_external_id",
     )
     email: str = Field(description=_email_description, examples=[_email_example])
     email_verified: bool = Field(

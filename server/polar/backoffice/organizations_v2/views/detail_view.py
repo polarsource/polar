@@ -241,24 +241,34 @@ class OrganizationDetailView:
                                     ),
                                     hx_target="#modal",
                                 ):
-                                    text(f"Approve (${threshold_dollars})")
+                                    text("Approve")
                         else:
-                            # AI agrees: 1-click approve with default threshold
-                            with tag.div(classes="w-full"):
+                            # AI agrees: inline threshold input + approve button
+                            with tag.form(
+                                hx_post=str(
+                                    request.url_for(
+                                        "organizations:approve_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                classes="w-full flex gap-2 items-center",
+                            ):
+                                with tag.div(classes="flex items-center gap-1 flex-1"):
+                                    with tag.span(classes="text-sm text-base-content/60"):
+                                        text("$")
+                                    with tag.input(
+                                        type="number",
+                                        name="threshold",
+                                        value=str(threshold_dollars),
+                                        classes="input input-bordered input-sm w-full",
+                                    ):
+                                        pass
                                 with button(
-                                    variant="secondary",
+                                    variant="primary",
                                     size="sm",
-                                    outline=True,
-                                    hx_post=str(
-                                        request.url_for(
-                                            "organizations:approve_dialog",
-                                            organization_id=self.org.id,
-                                        )
-                                    ),
-                                    hx_vals=f'{{"threshold": "{threshold_dollars}"}}',
-                                    hx_confirm=f"Approve with ${threshold_dollars} threshold?",
+                                    type="submit",
                                 ):
-                                    text(f"Approve (${threshold_dollars})")
+                                    text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(

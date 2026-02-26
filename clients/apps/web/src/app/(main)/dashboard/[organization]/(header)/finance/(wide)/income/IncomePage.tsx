@@ -63,7 +63,9 @@ export default function ClientPage({
   } = useOrganizationAccount(organization.id)
 
   const isNotAdmin =
-    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
+    accountError &&
+    accountError instanceof ClientResponseError &&
+    accountError.response?.status === 403
 
   const balancesHook = useSearchTransactions({
     account_id: account?.id,

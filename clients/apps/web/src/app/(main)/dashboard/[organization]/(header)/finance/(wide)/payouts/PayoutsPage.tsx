@@ -90,7 +90,9 @@ export default function ClientPage({
   )
 
   const isNotAdmin =
-    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
+    accountError &&
+    accountError instanceof ClientResponseError &&
+    accountError.response?.status === 403
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
     ...getAPIParams(pagination, sorting),

@@ -255,7 +255,6 @@ export function VectorEditor({
     currentY: number
   } | null>(null)
 
-
   const getSVGPoint = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } => {
       const el = svgRef.current
@@ -542,9 +541,7 @@ export function VectorEditor({
   const [isDark, setIsDark] = useState(() => {
     if (typeof document !== 'undefined') {
       const mq = window.matchMedia('(prefers-color-scheme: dark)')
-      return (
-        document.documentElement.classList.contains('dark') || mq.matches
-      )
+      return document.documentElement.classList.contains('dark') || mq.matches
     }
     return false
   })

@@ -47,7 +47,9 @@ export default function ClientPage({
   const [validationCompleted, setValidationCompleted] = useState(false)
 
   const isNotAdmin =
-    accountError && accountError instanceof ClientResponseError && accountError.response?.status === 403
+    accountError &&
+    accountError instanceof ClientResponseError &&
+    accountError.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 
@@ -93,7 +95,9 @@ export default function ClientPage({
     if (error) {
       // Handle specific error cases — error is typed as `never` by the OpenAPI spec
       // but the API can still return error responses in practice
-      const err = error as { detail?: string | { error?: string; detail?: string } }
+      const err = error as {
+        detail?: string | { error?: string; detail?: string }
+      }
       const errorDetail = err.detail
       if (
         (typeof errorDetail === 'object' &&

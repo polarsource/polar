@@ -15,10 +15,7 @@ const ClientPage = ({
   return (
     <NuqsAdapter>
       {wallet && (
-        <CustomerPortalWallet
-          organization={organization}
-          wallet={wallet}
-        />
+        <CustomerPortalWallet organization={organization} wallet={wallet} />
       )}
     </NuqsAdapter>
   )

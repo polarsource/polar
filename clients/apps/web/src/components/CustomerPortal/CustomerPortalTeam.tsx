@@ -8,10 +8,10 @@ import {
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
 import { validateEmail } from '@/utils/validation'
 import GroupOutlined from '@mui/icons-material/GroupOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
@@ -87,9 +87,7 @@ export const CustomerPortalTeam = ({
   const [isAddingMember, setIsAddingMember] = useState(false)
 
   const currentMemberId =
-    authenticatedUser?.type === 'member'
-      ? authenticatedUser.member_id
-      : null
+    authenticatedUser?.type === 'member' ? authenticatedUser.member_id : null
 
   const handleAddMember = async () => {
     if (!newMemberEmail.trim()) {

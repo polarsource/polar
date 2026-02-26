@@ -50,18 +50,17 @@ export default function CostsEventsTable({
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  const { data: hierarchyStats } =
-    useEventHierarchyStats(
-      organization.id,
-      {
-        event_type_id: spanId,
-        start_date: startDateISOString,
-        end_date: endDateISOString,
-        interval: 'month',
-        aggregate_fields: ['_cost.amount'],
-      },
-      !!spanId,
-    )
+  const { data: hierarchyStats } = useEventHierarchyStats(
+    organization.id,
+    {
+      event_type_id: spanId,
+      start_date: startDateISOString,
+      end_date: endDateISOString,
+      interval: 'month',
+      aggregate_fields: ['_cost.amount'],
+    },
+    !!spanId,
+  )
 
   const eventTypesMap = eventTypes.reduce<
     Record<string, schemas['EventTypeWithStats']>

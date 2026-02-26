@@ -17,7 +17,6 @@ import {
   PropsWithChildren,
   useContext,
   useEffect,
-  useRef,
   useState,
   type JSX,
 } from 'react'

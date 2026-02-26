@@ -9,7 +9,7 @@ import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpub
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 const XIcon = ({ className }: { className?: string }) => {
   return (

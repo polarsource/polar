@@ -25,10 +25,20 @@ class ApproveOrganizationForm(forms.BaseForm):
         forms.CurrencyValidator,
         Field(title="Next Review Threshold"),
     ]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 class DenyOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["deny"], forms.SkipField]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 class UnderReviewOrganizationForm(forms.BaseForm):
@@ -37,10 +47,20 @@ class UnderReviewOrganizationForm(forms.BaseForm):
 
 class ApproveOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["approve_appeal"], forms.SkipField]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 class DenyOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["deny_appeal"], forms.SkipField]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 OrganizationStatusForm = Annotated[

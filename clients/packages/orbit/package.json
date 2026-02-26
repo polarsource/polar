@@ -26,7 +26,7 @@
   "scripts": {
     "build": "rm -rf dist && tsup",
     "lint": "prettier -c .",
-    "format": "prettier -c . --write",
+    "format": "prettier . --write",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -87,12 +87,12 @@ const Endpoint = ({
   return (
     <div className="flex items-center justify-between overflow-hidden">
       <div className="flex w-2/3 flex-col gap-y-1">
-        <div className="flex items-center gap-x-2">
+        <div className="flex items-center gap-x-2 pl-0.5">
           <span
             className={`inline-block h-2 w-2 shrink-0 rounded-full ${
               endpoint.enabled
-                ? 'bg-emerald-500'
-                : 'dark:bg-polar-500 bg-gray-400'
+                ? 'bg-emerald-500 ring-2 ring-emerald-100'
+                : 'dark:bg-polar-600 bg-gray-300'
             }`}
             title={endpoint.enabled ? 'Enabled' : 'Disabled'}
           />
@@ -108,6 +108,7 @@ const Endpoint = ({
           </p>
         )}
         <p className="dark:text-polar-400 pl-4 text-sm text-gray-500">
+          Added on{' '}
           <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
         </p>
       </div>

@@ -253,28 +253,21 @@ class OrganizationDetailView:
                                 ),
                                 classes="w-full",
                             ):
-                                with tag.label(
-                                    classes="text-xs text-base-content/50 mb-1 block"
+                                with tag.button(
+                                    type="submit",
+                                    classes="btn btn-sm btn-secondary btn-outline w-full gap-0 px-0",
                                 ):
-                                    text("Next review threshold")
-                                with tag.div(
-                                    classes="flex items-stretch w-full rounded-lg border border-base-300 overflow-hidden h-9"
-                                ):
-                                    with tag.span(
-                                        classes="flex items-center px-2.5 bg-base-200 text-sm text-base-content/50 border-r border-base-300"
-                                    ):
+                                    with tag.span(classes="pl-3 pr-1 text-base-content/50 font-normal"):
                                         text("$")
                                     with tag.input(
                                         type="number",
                                         name="threshold",
                                         value=str(threshold_dollars),
-                                        classes="flex-1 w-0 px-2.5 text-sm bg-base-100 outline-none border-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                                        classes="w-14 bg-transparent outline-none text-secondary font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                                        onclick="event.stopPropagation()",
                                     ):
                                         pass
-                                    with tag.button(
-                                        type="submit",
-                                        classes="px-4 text-sm font-semibold bg-base-100 text-secondary border-l border-base-300 hover:bg-base-200 transition-colors cursor-pointer",
-                                    ):
+                                    with tag.span(classes="border-l border-secondary/30 pl-3 pr-3 ml-auto"):
                                         text("Approve")
 
                         with tag.div(classes="w-full"):

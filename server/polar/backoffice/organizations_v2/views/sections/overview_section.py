@@ -10,8 +10,17 @@ from fastapi import Request
 from tagflow import tag, text
 
 from polar.models import Organization
+from polar.organization_review.thresholds import (
+    AUTH_RATE,
+    CHARGEBACK_RATE,
+    DISPUTE_RATE,
+    P50_RISK,
+    P90_RISK,
+    REFUND_RATE,
+    thresholds_for_prompt,
+)
 
-from ....components import card, metric_card
+from ....components import card
 from ....components._metric_card import Variant
 
 
@@ -320,22 +329,9 @@ class OverviewSection:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _rate_variant(
-        value: float, *, yellow: float, red: float, higher_is_worse: bool = True
-    ) -> Variant:
-        """Pick metric card variant based on threshold direction."""
-        if higher_is_worse:
-            if value >= red:
-                return "error"
-            if value >= yellow:
-                return "warning"
-            return "default"
-        # Lower-is-worse (e.g. auth rate)
-        if value <= red:
-            return "error"
-        if value <= yellow:
-            return "warning"
-        return "default"
+    def _to_variant(level: str) -> Variant:
+        """Map threshold evaluation result to UI variant."""
+        return {"ok": "default", "warn": "warning", "crit": "error"}[level]
 
     @contextlib.contextmanager
     def payment_card(
@@ -346,31 +342,30 @@ class OverviewSection:
         # Determine worst variant for card-level border accent
         border_class = ""
         if payment_stats:
-            variants = [
-                self._rate_variant(
-                    payment_stats.get("auth_rate", 100),
-                    yellow=90,
-                    red=75,
-                    higher_is_worse=False,
-                ),
-                self._rate_variant(
-                    payment_stats.get("refund_rate", 0), yellow=10, red=15
-                ),
-                self._rate_variant(
-                    payment_stats.get("dispute_rate", 0), yellow=0.50, red=0.75
-                ),
-                self._rate_variant(
-                    payment_stats.get("chargeback_rate", 0), yellow=0.15, red=0.30
-                ),
+            levels = [
+                AUTH_RATE.evaluate(payment_stats.get("auth_rate", 100)),
+                REFUND_RATE.evaluate(payment_stats.get("refund_rate", 0)),
+                DISPUTE_RATE.evaluate(payment_stats.get("dispute_rate", 0)),
+                CHARGEBACK_RATE.evaluate(payment_stats.get("chargeback_rate", 0)),
             ]
-            if "error" in variants:
+            if "crit" in levels:
                 border_class = "border-l-4 border-l-error"
-            elif "warning" in variants:
+            elif "warn" in levels:
                 border_class = "border-l-4 border-l-warning"
 
         with card(bordered=True, classes=border_class):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Payment Metrics")
+            # Header with info tooltip
+            with tag.div(classes="flex items-center justify-between mb-4"):
+                with tag.h2(classes="text-lg font-bold"):
+                    text("Payment Metrics")
+                with tag.div(
+                    classes="tooltip tooltip-left before:whitespace-pre-line before:text-left before:max-w-xs",
+                    data_tip=thresholds_for_prompt(),
+                ):
+                    with tag.span(
+                        classes="badge badge-ghost badge-sm cursor-help text-base-content/40"
+                    ):
+                        text("thresholds")
 
             if not payment_stats:
                 with tag.p(classes="text-base-content/60"):
@@ -379,120 +374,120 @@ class OverviewSection:
                 next_review_threshold = payment_stats.get("next_review_threshold")
                 total_transfer_sum = payment_stats.get("total_transfer_sum")
 
-                if next_review_threshold or total_transfer_sum:
-                    with tag.div(
-                        classes="space-y-2 mb-4 pb-4 border-b border-base-200"
-                    ):
-                        if next_review_threshold:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Next Review")
-                                with tag.span(
-                                    classes="font-mono text-sm font-semibold"
-                                ):
-                                    text(f"${next_review_threshold / 100:,.0f}")
-
-                        if total_transfer_sum:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Total Transfers")
-                                with tag.span(
-                                    classes="font-mono text-sm font-semibold"
-                                ):
-                                    text(f"${total_transfer_sum / 100:,.2f}")
-
-                # Row 1: Total Payments + Total Amount
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
-                    with metric_card(
+                with tag.div(classes="space-y-0"):
+                    # Summary line items
+                    self._payment_line(
                         "Total Payments",
-                        payment_stats.get("payment_count", 0),
-                        compact=True,
-                    ):
-                        pass
-
-                    with metric_card(
+                        str(payment_stats.get("payment_count", 0)),
+                    )
+                    self._payment_line(
                         "Total Amount",
                         f"${payment_stats.get('total_amount', 0):,.2f}",
-                        compact=True,
-                    ):
-                        pass
+                    )
+                    if total_transfer_sum:
+                        self._payment_line(
+                            "Total Transfers",
+                            f"${total_transfer_sum / 100:,.2f}",
+                        )
+                    if next_review_threshold:
+                        self._payment_line(
+                            "Next Review",
+                            f"${next_review_threshold / 100:,.0f}",
+                        )
 
-                # Row 2: Auth Rate + Refund Rate
-                auth_rate = payment_stats.get("auth_rate", 100)
-                refund_rate = payment_stats.get("refund_rate", 0)
+                    # Divider before rate metrics
+                    tag.div(classes="border-b border-base-300 my-1")
 
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
-                    with metric_card(
+                    # Rate metrics
+                    auth_rate = payment_stats.get("auth_rate", 100)
+                    failed_count = payment_stats.get("failed_count", 0)
+                    self._payment_line(
                         "Auth Rate",
                         f"{auth_rate:.1f}%",
-                        subtitle=f"{payment_stats.get('failed_count', 0)} failed",
-                        variant=self._rate_variant(
-                            auth_rate, yellow=90, red=75, higher_is_worse=False
-                        ),
-                        compact=True,
-                    ):
-                        pass
+                        variant=self._to_variant(AUTH_RATE.evaluate(auth_rate)),
+                        detail=f"{failed_count} failed",
+                    )
 
-                    with metric_card(
+                    refund_rate = payment_stats.get("refund_rate", 0)
+                    self._payment_line(
                         "Refund Rate",
                         f"{refund_rate:.1f}%",
-                        subtitle=f"${payment_stats.get('refunds_amount', 0):,.2f}",
-                        variant=self._rate_variant(refund_rate, yellow=10, red=15),
-                        compact=True,
-                    ):
-                        pass
+                        variant=self._to_variant(REFUND_RATE.evaluate(refund_rate)),
+                        detail=f"${payment_stats.get('refunds_amount', 0):,.2f}",
+                    )
 
-                # Row 3: Dispute Rate + Chargeback Rate
-                dispute_rate = payment_stats.get("dispute_rate", 0)
-                chargeback_rate = payment_stats.get("chargeback_rate", 0)
-
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
-                    with metric_card(
+                    dispute_rate = payment_stats.get("dispute_rate", 0)
+                    self._payment_line(
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
-                        subtitle=f"{payment_stats.get('dispute_count', 0)} disputes (${payment_stats.get('dispute_amount', 0):,.2f})",
-                        variant=self._rate_variant(dispute_rate, yellow=0.50, red=0.75),
-                        compact=True,
-                    ):
-                        pass
+                        variant=self._to_variant(DISPUTE_RATE.evaluate(dispute_rate)),
+                        detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0):,.2f}",
+                    )
 
-                    with metric_card(
+                    chargeback_rate = payment_stats.get("chargeback_rate", 0)
+                    self._payment_line(
                         "Chargeback Rate",
                         f"{chargeback_rate:.2f}%",
-                        subtitle=f"{payment_stats.get('chargeback_count', 0)} lost (${payment_stats.get('chargeback_amount', 0):,.2f})",
-                        variant=self._rate_variant(
-                            chargeback_rate, yellow=0.15, red=0.30
+                        variant=self._to_variant(
+                            CHARGEBACK_RATE.evaluate(chargeback_rate)
                         ),
-                        compact=True,
-                    ):
-                        pass
+                        detail=f"{payment_stats.get('chargeback_count', 0)} lost · ${payment_stats.get('chargeback_amount', 0):,.2f}",
+                    )
 
-                # Row 4: P50 + P90 Risk Scores
-                risk_scores_count = payment_stats.get("risk_scores_count", 0)
-                if risk_scores_count > 0:
-                    p50_risk = payment_stats.get("p50_risk", 0)
-                    p90_risk = payment_stats.get("p90_risk", 0)
+                    # Risk scores
+                    risk_scores_count = payment_stats.get("risk_scores_count", 0)
+                    if risk_scores_count > 0:
+                        tag.div(classes="border-b border-base-300 my-1")
 
-                    with tag.div(classes="grid grid-cols-2 gap-3"):
-                        with metric_card(
-                            "P50 Risk Score",
+                        p50_risk = payment_stats.get("p50_risk", 0)
+                        p90_risk = payment_stats.get("p90_risk", 0)
+                        self._payment_line(
+                            "P50 Risk",
                             f"{p50_risk:.0f}",
-                            subtitle=f"median of {risk_scores_count} payments",
-                            variant=self._rate_variant(p50_risk, yellow=50, red=65),
-                            compact=True,
-                        ):
-                            pass
-
-                        with metric_card(
-                            "P90 Risk Score",
+                            variant=self._to_variant(P50_RISK.evaluate(p50_risk)),
+                            detail=f"median of {risk_scores_count}",
+                        )
+                        self._payment_line(
+                            "P90 Risk",
                             f"{p90_risk:.0f}",
-                            subtitle="90th percentile",
-                            variant=self._rate_variant(p90_risk, yellow=65, red=75),
-                            compact=True,
-                        ):
-                            pass
+                            variant=self._to_variant(P90_RISK.evaluate(p90_risk)),
+                            detail="90th pctl",
+                        )
 
             yield
+
+    @staticmethod
+    def _payment_line(
+        label: str,
+        value: str,
+        *,
+        variant: Variant = "default",
+        detail: str | None = None,
+    ) -> None:
+        """Render a single compact metric line with background tint for alerts."""
+        row_bg: dict[Variant, str] = {
+            "default": "",
+            "success": "",
+            "warning": "bg-warning/5",
+            "error": "bg-error/10",
+            "info": "",
+        }
+
+        with tag.div(
+            classes=f"flex items-center justify-between py-1.5 px-1 rounded {row_bg[variant]}"
+        ):
+            # Left: label + detail
+            with tag.div(classes="flex items-center gap-2 min-w-0"):
+                with tag.span(classes="text-sm truncate"):
+                    text(label)
+                if detail:
+                    with tag.span(classes="text-xs text-base-content/50 truncate"):
+                        text(detail)
+
+            # Right: value
+            weight = "font-bold" if variant != "default" else "font-semibold"
+            with tag.span(classes=f"font-mono text-sm {weight}"):
+                text(value)
 
     # ------------------------------------------------------------------
     # Bottom-left: Setup & Checklist card

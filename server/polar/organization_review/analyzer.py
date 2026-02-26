@@ -9,10 +9,11 @@ from polar.config import settings
 
 from .policy import fetch_policy_content
 from .schemas import DataSnapshot, ReviewAgentReport, ReviewContext, UsageInfo
+from .thresholds import thresholds_for_prompt
 
 log = structlog.get_logger(__name__)
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT = f"""\
 You are an expert compliance and risk analyst for Polar, a Merchant of Record platform \
 for digital products. You are reviewing an organization's application to sell on Polar.
 
@@ -54,11 +55,8 @@ human reviews.
 Assess payment risk scores, refund rates, charge back rates, authorization rate, and dispute history. \
 No payment history is neutral (new org), not negative.
 
-The following thresholds needs human review:
-- refund rates (>10%)
-- charge back rate (>0%)
-- p90 radar score (>75)
-- authorization rate (70%)
+The following thresholds need human review:
+{thresholds_for_prompt()}
 - any dispute created
 
 ### 5. Prior History
@@ -157,7 +155,7 @@ Return only APPROVE or DENY.
 """
 
 
-MANUAL_PREAMBLE = """\
+MANUAL_PREAMBLE = f"""\
 This is a MANUAL review triggered by a human reviewer from the backoffice. \
 Perform a comprehensive analysis across ALL five dimensions with full detail.
 
@@ -186,7 +184,9 @@ flagged this account.
 the Polar organization name. Significant mismatches are yellow flags.
 - **Financial risk** (if payment data exists):
   - Evaluate risk scores, refund rates, chargeback rates, and dispute history.
-  - Flag: refund rate > 10%, chargeback rate > 0%, p90 risk score > 75, any disputes.
+  - Thresholds:
+{thresholds_for_prompt()}
+    - any dispute created
   - No payment history is neutral (new org), not negative.
 - **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
 organization after denial is grounds for automatic denial.

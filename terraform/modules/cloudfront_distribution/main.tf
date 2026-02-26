@@ -38,9 +38,9 @@ resource "cloudflare_dns_record" "acm_validation" {
   }
 
   zone_id = var.cloudflare_zone_id
-  name    = each.value.name
+  name    = "${trimsuffix(each.value.name, ".")}."
   type    = each.value.type
-  content = each.value.value
+  content = "${trimsuffix(each.value.value, ".")}."
   ttl     = 1
 }
 

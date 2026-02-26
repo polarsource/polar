@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 interface GitHubRepositoryBenefitFormProps {

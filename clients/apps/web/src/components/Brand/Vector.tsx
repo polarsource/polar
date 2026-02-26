@@ -223,8 +223,18 @@ export function VectorEditor({
   onChange,
 }: VectorProps) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const [paths, setPaths] = useState<ParsedPath[]>([])
-  const [viewBox, setViewBox] = useState('0 0 100 100')
+  const { paths: initialPaths, viewBox: initialViewBox } = useMemo(
+    () => parseSVG(svg),
+    [svg],
+  )
+  const [paths, setPaths] = useState<ParsedPath[]>(initialPaths)
+  const [viewBox, setViewBox] = useState(initialViewBox)
+  const [prevSvg, setPrevSvg] = useState(svg)
+  if (prevSvg !== svg) {
+    setPrevSvg(svg)
+    setPaths(initialPaths)
+    setViewBox(initialViewBox)
+  }
   const [dragging, setDragging] = useState<DragState | null>(null)
   // Set of "pi:ci" keys for multi-selected vertices
   const [selection, setSelection] = useState<Set<string>>(new Set())
@@ -245,11 +255,6 @@ export function VectorEditor({
     currentY: number
   } | null>(null)
 
-  useEffect(() => {
-    const { paths: parsed, viewBox: vb } = parseSVG(svg)
-    setPaths(parsed)
-    setViewBox(vb)
-  }, [svg])
 
   const getSVGPoint = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } => {
@@ -534,10 +539,17 @@ export function VectorEditor({
   }, [getSVGPoint, svg, viewBox])
 
   // Detect dark mode
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== 'undefined') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      return (
+        document.documentElement.classList.contains('dark') || mq.matches
+      )
+    }
+    return false
+  })
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    setIsDark(document.documentElement.classList.contains('dark') || mq.matches)
     const onClassChange = () => {
       setIsDark(
         document.documentElement.classList.contains('dark') || mq.matches,

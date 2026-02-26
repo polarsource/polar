@@ -52,12 +52,14 @@ export const CheckoutDiscountInput = ({
   const hasDiscount = !!checkout.discount
 
   // Reset discount code and error when a discount is applied
-  const prevHasDiscountRef = useRef(hasDiscount)
-  if (hasDiscount && !prevHasDiscountRef.current) {
+  const [prevHasDiscount, setPrevHasDiscount] = useState(hasDiscount)
+  if (hasDiscount && !prevHasDiscount) {
     setDiscountCode('')
     setError(null)
   }
-  prevHasDiscountRef.current = hasDiscount
+  if (prevHasDiscount !== hasDiscount) {
+    setPrevHasDiscount(hasDiscount)
+  }
 
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return

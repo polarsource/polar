@@ -96,10 +96,12 @@ const BenefitGrantOAuth = ({
     return isNaN(seconds) || seconds <= 0 ? 0 : seconds
   }, [retryAfter])
 
-  const [retryCountdown, setRetryCountdown] = useState<number>(initialRetrySeconds)
-  const prevInitialRetrySecondsRef = useRef(initialRetrySeconds)
-  if (prevInitialRetrySecondsRef.current !== initialRetrySeconds) {
-    prevInitialRetrySecondsRef.current = initialRetrySeconds
+  const [retryCountdown, setRetryCountdown] =
+    useState<number>(initialRetrySeconds)
+  const [prevInitialRetrySeconds, setPrevInitialRetrySeconds] =
+    useState(initialRetrySeconds)
+  if (prevInitialRetrySeconds !== initialRetrySeconds) {
+    setPrevInitialRetrySeconds(initialRetrySeconds)
     setRetryCountdown(initialRetrySeconds)
   }
 

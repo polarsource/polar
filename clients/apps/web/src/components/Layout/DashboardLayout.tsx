@@ -89,9 +89,9 @@ const MobileNav = ({
   const { currentUser } = useAuth()
 
   // Close mobile nav when pathname changes
-  const prevPathnameRef = useRef(pathname)
-  if (prevPathnameRef.current !== pathname) {
-    prevPathnameRef.current = pathname
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
     if (mobileNavOpen) {
       setMobileNavOpen(false)
     }

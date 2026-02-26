@@ -21,7 +21,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
   const [theme, setTheme] = useState<Theme | undefined>()
   const didSetTheme = useRef(false)
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only localStorage read to avoid SSR hydration mismatch
+  /* eslint-disable react-hooks/set-state-in-effect -- client-only localStorage read to avoid SSR hydration mismatch */
   useEffect(() => {
     if (didSetTheme.current) {
       return
@@ -38,6 +38,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
       setTheme('system')
     }
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleThemeChange = useCallback((theme: Theme) => {
     return () => {

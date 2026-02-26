@@ -59,10 +59,11 @@ export const DashboardSidebar = ({
 
   // Client-only cookie read: isImpersonating() accesses document.cookie which is unavailable during SSR
   const [_isImpersonating, setIsImpersonating] = useState(false)
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setIsImpersonating(isImpersonating())
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
   const isTopBannerVisible = CONFIG.IS_SANDBOX || _isImpersonating
 
   useEffect(() => {

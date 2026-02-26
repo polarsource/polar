@@ -1,5 +1,5 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useState } from 'react'
 
 export enum UpsellKey {
   COST_INSIGHTS = 'cost_insights',
@@ -40,11 +40,16 @@ export const useUpsell = (upsellKey: UpsellKey) => {
     return orgDisabledUpsells.includes(upsellKey)
   })
 
-  useEffect(() => {
+  // Re-compute when organization or upsellKey changes
+  const [prevOrgId, setPrevOrgId] = useState(organization.id)
+  const [prevUpsellKey, setPrevUpsellKey] = useState(upsellKey)
+  if (prevOrgId !== organization.id || prevUpsellKey !== upsellKey) {
+    setPrevOrgId(organization.id)
+    setPrevUpsellKey(upsellKey)
     const disabledUpsells = getDisabledUpsells()
     const orgDisabledUpsells = disabledUpsells[organization.id] || []
     setIsUpsellDisabled(orgDisabledUpsells.includes(upsellKey))
-  }, [organization, upsellKey])
+  }
 
   const disableUpsell = useCallback(() => {
     if (typeof window === 'undefined') {

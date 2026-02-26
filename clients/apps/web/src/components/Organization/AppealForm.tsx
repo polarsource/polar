@@ -40,7 +40,8 @@ const AppealForm: React.FC<AppealFormProps> = ({
   const currentReviewStatus = existingReviewStatus || reviewStatus.data
 
   // Derive isSubmitted from review status or local submission
-  const isSubmitted = locallySubmitted || !!currentReviewStatus?.appeal_submitted_at
+  const isSubmitted =
+    locallySubmitted || !!currentReviewStatus?.appeal_submitted_at
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

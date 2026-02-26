@@ -75,7 +75,6 @@ export const NotificationsPopover = () => {
     setShow(false)
   })
 
-
   return (
     <Popover>
       <Button

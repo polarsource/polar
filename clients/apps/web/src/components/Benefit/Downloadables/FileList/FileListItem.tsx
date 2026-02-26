@@ -261,13 +261,6 @@ export const FileListItem = ({
     return archivedFiles ? !archivedFiles[file.id] : true
   }, [archivedFiles, file])
 
-  const update = useCallback(
-    (attrs: { name?: string; version?: string }) => {
-      patchFile(attrs)
-    },
-    [patchFile],
-  )
-
   return (
     <div
       ref={sortable ? sortable.setNodeRef : undefined}
@@ -297,7 +290,7 @@ export const FileListItem = ({
           <FilenameEditor
             name={file.name}
             className="text-sm font-medium"
-            onUpdate={(updated) => update({ name: updated })}
+            onUpdate={(updated) => patchFile({ name: updated })}
             enabled={file.is_uploaded ?? false}
           />
           {!isUploading && <FileUploadDetails file={file} />}

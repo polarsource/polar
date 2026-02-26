@@ -1,4 +1,4 @@
-import React, {
+import {
   type ComponentPropsWithoutRef,
   type ElementType,
   type ReactNode,
@@ -23,20 +23,41 @@ type StackContainerProps = Omit<FlexContainerProps, 'display' | 'flexDirection'>
 // Includes all standard Tailwind steps up to 48 (192 px).
 
 export type StackGap =
-  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
-  | 14 | 16 | 20 | 24 | 28 | 32 | 36 | 40 | 44 | 48
+  | 0
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 14
+  | 16
+  | 20
+  | 24
+  | 28
+  | 32
+  | 36
+  | 40
+  | 44
+  | 48
 
 const GAP_CLASSES: Record<StackGap, string> = {
-  0:  'gap-0',
-  1:  'gap-1',
-  2:  'gap-2',
-  3:  'gap-3',
-  4:  'gap-4',
-  5:  'gap-5',
-  6:  'gap-6',
-  7:  'gap-7',
-  8:  'gap-8',
-  9:  'gap-9',
+  0: 'gap-0',
+  1: 'gap-1',
+  2: 'gap-2',
+  3: 'gap-3',
+  4: 'gap-4',
+  5: 'gap-5',
+  6: 'gap-6',
+  7: 'gap-7',
+  8: 'gap-8',
+  9: 'gap-9',
   10: 'gap-10',
   11: 'gap-11',
   12: 'gap-12',
@@ -53,16 +74,16 @@ const GAP_CLASSES: Record<StackGap, string> = {
 }
 
 const GAP_X_CLASSES: Record<StackGap, string> = {
-  0:  'gap-x-0',
-  1:  'gap-x-1',
-  2:  'gap-x-2',
-  3:  'gap-x-3',
-  4:  'gap-x-4',
-  5:  'gap-x-5',
-  6:  'gap-x-6',
-  7:  'gap-x-7',
-  8:  'gap-x-8',
-  9:  'gap-x-9',
+  0: 'gap-x-0',
+  1: 'gap-x-1',
+  2: 'gap-x-2',
+  3: 'gap-x-3',
+  4: 'gap-x-4',
+  5: 'gap-x-5',
+  6: 'gap-x-6',
+  7: 'gap-x-7',
+  8: 'gap-x-8',
+  9: 'gap-x-9',
   10: 'gap-x-10',
   11: 'gap-x-11',
   12: 'gap-x-12',
@@ -79,16 +100,16 @@ const GAP_X_CLASSES: Record<StackGap, string> = {
 }
 
 const GAP_Y_CLASSES: Record<StackGap, string> = {
-  0:  'gap-y-0',
-  1:  'gap-y-1',
-  2:  'gap-y-2',
-  3:  'gap-y-3',
-  4:  'gap-y-4',
-  5:  'gap-y-5',
-  6:  'gap-y-6',
-  7:  'gap-y-7',
-  8:  'gap-y-8',
-  9:  'gap-y-9',
+  0: 'gap-y-0',
+  1: 'gap-y-1',
+  2: 'gap-y-2',
+  3: 'gap-y-3',
+  4: 'gap-y-4',
+  5: 'gap-y-5',
+  6: 'gap-y-6',
+  7: 'gap-y-7',
+  8: 'gap-y-8',
+  9: 'gap-y-9',
   10: 'gap-y-10',
   11: 'gap-y-11',
   12: 'gap-y-12',
@@ -158,12 +179,16 @@ function resolveDirection(
   horizontalUntil?: StackBreakpoint,
 ): FlexContainerProps['flexDirection'] {
   if (verticalUntil) {
-    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = { default: 'column' }
+    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = {
+      default: 'column',
+    }
     map[verticalUntil] = 'row'
     return map
   }
   if (horizontalUntil) {
-    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = { default: 'row' }
+    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = {
+      default: 'row',
+    }
     map[horizontalUntil] = 'column'
     return map
   }
@@ -199,13 +224,23 @@ export function Stack<E extends ElementType = 'div'>({
 
   const containerClasses = resolveContainerClasses({
     display: 'flex',
-    flexDirection: resolveDirection(horizontal, vertical, verticalUntil, horizontalUntil),
+    flexDirection: resolveDirection(
+      horizontal,
+      vertical,
+      verticalUntil,
+      horizontalUntil,
+    ),
     alignItems,
     justifyContent,
     flexWrap,
   })
 
-  const flexChildClasses = resolveFlexChildClasses({ flex, alignSelf, flexGrow, flexShrink })
+  const flexChildClasses = resolveFlexChildClasses({
+    flex,
+    alignSelf,
+    flexGrow,
+    flexShrink,
+  })
 
   return (
     <Tag

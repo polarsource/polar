@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button, type ButtonProps } from './Button'
 
@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       className={twMerge(
-        'flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-polar-700 dark:bg-polar-800',
+        'dark:border-polar-700 dark:bg-polar-800 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6',
         className,
       )}
     >
@@ -51,9 +51,7 @@ export function CardFooter({
   actions?: ButtonProps[]
 }) {
   return (
-    <div
-      className={twMerge(actions ? 'pt-4' : undefined, className)}
-    >
+    <div className={twMerge(actions ? 'pt-4' : undefined, className)}>
       {children}
       {actions && (
         <div className="flex gap-2">

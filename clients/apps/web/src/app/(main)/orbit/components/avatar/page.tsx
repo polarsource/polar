@@ -108,7 +108,11 @@ export default function AvatarPage() {
                 <Text variant="caption">{desc}</Text>
               </Stack>
               <div className="col-span-3">
-                <Avatar name={name} avatar_url={avatar_url} className="h-8 w-8 text-xs" />
+                <Avatar
+                  name={name}
+                  avatar_url={avatar_url}
+                  className="h-8 w-8 text-xs"
+                />
               </div>
             </div>
           ))}
@@ -124,9 +128,19 @@ export default function AvatarPage() {
         <Stack flexWrap="wrap" gap={4}>
           {initialsExamples.map(({ name, avatar_url }) => (
             <Stack vertical key={name} alignItems="center" gap={1}>
-              <Avatar name={name} avatar_url={avatar_url} className="h-8 w-8 text-xs" />
+              <Avatar
+                name={name}
+                avatar_url={avatar_url}
+                className="h-8 w-8 text-xs"
+              />
               <Text as="span" variant="mono">
-                {name.split('@')[0].split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                {name
+                  .split('@')[0]
+                  .split(' ')
+                  .map((w) => w[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2)}
               </Text>
             </Stack>
           ))}

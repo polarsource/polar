@@ -197,32 +197,30 @@ const OrganizationSelectionPage = ({
                 )}
               />
 
-              {false && (
-                <FormField
-                  control={control}
-                  name="default_presentment_currency"
-                  rules={{
-                    required: 'Currency is required',
-                  }}
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <Label htmlFor="default_presentment_currency">
-                        Default Payment Currency
-                      </Label>
-                      <FormControl>
-                        <CurrencySelector
-                          value={field.value as schemas['PresentmentCurrency']}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription>
-                        The default currency for your products
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={control}
+                name="default_presentment_currency"
+                rules={{
+                  required: 'Currency is required',
+                }}
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <Label htmlFor="default_presentment_currency">
+                      Default Payment Currency
+                    </Label>
+                    <FormControl>
+                      <CurrencySelector
+                        value={field.value as schemas['PresentmentCurrency']}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      The default currency for your products
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-white p-6">

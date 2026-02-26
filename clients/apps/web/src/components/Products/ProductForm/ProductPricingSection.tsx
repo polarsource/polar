@@ -1381,16 +1381,14 @@ export const ProductPricingSection = ({
         </div>
 
         {/* Currency Tabs */}
-        {organization.feature_settings?.presentment_currencies_enabled && (
-          <CurrencyTabs
-            activeCurrencies={activeCurrencies}
-            selectedCurrency={validatedSelectedCurrency}
-            onSelectCurrency={setSelectedCurrency}
-            onAddCurrency={handleAddCurrency}
-            onRemoveCurrency={handleRemoveCurrency}
-            defaultCurrency={defaultCurrency}
-          />
-        )}
+        <CurrencyTabs
+          activeCurrencies={activeCurrencies}
+          selectedCurrency={validatedSelectedCurrency}
+          onSelectCurrency={setSelectedCurrency}
+          onAddCurrency={handleAddCurrency}
+          onRemoveCurrency={handleRemoveCurrency}
+          defaultCurrency={defaultCurrency}
+        />
 
         {/* Prices for selected currency */}
         {pricesForSelectedCurrency.map(({ price, index }) => (

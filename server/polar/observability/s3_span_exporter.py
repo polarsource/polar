@@ -47,7 +47,8 @@ class S3SpanExporter(SpanExporter):
         key = (
             f"spans/{self.service_name}"
             f"/dt={now.strftime('%Y-%m-%d')}"
-            f"/{now.strftime('%H%M%S')}_{uuid.uuid4().hex}.jsonl.gz"
+            f"/hour={now.strftime('%H')}"
+            f"/{now.strftime('%M%S')}_{uuid.uuid4().hex}.jsonl.gz"
         )
 
         try:

@@ -56,7 +56,10 @@ resource "aws_glue_catalog_table" "spans" {
     "projection.dt.type"           = "date"
     "projection.dt.range"          = "2025-01-01,NOW"
     "projection.dt.format"         = "yyyy-MM-dd"
-    "storage.location.template"    = "s3://${var.logs_bucket_name}/spans/$${service_name}/dt=$${dt}"
+    "projection.hour.type"         = "integer"
+    "projection.hour.range"        = "0,23"
+    "projection.hour.digits"       = "2"
+    "storage.location.template"    = "s3://${var.logs_bucket_name}/spans/$${service_name}/dt=$${dt}/hour=$${hour}"
   }
 
   partition_keys {
@@ -67,6 +70,11 @@ resource "aws_glue_catalog_table" "spans" {
   partition_keys {
     name = "dt"
     type = "string"
+  }
+
+  partition_keys {
+    name = "hour"
+    type = "int"
   }
 
   storage_descriptor {

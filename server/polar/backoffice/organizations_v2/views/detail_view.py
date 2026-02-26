@@ -95,7 +95,77 @@ class OrganizationDetailView:
     def right_sidebar(self, request: Request) -> Generator[None]:
         """Render right sidebar with contextual actions and metadata."""
         with tag.aside(classes="w-80 pl-4"):
-            # Internal Notes - Prominent at top
+            # Metadata card - at the top for quick reference
+            with card(bordered=True, classes="mb-4"):
+                with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
+                    text("Metadata")
+
+                with tag.dl(classes="space-y-3 text-sm"):
+                    # Slug (copyable)
+                    with tag.div():
+                        with tag.dt(classes="text-base-content/60 mb-1"):
+                            text("Slug")
+                        with tag.dd(classes="flex items-center gap-2"):
+                            with tag.code(
+                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
+                            ):
+                                text(self.org.slug)
+                            with clipboard_button(self.org.slug):
+                                pass
+
+                    # ID (copyable)
+                    with tag.div():
+                        with tag.dt(classes="text-base-content/60 mb-1"):
+                            text("Organization ID")
+                        with tag.dd(classes="flex items-center gap-2"):
+                            with tag.code(
+                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
+                            ):
+                                text(str(self.org.id))
+                            with clipboard_button(str(self.org.id)):
+                                pass
+
+                    # Contact email (copyable)
+                    with tag.div():
+                        with tag.dt(classes="text-base-content/60 mb-1"):
+                            text("Contact Email")
+                        with tag.dd(classes="flex items-center gap-2"):
+                            with tag.code(
+                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
+                            ):
+                                text(self.org.email or "Not set")
+                            if self.org.email:
+                                with clipboard_button(self.org.email):
+                                    pass
+
+                    # Created
+                    with tag.div():
+                        with tag.dt(classes="text-base-content/60 mb-1"):
+                            text("Created")
+                        with tag.dd(classes="font-semibold"):
+                            days_ago = (datetime.now(UTC) - self.org.created_at).days
+                            text(f"{days_ago}d ago")
+
+                    # Status duration
+                    if self.org.status_updated_at:
+                        with tag.div():
+                            with tag.dt(classes="text-base-content/60 mb-1"):
+                                text("In Status")
+                            with tag.dd(classes="font-semibold"):
+                                days = (
+                                    datetime.now(UTC) - self.org.status_updated_at
+                                ).days
+                                text(f"{days} days")
+
+                    # Country
+                    if self.org.account and self.org.account.country:
+                        with tag.div():
+                            with tag.dt(classes="text-base-content/60 mb-1"):
+                                text("Country")
+                            with tag.dd(classes="font-semibold"):
+                                text(self.org.account.country)
+
+            # Internal Notes
             if self.org.internal_notes:
                 with card(bordered=True, classes="border-l-4 border-l-base-400 mb-4"):
                     with tag.h3(
@@ -320,63 +390,6 @@ class OrganizationDetailView:
                             hx_target="#modal",
                         ):
                             text("Block Organization")
-
-            # Metadata card
-            with card(bordered=True):
-                with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
-                    text("Metadata")
-
-                with tag.dl(classes="space-y-3 text-sm"):
-                    # Slug (copyable)
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Slug")
-                        with tag.dd(classes="flex items-center gap-2"):
-                            with tag.code(
-                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
-                            ):
-                                text(self.org.slug)
-                            with clipboard_button(self.org.slug):
-                                pass
-
-                    # ID (copyable)
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Organization ID")
-                        with tag.dd(classes="flex items-center gap-2"):
-                            with tag.code(
-                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
-                            ):
-                                text(str(self.org.id))
-                            with clipboard_button(str(self.org.id)):
-                                pass
-
-                    # Created
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Created")
-                        with tag.dd(classes="font-semibold"):
-                            days_ago = (datetime.now(UTC) - self.org.created_at).days
-                            text(f"{days_ago}d ago")
-
-                    # Status duration
-                    if self.org.status_updated_at:
-                        with tag.div():
-                            with tag.dt(classes="text-base-content/60 mb-1"):
-                                text("In Status")
-                            with tag.dd(classes="font-semibold"):
-                                days = (
-                                    datetime.now(UTC) - self.org.status_updated_at
-                                ).days
-                                text(f"{days} days")
-
-                    # Country
-                    if self.org.account and self.org.account.country:
-                        with tag.div():
-                            with tag.dt(classes="text-base-content/60 mb-1"):
-                                text("Country")
-                            with tag.dd(classes="font-semibold"):
-                                text(self.org.account.country)
 
             yield
 

@@ -340,21 +340,7 @@ class OverviewSection:
     ) -> Generator[None]:
         """Render payment statistics card with health-rate metrics."""
 
-        # Determine worst variant for card-level border accent
-        border_class = ""
-        if payment_stats:
-            levels = [
-                AUTH_RATE.evaluate(payment_stats.get("auth_rate", 100)),
-                REFUND_RATE.evaluate(payment_stats.get("refund_rate", 0)),
-                DISPUTE_RATE.evaluate(payment_stats.get("dispute_rate", 0)),
-                CHARGEBACK_RATE.evaluate(payment_stats.get("chargeback_rate", 0)),
-            ]
-            if "crit" in levels:
-                border_class = "border-l-4 border-l-error"
-            elif "warn" in levels:
-                border_class = "border-l-4 border-l-warning"
-
-        with card(bordered=True, classes=border_class):
+        with card(bordered=True):
             # Header with info tooltip
             with tag.div(classes="flex items-center justify-between mb-4"):
                 with tag.h2(classes="text-lg font-bold"):

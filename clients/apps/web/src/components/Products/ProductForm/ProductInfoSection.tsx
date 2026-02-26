@@ -37,6 +37,7 @@ export const ProductInfoSection = ({
           rules={{
             required: 'This field is required',
             minLength: 3,
+            maxLength: 64,
           }}
           defaultValue=""
           render={({ field }) => (

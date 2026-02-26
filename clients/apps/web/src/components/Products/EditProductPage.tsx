@@ -17,8 +17,6 @@ import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import ProductForm from './ProductForm/ProductForm'
 
-type PresentmentCurrency = schemas['PresentmentCurrency']
-
 export interface EditProductPageProps {
   organization: schemas['Organization']
   product: schemas['Product']

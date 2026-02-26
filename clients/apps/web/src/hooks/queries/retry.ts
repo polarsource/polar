@@ -1,17 +1,11 @@
 import {
-  ClientResponseError,
   NotFoundResponseError,
   UnauthorizedResponseError,
 } from '@polar-sh/client'
 
 export const authenticatingRetry = (
   failureCount: number,
-  // Errors that can be raised by `unwrap`.
-  // API calls not wrapped by `unwrap` will succeed with an error object, so they won't be catched here.
-  error:
-    | ClientResponseError
-    | UnauthorizedResponseError
-    | NotFoundResponseError,
+  error: Error,
 ): boolean => {
   if (error instanceof UnauthorizedResponseError) {
     return false

@@ -223,13 +223,25 @@ export function VectorEditor({
   onChange,
 }: VectorProps) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const [paths, setPaths] = useState<ParsedPath[]>([])
-  const [viewBox, setViewBox] = useState('0 0 100 100')
+  const { paths: initialPaths, viewBox: initialViewBox } = useMemo(
+    () => parseSVG(svg),
+    [svg],
+  )
+  const [paths, setPaths] = useState<ParsedPath[]>(initialPaths)
+  const [viewBox, setViewBox] = useState(initialViewBox)
+  const [prevSvg, setPrevSvg] = useState(svg)
+  if (prevSvg !== svg) {
+    setPrevSvg(svg)
+    setPaths(initialPaths)
+    setViewBox(initialViewBox)
+  }
   const [dragging, setDragging] = useState<DragState | null>(null)
   // Set of "pi:ci" keys for multi-selected vertices
   const [selection, setSelection] = useState<Set<string>>(new Set())
   const selectionRef = useRef<Set<string>>(selection)
-  selectionRef.current = selection
+  useEffect(() => {
+    selectionRef.current = selection
+  }, [selection])
   // The last-clicked vertex, used to show control handles
   const [focused, setFocused] = useState<{
     pathIndex: number
@@ -242,12 +254,6 @@ export function VectorEditor({
     currentX: number
     currentY: number
   } | null>(null)
-
-  useEffect(() => {
-    const { paths: parsed, viewBox: vb } = parseSVG(svg)
-    setPaths(parsed)
-    setViewBox(vb)
-  }, [svg])
 
   const getSVGPoint = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } => {
@@ -322,13 +328,21 @@ export function VectorEditor({
 
   const skipNextClick = useRef(false)
   const draggingRef = useRef(dragging)
-  draggingRef.current = dragging
   const marqueeRef = useRef(marquee)
-  marqueeRef.current = marquee
   const pathsRef = useRef(paths)
-  pathsRef.current = paths
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  useEffect(() => {
+    draggingRef.current = dragging
+  }, [dragging])
+  useEffect(() => {
+    marqueeRef.current = marquee
+  }, [marquee])
+  useEffect(() => {
+    pathsRef.current = paths
+  }, [paths])
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   // Window-level mousemove/mouseup for drag and marquee so they work outside the SVG
   useEffect(() => {
@@ -521,13 +535,18 @@ export function VectorEditor({
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [getSVGPoint])
+  }, [getSVGPoint, svg, viewBox])
 
   // Detect dark mode
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== 'undefined') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      return document.documentElement.classList.contains('dark') || mq.matches
+    }
+    return false
+  })
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    setIsDark(document.documentElement.classList.contains('dark') || mq.matches)
     const onClassChange = () => {
       setIsDark(
         document.documentElement.classList.contains('dark') || mq.matches,
@@ -558,8 +577,6 @@ export function VectorEditor({
   const handleSize = vbSize * 0.012
   const handleHalf = handleSize / 2
   const strokeW = vbSize * 0.0025
-  const dashLen = vbSize * 0.015
-
   const selectedFill = isDark ? '#ffffff' : '#000000'
 
   // Anchor points for all vertices (always visible)

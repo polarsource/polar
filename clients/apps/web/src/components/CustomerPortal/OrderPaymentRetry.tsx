@@ -146,7 +146,7 @@ export const OrderPaymentRetry = ({
   }, [checkPaymentStatus, order.id, handlePaymentCompletion])
 
   const handlePaymentAction = useCallback(
-    async (result: any) => {
+    async (result: schemas['CustomerOrderPaymentConfirmation']) => {
       if (!stripe) {
         handlePaymentCompletion(
           false,
@@ -180,7 +180,7 @@ export const OrderPaymentRetry = ({
   )
 
   const handlePaymentStatus = useCallback(
-    async (result: any) => {
+    async (result: schemas['CustomerOrderPaymentConfirmation']) => {
       switch (result.status) {
         case 'succeeded':
           handlePaymentCompletion(true)
@@ -288,7 +288,7 @@ export const OrderPaymentRetry = ({
         if (result) {
           await handlePaymentStatus(result)
         }
-      } catch (err) {
+      } catch {
         handlePaymentCompletion(
           false,
           'Network error occurred. Please check your connection and try again.',
@@ -332,7 +332,7 @@ export const OrderPaymentRetry = ({
       if (result) {
         await handlePaymentStatus(result)
       }
-    } catch (err) {
+    } catch {
       handlePaymentCompletion(
         false,
         'Network error occurred. Please check your connection and try again.',

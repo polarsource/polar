@@ -5,12 +5,15 @@ export default [
   ...nextJsConfig,
   {
     rules: {
-      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/set-state-in-effect': 'error',
       'react-hooks/refs': 'warn',
       'react-hooks/static-components': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn',
+      // Third-party libraries (react-hook-form, Stripe, etc.) that the React
+      // Compiler cannot optimize — not actionable without changing libraries
+      'react-hooks/incompatible-library': 'off',
     },
   },
   {

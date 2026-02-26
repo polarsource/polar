@@ -465,7 +465,7 @@ export const useCustomerOrderConfirmPayment = (api: Client) =>
             payment_method_id: variables.payment_method_id,
           }),
           payment_processor: variables.payment_processor || 'stripe',
-        } as any,
+        } as schemas['CustomerOrderConfirmPayment'],
       }),
     onSuccess: async (result, variables, _ctx) => {
       if (result.error) {

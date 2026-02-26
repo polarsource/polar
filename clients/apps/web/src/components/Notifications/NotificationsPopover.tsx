@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Icon from '../Icons/Icon'
 
@@ -21,10 +21,24 @@ type NotificationSchema = schemas['NotificationsList']['notifications'][number]
 
 export const NotificationsPopover = () => {
   const [show, setShow] = useState(false)
-  const [showBadge, setShowBadge] = useState(false)
 
   const notifs = useNotifications()
   const markRead = useNotificationsMarkRead()
+
+  const showBadge = useMemo(() => {
+    const haveNotifications =
+      notifs.data && notifs.data.notifications.length > 0
+    const noReadNotifications =
+      haveNotifications && !notifs.data.last_read_notification_id
+    const lastNotificationIsUnread =
+      haveNotifications &&
+      notifs.data.last_read_notification_id !== notifs.data.notifications[0].id
+
+    return !!(
+      haveNotifications &&
+      (noReadNotifications || lastNotificationIsUnread)
+    )
+  }, [notifs.data])
 
   const markLatest = () => {
     if (!notifs || !notifs.data || notifs.data.notifications.length === 0) {
@@ -60,23 +74,6 @@ export const NotificationsPopover = () => {
     }
     setShow(false)
   })
-
-  useEffect(() => {
-    const haveNotifications =
-      notifs.data && notifs.data.notifications.length > 0
-    const noReadNotifications =
-      haveNotifications && !notifs.data.last_read_notification_id
-    const lastNotificationIsUnread =
-      haveNotifications &&
-      notifs.data.last_read_notification_id !== notifs.data.notifications[0].id
-
-    const showBadge = !!(
-      haveNotifications &&
-      (noReadNotifications || lastNotificationIsUnread)
-    )
-
-    setShowBadge(showBadge)
-  }, [notifs, notifs.data])
 
   return (
     <Popover>
@@ -143,7 +140,7 @@ const Item = ({
 }: {
   iconClasses: string
   n: NotificationSchema
-  children: { icon: React.ReactElement<any>; text: React.ReactElement<any> }
+  children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
     <div className="flex space-x-2.5 text-sm transition-colors duration-100">
@@ -302,7 +299,7 @@ export const Notification = ({
 
 const InternalLink = (props: {
   href: string
-  children: React.ReactElement<any>
+  children: React.ReactElement
 }) => {
   return (
     <Link className="font-bold hover:underline" href={props.href}>

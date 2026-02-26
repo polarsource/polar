@@ -87,11 +87,5 @@ export default async function Page(props: {
     throw error
   }
 
-  return (
-    <WalletPage
-      organization={organization}
-      wallets={wallets.items}
-      customerSessionToken={token as string}
-    />
-  )
+  return <WalletPage organization={organization} wallets={wallets.items} />
 }

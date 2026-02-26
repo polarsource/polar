@@ -13,15 +13,11 @@ export const FeeCreditGrantsModal = ({
   hide: () => void
 }) => {
   const { organization } = useContext(OrganizationContext)
-  const {
-    data: account,
-    isLoading: accountIsLoading,
-    error: accountError,
-  } = useOrganizationAccount(organization.id)
+  const { data: account } = useOrganizationAccount(organization.id)
 
   const hasCredits = account?.credit_balance && account.credit_balance > 0
 
-  const { data: credits, isLoading: isLoadingCredits } = useAccountCredits(
+  const { data: credits } = useAccountCredits(
     hasCredits ? account?.id : undefined,
   )
 

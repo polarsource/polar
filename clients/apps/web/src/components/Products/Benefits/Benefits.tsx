@@ -56,6 +56,7 @@ export const Benefits = ({
     parseAsBoolean.withDefault(false),
   )
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reacting to querystring-driven command to open modal */
   useEffect(() => {
     if (createBenefitQuerystring) {
       setCreateBenefitType(undefined)
@@ -63,6 +64,7 @@ export const Benefits = ({
       setCreateBenefitQuerystring(null)
     }
   }, [createBenefitQuerystring, setCreateBenefitQuerystring])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const hasSelectedBenefits = selectedBenefits.length > 0
   const isSimplifiedView = totalBenefitCount <= SIMPLIFIED_VIEW_THRESHOLD

@@ -4,16 +4,7 @@ import { ShaderCanvas } from './ShaderCanvas'
 import { CIRCLES_GLSL } from './shaders/geometry/circles'
 import { RIPPLES_GLSL } from './shaders/geometry/ripples'
 import { VORTEX_GLSL } from './shaders/geometry/vortex'
-import { asciiEffect } from './shaders/pass/ascii'
 import { ditherEffect } from './shaders/pass/dither'
-
-const asciiVortex = asciiEffect({
-  cellSize: 12,
-  colorA: '#f3f4f6',
-  colorB: '#000000',
-  darkColorA: '#000000',
-  darkColorB: '#ffffff',
-})
 
 const ditherRipples = ditherEffect({
   pixelSize: 3,

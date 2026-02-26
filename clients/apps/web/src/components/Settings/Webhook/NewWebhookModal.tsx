@@ -29,7 +29,7 @@ export default function NewWebhookModal({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] = useState<schemas['WebhookEndpoint']>()
+  const [created, _setCreated] = useState<schemas['WebhookEndpoint']>()
 
   const createWebhookEndpoint = useCreateWebhookEndpoint()
 
@@ -51,7 +51,7 @@ export default function NewWebhookModal({
         `/dashboard/${organization.slug}/settings/webhooks/endpoints/${data.id}`,
       )
     },
-    [hide, createWebhookEndpoint, setCreated],
+    [createWebhookEndpoint, router, organization.slug],
   )
 
   return (

@@ -4,9 +4,9 @@ import { headers } from 'next/headers'
 import { cache } from 'react'
 
 async function retryWithBackoff<T>(
-  fn: () => Promise<{ data?: T; error?: any }>,
+  fn: () => Promise<{ data?: T; error?: unknown }>,
   maxRetries = 3,
-): Promise<{ data?: T; error?: any }> {
+): Promise<{ data?: T; error?: unknown }> {
   let delay = 100
   let lastResult
 
@@ -53,29 +53,24 @@ const _getUserOrganizations = async (
     return []
   }
 
-  const requestOptions: any = {
-    params: {
-      query: {
-        limit: 100,
-        sorting: ['name'],
-      },
-    },
-  }
+  const { data, error } = bypassCache
+    ? await retryWithBackoff(() =>
+        api.GET('/v1/organizations/', {
+          params: { query: { limit: 100, sorting: ['name'] } },
+          cache: 'no-cache',
+        }),
+      )
+    : await retryWithBackoff(() =>
+        api.GET('/v1/organizations/', {
+          params: { query: { limit: 100, sorting: ['name'] } },
+          next: {
+            tags: [`users:${user.id}:organizations`],
+            revalidate: 600,
+          },
+        }),
+      )
 
-  if (bypassCache) {
-    requestOptions.cache = 'no-cache'
-  } else {
-    requestOptions.next = {
-      tags: [`users:${user.id}:organizations`],
-      revalidate: 600,
-    }
-  }
-
-  const { data, error } = await retryWithBackoff(() =>
-    api.GET('/v1/organizations/', requestOptions),
-  )
-
-  if (error) {
+  if (error || !data) {
     console.error('getUserOrganizations failed after retries:', user.id, error)
     Sentry.captureException(
       new Error('Failed to fetch organizations after retries'),

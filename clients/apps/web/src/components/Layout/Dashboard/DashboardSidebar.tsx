@@ -1,6 +1,5 @@
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
-import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
@@ -51,8 +50,6 @@ export const DashboardSidebar = ({
   const router = useRouter()
   const { state } = useSidebar()
 
-  const { currentUser } = useAuth()
-
   const isCollapsed = state === 'collapsed'
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -60,11 +57,13 @@ export const DashboardSidebar = ({
     router.push(`/dashboard/${org.slug}`)
   }
 
-  // Annoying useEffect hack to allow access to client-side cookies from Server-Side component
+  // Client-only cookie read: isImpersonating() accesses document.cookie which is unavailable during SSR
   const [_isImpersonating, setIsImpersonating] = useState(false)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setIsImpersonating(isImpersonating())
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
   const isTopBannerVisible = CONFIG.IS_SANDBOX || _isImpersonating
 
   useEffect(() => {

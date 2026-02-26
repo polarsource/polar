@@ -71,7 +71,7 @@ export const ShareChartModal = ({
         description: 'Chart image downloaded',
       })
     })
-  }, [])
+  }, [getParams])
 
   const copyToClipboard = useCallback(() => {
     const params = getParams()

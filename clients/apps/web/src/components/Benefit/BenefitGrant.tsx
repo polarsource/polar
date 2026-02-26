@@ -83,13 +83,27 @@ const BenefitGrantOAuth = ({
   const [showAccountSelector, setShowAccountSelector] = useState(
     !account_id || !!grantError,
   )
-  const [retryCountdown, setRetryCountdown] = useState<number>(0)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
   const errorPlatform = searchParams.get('error_platform')
   const error = errorPlatform === platform ? searchParams.get('error') : null
   const retryAfter =
     errorPlatform === platform ? searchParams.get('error_retry_after') : null
+
+  const initialRetrySeconds = useMemo(() => {
+    if (!retryAfter) return 0
+    const seconds = Math.round(parseFloat(retryAfter))
+    return isNaN(seconds) || seconds <= 0 ? 0 : seconds
+  }, [retryAfter])
+
+  const [retryCountdown, setRetryCountdown] =
+    useState<number>(initialRetrySeconds)
+  const [prevInitialRetrySeconds, setPrevInitialRetrySeconds] =
+    useState(initialRetrySeconds)
+  if (prevInitialRetrySeconds !== initialRetrySeconds) {
+    setPrevInitialRetrySeconds(initialRetrySeconds)
+    setRetryCountdown(initialRetrySeconds)
+  }
 
   // Start countdown timer for rate limit errors
   useEffect(() => {
@@ -99,19 +113,10 @@ const BenefitGrantOAuth = ({
       }
     }
 
-    if (!retryAfter) {
+    if (initialRetrySeconds <= 0) {
       bail()
       return
     }
-
-    const seconds = Math.round(parseFloat(retryAfter))
-
-    if (isNaN(seconds) || seconds <= 0) {
-      bail()
-      return
-    }
-
-    setRetryCountdown(seconds)
 
     countdownRef.current = setInterval(() => {
       setRetryCountdown((prev) => {
@@ -124,7 +129,7 @@ const BenefitGrantOAuth = ({
     }, 1000)
 
     return bail
-  }, [retryAfter])
+  }, [initialRetrySeconds])
 
   const accounts = useMemo(
     () =>

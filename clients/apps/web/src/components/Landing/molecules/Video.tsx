@@ -14,14 +14,15 @@ export const Video = ({ src }: VideoProps) => {
   const [isMuted, setIsMuted] = useState(true)
 
   useEffect(() => {
+    const video = videoRef.current
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (videoRef.current) {
+          if (video) {
             if (entry.isIntersecting) {
-              videoRef.current.play()
+              video.play()
             } else {
-              videoRef.current.pause()
+              video.pause()
             }
           }
         })
@@ -29,13 +30,13 @@ export const Video = ({ src }: VideoProps) => {
       { threshold: 0.2 },
     )
 
-    if (videoRef.current) {
-      observer.observe(videoRef.current)
+    if (video) {
+      observer.observe(video)
     }
 
     return () => {
-      if (videoRef.current) {
-        observer.unobserve(videoRef.current)
+      if (video) {
+        observer.unobserve(video)
       }
     }
   }, [])

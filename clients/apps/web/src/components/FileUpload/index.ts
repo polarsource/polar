@@ -94,16 +94,17 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   }
 
   const onFileProcessing = (tempId: string, file: File) => {
+    // Placeholder object for a file being processed — doesn't have all T fields yet
     const processingFile = {
-      ...buildFileObject({
-        id: tempId,
-        name: file.name,
-        size: file.size,
-        mime_type: file.type || 'application/octet-stream',
-        is_uploaded: false,
-      } as any),
+      id: tempId,
+      name: file.name,
+      size: file.size,
+      mime_type: file.type || 'application/octet-stream',
+      is_uploaded: false,
       isProcessing: true,
-    }
+      isUploading: false,
+      uploadedBytes: 0,
+    } as unknown as FileObject<T>
     setFiles((prev) => [...prev, processingFile])
   }
 

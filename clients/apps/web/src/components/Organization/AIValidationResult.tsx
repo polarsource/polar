@@ -11,7 +11,7 @@ import {
   Info,
   Loader2,
 } from 'lucide-react'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
@@ -27,19 +27,20 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   onAppealApproved,
   onAppealSubmitted,
 }) => {
-  const startedAtRef = useRef<number>(Date.now())
   const [timedOut, setTimedOut] = useState(false)
   const [stopPolling, setStopPolling] = useState(false)
 
-  const shouldPoll = useMemo(
-    () => !timedOut && !stopPolling,
-    [timedOut, stopPolling],
-  )
+  const shouldPoll = !timedOut && !stopPolling
   const reviewStatus = useOrganizationReviewStatus(
     organization.id,
     true,
     shouldPoll ? 3000 : undefined,
   )
+
+  // Stop polling once a verdict is present (update during render)
+  if (reviewStatus.data?.verdict && !stopPolling) {
+    setStopPolling(true)
+  }
 
   // Timeout after 120s and stop polling
   useEffect(() => {
@@ -47,13 +48,6 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     const timeout = setTimeout(() => setTimedOut(true), 120_000)
     return () => clearTimeout(timeout)
   }, [timedOut])
-
-  // Stop polling once a verdict is present
-  useEffect(() => {
-    if (reviewStatus.data?.verdict) {
-      setStopPolling(true)
-    }
-  }, [reviewStatus.data?.verdict])
 
   const getValidationStatus = () => {
     // If we don't have a verdict yet, show loading while polling

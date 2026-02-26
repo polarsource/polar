@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 import { ControllerRenderProps } from 'react-hook-form'
 
 interface ValueInputProps {
-  field: ControllerRenderProps<any, any>
+  field: ControllerRenderProps
 }
 
 interface EventNameInputProps extends ValueInputProps {
@@ -123,7 +123,7 @@ const MetadataInput = ({ field }: ValueInputProps) => {
 }
 
 interface MeterFilterInputValueProps {
-  field: ControllerRenderProps<any, any>
+  field: ControllerRenderProps
   property: string
   organizationId: string
 }

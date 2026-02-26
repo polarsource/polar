@@ -87,9 +87,14 @@ const MobileNav = ({
   const pathname = usePathname()
   const { currentUser } = useAuth()
 
-  useEffect(() => {
-    setMobileNavOpen(false)
-  }, [pathname])
+  // Close mobile nav when pathname changes
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
+    if (mobileNavOpen) {
+      setMobileNavOpen(false)
+    }
+  }
 
   const header = (
     <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">

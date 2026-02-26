@@ -27,8 +27,11 @@ import CheckoutSeatInvitations from './CheckoutSeatInvitations'
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 const isIntegrationError = (
-  err: any,
+  err: unknown,
 ): err is { name: 'IntegrationError'; message: string } =>
+  typeof err === 'object' &&
+  err !== null &&
+  'name' in err &&
   err.name === 'IntegrationError'
 
 const StripeRequiresAction = ({

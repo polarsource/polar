@@ -11,6 +11,7 @@ import { createClientSideAPI } from '@/utils/client'
 import { validateEmail } from '@/utils/validation'
 import GroupOutlined from '@mui/icons-material/GroupOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
@@ -86,9 +87,7 @@ export const CustomerPortalTeam = ({
   const [isAddingMember, setIsAddingMember] = useState(false)
 
   const currentMemberId =
-    authenticatedUser?.type === 'member'
-      ? (authenticatedUser as any).member_id
-      : null
+    authenticatedUser?.type === 'member' ? authenticatedUser.member_id : null
 
   const handleAddMember = async () => {
     if (!newMemberEmail.trim()) {
@@ -136,7 +135,7 @@ export const CustomerPortalTeam = ({
     try {
       await updateMember.mutateAsync({
         id: memberId,
-        body: { role: newRole as any },
+        body: { role: newRole as schemas['MemberRole'] },
       })
       toast({
         title: 'Role updated',

@@ -41,8 +41,8 @@ export default function ConfirmationButton({
   // Handle escape key to cancel
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showConfirmation) {
-        handleCancel()
+      if (event.key === 'Escape') {
+        setShowConfirmation(false)
       }
     }
 
@@ -68,10 +68,6 @@ export default function ConfirmationButton({
 
   const handleConfirm = () => {
     onConfirm()
-    setShowConfirmation(false)
-  }
-
-  const handleCancel = () => {
     setShowConfirmation(false)
   }
 
@@ -146,7 +142,7 @@ export default function ConfirmationButton({
         <Button
           type="button"
           variant="secondary"
-          onClick={handleCancel}
+          onClick={() => setShowConfirmation(false)}
           disabled={loading}
           size={size}
           className="flex-1 sm:flex-initial"

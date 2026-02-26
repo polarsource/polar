@@ -19,9 +19,11 @@ const getIsDismissed = (): boolean => {
 export const IOSAppBanner = () => {
   const [isDismissed, setIsDismissed] = useState(() => getIsDismissed())
 
+  /* eslint-disable react-hooks/set-state-in-effect -- client-only localStorage read after SSR hydration */
   useEffect(() => {
     setIsDismissed(getIsDismissed())
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dismiss = useCallback(() => {
     if (typeof window === 'undefined') {

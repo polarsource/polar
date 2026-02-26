@@ -10,7 +10,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import { ArrowRight, Loader2, Send, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 interface AppealFormProps {
   organization: schemas['Organization']
@@ -27,8 +27,10 @@ const AppealForm: React.FC<AppealFormProps> = ({
   onContinueAfterSubmission,
   existingReviewStatus,
 }) => {
-  const [appealReason, setAppealReason] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [appealReason, setAppealReason] = useState(
+    () => existingReviewStatus?.appeal_reason || '',
+  )
+  const [locallySubmitted, setLocallySubmitted] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
   const appealMutation = useOrganizationAppeal(organization.id)
@@ -37,15 +39,9 @@ const AppealForm: React.FC<AppealFormProps> = ({
   // Use existing review status if provided, otherwise use fetched data
   const currentReviewStatus = existingReviewStatus || reviewStatus.data
 
-  // Update state based on existing review status
-  useEffect(() => {
-    if (currentReviewStatus?.appeal_submitted_at) {
-      setIsSubmitted(true)
-      if (currentReviewStatus.appeal_reason) {
-        setAppealReason(currentReviewStatus.appeal_reason)
-      }
-    }
-  }, [currentReviewStatus])
+  // Derive isSubmitted from review status or local submission
+  const isSubmitted =
+    locallySubmitted || !!currentReviewStatus?.appeal_submitted_at
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +52,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
 
     try {
       await appealMutation.mutateAsync({ reason: appealReason })
-      setIsSubmitted(true)
+      setLocallySubmitted(true)
 
       // Invalidate the review status query to refresh the data
       getQueryClient().invalidateQueries({

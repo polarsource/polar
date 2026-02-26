@@ -9,7 +9,7 @@ import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpub
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -51,12 +51,15 @@ export const CheckoutDiscountInput = ({
 
   const hasDiscount = !!checkout.discount
 
-  useEffect(() => {
-    if (hasDiscount) {
-      setDiscountCode('')
-      setError(null)
-    }
-  }, [hasDiscount])
+  // Reset discount code and error when a discount is applied
+  const [prevHasDiscount, setPrevHasDiscount] = useState(hasDiscount)
+  if (hasDiscount && !prevHasDiscount) {
+    setDiscountCode('')
+    setError(null)
+  }
+  if (prevHasDiscount !== hasDiscount) {
+    setPrevHasDiscount(hasDiscount)
+  }
 
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return

@@ -29,7 +29,7 @@ interface CustomerSeat {
   claimed_at?: string | null
   revoked_at?: string | null
   created_at: string
-  seat_metadata?: Record<string, any> | null
+  seat_metadata?: Record<string, unknown> | null
 }
 
 interface SeatViewOnlyTableProps {

@@ -17,6 +17,10 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
+import type {
+  NameType,
+  ValueType,
+} from 'recharts/types/component/DefaultTooltipContent'
 import {
   CANCELLATION_REASONS,
   REASON_COLORS,
@@ -142,7 +146,7 @@ const StackedChartTooltip = ({
   label,
   payload,
   tickFormatter,
-}: TooltipContentProps<any, any> & {
+}: TooltipContentProps<ValueType, NameType> & {
   tickFormatter: (timestamp: Date) => string
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -157,7 +161,10 @@ const StackedChartTooltip = ({
     return null
   }
 
-  const total = payload.reduce((acc, item) => acc + item.value, 0)
+  const total = payload.reduce(
+    (acc: number, item: { value: number }) => acc + item.value,
+    0,
+  )
 
   return (
     <div
@@ -169,25 +176,32 @@ const StackedChartTooltip = ({
         <span className="font-medium tabular-nums">{total}</span>
       </div>
       <div className="flex flex-col gap-1.5">
-        {payload.map((item) => {
-          return (
-            <div
-              key={item.dataKey}
-              className="flex items-center justify-between gap-1.5"
-            >
-              <div className="flex items-center gap-1.5">
-                <div
-                  className="h-2.5 w-2.5 shrink-0 rounded-xs"
-                  style={{ backgroundColor: item.color }}
-                />
-                {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}
+        {payload.map(
+          (item: {
+            dataKey: string
+            color: string
+            name: string
+            value: number
+          }) => {
+            return (
+              <div
+                key={item.dataKey}
+                className="flex items-center justify-between gap-1.5"
+              >
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="h-2.5 w-2.5 shrink-0 rounded-xs"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}
+                </div>
+                <span className="font-medium tabular-nums">
+                  {item.value.toLocaleString()}
+                </span>
               </div>
-              <span className="font-medium tabular-nums">
-                {item.value.toLocaleString()}
-              </span>
-            </div>
-          )
-        })}
+            )
+          },
+        )}
       </div>
     </div>
   )

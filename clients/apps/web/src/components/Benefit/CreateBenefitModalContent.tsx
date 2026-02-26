@@ -51,9 +51,9 @@ const CreateBenefitModalContent = ({
       type: type ? type : 'custom',
       description: description ? description : undefined,
       properties: {
-        ...(properties as any),
+        ...properties,
       },
-    },
+    } as schemas['BenefitCreate'],
   })
 
   const { toast } = useToast()

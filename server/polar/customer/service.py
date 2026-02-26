@@ -20,7 +20,6 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.member.schemas import Member as MemberSchema
 from polar.member.service import member_service
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.customer import CustomerType
@@ -472,14 +471,6 @@ class CustomerService:
             await self.webhook(
                 session, redis, WebhookEventType.customer_state_changed, customer
             )
-
-    async def load_members(
-        self,
-        session: AsyncReadSession,
-        customer_id: uuid.UUID,
-    ) -> Sequence[MemberSchema]:
-        members = await member_service.list_by_customer(session, customer_id)
-        return [MemberSchema.model_validate(member) for member in members]
 
 
 customer = CustomerService()

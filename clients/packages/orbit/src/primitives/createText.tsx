@@ -1,145 +1,91 @@
-import React, { type ComponentPropsWithoutRef, type ElementType, type JSX } from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
+import React, {
+  type ComponentPropsWithoutRef,
+  type ElementType,
+  type JSX,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // ─── Text tag union ───────────────────────────────────────────────────────────
 
-type TextTag =
-  | 'p'
-  | 'span'
-  | 'label'
-  | 'strong'
-  | 'em'
-  | 'small'
-  | 'code'
-  | 'div'
+type TextTag = 'p' | 'span' | 'label' | 'strong' | 'em' | 'small' | 'code' | 'div'
 
-// ─── Typography token maps ────────────────────────────────────────────────────
-// Fully static strings — Tailwind JIT can scan these as literals.
+// ─── Variants ─────────────────────────────────────────────────────────────────
+// All styling is encoded here — consumers pick a semantic variant, not raw props.
 
-const FONT_SIZE: Record<NonNullable<TextStyleProps['fontSize']>, string> = {
-  xs: 'text-xs',
-  sm: 'text-sm',
-  base: 'text-base',
-  lg: 'text-lg',
-  xl: 'text-xl',
-  '2xl': 'text-2xl',
-  '3xl': 'text-3xl',
+const textVariants = cva('', {
+  variants: {
+    variant: {
+      /** Default body text — 14 px, normal weight, primary color. */
+      body: 'text-sm leading-relaxed text-gray-900 dark:text-white',
+      /** Form labels and table headers — 12 px, medium weight, primary color. */
+      label: 'text-xs font-medium tracking-tight text-gray-900 dark:text-white',
+      /** Supporting annotations — 12 px, subtle color. */
+      caption: 'text-xs leading-snug text-gray-500 dark:text-polar-400',
+      /** Secondary copy alongside primary content — 14 px, subtle color. */
+      subtle: 'text-sm text-gray-500 dark:text-polar-400',
+      /** Non-interactive or unavailable content — 14 px, disabled color. */
+      disabled: 'text-sm text-gray-400 dark:text-polar-600',
+      /** Inline code and technical values — monospace, 12 px. */
+      mono: 'font-mono text-xs text-gray-900 dark:text-white',
+    },
+    align: {
+      left: 'text-left',
+      center: 'text-center',
+      right: 'text-right',
+      justify: 'text-justify',
+    },
+    wrap: {
+      wrap: 'text-wrap',
+      nowrap: 'text-nowrap',
+      balance: 'text-balance',
+      pretty: 'text-pretty',
+    },
+  },
+  defaultVariants: {
+    variant: 'body',
+  },
+})
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type TextVariant = NonNullable<VariantProps<typeof textVariants>['variant']>
+export type TextStyleProps = VariantProps<typeof textVariants>
+
+type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
+  as?: E
+  className?: string
+} & Omit<ComponentPropsWithoutRef<E>, keyof TextStyleProps | 'className'>
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+function Text<E extends TextTag = 'p'>({
+  as,
+  variant,
+  align,
+  wrap,
+  className,
+  children,
+  ...props
+}: TextProps<E>): JSX.Element {
+  const Tag = (as ?? 'p') as ElementType
+  return (
+    <Tag
+      className={twMerge(textVariants({ variant, align, wrap }), className)}
+      {...(props as object)}
+    >
+      {children}
+    </Tag>
+  )
 }
 
-const FONT_WEIGHT: Record<NonNullable<TextStyleProps['fontWeight']>, string> = {
-  light: 'font-light',
-  normal: 'font-normal',
-  medium: 'font-medium',
-  semibold: 'font-semibold',
-  bold: 'font-bold',
-}
+Text.displayName = 'Text'
 
-const LEADING: Record<NonNullable<TextStyleProps['leading']>, string> = {
-  none: 'leading-none',
-  tight: 'leading-tight',
-  snug: 'leading-snug',
-  normal: 'leading-normal',
-  relaxed: 'leading-relaxed',
-  loose: 'leading-loose',
-}
+// ─── createText ───────────────────────────────────────────────────────────────
+// Factory kept for extensibility — returns the standard Text component.
 
-const TRACKING: Record<NonNullable<TextStyleProps['tracking']>, string> = {
-  tighter: 'tracking-tighter',
-  tight: 'tracking-tight',
-  normal: 'tracking-normal',
-  wide: 'tracking-wide',
-  wider: 'tracking-wider',
-  widest: 'tracking-widest',
-}
-
-const TRANSFORM: Record<NonNullable<TextStyleProps['transform']>, string> = {
-  uppercase: 'uppercase',
-  lowercase: 'lowercase',
-  capitalize: 'capitalize',
-}
-
-const FONT_FAMILY: Record<NonNullable<TextStyleProps['fontFamily']>, string> = {
-  sans: 'font-sans',
-  mono: 'font-mono',
-}
-
-// ─── Typography prop types ────────────────────────────────────────────────────
-
-export type TextStyleProps = {
-  fontSize?: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl'
-  fontWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold'
-  leading?: 'none' | 'tight' | 'snug' | 'normal' | 'relaxed' | 'loose'
-  tracking?: 'tighter' | 'tight' | 'normal' | 'wide' | 'wider' | 'widest'
-  transform?: 'uppercase' | 'lowercase' | 'capitalize'
-  fontFamily?: 'sans' | 'mono'
-  tabular?: boolean
-}
-
-// ─── Variant ─────────────────────────────────────────────────────────────────
-
-export type TextVariant = 'default' | 'subtle' | 'disabled'
-
-// ─── Prop name union for native prop filtering ────────────────────────────────
-
-type TextPropName =
-  | 'fontSize'
-  | 'fontWeight'
-  | 'leading'
-  | 'tracking'
-  | 'transform'
-  | 'fontFamily'
-  | 'tabular'
-
-// ─── createText ──────────────────────────────────────────────────────────────
-// variantColors maps each TextVariant to a CSS value string (typically a
-// CSS variable reference like "var(--COLOR_TEXT)").
-
-export function createText(
-  variantColors: Record<TextVariant, string>,
-) {
-  type TextProps<E extends TextTag = 'p'> = {
-    as?: E
-    variant?: TextVariant
-    className?: string
-  } & TextStyleProps &
-    Omit<ComponentPropsWithoutRef<E>, TextPropName | 'className'>
-
-  function Text<E extends TextTag = 'p'>({
-    as,
-    variant = 'default',
-    fontSize = 'lg',
-    fontWeight,
-    leading,
-    tracking,
-    transform,
-    fontFamily,
-    tabular,
-    className,
-    children,
-    ...props
-  }: TextProps<E>): JSX.Element {
-    const Tag = (as ?? 'p') as ElementType
-
-    const classes: string[] = []
-    if (fontSize !== undefined) classes.push(FONT_SIZE[fontSize])
-    if (fontWeight !== undefined) classes.push(FONT_WEIGHT[fontWeight])
-    if (leading !== undefined) classes.push(LEADING[leading])
-    if (tracking !== undefined) classes.push(TRACKING[tracking])
-    if (transform !== undefined) classes.push(TRANSFORM[transform])
-    if (fontFamily !== undefined) classes.push(FONT_FAMILY[fontFamily])
-    if (tabular) classes.push('tabular-nums')
-
-    return (
-      <Tag
-        className={twMerge(classes.join(' '), className)}
-        style={{ color: variantColors[variant] }}
-        {...(props as object)}
-      >
-        {children}
-      </Tag>
-    )
-  }
-
-  Text.displayName = 'Text'
+export function createText() {
   return Text
 }
+
+export { Text }

@@ -1,73 +1,81 @@
-import React, { type ElementType } from 'react'
+import React, {
+  type ComponentPropsWithoutRef,
+  type ElementType,
+  type ReactNode,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
-import type {
-  BoxProps,
-  Breakpoint,
-  FlexContainerProps,
-} from '../primitives/createBox'
-import { resolveContainerClasses } from '../primitives/resolveProperties'
-import { Box } from './Box'
+import {
+  type Breakpoint,
+  type FlexChildProps,
+  type FlexContainerProps,
+  resolveContainerClasses,
+  resolveFlexChildClasses,
+} from '../primitives/resolveProperties'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Any breakpoint except 'default', used to specify a layout switch point. */
 export type StackBreakpoint = Exclude<Breakpoint, 'default'>
 
-/**
- * Container props exposed directly on Stack.
- * display is omitted — Stack is always `flex`.
- * flexDirection is omitted — use vertical / horizontal / verticalUntil / horizontalUntil.
- */
-type StackContainerProps = Omit<
-  FlexContainerProps,
-  'display' | 'flexDirection'
->
+type StackContainerProps = Omit<FlexContainerProps, 'display' | 'flexDirection'>
 
-export type StackProps<E extends ElementType = 'div'> = BoxProps<E> &
+// ─── Gap scale ────────────────────────────────────────────────────────────────
+// Maps numeric step (0–14) to a CSS-variable gap class (Tailwind v4 shorthand).
+// Each step corresponds to the SPACING_* design token.
+
+export type StackGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14
+
+const GAP_CLASSES: Record<StackGap, string> = {
+  0:  'gap-0',
+  1:  'gap-1',
+  2:  'gap-2',
+  3:  'gap-3',
+  4:  'gap-4',
+  5:  'gap-5',
+  6:  'gap-6',
+  7:  'gap-7',
+  8:  'gap-8',
+  9:  'gap-9',
+  10: 'gap-10',
+  11: 'gap-11',
+  12: 'gap-12',
+  13: 'gap-14',
+  14: 'gap-16',
+}
+
+// ─── StackProps ───────────────────────────────────────────────────────────────
+
+type StackOwnProps<E extends ElementType> = FlexChildProps &
   StackContainerProps & {
-    /**
-     * Render children in a row (horizontal flex). This is the default.
-     * Useful when combining with horizontalUntil to be explicit.
-     */
+    as?: E
     horizontal?: boolean
     /**
-     * Render children in a column (vertical flex). Equivalent to flex-col.
-     *
-     * @example
-     * <Stack vertical gap="var(--SPACING_2)">…</Stack>
+     * Render children in a column (flex-col).
+     * @example <Stack vertical gap={2}>…</Stack>
      */
     vertical?: boolean
     /**
-     * Stack vertically (column) until this breakpoint, then switch to
-     * horizontal (row).
-     *
-     * @example
-     * <Stack verticalUntil="xl">…</Stack>
-     * // → flex flex-col xl:flex-row
+     * Stack column until this breakpoint, then switch to row.
+     * @example <Stack verticalUntil="xl">…</Stack>
      */
     verticalUntil?: StackBreakpoint
     /**
-     * Stack horizontally (row) until this breakpoint, then switch to
-     * vertical (column).
-     *
-     * @example
-     * <Stack horizontalUntil="lg">…</Stack>
-     * // → flex flex-row lg:flex-col
+     * Stack row until this breakpoint, then switch to column.
+     * @example <Stack horizontalUntil="lg">…</Stack>
      */
     horizontalUntil?: StackBreakpoint
     /**
-     * Tailwind divide utility applied between children (e.g. `'divide-x'`, `'divide-y'`).
-     *
-     * @example
-     * <Stack divider="divide-x" dividerColor="divide-gray-200">…</Stack>
+     * Gap between children — design-token spacing scale (0–14).
+     * @example <Stack vertical gap={4}>…</Stack>  // 16 px
      */
+    gap?: StackGap
+    /** Tailwind divide utility, e.g. `'divide-y'`. */
     divider?: string
-    /**
-     * Tailwind divide color utility (e.g. `'divide-gray-200'`, `'dark:divide-polar-800'`).
-     * Only meaningful when `divider` is set.
-     */
-    dividerColor?: string
+    className?: string
+    children?: ReactNode
   }
+
+export type StackProps<E extends ElementType = 'div'> = StackOwnProps<E> &
+  Omit<ComponentPropsWithoutRef<E>, keyof StackOwnProps<E>>
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -78,54 +86,24 @@ function resolveDirection(
   horizontalUntil?: StackBreakpoint,
 ): FlexContainerProps['flexDirection'] {
   if (verticalUntil) {
-    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = {
-      default: 'column',
-    }
+    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = { default: 'column' }
     map[verticalUntil] = 'row'
     return map
   }
   if (horizontalUntil) {
-    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = {
-      default: 'row',
-    }
+    const map: Partial<Record<Breakpoint, 'row' | 'column'>> = { default: 'row' }
     map[horizontalUntil] = 'column'
     return map
   }
   if (vertical) return 'column'
   if (horizontal) return 'row'
-
   return 'row'
 }
 
 // ─── Stack ────────────────────────────────────────────────────────────────────
 
-/**
- * Orbit Stack — the primary flex layout primitive.
- *
- * Always renders as `display="flex"`. Defaults to a horizontal row.
- * Use `vertical` for a column, `verticalUntil` / `horizontalUntil` for
- * responsive direction changes. All Box style props (spacing, color, radius)
- * and flex child props (flex, alignSelf, …) are forwarded to the inner Box.
- *
- * @example
- * // Vertical on mobile, horizontal from xl upward
- * <Stack verticalUntil="xl" gap={theme.spacing[3]}>
- *   <Box>…</Box>
- *   <Box>…</Box>
- * </Stack>
- *
- * @example
- * // Always vertical, centered cross-axis
- * <Stack vertical alignItems="center" gap={theme.spacing[2]}>…</Stack>
- *
- * @example
- * // Divider between each child
- * <Stack vertical divider="divide-y" dividerColor="divide-gray-200 dark:divide-polar-800">
- *   <Item />
- *   <Item />
- * </Stack>
- */
 export function Stack<E extends ElementType = 'div'>({
+  as,
   horizontal,
   vertical,
   verticalUntil,
@@ -133,37 +111,41 @@ export function Stack<E extends ElementType = 'div'>({
   alignItems,
   justifyContent,
   flexWrap,
+  gap,
   divider,
-  dividerColor,
+  flex,
+  alignSelf,
+  flexGrow,
+  flexShrink,
   className,
   children,
-  ...boxProps
+  ...rest
 }: StackProps<E>) {
+  const Tag = (as ?? 'div') as ElementType
+
   const containerClasses = resolveContainerClasses({
     display: 'flex',
-    flexDirection: resolveDirection(
-      horizontal,
-      vertical,
-      verticalUntil,
-      horizontalUntil,
-    ),
+    flexDirection: resolveDirection(horizontal, vertical, verticalUntil, horizontalUntil),
     alignItems,
     justifyContent,
     flexWrap,
   })
 
+  const flexChildClasses = resolveFlexChildClasses({ flex, alignSelf, flexGrow, flexShrink })
+
   return (
-    <Box
+    <Tag
       className={twMerge(
         containerClasses,
+        flexChildClasses,
+        gap !== undefined ? GAP_CLASSES[gap] : undefined,
         divider,
-        dividerColor,
         className,
       )}
-      {...(boxProps as BoxProps<E>)}
+      {...rest}
     >
       {children}
-    </Box>
+    </Tag>
   )
 }
 

@@ -1,8 +1,22 @@
-import type {
-  Breakpoint,
-  FlexChildProps,
-  FlexContainerProps,
-} from './createBox'
+// ─── Layout types ─────────────────────────────────────────────────────────────
+
+export type Breakpoint = 'default' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+export type Responsive<T> = T | Partial<Record<Breakpoint, T>>
+
+export type FlexContainerProps = {
+  display?: Responsive<'flex' | 'block' | 'inline-flex' | 'grid' | 'inline-grid' | 'hidden'>
+  flexDirection?: Responsive<'row' | 'column' | 'row-reverse' | 'column-reverse'>
+  alignItems?: Responsive<'start' | 'end' | 'center' | 'stretch' | 'baseline'>
+  justifyContent?: Responsive<'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'>
+  flexWrap?: Responsive<'wrap' | 'nowrap' | 'wrap-reverse'>
+}
+
+export type FlexChildProps = {
+  flex?: Responsive<'1' | 'auto' | 'none' | 'initial'>
+  alignSelf?: Responsive<'auto' | 'start' | 'end' | 'center' | 'stretch' | 'baseline'>
+  flexGrow?: '0' | '1'
+  flexShrink?: '0' | '1'
+}
 
 // ─── Shared helper ────────────────────────────────────────────────────────────
 // Never concatenate prefix + class — always look up from pre-built tables.

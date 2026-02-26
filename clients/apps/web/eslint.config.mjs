@@ -60,8 +60,11 @@ export default [
     rules: {
       'no-restricted-syntax': [
         'warn',
-        // Box replaces layout divs
-        orbitElementRule('div', '<Box>'),
+        // Stack replaces flex divs
+        {
+          selector: `JSXOpeningElement[name.name="div"]:has(JSXAttribute[name.name="className"][value.value=/\\bflex\\b/])`,
+          message: 'Use <Stack> from @polar-sh/orbit instead of <div className="flex ...">. Stack is always display:flex and accepts alignItems, justifyContent, gap, and other layout props directly.',
+        },
         // Headline replaces headings
         orbitElementRule('h1', '<Headline as="h1">'),
         orbitElementRule('h2', '<Headline as="h2">'),

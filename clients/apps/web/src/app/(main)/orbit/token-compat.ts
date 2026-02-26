@@ -1,45 +1,51 @@
 /**
  * Compatibility shim for orbit demo pages.
- * Provides sp / cl / ra shorthand objects backed by the typed theme primitives.
+ * Provides sp / cl / ra shorthand objects for use in className strings.
+ *
+ * Since Box and Stack now use Tailwind classes only, colors and radii are
+ * applied via className using CSS-variable Tailwind shorthand, e.g.:
+ *   className="bg-(--COLOR_BG_SURFACE) rounded-(--RADII_LG)"
+ *
+ * The cl / ra objects below provide the raw CSS variable strings for use in
+ * arbitrary Tailwind values or inline styles if needed.
  */
-import { theme } from '@polar-sh/orbit'
 
-/** Spacing tokens — maps SPACING_* keys to Spacing branded values. */
+/** Spacing step → Tailwind gap/padding class (CSS variable shorthand). */
 export const sp = {
-  SPACING_0: theme.spacing[0],
-  SPACING_1: theme.spacing[1],
-  SPACING_2: theme.spacing[2],
-  SPACING_3: theme.spacing[3],
-  SPACING_4: theme.spacing[4],
-  SPACING_5: theme.spacing[5],
-  SPACING_6: theme.spacing[6],
-  SPACING_7: theme.spacing[7],
-  SPACING_8: theme.spacing[8],
-  SPACING_9: theme.spacing[9],
-  SPACING_10: theme.spacing[10],
-  SPACING_11: theme.spacing[11],
-  SPACING_12: theme.spacing[12],
-  SPACING_13: theme.spacing[13],
-  SPACING_14: theme.spacing[14],
-} as const
+  SPACING_0: 0,
+  SPACING_1: 1,
+  SPACING_2: 2,
+  SPACING_3: 3,
+  SPACING_4: 4,
+  SPACING_5: 5,
+  SPACING_6: 6,
+  SPACING_7: 7,
+  SPACING_8: 8,
+  SPACING_9: 9,
+  SPACING_10: 10,
+  SPACING_11: 11,
+  SPACING_12: 12,
+  SPACING_13: 13,
+  SPACING_14: 14,
+} as const satisfies Record<string, import('@polar-sh/orbit').StackGap>
 
-/** Color tokens — maps semantic color keys to Color branded values. */
+/** Color CSS variable strings — use in className, e.g. `bg-(--COLOR_BG_SURFACE)`. */
 export const cl = {
-  BG: theme.colors.bg,
-  BG_SURFACE: theme.colors.bgSurface,
-  BG_ELEVATED: theme.colors.bgElevated,
-  TEXT: theme.colors.text,
-  TEXT_SUBTLE: theme.colors.textSubtle,
-  TEXT_DISABLED: theme.colors.textDisabled,
-  DESTRUCTIVE: theme.colors.destructive,
+  BG:            'var(--COLOR_BG)',
+  BG_SURFACE:    'var(--COLOR_BG_SURFACE)',
+  BG_ELEVATED:   'var(--COLOR_BG_ELEVATED)',
+  TEXT:          'var(--COLOR_TEXT)',
+  TEXT_SUBTLE:   'var(--COLOR_TEXT_SUBTLE)',
+  TEXT_DISABLED: 'var(--COLOR_TEXT_DISABLED)',
+  DESTRUCTIVE:   'var(--COLOR_DESTRUCTIVE)',
 } as const
 
-/** Radius tokens — maps size keys to Radius branded values. */
+/** Radius CSS variable strings — use in className, e.g. `rounded-(--RADII_LG)`. */
 export const ra = {
-  SM: theme.radius.sm,
-  MD: theme.radius.md,
-  LG: theme.radius.lg,
-  XL: theme.radius.xl,
-  '2XL': theme.radius['2xl'],
-  FULL: theme.radius.full,
+  SM:   'var(--RADII_SM)',
+  MD:   'var(--RADII_MD)',
+  LG:   'var(--RADII_LG)',
+  XL:   'var(--RADII_XL)',
+  '2XL': 'var(--RADII_2XL)',
+  FULL: 'var(--RADII_FULL)',
 } as const

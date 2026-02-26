@@ -1,36 +1,23 @@
-import type { ReactNode } from 'react'
-import React from 'react'
+import React, { type ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { Spacing } from '../primitives/theme'
-import { theme } from '../primitives/theme'
-import { Box } from './Box'
 import { Button, type ButtonProps } from './Button'
-import { Stack } from './Stack'
 
 export function Card({
   children,
   className,
-  padding = theme.spacing[6],
-  gap = theme.spacing[4],
 }: {
   children?: ReactNode
   className?: string
-  padding?: Spacing
-  gap?: Spacing
 }) {
   return (
-    <Stack
-      vertical
-      borderRadius={theme.radius.lg}
-      padding={padding}
-      gap={gap}
+    <div
       className={twMerge(
-        'rounded-(--CARD-RADIUS) bg-(--CARD-BACKGROUND)',
+        'flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-polar-700 dark:bg-polar-800',
         className,
       )}
     >
       {children}
-    </Stack>
+    </div>
   )
 }
 
@@ -41,7 +28,7 @@ export function CardHeader({
   children?: ReactNode
   className?: string
 }) {
-  return <Box className={className}>{children}</Box>
+  return <div className={className}>{children}</div>
 }
 
 export function CardContent({
@@ -51,11 +38,7 @@ export function CardContent({
   children?: ReactNode
   className?: string
 }) {
-  return (
-    <Box flex="1" className={className}>
-      {children}
-    </Box>
-  )
+  return <div className={twMerge('flex-1', className)}>{children}</div>
 }
 
 export function CardFooter({
@@ -68,18 +51,17 @@ export function CardFooter({
   actions?: ButtonProps[]
 }) {
   return (
-    <Box
-      paddingTop={actions ? theme.spacing[4] : undefined}
-      className={className}
+    <div
+      className={twMerge(actions ? 'pt-4' : undefined, className)}
     >
       {children}
       {actions && (
-        <Stack gap={theme.spacing[3]}>
+        <div className="flex gap-2">
           {actions.map((props, i) => (
             <Button key={i} {...props} />
           ))}
-        </Stack>
+        </div>
       )}
-    </Box>
+    </div>
   )
 }

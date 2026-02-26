@@ -698,36 +698,7 @@ async def approve_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if request.method == "POST":
-        data = await request.form()
-        raw_threshold = data.get("threshold", "250")
-        threshold = int(float(str(raw_threshold)) * 100)
-
-        override_reason = str(data.get("override_reason", "")).strip() or None
-
-        # Record review decision before approving
-        review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision="APPROVE",
-            reason=override_reason,
-        )
-
-        # Approve the organization
-        await organization_service.confirm_organization_reviewed(
-            session, organization, threshold
-        )
-
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
-
-    # Fetch AI review for context
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
@@ -735,6 +706,64 @@ async def approve_dialog(
         if agent_review and agent_review.report
         else {}
     )
+    verdict = report.get("verdict", "")
+    is_override = verdict == "DENY"
+
+    error_message: str | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        raw_threshold = data.get("threshold", "250")
+        threshold = int(float(str(raw_threshold)) * 100)
+
+        override_reason = str(data.get("override_reason", "")).strip() or None
+
+        if is_override and not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            # Record review decision before approving
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="APPROVE",
+                reason=override_reason,
+            )
+
+            # Approve the organization
+            await organization_service.confirm_organization_reviewed(
+                session, organization, threshold
+            )
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    reason_label = (
+        "Reason for override (required)"
+        if is_override
+        else "Reason for approval (optional)"
+    )
+    reason_placeholder = (
+        "Why are you overriding the AI recommendation?"
+        if is_override
+        else "Why are you approving this organization?"
+    )
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": reason_placeholder,
+        "rows": "3",
+    }
+    if is_override:
+        textarea_attrs["required"] = True
 
     with modal("Approve Organization", open=True):
         with tag.form(
@@ -747,6 +776,10 @@ async def approve_dialog(
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             if report:
                 _render_ai_review_summary(report)
 
@@ -770,13 +803,8 @@ async def approve_dialog(
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
                     with tag.span(classes="label-text"):
-                        text("Reason for approval")
-                with tag.textarea(
-                    name="override_reason",
-                    classes="textarea textarea-bordered w-full",
-                    placeholder="Why are you approving this organization?",
-                    rows="3",
-                ):
+                        text(reason_label)
+                with tag.textarea(**textarea_attrs):
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
@@ -836,31 +864,7 @@ async def deny_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if request.method == "POST":
-        form_data = await request.form()
-        override_reason = str(form_data.get("override_reason", "")).strip() or None
-
-        # Record review decision before denying
-        review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision="DENY",
-            reason=override_reason,
-        )
-
-        # Deny the organization
-        await organization_service.deny_organization(session, organization)
-
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
-
-    # Fetch AI review for context
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     report = (
@@ -868,11 +872,68 @@ async def deny_dialog(
         if agent_review and agent_review.report
         else {}
     )
+    verdict = report.get("verdict", "")
+    is_override = verdict == "APPROVE"
+
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        override_reason = str(form_data.get("override_reason", "")).strip() or None
+
+        if is_override and not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            # Record review decision before denying
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="DENY",
+                reason=override_reason,
+            )
+
+            # Deny the organization
+            await organization_service.deny_organization(session, organization)
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    reason_label = (
+        "Reason for override (required)"
+        if is_override
+        else "Reason for denial (optional)"
+    )
+    reason_placeholder = (
+        "Why are you overriding the AI recommendation?"
+        if is_override
+        else "Why are you denying this organization?"
+    )
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": reason_placeholder,
+        "rows": "3",
+    }
+    if is_override:
+        textarea_attrs["required"] = True
 
     with modal("Deny Organization", open=True):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p(classes="font-semibold text-error"):
                 text("⚠️ Warning: Payments will be blocked")
+
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
 
             if report:
                 _render_ai_review_summary(report)
@@ -896,13 +957,8 @@ async def deny_dialog(
                 with tag.div(classes="form-control"):
                     with tag.label(classes="label"):
                         with tag.span(classes="label-text"):
-                            text("Reason for denial")
-                    with tag.textarea(
-                        name="override_reason",
-                        classes="textarea textarea-bordered w-full",
-                        placeholder="Why are you overriding the AI recommendation?",
-                        rows="3",
-                    ):
+                            text(reason_label)
+                    with tag.textarea(**textarea_attrs):
                         pass
 
                 with tag.div(classes="modal-action pt-6 border-t border-base-200"):
@@ -934,6 +990,19 @@ async def approve_denied_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    report = (
+        agent_review.report.get("report", {})
+        if agent_review and agent_review.report
+        else {}
+    )
+    verdict = report.get("verdict", "")
+    is_override = verdict == "DENY"
+
+    error_message: str | None = None
+
     if request.method == "POST":
         data = await request.form()
         # Convert dollars to cents (user enters 250, we store 25000)
@@ -942,36 +1011,52 @@ async def approve_denied_dialog(
 
         override_reason = str(data.get("override_reason", "")).strip() or None
 
-        # Record review decision before approving denied org
-        review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision="APPROVE",
-            reason=override_reason,
-        )
+        if is_override and not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            # Record review decision before approving denied org
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="APPROVE",
+                reason=override_reason,
+            )
 
-        # Approve the organization
-        await organization_service.confirm_organization_reviewed(
-            session, organization, threshold
-        )
+            # Approve the organization
+            await organization_service.confirm_organization_reviewed(
+                session, organization, threshold
+            )
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
 
-    # Fetch AI review for context
-    review_repo = OrganizationReviewRepository.from_session(session)
-    agent_review = await review_repo.get_latest_agent_review(organization_id)
-    report = (
-        agent_review.report.get("report", {})
-        if agent_review and agent_review.report
-        else {}
+    reason_label = (
+        "Reason for override (required)"
+        if is_override
+        else "Reason for approval (optional)"
     )
+    reason_placeholder = (
+        "Why are you overriding the AI recommendation?"
+        if is_override
+        else "Why are you approving this organization?"
+    )
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": reason_placeholder,
+        "rows": "3",
+    }
+    if is_override:
+        textarea_attrs["required"] = True
 
     with modal("Approve Denied Organization", open=True):
         with tag.form(
@@ -984,6 +1069,10 @@ async def approve_denied_dialog(
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             with tag.p(classes="font-semibold"):
                 text("Approve this previously denied organization")
 
@@ -1016,13 +1105,8 @@ async def approve_denied_dialog(
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
                     with tag.span(classes="label-text"):
-                        text("Reason for override (optional)")
-                with tag.textarea(
-                    name="override_reason",
-                    classes="textarea textarea-bordered w-full",
-                    placeholder="Why are you overriding the previous denial?",
-                    rows="3",
-                ):
+                        text(reason_label)
+                with tag.textarea(**textarea_attrs):
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
@@ -1054,35 +1138,76 @@ async def unblock_approve_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    report = (
+        agent_review.report.get("report", {})
+        if agent_review and agent_review.report
+        else {}
+    )
+    verdict = report.get("verdict", "")
+    is_override = verdict == "DENY"
+
+    error_message: str | None = None
+
     if request.method == "POST":
         data = await request.form()
         # Convert dollars to cents (user enters 250, we store 25000)
         raw_threshold = data.get("threshold", "250")
         threshold = int(float(str(raw_threshold)) * 100)
 
-        # Record review decision before unblocking
-        review_repo = OrganizationReviewRepository.from_session(session)
-        await review_repo.record_human_decision(
-            organization_id=organization_id,
-            reviewer_id=user_session.user.id,
-            decision="APPROVE",
-        )
+        override_reason = str(data.get("override_reason", "")).strip() or None
 
-        # Unblock the organization (set blocked_at to None)
-        organization.blocked_at = None
+        if is_override and not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            # Record review decision before unblocking
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="APPROVE",
+                reason=override_reason,
+            )
 
-        # Approve the organization
-        await organization_service.confirm_organization_reviewed(
-            session, organization, threshold
-        )
+            # Unblock the organization (set blocked_at to None)
+            organization.blocked_at = None
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
-        )
+            # Approve the organization
+            await organization_service.confirm_organization_reviewed(
+                session, organization, threshold
+            )
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    reason_label = (
+        "Reason for override (required)"
+        if is_override
+        else "Reason for approval (optional)"
+    )
+    reason_placeholder = (
+        "Why are you overriding the AI recommendation?"
+        if is_override
+        else "Why are you approving this organization?"
+    )
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": reason_placeholder,
+        "rows": "3",
+    }
+    if is_override:
+        textarea_attrs["required"] = True
 
     with modal("Unblock & Approve Organization", open=True):
         with tag.form(
@@ -1095,8 +1220,15 @@ async def unblock_approve_dialog(
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             with tag.p(classes="font-semibold"):
                 text("Unblock and approve this organization")
+
+            if report:
+                _render_ai_review_summary(report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-3"):
@@ -1120,6 +1252,13 @@ async def unblock_approve_dialog(
                     with tag.label(classes="label"):
                         with tag.span(classes="label-text-alt"):
                             text("Amount in dollars that will trigger next review")
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text(reason_label)
+                with tag.textarea(**textarea_attrs):
+                    pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):

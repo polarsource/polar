@@ -14,6 +14,31 @@ export default [
     },
   },
   {
+    files: ['**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'JSXOpeningElement[name.name="img"]',
+          message:
+            'Use <Image /> from @/components/Image/Image instead of <img> for automatic CDN resizing.',
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'next/image',
+              message:
+                'Use <Image /> from @/components/Image/Image instead of next/image for automatic CDN resizing.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       '.next/**',

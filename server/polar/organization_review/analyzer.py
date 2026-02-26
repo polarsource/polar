@@ -151,6 +151,16 @@ This is a THRESHOLD review triggered when a payment threshold is hit. \
 Perform a comprehensive analysis across ALL five dimensions. \
 If website content is not available, flag this as a red flag.
 
+Setup & integration signals to check:
+- **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
+the API when creating checkouts programmatically) should point to domains matching the \
+organization's website. Mismatched or suspicious domains are yellow flags.
+- **Checkout links without benefits**: Checkout links selling products with zero benefits \
+mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
+or API keys configured.
+- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
+Webhook domains should match the organization's website or known services.
+
 Return only APPROVE or DENY.
 """
 
@@ -190,6 +200,16 @@ the Polar organization name. Significant mismatches are yellow flags.
   - No payment history is neutral (new org), not negative.
 - **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
 organization after denial is grounds for automatic denial.
+
+Setup & integration signals to check:
+- **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
+the API when creating checkouts programmatically) should point to domains matching the \
+organization's website. Mismatched or suspicious domains are yellow flags.
+- **Checkout links without benefits**: Checkout links selling products with zero benefits \
+mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
+or API keys configured.
+- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
+Webhook domains should match the organization's website or known services.
 
 Return only APPROVE or DENY.
 """
@@ -299,6 +319,65 @@ class ReviewAnalyzer:
                         else:
                             price_strs.append(str(pr.get("amount_type", "unknown")))
                     parts.append(f"  Prices: {', '.join(price_strs)}")
+
+        # Setup & Integration Signals (only for threshold/manual reviews)
+        setup = snapshot.setup
+        if snapshot.context in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+            parts.append("\n## Setup & Integration Signals")
+
+            if setup.checkout_success_urls.unique_urls:
+                parts.append(
+                    f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
+                )
+                for url in setup.checkout_success_urls.unique_urls:
+                    parts.append(f"  - {url}")
+                parts.append(
+                    f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
+                )
+            else:
+                parts.append("No custom checkout success URLs configured.")
+
+            if setup.checkout_return_urls.unique_urls:
+                parts.append(
+                    f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
+                )
+                for url in setup.checkout_return_urls.unique_urls:
+                    parts.append(f"  - {url}")
+                parts.append(
+                    f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
+                )
+            else:
+                parts.append("No custom checkout return URLs configured.")
+
+            if setup.checkout_links.total_links > 0:
+                parts.append(
+                    f"Checkout Links: {setup.checkout_links.total_links} total, "
+                    f"{setup.checkout_links.links_without_benefits} without benefits"
+                )
+                for link in setup.checkout_links.links[:20]:
+                    products_str = (
+                        ", ".join(link.product_names)
+                        if link.product_names
+                        else "no products"
+                    )
+                    benefits_flag = (
+                        "has benefits" if link.has_benefits else "NO benefits"
+                    )
+                    label_str = f" [{link.label}]" if link.label else ""
+                    parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
+            else:
+                parts.append("No checkout links created.")
+
+            parts.append(f"API Keys: {setup.integration.api_key_count}")
+            if setup.integration.webhook_urls:
+                parts.append(f"Webhooks ({len(setup.integration.webhook_urls)}):")
+                for url in setup.integration.webhook_urls:
+                    parts.append(f"  - {url}")
+                parts.append(
+                    f"Webhook Domains: {', '.join(setup.integration.webhook_domains)}"
+                )
+            else:
+                parts.append("No webhook endpoints configured.")
 
         # Website Content
         if snapshot.website:

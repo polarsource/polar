@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -12,8 +12,12 @@ from polar.kit.repository.base import (
 )
 from polar.kit.utils import utc_now
 from polar.models.account import Account
+from polar.models.checkout import Checkout
+from polar.models.checkout_link import CheckoutLink
+from polar.models.checkout_link_product import CheckoutLinkProduct
 from polar.models.dispute import Dispute
 from polar.models.organization import Organization
+from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
@@ -22,6 +26,7 @@ from polar.models.product import Product
 from polar.models.refund import Refund, RefundStatus
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.models.webhook_endpoint import WebhookEndpoint
 
 
 class OrganizationReviewRepository(
@@ -334,3 +339,66 @@ class OrganizationReviewRepository(
             .values(is_current=False)
         )
         await self.session.execute(statement)
+
+    async def get_checkout_return_urls(
+        self, organization_id: UUID, *, months: int = 3
+    ) -> list[str]:
+        """Get distinct non-null return URLs from recent checkouts.
+
+        Uses SELECT DISTINCT on just the return_url column to avoid loading
+        full checkout rows from this large table. The organization_id index
+        keeps this efficient. Only looks at checkouts from the last *months*
+        months to bound the scan on high-volume organizations.
+        """
+        cutoff = utc_now() - timedelta(days=months * 30)
+        statement = (
+            select(Checkout.return_url)
+            .where(
+                Checkout.organization_id == organization_id,
+                Checkout.return_url.is_not(None),
+                Checkout.is_deleted.is_(False),
+                Checkout.created_at >= cutoff,
+            )
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
+
+    async def get_checkout_links_with_benefits(
+        self, organization_id: UUID
+    ) -> list[CheckoutLink]:
+        """Get checkout links with eagerly loaded products and their benefits."""
+        statement = (
+            select(CheckoutLink)
+            .where(
+                CheckoutLink.organization_id == organization_id,
+                CheckoutLink.is_deleted.is_(False),
+            )
+            .options(
+                selectinload(CheckoutLink.checkout_link_products)
+                .joinedload(CheckoutLinkProduct.product)
+                .selectinload(Product.product_benefits)
+            )
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().unique().all())
+
+    async def get_api_key_count(self, organization_id: UUID) -> int:
+        """Count organization access tokens."""
+        statement = select(func.count(OrganizationAccessToken.id)).where(
+            OrganizationAccessToken.organization_id == organization_id,
+            OrganizationAccessToken.is_deleted.is_(False),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0
+
+    async def get_webhook_endpoints(
+        self, organization_id: UUID
+    ) -> list[WebhookEndpoint]:
+        """Get webhook endpoints for the organization."""
+        statement = select(WebhookEndpoint).where(
+            WebhookEndpoint.organization_id == organization_id,
+            WebhookEndpoint.is_deleted.is_(False),
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())

@@ -1,12 +1,12 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { StaticImage } from '@/components/Image/StaticImage'
 import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
 
@@ -122,7 +122,7 @@ export const AnalyticsPage = () => {
                 </div>
               </div>
             </motion.div>
-            <Image
+            <StaticImage
               src="/assets/landing/abstract_08.jpg"
               alt="Analytics"
               className="absolute inset-0 h-full w-full object-cover"

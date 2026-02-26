@@ -46,6 +46,7 @@ const OpenGraphImageCreator = ({
       }}
     >
       {organization.avatar_url && (
+        // eslint-disable-next-line no-restricted-syntax
         <img
           src={organization.avatar_url}
           height={160}

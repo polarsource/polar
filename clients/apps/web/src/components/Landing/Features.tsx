@@ -1,5 +1,6 @@
 'use client'
 
+import { StaticImage } from '@/components/Image/StaticImage'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
@@ -7,7 +8,6 @@ import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -64,7 +64,7 @@ const CustomerCard = () => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 rounded-lg border border-gray-100 bg-gray-50 p-4">
       <div className="h-12 w-12 overflow-hidden rounded-full">
-        <Image
+        <StaticImage
           src="/assets/landing/testamonials/emil.jpg"
           alt="Customer avatar"
           className="h-full w-full object-cover"

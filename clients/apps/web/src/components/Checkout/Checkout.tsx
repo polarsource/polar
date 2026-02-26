@@ -1,5 +1,6 @@
 'use client'
 
+import { UploadImage } from '@/components/Image/Image'
 import { useExperiment } from '@/experiments/client'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
@@ -392,11 +393,9 @@ const Checkout = ({
                             <button
                               className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
                             >
-                              <img
-                                src={getResizedImage(
-                                  checkout.product.medias[0].publicUrl,
-                                  40,
-                                )}
+                              <UploadImage
+                                src={checkout.product.medias[0].publicUrl}
+                                approximateWidth={40}
                                 alt={checkout.product.name}
                                 className="h-10 w-10 rounded-lg object-cover"
                               />

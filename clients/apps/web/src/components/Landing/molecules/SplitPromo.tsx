@@ -1,8 +1,8 @@
 'use client'
 
+import { StaticImage } from '@/components/Image/StaticImage'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
-import Image from 'next/image'
 import React from 'react'
 
 interface SplitPromoProps {
@@ -90,7 +90,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
         whileInView="visible"
         viewport={{ once: true }}
       >
-        <Image
+        <StaticImage
           className="absolute inset-0 h-full w-full object-cover"
           src={image}
           fill

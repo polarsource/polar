@@ -1,6 +1,6 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import { Apple, Framer, Google, Raycast } from '@/components/Landing/Logos'
 import { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
@@ -71,7 +71,7 @@ export default function Downloads() {
     <div className="mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-24">
       <div className="flex w-full flex-col items-center gap-y-8">
         <div className="flex flex-col items-center gap-y-8 py-12 text-center lg:max-w-2xl">
-          <Image
+          <StaticImage
             className="rounded-3xl"
             src="/assets/brand/app-icon.png"
             width={160}

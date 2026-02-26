@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { StaticImage } from '@/components/Image/StaticImage'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -12,7 +13,6 @@ import KeyboardDoubleArrowRightOutlined from '@mui/icons-material/KeyboardDouble
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
@@ -119,7 +119,7 @@ export const UsageBillingPage = () => {
               </motion.ul>
             </div>
             <div className="dark:bg-polar-800 relative flex h-full bg-gray-100 p-4 md:p-8 xl:items-center xl:justify-center xl:p-16">
-              <Image
+              <StaticImage
                 className="absolute inset-0 h-full w-full object-cover"
                 src="/assets/landing/abstract_02.jpg"
                 alt="Usage Billing"

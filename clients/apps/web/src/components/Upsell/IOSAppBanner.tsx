@@ -1,8 +1,8 @@
 'use client'
 
+import { StaticImage } from '@/components/Image/StaticImage'
 import { LocalStorageKey } from '@/hooks/upsell'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -59,7 +59,7 @@ export const IOSAppBanner = () => {
         target="_blank"
         className="self-start"
       >
-        <Image
+        <StaticImage
           src="/assets/app_store_badge.svg"
           alt="Download on the App Store"
           width={120}

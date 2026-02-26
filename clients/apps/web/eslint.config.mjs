@@ -14,6 +14,31 @@ export default [
     },
   },
   {
+    files: ['**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'JSXOpeningElement[name.name="img"]',
+          message:
+            'Use <UploadImage /> from @/components/Image/Image or <StaticImage /> from @/components/Image/StaticImage instead of <img>.',
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'next/image',
+              message:
+                'Use <StaticImage /> from @/components/Image/StaticImage instead of next/image.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       '.next/**',

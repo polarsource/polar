@@ -1,3 +1,4 @@
+import { UploadImage } from '@/components/Image/Image'
 import TextureOutlined from '@mui/icons-material/TextureOutlined'
 import { schemas } from '@polar-sh/client'
 import { twMerge } from 'tailwind-merge'
@@ -24,9 +25,9 @@ export const ProductThumbnail = ({
       )}
     >
       {coverUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <UploadImage
           src={coverUrl}
+          approximateWidth={size === 'small' ? 40 : 96}
           alt={product.name}
           className={twMerge('aspect-square h-10 object-cover', sizeClassName)}
         />

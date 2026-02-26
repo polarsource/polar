@@ -7,13 +7,11 @@ export const MasterDetailLayout = ({
   children,
   wrapperClassName,
   listView,
-  listViewClassName,
   placement = 'left',
 }: {
   children?: React.ReactNode
   wrapperClassName?: string
   listView?: React.ReactNode
-  listViewClassName?: string
   placement?: 'left' | 'right'
 }) => {
   return (

@@ -558,8 +558,6 @@ export function VectorEditor({
   const handleSize = vbSize * 0.012
   const handleHalf = handleSize / 2
   const strokeW = vbSize * 0.0025
-  const dashLen = vbSize * 0.015
-
   const selectedFill = isDark ? '#ffffff' : '#000000'
 
   // Anchor points for all vertices (always visible)

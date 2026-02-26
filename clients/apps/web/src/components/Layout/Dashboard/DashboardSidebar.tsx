@@ -1,6 +1,5 @@
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
-import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
@@ -50,8 +49,6 @@ export const DashboardSidebar = ({
 }) => {
   const router = useRouter()
   const { state } = useSidebar()
-
-  const { currentUser } = useAuth()
 
   const isCollapsed = state === 'collapsed'
   const [searchOpen, setSearchOpen] = useState(false)

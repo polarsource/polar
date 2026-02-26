@@ -87,7 +87,7 @@ export const SyntaxHighlighterProvider = ({
           LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP],
         )
         return true
-      } catch (e) {
+      } catch {
         return false
       }
     },

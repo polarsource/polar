@@ -50,7 +50,7 @@ export default function CostsEventsTable({
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  const { data: hierarchyStats, isLoading: isHierarchyLoading } =
+  const { data: hierarchyStats } =
     useEventHierarchyStats(
       organization.id,
       {

@@ -11,7 +11,7 @@ import {
   Info,
   Loader2,
 } from 'lucide-react'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
@@ -27,7 +27,6 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   onAppealApproved,
   onAppealSubmitted,
 }) => {
-  const startedAtRef = useRef<number>(Date.now())
   const [timedOut, setTimedOut] = useState(false)
   const [stopPolling, setStopPolling] = useState(false)
 

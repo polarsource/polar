@@ -14,29 +14,6 @@ interface ClientPageProps {
   organization: schemas['Organization']
 }
 
-type TimeSeriesField = 'average' | 'p10' | 'p90' | 'p99'
-const getTimeSeriesValues = (
-  periods: schemas['StatisticsPeriod'][],
-  eventName: schemas['EventStatistics']['name'],
-  field: TimeSeriesField,
-): number[] => {
-  return periods.map((period) => {
-    const eventStats = period.stats.find((stat) => stat.name === eventName)
-    if (!eventStats) return 0
-
-    if (field === 'average') {
-      return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
-    } else if (field === 'p10') {
-      return parseFloat(eventStats.p10?.['_cost_amount'] || '0')
-    } else if (field === 'p90') {
-      return parseFloat(eventStats.p90?.['_cost_amount'] || '0')
-    } else if (field === 'p99') {
-      return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
-    }
-    return 0
-  })
-}
-
 export default function ClientPage({ organization }: ClientPageProps) {
   const [startDateISOString] = useQueryState(
     'startDate',
@@ -73,8 +50,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const {
     data: eventsData,
-    isLoading: isEventsLoading,
-    isFetching,
     fetchNextPage,
     hasNextPage,
   } = useInfiniteEvents(organization.id, {

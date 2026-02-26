@@ -117,7 +117,7 @@ export const AddPaymentMethodModal = ({
         })
         confirmationToken = confirmationTokenResponse.confirmationToken
         error = confirmationTokenResponse.error
-      } catch (err) {
+      } catch {
         setLoading(false)
         setError('Failed to add payment method, please try again later.')
         return

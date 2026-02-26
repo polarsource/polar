@@ -1,4 +1,3 @@
-import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import WalletCard from '../Wallet/WalletCard'
 
@@ -13,8 +12,6 @@ export const CustomerPortalWallet = ({
   wallet,
   customerSessionToken,
 }: CustomerPortalWalletProps) => {
-  const api = createClientSideAPI(customerSessionToken)
-
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">

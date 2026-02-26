@@ -208,6 +208,24 @@ import {
   id = "github-actions-backup/arn:aws:iam::975049931254:policy/polar-sh-backups"
 }
 
+resource "aws_iam_policy" "lambda_artifacts_upload" {
+  name = "lambda-artifacts-upload"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
+      }
+    ]
+  })
+}
+
 module "github_oidc_backup" {
   source = "../modules/github_oidc"
 
@@ -307,24 +325,6 @@ module "athena_spans" {
   source           = "../modules/athena_spans"
   environment      = "production"
   logs_bucket_name = "polar-production-logs"
-}
-
-resource "aws_iam_policy" "lambda_artifacts_upload" {
-  name = "lambda-artifacts-upload"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-          "s3:PutObject"
-        ]
-        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
-      }
-    ]
-  })
 }
 
 # =============================================================================

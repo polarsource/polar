@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import UUID4
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import attr, document, tag, text
+from tagflow import document, tag, text
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
@@ -28,7 +28,7 @@ from polar.subscription.sorting import SubscriptionSortProperty
 from polar.wallet.service import wallet as wallet_service
 from polar.worker import enqueue_job
 
-from ..components import button, confirmation_dialog, datatable, description_list, modal
+from ..components import button, datatable, description_list, modal
 from ..formatters import currency
 from ..layout import layout
 from ..orders.components import orders_datatable
@@ -474,7 +474,7 @@ async def revoke_benefits(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> Any:
+) -> None:
     customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(id)
 
@@ -495,20 +495,25 @@ async def revoke_benefits(
         return
 
     # GET method - show confirmation modal
-    with document() as doc:
-        with tag.div(id="modal"):
-            with confirmation_dialog(
-                "Revoke Benefits",
-                f"Are you sure you want to revoke all benefits for {customer.email}? "
-                "This will revoke all currently granted benefits for this customer.",
-                variant="error",
-                confirm_text="Revoke Benefits",
-                open=True,
-            ):
-                attr(
-                    "hx-post",
-                    str(request.url_for("customers:revoke_benefits", id=customer.id)),
+    with modal("Revoke Benefits", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    f"Are you sure you want to revoke all benefits for {customer.email}? "
+                    "This will revoke all currently granted benefits for this customer."
                 )
-                attr("hx-target", "#modal")
 
-    return HTMLResponse(str(doc))
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for("customers:revoke_benefits", id=customer.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Revoke")

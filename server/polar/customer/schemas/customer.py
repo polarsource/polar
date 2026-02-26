@@ -5,6 +5,7 @@ from typing import Annotated
 from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
+from pydantic.aliases import AliasChoices
 
 from polar.config import settings
 from polar.kit.address import Address, AddressInput
@@ -127,7 +128,12 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         default=None,
         description=_external_id_description,
         examples=[_external_id_example],
-        validation_alias="saved_external_id",
+        validation_alias=AliasChoices(
+            # From ORM model
+            "saved_external_id",
+            # From cached state or stored webhook payload
+            "external_id",
+        ),
     )
     email: str = Field(description=_email_description, examples=[_email_example])
     email_verified: bool = Field(

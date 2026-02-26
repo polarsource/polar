@@ -1,13 +1,19 @@
 import { Column, Img, Link, Row, Section, Text } from '@react-email/components'
 import type { schemas } from '../types'
 
-const S3_HOST = 'polar-public-files.s3.amazonaws.com'
-const CDN_HOST = 'uploads.polar.sh'
+const S3_TO_CDN: Record<string, string> = {
+  'polar-public-files.s3.amazonaws.com': 'uploads.polar.sh',
+  'polar-public-sandbox-files.s3.amazonaws.com': 'sandbox-uploads.polar.sh',
+}
 
 const getResizedAvatarUrl = (url: string): string => {
-  if (!url.includes(S3_HOST)) return url
-  const cdnUrl = url.replace(S3_HOST, CDN_HOST)
-  return `${cdnUrl}${cdnUrl.includes('?') ? '&' : '?'}width=64`
+  for (const [s3Host, cdnHost] of Object.entries(S3_TO_CDN)) {
+    if (url.includes(s3Host)) {
+      const cdnUrl = url.replace(s3Host, cdnHost)
+      return `${cdnUrl}${cdnUrl.includes('?') ? '&' : '?'}width=64`
+    }
+  }
+  return url
 }
 
 interface HeaderProps {

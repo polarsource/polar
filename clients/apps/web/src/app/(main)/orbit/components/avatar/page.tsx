@@ -3,43 +3,36 @@ import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
-const sizes = [
-  { size: 'sm', px: '24px' },
-  { size: 'md', px: '32px' },
-  { size: 'lg', px: '40px' },
-  { size: 'xl', px: '48px' },
-] as const
-
 const states = [
   {
     label: 'With image',
-    desc: 'Renders the provided src. Fades in once the image has loaded to avoid a flash on cache hits.',
-    src: 'https://avatars.githubusercontent.com/u/1753052',
-    name: 'birk',
+    desc: 'Renders the provided avatar_url. Fades in once the image has loaded to avoid a flash on cache hits.',
+    avatar_url: 'https://avatars.githubusercontent.com/u/1753052',
+    name: 'Birk Jernström',
   },
   {
     label: 'Broken image',
-    desc: 'When the src returns an error the Facehash fallback renders automatically — no extra handling required.',
-    src: 'https://this-image-does-not-exist.example.com/404.png',
-    name: 'birk',
+    desc: 'When avatar_url returns an error the initials fallback renders automatically — no extra handling required.',
+    avatar_url: 'https://this-image-does-not-exist.example.com/404.png',
+    name: 'Birk Jernström',
   },
   {
     label: 'No image',
-    desc: 'Pass null or omit src entirely. Facehash generates a deterministic face from the name.',
-    src: null,
-    name: 'birk',
+    desc: 'Pass null for avatar_url. Initials are derived from the name.',
+    avatar_url: null,
+    name: 'Birk Jernström',
   },
 ]
 
-const facehashExamples = [
-  'alice',
-  'bob',
-  'carol',
-  'dave',
-  'eve',
-  'frank',
-  'grace',
-  'heidi',
+const initialsExamples = [
+  { name: 'Alice Johnson', avatar_url: null },
+  { name: 'Bob Smith', avatar_url: null },
+  { name: 'Carol White', avatar_url: null },
+  { name: 'Dave Brown', avatar_url: null },
+  { name: 'Eve Davis', avatar_url: null },
+  { name: 'frank@example.com', avatar_url: null },
+  { name: 'Grace Lee', avatar_url: null },
+  { name: 'Heidi Martinez', avatar_url: null },
 ]
 
 const props = [
@@ -47,25 +40,43 @@ const props = [
     name: 'name',
     type: 'string',
     default: '—',
-    desc: 'Name of the person. Used as the Facehash seed and the img alt attribute.',
+    desc: 'Full name or email. Used as the initials seed and the img alt attribute.',
   },
   {
-    name: 'src',
+    name: 'avatar_url',
     type: 'string | null',
     default: '—',
-    desc: 'Avatar image URL. Omit or pass null to always show the Facehash fallback.',
-  },
-  {
-    name: 'size',
-    type: "'sm' | 'md' | 'lg' | 'xl'",
-    default: "'md'",
-    desc: 'Size token mapping to 24 / 32 / 40 / 48 px.',
+    desc: 'Avatar image URL. Pass null to always show the initials fallback.',
   },
   {
     name: 'className',
     type: 'string',
     default: '—',
     desc: 'Additional classes merged via twMerge. Use sparingly.',
+  },
+  {
+    name: 'height',
+    type: 'number',
+    default: '—',
+    desc: 'Explicit pixel height passed to the underlying image element.',
+  },
+  {
+    name: 'width',
+    type: 'number',
+    default: '—',
+    desc: 'Explicit pixel width passed to the underlying image element.',
+  },
+  {
+    name: 'loading',
+    type: "'eager' | 'lazy'",
+    default: "'eager'",
+    desc: 'Native loading attribute on the image element.',
+  },
+  {
+    name: 'CustomImageComponent',
+    type: 'ComponentType<any>',
+    default: '—',
+    desc: 'Swap in next/image or any other image component. Receives the same props as <img>.',
   },
 ]
 
@@ -77,34 +88,8 @@ export default function AvatarPage() {
       <OrbitPageHeader
         label="Component"
         title="Avatar"
-        description="Displays a user's avatar image with a deterministic Facehash fallback. When the image is missing, broken, or not provided, a unique face is generated from the name — same input always produces the same face, with no API calls or storage required."
+        description="Displays a user's avatar image with an initials fallback. When the image is missing, broken, or null, initials are derived from the name. Supports custom image components such as next/image."
       />
-
-      {/* Sizes */}
-      <Stack vertical gap={4}>
-        <OrbitSectionHeader title="Sizes" />
-        <Stack
-          vertical
-          className="dark:divide-polar-800 divide-y divide-neutral-200"
-        >
-          {sizes.map(({ size, px }) => (
-            <div
-              key={size}
-              className="grid grid-cols-5 items-center gap-8 py-5"
-            >
-              <Stack vertical className="gap-0.5">
-                <Text as="code" variant="mono">
-                  {size}
-                </Text>
-                <Text variant="caption">{px}</Text>
-              </Stack>
-              <div className="col-span-4">
-                <Avatar name="birk" size={size} />
-              </div>
-            </div>
-          ))}
-        </Stack>
-      </Stack>
 
       {/* States */}
       <Stack vertical gap={4}>
@@ -113,7 +98,7 @@ export default function AvatarPage() {
           vertical
           className="dark:divide-polar-800 divide-y divide-neutral-200"
         >
-          {states.map(({ label, desc, src, name }) => (
+          {states.map(({ label, desc, avatar_url, name }) => (
             <div
               key={label}
               className="grid grid-cols-5 items-center gap-8 py-6"
@@ -123,25 +108,25 @@ export default function AvatarPage() {
                 <Text variant="caption">{desc}</Text>
               </Stack>
               <div className="col-span-3">
-                <Avatar name={name} src={src} size="lg" />
+                <Avatar name={name} avatar_url={avatar_url} className="h-8 w-8 text-xs" />
               </div>
             </div>
           ))}
         </Stack>
       </Stack>
 
-      {/* Facehash */}
+      {/* Initials */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader
-          title="Facehash"
-          description="Every unique name produces a unique, deterministic face. The same name always renders the same avatar — across sessions, devices, and renders."
+          title="Initials fallback"
+          description="Initials are derived from the first and last word of the name. Email addresses are supported — the domain is stripped first. The component remounts on avatar_url change to avoid stale opacity state."
         />
-        <Stack flexWrap="wrap" gap={2}>
-          {facehashExamples.map((name) => (
+        <Stack flexWrap="wrap" gap={4}>
+          {initialsExamples.map(({ name, avatar_url }) => (
             <Stack vertical key={name} alignItems="center" gap={1}>
-              <Avatar name={name} size="xl" />
+              <Avatar name={name} avatar_url={avatar_url} className="h-8 w-8 text-xs" />
               <Text as="span" variant="mono">
-                {name}
+                {name.split('@')[0].split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
               </Text>
             </Stack>
           ))}

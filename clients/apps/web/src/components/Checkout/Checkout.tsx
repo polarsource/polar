@@ -6,6 +6,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
+import { Image } from '@/components/Image/Image'
 import { getResizedImage } from '@/utils/getResizedImage'
 import { markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
@@ -392,11 +393,9 @@ const Checkout = ({
                             <button
                               className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
                             >
-                              <img
-                                src={getResizedImage(
-                                  checkout.product.medias[0].publicUrl,
-                                  40,
-                                )}
+                              <Image
+                                src={checkout.product.medias[0].publicUrl}
+                                width={40}
                                 alt={checkout.product.name}
                                 className="h-10 w-10 rounded-lg object-cover"
                               />

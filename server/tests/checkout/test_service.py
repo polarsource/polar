@@ -5057,7 +5057,7 @@ class TestConfirm:
 
         # Verify preconditions
         assert checkout.is_payment_required is False
-        assert checkout.is_payment_setup_required is True
+        assert checkout.is_payment_setup_required is False
         assert checkout.discount is not None
         assert checkout.discount.duration == DiscountDuration.forever
 

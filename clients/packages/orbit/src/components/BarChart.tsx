@@ -2,7 +2,7 @@
 
 import { motion, useInView } from 'framer-motion'
 import { useTheme } from 'next-themes'
-import React, { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Headline } from './Headline'
 

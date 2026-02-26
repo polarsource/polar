@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority'
-import React, {
+import {
   type ComponentPropsWithoutRef,
   type ElementType,
   type JSX,

@@ -6,6 +6,13 @@ const orbitElementRule = (element, replacement) => ({
   message: `Use ${replacement} from @polar-sh/orbit instead of <${element}>.`,
 })
 
+// Ban specific Tailwind utility groups on <Text> className — consumers must use
+// the dedicated prop (variant, color, align, wrap) instead of raw classes.
+const textClassRule = (pattern, message) => ({
+  selector: `JSXOpeningElement[name.name="Text"]:has(JSXAttribute[name.name="className"][value.value=/${pattern}/])`,
+  message,
+})
+
 /** @type {import("eslint").Linter.Config} */
 export default [
   ...nextJsConfig,
@@ -80,6 +87,40 @@ export default [
         orbitElementRule('small', '<Text as="small">'),
         orbitElementRule('label', '<Text as="label">'),
         orbitElementRule('code', '<Text as="code">'),
+
+        // ── <Text> className guards ──────────────────────────────────────────
+        // These props have dedicated counterparts — never express them via className.
+
+        // Font size → use variant
+        textClassRule(
+          '\\btext-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)\\b',
+          'Do not set font size on <Text> via className. Choose a variant (body, label, caption, subtle, disabled, mono) instead.',
+        ),
+        // Text color → use color prop or variant
+        textClassRule(
+          '\\btext-(?:inherit|current|transparent|white|black|[a-z]+-\\d+)\\b',
+          'Do not set text color on <Text> via className. Use the color prop (error/warning/success) or a different variant instead.',
+        ),
+        // Text alignment → use align prop
+        textClassRule(
+          '\\btext-(?:left|center|right|justify)\\b',
+          'Do not set text alignment on <Text> via className. Use the align prop instead.',
+        ),
+        // Font weight → use variant
+        textClassRule(
+          '\\bfont-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)\\b',
+          'Do not set font weight on <Text> via className. Choose a variant instead.',
+        ),
+        // Letter spacing → use variant
+        textClassRule(
+          '\\btracking-(?:tighter|tight|normal|wide|wider|widest)\\b',
+          'Do not set letter-spacing on <Text> via className. Choose a variant instead.',
+        ),
+        // Line height → use variant or wrap
+        textClassRule(
+          '\\bleading-(?:none|tight|snug|normal|relaxed|loose)\\b',
+          'Do not set line-height on <Text> via className. Choose a variant instead.',
+        ),
       ],
     },
   },

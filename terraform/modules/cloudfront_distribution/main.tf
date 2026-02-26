@@ -38,10 +38,15 @@ resource "cloudflare_dns_record" "acm_validation" {
   }
 
   zone_id = var.cloudflare_zone_id
-  name    = "${trimsuffix(each.value.name, ".")}."
+  name    = each.value.name
   type    = each.value.type
-  content = "${trimsuffix(each.value.value, ".")}."
+  content = each.value.value
   ttl     = 1
+
+  lifecycle {
+    ignore_changes       = [name, content]
+    replace_triggered_by = [aws_acm_certificate.this]
+  }
 }
 
 resource "aws_acm_certificate_validation" "this" {

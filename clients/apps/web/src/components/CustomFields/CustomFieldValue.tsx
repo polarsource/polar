@@ -31,6 +31,7 @@ const CustomFieldValue = ({
         <CloseOutlined fontSize="inherit" />
       )
     case 'select':
+      // eslint-disable-next-line no-case-declarations
       const option = field.properties.options.find(
         (option) => option.value === value,
       )

@@ -74,6 +74,7 @@ export const CheckoutDiscountInput = ({
       await update({ discountCode: null })
       setDiscountCode('')
       setExpanded(false)
+      // eslint-disable-next-line no-empty
     } catch {}
   }, [update])
 

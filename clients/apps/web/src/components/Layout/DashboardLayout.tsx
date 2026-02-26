@@ -93,6 +93,7 @@ const MobileNav = ({
 
   const header = (
     <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/"
         className="shrink-0 items-center font-semibold text-black dark:text-white"

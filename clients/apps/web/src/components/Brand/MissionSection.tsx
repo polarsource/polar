@@ -51,6 +51,7 @@ export function MissionSection() {
               <h3 className="text-center text-3xl leading-tight tracking-tighter text-pretty md:text-5xl dark:font-light">
                 We count tokens.
                 <br />
+                {/* eslint-disable-next-line react/no-unescaped-entities */}
                 So you don't have to.
               </h3>
               <span className="font-louize text-xl md:text-4xl">polar.sh</span>

@@ -1,6 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { PropsWithChildren, createContext, useContext } from 'react'
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DashboardContextValue {}
 
 const defaultDashboardContextValue: DashboardContextValue = {}

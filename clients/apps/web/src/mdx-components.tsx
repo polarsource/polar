@@ -71,8 +71,6 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
           className = `${className} hidden dark:block`
         }
       }
-      // @ts-ignore
-      // eslint-disable-next-line jsx-a11y/alt-text
       return <Image {...props} className={className} />
     },
   }

@@ -290,6 +290,7 @@ export const OmniSearch = ({
                 query &&
                 combinedResults.length === 0 ? (
                 <div className="dark:text-polar-500 py-12 text-center text-sm text-gray-500">
+                  {/* eslint-disable-next-line react/no-unescaped-entities */}
                   No results found for "{query}"
                 </div>
               ) : (

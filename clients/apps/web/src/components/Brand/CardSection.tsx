@@ -84,6 +84,7 @@ export function CardSection() {
               <h3 className="text-center text-5xl leading-tight tracking-tighter text-pretty dark:font-light">
                 We count tokens.
                 <br />
+                {/* eslint-disable-next-line react/no-unescaped-entities */}
                 So you don't have to.
               </h3>
               <span className="font-louize text-3xl">polar.sh</span>

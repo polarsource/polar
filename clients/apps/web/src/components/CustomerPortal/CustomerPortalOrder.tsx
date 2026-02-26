@@ -54,7 +54,7 @@ const CustomerPortalOrder = ({
   const hasSeatBasedOrder = order.seats && order.seats > 0
 
   return (
-    <div className="flex h-full flex-col gap-12">
+    <div className="flex flex-col gap-12">
       <div className="flex w-full flex-col gap-8">
         <div className="flex flex-row flex-wrap gap-x-4">
           <h3 className="text-2xl">{order.description}</h3>
@@ -234,7 +234,14 @@ const CustomerPortalOrder = ({
         </div>
 
         {hasSeatBasedOrder && (
-          <SeatManagementTable api={api} identifier={{ orderId: order.id }} />
+          <SeatManagementTable
+            api={api}
+            identifier={
+              order.subscription_id
+                ? { subscriptionId: order.subscription_id }
+                : { orderId: order.id }
+            }
+          />
         )}
 
         <CustomerPortalGrants

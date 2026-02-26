@@ -102,7 +102,7 @@ export const CustomerSeatQuantityManager = ({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-3xl border p-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border p-4">
       <div className="flex flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
           <div>

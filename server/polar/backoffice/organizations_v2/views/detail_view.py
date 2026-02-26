@@ -251,25 +251,25 @@ class OrganizationDetailView:
                                         organization_id=self.org.id,
                                     )
                                 ),
-                                classes="w-full flex gap-2 items-center",
+                                classes="w-full",
                             ):
-                                with tag.div(classes="flex items-center gap-1 flex-1"):
-                                    with tag.span(classes="text-sm text-base-content/60"):
+                                with tag.div(classes="join w-full"):
+                                    with tag.span(
+                                        classes="join-item flex items-center px-3 bg-base-200 border border-base-300 text-sm text-base-content/60"
+                                    ):
                                         text("$")
                                     with tag.input(
                                         type="number",
                                         name="threshold",
                                         value=str(threshold_dollars),
-                                        classes="input input-bordered input-sm w-full",
+                                        classes="input input-bordered input-sm join-item flex-1 w-0",
                                     ):
                                         pass
-                                with button(
-                                    variant="secondary",
-                                    size="sm",
-                                    outline=True,
-                                    type="submit",
-                                ):
-                                    text("Approve")
+                                    with tag.button(
+                                        type="submit",
+                                        classes="btn btn-sm btn-secondary btn-outline join-item",
+                                    ):
+                                        text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(

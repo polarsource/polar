@@ -35,9 +35,7 @@ def _get_logfire_url(organization_id: UUID) -> str:
 class OrganizationDetailView:
     """Render the organization detail view with horizontal section tabs."""
 
-    def __init__(
-        self, organization: Organization, ai_verdict: str = ""
-    ):
+    def __init__(self, organization: Organization, ai_verdict: str = ""):
         self.org = organization
         self.ai_verdict = ai_verdict
 

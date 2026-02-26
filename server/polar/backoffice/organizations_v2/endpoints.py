@@ -736,9 +736,7 @@ async def approve_dialog(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             ),
             303,
         )

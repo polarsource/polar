@@ -30,6 +30,13 @@ else
     echo "@polar-sh/ui already built"
 fi
 
+if [[ ! -d "packages/orbit/dist" ]]; then
+    echo "Building @polar-sh/orbit..."
+    pnpm --filter @polar-sh/orbit build
+else
+    echo "@polar-sh/ui already built"
+fi
+
 if [[ ! -d "packages/checkout/dist" ]]; then
     echo "Building @polar-sh/checkout..."
     pnpm --filter @polar-sh/checkout build

@@ -136,12 +136,16 @@ verified name should match the business name. Significant mismatches are yellow 
 individual and business. Compare the Stripe business name and URL with the \
 Polar organization name and website. Significant mismatches are yellow flags.
 - **Prior history**: Check for prior denials or blocked organizations.
-- **Checkout success URL consistency**: Custom success URLs should point to domains \
-that match the organization's website. Mismatched or suspicious domains are yellow flags.
+- **Checkout URL consistency**: Custom success URLs and return URLs should point to domains \
+that match the organization's website. Return URLs are set via the API when creating checkouts \
+programmatically. Mismatched or suspicious domains are yellow flags.
 - **Checkout links without benefits**: Checkout links selling products with zero benefits \
-mean the customer pays but receives nothing tangible — this is a red flag for potential fraud.
+mean the customer pays but receives nothing tangible. This is a red flag for potential fraud \
+if there are no webhooks or api keys with checkout urls configured.
 - **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal \
-of real integration. Webhook domains should match the organization's website or known services.
+of real integration. Webhook domains should match the organization's website or a known services. \
+having multiple webhooks domains can be a yellow flag if they are not related to the organization's \
+website.
 
 Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred yet.
 
@@ -321,6 +325,18 @@ class ReviewAnalyzer:
             )
         else:
             parts.append("No custom checkout success URLs configured.")
+
+        if setup.checkout_return_urls.unique_urls:
+            parts.append(
+                f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
+            )
+            for url in setup.checkout_return_urls.unique_urls:
+                parts.append(f"  - {url}")
+            parts.append(
+                f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
+            )
+        else:
+            parts.append("No custom checkout return URLs configured.")
 
         if setup.checkout_links.total_links > 0:
             parts.append(

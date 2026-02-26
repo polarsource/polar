@@ -157,6 +157,11 @@ class CheckoutSuccessUrlData(Schema):
     domains: list[str] = Field(default_factory=list)
 
 
+class CheckoutReturnUrlData(Schema):
+    unique_urls: list[str] = Field(default_factory=list)
+    domains: list[str] = Field(default_factory=list)
+
+
 class CheckoutLinkBenefitData(Schema):
     label: str | None = None
     product_names: list[str] = Field(default_factory=list)
@@ -178,6 +183,9 @@ class IntegrationData(Schema):
 class SetupData(Schema):
     checkout_success_urls: CheckoutSuccessUrlData = Field(
         default_factory=CheckoutSuccessUrlData
+    )
+    checkout_return_urls: CheckoutReturnUrlData = Field(
+        default_factory=CheckoutReturnUrlData
     )
     checkout_links: CheckoutLinksData = Field(default_factory=CheckoutLinksData)
     integration: IntegrationData = Field(default_factory=IntegrationData)

@@ -117,9 +117,12 @@ async def _collect_setup(organization_id: UUID, context: ReviewContext) -> Setup
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         checkout_links = await repo.get_checkout_links_with_benefits(organization_id)
+        checkout_return_urls = await repo.get_checkout_return_urls(organization_id)
         api_key_count = await repo.get_api_key_count(organization_id)
         webhook_endpoints = await repo.get_webhook_endpoints(organization_id)
-        return collect_setup_data(checkout_links, api_key_count, webhook_endpoints)
+        return collect_setup_data(
+            checkout_links, checkout_return_urls, api_key_count, webhook_endpoints
+        )
 
 
 async def _collect_metrics(

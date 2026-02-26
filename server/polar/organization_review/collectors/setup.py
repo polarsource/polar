@@ -6,6 +6,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from ..schemas import (
     CheckoutLinkBenefitData,
     CheckoutLinksData,
+    CheckoutReturnUrlData,
     CheckoutSuccessUrlData,
     IntegrationData,
     SetupData,
@@ -22,6 +23,7 @@ def _extract_domain(url: str) -> str | None:
 
 def collect_setup_data(
     checkout_links: list[CheckoutLink],
+    checkout_return_urls: list[str],
     api_key_count: int,
     webhook_endpoints: list[WebhookEndpoint],
 ) -> SetupData:
@@ -44,6 +46,20 @@ def collect_setup_data(
     success_url_data = CheckoutSuccessUrlData(
         unique_urls=unique_urls,
         domains=url_domains,
+    )
+
+    # Checkout return URLs (from the checkouts table, API-created)
+    return_url_domains: list[str] = []
+    seen_return_domains: set[str] = set()
+    for url in checkout_return_urls:
+        domain = _extract_domain(url)
+        if domain and domain not in seen_return_domains:
+            seen_return_domains.add(domain)
+            return_url_domains.append(domain)
+
+    return_url_data = CheckoutReturnUrlData(
+        unique_urls=checkout_return_urls,
+        domains=return_url_domains,
     )
 
     # Checkout links with benefit info
@@ -93,6 +109,7 @@ def collect_setup_data(
 
     return SetupData(
         checkout_success_urls=success_url_data,
+        checkout_return_urls=return_url_data,
         checkout_links=checkout_links_data,
         integration=integration_data,
     )

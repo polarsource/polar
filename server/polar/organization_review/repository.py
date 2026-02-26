@@ -12,6 +12,7 @@ from polar.kit.repository.base import (
 )
 from polar.kit.utils import utc_now
 from polar.models.account import Account
+from polar.models.checkout import Checkout
 from polar.models.checkout_link import CheckoutLink
 from polar.models.checkout_link_product import CheckoutLinkProduct
 from polar.models.dispute import Dispute
@@ -338,6 +339,25 @@ class OrganizationReviewRepository(
             .values(is_current=False)
         )
         await self.session.execute(statement)
+
+    async def get_checkout_return_urls(self, organization_id: UUID) -> list[str]:
+        """Get distinct non-null return URLs from checkouts.
+
+        Uses SELECT DISTINCT on just the return_url column to avoid loading
+        full checkout rows from this large table. The organization_id index
+        keeps this efficient.
+        """
+        statement = (
+            select(Checkout.return_url)
+            .where(
+                Checkout.organization_id == organization_id,
+                Checkout.return_url.is_not(None),
+                Checkout.is_deleted.is_(False),
+            )
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
 
     async def get_checkout_links_with_benefits(
         self, organization_id: UUID

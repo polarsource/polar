@@ -7480,28 +7480,12 @@ export interface components {
      * BenefitFeatureFlagCreateProperties
      * @description Properties for creating a benefit of type `feature_flag`.
      */
-    BenefitFeatureFlagCreateProperties: {
-      /**
-       * Metadata
-       * @description Key-value metadata for this feature flag benefit.
-       */
-      metadata: {
-        [key: string]: string
-      }
-    }
+    BenefitFeatureFlagCreateProperties: Record<string, never>
     /**
      * BenefitFeatureFlagProperties
      * @description Properties for a benefit of type `feature_flag`.
      */
-    BenefitFeatureFlagProperties: {
-      /**
-       * Metadata
-       * @description Key-value metadata for this feature flag benefit.
-       */
-      metadata: {
-        [key: string]: string
-      }
-    }
+    BenefitFeatureFlagProperties: Record<string, never>
     /** BenefitFeatureFlagSubscriber */
     BenefitFeatureFlagSubscriber: {
       /**
@@ -7555,12 +7539,7 @@ export interface components {
      * BenefitFeatureFlagSubscriberProperties
      * @description Properties available to subscribers for a benefit of type `feature_flag`.
      */
-    BenefitFeatureFlagSubscriberProperties: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string
-      }
-    }
+    BenefitFeatureFlagSubscriberProperties: Record<string, never>
     /** BenefitFeatureFlagUpdate */
     BenefitFeatureFlagUpdate: {
       /**
@@ -9414,7 +9393,7 @@ export interface components {
       decline_reason: string | null
       /**
        * Decline Message
-       * @description Human-reasable error message, if the payment was declined.
+       * @description Human-readable error message, if the payment was declined.
        * @example Your card has insufficient funds.
        */
       decline_message: string | null
@@ -9607,12 +9586,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -9698,28 +9671,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
-       * Customer External Id
-       * @deprecated
-       */
-      customer_external_id: string | null
-      /**
        * Products
        * @description List of products available to select.
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
       product: components['schemas']['CheckoutProduct'] | null
-      /**
-       * Product Price
-       * @deprecated
-       * @description Price of the selected product.
-       */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
@@ -9776,12 +9733,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -11251,12 +11202,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -11335,17 +11280,6 @@ export interface components {
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
       product: components['schemas']['CheckoutProduct'] | null
-      /**
-       * Product Price
-       * @deprecated
-       * @description Price of the selected product.
-       */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
@@ -11510,12 +11444,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -11595,17 +11523,6 @@ export interface components {
       /** @description Product selected to checkout. */
       product: components['schemas']['CheckoutProduct'] | null
       /**
-       * Product Price
-       * @deprecated
-       * @description Price of the selected product.
-       */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
-      /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
@@ -11665,12 +11582,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -11788,12 +11699,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -13120,7 +13025,7 @@ export interface components {
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
        */
-      external_id: string | null
+      external_id?: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
@@ -14163,12 +14068,6 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
-      /**
-       * User Id
-       * Format: uuid4
-       * @deprecated
-       */
-      user_id: string
       product: components['schemas']['CustomerOrderProduct'] | null
       subscription: components['schemas']['CustomerOrderSubscription'] | null
       /**
@@ -15105,7 +15004,7 @@ export interface components {
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
        */
-      external_id: string | null
+      external_id?: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
@@ -16037,87 +15936,6 @@ export interface components {
       | '-created_at'
       | 'balance'
       | '-balance'
-    /**
-     * CustomerWithMembers
-     * @description A customer in an organization with their members loaded.
-     */
-    CustomerWithMembers: {
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the customer.
-       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      metadata: components['schemas']['MetadataOutputType']
-      /**
-       * External Id
-       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
-       * @example usr_1337
-       */
-      external_id: string | null
-      /**
-       * Email
-       * @description The email address of the customer. This must be unique within the organization.
-       * @example customer@example.com
-       */
-      email: string
-      /**
-       * Email Verified
-       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
-       * @example true
-       */
-      email_verified: boolean
-      /**
-       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
-       * @example individual
-       */
-      type?: components['schemas']['CustomerType'] | null
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
-      name: string | null
-      billing_address: components['schemas']['Address'] | null
-      /** Tax Id */
-      tax_id: [string, components['schemas']['TaxIDFormat']] | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning the customer.
-       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
-       */
-      organization_id: string
-      /**
-       * Deleted At
-       * @description Timestamp for when the customer was soft deleted.
-       */
-      deleted_at: string | null
-      /**
-       * Members
-       * @description List of members belonging to this customer.
-       */
-      members?: components['schemas']['Member'][]
-      /**
-       * Avatar Url
-       * @example https://www.gravatar.com/avatar/xxx?d=404
-       */
-      readonly avatar_url: string
-    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -17985,7 +17803,7 @@ export interface components {
       decline_reason: string | null
       /**
        * Decline Message
-       * @description Human-reasable error message, if the payment was declined.
+       * @description Human-readable error message, if the payment was declined.
        * @example Your card has insufficient funds.
        */
       decline_message: string | null
@@ -18474,7 +18292,7 @@ export interface components {
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
        */
-      external_id: string | null
+      external_id?: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
@@ -18805,10 +18623,10 @@ export interface components {
       items: components['schemas']['CustomerWallet'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[CustomerWithMembers] */
-    ListResource_CustomerWithMembers_: {
+    /** ListResource[Customer] */
+    ListResource_Customer_: {
       /** Items */
-      items: components['schemas']['CustomerWithMembers'][]
+      items: components['schemas']['Customer'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Discount] */
@@ -20456,12 +20274,6 @@ export interface components {
        */
       platform_fee_currency: string | null
       customer: components['schemas']['OrderCustomer']
-      /**
-       * User Id
-       * Format: uuid4
-       * @deprecated
-       */
-      user_id: string
       product: components['schemas']['OrderProduct'] | null
       /** Discount */
       discount:
@@ -20531,7 +20343,7 @@ export interface components {
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
        */
-      external_id: string | null
+      external_id?: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
@@ -21687,6 +21499,8 @@ export interface components {
       | 'youtube'
       | 'tiktok'
       | 'linkedin'
+      | 'threads'
+      | 'discord'
       | 'other'
     /**
      * OrganizationSortProperty
@@ -22602,12 +22416,6 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @deprecated */
-      type: components['schemas']['ProductPriceType']
-      /** @deprecated */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
@@ -22701,12 +22509,6 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @deprecated */
-      type: components['schemas']['ProductPriceType']
-      /** @deprecated */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
       /**
        * Price Amount
        * @description The price in cents.
@@ -22779,12 +22581,6 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @deprecated */
-      type: components['schemas']['ProductPriceType']
-      /** @deprecated */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
     }
     /**
      * ProductPriceFreeCreate
@@ -22864,12 +22660,6 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @deprecated */
-      type: components['schemas']['ProductPriceType']
-      /** @deprecated */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
       /**
        * Unit Amount
        * @description The price per unit in cents.
@@ -22966,12 +22756,6 @@ export interface components {
        * @description The ID of the product owning the price.
        */
       product_id: string
-      /** @deprecated */
-      type: components['schemas']['ProductPriceType']
-      /** @deprecated */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
     }
@@ -24524,7 +24308,7 @@ export interface components {
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
        */
-      external_id: string | null
+      external_id?: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
@@ -26529,11 +26313,6 @@ export interface components {
        * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */
       url: string
-      /**
-       * Secret
-       * @deprecated
-       */
-      secret?: string | null
       /** @description The format of the webhook payload. */
       format: components['schemas']['WebhookFormat']
       /**
@@ -26554,11 +26333,6 @@ export interface components {
     WebhookEndpointUpdate: {
       /** Url */
       url?: string | null
-      /**
-       * Secret
-       * @deprecated
-       */
-      secret?: string | null
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
@@ -33445,7 +33219,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_CustomerWithMembers_']
+          'application/json': components['schemas']['ListResource_Customer_']
         }
       }
       /** @description Validation Error */
@@ -33478,7 +33252,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerWithMembers']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Validation Error */
@@ -33543,7 +33317,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerWithMembers']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -33630,7 +33404,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerWithMembers']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -33671,7 +33445,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerWithMembers']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -33758,7 +33532,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerWithMembers']
+          'application/json': components['schemas']['Customer']
         }
       }
       /** @description Customer not found. */
@@ -43768,6 +43542,8 @@ export const organizationSocialPlatformsValues: ReadonlyArray<
   'youtube',
   'tiktok',
   'linkedin',
+  'threads',
+  'discord',
   'other',
 ]
 export const organizationSortPropertyValues: ReadonlyArray<

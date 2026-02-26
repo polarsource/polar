@@ -111,7 +111,7 @@ async def _collect_products(
 
 
 async def _collect_setup(organization_id: UUID, context: ReviewContext) -> SetupData:
-    if context == ReviewContext.SUBMISSION:
+    if context not in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
         return SetupData()
 
     async with AsyncReadSessionMaker() as session:

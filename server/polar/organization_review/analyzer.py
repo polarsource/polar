@@ -136,16 +136,6 @@ verified name should match the business name. Significant mismatches are yellow 
 individual and business. Compare the Stripe business name and URL with the \
 Polar organization name and website. Significant mismatches are yellow flags.
 - **Prior history**: Check for prior denials or blocked organizations.
-- **Checkout URL consistency**: Custom success URLs and return URLs should point to domains \
-that match the organization's website. Return URLs are set via the API when creating checkouts \
-programmatically. Mismatched or suspicious domains are yellow flags.
-- **Checkout links without benefits**: Checkout links selling products with zero benefits \
-mean the customer pays but receives nothing tangible. This is a red flag for potential fraud \
-if there are no webhooks or api keys with checkout urls configured.
-- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal \
-of real integration. Webhook domains should match the organization's website or a known services. \
-having multiple webhooks domains can be a yellow flag if they are not related to the organization's \
-website.
 
 Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred yet.
 
@@ -210,9 +200,16 @@ the Polar organization name. Significant mismatches are yellow flags.
   - No payment history is neutral (new org), not negative.
 - **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
 organization after denial is grounds for automatic denial.
-- **Setup & integration signals**: Check checkout success/return URL domains against the \
-org website. Checkout links without benefits + no API/webhook integration is a red flag. \
-API keys and webhooks are positive signals of real integration.
+
+Setup & integration signals to check:
+- **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
+the API when creating checkouts programmatically) should point to domains matching the \
+organization's website. Mismatched or suspicious domains are yellow flags.
+- **Checkout links without benefits**: Checkout links selling products with zero benefits \
+mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
+or API keys configured.
+- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
+Webhook domains should match the organization's website or known services.
 
 Return only APPROVE or DENY.
 """
@@ -323,61 +320,64 @@ class ReviewAnalyzer:
                             price_strs.append(str(pr.get("amount_type", "unknown")))
                     parts.append(f"  Prices: {', '.join(price_strs)}")
 
-        # Setup & Integration Signals
+        # Setup & Integration Signals (only for threshold/manual reviews)
         setup = snapshot.setup
-        parts.append("\n## Setup & Integration Signals")
+        if snapshot.context in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+            parts.append("\n## Setup & Integration Signals")
 
-        if setup.checkout_success_urls.unique_urls:
-            parts.append(
-                f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
-            )
-            for url in setup.checkout_success_urls.unique_urls:
-                parts.append(f"  - {url}")
-            parts.append(
-                f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
-            )
-        else:
-            parts.append("No custom checkout success URLs configured.")
-
-        if setup.checkout_return_urls.unique_urls:
-            parts.append(
-                f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
-            )
-            for url in setup.checkout_return_urls.unique_urls:
-                parts.append(f"  - {url}")
-            parts.append(
-                f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
-            )
-        else:
-            parts.append("No custom checkout return URLs configured.")
-
-        if setup.checkout_links.total_links > 0:
-            parts.append(
-                f"Checkout Links: {setup.checkout_links.total_links} total, "
-                f"{setup.checkout_links.links_without_benefits} without benefits"
-            )
-            for link in setup.checkout_links.links[:20]:
-                products_str = (
-                    ", ".join(link.product_names)
-                    if link.product_names
-                    else "no products"
+            if setup.checkout_success_urls.unique_urls:
+                parts.append(
+                    f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
                 )
-                benefits_flag = "has benefits" if link.has_benefits else "NO benefits"
-                label_str = f" [{link.label}]" if link.label else ""
-                parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
-        else:
-            parts.append("No checkout links created.")
+                for url in setup.checkout_success_urls.unique_urls:
+                    parts.append(f"  - {url}")
+                parts.append(
+                    f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
+                )
+            else:
+                parts.append("No custom checkout success URLs configured.")
 
-        parts.append(f"API Keys: {setup.integration.api_key_count}")
-        if setup.integration.webhook_urls:
-            parts.append(f"Webhooks ({len(setup.integration.webhook_urls)}):")
-            for url in setup.integration.webhook_urls:
-                parts.append(f"  - {url}")
-            parts.append(
-                f"Webhook Domains: {', '.join(setup.integration.webhook_domains)}"
-            )
-        else:
-            parts.append("No webhook endpoints configured.")
+            if setup.checkout_return_urls.unique_urls:
+                parts.append(
+                    f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
+                )
+                for url in setup.checkout_return_urls.unique_urls:
+                    parts.append(f"  - {url}")
+                parts.append(
+                    f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
+                )
+            else:
+                parts.append("No custom checkout return URLs configured.")
+
+            if setup.checkout_links.total_links > 0:
+                parts.append(
+                    f"Checkout Links: {setup.checkout_links.total_links} total, "
+                    f"{setup.checkout_links.links_without_benefits} without benefits"
+                )
+                for link in setup.checkout_links.links[:20]:
+                    products_str = (
+                        ", ".join(link.product_names)
+                        if link.product_names
+                        else "no products"
+                    )
+                    benefits_flag = (
+                        "has benefits" if link.has_benefits else "NO benefits"
+                    )
+                    label_str = f" [{link.label}]" if link.label else ""
+                    parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
+            else:
+                parts.append("No checkout links created.")
+
+            parts.append(f"API Keys: {setup.integration.api_key_count}")
+            if setup.integration.webhook_urls:
+                parts.append(f"Webhooks ({len(setup.integration.webhook_urls)}):")
+                for url in setup.integration.webhook_urls:
+                    parts.append(f"  - {url}")
+                parts.append(
+                    f"Webhook Domains: {', '.join(setup.integration.webhook_domains)}"
+                )
+            else:
+                parts.append("No webhook endpoints configured.")
 
         # Website Content
         if snapshot.website:

@@ -389,6 +389,17 @@ class OrganizationDetailView:
                     ):
                         with tag.li():
                             with tag.a(
+                                hx_post=str(
+                                    request.url_for(
+                                        "organizations:run_review_agent",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_confirm="Run organization review agent?",
+                            ):
+                                text("Run Review Agent")
+                        with tag.li():
+                            with tag.a(
                                 href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.org.email or self.org.slug}",
                                 target="_blank",
                             ):

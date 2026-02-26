@@ -19,6 +19,35 @@ INT_MAX_VALUE = 2_147_483_647
 
 
 @pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("", id="empty string"),
+        pytest.param("   ", id="whitespace only"),
+        pytest.param("AA", id="below min length"),
+        pytest.param("A" * 256, id="exceeds max length"),
+    ],
+)
+def test_invalid_product_name(name: str) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        ProductCreateRecurring(
+            name=name,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency=PresentmentCurrency.usd,
+                )
+            ],
+        )
+
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["type"] in ("too_short", "too_long")
+    assert errors[0]["loc"] == ("name",)
+
+
+@pytest.mark.parametrize(
     "payload",
     [
         {"trial_interval_count": 1},

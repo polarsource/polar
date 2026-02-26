@@ -8,21 +8,31 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import document, tag, text
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.kit.pagination import PaginationParamsQuery
-from polar.models import Customer, Order, Organization, Product, Subscription
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    Order,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.sorting import SubscriptionSortProperty
 from polar.wallet.service import wallet as wallet_service
+from polar.worker import enqueue_job
 
 from ..components import button, datatable, description_list, modal
 from ..formatters import currency
 from ..layout import layout
 from ..orders.components import orders_datatable
+from ..toast import add_toast
 from .components import customers_datatable, email_verified_badge
 
 router = APIRouter()
@@ -138,6 +148,12 @@ async def get(
     # Get credit balance
     credit_balance = await wallet_service.get_billing_wallet_balance(
         session, customer, "usd"
+    )
+
+    # Get granted benefits
+    benefit_grant_repository = BenefitGrantRepository.from_session(session)
+    benefit_grants = await benefit_grant_repository.list_granted_by_customer(
+        customer.id, options=(joinedload(BenefitGrant.benefit),)
     )
 
     with layout(
@@ -332,6 +348,42 @@ async def get(
                     with tag.div(classes="text-center py-8 text-gray-500"):
                         text("No orders found")
 
+            # Benefits Section
+            with tag.div(classes="mt-8"):
+                with tag.div(classes="flex justify-between items-center mb-4"):
+                    with tag.h2(classes="text-2xl font-bold"):
+                        text(f"Granted Benefits ({len(benefit_grants)})")
+                    if benefit_grants:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "customers:revoke_benefits", id=customer.id
+                                )
+                            ),
+                            hx_target="#modal",
+                            variant="error",
+                        ):
+                            text("Revoke Benefits")
+
+                if benefit_grants:
+                    with datatable.Datatable[BenefitGrant, Any](
+                        datatable.DatatableAttrColumn(
+                            "benefit_id",
+                            "ID",
+                            clipboard=True,
+                            href_route_name="benefits:get",
+                        ),
+                        datatable.DatatableAttrColumn(
+                            "benefit.description", "Description"
+                        ),
+                        datatable.DatatableAttrColumn("benefit.type", "Type"),
+                        datatable.DatatableDateTimeColumn("granted_at", "Granted At"),
+                    ).render(request, benefit_grants):
+                        pass
+                else:
+                    with tag.div(classes="text-center py-8 text-gray-500"):
+                        text("No granted benefits found")
+
 
 @router.get(
     "/{id}/generate_portal_link_modal", name="customers:generate_portal_link_modal"
@@ -413,3 +465,55 @@ async def generate_portal_link_modal(
                             text("Done")
 
     return HTMLResponse(str(doc))
+
+
+@router.api_route(
+    "/{id}/revoke_benefits", name="customers:revoke_benefits", methods=["GET", "POST"]
+)
+async def revoke_benefits(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id)
+
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        enqueue_job("benefit.revoke_customer", customer_id=customer.id)
+
+        await add_toast(
+            request,
+            f"Benefit revocation task enqueued for {customer.email}.",
+            "success",
+        )
+
+        with tag.div(hx_redirect=str(request.url_for("customers:get", id=customer.id))):
+            pass
+        return
+
+    # GET method - show confirmation modal
+    with modal("Revoke Benefits", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    f"Are you sure you want to revoke all benefits for {customer.email}? "
+                    "This will revoke all currently granted benefits for this customer."
+                )
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for("customers:revoke_benefits", id=customer.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Revoke")

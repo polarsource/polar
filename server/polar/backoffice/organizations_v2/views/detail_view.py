@@ -243,7 +243,7 @@ class OrganizationDetailView:
                                 ):
                                     text("Approve")
                         else:
-                            # AI agrees: inline threshold input + approve button
+                            # AI agrees: threshold input + approve button
                             with tag.form(
                                 hx_post=str(
                                     request.url_for(
@@ -251,24 +251,27 @@ class OrganizationDetailView:
                                         organization_id=self.org.id,
                                     )
                                 ),
-                                classes="w-full",
+                                classes="w-full flex gap-2",
                             ):
-                                with tag.button(
-                                    type="submit",
-                                    classes="btn btn-sm btn-secondary btn-outline w-full gap-0 px-0",
+                                with tag.label(
+                                    classes="input input-bordered input-sm flex items-center gap-1 flex-1"
                                 ):
-                                    with tag.span(classes="pl-3 pr-1 text-base-content/50 font-normal"):
+                                    with tag.span(classes="text-base-content/40"):
                                         text("$")
                                     with tag.input(
                                         type="number",
                                         name="threshold",
                                         value=str(threshold_dollars),
-                                        classes="w-14 bg-transparent outline-none text-secondary font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                                        onclick="event.stopPropagation()",
+                                        classes="w-full bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                                     ):
                                         pass
-                                    with tag.span(classes="border-l border-secondary/30 pl-3 pr-3 ml-auto"):
-                                        text("Approve")
+                                with button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    type="submit",
+                                ):
+                                    text("Approve")
 
                         with tag.div(classes="w-full"):
                             with button(

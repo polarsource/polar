@@ -13,4 +13,3 @@
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "build", "node_modules"]
 }
-

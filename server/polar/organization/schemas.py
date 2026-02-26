@@ -93,12 +93,6 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization compares Tinybird results with database",
     )
-    presentment_currencies_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization has multiple presentment currencies enabled"
-        ),
-    )
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",

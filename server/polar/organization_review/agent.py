@@ -134,14 +134,15 @@ async def _collect_metrics(
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         total, succeeded, amount = await repo.get_payment_stats(organization_id)
-        risk_scores = await repo.get_risk_scores(organization_id)
+        p50, p90 = await repo.get_risk_score_percentiles(organization_id)
         refund_count, refund_amount = await repo.get_refund_stats(organization_id)
         dispute_count, dispute_amount = await repo.get_dispute_stats(organization_id)
         return collect_metrics_data(
             total_payments=total,
             succeeded_payments=succeeded,
             total_amount_cents=amount,
-            risk_scores=risk_scores,
+            p50_risk_score=p50,
+            p90_risk_score=p90,
             refund_count=refund_count,
             refund_amount_cents=refund_amount,
             dispute_count=dispute_count,

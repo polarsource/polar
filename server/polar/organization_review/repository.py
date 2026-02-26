@@ -124,15 +124,24 @@ class OrganizationReviewRepository(
         row = result.one()
         return row[0], row[1], row[2]
 
-    async def get_risk_scores(self, organization_id: UUID) -> list[int]:
-        statement = select(Payment.risk_score).where(
+    async def get_risk_score_percentiles(
+        self, organization_id: UUID
+    ) -> tuple[int | None, int | None]:
+        """Returns (p50_risk_score, p90_risk_score) computed in the database."""
+        statement = select(
+            func.percentile_cont(0.5).within_group(Payment.risk_score),
+            func.percentile_cont(0.9).within_group(Payment.risk_score),
+        ).where(
             Payment.organization_id == organization_id,
             Payment.status == PaymentStatus.succeeded,
             Payment.risk_score.is_not(None),
             Payment.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
-        return [row[0] for row in result.all()]
+        row = result.one()
+        p50 = int(row[0]) if row[0] is not None else None
+        p90 = int(row[1]) if row[1] is not None else None
+        return p50, p90
 
     async def get_refund_stats(self, organization_id: UUID) -> tuple[int, int]:
         """Returns (refund_count, refund_amount_cents)."""

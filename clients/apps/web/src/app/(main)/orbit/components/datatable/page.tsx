@@ -5,10 +5,10 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
   Stack,
-  Text } from '@polar-sh/orbit'
+  Text,
+} from '@polar-sh/orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-
 
 // ─── Demo data — flat transactions ───────────────────────────────────────────
 
@@ -103,7 +103,9 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="Amount" />
     ),
     cell: ({ row }) => (
-      <Text as="span" variant="label">{String(row.getValue('amount'))}</Text>
+      <Text as="span" variant="label">
+        {String(row.getValue('amount'))}
+      </Text>
     ),
     size: 120,
   },
@@ -115,11 +117,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const status = row.getValue('status') as Transaction['status']
       return (
-        <Text
-          as="span"
-          variant="caption"
-          className={statusColors[status]}
-        >
+        <Text as="span" variant="caption" className={statusColors[status]}>
           {status}
         </Text>
       )
@@ -178,7 +176,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
         style={{ paddingLeft: `${row.depth * 20}px` }}
       >
         {row.getCanExpand() ? (
-          <span className="text-gray-500 dark:text-polar-400">
+          <span className="dark:text-polar-400 text-gray-500">
             {row.getIsExpanded() ? (
               <ChevronDown className="h-3.5 w-3.5" />
             ) : (
@@ -207,7 +205,9 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
       <DataTableColumnHeader column={column} title="Total" />
     ),
     cell: ({ row }) => (
-      <Text as="span" variant="label">{String(row.getValue('total'))}</Text>
+      <Text as="span" variant="label">
+        {String(row.getValue('total'))}
+      </Text>
     ),
     size: 120,
   },
@@ -224,11 +224,16 @@ export default function DataTablePage() {
         description={
           <>
             A data grid built on{' '}
-            <Text as="code" variant="mono">@tanstack/react-table</Text>.
-            Supports sortable columns, row selection, click handlers,
+            <Text as="code" variant="mono">
+              @tanstack/react-table
+            </Text>
+            . Supports sortable columns, row selection, click handlers,
             pagination, expandable sub-rows, and loading states. Column
             definitions follow the standard TanStack{' '}
-            <Text as="code" variant="mono">ColumnDef</Text> API.
+            <Text as="code" variant="mono">
+              ColumnDef
+            </Text>{' '}
+            API.
           </>
         }
       />
@@ -245,13 +250,19 @@ export default function DataTablePage() {
           title="Expandable rows"
           description={
             <>
-              Pass <Text as="code" variant="mono">getSubRows</Text> to
-              enable tree expansion. Toggle state lives in the row — use{' '}
+              Pass{' '}
+              <Text as="code" variant="mono">
+                getSubRows
+              </Text>{' '}
+              to enable tree expansion. Toggle state lives in the row — use{' '}
               <Text as="code" variant="mono">
                 row.getToggleExpandedHandler()
               </Text>{' '}
-              and <Text as="code" variant="mono">row.depth</Text> to
-              indent.
+              and{' '}
+              <Text as="code" variant="mono">
+                row.depth
+              </Text>{' '}
+              to indent.
             </>
           }
         />
@@ -281,7 +292,10 @@ export default function DataTablePage() {
       {/* API */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="API" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {[
             {
               name: 'columns',

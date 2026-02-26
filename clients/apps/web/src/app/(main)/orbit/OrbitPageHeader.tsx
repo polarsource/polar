@@ -16,11 +16,7 @@ export function OrbitPageHeader({
     <Stack vertical gap={3}>
       {label && <Headline as="span" text={label} />}
       <Headline as="h2" text={title} />
-      {description && (
-        <Text variant="subtle">
-          {description}
-        </Text>
-      )}
+      {description && <Text variant="subtle">{description}</Text>}
     </Stack>
   )
 }
@@ -38,11 +34,7 @@ export function OrbitSectionHeader({
     <Stack vertical gap={2}>
       <Headline as="h4" text={title} />
       <div className="dark:border-polar-800 border-t border-neutral-200" />
-      {description && (
-        <Text variant="subtle">
-          {description}
-        </Text>
-      )}
+      {description && <Text variant="subtle">{description}</Text>}
     </Stack>
   )
 }

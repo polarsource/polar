@@ -1,7 +1,6 @@
 'use client'
 
-import { Headline } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
+import { Headline, Text } from '@polar-sh/orbit'
 import {
   Sidebar,
   SidebarContent,
@@ -56,11 +55,7 @@ export function OrbitNav() {
         <nav className="flex flex-col gap-7">
           {nav.map(({ section, items }) => (
             <div key={section} className="flex flex-col gap-0.5">
-              <Text
-                as="span"
-                variant="caption"
-                className="pb-2.5"
-              >
+              <Text as="span" variant="caption" className="pb-2.5">
                 {section}
               </Text>
               {items.map(({ label, href }) => {

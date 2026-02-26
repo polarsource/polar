@@ -1,7 +1,6 @@
 import { Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 // ─── Examples data ────────────────────────────────────────────────────────────
 
 const verticalUntilExamples = [
@@ -114,12 +113,12 @@ export default function StackPage() {
           <Text as="span" variant="caption">
             Live demo — resize the window to see the layout switch at xl
           </Text>
-          <div className="bg-gray-100 dark:bg-polar-800 rounded-2xl p-6">
+          <div className="dark:bg-polar-800 rounded-2xl bg-gray-100 p-6">
             <Stack verticalUntil="xl" gap={2}>
               {(['A', 'B', 'C'] as const).map((label) => (
                 <div
                   key={label}
-                  className="grow dark:border-polar-700 dark:bg-polar-900 flex h-12 items-center justify-center rounded-xl border border-neutral-200 bg-gray-50 p-4"
+                  className="dark:border-polar-700 dark:bg-polar-900 flex h-12 grow items-center justify-center rounded-xl border border-neutral-200 bg-gray-50 p-4"
                 >
                   <Text variant="mono">{label}</Text>
                 </div>
@@ -127,7 +126,7 @@ export default function StackPage() {
             </Stack>
           </div>
           <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Stack verticalUntil="xl" gap={2}>
+            {`<Stack verticalUntil="xl" gap={2}>
   <div>A</div>
   <div>B</div>
   <div>C</div>
@@ -137,12 +136,14 @@ export default function StackPage() {
 
         {/* Breakpoint reference */}
         <Stack vertical gap={3}>
-          <Text as="span" variant="caption">All breakpoints</Text>
+          <Text as="span" variant="caption">
+            All breakpoints
+          </Text>
           <Stack gap={2} flexWrap="wrap">
             {verticalUntilExamples.map(({ bp, label }) => (
               <div
                 key={bp}
-                className="bg-gray-100 dark:bg-polar-800 dark:border-polar-700 rounded-lg border border-neutral-200 px-4 py-2"
+                className="dark:bg-polar-800 dark:border-polar-700 rounded-lg border border-neutral-200 bg-gray-100 px-4 py-2"
               >
                 <Text as="code" variant="mono">
                   verticalUntil=&quot;{label}&quot;
@@ -159,12 +160,12 @@ export default function StackPage() {
           title="horizontalUntil"
           description="The inverse of verticalUntil — stacks in a row by default and switches to a column at the given breakpoint."
         />
-        <div className="bg-gray-100 dark:bg-polar-800 rounded-2xl p-6">
+        <div className="dark:bg-polar-800 rounded-2xl bg-gray-100 p-6">
           <Stack horizontalUntil="lg" gap={2}>
             {(['A', 'B', 'C'] as const).map((label) => (
               <div
                 key={label}
-                className="grow dark:border-polar-700 dark:bg-polar-900 flex h-12 items-center justify-center rounded-xl border border-neutral-200 bg-gray-50 p-4"
+                className="dark:border-polar-700 dark:bg-polar-900 flex h-12 grow items-center justify-center rounded-xl border border-neutral-200 bg-gray-50 p-4"
               >
                 <Text variant="mono">{label}</Text>
               </div>
@@ -172,7 +173,7 @@ export default function StackPage() {
           </Stack>
         </div>
         <pre className="dark:bg-polar-900 dark:text-polar-200 rounded-lg bg-neutral-100 px-3 py-2.5 font-mono text-xs leading-relaxed text-neutral-700">
-{`<Stack horizontalUntil="lg" gap={2}>
+          {`<Stack horizontalUntil="lg" gap={2}>
   <div>A</div>
   <div>B</div>
   <div>C</div>
@@ -186,9 +187,16 @@ export default function StackPage() {
           title="alignItems"
           description="Cross-axis alignment of flex children. Accepts a plain value or a responsive breakpoint map."
         />
-        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          gap={2}
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {alignItemsExamples.map(({ value, label }) => (
-            <div key={value} className="grid grid-cols-5 items-center gap-8 py-5">
+            <div
+              key={value}
+              className="grid grid-cols-5 items-center gap-8 py-5"
+            >
               <div className="col-span-2">
                 <Text as="code" variant="mono">
                   alignItems=&quot;{label}&quot;
@@ -198,12 +206,12 @@ export default function StackPage() {
                 <Stack
                   alignItems={value}
                   gap={1}
-                  className="bg-gray-100 dark:bg-polar-800 h-16 rounded-lg p-4"
+                  className="dark:bg-polar-800 h-16 rounded-lg bg-gray-100 p-4"
                 >
                   {[4, 6, 8].map((h) => (
                     <div
                       key={h}
-                      className={`bg-gray-50 dark:bg-polar-900 rounded-lg w-6 h-${h}`}
+                      className={`dark:bg-polar-900 w-6 rounded-lg bg-gray-50 h-${h}`}
                     />
                   ))}
                 </Stack>
@@ -219,9 +227,16 @@ export default function StackPage() {
           title="justifyContent"
           description="Main-axis distribution of flex children."
         />
-        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          gap={2}
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {justifyContentExamples.map(({ value, label }) => (
-            <div key={value} className="grid grid-cols-5 items-center gap-8 py-5">
+            <div
+              key={value}
+              className="grid grid-cols-5 items-center gap-8 py-5"
+            >
               <div className="col-span-2">
                 <Text as="code" variant="mono">
                   justifyContent=&quot;{label}&quot;
@@ -230,12 +245,12 @@ export default function StackPage() {
               <div className="col-span-3">
                 <Stack
                   justifyContent={value}
-                  className="bg-gray-100 dark:bg-polar-800 rounded-lg p-4"
+                  className="dark:bg-polar-800 rounded-lg bg-gray-100 p-4"
                 >
                   {[0, 1, 2].map((i) => (
                     <div
                       key={i}
-                      className="bg-gray-50 dark:bg-polar-900 h-6 w-6 rounded-lg"
+                      className="dark:bg-polar-900 h-6 w-6 rounded-lg bg-gray-50"
                     />
                   ))}
                 </Stack>
@@ -251,21 +266,24 @@ export default function StackPage() {
           title="Composition"
           description="Real-world patterns. Stack drives the flex layout; className handles styling on individual elements."
         />
-        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
-
+        <Stack
+          vertical
+          gap={2}
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {/* Card */}
           <div className="grid grid-cols-5 items-start gap-8 py-6">
             <Stack vertical gap={1} className="col-span-2">
               <Text variant="body">Card</Text>
-              <Text variant="subtle">Vertical stack · surface · padding · radius</Text>
+              <Text variant="subtle">
+                Vertical stack · surface · padding · radius
+              </Text>
             </Stack>
             <div className="col-span-3">
               <article className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-neutral-200 bg-gray-50 p-6">
                 <Stack vertical gap={2}>
                   <Text variant="label">Card title</Text>
-                  <Text variant="subtle">
-                    Supporting description text.
-                  </Text>
+                  <Text variant="subtle">Supporting description text.</Text>
                 </Stack>
               </article>
             </div>
@@ -275,13 +293,15 @@ export default function StackPage() {
           <div className="grid grid-cols-5 items-start gap-8 py-6">
             <Stack vertical gap={1} className="col-span-2">
               <Text variant="body">Toolbar</Text>
-              <Text variant="subtle">Horizontal · space-between · centered</Text>
+              <Text variant="subtle">
+                Horizontal · space-between · centered
+              </Text>
             </Stack>
             <div className="col-span-3">
               <div className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-neutral-200 bg-gray-50 px-6 py-4">
                 <Stack alignItems="center" justifyContent="between">
                   <Text variant="label">Section title</Text>
-                  <div className="bg-gray-100 dark:bg-polar-800 rounded-lg px-4 py-2">
+                  <div className="dark:bg-polar-800 rounded-lg bg-gray-100 px-4 py-2">
                     <Text variant="subtle">Action</Text>
                   </div>
                 </Stack>
@@ -310,14 +330,17 @@ export default function StackPage() {
               </Stack>
             </div>
           </div>
-
         </Stack>
       </Stack>
 
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical gap={2} className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          gap={2}
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono" className="col-span-1">

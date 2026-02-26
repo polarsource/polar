@@ -1,7 +1,6 @@
 import { Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 const levels = [
   { tag: 'h1', size: '3rem → 6rem', weight: '300' },
   { tag: 'h2', size: '2.25rem → 3rem', weight: '400' },
@@ -82,7 +81,10 @@ export default function HeadlinePage() {
           title="Animated"
           description="Set animate to trigger a curtain-reveal on viewport entry. Each line clips upward independently; passing an array staggers them at 0.2s ÷ n."
         />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           <div className="grid grid-cols-5 items-baseline gap-8 py-6">
             <Stack vertical className="gap-0.5">
               <Text as="span" variant="caption">
@@ -116,7 +118,10 @@ export default function HeadlinePage() {
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono" className="col-span-1">
@@ -128,9 +133,7 @@ export default function HeadlinePage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="caption">
-                {desc}
-              </Text>
+              <Text variant="caption">{desc}</Text>
             </div>
           ))}
         </Stack>

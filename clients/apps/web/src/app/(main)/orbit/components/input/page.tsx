@@ -3,7 +3,6 @@
 import { Headline, Input, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 const props = [
   {
     name: 'type',
@@ -55,7 +54,10 @@ export default function InputPage() {
       {/* Standard types */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Standard types" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {(
             [
               { label: 'Text', type: 'text', placeholder: 'Plain text…' },
@@ -86,7 +88,10 @@ export default function InputPage() {
       {/* Prefix / suffix slots */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Prefix & Suffix" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
               <Headline as="h6" text="Prefix" />
@@ -134,11 +139,17 @@ export default function InputPage() {
             <>
               Values are stored and emitted in smallest currency units (cents
               for USD, whole units for JPY). Arrow keys step by{' '}
-              <Text as="code" variant="mono">step</Text> (default 0.1).
+              <Text as="code" variant="mono">
+                step
+              </Text>{' '}
+              (default 0.1).
             </>
           }
         />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {(
             [
               { currency: 'USD', placeholder: 1000, label: 'Decimal — USD' },
@@ -188,7 +199,10 @@ export default function InputPage() {
       {/* States */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="States" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <div className="col-span-2">
               <Headline as="h6" text="Disabled" />
@@ -211,7 +225,10 @@ export default function InputPage() {
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono">
@@ -223,9 +240,7 @@ export default function InputPage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="caption">
-                {desc}
-              </Text>
+              <Text variant="caption">{desc}</Text>
             </div>
           ))}
         </Stack>

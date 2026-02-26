@@ -2,7 +2,6 @@ import { Headline, Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
-
 // ─── Token data ────────────────────────────────────────────────────────────────
 
 const colorTokens = [
@@ -222,7 +221,7 @@ function TableHeader({ cols }: { cols: string[] }) {
           key={col}
           as="span"
           variant="caption"
-          className="uppercase tracking-widest"
+          className="tracking-widest uppercase"
         >
           {col}
         </Text>

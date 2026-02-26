@@ -3,7 +3,6 @@
 import { Button, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 const variants = [
   {
     variant: 'primary',
@@ -76,7 +75,10 @@ export default function ButtonPage() {
           <>
             The primary interactive element. Four semantic variants, three
             sizes, and a built-in loading state. Always renders as a native{' '}
-            <Text as="code" variant="mono">{'<button>'}</Text>.
+            <Text as="code" variant="mono">
+              {'<button>'}
+            </Text>
+            .
           </>
         }
       />
@@ -84,9 +86,15 @@ export default function ButtonPage() {
       {/* Variants */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {variants.map(({ variant, label, desc }) => (
-            <div key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div
+              key={variant}
+              className="grid grid-cols-5 items-center gap-8 py-6"
+            >
               <Stack vertical className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <Text as="span" variant="caption">
@@ -113,7 +121,10 @@ export default function ButtonPage() {
       {/* Sizes */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {(
             [
               { size: 'lg', label: 'Large', height: 'h-12 / 48px', px: 'px-5' },
@@ -126,7 +137,10 @@ export default function ButtonPage() {
               { size: 'sm', label: 'Small', height: 'h-8 / 32px', px: 'px-3' },
             ] as const
           ).map(({ size, label, height, px }) => (
-            <div key={size} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div
+              key={size}
+              className="grid grid-cols-5 items-center gap-8 py-6"
+            >
               <Stack vertical className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
                 <Text as="span" variant="mono">
@@ -150,7 +164,10 @@ export default function ButtonPage() {
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono" className="col-span-1">
@@ -162,9 +179,7 @@ export default function ButtonPage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="caption">
-                {desc}
-              </Text>
+              <Text variant="caption">{desc}</Text>
             </div>
           ))}
         </Stack>

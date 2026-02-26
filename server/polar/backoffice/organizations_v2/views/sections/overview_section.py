@@ -331,7 +331,8 @@ class OverviewSection:
     @staticmethod
     def _to_variant(level: str) -> Variant:
         """Map threshold evaluation result to UI variant."""
-        return {"ok": "default", "warn": "warning", "crit": "error"}[level]
+        _map: dict[str, Variant] = {"ok": "default", "warn": "warning", "crit": "error"}
+        return _map[level]
 
     @contextlib.contextmanager
     def payment_card(

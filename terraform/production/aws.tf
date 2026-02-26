@@ -312,20 +312,6 @@ resource "aws_iam_policy" "lambda_artifacts_upload" {
           "s3:PutObject"
         ]
         Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "lambda:GetFunction",
-          "lambda:UpdateFunctionCode",
-          "lambda:PublishVersion"
-        ]
-        Resource = [
-          "arn:aws:lambda:us-east-1:*:function:polar-image-resizer",
-          "arn:aws:lambda:us-east-1:*:function:polar-image-resizer:*",
-          "arn:aws:lambda:us-east-1:*:function:polar-sandbox-image-resizer",
-          "arn:aws:lambda:us-east-1:*:function:polar-sandbox-image-resizer:*"
-        ]
       }
     ]
   })

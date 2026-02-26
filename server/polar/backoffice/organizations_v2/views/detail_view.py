@@ -264,8 +264,9 @@ class OrganizationDetailView:
                                     ):
                                         pass
                                 with button(
-                                    variant="primary",
+                                    variant="secondary",
                                     size="sm",
+                                    outline=True,
                                     type="submit",
                                 ):
                                     text("Approve")

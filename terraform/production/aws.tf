@@ -299,6 +299,16 @@ module "application_access_production" {
   }
 }
 
+# =============================================================================
+# Athena for Span Logs
+# =============================================================================
+
+module "athena_spans" {
+  source           = "../modules/athena_spans"
+  environment      = "production"
+  logs_bucket_name = "polar-production-logs"
+}
+
 resource "aws_iam_policy" "lambda_artifacts_upload" {
   name = "lambda-artifacts-upload"
   policy = jsonencode({

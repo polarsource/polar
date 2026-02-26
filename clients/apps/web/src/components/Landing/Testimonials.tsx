@@ -1,5 +1,5 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Image from 'next/image'
 import Link from 'next/link'
 import { JSX } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -172,7 +172,7 @@ export const Testamonial = ({
               width={64}
               height={64}
               loading="lazy"
-              CustomImageComponent={Image}
+              CustomImageComponent={StaticImage}
             />
           )}
         </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -10,7 +11,6 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import {
@@ -220,7 +220,7 @@ export const Usage = () => {
                 </div>
 
                 <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-4 text-sm md:w-1/2 xl:p-12">
-                  <Image
+                  <StaticImage
                     className="absolute inset-0 h-full w-full object-cover"
                     src="/assets/landing/abstract_02.jpg"
                     fill

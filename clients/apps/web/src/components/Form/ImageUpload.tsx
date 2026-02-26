@@ -107,6 +107,7 @@ const ImageUpload = ({
         <div className="flex flex-col items-start gap-4">
           {imagePreviewSrc ? (
             <div className="relative">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <img
                 ref={imageRef}
                 src={imagePreviewSrc}

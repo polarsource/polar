@@ -5,10 +5,14 @@ type ImageProps = Omit<
   'src' | 'width'
 > & {
   src: string | null | undefined
-  width: number
+  approximateWidth: number
 }
 
-export const Image = ({ src, width, ...props }: ImageProps) => (
+export const UploadImage = ({
+  src,
+  approximateWidth,
+  ...props
+}: ImageProps) => (
   // eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element
-  <img src={getResizedImage(src, width)} {...props} />
+  <img src={getResizedImage(src, approximateWidth)} {...props} />
 )

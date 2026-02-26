@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { StaticImage } from '@/components/Image/StaticImage'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
@@ -8,7 +9,6 @@ import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
@@ -95,7 +95,7 @@ export const CustomersPage = () => {
             >
               <div className="dark:bg-polar-900 dark:border-polar-700 flex items-center gap-x-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="h-12 w-12 overflow-hidden rounded-full">
-                  <Image
+                  <StaticImage
                     src="/assets/landing/testamonials/emil.jpg"
                     alt="Customer avatar"
                     className="h-full w-full object-cover"
@@ -115,7 +115,7 @@ export const CustomersPage = () => {
                 </div>
               </div>
             </motion.div>
-            <Image
+            <StaticImage
               src="/assets/landing/abstract_07.jpg"
               alt="Customers"
               className="absolute inset-0 h-full w-full object-cover"

@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import { StaticImage } from '@/components/Image/StaticImage'
 import { Link } from '../Link'
 import { Section } from '../Section'
 
@@ -103,7 +103,7 @@ interface ProfileProps {
 const Profile = ({ name, title, image }: ProfileProps) => {
   return (
     <div className="relative flex flex-col gap-y-4">
-      <Image
+      <StaticImage
         className="aspect-square w-full md:w-[200px]"
         src={image}
         alt={name}

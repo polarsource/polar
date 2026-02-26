@@ -1,10 +1,10 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Check from '@mui/icons-material/Check'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 
 const containerVariants = {
@@ -102,7 +102,7 @@ export const Pricing = () => {
       </div>
 
       <div className="dark:bg-polar-800 relative flex flex-col items-center justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
-        <Image
+        <StaticImage
           className="absolute inset-0 h-full w-full object-cover"
           src="/assets/landing/abstract_07.jpg"
           fill

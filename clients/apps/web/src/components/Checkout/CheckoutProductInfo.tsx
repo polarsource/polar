@@ -1,6 +1,6 @@
 'use client'
 
-import { Image } from '@/components/Image/Image'
+import { UploadImage } from '@/components/Image/Image'
 import { getResizedImage } from '@/utils/getResizedImage'
 import { markdownOptions } from '@/utils/markdown'
 import {
@@ -86,9 +86,9 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
                 <button
                   className={`relative h-[70px] w-[70px] flex-shrink-0 ${additionalImages.length > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                 >
-                  <Image
+                  <UploadImage
                     src={firstImage}
-                    width={70}
+                    approximateWidth={70}
                     alt={product.name}
                     className="h-[70px] w-[70px] rounded-lg object-cover"
                   />

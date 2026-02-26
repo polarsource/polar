@@ -3,6 +3,7 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { DiscordIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
+import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CreditCardOutlined from '@mui/icons-material/CreditCardOutlined'
@@ -11,7 +12,6 @@ import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import KeyOutlined from '@mui/icons-material/KeyOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
@@ -128,7 +128,7 @@ export const BenefitsPage = () => {
                 </div>
               </div>
             </motion.div>
-            <Image
+            <StaticImage
               src="/assets/landing/abstract_07.jpg"
               alt="Benefits"
               className="absolute inset-0 h-full w-full object-cover"

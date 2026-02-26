@@ -21,7 +21,7 @@ export default [
         {
           selector: 'JSXOpeningElement[name.name="img"]',
           message:
-            'Use <Image /> from @/components/Image/Image instead of <img> for automatic CDN resizing.',
+            'Use <UploadImage /> from @/components/Image/Image or <StaticImage /> from @/components/Image/StaticImage instead of <img>.',
         },
       ],
       'no-restricted-imports': [
@@ -31,7 +31,7 @@ export default [
             {
               name: 'next/image',
               message:
-                'Use <Image /> from @/components/Image/Image instead of next/image for automatic CDN resizing.',
+                'Use <StaticImage /> from @/components/Image/StaticImage instead of next/image.',
             },
           ],
         },

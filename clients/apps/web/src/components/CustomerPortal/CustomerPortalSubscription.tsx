@@ -3,7 +3,6 @@
 import {
   useCustomerCancelSubscription,
   useCustomerOrders,
-  useCustomerSeats,
   usePortalAuthenticatedUser,
 } from '@/hooks/queries'
 import { hasBillingPermission } from '@/utils/customerPortal'
@@ -19,7 +18,6 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
-import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -64,13 +62,6 @@ const CustomerPortalSubscription = ({
   const portalSettings =
     subscription.product.organization.customer_portal_settings
   const showSeatManagement = portalSettings.subscription.update_seats === true
-
-  const { data: seatsData } = useCustomerSeats(
-    api,
-    hasSeatBasedPricing ? { subscriptionId: subscription.id } : undefined,
-  )
-  const totalSeats = seatsData?.total_seats || 0
-  const assignedSeats = totalSeats - (seatsData?.available_seats || 0)
 
   return (
     <div className="flex flex-col gap-8">
@@ -152,21 +143,10 @@ const CustomerPortalSubscription = ({
 
       {/* Seat management - only shown for users with billing permissions */}
       {hasSeatBasedPricing && showSeatManagement && canManageBilling && (
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-lg">Seat Management</h3>
-            <CustomerSeatQuantityManager
-              api={api}
-              subscription={subscription}
-              totalSeats={totalSeats}
-              assignedSeats={assignedSeats}
-            />
-          </div>
-          <SeatManagementTable
-            api={api}
-            identifier={{ subscriptionId: subscription.id }}
-          />
-        </div>
+        <SeatManagementTable
+          api={api}
+          identifier={{ subscriptionId: subscription.id }}
+        />
       )}
 
       <CustomerPortalGrants api={api} subscriptionId={subscription.id} />

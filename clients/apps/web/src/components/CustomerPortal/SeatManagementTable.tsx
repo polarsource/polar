@@ -21,6 +21,7 @@ import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { toast } from '../Toast/use-toast'
+import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 
 const seatStatusToDisplayName = {
   pending: [
@@ -174,11 +175,22 @@ export const SeatManagementTable = ({
     }
   }
 
+  const isSubscription = isSeatBasedSubscription(identifier)
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-lg">Seat Management</h3>
       </div>
+
+      {isSubscription && !isLoadingSeats && (
+        <CustomerSeatQuantityManager
+          api={api}
+          subscriptionId={identifier.subscriptionId}
+          totalSeats={totalSeats}
+          availableSeats={availableSeats}
+        />
+      )}
 
       {!isLoadingSeats && (seats.length > 0 || availableSeats > 0) && (
         <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">

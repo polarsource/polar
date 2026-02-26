@@ -1,7 +1,6 @@
 import { Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
 
-
 const sections = [
   {
     title: 'Motion',
@@ -129,7 +128,10 @@ export default function GuidelinesPage() {
             <Headline as="h3" text={title} />
             <div className="dark:border-polar-800 border-t border-neutral-200" />
           </Stack>
-          <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+          <Stack
+            vertical
+            className="dark:divide-polar-800 divide-y divide-neutral-200"
+          >
             {subsections.map(({ heading, content }) => (
               <div key={heading} className="grid grid-cols-5 gap-8 py-6">
                 <div className="col-span-2">

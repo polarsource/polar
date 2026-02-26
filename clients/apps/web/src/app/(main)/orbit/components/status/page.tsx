@@ -1,7 +1,6 @@
 import { Stack, Status, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 const variants = [
   {
     variant: 'neutral',
@@ -69,16 +68,17 @@ export default function StatusPage() {
       {/* Variants */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {variants.map(({ variant, label, desc }) => (
             <div
               key={variant}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <Stack vertical className="col-span-2 gap-1">
-                <Text variant="label">
-                  {label}
-                </Text>
+                <Text variant="label">{label}</Text>
                 <Text as="span" variant="subtle">
                   {desc}
                 </Text>
@@ -128,12 +128,13 @@ export default function StatusPage() {
       {/* Sizes */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <Stack vertical className="col-span-2 gap-1">
-              <Text variant="label">
-                Medium
-              </Text>
+              <Text variant="label">Medium</Text>
               <Text as="span" variant="mono">
                 size=&quot;md&quot;
               </Text>
@@ -146,9 +147,7 @@ export default function StatusPage() {
           </div>
           <div className="grid grid-cols-5 items-center gap-8 py-6">
             <Stack vertical className="col-span-2 gap-1">
-              <Text variant="label">
-                Small
-              </Text>
+              <Text variant="label">Small</Text>
               <Text as="span" variant="mono">
                 size=&quot;sm&quot;
               </Text>
@@ -165,7 +164,10 @@ export default function StatusPage() {
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono">
@@ -177,9 +179,7 @@ export default function StatusPage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle">
-                {desc}
-              </Text>
+              <Text variant="subtle">{desc}</Text>
             </div>
           ))}
         </Stack>

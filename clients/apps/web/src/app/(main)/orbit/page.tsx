@@ -2,7 +2,6 @@ import { Headline, Stack, Text } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
 
-
 const principles = [
   {
     title: 'Intentional',
@@ -115,9 +114,9 @@ export default function OrbitIntroductionPage() {
         <Stack vertical gap={2}>
           <Text variant="subtle">
             Orbit is the shared design language across every Polar product. It
-            captures decisions that would otherwise be made inconsistently across
-            teams — how things move, how type is set, what surfaces look like in
-            the dark — and promotes them to named, reusable primitives.
+            captures decisions that would otherwise be made inconsistently
+            across teams — how things move, how type is set, what surfaces look
+            like in the dark — and promotes them to named, reusable primitives.
           </Text>
           <Text variant="subtle">
             Rather than a component library alone, Orbit is a system of
@@ -133,7 +132,10 @@ export default function OrbitIntroductionPage() {
       <Stack vertical gap={3}>
         <Headline as="h5" text="Design Principles" />
         <div className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {principles.map(({ title, description }) => (
             <div key={title} className="grid grid-cols-5 gap-8 py-5">
               <div className="col-span-2">
@@ -157,7 +159,7 @@ export default function OrbitIntroductionPage() {
               <Text
                 as="span"
                 variant="caption"
-                className="uppercase tracking-widest"
+                className="tracking-widest uppercase"
               >
                 {label}
               </Text>

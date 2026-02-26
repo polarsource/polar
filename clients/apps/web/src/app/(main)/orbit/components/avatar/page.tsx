@@ -1,7 +1,6 @@
 import { Avatar, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
 const sizes = [
@@ -84,9 +83,15 @@ export default function AvatarPage() {
       {/* Sizes */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {sizes.map(({ size, px }) => (
-            <div key={size} className="grid grid-cols-5 items-center gap-8 py-5">
+            <div
+              key={size}
+              className="grid grid-cols-5 items-center gap-8 py-5"
+            >
               <Stack vertical className="gap-0.5">
                 <Text as="code" variant="mono">
                   {size}
@@ -104,9 +109,15 @@ export default function AvatarPage() {
       {/* States */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="States" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {states.map(({ label, desc, src, name }) => (
-            <div key={label} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div
+              key={label}
+              className="grid grid-cols-5 items-center gap-8 py-6"
+            >
               <Stack vertical className="col-span-2 gap-1">
                 <Text variant="label">{label}</Text>
                 <Text variant="caption">{desc}</Text>
@@ -129,7 +140,9 @@ export default function AvatarPage() {
           {facehashExamples.map((name) => (
             <Stack vertical key={name} alignItems="center" gap={1}>
               <Avatar name={name} size="xl" />
-              <Text as="span" variant="mono">{name}</Text>
+              <Text as="span" variant="mono">
+                {name}
+              </Text>
             </Stack>
           ))}
         </Stack>
@@ -138,7 +151,10 @@ export default function AvatarPage() {
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono">

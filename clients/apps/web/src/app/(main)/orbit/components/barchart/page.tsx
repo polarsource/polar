@@ -1,7 +1,6 @@
 import { BarChart, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 
-
 const props = [
   {
     name: 'data',
@@ -50,7 +49,10 @@ export default function BarChartPage() {
       {/* Behavior notes */}
       <Stack vertical gap={4}>
         <OrbitSectionHeader title="Behavior" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {[
             {
               heading: 'Relative scaling',
@@ -88,7 +90,10 @@ export default function BarChartPage() {
       {/* Props */}
       <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
+        <Stack
+          vertical
+          className="dark:divide-polar-800 divide-y divide-neutral-200"
+        >
           {props.map(({ name, type, default: def, desc }) => (
             <div key={name} className="grid grid-cols-5 gap-4 py-4">
               <Text as="code" variant="mono" className="col-span-1">
@@ -100,9 +105,7 @@ export default function BarChartPage() {
               <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="caption">
-                {desc}
-              </Text>
+              <Text variant="caption">{desc}</Text>
             </div>
           ))}
         </Stack>

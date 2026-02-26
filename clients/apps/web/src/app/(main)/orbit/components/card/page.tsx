@@ -254,9 +254,7 @@ export default function CardPage() {
                 <CardContent>
                   <Stack vertical gap={1}>
                     <Headline as="h3" text="$49 / mo" />
-                    <Text variant="subtle">
-                      Pro plan · renews Mar 1, 2026
-                    </Text>
+                    <Text variant="subtle">Pro plan · renews Mar 1, 2026</Text>
                   </Stack>
                 </CardContent>
                 <CardFooter
@@ -304,11 +302,7 @@ export default function CardPage() {
               <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text
-                as="code"
-                variant="mono"
-                className="col-span-2"
-              >
+              <Text as="code" variant="mono" className="col-span-2">
                 {props}
               </Text>
               <Text variant="caption" className="col-span-2">

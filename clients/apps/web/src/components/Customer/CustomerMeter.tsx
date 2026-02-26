@@ -52,81 +52,87 @@ export const CustomerMeter = ({
           <FormattedUnits value={total} />
         </span>
       </div>
-      {customerMeter.subscription && (
-        <div className="-mt-2 mb-6 flex flex-row flex-wrap items-start gap-x-8 gap-y-2 rounded-2xl px-6">
-          <div className="flex flex-col">
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Subscription
-            </span>
-            <h3 className="text-lg">
-              {customerMeter.subscription.product.name}
-            </h3>
-          </div>
-          <div className="flex flex-col">
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Current billing period
-            </span>
-            <h3 className="text-lg">
-              {customerMeter.subscription.current_period_end ? (
-                <FormattedInterval
-                  startDatetime={
-                    customerMeter.subscription.current_period_start
-                  }
-                  endDatetime={customerMeter.subscription.current_period_end}
-                />
-              ) : (
-                <>
-                  <FormattedDateTime
-                    datetime={customerMeter.subscription.current_period_start}
+      <div className="-mt-2 mb-6 flex flex-row justify-between px-6">
+        {customerMeter.subscription && (
+          <div className="flex flex-row items-start gap-x-8 gap-y-2 rounded-2xl">
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Subscription
+              </span>
+              <h3 className="text-lg">
+                {customerMeter.subscription.product.name}
+              </h3>
+            </div>
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Current billing period
+              </span>
+              <h3 className="text-lg">
+                {customerMeter.subscription.current_period_end ? (
+                  <FormattedInterval
+                    startDatetime={
+                      customerMeter.subscription.current_period_start
+                    }
+                    endDatetime={customerMeter.subscription.current_period_end}
                   />
-                  until upgrade
-                </>
-              )}
-            </h3>
-          </div>
-          <div className="flex flex-col">
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Total
-            </span>
-            <h3 className="text-lg">
-              <FormattedUnits value={customerMeter.consumed_units} />
-            </h3>
-          </div>
-          <div className="flex flex-col">
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Credited
-            </span>
-            <h3 className="text-lg">
-              <FormattedUnits value={customerMeter.credited_units} />
-            </h3>
-          </div>
-          <div className="flex flex-col">
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Balance
-            </span>
-            <h3 className="text-lg">
-              <FormattedUnits value={Math.abs(customerMeter.balance)} />
-              {customerMeter.balance > 0 && (
-                <span className="dark:text-polar-500 ml-1 text-xs text-gray-500">
-                  credits remaining
-                </span>
-              )}
-            </h3>
-          </div>
-          <div className="flex flex-col">
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Overages
-            </span>
-            <h3 className="text-lg">
-              {unitPrice &&
-                formatCurrency('compact')(
-                  overages || 0,
-                  unitPrice.price_currency,
+                ) : (
+                  <>
+                    <FormattedDateTime
+                      datetime={customerMeter.subscription.current_period_start}
+                    />
+                    until upgrade
+                  </>
                 )}
-            </h3>
+              </h3>
+            </div>
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Current overages
+              </span>
+              <h3 className="text-lg">
+                {unitPrice &&
+                  formatCurrency('compact')(
+                    overages || 0,
+                    unitPrice.price_currency,
+                  )}
+              </h3>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        {(customerMeter.subscription || customerMeter.credited_units > 0) && (
+          <div className="ml-auto flex flex-row items-start gap-x-8 gap-y-2 rounded-2xl">
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Total
+              </span>
+              <h3 className="text-lg">
+                <FormattedUnits value={customerMeter.consumed_units} />
+              </h3>
+            </div>
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Credited
+              </span>
+              <h3 className="text-lg">
+                <FormattedUnits value={customerMeter.credited_units} />
+              </h3>
+            </div>
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Balance
+              </span>
+              <h3 className="text-lg">
+                <FormattedUnits value={Math.abs(customerMeter.balance)} />
+                {customerMeter.balance > 0 && (
+                  <span className="dark:text-polar-500 ml-1 text-xs text-gray-500">
+                    credits remaining
+                  </span>
+                )}
+              </h3>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="dark:bg-polar-900 rounded-3xl bg-white p-4">
         <MetricChart
           data={quantities as unknown as ParsedMetricPeriod[]}

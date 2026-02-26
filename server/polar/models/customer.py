@@ -336,6 +336,14 @@ class Customer(MetadataMixin, RecordModel):
     def actual_billing_name(self) -> str | None:
         return self._billing_name
 
+    @property
+    def saved_external_id(self) -> str | None:
+        if self.external_id is not None:
+            return self.external_id
+        # We clear the external ID for soft-deleted customers,
+        # but keep it in metadata
+        return self.user_metadata.get("__external_id")
+
 
 # ID generation algorithm based on https://instagram-engineering.com/sharding-ids-at-instagram-1cf5a71e5a5c
 generate_customer_short_id_function = PGFunction(

@@ -40,7 +40,7 @@ class S3SpanExporter(SpanExporter):
         if not spans:
             return SpanExportResult.SUCCESS
 
-        lines = [span.to_json() for span in spans]
+        lines = [span.to_json(indent=None) for span in spans]
         body = gzip.compress("\n".join(lines).encode())
 
         now = datetime.now(UTC)

@@ -1,6 +1,5 @@
-import { Avatar, Box, Stack, Text } from '@polar-sh/orbit'
+import { Avatar, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
@@ -75,7 +74,7 @@ const props = [
 
 export default function AvatarPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Avatar"
@@ -83,76 +82,76 @@ export default function AvatarPage() {
       />
 
       {/* Sizes */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {sizes.map(({ size, px }) => (
-            <Box key={size} className="grid grid-cols-5 items-center gap-8 py-5">
+            <div key={size} className="grid grid-cols-5 items-center gap-8 py-5">
               <Stack vertical className="gap-0.5">
-                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+                <Text as="code" variant="mono">
                   {size}
                 </Text>
-                <Text variant="subtle" fontSize="xs">{px}</Text>
+                <Text variant="caption">{px}</Text>
               </Stack>
-              <Box className="col-span-4">
+              <div className="col-span-4">
                 <Avatar name="birk" size={size} />
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* States */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="States" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {states.map(({ label, desc, src, name }) => (
-            <Box key={label} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div key={label} className="grid grid-cols-5 items-center gap-8 py-6">
               <Stack vertical className="col-span-2 gap-1">
-                <Text fontWeight="medium" fontSize="sm">{label}</Text>
-                <Text variant="subtle" fontSize="xs">{desc}</Text>
+                <Text variant="label">{label}</Text>
+                <Text variant="caption">{desc}</Text>
               </Stack>
-              <Box className="col-span-3">
+              <div className="col-span-3">
                 <Avatar name={name} src={src} size="lg" />
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Facehash */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Facehash"
           description="Every unique name produces a unique, deterministic face. The same name always renders the same avatar — across sessions, devices, and renders."
         />
-        <Stack flexWrap="wrap" gap={sp['SPACING_2']}>
+        <Stack flexWrap="wrap" gap={2}>
           {facehashExamples.map((name) => (
-            <Stack vertical key={name} alignItems="center" gap={sp['SPACING_1']}>
+            <Stack vertical key={name} alignItems="center" gap={1}>
               <Avatar name={name} size="xl" />
-              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">{name}</Text>
+              <Text as="span" variant="mono">{name}</Text>
             </Stack>
           ))}
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">{desc}</Text>
-            </Box>
+              <Text variant="caption">{desc}</Text>
+            </div>
           ))}
         </Stack>
       </Stack>

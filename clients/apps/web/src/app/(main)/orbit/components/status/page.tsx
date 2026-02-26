@@ -1,6 +1,5 @@
-import { Box, Stack, Status, Text } from '@polar-sh/orbit'
+import { Stack, Status, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 const variants = [
@@ -60,7 +59,7 @@ const props = [
 
 export default function StatusPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Status"
@@ -68,23 +67,23 @@ export default function StatusPage() {
       />
 
       {/* Variants */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
-            <Box
+            <div
               key={variant}
               className="grid grid-cols-5 items-center gap-8 py-6"
             >
               <Stack vertical className="col-span-2 gap-1">
-                <Text fontSize="sm" fontWeight="medium">
+                <Text variant="label">
                   {label}
                 </Text>
-                <Text as="span" variant="subtle" fontSize="xs">
+                <Text as="span" variant="subtle">
                   {desc}
                 </Text>
               </Stack>
-              <Stack alignItems="center" gap={sp['SPACING_1']} className="col-span-3">
+              <Stack alignItems="center" gap={1} className="col-span-3">
                 {variant === 'neutral' && (
                   <>
                     <Status variant={variant} status="Draft" />
@@ -121,67 +120,67 @@ export default function StatusPage() {
                   </>
                 )}
               </Stack>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Sizes */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
             <Stack vertical className="col-span-2 gap-1">
-              <Text fontSize="sm" fontWeight="medium">
+              <Text variant="label">
                 Medium
               </Text>
-              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="span" variant="mono">
                 size=&quot;md&quot;
               </Text>
             </Stack>
-            <Stack alignItems="center" gap={sp['SPACING_1']} className="col-span-3">
+            <Stack alignItems="center" gap={1} className="col-span-3">
               <Status status="Paid" variant="success" size="md" />
               <Status status="Past due" variant="warning" size="md" />
               <Status status="Declined" variant="error" size="md" />
             </Stack>
-          </Box>
-          <Box className="grid grid-cols-5 items-center gap-8 py-6">
+          </div>
+          <div className="grid grid-cols-5 items-center gap-8 py-6">
             <Stack vertical className="col-span-2 gap-1">
-              <Text fontSize="sm" fontWeight="medium">
+              <Text variant="label">
                 Small
               </Text>
-              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="span" variant="mono">
                 size=&quot;sm&quot;
               </Text>
             </Stack>
-            <Stack alignItems="center" gap={sp['SPACING_1']} className="col-span-3">
+            <Stack alignItems="center" gap={1} className="col-span-3">
               <Status status="Paid" variant="success" size="sm" />
               <Status status="Past due" variant="warning" size="sm" />
               <Status status="Declined" variant="error" size="sm" />
             </Stack>
-          </Box>
+          </div>
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">
+              <Text variant="subtle">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

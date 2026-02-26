@@ -1,8 +1,7 @@
 'use client'
 
-import { Box, Button, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Button, Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 const variants = [
@@ -69,7 +68,7 @@ const props = [
 
 export default function ButtonPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Button"
@@ -77,24 +76,24 @@ export default function ButtonPage() {
           <>
             The primary interactive element. Four semantic variants, three
             sizes, and a built-in loading state. Always renders as a native{' '}
-            <Text as="code" fontFamily="mono" fontSize="sm">{'<button>'}</Text>.
+            <Text as="code" variant="mono">{'<button>'}</Text>.
           </>
         }
       />
 
       {/* Variants */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Variants" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
-            <Box key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div key={variant} className="grid grid-cols-5 items-center gap-8 py-6">
               <Stack vertical className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
-                <Text as="span" variant="subtle" fontSize="xs">
+                <Text as="span" variant="caption">
                   {desc}
                 </Text>
               </Stack>
-              <Stack alignItems="center" gap={sp['SPACING_1']} className="col-span-3">
+              <Stack alignItems="center" gap={1} className="col-span-3">
                 <Button variant={variant} size="lg">
                   Action
                 </Button>
@@ -106,13 +105,13 @@ export default function ButtonPage() {
                   Action
                 </Button>
               </Stack>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Sizes */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Sizes" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {(
@@ -127,46 +126,46 @@ export default function ButtonPage() {
               { size: 'sm', label: 'Small', height: 'h-8 / 32px', px: 'px-3' },
             ] as const
           ).map(({ size, label, height, px }) => (
-            <Box key={size} className="grid grid-cols-5 items-center gap-8 py-6">
+            <div key={size} className="grid grid-cols-5 items-center gap-8 py-6">
               <Stack vertical className="col-span-2 gap-1">
                 <Headline as="h6" text={label} />
-                <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+                <Text as="span" variant="mono">
                   {height}
                 </Text>
-                <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+                <Text as="span" variant="mono">
                   {px}
                 </Text>
               </Stack>
-              <Stack alignItems="end" gap={sp['SPACING_1']} className="col-span-3">
+              <Stack alignItems="end" gap={1} className="col-span-3">
                 <Button size={size}>Label</Button>
                 <Button size={size} variant="secondary">
                   Label
                 </Button>
               </Stack>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono" className="col-span-1">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">
+              <Text variant="caption">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

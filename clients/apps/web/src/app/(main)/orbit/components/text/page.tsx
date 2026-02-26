@@ -1,12 +1,11 @@
-import { Box, Stack, Text } from '@polar-sh/orbit'
+import { Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
-const variants: { variant: 'default' | 'subtle' | 'disabled'; label: string; desc: string }[] = [
+const variants: { variant: 'body' | 'subtle' | 'disabled'; label: string; desc: string }[] = [
   {
-    variant: 'default',
-    label: 'Default',
+    variant: 'body',
+    label: 'Body',
     desc: 'Primary text. Use for body copy, headings outside of Headline, and any content that should read at full contrast.',
   },
   {
@@ -21,31 +20,13 @@ const variants: { variant: 'default' | 'subtle' | 'disabled'; label: string; des
   },
 ]
 
-const fontSizes: { size: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl'; px: string }[] = [
-  { size: 'xs', px: '12px' },
-  { size: 'sm', px: '14px' },
-  { size: 'base', px: '16px' },
-  { size: 'lg', px: '18px' },
-  { size: 'xl', px: '20px' },
-  { size: '2xl', px: '24px' },
-  { size: '3xl', px: '30px' },
-]
-
-const fontWeights: { weight: 'light' | 'normal' | 'medium' | 'semibold' | 'bold'; value: string }[] = [
-  { weight: 'light', value: '300' },
-  { weight: 'normal', value: '400' },
-  { weight: 'medium', value: '500' },
-  { weight: 'semibold', value: '600' },
-  { weight: 'bold', value: '700' },
-]
-
-const leadings: { leading: 'none' | 'tight' | 'snug' | 'normal' | 'relaxed' | 'loose'; value: string }[] = [
-  { leading: 'none', value: '1' },
-  { leading: 'tight', value: '1.25' },
-  { leading: 'snug', value: '1.375' },
-  { leading: 'normal', value: '1.5' },
-  { leading: 'relaxed', value: '1.625' },
-  { leading: 'loose', value: '2' },
+const textVariants: { variant: 'body' | 'label' | 'caption' | 'subtle' | 'disabled' | 'mono'; label: string; desc: string }[] = [
+  { variant: 'body', label: 'body', desc: 'Default body text at base size' },
+  { variant: 'label', label: 'label', desc: 'Medium-weight small text for labels' },
+  { variant: 'caption', label: 'caption', desc: 'Extra-small text for captions and metadata' },
+  { variant: 'subtle', label: 'subtle', desc: 'Muted secondary text' },
+  { variant: 'disabled', label: 'disabled', desc: 'Dimmed text for placeholders and disabled states' },
+  { variant: 'mono', label: 'mono', desc: 'Monospace for code, values, and technical labels' },
 ]
 
 const props = [
@@ -57,168 +38,96 @@ const props = [
   },
   {
     name: 'variant',
-    type: "'default' | 'subtle' | 'disabled'",
-    default: "'default'",
-    desc: 'Color intent. Maps to an Orbit color token — never a raw Tailwind color class.',
+    type: "'body' | 'label' | 'caption' | 'subtle' | 'disabled' | 'mono'",
+    default: "'body'",
+    desc: 'Controls color, size, weight, and font family. Maps to an Orbit token — never a raw Tailwind color class.',
   },
   {
-    name: 'fontSize',
-    type: "'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl'",
+    name: 'align',
+    type: "'left' | 'center' | 'right'",
     default: '—',
-    desc: 'Font size token. Omit to inherit from context.',
+    desc: 'Text alignment.',
   },
   {
-    name: 'fontWeight',
-    type: "'light' | 'normal' | 'medium' | 'semibold' | 'bold'",
-    default: '—',
-    desc: 'Font weight token. Omit to inherit from context.',
-  },
-  {
-    name: 'leading',
-    type: "'none' | 'tight' | 'snug' | 'normal' | 'relaxed' | 'loose'",
-    default: '—',
-    desc: 'Line height token. Use relaxed for body copy, tight for labels and captions.',
-  },
-  {
-    name: 'tracking',
-    type: "'tighter' | 'tight' | 'normal' | 'wide' | 'wider' | 'widest'",
-    default: '—',
-    desc: 'Letter spacing token.',
-  },
-  {
-    name: 'transform',
-    type: "'uppercase' | 'lowercase' | 'capitalize'",
-    default: '—',
-    desc: 'Text transform token.',
-  },
-  {
-    name: 'fontFamily',
-    type: "'sans' | 'mono'",
-    default: '—',
-    desc: 'Font family token. Use mono for code, numeric values, and technical labels.',
-  },
-  {
-    name: 'tabular',
+    name: 'wrap',
     type: 'boolean',
     default: '—',
-    desc: 'Enables tabular-nums for numeric alignment in tables and lists.',
+    desc: 'Whether text wraps onto multiple lines.',
   },
   {
     name: 'className',
     type: 'string',
     default: '—',
-    desc: 'Additional classes merged via twMerge. Use sparingly — prefer token props.',
+    desc: 'Additional classes merged via twMerge. Use sparingly — prefer variant.',
   },
 ]
 
 export default function TextPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Text"
-        description="The standard primitive for rendering body copy, labels, captions, and any non-heading text. Color is always resolved from an Orbit token — never a raw class — and all typographic properties are constrained to the defined token set."
+        description="The standard primitive for rendering body copy, labels, captions, and any non-heading text. Style is always resolved from the variant token — body, label, caption, subtle, disabled, or mono."
       />
 
-      {/* Variants */}
-      <Stack vertical gap={sp['SPACING_4']}>
-        <OrbitSectionHeader title="Variants" />
+      {/* Color variants */}
+      <Stack vertical gap={4}>
+        <OrbitSectionHeader title="Color variants" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {variants.map(({ variant, label, desc }) => (
-            <Box key={variant} className="grid grid-cols-5 items-start gap-8 py-6">
+            <div key={variant} className="grid grid-cols-5 items-start gap-8 py-6">
               <Stack vertical className="col-span-2 gap-1">
-                <Text fontWeight="medium" fontSize="sm">{label}</Text>
-                <Text variant="subtle" fontSize="xs">{desc}</Text>
+                <Text variant="label">{label}</Text>
+                <Text variant="caption">{desc}</Text>
               </Stack>
-              <Box className="col-span-3">
-                <Text variant={variant} fontSize="sm" leading="relaxed">
+              <div className="col-span-3">
+                <Text variant={variant}>
                   The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
                 </Text>
-              </Box>
-            </Box>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
-      {/* Font size */}
-      <Stack vertical gap={sp['SPACING_4']}>
-        <OrbitSectionHeader title="Font Size" />
+      {/* All variants */}
+      <Stack vertical gap={4}>
+        <OrbitSectionHeader title="All variants" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          {fontSizes.map(({ size, px }) => (
-            <Box key={size} className="grid grid-cols-5 items-baseline gap-8 py-5">
+          {textVariants.map(({ variant, label, desc }) => (
+            <div key={variant} className="grid grid-cols-5 items-baseline gap-8 py-5">
               <Stack vertical className="gap-0.5">
-                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
-                  {size}
+                <Text as="code" variant="mono">
+                  {label}
                 </Text>
-                <Text variant="subtle" fontSize="xs">{px}</Text>
+                <Text variant="caption">{desc}</Text>
               </Stack>
-              <Box className="col-span-4">
-                <Text fontSize={size}>The quick brown fox</Text>
-              </Box>
-            </Box>
-          ))}
-        </Stack>
-      </Stack>
-
-      {/* Font weight */}
-      <Stack vertical gap={sp['SPACING_4']}>
-        <OrbitSectionHeader title="Font Weight" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          {fontWeights.map(({ weight, value }) => (
-            <Box key={weight} className="grid grid-cols-5 items-baseline gap-8 py-5">
-              <Stack vertical className="gap-0.5">
-                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
-                  {weight}
-                </Text>
-                <Text variant="subtle" fontSize="xs">{value}</Text>
-              </Stack>
-              <Box className="col-span-4">
-                <Text fontWeight={weight} fontSize="lg">The quick brown fox</Text>
-              </Box>
-            </Box>
-          ))}
-        </Stack>
-      </Stack>
-
-      {/* Leading */}
-      <Stack vertical gap={sp['SPACING_4']}>
-        <OrbitSectionHeader title="Leading" />
-        <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          {leadings.map(({ leading, value }) => (
-            <Box key={leading} className="grid grid-cols-5 items-start gap-8 py-5">
-              <Stack vertical className="gap-0.5">
-                <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
-                  {leading}
-                </Text>
-                <Text variant="subtle" fontSize="xs">{value}</Text>
-              </Stack>
-              <Box className="col-span-4">
-                <Text leading={leading} fontSize="sm">
-                  The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.
-                </Text>
-              </Box>
-            </Box>
+              <div className="col-span-4">
+                <Text variant={variant}>The quick brown fox</Text>
+              </div>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">{desc}</Text>
-            </Box>
+              <Text variant="caption">{desc}</Text>
+            </div>
           ))}
         </Stack>
       </Stack>

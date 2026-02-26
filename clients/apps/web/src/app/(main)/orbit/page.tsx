@@ -1,7 +1,6 @@
-import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Headline, Stack, Text } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { OrbitPageHeader } from './OrbitPageHeader'
-import { sp, cl, ra } from './token-compat'
 
 
 const principles = [
@@ -102,7 +101,7 @@ const sections = [
 
 export default function OrbitIntroductionPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="v0.1 — Polar Software Inc."
         title="Orbit"
@@ -110,17 +109,17 @@ export default function OrbitIntroductionPage() {
       />
 
       {/* What is Orbit */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <Headline as="h5" text="What is Orbit" />
-        <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical gap={sp['SPACING_2']}>
-          <Text variant="subtle" fontSize="sm" leading="relaxed">
+        <div className="dark:border-polar-800 border-t border-neutral-200" />
+        <Stack vertical gap={2}>
+          <Text variant="subtle">
             Orbit is the shared design language across every Polar product. It
             captures decisions that would otherwise be made inconsistently across
             teams — how things move, how type is set, what surfaces look like in
             the dark — and promotes them to named, reusable primitives.
           </Text>
-          <Text variant="subtle" fontSize="sm" leading="relaxed">
+          <Text variant="subtle">
             Rather than a component library alone, Orbit is a system of
             constraints. Design tokens encode the raw values. Guidelines encode
             the rules for applying them. Components encode the patterns those
@@ -131,40 +130,38 @@ export default function OrbitIntroductionPage() {
       </Stack>
 
       {/* Design principles */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <Headline as="h5" text="Design Principles" />
-        <Box className="dark:border-polar-800 border-t border-neutral-200" />
+        <div className="dark:border-polar-800 border-t border-neutral-200" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {principles.map(({ title, description }) => (
-            <Box key={title} className="grid grid-cols-5 gap-8 py-5">
-              <Box className="col-span-2">
+            <div key={title} className="grid grid-cols-5 gap-8 py-5">
+              <div className="col-span-2">
                 <Headline as="h6" text={title} />
-              </Box>
-              <Text variant="subtle" fontSize="sm" leading="relaxed" className="col-span-3">
+              </div>
+              <Text variant="subtle" className="col-span-3">
                 {description}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>
 
       {/* What's inside */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <Headline as="h5" text="What's inside" />
-        <Box className="dark:border-polar-800 border-t border-neutral-200" />
-        <Stack vertical gap={sp['SPACING_5']}>
+        <div className="dark:border-polar-800 border-t border-neutral-200" />
+        <Stack vertical gap={5}>
           {sections.map(({ label, links }) => (
-            <Stack vertical key={label} gap={sp['SPACING_1']}>
+            <Stack vertical key={label} gap={1}>
               <Text
                 as="span"
-                variant="subtle"
-                fontSize="xs"
-                tracking="widest"
-                transform="uppercase"
+                variant="caption"
+                className="uppercase tracking-widest"
               >
                 {label}
               </Text>
-              <Box className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
+              <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">
                 {links.map(({ label: linkLabel, href, desc }) => (
                   <Link
                     key={href}
@@ -172,12 +169,12 @@ export default function OrbitIntroductionPage() {
                     className="dark:bg-polar-950 dark:hover:bg-polar-900 flex flex-col gap-1 bg-white p-5 transition-colors hover:bg-neutral-50"
                   >
                     <Headline as="h6" text={linkLabel} />
-                    <Text as="span" variant="subtle" fontSize="xs">
+                    <Text as="span" variant="caption">
                       {desc}
                     </Text>
                   </Link>
                 ))}
-              </Box>
+              </div>
             </Stack>
           ))}
         </Stack>

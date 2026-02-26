@@ -1,6 +1,5 @@
-import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 const levels = [
@@ -47,7 +46,7 @@ const props = [
 
 export default function HeadlinePage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="Headline"
@@ -55,84 +54,84 @@ export default function HeadlinePage() {
       />
 
       {/* Type scale demo */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Type Scale" />
         {levels.map(({ tag, size, weight }) => (
-          <Box key={tag} className="grid grid-cols-5 items-baseline gap-8">
+          <div key={tag} className="grid grid-cols-5 items-baseline gap-8">
             <Stack vertical className="gap-0.5">
-              <Text as="span" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="span" variant="mono">
                 {tag}
               </Text>
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 {size}
               </Text>
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 {weight}
               </Text>
             </Stack>
-            <Box className="col-span-4">
+            <div className="col-span-4">
               <Headline as={tag} text="The quick brown fox" />
-            </Box>
-          </Box>
+            </div>
+          </div>
         ))}
       </Stack>
 
       {/* Animated */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Animated"
           description="Set animate to trigger a curtain-reveal on viewport entry. Each line clips upward independently; passing an array staggers them at 0.2s ÷ n."
         />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
-          <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
+          <div className="grid grid-cols-5 items-baseline gap-8 py-6">
             <Stack vertical className="gap-0.5">
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 Single line
               </Text>
             </Stack>
-            <Box className="col-span-4">
+            <div className="col-span-4">
               <Headline animate as="h2" text="The quick brown fox" />
-            </Box>
-          </Box>
-          <Box className="grid grid-cols-5 items-baseline gap-8 py-6">
+            </div>
+          </div>
+          <div className="grid grid-cols-5 items-baseline gap-8 py-6">
             <Stack vertical className="gap-0.5">
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 Multiline stagger
               </Text>
-              <Text as="span" variant="subtle" fontSize="xs">
+              <Text as="span" variant="caption">
                 Stagger: 0.2s ÷ n
               </Text>
             </Stack>
-            <Box className="col-span-4">
+            <div className="col-span-4">
               <Headline
                 animate
                 as="h2"
                 text={['The quick', 'brown fox', 'jumps over']}
               />
-            </Box>
-          </Box>
+            </div>
+          </div>
         </Stack>
       </Stack>
 
       {/* Props */}
-      <Stack vertical gap={sp['SPACING_3']}>
+      <Stack vertical gap={3}>
         <OrbitSectionHeader title="Props" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {props.map(({ name, type, default: def, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm" className="col-span-1">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono" className="col-span-1">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 {def}
               </Text>
-              <Text variant="subtle" fontSize="xs">
+              <Text variant="caption">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

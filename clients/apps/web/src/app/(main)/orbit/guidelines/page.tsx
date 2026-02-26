@@ -1,6 +1,5 @@
-import { Box, Headline, Stack, Text } from '@polar-sh/orbit'
+import { Headline, Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader } from '../OrbitPageHeader'
-import { sp, cl, ra } from '../token-compat'
 
 
 const sections = [
@@ -118,28 +117,28 @@ const sections = [
 
 export default function GuidelinesPage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         title="Guidelines"
         description="Principles and rules for how Orbit components behave, and how to use them effectively in product contexts."
       />
 
       {sections.map(({ title, subsections }) => (
-        <Stack vertical key={title} gap={sp['SPACING_5']}>
-          <Stack vertical gap={sp['SPACING_1']}>
+        <Stack vertical key={title} gap={5}>
+          <Stack vertical gap={1}>
             <Headline as="h3" text={title} />
-            <Box className="dark:border-polar-800 border-t border-neutral-200" />
+            <div className="dark:border-polar-800 border-t border-neutral-200" />
           </Stack>
           <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
             {subsections.map(({ heading, content }) => (
-              <Box key={heading} className="grid grid-cols-5 gap-8 py-6">
-                <Box className="col-span-2">
+              <div key={heading} className="grid grid-cols-5 gap-8 py-6">
+                <div className="col-span-2">
                   <Headline as="h6" text={heading} />
-                </Box>
-                <Text variant="subtle" fontSize="sm" leading="relaxed" className="col-span-3">
+                </div>
+                <Text variant="subtle" className="col-span-3">
                   {content}
                 </Text>
-              </Box>
+              </div>
             ))}
           </Stack>
         </Stack>

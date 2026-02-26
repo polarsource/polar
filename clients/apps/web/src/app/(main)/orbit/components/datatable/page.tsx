@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  Box,
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
@@ -9,7 +8,6 @@ import {
   Text } from '@polar-sh/orbit'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
-import { sp, cl, ra } from '../../token-compat'
 
 
 // ─── Demo data — flat transactions ───────────────────────────────────────────
@@ -80,7 +78,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="ID" />
     ),
     cell: ({ row }) => (
-      <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+      <Text as="code" variant="mono">
         {String(row.getValue('id'))}
       </Text>
     ),
@@ -105,7 +103,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
       <DataTableColumnHeader column={column} title="Amount" />
     ),
     cell: ({ row }) => (
-      <Text as="span" fontWeight="medium" tabular>{String(row.getValue('amount'))}</Text>
+      <Text as="span" variant="label">{String(row.getValue('amount'))}</Text>
     ),
     size: 120,
   },
@@ -119,9 +117,7 @@ const columns: DataTableColumnDef<Transaction>[] = [
       return (
         <Text
           as="span"
-          fontSize="xs"
-          fontWeight="medium"
-          transform="capitalize"
+          variant="caption"
           className={statusColors[status]}
         >
           {status}
@@ -182,17 +178,17 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
         style={{ paddingLeft: `${row.depth * 20}px` }}
       >
         {row.getCanExpand() ? (
-          <Box as="span" color={cl['TEXT_SUBTLE']}>
+          <span className="text-gray-500 dark:text-polar-400">
             {row.getIsExpanded() ? (
               <ChevronDown className="h-3.5 w-3.5" />
             ) : (
               <ChevronRight className="h-3.5 w-3.5" />
             )}
-          </Box>
+          </span>
         ) : (
           <span className="w-3.5" />
         )}
-        <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs">
+        <Text as="code" variant="mono">
           {String(row.getValue('id') ?? '—')}
         </Text>
       </div>
@@ -211,7 +207,7 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
       <DataTableColumnHeader column={column} title="Total" />
     ),
     cell: ({ row }) => (
-      <Text as="span" fontWeight="medium" tabular>{String(row.getValue('total'))}</Text>
+      <Text as="span" variant="label">{String(row.getValue('total'))}</Text>
     ),
     size: 120,
   },
@@ -221,40 +217,40 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
 
 export default function DataTablePage() {
   return (
-    <Stack vertical gap={sp['SPACING_10']}>
+    <Stack vertical gap={10}>
       <OrbitPageHeader
         label="Component"
         title="DataTable"
         description={
           <>
             A data grid built on{' '}
-            <Text as="code" fontFamily="mono" fontSize="sm">@tanstack/react-table</Text>.
+            <Text as="code" variant="mono">@tanstack/react-table</Text>.
             Supports sortable columns, row selection, click handlers,
             pagination, expandable sub-rows, and loading states. Column
             definitions follow the standard TanStack{' '}
-            <Text as="code" fontFamily="mono" fontSize="sm">ColumnDef</Text> API.
+            <Text as="code" variant="mono">ColumnDef</Text> API.
           </>
         }
       />
 
       {/* Basic */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Basic" />
         <DataTable columns={columns} data={data} isLoading={false} />
       </Stack>
 
       {/* Expandable rows */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader
           title="Expandable rows"
           description={
             <>
-              Pass <Text as="code" fontFamily="mono" fontSize="xs">getSubRows</Text> to
+              Pass <Text as="code" variant="mono">getSubRows</Text> to
               enable tree expansion. Toggle state lives in the row — use{' '}
-              <Text as="code" fontFamily="mono" fontSize="xs">
+              <Text as="code" variant="mono">
                 row.getToggleExpandedHandler()
               </Text>{' '}
-              and <Text as="code" fontFamily="mono" fontSize="xs">row.depth</Text> to
+              and <Text as="code" variant="mono">row.depth</Text> to
               indent.
             </>
           }
@@ -271,19 +267,19 @@ export default function DataTablePage() {
       </Stack>
 
       {/* Loading */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Loading state" />
         <DataTable columns={columns} data={[]} isLoading={true} />
       </Stack>
 
       {/* Empty */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="Empty state" />
         <DataTable columns={columns} data={[]} isLoading={false} />
       </Stack>
 
       {/* API */}
-      <Stack vertical gap={sp['SPACING_4']}>
+      <Stack vertical gap={4}>
         <OrbitSectionHeader title="API" />
         <Stack vertical className="dark:divide-polar-800 divide-y divide-neutral-200">
           {[
@@ -334,17 +330,17 @@ export default function DataTablePage() {
               desc: 'Enables row selection via checkbox or click.',
             },
           ].map(({ name, type, desc }) => (
-            <Box key={name} className="grid grid-cols-5 gap-4 py-4">
-              <Text as="code" fontFamily="mono" fontSize="sm">
+            <div key={name} className="grid grid-cols-5 gap-4 py-4">
+              <Text as="code" variant="mono">
                 {name}
               </Text>
-              <Text as="code" variant="subtle" fontFamily="mono" fontSize="xs" className="col-span-2">
+              <Text as="code" variant="mono" className="col-span-2">
                 {type}
               </Text>
-              <Text variant="subtle" fontSize="xs" className="col-span-2">
+              <Text variant="caption" className="col-span-2">
                 {desc}
               </Text>
-            </Box>
+            </div>
           ))}
         </Stack>
       </Stack>

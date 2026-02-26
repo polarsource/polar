@@ -58,8 +58,7 @@ export function OrbitNav() {
             <div key={section} className="flex flex-col gap-0.5">
               <Text
                 as="span"
-                variant="subtle"
-                fontSize="xs"
+                variant="caption"
                 className="pb-2.5"
               >
                 {section}

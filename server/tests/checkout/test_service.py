@@ -26,6 +26,7 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
+    CheckoutCustomerDeleted,
     NotConfirmedCheckout,
     NotOpenCheckout,
     TrialAlreadyRedeemed,
@@ -3870,6 +3871,35 @@ class TestConfirm:
                 checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
                     {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
+                ),
+            )
+
+    async def test_deleted_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+        checkout_one_time_fixed.customer = customer
+        await save_fixture(checkout_one_time_fixed)
+
+        with pytest.raises(CheckoutCustomerDeleted):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": customer.email,
+                        "customer_billing_address": {"country": "FR"},
+                    }
                 ),
             )
 

@@ -217,6 +217,13 @@ class CheckoutLocked(CheckoutError):
         super().__init__(message, 409)
 
 
+class CheckoutCustomerDeleted(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = "The customer associated with this checkout has been deleted."
+        super().__init__(message, 409)
+
+
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
 
 
@@ -2514,6 +2521,9 @@ class CheckoutService:
 
         created = False
         customer = checkout.customer
+
+        if customer is not None and customer.is_deleted:
+            raise CheckoutCustomerDeleted(checkout)
 
         if customer is None:
             assert checkout.customer_email is not None

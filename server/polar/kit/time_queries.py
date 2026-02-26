@@ -62,4 +62,5 @@ MIN_INTERVAL_DAYS: dict[TimeInterval, int] = {
 
 
 def is_under_limits(start_date: date, end_date: date, interval: TimeInterval) -> bool:
-    return end_date.toordinal() - start_date.toordinal() <= MAX_INTERVAL_DAYS[interval]
+    days = end_date.toordinal() - start_date.toordinal()
+    return days >= MIN_INTERVAL_DAYS[interval] and days <= MAX_INTERVAL_DAYS[interval]

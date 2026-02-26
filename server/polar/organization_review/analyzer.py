@@ -163,6 +163,16 @@ This is a THRESHOLD review triggered when a payment threshold is hit. \
 Perform a comprehensive analysis across ALL five dimensions. \
 If website content is not available, flag this as a red flag.
 
+Setup & integration signals to check:
+- **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
+the API when creating checkouts programmatically) should point to domains matching the \
+organization's website. Mismatched or suspicious domains are yellow flags.
+- **Checkout links without benefits**: Checkout links selling products with zero benefits \
+mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
+or API keys configured.
+- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
+Webhook domains should match the organization's website or known services.
+
 Return only APPROVE or DENY.
 """
 
@@ -200,6 +210,9 @@ the Polar organization name. Significant mismatches are yellow flags.
   - No payment history is neutral (new org), not negative.
 - **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
 organization after denial is grounds for automatic denial.
+- **Setup & integration signals**: Check checkout success/return URL domains against the \
+org website. Checkout links without benefits + no API/webhook integration is a red flag. \
+API keys and webhooks are positive signals of real integration.
 
 Return only APPROVE or DENY.
 """

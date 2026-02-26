@@ -12,12 +12,14 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
+import stripe as stripe_lib
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
+from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
 from polar.account.service import account as account_service
@@ -30,16 +32,20 @@ from polar.backoffice.organizations.analytics import (
     PaymentAnalyticsService,
 )
 from polar.backoffice.organizations.forms import (
+    AddPaymentMethodDomainForm,
     DeleteStripeAccountForm,
     DisconnectStripeAccountForm,
+    OrganizationOrdersImportForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
     UpdateOrganizationSocialsForm,
 )
+from polar.backoffice.organizations.orders_import import orders_import_sse
 from polar.enums import AccountType
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
 from polar.models.customer import Customer
@@ -2868,6 +2874,134 @@ async def revoke_credit(
                 text("Revoke Credit")
 
     return None
+
+
+@router.api_route(
+    "/{organization_id}/import-orders",
+    name="organizations:import_orders",
+    methods=["GET", "POST"],
+    dependencies=[Depends(get_admin)],
+)
+async def import_orders(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_deleted=True)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = OrganizationOrdersImportForm.model_validate_form(data)
+            return EventSourceResponse(
+                orders_import_sse(
+                    session,
+                    organization,
+                    form.file,
+                    invoice_number_prefix=form.invoice_number_prefix,
+                )
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Import Orders", open=True):
+        with OrganizationOrdersImportForm.render(
+            {"invoice_number_prefix": "IMPORTED-"},
+            action=str(request.url),
+            method="POST",
+            classes="flex flex-col",
+            validation_error=validation_error,
+            _="on submit halt the event then call formPostSSE(me, '#import-progress')",
+        ):
+            with tag.div(id="import-progress"):
+                pass
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Import")
+
+
+@router.api_route(
+    "/{organization_id}/add-payment-method-domain",
+    name="organizations:add_payment_method_domain",
+    methods=["GET", "POST"],
+    dependencies=[Depends(get_admin)],
+)
+async def add_payment_method_domain(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = AddPaymentMethodDomainForm.model_validate_form(data)
+
+            await stripe_service.create_payment_method_domain(form.domain_name)
+
+            await add_toast(
+                request,
+                f"Successfully added {form.domain_name} to allowlist",
+                variant="success",
+            )
+            return
+
+        except ValidationError as e:
+            validation_error = e
+        except stripe_lib.InvalidRequestError as e:
+            logger.error(
+                "Invalid request to Stripe API",
+                organization_id=organization_id,
+                domain=data.get("domain_name"),
+                error=str(e),
+                error_code=e.code if hasattr(e, "code") else None,
+            )
+            error_message = (
+                "Unable to add domain to allowlist. "
+                "Please verify the domain and try again."
+            )
+            await add_toast(request, error_message, variant="error")
+
+    with modal("Add Domain to Allowlist", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary mb-4"):
+            text(
+                "Add a custom domain to the Apple Pay / Google Pay allowlist. "
+                "This allows these payment methods to appear in embeds on the specified domain."
+            )
+
+        with AddPaymentMethodDomainForm.render(
+            {},
+            hx_post=str(request.url),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Add Domain")
 
 
 __all__ = ["router"]

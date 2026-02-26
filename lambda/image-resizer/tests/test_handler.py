@@ -57,12 +57,12 @@ def _upload(client: S3Client, key: str, body: bytes) -> None:
 
 class TestSnapToSize:
     def test_rounds_up_to_nearest(self) -> None:
-        assert snap_to_size(60) == 100
-        assert snap_to_size(150) == 200
-        assert snap_to_size(50) == 50
+        assert snap_to_size(60) == 64
+        assert snap_to_size(150) == 192
+        assert snap_to_size(48) == 48
 
     def test_caps_at_max(self) -> None:
-        assert snap_to_size(9999) == 2560
+        assert snap_to_size(9999) == 1920
 
 
 class TestIsImage:
@@ -120,12 +120,12 @@ class TestHandler:
         assert result["uri"] == "/images/photo.jpg"
 
     def test_cache_hit(self, aws: S3Client) -> None:
-        _upload(aws, "resized/100x0/images/photo.jpg", b"cached-data")
+        _upload(aws, "resized/128x0/images/photo.jpg", b"cached-data")
 
         event = _make_event(querystring="width=100")
         result = handler(event, None)
 
-        assert result["uri"] == "/resized/100x0/images/photo.jpg"
+        assert result["uri"] == "/resized/128x0/images/photo.jpg"
         assert result["querystring"] == ""
 
     def test_cache_miss_resize_and_store(self, aws: S3Client) -> None:
@@ -134,14 +134,14 @@ class TestHandler:
         event = _make_event(querystring="width=200")
         result = handler(event, None)
 
-        assert result["uri"] == "/resized/200x0/images/photo.jpg"
+        assert result["uri"] == "/resized/256x0/images/photo.jpg"
         assert result["querystring"] == ""
 
-        obj = aws.get_object(Bucket=BUCKET, Key="resized/200x0/images/photo.jpg")
+        obj = aws.get_object(Bucket=BUCKET, Key="resized/256x0/images/photo.jpg")
         assert obj["ContentType"] == "image/jpeg"
 
         img = Image.open(io.BytesIO(obj["Body"].read()))
-        assert img.size == (200, 200)
+        assert img.size == (256, 256)
 
     def test_original_too_small_serves_original(self, aws: S3Client) -> None:
         _upload(aws, "images/photo.jpg", _make_image(50, 50))
@@ -188,9 +188,9 @@ class TestHandler:
         event = _make_event(uri="/images/my%20photo.jpg", querystring="width=200")
         result = handler(event, None)
 
-        assert result["uri"] == "/resized/200x0/images/my%20photo.jpg"
+        assert result["uri"] == "/resized/256x0/images/my%20photo.jpg"
         assert result["querystring"] == ""
 
-        obj = aws.get_object(Bucket=BUCKET, Key="resized/200x0/images/my photo.jpg")
+        obj = aws.get_object(Bucket=BUCKET, Key="resized/256x0/images/my photo.jpg")
         img = Image.open(io.BytesIO(obj["Body"].read()))
-        assert img.size == (200, 200)
+        assert img.size == (256, 256)

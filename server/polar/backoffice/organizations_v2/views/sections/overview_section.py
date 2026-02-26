@@ -11,7 +11,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 
-from ....components import button, card, metric_card
+from ....components import card, metric_card
 from ....components._metric_card import Variant
 
 
@@ -85,12 +85,6 @@ class OverviewSection:
     @contextlib.contextmanager
     def organization_review_card(self, request: Request) -> Generator[None]:
         """Merged agent report + org.review fallback card."""
-        run_agent_url = str(
-            request.url_for(
-                "organizations:run_review_agent",
-                organization_id=self.org.id,
-            )
-        )
 
         with card(bordered=True):
             # --- No agent report: show fallback from org.review ---
@@ -99,26 +93,13 @@ class OverviewSection:
                 if self.org.review:
                     review = self.org.review
 
-                    # Header with timestamp and run agent button
+                    # Header with timestamp
                     with tag.div(classes="flex items-center justify-between mb-4"):
                         with tag.h2(classes="text-lg font-bold"):
                             text("Organization Review")
-                        with tag.div(classes="flex items-center gap-3"):
-                            if review.validated_at:
-                                with tag.span(classes="text-xs text-base-content/60"):
-                                    text(
-                                        review.validated_at.strftime(
-                                            "%Y-%m-%d %H:%M UTC"
-                                        )
-                                    )
-                            with button(
-                                variant="primary",
-                                size="sm",
-                                outline=True,
-                                hx_post=run_agent_url,
-                                hx_confirm="Run organization review agent?",
-                            ):
-                                text("Run Agent")
+                        if review.validated_at:
+                            with tag.span(classes="text-xs text-base-content/60"):
+                                text(review.validated_at.strftime("%Y-%m-%d %H:%M UTC"))
 
                     # Verdict badge + risk score
                     with tag.div(classes="flex items-center gap-4 mb-4"):
@@ -127,20 +108,17 @@ class OverviewSection:
                             if hasattr(review.verdict, "value")
                             else str(review.verdict or "N/A")
                         )
-                        verdict_classes = {
-                            "PASS": "badge-success",
-                            "FAIL": "badge-error",
-                            "UNCERTAIN": "badge-warning",
-                        }
-                        badge_class = verdict_classes.get(verdict_str, "badge-ghost")
-                        with tag.div(classes=f"badge {badge_class} badge-lg"):
+                        fallback_badge = (
+                            "badge-error" if verdict_str == "FAIL" else "badge-neutral"
+                        )
+                        with tag.div(classes=f"badge {fallback_badge} badge-lg"):
                             text(verdict_str)
 
                         if review.risk_score is not None:
                             with tag.div(classes="flex items-center gap-1"):
-                                with tag.span(classes="text-sm font-medium"):
+                                with tag.span(classes="text-sm text-base-content/60"):
                                     text("Risk:")
-                                with tag.span(classes="text-sm font-bold"):
+                                with tag.span(classes="text-sm font-semibold"):
                                     text(f"{float(review.risk_score):.0f}/100")
 
                     # Assessment reason (as summary paragraph)
@@ -151,7 +129,9 @@ class OverviewSection:
                     # Violated sections (inline comma-separated)
                     if review.violated_sections:
                         with tag.div(classes="mb-4"):
-                            with tag.span(classes="text-sm font-medium text-error"):
+                            with tag.span(
+                                classes="text-sm font-medium text-base-content/70"
+                            ):
                                 text("Violated sections: ")
                             with tag.span(classes="text-sm"):
                                 text(", ".join(review.violated_sections))
@@ -200,14 +180,6 @@ class OverviewSection:
                     with tag.div(classes="flex items-center justify-between mb-4"):
                         with tag.h2(classes="text-lg font-bold"):
                             text("Organization Review")
-                        with button(
-                            variant="primary",
-                            size="sm",
-                            outline=True,
-                            hx_post=run_agent_url,
-                            hx_confirm="Run organization review agent?",
-                        ):
-                            text("Run Agent")
                     with tag.p(classes="text-sm text-base-content/60 mb-4"):
                         text("No agent review yet")
 
@@ -219,56 +191,38 @@ class OverviewSection:
             usage = self.agent_report.get("usage", {})
             review_type = self.agent_report.get("review_type")
 
-            # Header with timestamp and re-run button
+            # Header with timestamp
             with tag.div(classes="flex items-center justify-between mb-4"):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.h2(classes="text-lg font-bold"):
                         text("Organization Review")
                     self._render_review_context_badge(review_type)
-                with tag.div(classes="flex items-center gap-3"):
-                    if self.agent_reviewed_at:
-                        with tag.span(classes="text-xs text-base-content/60"):
-                            text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
-                    with button(
-                        variant="secondary",
-                        size="sm",
-                        outline=True,
-                        hx_post=run_agent_url,
-                        hx_confirm="Re-run organization review agent?",
-                    ):
-                        text("Re-run Agent")
+                if self.agent_reviewed_at:
+                    with tag.span(classes="text-xs text-base-content/60"):
+                        text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
 
             # Verdict badge + risk score
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = report.get("verdict", "")
-                verdict_classes = {
-                    "APPROVE": "badge-success",
-                    "DENY": "badge-error",
-                    "NEEDS_HUMAN_REVIEW": "badge-warning",
-                }
                 if verdict == "APPROVE" and has_missing:
-                    badge_class = "badge-warning"
+                    badge_class = "badge-neutral"
                     display_verdict = "APPROVE (checklist incomplete)"
-                else:
-                    badge_class = verdict_classes.get(verdict, "badge-ghost")
+                elif verdict == "DENY":
+                    badge_class = "badge-error"
                     display_verdict = verdict
-                with tag.div(classes=f"badge {badge_class} badge-lg"):
+                else:
+                    badge_class = "badge-neutral"
+                    display_verdict = verdict
+                with tag.div(classes=f"badge {badge_class} badge-lg font-semibold"):
                     text(display_verdict)
 
                 risk_score = report.get("overall_risk_score")
                 if risk_score is not None:
-                    score_color = (
-                        "text-success"
-                        if risk_score < 30
-                        else "text-warning"
-                        if risk_score < 70
-                        else "text-error"
-                    )
                     with tag.div(classes="flex items-center gap-1"):
-                        with tag.span(classes="text-sm font-medium"):
+                        with tag.span(classes="text-sm text-base-content/60"):
                             text("AI Risk:")
-                        with tag.span(classes=f"text-sm font-bold {score_color}"):
+                        with tag.span(classes="text-sm font-semibold"):
                             text(f"{risk_score:.0f}/100")
 
             # Summary
@@ -281,7 +235,7 @@ class OverviewSection:
             violated = report.get("violated_sections", [])
             if violated:
                 with tag.div(classes="mb-4"):
-                    with tag.span(classes="text-sm font-medium text-error"):
+                    with tag.span(classes="text-sm font-medium text-base-content/70"):
                         text("Violated sections: ")
                     with tag.span(classes="text-sm"):
                         text(", ".join(violated))
@@ -290,7 +244,7 @@ class OverviewSection:
             recommended = report.get("recommended_action", "")
             if recommended:
                 with tag.div(
-                    classes="p-3 bg-info/10 border border-info/30 rounded text-sm mb-4"
+                    classes="p-3 bg-base-200 border border-base-300 rounded text-sm mb-4"
                 ):
                     with tag.span(classes="font-medium"):
                         text("Recommended action: ")
@@ -698,20 +652,12 @@ class OverviewSection:
         findings = dim.get("findings", [])
         recommendation = dim.get("recommendation", "")
 
-        score_color = (
-            "badge-success"
-            if score < 30
-            else "badge-warning"
-            if score < 70
-            else "badge-error"
-        )
-
         with tag.div(classes="border border-base-200 rounded p-3"):
             with tag.div(classes="flex items-center justify-between mb-1"):
                 with tag.span(classes="text-sm font-medium"):
                     text(name)
                 with tag.div(classes="flex items-center gap-2"):
-                    with tag.div(classes=f"badge badge-sm {score_color}"):
+                    with tag.div(classes="badge badge-sm badge-ghost"):
                         text(f"{score:.0f}")
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(f"{confidence:.0%} confidence")

@@ -1,6 +1,15 @@
 import { Column, Img, Link, Row, Section, Text } from '@react-email/components'
 import type { schemas } from '../types'
 
+const S3_HOST = 'polar-public-files.s3.amazonaws.com'
+const CDN_HOST = 'uploads.polar.sh'
+
+const getResizedAvatarUrl = (url: string): string => {
+  if (!url.includes(S3_HOST)) return url
+  const cdnUrl = url.replace(S3_HOST, CDN_HOST)
+  return `${cdnUrl}${cdnUrl.includes('?') ? '&' : '?'}width=64`
+}
+
 interface HeaderProps {
   organization: schemas['Organization']
 }
@@ -26,7 +35,7 @@ const Header = ({ organization }: HeaderProps) => (
           <Column className="w-10">
             <Img
               alt={organization.name}
-              src={organization.avatar_url}
+              src={getResizedAvatarUrl(organization.avatar_url)}
               className="size-8 overflow-hidden rounded-full object-cover"
             />
           </Column>

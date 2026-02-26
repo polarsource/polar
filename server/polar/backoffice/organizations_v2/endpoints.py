@@ -8,6 +8,7 @@ This module provides a modern, three-column layout with:
 - Keyboard shortcuts and accessibility improvements
 """
 
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
@@ -193,19 +194,22 @@ async def list_organizations(
     # Apply filters
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
-    else:
-        # By default, exclude denied organizations
+    elif not q:
+        # By default, exclude denied organizations (but not when searching)
         stmt = stmt.where(Organization.status != OrganizationStatus.DENIED)
 
     if q:
-        search_term = f"%{q}%"
-        stmt = stmt.where(
-            or_(
-                Organization.name.ilike(search_term),
-                Organization.slug.ilike(search_term),
-                Organization.email.ilike(search_term),
+        try:
+            stmt = stmt.where(Organization.id == uuid.UUID(q))
+        except ValueError:
+            search_term = f"%{q}%"
+            stmt = stmt.where(
+                or_(
+                    Organization.name.ilike(search_term),
+                    Organization.slug.ilike(search_term),
+                    Organization.email.ilike(search_term),
+                )
             )
-        )
 
     # Country filter
     if country:

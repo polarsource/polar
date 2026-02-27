@@ -53,6 +53,7 @@ from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
@@ -60,6 +61,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
+from polar.organization_review.schemas import ReviewAgentReport
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
@@ -423,8 +425,9 @@ async def get_organization_detail(
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     ai_verdict = ""
-    if agent_review and agent_review.report:
-        ai_verdict = agent_review.report.get("report", {}).get("verdict", "")
+    if agent_review:
+        parsed = agent_review.parsed_report
+        ai_verdict = parsed.report.verdict.value
 
     # Fetch admin user email for Plain search
     admin_user = await repository.get_admin_user(session, organization)
@@ -440,7 +443,7 @@ async def get_organization_detail(
     payment_stats = None
     orders_count = 0
     unrefunded_orders_count = 0
-    agent_report = None
+    parsed_agent_report = None
     agent_reviewed_at = None
     if section == "overview":
         setup_analytics = OrganizationSetupAnalyticsService(session)
@@ -577,7 +580,7 @@ async def get_organization_detail(
             session, organization_id
         )
 
-        agent_report = agent_review.report if agent_review else None
+        parsed_agent_report = agent_review.parsed_report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
     # Render based on section
@@ -596,7 +599,7 @@ async def get_organization_detail(
                     organization,
                     orders_count=orders_count,
                     unrefunded_orders_count=unrefunded_orders_count,
-                    agent_report=agent_report,
+                    agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
                 )
                 with overview.render(
@@ -657,12 +660,23 @@ async def get_organization_detail(
                     text(f"Unknown section: {section}")
 
 
-def _render_ai_review_summary(report: dict[str, Any]) -> None:
+def _get_review_report(
+    agent_review: OrganizationAgentReview | None,
+) -> ReviewAgentReport | None:
+    """Extract the ReviewAgentReport from an agent review.
+
+    Isolated in a helper so the explicit return type prevents Any-widening
+    in callers that also use untyped dict access (e.g. ``request.form()``).
+    """
+    if agent_review is None:
+        return None
+    return agent_review.parsed_report.report
+
+
+def _render_ai_review_summary(report: ReviewAgentReport) -> None:
     """Render a compact AI review summary for use in approve/deny dialogs."""
-    verdict = report.get("verdict", "")
-    risk_score = report.get("overall_risk_score")
-    summary = report.get("summary", "")
-    violated = report.get("violated_sections", [])
+    verdict = report.verdict.value
+    risk_score = report.overall_risk_score
 
     verdict_classes = {
         "APPROVE": "badge-success",
@@ -677,27 +691,26 @@ def _render_ai_review_summary(report: dict[str, Any]) -> None:
                 text("AI Verdict:")
             with tag.div(classes=f"badge {badge_class} badge-sm"):
                 text(verdict)
-            if risk_score is not None:
-                score_color = (
-                    "text-success"
-                    if risk_score < 30
-                    else "text-warning"
-                    if risk_score < 70
-                    else "text-error"
-                )
-                with tag.span(classes=f"text-sm font-bold {score_color}"):
-                    text(f"Risk: {risk_score:.0f}/100")
+            score_color = (
+                "text-success"
+                if risk_score < 30
+                else "text-warning"
+                if risk_score < 70
+                else "text-error"
+            )
+            with tag.span(classes=f"text-sm font-bold {score_color}"):
+                text(f"Risk: {risk_score:.0f}/100")
 
-        if summary:
+        if report.summary:
             with tag.p(classes="text-sm"):
-                text(summary)
+                text(report.summary)
 
-        if violated:
+        if report.violated_sections:
             with tag.div(classes="text-sm"):
                 with tag.span(classes="font-medium text-error"):
                     text("Violated sections: ")
                 with tag.span():
-                    text(", ".join(violated))
+                    text(", ".join(report.violated_sections))
 
 
 @router.api_route(
@@ -722,12 +735,8 @@ async def approve_dialog(
     # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
-    report = (
-        agent_review.report.get("report", {})
-        if agent_review and agent_review.report
-        else {}
-    )
-    verdict = report.get("verdict", "")
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
     is_override = verdict == "DENY"
 
     # Suggested threshold: double current or $250 min
@@ -806,8 +815,8 @@ async def approve_dialog(
                 with tag.div(classes="alert alert-error"):
                     text(error_message)
 
-            if report:
-                _render_ai_review_summary(report)
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.div(classes="form-control"):
@@ -899,12 +908,8 @@ async def deny_dialog(
     # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
-    report = (
-        agent_review.report.get("report", {})
-        if agent_review and agent_review.report
-        else {}
-    )
-    verdict = report.get("verdict", "")
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
     is_override = verdict == "APPROVE"
 
     error_message: str | None = None
@@ -967,8 +972,8 @@ async def deny_dialog(
                 with tag.div(classes="alert alert-error"):
                     text(error_message)
 
-            if report:
-                _render_ai_review_summary(report)
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-2"):
@@ -1025,12 +1030,8 @@ async def approve_denied_dialog(
     # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
-    report = (
-        agent_review.report.get("report", {})
-        if agent_review and agent_review.report
-        else {}
-    )
-    verdict = report.get("verdict", "")
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
     is_override = verdict == "DENY"
 
     error_message: str | None = None
@@ -1108,8 +1109,8 @@ async def approve_denied_dialog(
             with tag.p(classes="font-semibold"):
                 text("Approve this previously denied organization")
 
-            if report:
-                _render_ai_review_summary(report)
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-3"):
@@ -1177,11 +1178,7 @@ async def deny_appeal_dialog(
     # Fetch AI review for context
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
-    report = (
-        agent_review.report.get("report", {})
-        if agent_review and agent_review.report
-        else {}
-    )
+    review_report = _get_review_report(agent_review)
 
     error_message: str | None = None
 
@@ -1223,8 +1220,8 @@ async def deny_appeal_dialog(
                 with tag.div(classes="alert alert-error"):
                     text(error_message)
 
-            if report:
-                _render_ai_review_summary(report)
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             if appeal_reason:
                 with tag.div(classes="bg-base-200 p-4 rounded-lg"):
@@ -1293,12 +1290,8 @@ async def unblock_approve_dialog(
     # Fetch AI review for context (needed for both POST validation and GET rendering)
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
-    report = (
-        agent_review.report.get("report", {})
-        if agent_review and agent_review.report
-        else {}
-    )
-    verdict = report.get("verdict", "")
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
     is_override = verdict == "DENY"
 
     error_message: str | None = None
@@ -1379,8 +1372,8 @@ async def unblock_approve_dialog(
             with tag.p(classes="font-semibold"):
                 text("Unblock and approve this organization")
 
-            if report:
-                _render_ai_review_summary(report)
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-3"):

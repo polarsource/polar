@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select, update
@@ -27,6 +26,7 @@ from polar.models.refund import Refund, RefundStatus
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.organization_review.report import AnyAgentReport
 
 
 class OrganizationReviewRepository(
@@ -39,20 +39,18 @@ class OrganizationReviewRepository(
     async def save_agent_review(
         self,
         organization_id: UUID,
-        review_type: str,
-        report: dict[str, Any],
-        model_used: str,
+        report: AnyAgentReport,
         reviewed_at: datetime,
     ) -> OrganizationAgentReview:
         """Create a new agent review record for the organization.
 
-        The review_type is stored as a top-level key in the report JSONB column.
+        Accepts a fully typed ``AnyAgentReport`` — the ``review_type``,
+        ``model_used`` and ``version`` are all embedded in the report schema.
         """
-        report_with_type = {**report, "review_type": review_type}
         agent_review = OrganizationAgentReview(
             organization_id=organization_id,
-            report=report_with_type,
-            model_used=model_used,
+            report=report.model_dump(mode="json"),
+            model_used=report.model_used,
             reviewed_at=reviewed_at,
         )
         self.session.add(agent_review)
@@ -256,12 +254,12 @@ class OrganizationReviewRepository(
 
         if agent_review is not None:
             agent_review_id = agent_review.id
-            report = agent_review.report.get("report", {})
-            verdict = report.get("verdict")
-            risk_score = report.get("overall_risk_score")
+            parsed = agent_review.parsed_report
+            verdict = parsed.report.verdict.value
+            risk_score = parsed.report.overall_risk_score
 
             if review_context is None:
-                derived_context = agent_review.report.get("review_type", "manual")
+                derived_context = parsed.review_type
 
         await self.deactivate_current_decisions(organization_id)
         return await self.save_review_decision(

@@ -1381,9 +1381,9 @@ async def get(
             # Fetch the AI verdict to determine if this is an override
             agent_review = await review_repo.get_latest_agent_review(id)
             ai_verdict: str | None = None
-            if agent_review and agent_review.report:
-                report = agent_review.report.get("report", {})
-                ai_verdict = report.get("verdict")
+            if agent_review:
+                parsed = agent_review.parsed_report
+                ai_verdict = parsed.report.verdict.value
 
             reason = getattr(account_status, "reason", None)
             reason = reason.strip() if reason else None

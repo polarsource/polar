@@ -46,38 +46,59 @@ const CheckoutSeatSelector = ({
     return null
   }
 
-  // Get seat limits from the tiers
-  // The minimum comes from the first tier's min_seats, maximum from the last tier's max_seats
+  // Get seat limits from the tiers, narrowed by checkout-level constraints
   const seatTiers = productPrice.seatTiers
   const tiers = seatTiers?.tiers ?? []
   const sortedTiers = [...tiers].sort((a, b) => a.minSeats - b.minSeats)
-  const minimumSeats = sortedTiers[0]?.minSeats ?? 1
-  const maximumSeats = sortedTiers[sortedTiers.length - 1]?.maxSeats ?? null
+  const tierMinimum = sortedTiers[0]?.minSeats ?? 1
+  const tierMaximum = sortedTiers[sortedTiers.length - 1]?.maxSeats ?? null
+  // TODO: Remove casts once @polar-sh/sdk is republished with minSeats/maxSeats
+  const checkoutAny = checkout as unknown as Record<string, unknown>
+  const minimumSeats =
+    (checkoutAny.minSeats as number | undefined) ?? tierMinimum
+  const maximumSeats =
+    (checkoutAny.maxSeats as number | undefined) ?? tierMaximum
   const hasMaximumLimit = maximumSeats !== null
+  const isFixedSeats = hasMaximumLimit && minimumSeats === maximumSeats
 
-  // Display seats clamped to at least the minimum
-  const displaySeats = Math.max(checkout.seats || minimumSeats, minimumSeats)
+  // Display seats clamped to the effective range
+  const displaySeats = hasMaximumLimit
+    ? Math.min(
+        Math.max(checkout.seats || minimumSeats, minimumSeats),
+        maximumSeats,
+      )
+    : Math.max(checkout.seats || minimumSeats, minimumSeats)
   // Track whether the checkout needs to be corrected
   const needsSeatCorrection =
     checkout.seats !== null &&
     checkout.seats !== undefined &&
-    checkout.seats < minimumSeats
+    (checkout.seats < minimumSeats ||
+      (hasMaximumLimit && checkout.seats > maximumSeats))
 
   const netAmount = checkout.netAmount || 0
   const currency = productPrice.priceCurrency
   const pricePerSeat = checkout.pricePerSeat || 0
 
-  // Auto-correct seat count if it's below the minimum (only attempt once)
+  // Auto-correct seat count if it's outside the allowed range (only attempt once)
   useEffect(() => {
     if (needsSeatCorrection && !isUpdating && !autoCorrectAttempted) {
       setAutoCorrectAttempted(true)
-      update({ seats: minimumSeats } as CheckoutUpdatePublic).catch((err) => {
+      const correctedSeats = hasMaximumLimit
+        ? Math.min(
+            Math.max(checkout.seats || minimumSeats, minimumSeats),
+            maximumSeats,
+          )
+        : Math.max(checkout.seats || minimumSeats, minimumSeats)
+      update({ seats: correctedSeats } as CheckoutUpdatePublic).catch((err) => {
         setError(getErrorMessage(err))
       })
     }
   }, [
     needsSeatCorrection,
     minimumSeats,
+    maximumSeats,
+    hasMaximumLimit,
+    checkout.seats,
     isUpdating,
     update,
     autoCorrectAttempted,
@@ -136,6 +157,9 @@ const CheckoutSeatSelector = ({
 
   // Build seat limit description
   const getSeatLimitText = () => {
+    if (isFixedSeats) {
+      return null
+    }
     if (minimumSeats > 1 && hasMaximumLimit) {
       return `${minimumSeats} - ${maximumSeats} seats`
     } else if (minimumSeats > 1) {
@@ -149,6 +173,28 @@ const CheckoutSeatSelector = ({
   const seatLimitText = getSeatLimitText()
 
   const isFlat = flattenExperiment === 'treatment'
+
+  if (compact && isFixedSeats) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium dark:text-white">Seats</span>
+            <span className="dark:text-polar-500 text-xs text-gray-500">
+              {formatCurrency('compact', locale)(pricePerSeat, currency)} per
+              seat
+            </span>
+          </div>
+          <span className="text-sm font-medium tabular-nums dark:text-white">
+            {displaySeats}
+          </span>
+        </div>
+        {error && (
+          <p className="text-destructive-foreground text-sm">{error}</p>
+        )}
+      </div>
+    )
+  }
 
   if (compact) {
     return (
@@ -259,6 +305,36 @@ const CheckoutSeatSelector = ({
         {error && (
           <p className="text-destructive-foreground text-sm">{error}</p>
         )}
+      </div>
+    )
+  }
+
+  if (isFixedSeats) {
+    return (
+      <div className="flex flex-col gap-6">
+        {/* Total Amount Display */}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-light text-gray-900 dark:text-white">
+            {formatCurrency('compact', locale)(netAmount, currency)}
+          </h1>
+          <p className="dark:text-polar-400 text-sm text-gray-500">
+            {formatCurrency('compact', locale)(pricePerSeat, currency)} per seat
+          </p>
+        </div>
+
+        {/* Fixed Seat Count Display */}
+        <div className="flex flex-col gap-2">
+          <label className="text-lg">Number of seats</label>
+          <span className="text-2xl font-light text-gray-900 tabular-nums dark:text-white">
+            {displaySeats}
+          </span>
+        </div>
+
+        {error && (
+          <p className="text-destructive-foreground text-sm">{error}</p>
+        )}
+
+        <MeteredPricesDisplay checkout={checkout} locale={locale} />
       </div>
     )
   }

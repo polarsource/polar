@@ -212,7 +212,19 @@ class CheckoutCreateBase(
         default=None,
         ge=1,
         le=1000,
-        description="Number of seats for seat-based pricing. Required for seat-based products.",
+        description="Predefined number of seats (works with seat-based pricing only)",
+    )
+    min_seats: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=("Minimum number of seats (works with seat-based pricing only)"),
+    )
+    max_seats: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=("Maximum number of seats (works with seat-based pricing only)"),
     )
     allow_trial: bool = Field(default=True, description=_allow_trial_description)
     customer_id: UUID4 | None = Field(
@@ -327,7 +339,19 @@ class CheckoutCreatePublic(Schema):
         default=None,
         ge=1,
         le=1000,
-        description="Number of seats for seat-based pricing.",
+        description="Predefined number of seats (works with seat-based pricing only)",
+    )
+    min_seats: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=("Minimum number of seats (works with seat-based pricing only)"),
+    )
+    max_seats: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=("Maximum number of seats (works with seat-based pricing only)"),
     )
     customer_email: CustomerEmail | None = None
     subscription_id: UUID4 | None = Field(
@@ -489,7 +513,16 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     )
     amount: int = Field(description="Amount in cents, before discounts and taxes.")
     seats: int | None = Field(
-        default=None, description="Number of seats for seat-based pricing."
+        default=None,
+        description="Predefined number of seats (works with seat-based pricing only)",
+    )
+    min_seats: int | None = Field(
+        default=None,
+        description=("Minimum number of seats (works with seat-based pricing only)"),
+    )
+    max_seats: int | None = Field(
+        default=None,
+        description=("Maximum number of seats (works with seat-based pricing only)"),
     )
     price_per_seat: int | None = Field(
         default=None,

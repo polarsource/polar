@@ -406,12 +406,29 @@ class CheckoutService:
                 ) from e
 
         # Validate seats for seat-based pricing
+        min_seats = getattr(checkout_create, "min_seats", None)
+        max_seats = getattr(checkout_create, "max_seats", None)
+        min_seats, max_seats = self._validate_checkout_seat_constraints(
+            price, min_seats, max_seats
+        )
+        if hasattr(checkout_create, "min_seats"):
+            checkout_create.min_seats = min_seats
+        if hasattr(checkout_create, "max_seats"):
+            checkout_create.max_seats = max_seats
+
         if is_seat_price(price):
             if checkout_create.seats is None:
-                # Default to minimum seats if not specified
-                minimum_seats = price.get_minimum_seats()
-                checkout_create.seats = minimum_seats
-            self._validate_seat_limits(price, checkout_create.seats)
+                # Default to min_seats if set, else tier minimum
+                if min_seats is not None:
+                    checkout_create.seats = min_seats
+                else:
+                    checkout_create.seats = price.get_minimum_seats()
+            self._validate_seat_limits(
+                price,
+                checkout_create.seats,
+                checkout_min_seats=min_seats,
+                checkout_max_seats=max_seats,
+            )
         elif checkout_create.seats is not None:
             raise PolarRequestValidationError(
                 [
@@ -687,12 +704,24 @@ class CheckoutService:
         currency = currency_prices.currency
 
         # Validate seats for seat-based pricing
+        min_seats, max_seats = self._validate_checkout_seat_constraints(
+            price, checkout_create.min_seats, checkout_create.max_seats
+        )
+        checkout_create.min_seats = min_seats
+        checkout_create.max_seats = max_seats
+
         if is_seat_price(price):
             if checkout_create.seats is None:
-                # Default to minimum seats if not specified
-                minimum_seats = price.get_minimum_seats()
-                checkout_create.seats = minimum_seats
-            self._validate_seat_limits(price, checkout_create.seats)
+                if min_seats is not None:
+                    checkout_create.seats = min_seats
+                else:
+                    checkout_create.seats = price.get_minimum_seats()
+            self._validate_seat_limits(
+                price,
+                checkout_create.seats,
+                checkout_min_seats=min_seats,
+                checkout_max_seats=max_seats,
+            )
         elif checkout_create.seats is not None:
             raise PolarRequestValidationError(
                 [
@@ -722,6 +751,8 @@ class CheckoutService:
             amount=amount,
             currency=currency,
             seats=checkout_create.seats,
+            min_seats=checkout_create.min_seats,
+            max_seats=checkout_create.max_seats,
             allow_trial=True,
             organization=product.organization,
             checkout_products=[
@@ -2039,7 +2070,12 @@ class CheckoutService:
             and checkout_update.seats is not None
             and is_seat_price(checkout.product_price)
         ):
-            self._validate_seat_limits(checkout.product_price, checkout_update.seats)
+            self._validate_seat_limits(
+                checkout.product_price,
+                checkout_update.seats,
+                checkout_min_seats=checkout.min_seats,
+                checkout_max_seats=checkout.max_seats,
+            )
             checkout.seats = checkout_update.seats
             checkout.amount = checkout.product_price.calculate_amount(
                 checkout_update.seats
@@ -2441,6 +2477,9 @@ class CheckoutService:
         price: ProductPrice,
         seats: int,
         loc: tuple[str, ...] = ("body", "seats"),
+        *,
+        checkout_min_seats: int | None = None,
+        checkout_max_seats: int | None = None,
     ) -> None:
         """Validate that a seat count is within the min/max bounds for a seat-based price."""
         if not is_seat_price(price):
@@ -2448,6 +2487,15 @@ class CheckoutService:
 
         minimum_seats = price.get_minimum_seats()
         maximum_seats = price.get_maximum_seats()
+
+        # Narrow the effective range with checkout-level constraints
+        if checkout_min_seats is not None:
+            minimum_seats = max(minimum_seats, checkout_min_seats)
+        if checkout_max_seats is not None:
+            if maximum_seats is not None:
+                maximum_seats = min(maximum_seats, checkout_max_seats)
+            else:
+                maximum_seats = checkout_max_seats
 
         if seats < minimum_seats:
             raise PolarRequestValidationError(
@@ -2474,6 +2522,72 @@ class CheckoutService:
                     }
                 ]
             )
+
+    def _validate_checkout_seat_constraints(
+        self,
+        price: ProductPrice,
+        min_seats: int | None,
+        max_seats: int | None,
+    ) -> tuple[int | None, int | None]:
+        """Validate and clamp min_seats/max_seats for the given seat-based price.
+
+        Returns the (possibly adjusted) min_seats and max_seats values.
+        Values below tier minimum are raised to the tier minimum;
+        values above tier maximum are lowered to the tier maximum.
+        """
+        if min_seats is None and max_seats is None:
+            return None, None
+
+        if not is_seat_price(price):
+            fields: list[dict[str, typing.Any]] = []
+            if min_seats is not None:
+                fields.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "min_seats"),
+                        "msg": "min_seats can only be set for seat-based pricing.",
+                        "input": min_seats,
+                    }
+                )
+            if max_seats is not None:
+                fields.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "max_seats"),
+                        "msg": "max_seats can only be set for seat-based pricing.",
+                        "input": max_seats,
+                    }
+                )
+            raise PolarRequestValidationError(fields)
+
+        tier_minimum = price.get_minimum_seats()
+        tier_maximum = price.get_maximum_seats()
+
+        # Clamp min_seats to tier bounds
+        if min_seats is not None:
+            min_seats = max(min_seats, tier_minimum)
+            if tier_maximum is not None:
+                min_seats = min(min_seats, tier_maximum)
+
+        # Clamp max_seats to tier bounds
+        if max_seats is not None:
+            max_seats = max(max_seats, tier_minimum)
+            if tier_maximum is not None:
+                max_seats = min(max_seats, tier_maximum)
+
+        if min_seats is not None and max_seats is not None and min_seats > max_seats:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "min_seats"),
+                        "msg": "min_seats must be less than or equal to max_seats.",
+                        "input": min_seats,
+                    }
+                ]
+            )
+
+        return min_seats, max_seats
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
         fields: set[tuple[str, ...]] = {("customer_email",)}

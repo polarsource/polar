@@ -122,6 +122,7 @@ export function MetricsHeader({
           organization={organization}
           value={productId ?? []}
           onChange={onProductSelect}
+          includeArchived={true}
           className="w-auto"
         />
       </div>

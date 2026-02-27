@@ -426,8 +426,14 @@ async def get_organization_detail(
     if agent_review and agent_review.report:
         ai_verdict = agent_review.report.get("report", {}).get("verdict", "")
 
+    # Fetch admin user email for Plain search
+    admin_user = await repository.get_admin_user(session, organization)
+    admin_email = admin_user.email if admin_user else None
+
     # Create views
-    detail_view = OrganizationDetailView(organization, ai_verdict=ai_verdict)
+    detail_view = OrganizationDetailView(
+        organization, ai_verdict=ai_verdict, admin_email=admin_email
+    )
 
     # Fetch analytics data for overview section
     setup_data = None

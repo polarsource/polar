@@ -70,4 +70,7 @@ async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
         if product is None:
             raise ProductDoesNotExist(product_id)
 
+        if not product.has_seat_based_price:
+            return
+
         await seat_service.update_product_benefits_grants(session, product)

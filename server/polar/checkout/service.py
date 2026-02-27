@@ -1817,25 +1817,6 @@ class CheckoutService:
                 ]
             )
 
-        if (
-            product.recurring_interval is None
-            and not isinstance(
-                price,
-                LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
-            )
-            and discount.duration == DiscountDuration.repeating
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", loc_field),
-                        "msg": "Discount is not applicable to this product.",
-                        "input": discount_id,
-                    }
-                ]
-            )
-
         return discount
 
     async def _get_validated_subscription(

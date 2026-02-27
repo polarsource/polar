@@ -2787,7 +2787,7 @@ class TestUpdate:
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
 
-    async def test_invalid_recurring_discount_on_one_time_product(
+    async def test_repeating_discount_on_one_time_product(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2804,12 +2804,12 @@ class TestUpdate:
             duration_in_months=12,
             organization=organization,
         )
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session,
-                checkout_one_time_fixed,
-                CheckoutUpdatePublic(discount_code=recurring_discount.code),
-            )
+        checkout, _ = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(discount_code=recurring_discount.code),
+        )
+        assert checkout.discount_id == recurring_discount.id
 
     async def test_valid_product_change(
         self,

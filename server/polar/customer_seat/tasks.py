@@ -1,14 +1,28 @@
 import uuid
 
 import structlog
+from sqlalchemy.orm import selectinload
 
+from polar.exceptions import PolarTaskError
 from polar.logging import Logger
+from polar.models.product import Product
+from polar.product.repository import ProductRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import CustomerSeatRepository
 from .service import seat_service
 
 log: Logger = structlog.get_logger()
+
+
+class SeatTaskError(PolarTaskError): ...
+
+
+class ProductDoesNotExist(SeatTaskError):
+    def __init__(self, product_id: uuid.UUID) -> None:
+        self.product_id = product_id
+        message = f"The product with id {product_id} does not exist."
+        super().__init__(message)
 
 
 @actor(actor_name="customer_seat.revoke_seats_for_member", priority=TaskPriority.MEDIUM)
@@ -40,3 +54,23 @@ async def revoke_seats_for_member(member_id: uuid.UUID) -> None:
             member_id=member_id,
             seats_revoked=len(active_seats),
         )
+
+
+@actor(
+    actor_name="customer_seat.update_product_benefits_grants",
+    priority=TaskPriority.MEDIUM,
+)
+async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
+    """Re-sync benefit grants for all claimed seats of a product."""
+    async with AsyncSessionMaker() as session:
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            product_id, options=(selectinload(Product.prices),)
+        )
+        if product is None:
+            raise ProductDoesNotExist(product_id)
+
+        if not product.has_seat_based_price:
+            return
+
+        await seat_service.update_product_benefits_grants(session, product)

@@ -35,6 +35,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_customer_seat,
     create_member,
+    create_order_with_seats,
     create_organization,
     create_product,
     create_subscription_with_seats,
@@ -2507,3 +2508,247 @@ class TestAssignSeatToDeletedMember:
         # or a new member should have been created successfully
         assert new_seat.member_id is not None
         assert new_seat.email == seat_member_email
+
+
+@pytest.mark.asyncio
+class TestUpdateProductBenefitsGrants:
+    async def test_enqueues_grants_for_claimed_subscription_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When product benefits are updated, claimed seat members
+        on subscriptions should get benefit grant jobs enqueued."""
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="billing@test.com"
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # Create claimed seats
+        seat1 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        seat2 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        # Create a pending seat (should NOT be included)
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+        )
+        # Create a revoked seat (should NOT be included)
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.revoked,
+            revoked_at=utc_now(),
+        )
+
+        session.expunge_all()
+
+        with patch("polar.customer_seat.service.enqueue_job") as enqueue_job_mock:
+            await seat_service.update_product_benefits_grants(session, product)
+
+            assert enqueue_job_mock.call_count == 2
+
+            # Verify the calls include correct seat data
+            calls = enqueue_job_mock.call_args_list
+            enqueued_sub_ids = {c.kwargs["subscription_id"] for c in calls}
+            assert enqueued_sub_ids == {subscription.id}
+
+            for c in calls:
+                assert c.args[0] == "benefit.enqueue_benefits_grants"
+                assert c.kwargs["task"] == "grant"
+                assert c.kwargs["customer_id"] == customer.id
+                assert c.kwargs["product_id"] == product.id
+
+    async def test_enqueues_grants_for_claimed_order_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When product benefits are updated, claimed seat members
+        on orders should get benefit grant jobs enqueued."""
+        from polar.models.order import OrderStatus
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="billing@test.com"
+        )
+        order = await create_order_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=3,
+            status=OrderStatus.paid,
+        )
+
+        # Create a claimed seat
+        seat = await create_customer_seat(
+            save_fixture,
+            order=order,
+            customer=customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+
+        with patch("polar.customer_seat.service.enqueue_job") as enqueue_job_mock:
+            await seat_service.update_product_benefits_grants(session, product)
+
+            assert enqueue_job_mock.call_count == 1
+            c = enqueue_job_mock.call_args_list[0]
+            assert c.args[0] == "benefit.enqueue_benefits_grants"
+            assert c.kwargs["task"] == "grant"
+            assert c.kwargs["customer_id"] == customer.id
+            assert c.kwargs["product_id"] == product.id
+            assert c.kwargs["order_id"] == order.id
+
+    async def test_no_claimed_seats_does_nothing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When there are no claimed seats, no jobs should be enqueued."""
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="billing@test.com"
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # Only pending and revoked seats
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.revoked,
+            revoked_at=utc_now(),
+        )
+
+        session.expunge_all()
+
+        with patch("polar.customer_seat.service.enqueue_job") as enqueue_job_mock:
+            await seat_service.update_product_benefits_grants(session, product)
+
+            enqueue_job_mock.assert_not_called()
+
+    async def test_includes_member_id_for_member_model_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Benefit grants for seats with member_id should include the member_id."""
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "seat_based_pricing_enabled": True,
+            "member_model_enabled": True,
+        }
+        await save_fixture(organization)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        billing_customer = await create_customer(
+            save_fixture, organization=organization, email="billing@test.com"
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=billing_customer,
+            seats=5,
+        )
+
+        member = await create_member(
+            save_fixture,
+            organization=organization,
+            customer=billing_customer,
+            email="member@test.com",
+        )
+
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            customer=billing_customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+            member_id=member.id,
+            email="member@test.com",
+        )
+
+        session.expunge_all()
+
+        with patch("polar.customer_seat.service.enqueue_job") as enqueue_job_mock:
+            await seat_service.update_product_benefits_grants(session, product)
+
+            assert enqueue_job_mock.call_count == 1
+            c = enqueue_job_mock.call_args_list[0]
+            assert c.kwargs["member_id"] == member.id
+            assert c.kwargs["subscription_id"] == subscription.id

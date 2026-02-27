@@ -487,6 +487,7 @@ class ProductService:
                 "subscription.subscription.update_product_benefits_grants", product.id
             )
             enqueue_job("order.update_product_benefits_grants", product.id)
+            enqueue_job("customer_seat.update_product_benefits_grants", product.id)
 
         await self._after_product_updated(session, product)
 

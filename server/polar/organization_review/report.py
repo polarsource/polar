@@ -23,7 +23,7 @@ V2: Adds ``overall_risk_level`` as an explicit LLM-output field on
     migrated on read via ``_migrate_v1_to_v2``.
 """
 
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -146,7 +146,7 @@ def _migrate_v1_to_v2(v1: AgentReportV1) -> AgentReportV2:
 
 LATEST_VERSION: Literal[2] = 2
 
-AnyAgentReport = Union[AgentReportV1, AgentReportV2]
+AnyAgentReport = AgentReportV1 | AgentReportV2
 LatestAgentReport = AgentReportV2
 
 

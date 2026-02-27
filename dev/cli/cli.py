@@ -4,6 +4,7 @@
 # dependencies = [
 #     "typer>=0.12.0",
 #     "rich>=13.0.0",
+#     "python-dotenv>=1.0.0",
 # ]
 # ///
 """

@@ -224,7 +224,6 @@ class TestRecordHumanDecision:
         assert decision.actor_type == "human"
         assert decision.decision == "APPROVE"
         assert decision.review_context == "submission"
-        assert decision.agreement == "AGREE"
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 12.0
         assert decision.reason == "Looks good"
@@ -257,7 +256,6 @@ class TestRecordHumanDecision:
         await session.flush()
 
         assert decision.review_context == "threshold"
-        assert decision.agreement == "OVERRIDE_TO_APPROVE"
         assert decision.verdict == "DENY"
         assert decision.risk_score == 78.0
 
@@ -309,7 +307,6 @@ class TestRecordHumanDecision:
         assert decision.review_context == "manual"
         assert decision.agent_review_id is None
         assert decision.verdict is None
-        assert decision.agreement is None
         assert decision.risk_score is None
         assert decision.is_current is True
 
@@ -395,7 +392,6 @@ class TestSaveReviewDecision:
             agent_review_id=agent_review.id,
             reviewer_id=user.id,
             verdict="DENY",
-            agreement="OVERRIDE_TO_APPROVE",
             risk_score=85.0,
             reason="Verified legitimate business",
         )
@@ -407,34 +403,8 @@ class TestSaveReviewDecision:
         assert decision.reviewer_id == user.id
         assert decision.agent_review_id == agent_review.id
         assert decision.verdict == "DENY"
-        assert decision.agreement == "OVERRIDE_TO_APPROVE"
         assert decision.reason == "Verified legitimate business"
         assert decision.is_current is True
-
-    async def test_dual_write_old_columns(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        """Verify old columns are populated for backward compat."""
-        repo = OrganizationReviewRepository.from_session(session)
-        decision = await repo.save_review_decision(
-            organization_id=organization.id,
-            actor_type="human",
-            decision="DENY",
-            review_context="manual",
-            reviewer_id=user.id,
-            verdict="APPROVE",
-            reason="Suspicious activity",
-        )
-        await session.flush()
-
-        # Old columns should be populated via dual-write
-        assert decision.ai_verdict == "APPROVE"  # maps from verdict
-        assert decision.human_verdict == "DENY"  # maps from decision
-        assert decision.override_reason == "Suspicious activity"  # maps from reason
-        assert decision.reviewed_at is not None
 
     async def test_is_current_defaults_to_true(
         self,

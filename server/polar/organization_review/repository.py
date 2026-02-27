@@ -200,19 +200,12 @@ class OrganizationReviewRepository(
         agent_review_id: UUID | None = None,
         reviewer_id: UUID | None = None,
         verdict: str | None = None,
-        agreement: str | None = None,
         risk_score: float | None = None,
         reason: str | None = None,
         is_current: bool = True,
     ) -> OrganizationReviewFeedback:
-        """Record a review decision (agent or human).
-
-        Writes both new columns and old columns (dual-write) for backward
-        compatibility during the expand-modify-contract migration.
-        """
-        now = utc_now()
+        """Record a review decision (agent or human)."""
         feedback = OrganizationReviewFeedback(
-            # New columns
             organization_id=organization_id,
             actor_type=actor_type,
             decision=decision,
@@ -221,14 +214,8 @@ class OrganizationReviewRepository(
             risk_score=risk_score,
             reason=reason,
             is_current=is_current,
-            # Old columns — dual-write for backward compat
             agent_review_id=agent_review_id,
             reviewer_id=reviewer_id,
-            ai_verdict=verdict,
-            human_verdict=decision if actor_type == "human" else None,
-            agreement=agreement,
-            override_reason=reason,
-            reviewed_at=now,
         )
         self.session.add(feedback)
         return feedback
@@ -246,8 +233,8 @@ class OrganizationReviewRepository(
 
         Looks up the latest agent review for the organization, derives the
         review_context from the agent review's review_type (falling back to
-        "manual"), computes agreement between the AI verdict and human decision,
-        deactivates any previous current decision, and saves the new one as current.
+        "manual"), deactivates any previous current decision, and saves the
+        new one as current.
 
         If review_context is explicitly provided it takes precedence (e.g. "appeal").
         """
@@ -256,7 +243,6 @@ class OrganizationReviewRepository(
         verdict: str | None = None
         risk_score: float | None = None
         agent_review_id: UUID | None = None
-        agreement: str | None = None
         derived_context = review_context or "manual"
 
         if agent_review is not None:
@@ -268,14 +254,6 @@ class OrganizationReviewRepository(
             if review_context is None:
                 derived_context = agent_review.report.get("review_type", "manual")
 
-            if verdict is not None:
-                if decision == "APPROVE":
-                    agreement = (
-                        "AGREE" if verdict == "APPROVE" else "OVERRIDE_TO_APPROVE"
-                    )
-                else:
-                    agreement = "AGREE" if verdict == "DENY" else "OVERRIDE_TO_DENY"
-
         await self.deactivate_current_decisions(organization_id)
         return await self.save_review_decision(
             organization_id=organization_id,
@@ -285,7 +263,6 @@ class OrganizationReviewRepository(
             agent_review_id=agent_review_id,
             reviewer_id=reviewer_id,
             verdict=verdict,
-            agreement=agreement,
             risk_score=risk_score,
             reason=reason,
         )

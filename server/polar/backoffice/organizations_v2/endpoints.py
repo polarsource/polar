@@ -1146,6 +1146,126 @@ async def approve_denied_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/deny-appeal-dialog",
+    name="organizations:deny_appeal_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def deny_appeal_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Deny an organization's appeal dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(
+        organization_id,
+        include_blocked=True,
+        options=(joinedload(Organization.review),),
+    )
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Fetch AI review for context
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    report = (
+        agent_review.report.get("report", {})
+        if agent_review and agent_review.report
+        else {}
+    )
+
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+
+        # Record review decision
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="DENY",
+            review_context="appeal",
+            reason=reason,
+        )
+
+        # Deny the appeal
+        await organization_service.deny_appeal(session, organization)
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    # Show appeal reason if available
+    appeal_reason = None
+    if organization.review and organization.review.appeal_reason:
+        appeal_reason = organization.review.appeal_reason
+
+    with modal("Deny Appeal", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-error"):
+                text("⚠️ This will reject the organization's appeal")
+
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            if report:
+                _render_ai_review_summary(report)
+
+            if appeal_reason:
+                with tag.div(classes="bg-base-200 p-4 rounded-lg"):
+                    with tag.p(classes="font-semibold text-sm mb-2"):
+                        text("Appeal Reason")
+                    with tag.p(classes="text-sm whitespace-pre-wrap"):
+                        text(appeal_reason)
+
+            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
+                with tag.p():
+                    text(
+                        "Denying the appeal will keep the organization in DENIED status. "
+                        "They will not be able to receive payments."
+                    )
+
+            with tag.form(
+                hx_post=str(
+                    request.url_for(
+                        "organizations:deny_appeal_dialog",
+                        organization_id=organization_id,
+                    )
+                ),
+                classes="flex flex-col gap-4",
+            ):
+                with tag.div(classes="form-control"):
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text"):
+                            text("Reason for denying appeal (optional)")
+                    with tag.textarea(
+                        name="reason",
+                        classes="textarea textarea-bordered w-full",
+                        placeholder="Why are you denying this appeal?",
+                        rows="3",
+                    ):
+                        pass
+
+                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
+                    with button(variant="error", type="submit"):
+                        text("Deny Appeal")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/unblock-approve-dialog",
     name="organizations:unblock_approve_dialog",
     methods=["GET", "POST"],

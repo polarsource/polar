@@ -255,6 +255,27 @@ class OrganizationDetailView:
                             ):
                                 text("Approve")
 
+                        # Show "Deny Appeal" when there's a pending appeal
+                        if (
+                            self.org.review
+                            and self.org.review.appeal_submitted_at
+                            and self.org.review.appeal_decision is None
+                        ):
+                            with tag.div(classes="w-full"):
+                                with button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:deny_appeal_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Deny Appeal")
+
                     elif self.org.status == OrganizationStatus.ACTIVE:
                         # Active organizations can be denied or set under review
                         with tag.div(classes="w-full"):

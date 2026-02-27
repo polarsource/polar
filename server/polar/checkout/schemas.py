@@ -228,7 +228,6 @@ class CheckoutCreateBase(
         description=("Maximum number of seats (works with seat-based pricing only)"),
     )
 
-
     @model_validator(mode="after")
     def _validate_seat_constraints(self) -> "CheckoutCreateBase":
         if self.min_seats is not None and self.max_seats is not None:

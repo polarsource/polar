@@ -2096,14 +2096,10 @@ class TestCreate:
         price_id = product_seat_based.prices[0].id
 
         with pytest.raises(ValidationError):
-            CheckoutPriceCreate(
-                product_price_id=price_id, seats=10, max_seats=5
-            )
+            CheckoutPriceCreate(product_price_id=price_id, seats=10, max_seats=5)
 
         with pytest.raises(ValidationError):
-            CheckoutPriceCreate(
-                product_price_id=price_id, seats=2, min_seats=5
-            )
+            CheckoutPriceCreate(product_price_id=price_id, seats=2, min_seats=5)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -3692,14 +3688,10 @@ class TestUpdate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session, checkout, CheckoutUpdate(seats=2)
-            )
+            await checkout_service.update(session, checkout, CheckoutUpdate(seats=2))
 
         with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session, checkout, CheckoutUpdate(seats=10)
-            )
+            await checkout_service.update(session, checkout, CheckoutUpdate(seats=10))
 
     async def test_update_seats_within_checkout_min_max(
         self,

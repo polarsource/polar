@@ -412,11 +412,9 @@ class CheckoutService:
 
         if is_seat_price(price):
             if checkout_create.seats is None:
-                # Default to min_seats if set, else tier minimum
-                if min_seats is not None:
-                    checkout_create.seats = min_seats
-                else:
-                    checkout_create.seats = price.get_minimum_seats()
+                checkout_create.seats = (
+                    min_seats if min_seats is not None else price.get_minimum_seats()
+                )
             self._validate_seat_limits(
                 price,
                 checkout_create.seats,
@@ -704,10 +702,9 @@ class CheckoutService:
 
         if is_seat_price(price):
             if checkout_create.seats is None:
-                if min_seats is not None:
-                    checkout_create.seats = min_seats
-                else:
-                    checkout_create.seats = price.get_minimum_seats()
+                checkout_create.seats = (
+                    min_seats if min_seats is not None else price.get_minimum_seats()
+                )
             self._validate_seat_limits(
                 price,
                 checkout_create.seats,
@@ -2526,7 +2523,7 @@ class CheckoutService:
             return
 
         if not is_seat_price(price):
-            fields: list[dict[str, typing.Any]] = []
+            fields: list[ValidationError] = []
             if min_seats is not None:
                 fields.append(
                     {

@@ -2521,7 +2521,6 @@ class TestUpdateProductBenefitsGrants:
         """When product benefits are updated, claimed seat members
         on subscriptions should get benefit grant jobs enqueued."""
 
-
         organization.feature_settings = {
             **organization.feature_settings,
             "seat_based_pricing_enabled": True,

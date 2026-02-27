@@ -137,6 +137,8 @@ class Checkout(
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    min_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    max_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(

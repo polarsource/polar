@@ -496,6 +496,37 @@ class ReviewAnalyzer:
         else:
             parts.append("No other organizations for this user.")
 
+        # Prior Review Decisions
+        prior_feedback = snapshot.prior_feedback
+        if prior_feedback.entries:
+            parts.append("\n## Prior Review Decisions")
+            parts.append(
+                "The following previous review decisions exist for this organization. "
+                "If a human reviewer has already evaluated and approved the organization, "
+                "do NOT re-raise the same concerns unless you have new, concrete evidence "
+                "that was not available during the prior review. Focus your analysis on "
+                "what has CHANGED since the last review."
+            )
+            for entry in prior_feedback.entries:
+                date_str = (
+                    entry.created_at.strftime("%Y-%m-%d")
+                    if entry.created_at
+                    else "unknown date"
+                )
+                parts.append(
+                    f"\n### {entry.review_context.upper()} review ({date_str})"
+                )
+                parts.append(f"- Actor: {entry.actor_type}")
+                parts.append(f"- Decision: {entry.decision}")
+                if entry.verdict:
+                    parts.append(f"- Agent Verdict: {entry.verdict}")
+                if entry.risk_score is not None:
+                    parts.append(f"- Agent Risk Score: {entry.risk_score:.1f}")
+                if entry.agent_summary:
+                    parts.append(f"- Agent Summary: {entry.agent_summary}")
+                if entry.reason:
+                    parts.append(f"- Reviewer Reason: {entry.reason}")
+
         # Policy
         parts.append("\n## Acceptable Use Policy")
         parts.append(policy_content)

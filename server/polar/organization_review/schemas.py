@@ -212,6 +212,31 @@ class WebsiteData(Schema):
     usage: UsageInfo | None = Field(default_factory=UsageInfo)
 
 
+class PriorFeedbackEntry(Schema):
+    """A single prior review decision for the organization."""
+
+    actor_type: str = Field(description="'agent' or 'human'")
+    decision: str = Field(description="'APPROVE', 'DENY', or 'ESCALATE'")
+    review_context: str = Field(
+        description="Review trigger: submission, setup_complete, threshold, manual, appeal"
+    )
+    verdict: str | None = None
+    risk_score: float | None = None
+    reason: str | None = Field(
+        default=None, description="Human-provided reason for the decision"
+    )
+    agent_summary: str | None = Field(
+        default=None, description="Summary from the linked agent review"
+    )
+    created_at: datetime | None = None
+
+
+class PriorFeedbackData(Schema):
+    """All prior review decisions for the organization."""
+
+    entries: list[PriorFeedbackEntry] = Field(default_factory=list)
+
+
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
@@ -224,6 +249,7 @@ class DataSnapshot(Schema):
     history: HistoryData
     setup: SetupData = Field(default_factory=SetupData)
     website: WebsiteData | None = None
+    prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
     collected_at: datetime
 
 

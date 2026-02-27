@@ -89,7 +89,7 @@ Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to kn
 - **[server](./server/README.md)** – Python / FastAPI / Dramatiq / SQLAlchemy (PostgreSQL) / Redis
 - **[clients](./clients/README.md)** – Turborepo
     - [web](./clients/apps/web) (Dashboard) – NextJS (TypeScript)
-    - [polarkit](./clients/packages/polarkit) - Shared React components
+    - [polarkit](./clients/packages/ui) - Shared React components
 
 <sub>♥️🙏 To our `pyproject.toml` friends: [FastAPI](https://github.com/tiangolo/fastapi), [Pydantic](https://github.com/pydantic/pydantic), [Dramatiq](https://github.com/Bogdanp/dramatiq), [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy), [Githubkit](https://github.com/yanyongyu/githubkit), [sse-starlette](https://github.com/sysid/sse-starlette), [Uvicorn](https://github.com/encode/uvicorn), [httpx-oauth](https://github.com/frankie567/httpx-oauth), [jinja](https://github.com/pallets/jinja), [blinker](https://github.com/pallets-eco/blinker), [pyjwt](https://github.com/jpadilla/pyjwt), [Sentry](https://github.com/getsentry/sentry) + more</sub><br />
 <sub>♥️🙏 To our `package.json` friends: [Next.js](https://github.com/vercel/next.js/), [TanStack Query](https://github.com/TanStack/query), [tailwindcss](https://github.com/tailwindlabs/tailwindcss), [openapi-typescript-codegen](https://github.com/ferdikoomen/openapi-typescript-codegen), [axios](https://github.com/axios/axios), [radix-ui](https://github.com/radix-ui/primitives), [cmdk](https://github.com/pacocoursey/cmdk), [framer-motion](https://github.com/framer/motion) + more</sub><br />

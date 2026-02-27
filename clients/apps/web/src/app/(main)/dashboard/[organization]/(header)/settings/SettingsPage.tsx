@@ -6,6 +6,7 @@ import OrganizationAccessTokensSettings from '@/components/Settings/Organization
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
+import OrganizationTrustSettings from '@/components/Settings/OrganizationTrustSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { schemas } from '@polar-sh/client'
 
@@ -44,6 +45,11 @@ export default function ClientPage({
             description="Manage access tokens to authenticate with the Polar API"
           />
           <OrganizationAccessTokensSettings organization={org} />
+        </Section>
+
+        <Section id="trust">
+          <SectionDescription title="Trust & Branding" />
+          <OrganizationTrustSettings organization={org} />
         </Section>
 
         <Section id="danger">

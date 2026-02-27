@@ -29,7 +29,9 @@ SQL >
         ) AS canceled_at,
         argMaxState(
             CASE
-                WHEN e.name = 'subscription.canceled' THEN e.customer_cancellation_reason ELSE NULL
+                WHEN e.name = 'subscription.canceled'
+                THEN COALESCE(e.customer_cancellation_reason, '')
+                ELSE NULL
             END,
             (
                 CASE WHEN e.name = 'subscription.canceled' THEN toUInt8(1) ELSE toUInt8(0) END,

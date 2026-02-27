@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Validate input
+if [[ $# -ne 2 ]]; then
+    echo -e "${RED}Error: Exactly two arguments are required.${NC}" >&2
+    echo "Usage: $0 <candidate> <branch-name>" >&2
+    exit 1
+fi
+
+CANDIDATE="$1"
+BRANCH="$2"
+FORK_NAME="polar-${CANDIDATE}"
+REMOTE_URL="git@github.com:polarsource/${FORK_NAME}.git"
+
+# Validate candidate name format
+if ! [[ "$CANDIDATE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo -e "${RED}Error: Candidate name contains invalid characters. Use only alphanumeric, hyphens, and underscores.${NC}" >&2
+    exit 1
+fi
+
+# Validate branch name format
+if ! [[ "$BRANCH" =~ ^[a-zA-Z0-9_/-]+$ ]]; then
+    echo -e "${RED}Error: Branch name contains invalid characters. Use only alphanumeric, hyphens, underscores, and slashes.${NC}" >&2
+    exit 1
+fi
+
+# Ensure we are inside a git repository
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo -e "${RED}Error: Not inside a git repository.${NC}" >&2
+    exit 1
+fi
+
+echo "Setting up remote for candidate: ${CANDIDATE}"
+echo "Remote name: ${CANDIDATE}"
+echo "Remote URL:  ${REMOTE_URL}"
+echo "Branch:      ${BRANCH}"
+
+# Step 1: Add the remote
+echo -e "\n${GREEN}Step 1: Adding remote...${NC}"
+if git remote get-url "$CANDIDATE" > /dev/null 2>&1; then
+    echo "Remote '${CANDIDATE}' already exists, skipping."
+else
+    git remote add "$CANDIDATE" "$REMOTE_URL"
+    echo -e "${GREEN}Remote '${CANDIDATE}' added.${NC}"
+fi
+
+# Step 2: Fetch the remote
+echo -e "\n${GREEN}Step 2: Fetching remote...${NC}"
+git fetch "$CANDIDATE"
+echo -e "${GREEN}Remote fetched.${NC}"
+
+# Step 3: Create and checkout the branch
+echo -e "\n${GREEN}Step 3: Creating and checking out branch '${BRANCH}'...${NC}"
+git checkout -b "$BRANCH"
+echo -e "${GREEN}Branch '${BRANCH}' created and checked out.${NC}"
+
+# Step 4: Push the branch to the candidate remote
+echo -e "\n${GREEN}Step 4: Pushing branch to remote '${CANDIDATE}'...${NC}"
+git push --set-upstream "$CANDIDATE" "$BRANCH"
+echo -e "${GREEN}Branch pushed.${NC}"
+
+echo -e "\n${GREEN}✓ Setup completed successfully!${NC}"
+echo "You are now on branch '${BRANCH}' tracking '${CANDIDATE}/${BRANCH}'."

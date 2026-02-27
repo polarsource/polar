@@ -28,6 +28,7 @@ const NavigationLegend = () => {
         <Button variant="icon">H</Button>
         <Button variant="icon">L</Button>
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span>Navigate</span>
     </div>
   )
@@ -43,6 +44,7 @@ const SectionsLegend = () => {
           </Button>
         ))}
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span>Sections</span>
     </div>
   )
@@ -68,6 +70,7 @@ const OpenSourceLegend = () => {
       <div className="flex flex-row gap-x-2">
         <Button variant="icon">O</Button>
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span>Open Source</span>
     </div>
   )
@@ -93,6 +96,7 @@ const ContactUsLegend = () => {
       <div className="flex flex-row gap-x-2">
         <Button variant="icon">M</Button>
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span>Contact Us</span>
     </div>
   )

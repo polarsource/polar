@@ -27,6 +27,7 @@ export const Profile = (props: { name: string; avatar_url: string | null }) => {
             avatar_url={props.avatar_url}
             className="h-8 w-8 rounded-full"
           />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="ml-4 truncate">{props.name}</p>
         </div>
       </div>
@@ -43,6 +44,7 @@ export const LinkItem = (props: {
     <a href={props.href}>
       <ListItem current={false} className="rounded-lg px-4">
         <div className="flex flex-row items-center gap-x-2 text-sm">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-lg">{props.icon}</span>
           {props.children}
         </div>
@@ -63,6 +65,7 @@ export const TextItem = (props: {
     >
       <ListItem current={false} className="gap-x-2 px-4 py-0 text-sm">
         <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-lg">{props.icon}</span>
           {props.children}
         </>

@@ -50,6 +50,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
       )}
     >
       <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pt-2 pb-0 text-sm text-gray-400">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span>{displayDate}</span>
         <Status
           className={twMerge(
@@ -60,7 +61,9 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
         />
       </CardHeader>
       <CardContent className="flex flex-row justify-between gap-x-4 p-4 pt-0 pb-3">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="min-w-0 truncate">{order.description}</h3>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="">
           {formatCurrency('compact')(order.net_amount, order.currency)}
         </span>
@@ -88,6 +91,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
       {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="absolute inset-2 flex flex-col">
           <div className="flex items-center justify-between p-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Latest Orders</h3>
             <Link href={`/dashboard/${org.slug}/sales`}>
               <Button
@@ -116,6 +120,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
             className="dark:text-polar-600 text-gray-300"
             fontSize="large"
           />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>No orders found</h3>
         </Card>
       )}

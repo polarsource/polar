@@ -66,6 +66,7 @@ const CustomerPortalSubscription = ({
   return (
     <div className="flex flex-col gap-8">
       <div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-xl">{subscription.product.name}</h3>
       </div>
 
@@ -154,6 +155,7 @@ const CustomerPortalSubscription = ({
       <div className="flex w-full flex-col gap-4">
         {hasInvoices && (
           <div className="flex flex-col gap-y-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Invoices</h3>
             <DataTable
               data={orders.items ?? []}
@@ -174,6 +176,7 @@ const CustomerPortalSubscription = ({
                   accessorKey: 'amount',
                   header: 'Amount',
                   cell: ({ row }) => (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span className="dark:text-polar-500 text-sm text-gray-500">
                       {formatCurrency('compact')(
                         row.original.total_amount,
@@ -186,6 +189,7 @@ const CustomerPortalSubscription = ({
                   accessorKey: 'id',
                   header: '',
                   cell: ({ row }) => (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span className="flex justify-end">
                       <DownloadInvoicePortal
                         customerSessionToken={customerSessionToken}

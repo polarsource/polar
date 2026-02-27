@@ -141,6 +141,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
                 className="flex flex-row items-center gap-x-2 px-4"
                 value={item.title}
               >
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3>{item.title}</h3>
               </TabsTrigger>
             </Link>
@@ -206,9 +207,12 @@ export const DashboardBody = ({
             <div className="flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between md:gap-x-4">
               {title !== null &&
                 (!title || typeof parsedTitle === 'string' ? (
-                  <h4 className="text-2xl font-medium whitespace-nowrap dark:text-white">
-                    {title ?? current?.title}
-                  </h4>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <h4 className="text-2xl font-medium whitespace-nowrap dark:text-white">
+                      {title ?? current?.title}
+                    </h4>
+                  </>
                 ) : (
                   parsedTitle
                 ))}

@@ -46,11 +46,15 @@ const SectionDescription = ({
   return (
     <div className="flex w-full flex-col gap-y-6">
       <div className="flex flex-col gap-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-lg font-medium">{title}</h2>
         {description && (
-          <p className="dark:text-polar-500 leading-snug text-gray-500">
-            {description}
-          </p>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <p className="dark:text-polar-500 leading-snug text-gray-500">
+              {description}
+            </p>
+          </>
         )}
         {cta && <div className="flex flex-row gap-x-2">{cta}</div>}
       </div>

@@ -18,6 +18,7 @@ export const MerchantOfRecord = () => {
         <Link href="/resources/merchant-of-record">
           <Button variant="secondary" className="rounded-full">
             Learn more
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="ml-2">
               <ArrowOutward fontSize="inherit" />
             </span>

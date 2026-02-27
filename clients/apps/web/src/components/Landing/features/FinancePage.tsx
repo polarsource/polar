@@ -55,10 +55,12 @@ export const FinancePage = () => {
           <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
             <div className="flex flex-col gap-y-4">
               <div className="flex items-center gap-x-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-2xl leading-normal! md:text-3xl">
                   Transparent financial reporting
                 </h2>
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-lg text-gray-500">
                 Complete visibility into your revenue, payouts, and taxes. Track
                 every transaction with detailed financial reporting.
@@ -83,6 +85,7 @@ export const FinancePage = () => {
                     className="mt-0.5 text-emerald-500"
                     fontSize="small"
                   />
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{item}</span>
                 </motion.li>
               ))}
@@ -94,6 +97,7 @@ export const FinancePage = () => {
               variants={itemVariants}
             >
               <div className="flex flex-row items-center justify-between gap-x-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-sm font-medium text-black dark:text-white">
                   Payout Summary
                 </span>
@@ -103,26 +107,32 @@ export const FinancePage = () => {
                 />
               </div>
               <div className="flex flex-col gap-y-1">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-3xl text-black dark:text-white">
                   $12,450
                 </span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 text-sm text-gray-500">
                   Available for payout
                 </span>
               </div>
               <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-4">
                 <div className="flex flex-col">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     Revenue
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-black dark:text-white">
                     $15,000
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     Fees & Tax
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-black dark:text-white">
                     $602
                   </span>
@@ -170,7 +180,9 @@ export const FinancePage = () => {
               >
                 <div className="flex flex-row gap-x-2">{feature.icon}</div>
                 <div className="flex flex-col gap-y-4">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="text-2xl">{feature.title}</h3>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 text-balance text-gray-600">
                     {feature.description}
                   </p>

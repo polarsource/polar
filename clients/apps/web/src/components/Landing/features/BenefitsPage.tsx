@@ -58,10 +58,12 @@ export const BenefitsPage = () => {
           <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
             <div className="flex flex-col gap-y-4">
               <div className="flex items-center gap-x-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-2xl leading-normal! md:text-3xl">
                   Automated benefit delivery
                 </h2>
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-lg text-gray-500">
                 Configure benefits that are automatically granted when customers
                 purchase your products. No manual work required.
@@ -87,6 +89,7 @@ export const BenefitsPage = () => {
                     className="mt-0.5 text-emerald-500"
                     fontSize="small"
                   />
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{item}</span>
                 </motion.li>
               ))}
@@ -99,31 +102,38 @@ export const BenefitsPage = () => {
             >
               <div className="flex flex-row items-center gap-x-2">
                 <KeyOutlined className="text-emerald-500" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-sm font-medium text-black dark:text-white">
                   License Key
                 </span>
               </div>
               <div className="flex flex-col gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:bg-polar-800 dark:border-polar-700 rounded-lg border border-gray-200 bg-gray-100 p-3 font-mono text-xs">
                   POLAR-ABC123-XYZ789-DEF456
                 </span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 text-xs text-gray-500">
                   Granted on Jan 1, 2025
                 </span>
               </div>
               <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-4">
                 <div className="flex flex-col">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     Product
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-black dark:text-white">
                     Pro License
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     Status
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-emerald-500">Active</span>
                 </div>
               </div>
@@ -187,7 +197,9 @@ export const BenefitsPage = () => {
               >
                 <div className="flex flex-row gap-x-2">{feature.icon}</div>
                 <div className="flex flex-col gap-y-4">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="text-2xl">{feature.title}</h3>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 text-balance text-gray-600">
                     {feature.description}
                   </p>

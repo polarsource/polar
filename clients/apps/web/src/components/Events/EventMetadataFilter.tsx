@@ -40,6 +40,7 @@ export const EventMetadataFilter = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row items-center justify-between gap-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-sm">Metadata</h3>
         <Button
           className="size-6 rounded-full"

@@ -386,9 +386,12 @@ const DownloadInvoice = ({
                 Generate invoice
               </Button>
               {errors.root && (
-                <p className="text-destructive-foreground text-sm">
-                  {errors.root.message}
-                </p>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <p className="text-destructive-foreground text-sm">
+                    {errors.root.message}
+                  </p>
+                </>
               )}
             </form>
           </Form>

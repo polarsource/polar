@@ -81,8 +81,8 @@ export const FieldClientType = () => {
           <FormMessage />
           <FormDescription>
             If you intend to perform authentication on public clients, like SPA
-            or mobile app, select <em>Public Client</em>. Otherwise, choose{' '}
-            <em>Confidential Client</em>.{' '}
+            or mobile app, select Public Client. Otherwise, choose Confidential
+            Client.{' '}
             <Link
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
               href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
@@ -285,6 +285,7 @@ export const FieldScopes = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-row items-center">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           Scopes
         </h2>

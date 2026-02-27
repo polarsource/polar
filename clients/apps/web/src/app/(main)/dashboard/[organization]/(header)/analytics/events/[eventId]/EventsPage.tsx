@@ -61,10 +61,14 @@ export default function EventDetailPage({
               >
                 <KeyboardArrowUpOutlined className="h-2 w-2" />
               </Button>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>Parent Event</span>
             </Link>
           ) : (
-            <span>Event</span>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span>Event</span>
+            </>
           )}
         </div>
       }
@@ -82,16 +86,21 @@ export default function EventDetailPage({
     >
       <div className="flex flex-col gap-y-4">
         <div className="flex flex-row items-center justify-between gap-x-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-4xl">{event.label}</h3>
           {'_cost' in event.metadata && event.metadata._cost && (
-            <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
-              {formatCurrency('subcent')(
-                Number(event.metadata._cost?.amount ?? 0),
-                event.metadata._cost?.currency ?? 'usd',
-              )}
-            </h3>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
+                {formatCurrency('subcent')(
+                  Number(event.metadata._cost?.amount ?? 0),
+                  event.metadata._cost?.currency ?? 'usd',
+                )}
+              </h3>
+            </>
           )}
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 font-mono text-gray-500 capitalize">
           {new Date(event.timestamp).toLocaleDateString('en-US', {
             hour: '2-digit',
@@ -116,7 +125,9 @@ export default function EventDetailPage({
       {children.length > 0 ? (
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-row justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-2xl">Child Events</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="dark:text-polar-500 text-2xl text-gray-400">
               {children.length} {children.length === 1 ? 'Event' : 'Events'}
             </h3>

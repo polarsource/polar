@@ -9,6 +9,7 @@ const Footer = () => {
       <div className="flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 lg:py-32 xl:max-w-6xl">
         <div className="grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-16 lg:grid-cols-6">
           <div className="flex h-full flex-1 flex-col justify-between gap-y-6 md:col-span-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-black md:ml-0">
               <PolarLogotype
                 className="ml-2 md:ml-0"
@@ -21,9 +22,11 @@ const Footer = () => {
                 href="/signup"
                 className="flex w-fit flex-row items-center gap-x-2 border-b border-black pb-0.5 dark:border-white"
               >
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>Join Polar today</span>
                 <ArrowOutwardOutlined fontSize="inherit" />
               </Link>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 w-full text-gray-500">
                 &copy; Polar Software, Inc. {new Date().getFullYear()}
               </span>
@@ -31,6 +34,7 @@ const Footer = () => {
           </div>
 
           <div className="flex flex-col gap-y-4 text-sm">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="dark:text-polar-500 text-gray-500">Features</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="/features/products">Products</FooterLink>
@@ -42,6 +46,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex flex-col gap-y-4 text-sm">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="dark:text-polar-500 text-gray-500">Resources</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="/resources/why">Why Polar</FooterLink>
@@ -53,6 +58,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex flex-col gap-y-4 text-sm">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="dark:text-polar-500 text-gray-500">Company</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="/company">About Polar</FooterLink>
@@ -75,6 +81,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex flex-col gap-y-4 text-sm">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="dark:text-polar-500 text-gray-500">Support</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="https://polar.sh/docs">Docs</FooterLink>

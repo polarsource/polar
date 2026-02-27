@@ -78,6 +78,7 @@ export default function CancellationsStackedChart({
   return (
     <div className="">
       <div className="p-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-lg">Cancellations</h3>
       </div>
 
@@ -165,7 +166,9 @@ const StackedChartTooltip = ({
       className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl"
     >
       <div className="flex items-center justify-between">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="font-medium">{formattedLabel}</span>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="font-medium tabular-nums">{total}</span>
       </div>
       <div className="flex flex-col gap-1.5">
@@ -182,6 +185,7 @@ const StackedChartTooltip = ({
                 />
                 {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-medium tabular-nums">
                 {item.value.toLocaleString()}
               </span>

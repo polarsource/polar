@@ -136,6 +136,7 @@ const OrganizationSelectionPage = ({
             Welcome to Polar!
             <br />
             Create an organization and connect to{' '}
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-200 font-medium text-gray-700">
               {clientName}
             </span>
@@ -246,6 +247,7 @@ const OrganizationSelectionPage = ({
                         className="mt-1"
                       />
                       <div className="flex flex-col gap-y-2 text-sm">
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <label
                           htmlFor="terms"
                           className="cursor-pointer leading-relaxed font-medium"
@@ -296,9 +298,12 @@ const OrganizationSelectionPage = ({
             </div>
 
             {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              </>
             )}
           </form>
         </Form>
@@ -358,6 +363,7 @@ const OrganizationSelectionPage = ({
       client={client}
       introduction={
         <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-200 font-medium text-gray-700">
             {clientName}
           </span>{' '}

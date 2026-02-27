@@ -47,7 +47,9 @@ export const CustomerMeter = ({
   return (
     <ShadowBox className="dark:bg-polar-800 flex flex-col p-2">
       <div className="mb-2 flex flex-row items-center justify-between gap-x-2 p-6">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-xl">{meter.name}</h2>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="text-xl">
           <FormattedUnits value={total} />
         </span>
@@ -56,17 +58,21 @@ export const CustomerMeter = ({
         {customerMeter.subscription && (
           <div className="flex flex-row items-start gap-x-8 gap-y-2 rounded-2xl">
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 Subscription
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 {customerMeter.subscription.product.name}
               </h3>
             </div>
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 Current billing period
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 {customerMeter.subscription.current_period_end ? (
                   <FormattedInterval
@@ -86,9 +92,11 @@ export const CustomerMeter = ({
               </h3>
             </div>
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 Current overages
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 {unitPrice &&
                   formatCurrency('compact')(
@@ -102,31 +110,40 @@ export const CustomerMeter = ({
         {(customerMeter.subscription || customerMeter.credited_units > 0) && (
           <div className="ml-auto flex flex-row items-start gap-x-8 gap-y-2 rounded-2xl">
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 Total
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 <FormattedUnits value={customerMeter.consumed_units} />
               </h3>
             </div>
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 Credited
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 <FormattedUnits value={customerMeter.credited_units} />
               </h3>
             </div>
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 Balance
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 <FormattedUnits value={Math.abs(customerMeter.balance)} />
                 {customerMeter.balance > 0 && (
-                  <span className="dark:text-polar-500 ml-1 text-xs text-gray-500">
-                    credits remaining
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span className="dark:text-polar-500 ml-1 text-xs text-gray-500">
+                      credits remaining
+                    </span>
+                  </>
                 )}
               </h3>
             </div>

@@ -22,14 +22,17 @@ export const NavigationContainer = ({
   return (
     <div className="flex flex-col gap-y-3">
       {title && (
-        <span
-          className="dark:text-polar-500 text-xxs px-3 tracking-widest text-gray-400 uppercase"
-          style={{
-            fontFeatureSettings: `'ss02'`,
-          }}
-        >
-          {title}
-        </span>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <span
+            className="dark:text-polar-500 text-xxs px-3 tracking-widest text-gray-400 uppercase"
+            style={{
+              fontFeatureSettings: `'ss02'`,
+            }}
+          >
+            {title}
+          </span>
+        </>
       )}
       <div className="flex flex-col gap-y-3">
         <div className="flex flex-col">
@@ -46,17 +49,21 @@ export const NavigationContainer = ({
                 href={route.link}
               >
                 {'icon' in route && route.icon ? (
-                  <span
-                    className={twMerge(
-                      'flex flex-col items-center justify-center rounded-full bg-transparent text-[18px]',
-                      route.isActive
-                        ? 'text-blue-500 dark:text-white'
-                        : 'bg-transparent',
-                    )}
-                  >
-                    {route.icon}
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span
+                      className={twMerge(
+                        'flex flex-col items-center justify-center rounded-full bg-transparent text-[18px]',
+                        route.isActive
+                          ? 'text-blue-500 dark:text-white'
+                          : 'bg-transparent',
+                      )}
+                    >
+                      {route.icon}
+                    </span>
+                  </>
                 ) : undefined}
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-sm font-medium">{route.title}</span>
               </Link>
             )

@@ -141,6 +141,7 @@ function DownloadButton() {
       className="flex w-fit cursor-none flex-row items-center gap-x-3 border-b border-black pb-0.5 text-2xl dark:border-white"
     >
       <ArrowDownwardOutlined fontSize="inherit" />
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span>Brand Assets</span>
     </a>
   )
@@ -180,6 +181,7 @@ function DontCard({
           </svg>
         </div>
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="dark:text-polar-500 text-sm text-neutral-500">
         {label}
       </span>
@@ -245,12 +247,14 @@ export function LogoSection() {
           {/* Body + clear space + Don'ts */}
           <div className="flex flex-col gap-20">
             <div className="flex flex-col gap-6 text-lg leading-relaxed md:text-xl">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p>
                 The Polar wordmark joins the globe mark with the logotype,
                 forming the complete brand signature. Use it wherever both the
                 symbol and the name need to be present — marketing materials,
                 landing pages, and any context where Polar is being introduced.
               </p>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p>
                 The wordmark maintains a fixed spatial relationship between the
                 globe and the type. Never separate, rearrange, or independently
@@ -262,6 +266,7 @@ export function LogoSection() {
               <div className="dark:bg-polar-900 flex items-center justify-center bg-neutral-100 p-8">
                 <WordmarkClearSpaceGrid />
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-lg leading-relaxed text-neutral-500">
                 Always surround the wordmark with clear space equal to the
                 height of the globe mark. Keep this zone free of other
@@ -338,12 +343,14 @@ export function LogoSection() {
           {/* Body + clear space + Don'ts */}
           <div className="flex flex-col gap-20">
             <div className="flex flex-col gap-6 text-lg leading-relaxed md:text-xl">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p>
                 A polar reference is a point of orientation — something constant
                 in a shifting landscape. For AI companies, billing is that
                 reference point. It&apos;s where experimentation meets
                 economics, where intelligence becomes revenue.
               </p>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p>
                 The globe embodies that role: steady at the center, expansive at
                 the edges. As AI companies scale across borders and models
@@ -351,6 +358,7 @@ export function LogoSection() {
                 keeps value aligned with usage — globally, reliably, and without
                 friction.
               </p>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p>Not just billing. A fixed point for a moving world.</p>
             </div>
 
@@ -358,6 +366,7 @@ export function LogoSection() {
               <div className="dark:bg-polar-900 flex items-center justify-center bg-neutral-100 p-8">
                 <ClearSpaceGrid />
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-lg leading-relaxed text-neutral-500">
                 Maintain clear space equal to the diameter of the globe on all
                 sides. Nothing — text, imagery, or other marks — should enter

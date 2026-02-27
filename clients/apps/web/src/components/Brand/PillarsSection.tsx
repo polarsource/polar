@@ -68,6 +68,7 @@ export function PillarsSection() {
                 padding: PIXEL,
               }}
             >
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span
                 className="font-mono tracking-widest text-black dark:text-white"
                 style={{ lineHeight: `${PIXEL}px` }}

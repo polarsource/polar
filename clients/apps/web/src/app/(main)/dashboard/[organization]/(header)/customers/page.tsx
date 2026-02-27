@@ -44,7 +44,9 @@ export default async function Page(props: {
   // Otherwise show empty state
   return (
     <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h1 className="text-2xl font-normal">No Customers</h1>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p className="dark:text-polar-500 text-gray-500">
         Create a customer to get started
       </p>

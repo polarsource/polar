@@ -180,6 +180,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h2 className="text-xl">Benefit Grants</h2>
       <DataTable
         data={benefitGrants?.items || []}

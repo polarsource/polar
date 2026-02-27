@@ -143,6 +143,7 @@ export const MeterCreditBenefitForm = ({
                       defaultChecked={field.value}
                       onCheckedChange={field.onChange}
                     />
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <p className="text-sm">
                       Rollover unused credits to the next billing cycle
                     </p>

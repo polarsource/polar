@@ -37,6 +37,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
     >
       <div className="flex flex-col gap-y-4 p-6 pb-2">
         <div className="flex flex-row items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-lg">Account Balance</span>
           <Link href={`/dashboard/${org.slug}/finance`}>
             <Button
@@ -48,6 +49,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
             </Button>
           </Link>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-5xl font-light">
           {summary &&
             formatCurrency('compact')(
@@ -60,6 +62,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
         {lastPayout ? (
           <div className="flex flex-col">
             <div className="flex flex-row items-center justify-between gap-x-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">
                 {formatCurrency('compact')(
                   lastPayout.amount,
@@ -76,6 +79,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
                 )}
               />
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-500">
               {new Date(lastPayout.created_at).toLocaleDateString('en-US', {
                 month: 'long',
@@ -86,7 +90,9 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
           </div>
         ) : (
           <div className="flex flex-col">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3>No payouts yet</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-500">
               You may only withdraw funds above $10.
             </p>

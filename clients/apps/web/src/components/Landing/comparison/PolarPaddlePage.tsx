@@ -18,9 +18,11 @@ export const PolarVsPaddlePage = () => {
   return (
     <ResourceLayout title="Polar vs Paddle" toc={tocItems}>
       <ResourceSection id="overview" title="Overview">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-lg">
           Comparing two Merchant of Record solutions for software businesses.
         </p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-gray-500">
           Both Polar and Paddle act as Merchant of Record (MoR), handling tax
           compliance and payments for you. However, Polar is built by developers
@@ -130,8 +132,10 @@ export const PolarVsPaddlePage = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">Polar</h3>
               <div className="text-4xl">4% + 40¢</div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-sm text-gray-500">
                 per transaction
               </p>
@@ -139,18 +143,21 @@ export const PolarVsPaddlePage = () => {
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   20% cheaper than Paddle
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   No hidden fees or markups
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   All features included
                 </span>
@@ -160,8 +167,10 @@ export const PolarVsPaddlePage = () => {
 
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">Paddle</h3>
               <div className="text-4xl">5% + 50¢</div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-sm text-gray-500">
                 per transaction
               </p>
@@ -169,18 +178,21 @@ export const PolarVsPaddlePage = () => {
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Higher base fees
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Additional fees for some features
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Volume discounts require negotiation
                 </span>
@@ -188,6 +200,7 @@ export const PolarVsPaddlePage = () => {
             </ul>
           </div>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-sm text-gray-500">
           On $100,000 in monthly revenue, Polar saves you ~$1,000/month compared
           to Paddle ($4,000 vs $5,000 in fees).
@@ -197,7 +210,9 @@ export const PolarVsPaddlePage = () => {
       <ResourceSection id="developer-experience" title="Developer Experience">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Built for modern development</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Polar is designed from the ground up for today&apos;s developers,
               with modern tooling, framework adapters, and a TypeScript-first
@@ -206,21 +221,27 @@ export const PolarVsPaddlePage = () => {
           </div>
           <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">6-line integration</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar provides a 6-line integration with framework adapters,
                 making it easy to get started with minimal code.
               </p>
             </li>
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">Framework adapters</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar provides native support for Next.js, BetterAuth, Laravel,
                 and more.
               </p>
             </li>
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">Open source</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar is open source, so you can inspect and contribute to the
                 codebase.
@@ -232,7 +253,9 @@ export const PolarVsPaddlePage = () => {
 
       <ResourceSection id="transparency" title="Transparency & Control">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Open source vs closed platform</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             One of the biggest differences between Polar and Paddle is
             transparency. Polar is fully open source, giving you complete
@@ -242,6 +265,7 @@ export const PolarVsPaddlePage = () => {
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="dark:bg-polar-800 flex flex-col gap-3 bg-gray-50 p-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">With Polar</h4>
             <ul className="flex flex-col gap-2">
               <li className="dark:text-polar-300 flex items-start gap-2 text-sm text-gray-600">
@@ -264,6 +288,7 @@ export const PolarVsPaddlePage = () => {
           </div>
 
           <div className="dark:bg-polar-800 flex flex-col gap-3 bg-gray-50 p-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">With Paddle</h4>
             <ul className="flex flex-col gap-2">
               <li className="dark:text-polar-300 flex items-start gap-2 text-sm text-gray-600">
@@ -289,9 +314,11 @@ export const PolarVsPaddlePage = () => {
 
       <ResourceSection id="why-polar" title="Why Choose Polar?">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">
             A modern alternative to Paddle for forward-thinking teams
           </h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             If you&apos;re choosing a Merchant of Record, Polar offers
             everything Paddle does but with better pricing, modern developer
@@ -300,25 +327,33 @@ export const PolarVsPaddlePage = () => {
         </div>
         <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">20% cheaper</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Same MoR benefits, lower fees (4% vs 5%).
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Better developer experience</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Modern tooling built for today&apos;s tech stack.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Open source</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Full transparency, community contributions, public roadmap.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Built for developers</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               TypeScript-first, framework adapters, 6-line integration.
             </p>
@@ -329,7 +364,9 @@ export const PolarVsPaddlePage = () => {
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Ready to switch from Paddle?</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Join developers who are moving to a more modern, transparent, and
               affordable Merchant of Record solution.

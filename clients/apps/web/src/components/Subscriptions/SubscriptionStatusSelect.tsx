@@ -28,6 +28,7 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="any">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="whitespace-nowrap">Any status</span>
         </SelectItem>
         <SelectSeparator />

@@ -64,6 +64,7 @@ const MeterFilterInput = ({
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Condition group</h3>
           <div className="flex flex-row items-center gap-x-2">
             <Button
@@ -75,6 +76,7 @@ const MeterFilterInput = ({
               }
             >
               <PlusIcon className="mr-1.5 size-3" strokeWidth={1.5} />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>Add condition</span>
             </Button>
             {removeParent && (

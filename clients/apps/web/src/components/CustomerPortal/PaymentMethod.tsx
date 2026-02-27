@@ -29,7 +29,9 @@ const PaymentMethodCard = ({
         className="dark:border-polar-700 rounded-lg border border-gray-200 p-2"
       />
       <div className="flex flex-col">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="capitalize">{`${brand} •••• ${last4}`}</span>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 text-sm text-gray-500">
           Expires {exp_month}/{exp_year}
         </span>

@@ -96,9 +96,11 @@ export const Adapters = () => {
       <Tabs defaultValue={adapters[0].name}>
         <div className="flex w-full flex-col gap-y-16 md:h-full md:min-h-96">
           <div className="flex flex-col items-center gap-y-8">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-lg text-gray-400">
               Framework Adapters
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
               Integrate in under a minute
             </h1>
@@ -117,6 +119,7 @@ export const Adapters = () => {
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>All 13 Adapters</span>
                   <ArrowOutwardOutlined className="ml-2" />
                 </Button>
@@ -153,6 +156,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <p className="leading-relaxed text-pretty">
                           Secure & Simple Checkouts
                         </p>
@@ -162,6 +166,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <p className="leading-relaxed text-pretty">
                           Integrated Customer Portal
                         </p>
@@ -171,6 +176,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <p className="leading-relaxed text-pretty">
                           Granular & Reliable Webhook Handler
                         </p>
@@ -181,6 +187,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <p className="leading-relaxed text-pretty">
                           Global Merchant of Record
                         </p>

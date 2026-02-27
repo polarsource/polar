@@ -73,11 +73,15 @@ export const ConfirmModal = ({
         <>
           <div className="flex flex-col gap-y-4 p-8">
             <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-xl font-medium">{title}</h3>
               {description && (
-                <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
-                  {description}
-                </p>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
+                    {description}
+                  </p>
+                </>
               )}
               {body}
               <Form {...form}>
@@ -87,6 +91,7 @@ export const ConfirmModal = ({
                 >
                   {confirmPrompt && (
                     <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
                         Please enter &quot;{confirmPrompt}&quot; to confirm:
                       </p>

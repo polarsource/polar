@@ -30,10 +30,12 @@ const DropzoneView = ({
         <div className={isDragActive ? 'text-blue-500' : ''}>
           <FileUploadIcon fontSize="large" />
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="font-medium">
           {!isDragActive && 'Feed me some bytes'}
           {isDragActive && "Drop it like it's hot"}
         </h3>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-sm">
           You can drop files here or{' '}
           <a className="text-blue-500">click like a Netscape user</a>
@@ -143,9 +145,12 @@ const DownloadablesForm = ({
         setArchivedFile={setArchivedFile}
       />
       {errors.properties?.files && (
-        <p className="text-destructive-foreground text-sm">
-          {errors.properties.files.message}
-        </p>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <p className="text-destructive-foreground text-sm">
+            {errors.properties.files.message}
+          </p>
+        </>
       )}
     </>
   )

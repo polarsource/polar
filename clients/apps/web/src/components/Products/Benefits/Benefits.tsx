@@ -102,6 +102,7 @@ export const Benefits = ({
                 <Button variant="secondary" size="sm">
                   <div className="flex items-center gap-x-2">
                     <Plus className="h-4 w-4" />
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>Create Benefit</span>
                   </div>
                 </Button>
@@ -117,6 +118,7 @@ export const Benefits = ({
                     className="flex items-center gap-2"
                   >
                     {resolveBenefitIcon(type, 'h-4 w-4')}
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>{benefitsDisplayNames[type]}</span>
                   </DropdownMenuItem>
                 ))}

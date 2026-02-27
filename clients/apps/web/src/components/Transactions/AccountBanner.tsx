@@ -23,9 +23,9 @@ const GenericAccountBanner: React.FC<{
           }
         >
           <CircleAlertIcon className="h-6 w-6 text-red-500" />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-sm">
-            You need to set up a <strong>payout account</strong> to receive
-            payouts
+            You need to set up a payout account to receive payouts
           </span>
         </Banner>
       </>
@@ -44,10 +44,11 @@ const GenericAccountBanner: React.FC<{
         }
       >
         <Icon classes="bg-blue p-1" icon={<AccountTypeIcon />} />
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="text-sm">
           Continue the setup of your{' '}
-          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
-          account to receive payouts
+          {ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]} account to receive
+          payouts
         </span>
       </Banner>
     )

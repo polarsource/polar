@@ -70,9 +70,11 @@ const ClientPage = ({
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-2xl text-black dark:text-white">
             Verification code
           </h2>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-gray-500">
             Enter the verification code sent to your email address.
           </p>
@@ -116,9 +118,12 @@ const ClientPage = ({
             />
 
             {form.formState.errors.root && (
-              <p className="text-sm font-medium text-red-500 dark:text-red-400">
-                {form.formState.errors.root.message}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-sm font-medium text-red-500 dark:text-red-400">
+                  {form.formState.errors.root.message}
+                </p>
+              </>
             )}
 
             <Button
@@ -131,6 +136,7 @@ const ClientPage = ({
               Access my purchases
             </Button>
 
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-sm text-gray-500">
               Don&apos;t have a code?{' '}
               <Link href="request" className="underline hover:no-underline">

@@ -20,7 +20,9 @@ export const PricingPage = () => {
     <ResourceLayout title="Pricing" toc={toc}>
       <ResourceSection id="introduction" title="Introduction">
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Cheapest MoR on the market</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Polar is priced 20% cheaper than other MoR alternatives. 4% and 40¢
             per transaction.
@@ -28,7 +30,9 @@ export const PricingPage = () => {
         </div>
 
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>No Hidden Fees</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             While payouts may incur fees charged by the payout providers (such
             as Stripe), Polar does not add any extra fees or markup.
@@ -38,7 +42,9 @@ export const PricingPage = () => {
 
       <ResourceSection id="transaction-fees" title="Transaction Fees">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">4% + 40¢ per transaction</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Polar is currently built on Stripe, and we cover their 2.9% + 30¢
             fee from ours. However, they impose a few additional fees for
@@ -49,12 +55,8 @@ export const PricingPage = () => {
 
       <ResourceSection id="additional-fees" title="Additional Fees">
         <ul className="space-y-2">
-          <li>
-            <strong>+1.5%</strong> for international cards (non-US)
-          </li>
-          <li>
-            <strong>+0.5%</strong> for subscription payments
-          </li>
+          <li>+1.5% for international cards (non-US)</li>
+          <li>+0.5% for subscription payments</li>
         </ul>
         <div className="dark:text-polar-300 dark:bg-polar-800 bg-gray-50 p-4 text-sm text-gray-500">
           We also reserve the right to pass on any other fees Stripe might
@@ -64,6 +66,7 @@ export const PricingPage = () => {
 
       <ResourceSection id="example" title="Example">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             Let&apos;s look at an example breakdown with all these additional
             fees applied. Below is a payment of a $30 subscription from Sweden
@@ -109,6 +112,7 @@ export const PricingPage = () => {
 
       <ResourceSection id="refunds" title="Refunds">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             You can issue both full or partial refunds on Polar to your
             customers. However, the initial transaction fees are not refunded to
@@ -116,6 +120,7 @@ export const PricingPage = () => {
             future refund.
           </p>
           <div className="dark:bg-polar-800 bg-gray-50 p-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-sm text-gray-500">
               Polar reserves the right to issue refunds at our own discretion up
               to 60 days after the purchase as part of our efforts to
@@ -130,18 +135,20 @@ export const PricingPage = () => {
 
       <ResourceSection id="dispute-fees" title="Dispute/Chargeback Fees">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
-            Sometimes, customers can open a <strong>dispute/chargeback</strong>{' '}
-            via their bank for a purchase.{' '}
-            <strong>Disputes cost $15 per dispute</strong> regardless of outcome
+            Sometimes, customers can open a dispute/chargeback via their bank
+            for a purchase. Disputes cost $15 per dispute regardless of outcome
             and is deducted from your balance directly. This fee is charged by
             the underlying credit card networks & PSPs regardless of outcome and
             therefore something we cannot refund.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             However, we continuously work to proactively reduce the rate of
             chargebacks across Polar to be at or lower than industry standards.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             Credit card networks impose monitoring programs, penalties and
             higher chargeback costs for sellers with high chargeback rates
@@ -150,6 +157,7 @@ export const PricingPage = () => {
             thresholds.
           </p>
           <div className="dark:bg-polar-800 bg-gray-50 p-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-sm text-gray-500">
               Therefore, we might need to intervene and even suspend your
               account unless swift and proactive measures are taken to reduce
@@ -161,16 +169,19 @@ export const PricingPage = () => {
 
       <ResourceSection id="payout-fees" title="Payout Fees">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             While payouts may incur fees charged by our payout providers
             (Stripe), Polar does not add any extra fees or markup. These are
             strictly Stripe&apos;s fees, and Polar does not profit from them.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             In addition, Polar offers manual withdrawals for developers. Keeping
             you in control of when to issue payouts.
           </p>
           <div className="dark:bg-polar-800 bg-gray-50 p-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-sm text-gray-500">
               Unless you have a Polar balance that you haven&apos;t withdrawn
               for several months, at which point we&apos;ll eventually need to
@@ -180,15 +191,20 @@ export const PricingPage = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">Stripe</h3>
               <div className="flex flex-col gap-2 text-sm">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p>$2 per month of active payout(s)</p>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p>0.25% + $0.25 per payout</p>
               </div>
               <div className="flex flex-col gap-2 text-sm">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h4 className="dark:text-polar-300 text-gray-500">
                   Cross border fees (currency conversion)
                 </h4>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p>0.25% (EU) - 1% in other countries</p>
               </div>
             </div>
@@ -198,6 +214,7 @@ export const PricingPage = () => {
 
       <ResourceSection id="volume-pricing" title="Volume Pricing">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             Large or fast-growing business? We can offer custom pricing to
             better fit your needs.

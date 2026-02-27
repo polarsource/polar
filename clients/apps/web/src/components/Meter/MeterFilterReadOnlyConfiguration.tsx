@@ -63,6 +63,7 @@ const FilterClauseDisplay = ({
         </div>
       )}
       <div className="flex grow items-baseline gap-2 text-sm">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span
           className={
             clause.property === 'name' || clause.property === 'timestamp'
@@ -72,9 +73,11 @@ const FilterClauseDisplay = ({
         >
           {formatProperty(clause.property)}
         </span>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="text-muted-foreground">
           {OPERATOR_DISPLAY_NAMES[clause.operator]}
         </span>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="font-mono text-xs">{formatValue(clause.value)}</span>
       </div>
     </div>
@@ -146,6 +149,7 @@ const MeterFilterReadOnlyConfiguration = ({
     <div className="flex flex-col gap-6">
       {filter && (
         <div className="flex flex-col gap-3">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-sm font-medium">Filters</h3>
           <div className="flex flex-col gap-3">
             {filter.clauses.map((clause, index) => {
@@ -178,12 +182,16 @@ const MeterFilterReadOnlyConfiguration = ({
       )}
 
       <div className="flex flex-col gap-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-sm font-medium">Aggregation</h3>
         <div className="flex items-baseline gap-2 text-sm">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="">{AGGREGATION_DISPLAY_NAMES[aggregationFunc]}</span>
           {aggregationProperty && (
             <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-muted-foreground">over</span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-mono text-xs">{aggregationProperty}</span>
             </>
           )}

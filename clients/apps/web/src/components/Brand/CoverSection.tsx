@@ -7,6 +7,7 @@ export function CoverSection() {
     <div className="relative flex h-screen w-full flex-col justify-between p-8 md:p-16">
       <div className="flex items-start justify-between">
         <Headline as="span" text="Polar Software Inc" />
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="font-medium">{new Date().getFullYear()}</span>
       </div>
       <div className="absolute inset-0">
@@ -19,6 +20,7 @@ export function CoverSection() {
           className="tracking-tight"
           text={['Brand', 'Guidelines']}
         />
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span>
           <ArrowDownward />
         </span>

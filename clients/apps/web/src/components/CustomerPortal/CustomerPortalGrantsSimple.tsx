@@ -16,6 +16,7 @@ export const CustomerPortalGrantsSimple = ({
 }: CustomerPortalGrantsSimpleProps) => {
   return (
     <div className="flex w-full flex-col gap-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-xl">Benefit Grants</h3>
       <div className="flex flex-col gap-4">
         <List>

@@ -146,7 +146,9 @@ export default function ClientPage({
         <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
           <ErrorOutlined fontSize="large" />
           <div className="flex flex-col items-center gap-2 text-center">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-xl">Missing Invitation Token</h2>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               This page requires a valid invitation token in the URL.
             </p>
@@ -161,6 +163,7 @@ export default function ClientPage({
       <div className="flex flex-col items-center">
         <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
           <Loader2 className="h-8 w-8 animate-spin" />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 text-gray-500">
             Loading invitation details...
           </p>
@@ -175,7 +178,9 @@ export default function ClientPage({
         <ShadowBox className="flex w-full max-w-2xl flex-col items-center gap-6 p-12">
           <ErrorOutlined fontSize="large" />
           <div className="flex flex-col items-center gap-4 text-center">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-xl">Invalid Invitation</h2>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               This invitation link is invalid, has expired, or has already been
               claimed. Contact the person who invited you to resend the
@@ -197,7 +202,9 @@ export default function ClientPage({
             <>
               <CheckOutlined fontSize="large" />
               <div className="flex flex-col items-center gap-2 text-center">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-xl font-medium">Success!</h2>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-gray-500">
                   Redirecting to your portal...
                 </p>
@@ -207,9 +214,11 @@ export default function ClientPage({
             <>
               <Loader2 className="h-8 w-8 animate-spin" />
               <div className="flex flex-col items-center gap-2 text-center">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-xl">
                   {fulfillmentLabel || 'Claiming benefits...'}
                 </h2>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-sm text-gray-500">
                   Please wait while we set up your access
                 </p>
@@ -225,7 +234,9 @@ export default function ClientPage({
     <div className="flex flex-col items-center">
       <ShadowBox className="flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">Claim your seat</h2>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-gray-500">
             You&apos;ve been invited to {claimInfo.product_name} on{' '}
             {claimInfo.organization_name}.

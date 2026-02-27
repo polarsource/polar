@@ -170,6 +170,7 @@ export const FieldEvents = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-row items-center">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           Events
         </h2>

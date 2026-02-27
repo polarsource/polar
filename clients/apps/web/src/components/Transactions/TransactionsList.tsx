@@ -63,6 +63,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
             {'product' in transactionMeta.meta &&
               transactionMeta.meta.product && (
                 <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 truncate text-sm text-gray-500">
                     {transactionMeta.meta.product.name}
                   </span>
@@ -152,7 +153,9 @@ const TransactionsList = ({
           return (
             <div className="flex gap-x-4">
               <div className="flex flex-row items-center gap-x-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-sm">→</span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-sm">
                   {platformFeesDisplayNames[transaction.platform_fee_type]}
                 </h3>

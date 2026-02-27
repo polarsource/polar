@@ -52,11 +52,14 @@ export const CustomerPortalSettings = ({
 
   return (
     <div className="flex flex-col gap-y-8">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-2xl">Billing Settings</h3>
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Payment Methods</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               Methods used for subscriptions & one-time purchases
             </p>
@@ -80,7 +83,9 @@ export const CustomerPortalSettings = ({
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Billing Details</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               Update your billing details
             </p>
@@ -102,7 +107,9 @@ export const CustomerPortalSettings = ({
           <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
             <WellHeader className="flex-row items-start justify-between">
               <div className="flex flex-col gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-xl">Billing Managers</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-gray-500">
                   Billing Managers can manage billing details, payment methods,
                   and subscriptions.

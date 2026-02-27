@@ -193,9 +193,11 @@ export const CostsBandedChart = ({
                               className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                               style={{ backgroundColor: item.color }}
                             />
+                            {/* eslint-disable-next-line no-restricted-syntax */}
                             <span className="text-muted-foreground">
                               {item.label}
                             </span>
+                            {/* eslint-disable-next-line no-restricted-syntax */}
                             <span className="text-foreground ml-auto font-mono font-medium tabular-nums">
                               {formattedValue}
                             </span>

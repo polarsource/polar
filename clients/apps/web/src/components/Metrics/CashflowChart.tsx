@@ -98,11 +98,14 @@ const CashflowChart = ({
       <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row gap-x-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Cashflow</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-xl text-gray-500">
               Last 30 Days
             </span>
           </div>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-5xl font-light">
             {formatCurrency('compact')(
               metricsData ? (metricsData.totals.cashflow ?? 0) : 0,
@@ -163,6 +166,7 @@ const CashflowChart = ({
                             key={order.id}
                             className="flex h-8 w-full items-center justify-start gap-x-2 rounded-full bg-gray-100 text-sm text-emerald-500"
                           >
+                            {/* eslint-disable-next-line no-restricted-syntax */}
                             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white">
                               {order.billing_reason === 'purchase' ? (
                                 <CircleDollarSignIcon

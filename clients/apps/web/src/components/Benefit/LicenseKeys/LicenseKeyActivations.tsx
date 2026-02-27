@@ -62,12 +62,15 @@ export const LicenseKeyActivations = ({
 
   return (
     <div className="flex flex-col gap-y-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3>{t('checkout.benefits.licenseKey.activations')}</h3>
       <List size="small">
         {licenseKey?.activations.map((activation) => (
           <ListItem key={activation.id} size="small">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-sm">{activation.label}</h3>
             <div className="flex flex-row items-center gap-x-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 <FormattedDateTime
                   datetime={activation.created_at}

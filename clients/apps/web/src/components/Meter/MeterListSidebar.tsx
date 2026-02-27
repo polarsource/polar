@@ -105,6 +105,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
                     archivedFilter !== 'all' && 'invisible',
                   )}
                 />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>All</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setArchivedFilter('active')}>
@@ -114,6 +115,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
                     archivedFilter !== 'active' && 'invisible',
                   )}
                 />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>Active</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setArchivedFilter('archived')}>
@@ -123,6 +125,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
                     archivedFilter !== 'archived' && 'invisible',
                   )}
                 />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>Archived</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

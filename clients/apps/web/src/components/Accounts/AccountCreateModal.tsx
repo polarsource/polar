@@ -91,6 +91,7 @@ const AccountCreateModal = ({
   return (
     <>
       <div className="flex flex-col gap-y-6 overflow-auto p-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2>Setup payout account</h2>
 
         <Form {...form}>
@@ -100,9 +101,12 @@ const AccountCreateModal = ({
           >
             <AccountCountry />
             {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              </>
             )}
             <Button
               className="self-start"

@@ -77,6 +77,7 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   return (
     consentGiven === 'undecided' && (
       <div className="shadow-3xl dark:bg-polar-950 dark:border-polar-700 dark:text-polar-500 fixed right-8 bottom-8 left-8 z-50 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 md:left-auto md:max-w-96">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           We use tracking cookies to understand how you use the product and help
           us improve it.

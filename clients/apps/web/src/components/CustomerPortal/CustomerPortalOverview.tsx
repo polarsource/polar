@@ -53,7 +53,10 @@ export const CustomerPortalOverview = ({
       {canManageBilling && activeOwnedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-6">
           {activeClaimedSubscriptions.length > 0 && (
-            <h3 className="text-xl">Your Subscriptions</h3>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <h3 className="text-xl">Your Subscriptions</h3>
+            </>
           )}
           <div className="flex flex-col gap-y-4">
             {activeOwnedSubscriptions.map((s) => (
@@ -74,7 +77,9 @@ export const CustomerPortalOverview = ({
       {activeClaimedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Team Seat Access</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               Access provided through team subscription
             </p>
@@ -85,7 +90,9 @@ export const CustomerPortalOverview = ({
               className="dark:bg-polar-900 flex justify-between rounded-2xl bg-gray-50 px-6 py-4"
             >
               <div className="flex flex-col gap-1">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>{s.product.name}</span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 text-sm text-gray-500">
                   {s.product.organization.name}
                 </span>

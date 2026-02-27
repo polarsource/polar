@@ -36,7 +36,9 @@ export const FeeCreditGrantsModal = ({
       modalContent={
         <div className="flex flex-col gap-8 px-8 py-10">
           <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h1 className="text-2xl">Fee Credit Grants</h1>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               Fee Credits are usually granted for promotional, paid campaigns,
               or other purposes.
@@ -53,7 +55,9 @@ export const FeeCreditGrantsModal = ({
                 .map((credit) => (
                   <ListItem key={credit.id} className="p-4" size="small">
                     <div className="flex flex-row items-baseline gap-4">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <h2>{credit.title}</h2>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="dark:text-polar-500 text-gray-500">
                         {new Date(credit.granted_at).toLocaleDateString(
                           'en-US',
@@ -65,6 +69,7 @@ export const FeeCreditGrantsModal = ({
                         )}
                       </span>
                     </div>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>
                       {formatCurrency('accounting')(credit.amount, 'usd')}
                     </span>
@@ -73,6 +78,7 @@ export const FeeCreditGrantsModal = ({
             </List>
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 p-8">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="text-lg">No credits granted</p>
             </div>
           )}

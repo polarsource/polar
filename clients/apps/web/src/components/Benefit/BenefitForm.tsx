@@ -90,6 +90,7 @@ export const BenefitForm = ({
             <FormItem>
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Description</FormLabel>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-400 text-sm text-gray-400">
                   {field.value?.length ?? 0} / 42
                 </span>
@@ -139,6 +140,7 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
             <FormItem>
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Private note</FormLabel>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 text-sm text-gray-500">
                   Markdown Format
                 </span>
@@ -309,6 +311,7 @@ export const DiscordBenefitForm = () => {
                                         className="font-normal"
                                       >
                                         {role.name} —{' '}
+                                        {/* eslint-disable-next-line no-restricted-syntax */}
                                         <span className="text-muted-foreground">
                                           ↑ Roles set above can&apos;t be
                                           granted by the bot.
@@ -343,7 +346,9 @@ export const DiscordBenefitForm = () => {
                   <FormDescription>
                     To grant a specific role, our Polar bot role should be above
                     it in the hierarchy list. You can do so from{' '}
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="font-medium">Server Settings</span> →{' '}
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="font-medium">Roles</span> in Discord.
                   </FormDescription>
                   <FormMessage />
@@ -363,6 +368,7 @@ export const DiscordBenefitForm = () => {
                       defaultChecked={field.value}
                       onCheckedChange={field.onChange}
                     />
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <p className="text-sm">Kick member on revocation</p>
                   </div>
                 </FormControl>

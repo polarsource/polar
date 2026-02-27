@@ -101,6 +101,7 @@ export const MeterPage = ({
         <TabsContent value="overview" className="flex flex-col gap-y-12 pb-12">
           <Well className="flex flex-col rounded-4xl p-2">
             <WellHeader className="flex flex-col gap-4 px-4 pt-4 md:flex-row md:items-center md:justify-between">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-xl">Meter Quantities</h2>
               <div className="flex flex-col gap-2 lg:flex-row">
                 <div>
@@ -141,6 +142,7 @@ export const MeterPage = ({
                 />
               ) : (
                 <div className="flex h-[300px] flex-col items-center justify-center">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="text-lg">No data available</span>
                 </div>
               )}
@@ -148,6 +150,7 @@ export const MeterPage = ({
           </Well>
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-row items-center justify-between">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-xl">Activity</h2>
             </div>
             <MeterActivityCards meter={meter} />
@@ -155,7 +158,9 @@ export const MeterPage = ({
           {meterEvents.length > 0 ? (
             <div className="flex flex-col gap-y-6">
               <div className="flex flex-col gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-xl">Latest meter events</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-gray-500">
                   Recently received meter events
                 </p>
@@ -250,7 +255,9 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
       ].map((card, i) => (
         <Card key={i} className="flex-1 rounded-3xl">
           <CardHeader className="flex flex-col gap-y-0">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">{card.title}</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {card.startDate.toLocaleDateString('en-US', {
                 month: 'long',
@@ -271,6 +278,7 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
             </span>
           </CardHeader>
           <CardContent>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-4xl">
               {card.value ? <FormattedUnits value={card.value} /> : '—'}
             </span>

@@ -264,6 +264,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         return discount.ends_at ? (
           <FormattedDateTime datetime={discount.ends_at} resolution="day" />
         ) : (
+          // eslint-disable-next-line no-restricted-syntax
           <span className="dark:text-polar-500 text-gray-500">Never</span>
         )
       },
@@ -339,6 +340,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             onClick={() => setShowNewModal(true)}
           >
             <AddOutlined fontSize="small" />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>New Discount</span>
           </Button>
         </div>

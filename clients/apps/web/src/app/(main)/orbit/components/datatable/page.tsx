@@ -176,15 +176,21 @@ const orderColumns: DataTableColumnDef<OrderRow>[] = [
         style={{ paddingLeft: `${row.depth * 20}px` }}
       >
         {row.getCanExpand() ? (
-          <span className="dark:text-polar-400 text-gray-500">
-            {row.getIsExpanded() ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-          </span>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <span className="dark:text-polar-400 text-gray-500">
+              {row.getIsExpanded() ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </span>
+          </>
         ) : (
-          <span className="w-3.5" />
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <span className="w-3.5" />
+          </>
         )}
         <Text as="code" variant="mono">
           {String(row.getValue('id') ?? '—')}

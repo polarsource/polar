@@ -49,6 +49,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
               className="size-6 shrink-0"
             />
             <div className="flex flex-row items-baseline gap-x-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 dark:group-data-[state=open]:text-polar-300 text-sm text-gray-500 group-data-[state=open]:text-gray-600">
                 {name}
               </span>
@@ -67,9 +68,11 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
               className="size-10 shrink-0"
             />
             <div className="flex flex-col gap-0.5">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-sm/4 font-medium whitespace-nowrap text-gray-700 dark:text-white">
                 {name}
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 pr-2 font-mono text-xs whitespace-nowrap text-gray-500">
                 {event.external_customer_id}
               </span>
@@ -110,9 +113,11 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
               avatar_url={event.customer.avatar_url ?? null}
             />
             <div className="flex flex-col gap-0.5">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-sm/4 font-medium whitespace-nowrap text-gray-700 dark:text-white">
                 {event.customer.name ?? event.customer.email}
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 pr-2 font-mono text-xs whitespace-nowrap text-gray-500">
                 {event.external_customer_id}
               </span>

@@ -145,6 +145,7 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
 
       {cancellationDate && (
         <div className="flex flex-col gap-y-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Cancellation Details</h3>
           <div className="flex flex-col gap-y-2">
             <DetailRow

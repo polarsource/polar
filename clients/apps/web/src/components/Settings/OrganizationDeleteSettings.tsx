@@ -94,6 +94,7 @@ export default function OrganizationDeleteSettings({
         description={`Are you sure you want to delete "${organization.name}"? This action cannot be undone.`}
         body={
           <div className="dark:text-polar-400 text-sm text-gray-600">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="mb-2">When you delete an organization:</p>
             <ul className="list-inside list-disc space-y-1">
               <li>

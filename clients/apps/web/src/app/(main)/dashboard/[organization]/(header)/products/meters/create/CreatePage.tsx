@@ -110,7 +110,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
           </div>
           <div className="flex h-full flex-1 flex-col gap-y-6 xl:w-1/2 xl:pl-12">
             <div className="flex flex-col gap-y-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-xl">Preview</h2>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-gray-500">
                 Preview the meter with the filter you created. Showing the
                 latest 10 events.

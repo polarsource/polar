@@ -21,11 +21,13 @@ export const MiniMetricChartBox = ({
   return (
     <Card className="rounded-2xl">
       <CardHeader className="pb-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 text-gray-500">
           {title ?? metric?.display_name}
         </span>
       </CardHeader>
       <CardContent>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-2xl">
           {metric &&
             (metric.type === 'scalar'

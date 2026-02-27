@@ -159,6 +159,7 @@ export const BenefitListSidebar = ({
                 )}
               >
                 <div className="flex flex-row items-center gap-3 px-4 py-3">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-gray-200 text-2xl text-black dark:text-white">
                     {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
                   </span>

@@ -118,7 +118,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         <div className="flex items-center space-x-4">
           <div className="shrink-0">{status.icon}</div>
           <div className="flex-1">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className={`text-lg font-medium`}>{status.title}</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 mt-1 text-sm text-gray-600">
               {status.message}
             </p>
@@ -130,7 +132,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
           <div className="flex items-start space-x-3">
             <Info className={`dark:text-polar-400 h-5 w-5 text-gray-600`} />
             <div className="flex-1">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className={`text-sm font-medium`}>What happens next?</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className={`dark:text-polar-400 mt-1 text-sm text-gray-600`}>
                 {status.type === 'pass'
                   ? 'Your organization details passed our automated compliance check. You can accept payments immediately, but a manual review will still occur before your first payout as part of our standard process.'

@@ -1,5 +1,5 @@
 import {
-  type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
   type ElementType,
   type ReactNode,
 } from 'react'
@@ -147,6 +147,12 @@ type StackOwnProps<E extends ElementType> = FlexChildProps &
      */
     horizontalUntil?: StackBreakpoint
     /**
+     * Hidden (display:none) until this breakpoint, then flex.
+     * Equivalent to `hidden {bp}:flex` in Tailwind.
+     * @example <Stack hiddenUntil="md">…</Stack>
+     */
+    hiddenUntil?: StackBreakpoint
+    /**
      * Gap between children — Tailwind spacing scale (gap-N).
      * @example <Stack vertical gap={4}>…</Stack>  // gap-4 = 16 px
      */
@@ -168,7 +174,7 @@ type StackOwnProps<E extends ElementType> = FlexChildProps &
   }
 
 export type StackProps<E extends ElementType = 'div'> = StackOwnProps<E> &
-  Omit<ComponentPropsWithoutRef<E>, keyof StackOwnProps<E>>
+  Omit<ComponentPropsWithRef<E>, keyof StackOwnProps<E>>
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -205,6 +211,7 @@ export function Stack<E extends ElementType = 'div'>({
   vertical,
   verticalUntil,
   horizontalUntil,
+  hiddenUntil,
   alignItems,
   justifyContent,
   flexWrap,
@@ -222,8 +229,17 @@ export function Stack<E extends ElementType = 'div'>({
 }: StackProps<E>) {
   const Tag = (as ?? 'div') as ElementType
 
+  let display: FlexContainerProps['display'] = 'flex'
+  if (hiddenUntil) {
+    const map: Partial<Record<Breakpoint, 'flex' | 'hidden'>> = {
+      default: 'hidden',
+    }
+    map[hiddenUntil] = 'flex'
+    display = map
+  }
+
   const containerClasses = resolveContainerClasses({
-    display: 'flex',
+    display,
     flexDirection: resolveDirection(
       horizontal,
       vertical,

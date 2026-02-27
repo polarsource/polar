@@ -196,6 +196,7 @@ const MetricChartBox = ({
               {metric in EXPERIMENTAL_METRICS && (
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="inline-flex cursor-help">
                       <Status
                         status="Experimental"
@@ -211,12 +212,14 @@ const MetricChartBox = ({
             </div>
           ) : (
             <div className="flex flex-row items-center gap-x-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className={compact ? 'text-base' : 'text-lg'}>
                 {selectedMetric?.display_name}
               </h3>
               {metric in EXPERIMENTAL_METRICS && (
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="inline-flex cursor-help">
                       <Status
                         status="Experimental"
@@ -231,12 +234,14 @@ const MetricChartBox = ({
               )}
             </div>
           )}
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className={compact ? 'text-base' : 'text-5xl font-light'}>
             {metricValue}
           </h2>
           {!compact && (
             <div className="flex flex-col gap-x-6 gap-y-2 md:flex-row md:items-center">
               <div className="flex flex-row items-center gap-x-2 text-sm">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
                 {hoveredPeriod ? (
                   <FormattedDateTime
@@ -244,19 +249,23 @@ const MetricChartBox = ({
                     dateStyle="medium"
                   />
                 ) : (
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {startDate && endDate && (
-                      <FormattedInterval
-                        startDatetime={startDate}
-                        endDatetime={endDate}
-                        hideCurrentYear={false}
-                      />
-                    )}
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span className="dark:text-polar-500 text-gray-500">
+                      {startDate && endDate && (
+                        <FormattedInterval
+                          startDatetime={startDate}
+                          endDatetime={endDate}
+                          hideCurrentYear={false}
+                        />
+                      )}
+                    </span>
+                  </>
                 )}
               </div>
               {previousData && (
                 <div className="flex flex-row items-center gap-x-2 text-sm">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:border-polar-600 h-3 w-3 rounded-full border-2 border-gray-500" />
                   {hoveredPreviousPeriod ? (
                     <FormattedDateTime
@@ -264,15 +273,18 @@ const MetricChartBox = ({
                       dateStyle="medium"
                     />
                   ) : (
-                    <span className="dark:text-polar-500 text-gray-500">
-                      {previousStartDate && previousEndDate && (
-                        <FormattedInterval
-                          startDatetime={previousStartDate}
-                          endDatetime={previousEndDate}
-                          hideCurrentYear={false}
-                        />
-                      )}
-                    </span>
+                    <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
+                      <span className="dark:text-polar-500 text-gray-500">
+                        {previousStartDate && previousEndDate && (
+                          <FormattedInterval
+                            startDatetime={previousStartDate}
+                            endDatetime={previousEndDate}
+                            hideCurrentYear={false}
+                          />
+                        )}
+                      </span>
+                    </>
                   )}
                 </div>
               )}
@@ -343,6 +355,7 @@ const MetricChartBox = ({
             className="flex w-full flex-col items-center justify-center"
             style={{ height }}
           >
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-lg">No data available</span>
           </div>
         )}

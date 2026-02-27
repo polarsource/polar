@@ -171,16 +171,22 @@ export default function ClientPage({
           <div className="flex min-w-0 flex-col gap-1">
             {endpoint.name && endpoint.name.length > 0 ? (
               <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-lg">{endpoint.name}</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-400 truncate font-mono text-sm text-gray-500">
                   {endpoint.url}
                 </p>
               </>
             ) : (
-              <h3 className="text-lg">{endpoint.url}</h3>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <h3 className="text-lg">{endpoint.url}</h3>
+              </>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-sm text-gray-500" id="webhook-status-label">
               {endpoint.enabled ? 'Enabled' : 'Disabled'}
             </span>
@@ -198,6 +204,7 @@ export default function ClientPage({
       </div>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl font-medium">Deliveries</h2>
           <WebhookFilter
             dateRange={dateRange}

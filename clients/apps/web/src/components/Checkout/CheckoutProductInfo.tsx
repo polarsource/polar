@@ -93,9 +93,12 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
                     className="h-[70px] w-[70px] rounded-lg object-cover"
                   />
                   {additionalImages.length > 0 && (
-                    <span className="absolute right-1 bottom-1 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white">
-                      +{additionalImages.length}
-                    </span>
+                    <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
+                      <span className="absolute right-1 bottom-1 rounded-md bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white">
+                        +{additionalImages.length}
+                      </span>
+                    </>
                   )}
                 </button>
               </DialogTrigger>
@@ -116,7 +119,10 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
           )}
           <div className="flex flex-col">
             {product.name ? (
-              <h1 className="text-2xl font-medium">{product.name}</h1>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <h1 className="text-2xl font-medium">{product.name}</h1>
+              </>
             ) : (
               <div className="dark:bg-polar-700 h-6 w-48 animate-pulse rounded-md bg-gray-200" />
             )}

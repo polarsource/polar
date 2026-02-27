@@ -12,9 +12,12 @@ export const EventCostCreationGuideModal = () => {
     <SyntaxHighlighterProvider>
       <div className="flex flex-col gap-8 p-6">
         <div className="flex flex-col gap-y-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h1 className="text-2xl">Event Cost Ingestion</h1>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-gray-500">
             Associate costs with events by adding a{' '}
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <code className="font-mono text-sm">_cost</code> property to your
             event metadata.
           </p>
@@ -52,6 +55,7 @@ const result = await polar.events.ingest({
             className="flex flex-row items-center"
           >
             <Button variant="secondary">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>Learn more</span>
               <ArrowOutwardOutlined fontSize="inherit" className="ml-2" />
             </Button>

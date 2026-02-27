@@ -191,7 +191,10 @@ export const CustomerPortalTeamSection = ({
               }}
             />
             {addMemberError && (
-              <p className="mt-1 text-xs text-red-500">{addMemberError}</p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="mt-1 text-xs text-red-500">{addMemberError}</p>
+              </>
             )}
           </div>
           <Button
@@ -234,19 +237,26 @@ export const CustomerPortalTeamSection = ({
                     <td className="p-4 align-middle">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2">
+                          {/* eslint-disable-next-line no-restricted-syntax */}
                           <span className="text-sm font-medium">
                             {member.name || member.email}
                           </span>
                           {isCurrentUser && (
-                            <span className="dark:text-polar-500 text-xs text-gray-500">
-                              (you)
-                            </span>
+                            <>
+                              {/* eslint-disable-next-line no-restricted-syntax */}
+                              <span className="dark:text-polar-500 text-xs text-gray-500">
+                                (you)
+                              </span>
+                            </>
                           )}
                         </div>
                         {member.name && (
-                          <span className="dark:text-polar-500 text-xs text-gray-500">
-                            {member.email}
-                          </span>
+                          <>
+                            {/* eslint-disable-next-line no-restricted-syntax */}
+                            <span className="dark:text-polar-500 text-xs text-gray-500">
+                              {member.email}
+                            </span>
+                          </>
                         )}
                       </div>
                     </td>

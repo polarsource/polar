@@ -35,6 +35,7 @@ export const SavedCardsSelector = ({
   if (paymentMethods.length === 0) {
     return (
       <div className="space-y-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-sm text-gray-500">No saved payment methods found.</p>
         <Button
           onClick={handleAddNewCard}
@@ -50,6 +51,7 @@ export const SavedCardsSelector = ({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h4 className="font-medium">Saved Payment Methods</h4>
         <div className="space-y-2">
           {paymentMethods.map((paymentMethod) => {

@@ -54,6 +54,7 @@ export default function NewWebhookModal({
     <>
       <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">New webhook</h2>
         </div>
       </InlineModalHeader>

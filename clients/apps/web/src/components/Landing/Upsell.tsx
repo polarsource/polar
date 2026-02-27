@@ -28,9 +28,11 @@ const UpsellCard = ({
     <motion.div className="dark:bg-polar-900 relative flex h-full flex-col gap-y-6 rounded-xl bg-white p-8">
       <div className="flex flex-row items-center gap-3">
         <Icon className="dark:text-polar-300 h-5 w-5 text-gray-600" />
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-xl">{title}</h3>
       </div>
       <div className="flex flex-1 flex-col justify-start gap-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 text-lg text-balance text-gray-500">
           {description}
         </p>
@@ -40,6 +42,7 @@ const UpsellCard = ({
         <Link href={link} target="_blank">
           <Button variant="ghost" className="rounded-full">
             Learn more
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="ml-2">
               <ArrowOutwardOutlined fontSize="inherit" />
             </span>

@@ -67,6 +67,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
       )}
     >
       <div className="flex items-center justify-between p-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-xl">{monthName}</h2>
         <div className="flex items-center gap-x-2">
           <Button
@@ -93,6 +94,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
 
       <div className="flex items-center justify-between px-4 pb-4">
         <div className="flex items-baseline gap-x-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-5xl font-light">
             {(orderMetrics.data?.totals.orders ?? 0).toLocaleString('en-US', {
               style: 'decimal',
@@ -100,6 +102,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
               notation: 'compact',
             })}
           </h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-lg">
             {orderMetrics.data?.totals.orders === 1 ? 'Order' : 'Orders'}
           </span>
@@ -150,13 +153,16 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                         )}
                       >
                         {day.orders > 0 ? (
-                          <span>
-                            {day.orders.toLocaleString('en-US', {
-                              style: 'decimal',
-                              compactDisplay: 'short',
-                              notation: 'compact',
-                            })}
-                          </span>
+                          <>
+                            {/* eslint-disable-next-line no-restricted-syntax */}
+                            <span>
+                              {day.orders.toLocaleString('en-US', {
+                                style: 'decimal',
+                                compactDisplay: 'short',
+                                notation: 'compact',
+                              })}
+                            </span>
+                          </>
                         ) : (
                           <div
                             className={twMerge(
@@ -167,20 +173,27 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                             )}
                           >
                             {day.orders === 0 && isPreviousDay ? (
-                              <span className="dark:bg-polar-700 h-1 w-1 rounded-full bg-gray-200" />
+                              <>
+                                {/* eslint-disable-next-line no-restricted-syntax */}
+                                <span className="dark:bg-polar-700 h-1 w-1 rounded-full bg-gray-200" />
+                              </>
                             ) : isToday(day.timestamp) ? (
-                              <span className="text-white">
-                                {day.orders.toLocaleString('en-US', {
-                                  style: 'decimal',
-                                  compactDisplay: 'short',
-                                  notation: 'compact',
-                                })}
-                              </span>
+                              <>
+                                {/* eslint-disable-next-line no-restricted-syntax */}
+                                <span className="text-white">
+                                  {day.orders.toLocaleString('en-US', {
+                                    style: 'decimal',
+                                    compactDisplay: 'short',
+                                    notation: 'compact',
+                                  })}
+                                </span>
+                              </>
                             ) : undefined}
                           </div>
                         )}
                       </TooltipTrigger>
                       <TooltipContent className="flex flex-col gap-1">
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="dark:text-polar-500 text-sm text-gray-500">
                           {new Date(day.timestamp).toLocaleString('default', {
                             day: 'numeric',
@@ -188,6 +201,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                             year: 'numeric',
                           })}
                         </span>
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span>
                           {day.orders.toLocaleString('en-US', {
                             style: 'decimal',

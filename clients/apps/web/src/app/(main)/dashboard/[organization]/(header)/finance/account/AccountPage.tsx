@@ -298,7 +298,9 @@ export default function ClientPage({
           <ShadowBoxOnMd>
             <div className="flex flex-row items-center justify-between">
               <div className="flex flex-col gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-lg font-medium">All payout accounts</h2>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-sm text-gray-500">
                   Payout accounts you manage
                 </p>

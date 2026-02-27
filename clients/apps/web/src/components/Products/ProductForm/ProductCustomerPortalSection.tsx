@@ -55,6 +55,7 @@ export const ProductCustomerPortalSection = ({
                         <RadioGroupItem value="public" id="visibility-public" />
                         Public
                       </div>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <p className="dark:text-polar-500 text-sm text-gray-500">
                         Shown in the Customer Portal
                       </p>
@@ -74,6 +75,7 @@ export const ProductCustomerPortalSection = ({
                         />
                         Private
                       </div>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <p className="dark:text-polar-500 text-sm text-gray-500">
                         Only purchasable via a direct checkout link
                       </p>

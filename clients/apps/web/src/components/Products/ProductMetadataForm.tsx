@@ -46,6 +46,7 @@ export const ProductMetadataForm = () => {
     <FormItem className="flex flex-col gap-2">
       <div className="flex flex-row items-center justify-between">
         <FormLabel>Metadata</FormLabel>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 text-sm text-gray-500">
           <Button
             size="sm"
@@ -123,9 +124,12 @@ export const ProductMetadataForm = () => {
       )}
 
       {fields.length === 0 && (
-        <p className="dark:text-polar-500 dark:bg-polar-800 flex h-10 items-center justify-center rounded-2xl bg-gray-50 text-center text-sm text-gray-500 italic">
-          No metadata added.
-        </p>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <p className="dark:text-polar-500 dark:bg-polar-800 flex h-10 items-center justify-center rounded-2xl bg-gray-50 text-center text-sm text-gray-500 italic">
+            No metadata added.
+          </p>
+        </>
       )}
     </FormItem>
   )

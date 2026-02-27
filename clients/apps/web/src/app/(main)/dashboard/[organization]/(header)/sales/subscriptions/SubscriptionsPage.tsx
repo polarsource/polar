@@ -302,6 +302,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <DataTableColumnHeader column={column} title={key} />
           ),
           cell: (props) => (
+            // eslint-disable-next-line no-restricted-syntax
             <span className="font-mono">{props.getValue() as string}</span>
           ),
         }))
@@ -351,6 +352,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             wrapperClassNames="gap-x-2"
           >
             <FileDownloadOutlined fontSize="inherit" />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Export</span>
           </Button>
         </div>

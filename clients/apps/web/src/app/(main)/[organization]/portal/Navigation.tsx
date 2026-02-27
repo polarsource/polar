@@ -93,11 +93,18 @@ const NavigationContent = ({
             className="dark:text-polar-500 flex flex-row items-center gap-x-4 py-2 text-gray-500"
           >
             <ArrowBackOutlined fontSize="inherit" />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Back to {organization.name}</span>
           </Link>
         )}
         <div className="flex flex-col">
-          {authenticatedUser?.name ? <h3>{authenticatedUser?.name}</h3> : null}
+          {authenticatedUser?.name ? (
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <h3>{authenticatedUser?.name}</h3>
+            </>
+          ) : null}
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span
             className={twMerge(
               authenticatedUser?.name

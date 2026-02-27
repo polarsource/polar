@@ -138,15 +138,20 @@ export const EventRow = ({
               </div>
             )}
             <div className="flex flex-row items-center gap-x-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-xs">{event.label}</span>
               <EventSourceBadge source={event.source} />
               {event.child_count > 0 && (
-                <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
-                  {event.child_count}{' '}
-                  {event.child_count === 1 ? 'child' : 'children'}
-                </span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
+                    {event.child_count}{' '}
+                    {event.child_count === 1 ? 'child' : 'children'}
+                  </span>
+                </>
               )}
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-xs text-gray-500 capitalize">
               {formattedTimestamp}
             </span>
@@ -168,6 +173,7 @@ export const EventRow = ({
                     wrapperClassNames="gap-x-1"
                     className="text-xxs h-6 rounded-sm px-2 font-mono"
                   >
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="text-xxs font-mono">View Event</span>
                   </Button>
                 </Link>
@@ -201,9 +207,11 @@ export const EventRow = ({
                       avatar_url={event.customer?.avatar_url ?? null}
                     />
                     <div className="flex flex-col">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="text-xs">
                         {event.customer?.name ?? '—'}
                       </span>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
                         {event.customer?.email}
                       </span>
@@ -226,6 +234,7 @@ export const EventRow = ({
                       externalId={event.external_customer_id}
                     />
                     <div className="flex flex-col">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="text-xs">
                         {
                           getAnonymousCustomerName(
@@ -233,6 +242,7 @@ export const EventRow = ({
                           )[0]
                         }
                       </span>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
                         {event.external_customer_id}
                       </span>

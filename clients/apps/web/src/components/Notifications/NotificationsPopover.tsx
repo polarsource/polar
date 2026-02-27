@@ -181,7 +181,10 @@ const MaintainerNewPaidSubscription = ({
                 <>{payload.tier_name}</>
               </InternalLink>
             ) : (
-              <span className="font-bold">{payload.tier_name}</span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="font-bold">{payload.tier_name}</span>
+              </>
             )}{' '}
             {payload.tier_price_amount !== null && (
               <>
@@ -220,7 +223,10 @@ const MaintainerNewProductSale = ({
                 <>{payload.product_name}</>
               </InternalLink>
             ) : (
-              <span className="font-bold">{payload.product_name}</span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="font-bold">{payload.product_name}</span>
+              </>
             )}{' '}
             ({formatCurrency('compact')(payload.product_price_amount, 'usd')})
           </>
@@ -267,6 +273,7 @@ const MaintainerAccountCreditsGranted = ({
         text: (
           <>
             {payload.organization_name} has received{' '}
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="font-bold">
               {formatCurrency('compact')(payload.amount, 'usd')}
             </span>{' '}

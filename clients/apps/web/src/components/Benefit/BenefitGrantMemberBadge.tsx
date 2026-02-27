@@ -9,6 +9,7 @@ export const BenefitGrantMemberBadge = ({
   member,
 }: BenefitGrantMemberBadgeProps) => {
   if (!member) {
+    // eslint-disable-next-line no-restricted-syntax
     return <span className="dark:text-polar-500 text-sm text-gray-500">—</span>
   }
 

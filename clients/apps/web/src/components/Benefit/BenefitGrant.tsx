@@ -268,9 +268,12 @@ const BenefitGrantOAuth = ({
         )}
       </div>
       {(error || grantError) && (
-        <p className="text-sm text-red-500 dark:text-red-400">
-          {error || grantError?.message}
-        </p>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <p className="text-sm text-red-500 dark:text-red-400">
+            {error || grantError?.message}
+          </p>
+        </>
       )}
     </div>
   )
@@ -348,12 +351,15 @@ export const BenefitGrant = ({
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-row items-center gap-x-4">
         <div className="flex flex-row items-center gap-x-2 text-xs text-gray-500 dark:text-white">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:bg-polar-700 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-gray-50 text-sm">
             {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
           </span>
         </div>
         <div className="flex flex-col">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-sm font-medium">{benefit.description}</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
             {t(`benefitTypes.${benefit.type}`)}
           </p>

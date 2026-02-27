@@ -41,6 +41,7 @@ export const CustomerPortalOrders = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-xl">Order History</h3>
       </div>
       <DataTable
@@ -55,6 +56,7 @@ export const CustomerPortalOrders = ({
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="flex shrink">
                 <OrderStatus status={row.original.status} />
               </span>
@@ -78,6 +80,7 @@ export const CustomerPortalOrders = ({
               const order = row.original
 
               return (
+                // eslint-disable-next-line no-restricted-syntax
                 <span className="flex justify-end gap-2">
                   <Button
                     variant="secondary"

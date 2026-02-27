@@ -122,11 +122,14 @@ const CheckoutSeatInvitations = ({
   return (
     <Well className="dark:border-polar-700 dark:bg-polar-800 w-full border border-gray-200 bg-white">
       <WellHeader className="gap-y-4 text-left">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-xl">Invite team members</h2>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 text-sm text-gray-500">
           Invite team members to access your purchase.
         </p>
         <div className="flex items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="text-sm">
             {availableSeats} {availableSeats === 1 ? 'seat' : 'seats'} available
           </p>
@@ -147,7 +150,10 @@ const CheckoutSeatInvitations = ({
                   className={`${input.error ? 'border-red-500' : ''}`}
                 />
                 {input.error && (
-                  <p className="mt-1 text-xs text-red-500">{input.error}</p>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <p className="mt-1 text-xs text-red-500">{input.error}</p>
+                  </>
                 )}
               </div>
               {input.sent ? (
@@ -198,20 +204,23 @@ const CheckoutSeatInvitations = ({
         )}
 
         {sentCount > 0 && (
-          <p className="dark:text-polar-500 mx-auto max-w-xs text-center text-xs text-pretty text-gray-500">
-            Successfully assigned {sentCount}{' '}
-            {sentCount === 1 ? 'seat' : 'seats'}.
-            {availableSeats > 0 && (
-              <>
-                {' '}
-                You can assign{' '}
-                {availableSeats === 1
-                  ? 'one more seat'
-                  : `${availableSeats} more seats`}
-                , or do that later through the Customer Portal.
-              </>
-            )}
-          </p>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <p className="dark:text-polar-500 mx-auto max-w-xs text-center text-xs text-pretty text-gray-500">
+              Successfully assigned {sentCount}{' '}
+              {sentCount === 1 ? 'seat' : 'seats'}.
+              {availableSeats > 0 && (
+                <>
+                  {' '}
+                  You can assign{' '}
+                  {availableSeats === 1
+                    ? 'one more seat'
+                    : `${availableSeats} more seats`}
+                  , or do that later through the Customer Portal.
+                </>
+              )}
+            </p>
+          </>
         )}
       </WellContent>
     </Well>

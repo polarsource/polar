@@ -91,6 +91,7 @@ export const OrderPaymentRetryModal = ({
             {/* Error State */}
             {error && (
               <div className="py-4 text-center">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="mb-4 text-red-600">{error}</p>
                 <Button
                   onClick={() => {

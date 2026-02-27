@@ -169,6 +169,7 @@ export const ToolCallGroup = ({
     const label = getToolLabel(part)
 
     return (
+      // eslint-disable-next-line no-restricted-syntax
       <p className="dark:text-polar-500 not-prose flex items-center gap-1 text-gray-500">
         <LogoIcon size={24} className="-ml-1.5" />
         {label}
@@ -187,6 +188,7 @@ export const ToolCallGroup = ({
           className="dark:text-polar-500 flex items-center gap-1 text-left text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"
         >
           <LogoIcon size={24} className="-ml-1.5" />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>
             Took {parts.length} action{parts.length === 1 ? '' : 's'} to
             configure your account
@@ -196,12 +198,15 @@ export const ToolCallGroup = ({
           {parts.map((part, index) => {
             const label = getToolLabel(part)
             return (
-              <p
-                key={`${messageId}-tool-${index}`}
-                className="dark:text-polar-500 flex items-center gap-1 text-sm text-gray-500"
-              >
-                {label}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p
+                  key={`${messageId}-tool-${index}`}
+                  className="dark:text-polar-500 flex items-center gap-1 text-sm text-gray-500"
+                >
+                  {label}
+                </p>
+              </>
             )
           })}
         </div>
@@ -218,13 +223,17 @@ export const ToolCallGroup = ({
       <LogoIcon size={24} className="-ml-1.5" />
       {isComplete ? (
         <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>
             Took {parts.length} action{parts.length === 1 ? '' : 's'} to
             configure your account
           </span>
         </>
       ) : (
-        <span>{getToolLabel(lastPart)}</span>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <span>{getToolLabel(lastPart)}</span>
+        </>
       )}
     </button>
   )

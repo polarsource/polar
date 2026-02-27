@@ -99,11 +99,13 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
           <div className="overflow-scroll p-6">
             {!canWithdraw && (
               <div className="flex flex-col gap-6">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p>
                   Your organization is currently under review, as part of our
                   compliance process. Withdrawals are disabled until the review
                   is complete.
                 </p>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p>
                   <Link
                     href="https://polar.sh/docs/merchant-of-record/account-reviews"
@@ -114,6 +116,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                       variant="default"
                       className="flex flex-row items-center"
                     >
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span>Learn more</span>
                       <ArrowOutwardOutlined
                         className="ml-2"
@@ -127,6 +130,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
             {errorMessage && (
               <div className="flex flex-col gap-8">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="text-black dark:text-white">{errorMessage}</p>
                 <div className="flex flex-row gap-x-4">
                   <Button variant="default" onClick={hide}>
@@ -139,7 +143,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-8">
                   <div className="flex flex-col gap-2">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <h1 className="text-2xl">Withdraw your balance</h1>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <p className="dark:text-polar-500 text-gray-500">
                       You&apos;re about to withdraw your balance to your bank
                       account.

@@ -63,7 +63,9 @@ const CreateCustomFieldModalContent = ({
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
       <div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-lg">Create Custom Field</h2>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
           Custom Fields allow you to ask additional information from your
           customers at checkout, and will be available for use in all products
@@ -78,9 +80,12 @@ const CreateCustomFieldModalContent = ({
           >
             <CustomFieldForm update={false} />
             {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              </>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button

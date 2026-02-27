@@ -120,6 +120,7 @@ export const EditOAuthClientModal = ({
     <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">Edit OAuth App</h2>
         </div>
       </InlineModalHeader>
@@ -143,9 +144,11 @@ export const EditOAuthClientModal = ({
             <ShadowBoxOnMd className="flex flex-col gap-y-8 md:bg-gray-100">
               <div className="flex flex-row items-start justify-between">
                 <div className="flex flex-col gap-y-1">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="font-medium text-gray-950 dark:text-white">
                     Delete OAuth Application
                   </h3>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-500 text-sm text-gray-500">
                     This action will delete the OAuth Application configuration
                     permanently

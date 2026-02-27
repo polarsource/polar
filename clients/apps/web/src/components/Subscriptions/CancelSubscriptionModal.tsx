@@ -125,6 +125,7 @@ const CancelSubscriptionModal = ({
   return (
     <div className="flex h-full flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-xl">Cancel Subscription</h2>
       </div>
       <div className="flex h-full flex-col gap-4">
@@ -157,6 +158,7 @@ const CancelSubscriptionModal = ({
                             {periodEndOutput && (
                               <>
                                 {'  '}
+                                {/* eslint-disable-next-line no-restricted-syntax */}
                                 <span>({periodEndOutput})</span>
                               </>
                             )}

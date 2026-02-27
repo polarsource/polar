@@ -27,8 +27,10 @@ export default function IdentityStep({
       {/* Header */}
       <div className="space-y-3 text-center">
         <div className="flex items-center justify-center space-x-3">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h1 className="text-2xl font-semibold">Identity Verification</h1>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
           {identityVerificationStatus === 'verified'
             ? 'Your identity has been successfully verified.'
@@ -47,9 +49,11 @@ export default function IdentityStep({
             <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-8">
               {identityVerificationStatus === 'pending' ? (
                 <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h4 className="mb-2 font-medium">
                     Identity Verification Pending
                   </h4>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 mx-auto mb-6 max-w-md text-sm text-gray-600">
                     Your identity verification is being processed. This usually
                     takes a few minutes but can take up to 24 hours.
@@ -60,16 +64,20 @@ export default function IdentityStep({
                 </>
               ) : identityVerificationStatus === 'verified' ? (
                 <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h4 className="mb-2 font-medium">Identity Verified</h4>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 mx-auto text-sm text-gray-600">
                     Your identity has been successfully verified.
                   </p>
                 </>
               ) : identityVerificationStatus === 'failed' ? (
                 <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h4 className="mb-2 font-medium text-red-600 dark:text-red-400">
                     Identity Verification Failed
                   </h4>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 mx-auto mb-6 max-w-md text-sm text-gray-600">
                     We were unable to verify your identity. This could be due to
                     document quality or information mismatch. Please try again.
@@ -90,7 +98,9 @@ export default function IdentityStep({
                       <CheckCircle className="dark:text-polar-400 h-4 w-4 text-gray-600" />
                     </div>
                   </div>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h4 className="mb-2 font-medium">Verify Your Identity</h4>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 mx-auto mb-6 max-w-md text-sm text-gray-600">
                     To comply with financial regulations and secure your
                     account, we need to verify your identity using a

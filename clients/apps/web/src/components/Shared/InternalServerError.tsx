@@ -7,9 +7,11 @@ export default function InternalServerError({ digest }: { digest?: string }) {
   return (
     <div className="dark:bg-polar-950 flex h-screen w-full flex-col items-center justify-center gap-y-12 bg-gray-50 px-12">
       <div className="flex flex-col items-center justify-center gap-y-1">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-2xl font-medium text-black dark:text-white">
           Something went wrong
         </h1>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-400 -mb-1 max-w-md text-center text-base text-balance text-gray-600">
           Sorry, we&rsquo;re having an issue on our end. Please try again later
           or reach out to support if the issue persists.

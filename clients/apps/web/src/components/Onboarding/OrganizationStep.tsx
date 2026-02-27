@@ -180,11 +180,13 @@ export const OrganizationStep = ({
         <FadeUp className="flex flex-col items-center gap-y-8">
           <LogoIcon size={50} />
           <div className="flex flex-col items-center gap-y-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h1 className="text-3xl">
               {hasExistingOrg
                 ? 'Create a new organization'
                 : "Let's get you started"}
             </h1>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-lg text-gray-600">
               {hasExistingOrg ? (
                 'Follow the instructions below to create a new organization'
@@ -298,6 +300,7 @@ export const OrganizationStep = ({
                               className="mt-1"
                             />
                             <div className="flex flex-col gap-y-2 text-sm">
+                              {/* eslint-disable-next-line no-restricted-syntax */}
                               <label
                                 htmlFor="terms"
                                 className="cursor-pointer leading-relaxed font-medium"
@@ -350,9 +353,12 @@ export const OrganizationStep = ({
                 </FadeUp>
               </div>
               {errors.root && (
-                <p className="text-destructive-foreground text-sm">
-                  {errors.root.message}
-                </p>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <p className="text-destructive-foreground text-sm">
+                    {errors.root.message}
+                  </p>
+                </>
               )}
               <FadeUp className="flex flex-col gap-y-3">
                 <Button

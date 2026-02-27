@@ -20,9 +20,11 @@ export const PolarVsStripePage = () => {
   return (
     <ResourceLayout title="Polar vs Stripe" toc={tocItems}>
       <ResourceSection id="overview" title="Overview">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-lg">
           Choosing the right payment infrastructure for your software business.
         </p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-gray-500">
           While Stripe is a powerful payment processor, Polar is a complete
           billing infrastructure platform built specifically for developers who
@@ -133,8 +135,10 @@ export const PolarVsStripePage = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">Polar</h3>
               <div className="text-4xl">4% + 40¢</div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-sm text-gray-500">
                 per transaction
               </p>
@@ -142,18 +146,21 @@ export const PolarVsStripePage = () => {
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Global tax compliance included
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   No hidden fees
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Merchant of Record service
                 </span>
@@ -163,8 +170,10 @@ export const PolarVsStripePage = () => {
 
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">Stripe</h3>
               <div className="text-4xl">2.9% + 30¢</div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-sm text-gray-500">
                 per transaction
               </p>
@@ -172,18 +181,21 @@ export const PolarVsStripePage = () => {
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Tax compliance is your responsibility
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Subscriptions at 0.7% added fee
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Additional costs for international sales
                 </span>
@@ -191,6 +203,7 @@ export const PolarVsStripePage = () => {
             </ul>
           </div>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-sm text-gray-500">
           While Stripe&apos;s base processing fee appears lower, Polar&apos;s
           pricing includes Merchant of Record services, global tax compliance,
@@ -202,7 +215,9 @@ export const PolarVsStripePage = () => {
       <ResourceSection id="developer-experience" title="Developer Experience">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Designed for developers</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Both Stripe and Polar offer excellent developer experiences, but
               Polar is purpose-built for software monetization with modern
@@ -211,21 +226,27 @@ export const PolarVsStripePage = () => {
           </div>
           <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">6-line integration</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar provides a 6-line integration with framework adapters,
                 making it easy to get started with minimal code.
               </p>
             </li>
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">Framework adapters</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar provides native support for Next.js, BetterAuth, Laravel,
                 and more.
               </p>
             </li>
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">Open source</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar is open source, so you can inspect and contribute to the
                 codebase.
@@ -237,7 +258,9 @@ export const PolarVsStripePage = () => {
 
       <ResourceSection id="merchant-of-record" title="Merchant of Record">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">The key differentiator</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             This is where Polar and Stripe fundamentally differ. Polar acts as
             the Merchant of Record, meaning we handle all the complexity of
@@ -246,6 +269,7 @@ export const PolarVsStripePage = () => {
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="dark:bg-polar-800 flex flex-col gap-3 bg-gray-50 p-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">With Polar (MoR)</h4>
             <ul className="flex flex-col gap-2">
               <li className="dark:text-polar-300 flex items-start gap-2 text-sm text-gray-600">
@@ -268,6 +292,7 @@ export const PolarVsStripePage = () => {
           </div>
 
           <div className="dark:bg-polar-800 flex flex-col gap-3 bg-gray-50 p-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">With Stripe (Payment Processor)</h4>
             <ul className="flex flex-col gap-2">
               <li className="dark:text-polar-300 flex items-start gap-2 text-sm text-gray-600">
@@ -293,9 +318,11 @@ export const PolarVsStripePage = () => {
 
       <ResourceSection id="why-polar" title="Why Choose Polar?">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">
             Polar is purpose-built for software businesses
           </h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             While Stripe is a powerful general-purpose payment processor, Polar
             is specifically designed for developers monetizing software. If you
@@ -305,28 +332,36 @@ export const PolarVsStripePage = () => {
         </div>
         <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Zero tax complexity</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Sell globally from day one without worrying about VAT, GST, or
               sales tax.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Lower total cost</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               No need for additional tax software, accountants, or legal counsel
               for international sales.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Built for software</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Features designed specifically for SaaS, digital products, and
               software licensing.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Open source transparency</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               See exactly how the platform works and contribute to its
               development
@@ -338,7 +373,9 @@ export const PolarVsStripePage = () => {
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Ready to simplify your payments?</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Join thousands of developers who have chosen Polar for hassle-free
               global software monetization.

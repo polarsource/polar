@@ -33,9 +33,11 @@ export function VoiceSection() {
               key={item.trait}
               className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-48"
             >
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-5xl font-light tracking-tighter md:text-9xl">
                 {item.trait}
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 max-w-xl text-base leading-relaxed text-neutral-500 md:text-2xl">
                 {item.description}
               </p>

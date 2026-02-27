@@ -127,6 +127,7 @@ export default function CostsSidebarFilters({
       onScroll={handleScroll}
     >
       <div className="flex flex-col items-stretch gap-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-sm">Timeline</h3>
         <DateRangePicker
           date={dateRange}
@@ -135,6 +136,7 @@ export default function CostsSidebarFilters({
         />
       </div>
       <div className="flex flex-col gap-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-sm">Grouping</h3>
         <IntervalPicker
           interval={interval}
@@ -144,6 +146,7 @@ export default function CostsSidebarFilters({
         />
       </div>
       <div className="flex flex-col gap-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-sm">Events</h3>
         <div className="flex flex-col gap-y-2">
           {(costData?.totals ?? []).map((totals) => (
@@ -252,6 +255,7 @@ function EventStatisticsCard({
       )}
     >
       <div className="flex flex-col justify-between gap-1.5">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-sm font-medium">
           {eventStatistics.label ?? eventStatistics.name}
         </h2>

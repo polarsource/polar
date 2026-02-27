@@ -49,6 +49,7 @@ export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
           accessorKey: 'customer_email',
           header: 'Email',
           cell: ({ row }) => (
+            // eslint-disable-next-line no-restricted-syntax
             <span className="text-sm">
               {row.original.customer_email || '—'}
             </span>

@@ -19,9 +19,11 @@ const BenefitRow = ({
 }) => {
   return (
     <div className="dark:text-polar-100 flex flex-row items-center gap-x-2 text-gray-600">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="dark:text-polar-200 flex h-4 w-4 items-center justify-center text-2xl text-gray-600">
         {icon}
       </span>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="text-sm">{children}</span>
     </div>
   )

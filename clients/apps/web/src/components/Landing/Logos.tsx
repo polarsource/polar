@@ -232,6 +232,7 @@ export const Speakeasy = () => {
           ></path>
         </svg>
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p className="sr-only">Speakeasy Logo</p>
       <svg
         width="106"

@@ -180,6 +180,7 @@ export const SeatManagementTable = ({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-lg">Seat Management</h3>
       </div>
 
@@ -220,6 +221,7 @@ export const SeatManagementTable = ({
                   return (
                     <tr key={seat.id} className="border-b transition-colors">
                       <td className="p-4 align-middle">
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="text-sm">
                           {seat.customer_email || '—'}
                         </span>
@@ -295,9 +297,12 @@ export const SeatManagementTable = ({
                             }}
                           />
                           {error && (
-                            <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
-                              {error}
-                            </p>
+                            <>
+                              {/* eslint-disable-next-line no-restricted-syntax */}
+                              <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
+                                {error}
+                              </p>
+                            </>
                           )}
                         </div>
                         <Button
@@ -324,11 +329,13 @@ export const SeatManagementTable = ({
                         className="flex w-full items-center justify-between px-4 py-4 text-left transition-colors"
                         onClick={() => setIsInviting(true)}
                       >
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="dark:text-polar-400 text-gray-500">
                           {availableSeats === 1
                             ? 'One more seat available'
                             : `${availableSeats} more seats available`}
                         </span>
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="dark:bg-polar-700 dark:hover:bg-polar-600 flex h-10 cursor-pointer items-center rounded-xl border border-black/4 bg-gray-100 px-3 text-sm font-medium text-black hover:bg-gray-200 dark:border-white/5 dark:text-white">
                           Invite member
                         </span>

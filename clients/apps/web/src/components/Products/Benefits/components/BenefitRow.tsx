@@ -87,9 +87,11 @@ export const BenefitRow = ({
             {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
           </div>
           <div className="flex flex-col">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className={twMerge('text-sm', selected ? 'font-medium' : '')}>
               {benefit.description}
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-xs text-gray-500">
               {benefitsDisplayNames[benefit.type]}
             </span>

@@ -67,16 +67,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header={
         <>
           <div className="flex flex-row items-center gap-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:bg-polar-700 flex h-12 w-12 shrink-0 flex-row items-center justify-center rounded-full bg-gray-200 text-2xl text-black dark:text-white">
               <LinkOutlined />
             </span>
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="text-lg">
                 {(checkoutLink.label?.length ?? 0) > 0
                   ? checkoutLink.label
                   : 'Untitled'}
               </p>
               <div className="dark:text-polar-500 flex flex-row items-center gap-2 font-mono text-sm text-gray-500">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>
                   {checkoutLink.products.length === 1
                     ? checkoutLink.products[0].name

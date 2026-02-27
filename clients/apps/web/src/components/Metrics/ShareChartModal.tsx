@@ -189,6 +189,7 @@ const MetricThemeSelector = ({
         />
       </TooltipTrigger>
       <TooltipContent>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="text-sm">{name}</span>
       </TooltipContent>
     </Tooltip>

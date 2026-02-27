@@ -45,7 +45,9 @@ export const SubscriptionStatusLabel = ({
 
   return (
     <div className={twMerge('flex flex-row items-center gap-x-2', className)}>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className={twMerge('h-2 w-2 rounded-full border-2', statusColor)} />
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="capitalize">{label}</span>
     </div>
   )

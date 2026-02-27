@@ -252,9 +252,12 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           )}
 
           {errors.billing_address?.message && (
-            <p className="text-destructive-foreground text-sm">
-              {errors.billing_address.message}
-            </p>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <p className="text-destructive-foreground text-sm">
+                {errors.billing_address.message}
+              </p>
+            </>
           )}
         </FormItem>
         <FormField

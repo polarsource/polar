@@ -14,6 +14,7 @@ export const Pagination = ({
   onPageChange,
 }: PaginationProps) => (
   <div className="flex items-center gap-2">
+    {/* eslint-disable-next-line no-restricted-syntax */}
     <span className="dark:text-polar-500 text-xs text-gray-500">
       Page {page} of {totalPages}
     </span>

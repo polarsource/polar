@@ -70,6 +70,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
                 variants={itemVariants}
               >
                 <Check className="h-4 w-4 text-emerald-500" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="leading-relaxed text-pretty">{bullet}</p>
               </motion.li>
             ))}

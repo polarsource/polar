@@ -19,19 +19,23 @@ export const MeterIngestionGuide = () => {
         <Well className="flex flex-col gap-12 rounded-4xl p-4 md:flex-row">
           <div className="flex w-full flex-col gap-6 p-6 md:max-w-sm">
             <WellHeader>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-2xl">Usage Billing with Meters</h2>
             </WellHeader>
             <WellContent className="flex grow flex-col justify-between gap-6">
               <div className="flex flex-col gap-4">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-300 text-gray-700">
                   Meters are aggregated filters on ingested events. They are
                   used to calculate your customer&apos;s usage of whatever you
                   choose to measure.
                 </p>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-300 text-gray-700">
                   For example, if you want to measure the number of API calls
                   your customer makes, you can create a meter that counts the
                   number of events with an arbitrary name like{' '}
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <code>api_call</code>.
                 </p>
               </div>

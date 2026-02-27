@@ -26,11 +26,15 @@ export const SettingsGroupItem: React.FC<
     )}
   >
     <div className="flex w-full flex-col md:max-w-1/2">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-sm font-medium">{title}</h3>
       {description && (
-        <p className="dark:text-polar-500 text-xs text-gray-500">
-          {description}
-        </p>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <p className="dark:text-polar-500 text-xs text-gray-500">
+            {description}
+          </p>
+        </>
       )}
     </div>
     {children && (

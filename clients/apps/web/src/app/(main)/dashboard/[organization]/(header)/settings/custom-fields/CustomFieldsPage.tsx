@@ -149,6 +149,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         const value = getValue() as string
         return (
           <div className="flex flex-row items-center gap-1">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>{value}</span>
           </div>
         )
@@ -223,6 +224,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           onClick={() => setShowNewModal(true)}
         >
           <AddOutlined className="h-4 w-4" />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>New Custom Field</span>
         </Button>
       }

@@ -48,31 +48,39 @@ export const LicenseKeyDetails = ({
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {t('checkout.benefits.licenseKey.status')}
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>{getLicenseKeyStatusLabel(licenseKey.status, t)}</span>
           </div>
           {licenseKey.limit_usage && (
             <div className="flex flex-row items-center justify-between">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-gray-500">
                 {t('checkout.benefits.licenseKey.usage')}
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>
                 {licenseKey.usage} / {licenseKey.limit_usage}
               </span>
             </div>
           )}
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {t('checkout.benefits.licenseKey.validations')}
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>{licenseKey.validations}</span>
           </div>
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {t('checkout.benefits.licenseKey.validatedAt')}
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>
               {licenseKey.last_validated_at ? (
                 <FormattedDateTime
@@ -80,14 +88,21 @@ export const LicenseKeyDetails = ({
                   locale={locale}
                 />
               ) : (
-                <span>{t('checkout.benefits.licenseKey.neverValidated')}</span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span>
+                    {t('checkout.benefits.licenseKey.neverValidated')}
+                  </span>
+                </>
               )}
             </span>
           </div>
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {t('checkout.benefits.licenseKey.expiryDate')}
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>
               {licenseKey.expires_at ? (
                 <FormattedDateTime
@@ -95,7 +110,10 @@ export const LicenseKeyDetails = ({
                   locale={locale}
                 />
               ) : (
-                <span>{t('checkout.benefits.licenseKey.noExpiry')}</span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span>{t('checkout.benefits.licenseKey.noExpiry')}</span>
+                </>
               )}
             </span>
           </div>

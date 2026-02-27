@@ -36,11 +36,14 @@ const StatusLabel = ({
 
   return (
     <div className={`flex flex-row items-center gap-x-2`}>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="capitalize">{children}</span>
       {prettyEventDate && (
         <Pill color="gray">
           {icon}
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>{prettyEventDate}</span>
         </Pill>
       )}

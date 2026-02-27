@@ -101,7 +101,9 @@ export const ProductOverview = ({
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-row items-center justify-between gap-x-6">
             <div className="flex flex-col gap-y-1">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-lg">Subscriptions</h2>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 Showing 10 most recent subscriptions for {product.name}
               </p>
@@ -190,6 +192,7 @@ export const ProductOverview = ({
                 enableSorting: false,
                 header: () => null,
                 cell: (props) => (
+                  // eslint-disable-next-line no-restricted-syntax
                   <span className="flex flex-row justify-end gap-x-2">
                     <Link
                       href={`/dashboard/${organization.slug}/customers/${props.row.original.customer.id}`}
@@ -216,7 +219,9 @@ export const ProductOverview = ({
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-row items-center justify-between gap-x-6">
           <div className="flex flex-col gap-y-1">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-lg">Orders</h2>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-500">
               Showing last 10 orders for {product.name}
             </p>
@@ -257,6 +262,7 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Amount" />
               ),
               cell: ({ row: { original: order } }) => (
+                // eslint-disable-next-line no-restricted-syntax
                 <span>
                   {formatCurrency('compact')(order.net_amount, order.currency)}
                 </span>
@@ -269,6 +275,7 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Status" />
               ),
               cell: ({ row: { original: order } }) => (
+                // eslint-disable-next-line no-restricted-syntax
                 <span className="flex shrink">
                   <OrderStatus status={order.status} />
                 </span>
@@ -289,6 +296,7 @@ export const ProductOverview = ({
               enableSorting: true,
               header: () => null,
               cell: (props) => (
+                // eslint-disable-next-line no-restricted-syntax
                 <span className="flex flex-row justify-end">
                   <Link
                     href={`/dashboard/${organization.slug}/sales/${props.row.original.id}`}
@@ -311,7 +319,9 @@ export const ProductOverview = ({
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-row items-center justify-between gap-x-6">
             <div className="flex flex-col gap-y-1">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-lg">Applicable Discounts</h2>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 All Discounts valid for {product.name}
               </p>
@@ -337,6 +347,7 @@ export const ProductOverview = ({
                   <DataTableColumnHeader column={column} title="Code" />
                 ),
                 cell: ({ row: { original: discount } }) => (
+                  // eslint-disable-next-line no-restricted-syntax
                   <span>{discount.code}</span>
                 ),
               },
@@ -347,6 +358,7 @@ export const ProductOverview = ({
                   <DataTableColumnHeader column={column} title="Amount" />
                 ),
                 cell: ({ row: { original: discount } }) => (
+                  // eslint-disable-next-line no-restricted-syntax
                   <span>{getDiscountDisplay(discount)}</span>
                 ),
               },

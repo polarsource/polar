@@ -176,6 +176,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     <DashboardBody
       title="Events"
       header={
+        // eslint-disable-next-line no-restricted-syntax
         <h3 className="dark:text-polar-500 text-xl text-gray-500">
           {events.length > 0 && (
             <>
@@ -208,6 +209,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>Reset Filters</span>
                 </TooltipContent>
               </Tooltip>
@@ -237,6 +239,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             </div>
             <div className="flex h-full grow flex-col gap-y-6">
               <div className="flex flex-col gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-sm">Timeline</h3>
                 <DateRangePicker
                   date={dateRange}
@@ -245,6 +248,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 />
               </div>
               <div className="flex flex-col gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-sm">Sorting</h3>
                 <Select
                   value={sorting}
@@ -269,6 +273,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
                   return (
                     <div className="flex flex-col gap-y-2" key={source}>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <h3 className="text-sm capitalize">{source} Events</h3>
                       <List size="small" className="rounded-xl">
                         {eventTypes.map((eventType) => (
@@ -293,9 +298,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                               )
                             }
                           >
+                            {/* eslint-disable-next-line no-restricted-syntax */}
                             <span className="w-full truncate">
                               {eventType.label}
                             </span>
+                            {/* eslint-disable-next-line no-restricted-syntax */}
                             <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
                               {Number(eventType.occurrences).toLocaleString(
                                 'en-US',
@@ -355,7 +362,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <div className="flex h-full flex-col gap-y-4">
         {events.length === 0 ? (
           <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h1 className="text-2xl font-normal">No Events Found</h1>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               There are no events matching your current filters
             </p>
@@ -369,17 +378,22 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 rounded-xl py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
                   onClick={() => fetchNextPage()}
                 >
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
                     Showing {events.length} events
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
                     Show more
                   </span>
                 </button>
               ) : (
-                <span className="dark:text-polar-500/60 dark:bg-polar-800 flex h-10 w-full items-center justify-center rounded-xl bg-gray-50 text-sm text-gray-400">
-                  Showing all {events.length} events
-                </span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span className="dark:text-polar-500/60 dark:bg-polar-800 flex h-10 w-full items-center justify-center rounded-xl bg-gray-50 text-sm text-gray-400">
+                    Showing all {events.length} events
+                  </span>
+                </>
               )}
             </div>
           </>

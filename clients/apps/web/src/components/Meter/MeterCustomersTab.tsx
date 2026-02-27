@@ -74,7 +74,9 @@ const MeterCustomersTab = ({
                 avatar_url={customer.avatar_url ?? null}
               />
               <div className="flex flex-col">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-xs">{customer.name ?? '—'}</span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 text-xxs text-gray-500">
                   {customer.email ?? '—'}
                 </span>

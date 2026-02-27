@@ -45,11 +45,13 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
     >
       <div className="flex flex-col gap-y-4">
         <div className="flex items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="dark:text-polar-500 text-lg text-gray-500">
             Last 6 Months
           </h2>
         </div>
 
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-4xl font-light">
           {productId ? 'Product Revenue' : 'Revenue'}
         </h3>
@@ -96,6 +98,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                   )}
                 </TooltipTrigger>
                 <TooltipContent>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>
                     {formatCurrency('compact')(period.revenue ?? 0, 'usd')} in{' '}
                     {format(period.timestamp, 'MMMM')}
@@ -103,10 +106,12 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </TooltipContent>
               </Tooltip>
               <div className="flex flex-col text-left">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-sm lg:text-base">
                   {format(period.timestamp, 'MMMM')}
                 </span>
                 <div className="flex flex-row items-center justify-between gap-x-2">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-sm text-gray-500">
                     {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}
                   </span>
@@ -127,6 +132,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                         )}
                       </TooltipTrigger>
                       <TooltipContent>
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="text-xs">
                           {percentageChangeComparedToPreviousPeriod === Infinity
                             ? 'Infinity'

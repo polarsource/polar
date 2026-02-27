@@ -70,6 +70,7 @@ const UpdateBenefitModalContent = ({
   return (
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-lg">Update Benefit</h2>
       </div>
       <div className="flex flex-col gap-y-6">

@@ -205,12 +205,15 @@ export const AssistantStep = ({
                     if (part.type === 'reasoning') {
                       if (part.state === 'streaming') {
                         return (
-                          <p
-                            key={`${message.id}-${index}`}
-                            className="dark:text-polar-500 animate-pulse text-sm text-gray-500 italic"
-                          >
-                            Thinking…
-                          </p>
+                          <>
+                            {/* eslint-disable-next-line no-restricted-syntax */}
+                            <p
+                              key={`${message.id}-${index}`}
+                              className="dark:text-polar-500 animate-pulse text-sm text-gray-500 italic"
+                            >
+                              Thinking…
+                            </p>
+                          </>
                         )
                       }
                       return null

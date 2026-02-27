@@ -5,6 +5,7 @@ import { NotificationCreateAccount } from './notification_create_account'
 import { NotificationCreditsGranted } from './notification_credits_granted'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
+import { NotificationSubscriptionCanceled } from './notification_subscription_canceled'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
@@ -50,6 +51,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   webhook_endpoint_disabled: WebhookEndpointDisabled,
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
+  notification_subscription_canceled: NotificationSubscriptionCanceled,
   notification_create_account: NotificationCreateAccount,
   notification_credits_granted: NotificationCreditsGranted,
 }

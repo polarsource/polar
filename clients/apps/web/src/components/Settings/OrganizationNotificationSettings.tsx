@@ -115,6 +115,27 @@ const OrganizationNotificationSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Subscription Cancellations"
+            description="Send a notification when subscriptions are canceled"
+          >
+            <FormField
+              control={control}
+              name="subscription_canceled"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
         </SettingsGroup>
       </form>
     </Form>

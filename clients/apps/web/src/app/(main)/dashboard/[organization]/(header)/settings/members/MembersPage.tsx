@@ -127,14 +127,20 @@ export default function ClientPage({
             <Avatar avatar_url={member.avatar_url} name={member.email} />
             <div className="fw-medium">{member.email}</div>
             {member.is_admin && (
-              <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                Admin
-              </span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  Admin
+                </span>
+              </>
             )}
             {isCurrentUser && (
-              <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                You
-              </span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  You
+                </span>
+              </>
             )}
           </div>
         )
@@ -200,10 +206,12 @@ export default function ClientPage({
       header={
         <Button onClick={openInviteMemberModal} variant="default">
           <Add className="mr-2" fontSize="small" />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>Invite</span>
         </Button>
       }
     >
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p className="dark:text-polar-500 text-gray-500">
         Manage users who have access to this organization. All members are
         entitled to view and manage organization settings, products,
@@ -302,6 +310,7 @@ function InviteMemberModal({
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-y-6 p-8">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-lg font-medium">Invite User</h3>
       <Input
         type="email"

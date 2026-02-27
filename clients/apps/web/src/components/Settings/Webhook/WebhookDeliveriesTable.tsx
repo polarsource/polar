@@ -160,6 +160,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
           return <ExpandedRow {...props} />
         }
 
+        // eslint-disable-next-line no-restricted-syntax
         return <span className="text-xs">{delivery.id}</span>
       },
     },
@@ -187,6 +188,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
 
         if (delivery.http_code) {
           return (
+            // eslint-disable-next-line no-restricted-syntax
             <span
               className={twMerge(success ? 'text-green-500' : 'text-red-500')}
             >
@@ -195,6 +197,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
           )
         }
 
+        // eslint-disable-next-line no-restricted-syntax
         return <span>Failed</span>
       },
     },
@@ -319,15 +322,19 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
     <div className="flex flex-col gap-y-4">
       <div className="grid w-fit grid-cols-2 gap-2 text-sm">
         <div>Event ID</div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <code className="text-xs">{delivery.webhook_event.id}</code>
 
         <div>Event Timestamp</div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <code className="text-xs">{delivery.webhook_event.created_at}</code>
 
         <div>Delivery ID</div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <code className="text-xs">{delivery.id}</code>
 
         <div>Sent at</div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <code className="text-xs">{delivery.created_at}</code>
       </div>
       <div>

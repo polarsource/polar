@@ -17,6 +17,7 @@ export const AuthModal = ({
   const title = isSignup ? 'Sign Up' : 'Log In'
 
   const copy = isSignup ? (
+    // eslint-disable-next-line no-restricted-syntax
     <p className="dark:text-polar-500 text-xl text-gray-500">
       Join thousands of developers &amp; startups monetizing their products with
       Polar.
@@ -29,6 +30,7 @@ export const AuthModal = ({
         <LogoIcon className="text-black dark:text-white" size={60} />
 
         <div className="flex flex-col gap-y-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h1 className="text-3xl">{title}</h1>
           {copy}
         </div>

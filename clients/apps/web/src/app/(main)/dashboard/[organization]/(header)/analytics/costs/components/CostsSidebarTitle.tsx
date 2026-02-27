@@ -19,6 +19,7 @@ export function CostsSidebarTitle({
 
   return (
     <div className="flex flex-row items-center justify-between gap-1">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h2 className="text-base font-medium">
         <Link href={`/dashboard/${organizationSlug}/analytics/costs`}>
           Costs

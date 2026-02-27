@@ -31,6 +31,7 @@ const FAQItem = ({
           {number}
         </div>
         <div className="flex-1">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg lg:text-xl dark:text-white">{question}</h3>
         </div>
         <div className="shrink-0">
@@ -47,6 +48,7 @@ const FAQItem = ({
         }`}
       >
         <div className="pr-12 pb-8 pl-4 lg:pl-[84px]">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 leading-relaxed text-gray-700">
             {answer}
           </p>
@@ -90,17 +92,21 @@ export const WhyPolarPage = () => {
       toc={tocItems}
     >
       <ResourceSection id="introduction" title="Introduction">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-lg">Monetizing your software should be easy.</p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-gray-500">
           Polar is an open-source billing infrastructure platform designed
           specifically for developers who want to monetize their software
           without the complexity of traditional payment systems.
         </p>
         <blockquote className="dark:border-polar-700 flex flex-col gap-y-4 border border-gray-200 p-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             The speed at which Polar is executing on the financial
             infrastructure primitives the new world needs is very impressive
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-500 text-sm text-gray-500">
             — Guillermo Rauch, CEO & Founder of Vercel
           </span>
@@ -135,9 +141,11 @@ export const WhyPolarPage = () => {
 
       <ResourceSection id="mor" title="Merchant of Record">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">
             Leave billing infrastructure and international tax headaches to us.
           </h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             We take on the liability of international sales taxes globally for
             you. So you can focus on growing your business instead of accounting
@@ -165,14 +173,18 @@ export const WhyPolarPage = () => {
 
       <ResourceSection id="developer-experience" title="Developer Experience">
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Developer Ergonomics</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             We design our APIs & SDKs with developer ergonomics in mind. We put
             the developer experience in the front seat.
           </p>
         </div>
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Developer Tools</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             We build developer tools that make it easy to iterate quickly and
             maintain systems effectively. We&apos;re not just building a billing
@@ -181,7 +193,9 @@ export const WhyPolarPage = () => {
           </p>
         </div>
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Open Source</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Polar is open source, licensed under the Apache 2.0 license. We
             believe that the best way to build a great developer experience is
@@ -201,14 +215,18 @@ export const WhyPolarPage = () => {
       <ResourceSection id="pricing" title="Pricing">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3>Cheapest MoR on the market</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Polar is priced 20% cheaper than other MoR alternatives. 4% and
               40¢ per transaction.
             </p>
           </div>
           <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3>No Hidden Fees</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               While payouts may incur fees charged by the payout providers (such
               as Stripe), Polar does not add any extra fees or markup.
@@ -220,7 +238,9 @@ export const WhyPolarPage = () => {
       {/* Why Switch */}
       <ResourceSection id="why-switch" title="Why switch to Polar?">
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Integrate with 6 lines of code</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             We&apos;ve gone the extra mile to build ergonomic adapters that
             plugs right into the most popular frameworks. If that isn&apos;t
@@ -229,7 +249,9 @@ export const WhyPolarPage = () => {
           </p>
         </div>
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Secure, robust & reliable payments</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             You can rest assured that your customers will be able to pay you
             securely and reliably. We&apos;ve built a payment system that works
@@ -237,7 +259,9 @@ export const WhyPolarPage = () => {
           </p>
         </div>
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>We&apos;re deeply invested in your success</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Polar is built by developers, for developers. We listen to your
             feedback, and we&apos;re always looking for ways to make it easier
@@ -250,11 +274,17 @@ export const WhyPolarPage = () => {
       <ResourceSection id="who-switches" title="Who else is switching?">
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Trusted by leading SaaS companies</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-700">
               Companies like{' '}
-              <span className="text-black dark:text-white">Tailwind Labs</span>,{' '}
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span className="text-black dark:text-white">
+                Tailwind Labs
+              </span>, {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-black dark:text-white">Midday</span>,{' '}
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-black dark:text-white">Stilla AI</span> &
               thousands of other SaaS companies have already made the switch to
               Polar.
@@ -313,7 +343,9 @@ export const WhyPolarPage = () => {
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Ready to make the switch?</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Join thousands of teams who have already transformed their payment
               infrastructure with Polar.

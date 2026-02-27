@@ -182,11 +182,13 @@ export const CheckoutConfirmation = ({
           avatar_url={organization.avatarUrl}
           name={organization.name}
         />
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-2xl font-medium">
           {status === 'confirmed' && t('checkout.confirmation.processingTitle')}
           {status === 'succeeded' && t('checkout.confirmation.successTitle')}
           {status === 'failed' && t('checkout.confirmation.failedTitle')}
         </h1>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 text-gray-500">
           {status === 'confirmed' &&
             t('checkout.confirmation.processingDescription')}
@@ -231,6 +233,7 @@ export const CheckoutConfirmation = ({
                   maxWaitingTimeMs={maxWaitingTimeMs}
                 />
               )}
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               {t('checkout.footer.merchantOfRecord')}
             </p>
@@ -238,6 +241,7 @@ export const CheckoutConfirmation = ({
         )}
       </div>
       <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span>{t('checkout.footer.poweredBy')}</span>
         <LogoType className="h-5" />
       </div>

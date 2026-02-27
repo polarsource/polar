@@ -13,6 +13,7 @@ const CardPaymentMethod = ({
         height="1.5em"
         brand={payment.method_metadata.brand}
       />
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="capitalize">
         {`•••• ${payment.method_metadata.last4}`}
       </span>
@@ -24,6 +25,7 @@ const PaymentMethod = ({ payment }: { payment: schemas['Payment'] }) => {
   if (isCardPayment(payment)) {
     return <CardPaymentMethod payment={payment} />
   }
+  // eslint-disable-next-line no-restricted-syntax
   return <span className="capitalize">{payment.method}</span>
 }
 

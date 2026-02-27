@@ -176,6 +176,7 @@ const ProgressIndicator = ({
               </div>
 
               <div className="mt-3 max-w-24 text-center">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p
                   className={`text-xs font-medium ${
                     isCompleted
@@ -415,7 +416,9 @@ export default function StreamlinedAccountReview({
     <div className="mx-auto w-full max-w-4xl space-y-8">
       {/* Header */}
       <div className="space-y-2 text-center">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-2xl font-semibold">Set up your payout account</h1>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-400 text-gray-600">
           Complete these steps to start accepting payments
         </p>
@@ -442,8 +445,10 @@ export default function StreamlinedAccountReview({
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h1 className="text-2xl font-semibold">Organization Details</h1>
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
                 {requireDetails
                   ? "Tell us about your organization so we can review if it's an acceptable use case for Polar."
@@ -478,8 +483,10 @@ export default function StreamlinedAccountReview({
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h1 className="text-2xl font-semibold">Compliance Check</h1>
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
                 {organizationReviewStatus?.verdict
                   ? 'Review your validation results and appeal status below.'
@@ -517,6 +524,7 @@ export default function StreamlinedAccountReview({
       {/* Status footer */}
       {currentStepConfig && (
         <div className="text-center">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="text-sm text-gray-500">
             Step {steps.findIndex((s) => s.id === currentStep) + 1} of{' '}
             {steps.length}: {currentStepConfig.description}

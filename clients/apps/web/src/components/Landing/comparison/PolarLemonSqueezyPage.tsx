@@ -18,10 +18,12 @@ export const PolarVsLemonSqueezyPage = () => {
   return (
     <ResourceLayout title="Polar vs Lemon Squeezy" toc={tocItems}>
       <ResourceSection id="overview" title="Overview">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-lg">
           Comparing modern Merchant of Record solutions for indie developers and
           SaaS businesses.
         </p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-gray-500">
           Both Polar and Lemon Squeezy are Merchant of Record platforms that
           handle tax compliance globally. While Lemon Squeezy caters to solo
@@ -132,8 +134,10 @@ export const PolarVsLemonSqueezyPage = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">Polar</h3>
               <div className="text-4xl">4% + 40¢</div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-sm text-gray-500">
                 per transaction
               </p>
@@ -141,18 +145,21 @@ export const PolarVsLemonSqueezyPage = () => {
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   20% cheaper than Lemon Squeezy
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   No hidden fees or surprise charges
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CheckOutlined className="text-green-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   All features included at one price
                 </span>
@@ -162,8 +169,10 @@ export const PolarVsLemonSqueezyPage = () => {
 
           <div className="dark:border-polar-700 flex flex-col gap-4 border border-gray-200 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">Lemon Squeezy</h3>
               <div className="text-4xl">5% + 50¢</div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-sm text-gray-500">
                 per transaction
               </p>
@@ -171,18 +180,21 @@ export const PolarVsLemonSqueezyPage = () => {
             <ul className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Higher base transaction fee
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Additional fees for certain features
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-300 text-sm text-gray-600">
                   Limited advanced features
                 </span>
@@ -190,6 +202,7 @@ export const PolarVsLemonSqueezyPage = () => {
             </ul>
           </div>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-sm text-gray-500">
           At $50,000 monthly revenue, Polar saves you $500/month. At $100,000,
           you save $1,000/month compared to Lemon Squeezy.
@@ -199,9 +212,11 @@ export const PolarVsLemonSqueezyPage = () => {
       <ResourceSection id="developer-experience" title="Developer Experience">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">
               Built for developers who want full control
             </h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Lemon Squeezy is designed for simplicity, which is great for
               getting started quickly. However, Polar provides both simplicity
@@ -211,21 +226,27 @@ export const PolarVsLemonSqueezyPage = () => {
           </div>
           <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">6-line integration</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar provides a 6-line integration with framework adapters,
                 making it easy to get started with minimal code.
               </p>
             </li>
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">Framework adapters</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar provides native support for Next.js, BetterAuth, Laravel,
                 and more.
               </p>
             </li>
             <li>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="font-medium">Open source</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-300 text-gray-500">
                 Polar is open source, so you can inspect and contribute to the
                 codebase.
@@ -237,7 +258,9 @@ export const PolarVsLemonSqueezyPage = () => {
 
       <ResourceSection id="scalability" title="Scalability & Features">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Built to scale with your business</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             While Lemon Squeezy works well for small projects and indie
             creators, Polar is designed to grow with you from your first sale to
@@ -246,6 +269,7 @@ export const PolarVsLemonSqueezyPage = () => {
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="dark:bg-polar-800 flex flex-col gap-3 bg-gray-50 p-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Polar at Scale</h4>
             <ul className="flex flex-col gap-2">
               <li className="dark:text-polar-300 flex items-start gap-2 text-sm text-gray-600">
@@ -268,6 +292,7 @@ export const PolarVsLemonSqueezyPage = () => {
           </div>
 
           <div className="dark:bg-polar-800 flex flex-col gap-3 bg-gray-50 p-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Lemon Squeezy Limitations</h4>
             <ul className="flex flex-col gap-2">
               <li className="dark:text-polar-300 flex items-start gap-2 text-sm text-gray-600">
@@ -293,9 +318,11 @@ export const PolarVsLemonSqueezyPage = () => {
 
       <ResourceSection id="why-polar" title="Why Choose Polar?">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">
             Start simple, scale to enterprise without switching
           </h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Lemon Squeezy is great for getting started, but many developers
             quickly outgrow its limitations. Polar gives you the same simple
@@ -305,25 +332,33 @@ export const PolarVsLemonSqueezyPage = () => {
         </div>
         <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-3">
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Better pricing</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               20% cheaper with the same MoR benefits (4% vs 5%).
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">More powerful</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Advanced features for complex use cases and scale.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Developer-first</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Modern tooling, TypeScript-first, framework adapters.
             </p>
           </li>
           <li>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="font-medium">Open source</h4>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Full transparency and community-driven development.
             </p>
@@ -334,7 +369,9 @@ export const PolarVsLemonSqueezyPage = () => {
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Choose a platform that grows with you</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Get the simplicity of Lemon Squeezy with the power and scalability
               to take your business to the next level.

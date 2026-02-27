@@ -76,6 +76,7 @@ const FileUploadProgress = ({ file }: { file: FileObject }) => {
           </div>
         </div>
         <div className="flex w-8">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="text-sm">{pct}%</p>
         </div>
       </div>
@@ -146,6 +147,7 @@ const FilenameEditor = ({
   return (
     <>
       <div className={twMerge('flex flex-row', className)}>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p
           ref={paragraphRef}
           suppressContentEditableWarning
@@ -172,6 +174,7 @@ const FilenameEditor = ({
 const FileUploadDetails = ({ file }: { file: FileObject }) => {
   return (
     <div className="dark:text-polar-500 text-gray-500">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p className="text-xs">{file.size_readable}</p>
     </div>
   )

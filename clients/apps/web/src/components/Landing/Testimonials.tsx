@@ -14,11 +14,14 @@ export const companyTestimonials = [
     logo: <StillaAI size={48} />,
     text: (
       <>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           Polar&apos;s Python SDK and Webhook infrastructure made our billing
           integration straightforward.
         </p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>It gave us production-ready billing in hours, not weeks.</p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>It&apos;s rare to find a vendor that moves this fast.</p>
       </>
     ),
@@ -31,7 +34,9 @@ export const companyTestimonials = [
     avatar: '/assets/landing/testamonials/eric.jpg',
     text: (
       <>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>Polar was a turning point for Repo Prompt.</p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           I went from dreading payments to having everything live in a weekend.
         </p>
@@ -48,6 +53,7 @@ export const userTestimonials = [
     verified: true,
     avatar: '/assets/landing/testamonials/rauch.jpg',
     text: (
+      // eslint-disable-next-line no-restricted-syntax
       <p>
         The speed at which Polar is executing on the financial infrastructure
         primitives the new world needs is very impressive.
@@ -62,7 +68,9 @@ export const userTestimonials = [
     avatar: '/assets/landing/testamonials/steven.jpg',
     text: (
       <>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>Open source + great DX + responsive support always wins.</p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           If you&apos;re selling stuff online and haven&apos;t tried Polar yet —
           100% recommend doing so!
@@ -78,7 +86,9 @@ export const userTestimonials = [
     avatar: '/assets/landing/testamonials/mitchell.jpg',
     text: (
       <>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>I&apos;ve joined Polar as an advisor!</p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           I think it benefits everyone for devs to have more options to get paid
           to work on their passions, to support upstreams, and for users to have
@@ -96,6 +106,7 @@ export const userTestimonials = [
     avatar: '/assets/landing/testamonials/lee.jpg',
     text: (
       <>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>I switched to Polar a few weeks back. Best decision ever.</p>
       </>
     ),
@@ -106,6 +117,7 @@ export const userTestimonials = [
     company: 'Midday',
     verified: true,
     avatar: '/assets/landing/testamonials/pontus.jpg',
+    // eslint-disable-next-line no-restricted-syntax
     text: <p>You can tell Polar is building DX first.</p>,
   },
   {
@@ -116,14 +128,17 @@ export const userTestimonials = [
     avatar: '/assets/landing/testamonials/tony.jpg',
     text: (
       <>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           Highly recommend using Polar for billing. Easiest and quickest payment
           integration I’ve done in… ever actually!
         </p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>
           Within 50 minutes of signing up had onboarded, integrated, tested in
           sandbox and was migrating to Production.
         </p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>That’s hard to beat.</p>
       </>
     ),
@@ -186,10 +201,13 @@ export const Testamonial = ({
         </div>
       </div>
       <div className="flex flex-col">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-600 mb-4 text-gray-400">—</p>
         <div className="flex flex-row items-center gap-x-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>{name}</span>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 text-gray-500">{company}</span>
       </div>
     </Link>
@@ -200,9 +218,11 @@ export const Testimonials = () => {
   return (
     <div className="flex flex-col items-center gap-y-12 md:gap-y-24 md:py-12">
       <div className="flex flex-col items-center gap-y-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Testimonials
         </span>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
           Why people love Polar
         </h1>

@@ -374,14 +374,19 @@ export const OrderPaymentRetry = ({
     <div className="space-y-4">
       {/* Order Summary */}
       <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="mb-2 font-medium">Order Summary</h3>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Description:</span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>{order.description}</span>
           </div>
           <div className="flex justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Amount:</span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>
               ${(order.total_amount / 100).toFixed(2)}{' '}
               {order.currency.toUpperCase()}
@@ -409,9 +414,11 @@ export const OrderPaymentRetry = ({
                 />
               </svg>
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="text-lg font-medium">
               {showRetryButton ? 'Payment Failed' : 'Payment Successful!'}
             </p>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
               {showRetryButton
                 ? 'You can try again or contact support if the issue persists.'
@@ -437,11 +444,14 @@ export const OrderPaymentRetry = ({
             className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
             role="status"
           >
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="!absolute -m-px! h-px! w-px! overflow-hidden! border-0! p-0! whitespace-nowrap! [clip:rect(0,0,0,0)]!">
               Loading...
             </span>
           </div>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="text-lg font-medium">Processing your payment...</p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="mt-2 text-sm text-gray-500">
             This may take a few moments. Please don&apos;t close this window.
           </p>
@@ -453,7 +463,9 @@ export const OrderPaymentRetry = ({
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
               <WalletCards className="h-8 w-8 text-blue-600" />
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="text-lg font-medium">Processing payment...</p>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="mt-2 text-sm text-gray-500">
               Using your saved payment method
             </p>
@@ -469,6 +481,7 @@ export const OrderPaymentRetry = ({
         <div className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <label className="mb-2 block text-sm font-medium">
                 Payment Method
               </label>

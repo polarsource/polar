@@ -217,12 +217,7 @@ function TableHeader({ cols }: { cols: string[] }) {
       style={{ gridTemplateColumns: `repeat(${cols.length}, 1fr)` }}
     >
       {cols.map((col) => (
-        <Text
-          key={col}
-          as="span"
-          variant="caption"
-          className="tracking-widest uppercase"
-        >
+        <Text key={col} as="span" variant="caption">
           {col}
         </Text>
       ))}
@@ -245,6 +240,7 @@ function TableRow({ cells, cols }: { cells: ReactNode[]; cols: number }) {
 
 function Swatch({ color }: { color: string }) {
   return (
+    // eslint-disable-next-line no-restricted-syntax
     <span
       className="inline-block h-4 w-4 rounded-full border border-black/10 dark:border-white/10"
       style={{ backgroundColor: color }}
@@ -284,12 +280,14 @@ export default function TokensPage() {
               cols={4}
               cells={[
                 <Mono key="token">{token}</Mono>,
+                // eslint-disable-next-line no-restricted-syntax
                 <span key="light" className="inline-flex items-center gap-2">
                   <Swatch color={light} />
                   <Text as="span" variant="caption">
                     {lightLabel}
                   </Text>
                 </span>,
+                // eslint-disable-next-line no-restricted-syntax
                 <span key="dark" className="inline-flex items-center gap-2">
                   <Swatch color={dark} />
                   <Text as="span" variant="caption">

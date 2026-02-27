@@ -53,7 +53,9 @@ const SpanEventDetailsCard = ({ event }: { event: schemas['UserEvent'] }) => {
                   <BotIcon className="dark:text-polar-500 size-3 text-gray-500" />
                 </dt>
                 <dd>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{llmMetadata.vendor}</span>/
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{llmMetadata.model}</span>
                 </dd>
               </div>
@@ -168,13 +170,18 @@ function TreeNode({
         <div className="-ml-1 flex flex-col gap-y-1 rounded-lg p-1 transition-colors duration-150">
           <div className="flex flex-row items-center justify-between gap-2">
             <div className="flex flex-row items-center gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-sm font-medium">{event.label}</span>
               <div className="flex flex-row items-center gap-2">
                 {showEventType && (
-                  <span className="dark:text-polar-500 text-xs text-gray-500">
-                    {event.name}
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span className="dark:text-polar-500 text-xs text-gray-500">
+                      {event.name}
+                    </span>
+                  </>
                 )}
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
                   +{formattedTimestamp}
                 </span>
@@ -182,9 +189,12 @@ function TreeNode({
             </div>
 
             {costDisplay && (
-              <span className="dark:text-polar-500 dark:group-hover:text-polar-300 font-mono text-sm text-gray-500 tabular-nums transition-colors duration-150 group-hover:text-gray-700">
-                {costDisplay}
-              </span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="dark:text-polar-500 dark:group-hover:text-polar-300 font-mono text-sm text-gray-500 tabular-nums transition-colors duration-150 group-hover:text-gray-700">
+                  {costDisplay}
+                </span>
+              </>
             )}
           </div>
         </div>
@@ -323,9 +333,12 @@ export function EventRow({
             className="text-sm font-medium"
           >
             {event.label === eventType.label ? (
-              <span className="dark:text-polar-200 truncate font-mono font-normal text-gray-600">
-                {event.id}
-              </span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="dark:text-polar-200 truncate font-mono font-normal text-gray-600">
+                  {event.id}
+                </span>
+              </>
             ) : (
               event.label
             )}
@@ -358,6 +371,7 @@ export function EventRow({
         >
           {costMetadata && (
             <div className="ml-auto flex flex-row items-center justify-end gap-x-3">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-mono">
                 {formatCurrency('subcent')(
                   parsedCost,

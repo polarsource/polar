@@ -151,6 +151,7 @@ export const LicenseKeysPage = ({
 
   const LicenseKeyContextView = selectedLicenseKey ? (
     <div className="flex flex-col gap-y-8 p-8">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h1 className="text-xl">License Key</h1>
       <div className="flex flex-row items-center gap-x-3">
         <Avatar
@@ -159,6 +160,7 @@ export const LicenseKeysPage = ({
           name={selectedLicenseKey.customer.email}
         />
         <div className="flex flex-col">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>{selectedLicenseKey.customer.email}</span>
         </div>
       </div>
@@ -213,6 +215,7 @@ export const LicenseKeysPage = ({
       </TabsList>
       <TabsContent value="license-keys">
         <div className="flex flex-col gap-y-6">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">License Keys</h2>
           <LicenseKeysList
             isLoading={isLoading}

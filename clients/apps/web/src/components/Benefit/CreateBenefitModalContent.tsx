@@ -99,7 +99,9 @@ const CreateBenefitModalContent = ({
   return (
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-lg">Create Benefit</h2>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
           Created benefits will be available for use in all products of your
           organization
@@ -110,9 +112,12 @@ const CreateBenefitModalContent = ({
           <form className="flex flex-col gap-y-6">
             <NewBenefitForm organization={organization} />
             {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              </>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button

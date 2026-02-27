@@ -20,6 +20,7 @@ export default async function Page(props: {
         <LogoIcon size={60} className="mb-6 text-black dark:text-white" />
         <div className="dark:text-polar-400 mb-2 text-center text-gray-500">
           We sent a verification code to{' '}
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-300 font-medium text-gray-600">
             {email}
           </span>

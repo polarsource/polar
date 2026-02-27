@@ -82,6 +82,7 @@ export const PolarLogotype = ({
             onClick={handleCopyLogoToClipboard}
           >
             <Clipboard className="h-3 w-3" />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Copy Logo as SVG</span>
           </DropdownMenuItem>
           <DropdownMenuItem

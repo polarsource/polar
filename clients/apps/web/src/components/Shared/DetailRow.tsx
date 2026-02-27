@@ -17,6 +17,7 @@ export const DetailRow = ({
 }: DetailRowProps) => {
   return (
     <div className="flex flex-col text-sm md:flex-row md:items-baseline md:justify-between md:gap-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3
         className={twMerge(
           'dark:text-polar-500 flex-1 text-gray-500',
@@ -25,6 +26,7 @@ export const DetailRow = ({
       >
         {label}
       </h3>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span
         className={twMerge(
           'dark:md:hover:bg-polar-800 group flex flex-1 flex-row flex-nowrap items-center justify-between gap-x-2 rounded-md transition-colors duration-75 md:px-2.5 md:py-1 hover:md:bg-gray-100',
@@ -33,6 +35,7 @@ export const DetailRow = ({
         )}
       >
         {value ?? '—'}
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="opacity-0 group-hover:opacity-100">{action}</span>
       </span>
     </div>

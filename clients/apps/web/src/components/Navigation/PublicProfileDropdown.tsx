@@ -76,6 +76,7 @@ const PublicProfileDropdown = ({
                   href={`${CONFIG.FRONTEND_BASE_URL}/dashboard`}
                   icon={<SpaceDashboardOutlined fontSize="inherit" />}
                 >
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="mx-2 text-sm">Dashboard</span>
                 </LinkItem>
               )}
@@ -83,6 +84,7 @@ const PublicProfileDropdown = ({
                 href={`${CONFIG.FRONTEND_BASE_URL}/dashboard/account`}
                 icon={<Face fontSize="inherit" />}
               >
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="mx-2 text-sm">Account</span>
               </LinkItem>
 
@@ -92,6 +94,7 @@ const PublicProfileDropdown = ({
                 href={`${CONFIG.BASE_URL}/v1/auth/logout`}
                 icon={<LogoutOutlined fontSize="small" />}
               >
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="mx-2 py-2">Log out</span>
               </LinkItem>
             </ul>

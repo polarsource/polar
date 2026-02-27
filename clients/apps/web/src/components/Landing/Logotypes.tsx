@@ -52,6 +52,7 @@ export const Logotypes = () => {
       initial="hidden"
     >
       <div className="flex flex-col items-center gap-y-12">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-polar-500 text-center text-2xl">
           Powering billing for thousands of startups
         </h3>

@@ -68,9 +68,12 @@ export const NavPopover = ({
             )}
           >
             {section.title && (
-              <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
-                {section.title}
-              </h3>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
+                  {section.title}
+                </h3>
+              </>
             )}
             <div
               className={twMerge(
@@ -87,11 +90,15 @@ export const NavPopover = ({
                   target={target}
                   className="dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
                 >
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium">{label}</span>
                   {subtitle && (
-                    <span className="dark:text-polar-500 text-gray-500">
-                      {subtitle}
-                    </span>
+                    <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
+                      <span className="dark:text-polar-500 text-gray-500">
+                        {subtitle}
+                      </span>
+                    </>
                   )}
                 </Link>
               ))}

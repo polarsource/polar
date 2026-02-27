@@ -81,9 +81,11 @@ export default function Resources() {
   return (
     <div className="mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-16">
       <div className="flex flex-col gap-y-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-3xl md:text-5xl">Resources</h3>
       </div>
       <div className="flex flex-col gap-y-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-2xl">Platform</h3>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {resourceLinks.map((link) => (
@@ -95,7 +97,9 @@ export default function Resources() {
             >
               <ArrowOutwardOutlined fontSize="inherit" />
               <div className="flex flex-col gap-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="font-mono text-xl">{link.title}</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
                 </p>
@@ -105,6 +109,7 @@ export default function Resources() {
         </div>
       </div>
       <div className="flex flex-col gap-y-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-2xl">Comparisons</h3>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {comparisonLinks.map((link) => (
@@ -116,7 +121,9 @@ export default function Resources() {
             >
               <ArrowOutwardOutlined fontSize="inherit" />
               <div className="flex flex-col gap-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="font-mono text-xl">{link.title}</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
                 </p>

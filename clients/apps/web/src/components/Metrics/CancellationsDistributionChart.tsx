@@ -82,6 +82,7 @@ export default function CancellationsDistributionChart({
   return (
     <div className="relative">
       <div className="p-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-lg">Breakdown</h3>
       </div>
 
@@ -112,7 +113,9 @@ export default function CancellationsDistributionChart({
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-normal">{item.label}</span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span
                 className="dark:text-polar-400 -m-1 ml-auto p-1 text-right font-medium text-gray-500 tabular-nums"
                 onClick={() =>
@@ -128,9 +131,11 @@ export default function CancellationsDistributionChart({
             </div>
           ))}
           <div className="dark:border-polar-600 mt-1 flex items-center justify-between gap-2 border-t border-gray-200 pt-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-400 font-medium text-gray-500">
               Total
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="ml-auto text-right font-medium tabular-nums">
               {legendData.reduce((sum, item) => sum + item.total, 0)}
             </span>

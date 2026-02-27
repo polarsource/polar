@@ -50,8 +50,10 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
     >
       <CardHeader className="flex flex-col gap-y-2 pb-2">
         <div className="flex flex-row items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-lg">Active Subscriptions</span>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-5xl font-light">
           {
             subscriberMetrics.data?.periods[

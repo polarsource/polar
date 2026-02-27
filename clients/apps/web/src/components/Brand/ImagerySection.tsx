@@ -10,12 +10,14 @@ export function ImagerySection() {
               key={i}
               className="flex h-48 w-64 items-center justify-center rounded-2xl bg-neutral-100"
             >
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-sm text-neutral-400">
                 Image Placeholder
               </span>
             </div>
           ))}
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="max-w-md text-sm leading-relaxed text-neutral-400">
           Use clean, minimal imagery that emphasizes developer tools,
           interfaces, and abstract geometric patterns. Avoid stock photography

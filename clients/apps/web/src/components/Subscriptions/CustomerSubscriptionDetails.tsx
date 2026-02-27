@@ -86,42 +86,55 @@ const CustomerSubscriptionDetails = ({
     <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-row items-baseline gap-x-6">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="truncate text-xl">{subscription.product.name}</h3>
           <div className="dark:text-polar-500 text-xl text-gray-500">
             {subscription.amount && subscription.currency ? (
-              <span className="flex flex-row justify-end gap-x-1">
-                {subscriptionBaseAmount &&
-                  subscription.amount !== subscriptionBaseAmount && (
-                    <span className="text-gray-500 line-through">
-                      {formatCurrency('compact')(
-                        subscriptionBaseAmount,
-                        subscription.currency,
-                      )}
-                    </span>
-                  )}
-                <AmountLabel
-                  amount={subscription.amount}
-                  currency={subscription.currency}
-                  interval={subscription.recurring_interval}
-                  intervalCount={subscription.recurring_interval_count}
-                />
-              </span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="flex flex-row justify-end gap-x-1">
+                  {subscriptionBaseAmount &&
+                    subscription.amount !== subscriptionBaseAmount && (
+                      <>
+                        {/* eslint-disable-next-line no-restricted-syntax */}
+                        <span className="text-gray-500 line-through">
+                          {formatCurrency('compact')(
+                            subscriptionBaseAmount,
+                            subscription.currency,
+                          )}
+                        </span>
+                      </>
+                    )}
+                  <AmountLabel
+                    amount={subscription.amount}
+                    currency={subscription.currency}
+                    interval={subscription.recurring_interval}
+                    intervalCount={subscription.recurring_interval_count}
+                  />
+                </span>
+              </>
             ) : (
-              <span>Free</span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span>Free</span>
+              </>
             )}
           </div>
         </div>
       </div>
       <div className="flex flex-col gap-y-2 text-sm">
         <div className="flex flex-row items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-500 text-gray-500">Status</span>
           <SubscriptionStatusLabel subscription={subscription} />
         </div>
         {subscription.started_at && (
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               Start Date
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>
               <FormattedDateTime
                 datetime={subscription.started_at}
@@ -132,9 +145,11 @@ const CustomerSubscriptionDetails = ({
         )}
         {subscription.trial_end && subscription.status === 'trialing' ? (
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               Trial Ends
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>
               <FormattedDateTime
                 datetime={subscription.trial_end}
@@ -146,11 +161,13 @@ const CustomerSubscriptionDetails = ({
           !subscription.ended_at &&
           subscription.current_period_end && (
             <div className="flex flex-row items-center justify-between">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-gray-500">
                 {subscription.cancel_at_period_end
                   ? 'Expiry Date'
                   : 'Renewal Date'}
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>
                 <FormattedDateTime
                   datetime={subscription.current_period_end}
@@ -162,6 +179,7 @@ const CustomerSubscriptionDetails = ({
         )}
         {subscription.meters.length > 0 && (
           <div className="flex flex-col gap-y-4 py-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-lg">Metered Usage</span>
             <div className="flex flex-col gap-y-2">
               {subscription.meters.map((subscriptionMeter) => (
@@ -169,9 +187,11 @@ const CustomerSubscriptionDetails = ({
                   key={subscriptionMeter.meter.id}
                   className="flex flex-row items-center justify-between"
                 >
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-gray-500">
                     {subscriptionMeter.meter.name}
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>
                     {formatCurrency('compact')(
                       subscriptionMeter.amount,
@@ -185,7 +205,9 @@ const CustomerSubscriptionDetails = ({
         )}
         {subscription.ended_at && (
           <div className="flex flex-row items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">Expired</span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>
               <FormattedDateTime
                 datetime={subscription.ended_at}

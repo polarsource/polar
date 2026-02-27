@@ -69,6 +69,7 @@ export const LicenseKeysBenefitForm = () => {
 
       <div className="flex flex-row items-center">
         <div className="grow">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <label htmlFor="license-key-ttl">Expires</label>
         </div>
         <FormField
@@ -138,6 +139,7 @@ export const LicenseKeysBenefitForm = () => {
 
       <div className="flex flex-row items-center">
         <div className="grow">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <label htmlFor="license-key-activations">Limit Activations</label>
         </div>
         <Switch
@@ -190,6 +192,7 @@ export const LicenseKeysBenefitForm = () => {
                 )
               }}
             />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <label
               htmlFor="license-key-activations-user-admin"
               className="-mt-2 text-sm"
@@ -202,6 +205,7 @@ export const LicenseKeysBenefitForm = () => {
 
       <div className="flex flex-row items-center">
         <div className="grow">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <label htmlFor="license-key-limit-usage">Limit Usage</label>
         </div>
         <Switch

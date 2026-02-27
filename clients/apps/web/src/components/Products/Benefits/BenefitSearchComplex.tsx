@@ -205,6 +205,7 @@ export const BenefitSearchComplex = ({
       {selectedBenefitIds.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
               Enabled
               {enabledPagination && ` (${enabledPagination.total_count})`}
@@ -247,6 +248,7 @@ export const BenefitSearchComplex = ({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h4 className="dark:text-polar-400 text-xs font-medium tracking-wide text-gray-500 uppercase">
             Available
             {availablePagination && ` (${availablePagination.total_count})`}

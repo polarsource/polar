@@ -318,6 +318,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         />
 
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Subscriptions</h3>
           <DataTable
             data={subscriptions?.items ?? []}
@@ -326,6 +327,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Product Name',
                 accessorKey: 'product.name',
                 cell: ({ row: { original } }) => (
+                  // eslint-disable-next-line no-restricted-syntax
                   <span>{original.product.name}</span>
                 ),
               },
@@ -351,6 +353,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                       intervalCount={original.recurring_interval_count}
                     />
                   ) : (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span>—</span>
                   ),
               },
@@ -375,6 +378,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           />
         </div>
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Orders</h3>
 
           <DataTable
@@ -388,6 +392,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                     href={`/dashboard/${organization?.slug}/sales/${original.id}`}
                     key={original.id}
                   >
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>{original.description}</span>
                   </Link>
                 ),
@@ -396,6 +401,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Created At',
                 accessorKey: 'created_at',
                 cell: ({ row: { original } }) => (
+                  // eslint-disable-next-line no-restricted-syntax
                   <span className="dark:text-polar-500 text-sm text-gray-500">
                     <FormattedDateTime datetime={original.created_at} />
                   </span>
@@ -432,6 +438,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         </div>
 
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Benefit Grants</h3>
           <DataTable
             data={benefitGrants?.items ?? []}
@@ -441,8 +448,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'benefit.description',
                 cell: ({ row: { original } }) => (
                   <div className="flex flex-col gap-0.5">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>{original.benefit.description}</span>
 
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="dark:text-polar-500 text-xs text-gray-500">
                       {benefitsDisplayNames[original.benefit.type]}
                     </span>
@@ -461,10 +470,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'granted_at',
                 cell: ({ row: { original } }) =>
                   original.granted_at ? (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span className="dark:text-polar-500 text-sm text-gray-500">
                       <FormattedDateTime datetime={original.granted_at} />
                     </span>
                   ) : (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span>—</span>
                   ),
               },
@@ -473,10 +484,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'revoked_at',
                 cell: ({ row: { original } }) =>
                   original.revoked_at ? (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span className="dark:text-polar-500 text-sm text-gray-500">
                       <FormattedDateTime datetime={original.revoked_at} />
                     </span>
                   ) : (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span className="dark:text-polar-800 text-gray-400">—</span>
                   ),
               },
@@ -503,6 +516,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-lg">Customer Details</h2>
             <div className="flex flex-col">
               <DetailRow label="ID" value={customer.id} />
@@ -527,8 +541,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 label="Tax ID"
                 value={
                   customer.tax_id ? (
+                    // eslint-disable-next-line no-restricted-syntax
                     <span className="flex flex-row items-center gap-1.5">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span>{customer.tax_id[0]}</span>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="font-mono text-xs opacity-70">
                         {customer.tax_id[1]
                           .toLocaleUpperCase()
@@ -547,6 +564,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             </div>
           </div>
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h4 className="text-lg">Billing Address</h4>
             <div className="flex flex-col">
               <DetailRow
@@ -574,6 +592,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex flex-row items-center justify-between gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">Metadata</h3>
             </div>
             {Object.entries(customer.metadata).map(([key, value]) => (

@@ -52,6 +52,7 @@ export const Pricing = () => {
               variants={itemVariants}
             >
               <Check className="text-emerald-500" fontSize="small" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="leading-relaxed text-pretty">
                 4% + 40¢ per transaction
               </p>
@@ -61,6 +62,7 @@ export const Pricing = () => {
               variants={itemVariants}
             >
               <Check className="text-emerald-500" fontSize="small" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="leading-relaxed text-pretty">No hidden fees</p>
             </motion.li>
             <motion.li
@@ -68,6 +70,7 @@ export const Pricing = () => {
               variants={itemVariants}
             >
               <Check className="text-emerald-500" fontSize="small" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="leading-relaxed text-pretty">
                 Global Merchant of Record
               </p>
@@ -77,6 +80,7 @@ export const Pricing = () => {
               variants={itemVariants}
             >
               <Check className="text-emerald-500" fontSize="small" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="leading-relaxed text-pretty">
                 Negotiated Volume Discounts
               </p>

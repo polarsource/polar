@@ -27,6 +27,7 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="whitespace-nowrap">All products</span>
         </SelectItem>
         <SelectSeparator />

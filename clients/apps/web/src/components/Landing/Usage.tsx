@@ -135,9 +135,11 @@ export const Usage = () => {
       <Tabs defaultValue={strategies[0].name}>
         <div className="flex w-full flex-col gap-y-16 md:h-full md:min-h-96">
           <div className="flex flex-col items-center gap-y-8">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-lg text-gray-400">
               Ingestion Based Billing
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h1 className="w-fit max-w-3xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
               Usage Based Billing on Autopilot
             </h1>
@@ -156,6 +158,7 @@ export const Usage = () => {
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>All Ingestion Strategies</span>
                   <ArrowOutwardOutlined className="ml-2" />
                 </Button>
@@ -196,6 +199,7 @@ export const Usage = () => {
                             className="text-emerald-500"
                             fontSize="small"
                           />
+                          {/* eslint-disable-next-line no-restricted-syntax */}
                           <p className="leading-relaxed text-pretty">
                             {bullet}
                           </p>

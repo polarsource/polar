@@ -90,6 +90,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       title={
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-xl font-normal">Subscription</h2>
           </div>
         </div>
@@ -146,6 +147,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
         {(customFields?.items?.length ?? 0) > 0 && (
           <div className="flex flex-col gap-6 p-8">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Custom Fields</h3>
             <div className="flex flex-col gap-2">
               {customFields?.items?.map((field) => (
@@ -172,6 +174,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
         {Object.keys(subscription.metadata).length > 0 && (
           <div className="flex flex-col gap-6 p-8">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Metadata</h3>
             <div className="flex flex-col gap-2">
               {Object.entries(subscription.metadata).map(([key, value]) => (
@@ -189,7 +192,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
         {hasSeatBasedSubscription && (
           <div className="flex flex-col gap-6 p-8">
             <div className="flex flex-col gap-y-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">Seats</h3>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 {availableSeats} of {totalSeats} seats available
               </p>
@@ -197,15 +202,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
             {!isLoadingSeats && seats.length > 0 && (
               <div className="flex flex-col gap-4">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h4 className="text-base font-medium">Assigned Seats</h4>
                 <SeatViewOnlyTable seats={seats} />
               </div>
             )}
 
             {!isLoadingSeats && seats.length === 0 && (
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                No seats have been assigned yet.
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  No seats have been assigned yet.
+                </p>
+              </>
             )}
           </div>
         )}

@@ -32,6 +32,7 @@ export const Section = ({
       )}
     >
       <div className="flex max-w-lg flex-col gap-y-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-4xl leading-tight text-balance">{title}</h1>
         <div className="flex flex-col gap-y-8 text-justify">{children}</div>
       </div>

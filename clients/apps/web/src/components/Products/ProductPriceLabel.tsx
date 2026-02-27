@@ -51,15 +51,19 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       return (
         <div className="flex items-baseline gap-1.5">
           {hasMultipleTiers && (
-            <span className="dark:text-polar-500 text-xs text-gray-500">
-              From
-            </span>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                From
+              </span>
+            </>
           )}
           <AmountLabel
             amount={firstTier.price_per_seat}
             currency={staticPrice.price_currency}
             interval={product.recurring_interval || undefined}
           />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-500 text-xs text-gray-500">
             / seat
           </span>

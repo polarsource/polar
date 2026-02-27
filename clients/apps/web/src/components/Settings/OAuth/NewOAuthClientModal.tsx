@@ -79,6 +79,7 @@ export const NewOAuthClientModal = ({
     <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">New OAuth App</h2>
         </div>
       </InlineModalHeader>

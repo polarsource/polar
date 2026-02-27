@@ -51,11 +51,13 @@ export function CardSection() {
           >
             <div className="flex flex-col items-center gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-center text-5xl leading-tight tracking-tighter text-pretty dark:font-light">
                 Usage billing keeping you up?
                 <br />
                 We run it on autopilot.
               </h3>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-louize text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
@@ -66,11 +68,13 @@ export function CardSection() {
           >
             <div className="flex flex-col items-center gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-center text-5xl leading-tight tracking-tighter text-pretty dark:font-light">
                 From prompt to revenue.
                 <br />
                 Automatically.
               </h3>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-louize text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>
@@ -81,12 +85,14 @@ export function CardSection() {
           >
             <div className="flex flex-col items-center gap-12">
               <PolarLogotype logoVariant="icon" size={64} />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-center text-5xl leading-tight tracking-tighter text-pretty dark:font-light">
                 We count tokens.
                 <br />
                 {/* eslint-disable-next-line react/no-unescaped-entities */}
                 So you don't have to.
               </h3>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-louize text-3xl">polar.sh</span>
             </div>
           </ShaderCanvas>

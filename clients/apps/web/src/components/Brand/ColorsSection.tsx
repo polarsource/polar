@@ -74,6 +74,7 @@ function ColorColumn({ color }: { color: ColorEntry }) {
     >
       {/* Name — vertically centred */}
       <div className="flex flex-1 items-center p-8 md:p-10">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="text-sm font-medium tracking-tight md:text-base">
           {color.name}
         </span>

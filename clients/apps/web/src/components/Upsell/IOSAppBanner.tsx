@@ -48,7 +48,9 @@ export const IOSAppBanner = () => {
       </button>
 
       <div className="flex flex-col gap-1">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="font-medium">Polar is now available on App Store</span>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 text-gray-500">
           Your dashboard, always in your pocket. Get push notifications for new
           sales, subscribers and more.

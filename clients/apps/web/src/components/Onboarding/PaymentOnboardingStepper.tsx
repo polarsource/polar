@@ -87,9 +87,11 @@ export const PaymentOnboardingStepper = ({
         <div className="dark:bg-polar-800 flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-100 p-4 dark:border-white/5">
           <AlertCircle className="h-5 w-5 shrink-0" />
           <div className="flex flex-col gap-y-1 text-sm">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="font-medium">
               Payment processing is not yet available
             </p>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-500">
               Complete all steps below to start accepting payments from
               customers
@@ -138,9 +140,11 @@ export const PaymentOnboardingStepper = ({
                 <div className="flex flex-1 flex-col justify-between gap-6">
                   <div className="flex flex-1 flex-col gap-y-8">
                     <div className="flex flex-col gap-y-2">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <h3 className="text-lg text-gray-900 md:text-xl dark:text-white">
                         {step.title}
                       </h3>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <p className="dark:text-polar-400 text-sm text-gray-600 md:text-base">
                         {step.description}
                       </p>
@@ -161,6 +165,7 @@ export const PaymentOnboardingStepper = ({
                             >
                               <div className="flex min-w-0 flex-1 flex-col gap-y-1">
                                 <div className="flex flex-row items-center">
+                                  {/* eslint-disable-next-line no-restricted-syntax */}
                                   <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                                     {option.title}
                                   </h4>
@@ -170,6 +175,7 @@ export const PaymentOnboardingStepper = ({
                                     fontSize="inherit"
                                   />
                                 </div>
+                                {/* eslint-disable-next-line no-restricted-syntax */}
                                 <p className="dark:text-polar-400 text-sm text-gray-600">
                                   {option.description}
                                 </p>

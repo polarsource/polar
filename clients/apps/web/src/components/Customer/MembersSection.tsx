@@ -57,6 +57,7 @@ export const MembersSection = ({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-lg">Members</h3>
       <DataTable
         data={members}
@@ -65,6 +66,7 @@ export const MembersSection = ({
             header: 'Email',
             accessorKey: 'email',
             cell: ({ row: { original } }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="text-sm">{original.email}</span>
             ),
           },
@@ -72,6 +74,7 @@ export const MembersSection = ({
             header: 'Name',
             accessorKey: 'name',
             cell: ({ row: { original } }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="text-sm">{original.name ?? '—'}</span>
             ),
           },
@@ -92,6 +95,7 @@ export const MembersSection = ({
             header: 'External ID',
             accessorKey: 'external_id',
             cell: ({ row: { original } }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 {original.external_id ?? '—'}
               </span>
@@ -101,6 +105,7 @@ export const MembersSection = ({
             header: 'Created',
             accessorKey: 'created_at',
             cell: ({ row: { original } }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 <FormattedDateTime datetime={original.created_at} />
               </span>

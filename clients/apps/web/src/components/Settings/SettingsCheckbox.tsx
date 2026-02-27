@@ -41,15 +41,20 @@ const SettingsCheckbox = ({
         />
       </div>
       <div className="ml-2.5 inline-flex items-center space-x-4 text-sm leading-6">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <label htmlFor={id}>{title}</label>{' '}
         {description && (
-          <span
-            id={`${id}-description`}
-            className="dark:text-polar-400 inline-flex items-center space-x-1 text-gray-500"
-          >
-            <InfoIcon className="h-6 w-6" />
-            <span>{description}</span>
-          </span>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <span
+              id={`${id}-description`}
+              className="dark:text-polar-400 inline-flex items-center space-x-1 text-gray-500"
+            >
+              <InfoIcon className="h-6 w-6" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span>{description}</span>
+            </span>
+          </>
         )}
       </div>
     </div>

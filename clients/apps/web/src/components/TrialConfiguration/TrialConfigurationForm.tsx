@@ -76,6 +76,7 @@ export const TrialConfigurationForm = ({
   }, [count])
 
   return (
+    // eslint-disable-next-line no-restricted-syntax
     <label
       className={twMerge(
         'w-full cursor-pointer rounded-2xl border p-4 transition-colors',

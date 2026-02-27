@@ -49,6 +49,7 @@ const AuthorizePage = ({
           {sub && isSubTypeOrganization(sub_type, sub) && (
             <>
               <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="font-medium">{clientName}</span> requests the
                 following permissions to your Polar organization.
               </div>
@@ -65,6 +66,7 @@ const AuthorizePage = ({
           {sub && isSubTypeUser(sub_type, sub) && (
             <>
               <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="font-medium">{clientName}</span> requests the
                 following permissions to your personal Polar account.
               </div>
@@ -90,6 +92,7 @@ const AuthorizePage = ({
                 className="dark:bg-polar-800 dark:hover:bg-polar-800 flex flex-col items-start gap-y-1 bg-white py-3 text-sm hover:bg-white"
                 size="small"
               >
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="font-medium capitalize">
                   {key === 'openid' ? 'OpenID' : key.replaceAll('_', ' ')}
                 </h3>

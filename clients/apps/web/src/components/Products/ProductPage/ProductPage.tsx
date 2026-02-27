@@ -144,6 +144,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           <div className="flex min-w-0 flex-row items-center gap-4">
             <div className="flex min-w-0 flex-row items-center gap-4">
               <ProductThumbnail product={product} />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h1 className="truncate text-2xl">{product.name}</h1>
             </div>
 

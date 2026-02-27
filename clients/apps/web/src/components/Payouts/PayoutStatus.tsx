@@ -43,6 +43,7 @@ export const PayoutStatus = ({
           />
         </TooltipTrigger>
         <TooltipContent side="right" className="max-w-64">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="text-justify text-sm">{lastAttempt.failed_reason}</p>
         </TooltipContent>
       </Tooltip>

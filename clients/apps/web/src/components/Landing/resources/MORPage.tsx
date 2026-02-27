@@ -21,6 +21,7 @@ const Benefit = ({
       ) : (
         <CloseOutlined className="mt-1 mr-2" fontSize="inherit" />
       )}
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span>{children}</span>
     </li>
   )
@@ -39,7 +40,9 @@ export const MORPage = () => {
   return (
     <ResourceLayout title="Polar as a Merchant of Record" toc={tocItems}>
       <ResourceSection id="introduction" title="Introduction">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="text-lg">What is a Merchant of Record?</p>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-300 text-gray-500">
           We take on the liability of international sales taxes globally for
           you. So you can focus on growing your business vs. accounting bills.
@@ -51,7 +54,9 @@ export const MORPage = () => {
       <ResourceSection id="mor" title="PSP vs. MoR" className="gap-y-8">
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Payment Service Provider (PSPs)</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Stripe and other Payment Service Providers (PSPs) offer an
               accessible and convenient abstraction to faciliate transactions on
@@ -81,7 +86,9 @@ export const MORPage = () => {
 
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Merchant of Record</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-gray-500">
               Merchants of Record offer yet another layer of convenient
               abstraction to facilitate digital orders on top of the underlying
@@ -110,6 +117,7 @@ export const MORPage = () => {
 
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Go with a PSP if...</h3>
           </div>
           <div className="flex flex-col gap-2">
@@ -129,6 +137,7 @@ export const MORPage = () => {
 
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">Go with Polar if...</h3>
             </div>
             <div className="flex flex-col gap-2">
@@ -161,17 +170,20 @@ export const MORPage = () => {
         className="gap-y-8"
       >
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Most countries, states and jurisdictions globally impose sales taxes
             on digital goods and services (VAT, GST, US Sales Tax etc).
             Regardless of whether the merchant (seller) is a resident there or
             not - they&apos;re doing business there.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             For example, a $10/month subscription should cost $12.5/month for a
             Swedish (25% VAT) consumer, but $10/month for a Swedish business
             with VAT registration (reverse charge).
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Merchants are responsible for capturing & remitting sales taxes to
             the local tax authorities. What does that mean in our example?
@@ -179,7 +191,9 @@ export const MORPage = () => {
         </div>
 
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Capturing</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Charging the Swedish consumer $12.5/month and saving $2.5/month for
             the Swedish tax authorities. Stripe Tax is an excellent service to
@@ -188,7 +202,9 @@ export const MORPage = () => {
         </div>
 
         <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3>Remitting</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Filing & paying the captured sales taxes with the tax authorities on
             time. Stripe Tax does not do this, i.e the merchant is liable to
@@ -197,6 +213,7 @@ export const MORPage = () => {
         </div>
 
         <div className="dark:border-polar-700 flex flex-col gap-2 border-t border-gray-200 pt-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             Many jurisdictions, however, don&apos;t require this until you reach
             a certain threshold in terms of sales volume. But others require
@@ -206,12 +223,14 @@ export const MORPage = () => {
             business customers.
           </p>
 
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             For example, United Kingdom and EU countries require upfront
             registration for international companies, but Texas (United States)
             does not until you&apos;ve sold for more than $500,000.
           </p>
 
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-300 text-gray-500">
             In short: It&apos;s complex and hard. Even large and well-known
             businesses don&apos;t do it perfectly. Arguably, it&apos;s almost
@@ -224,6 +243,7 @@ export const MORPage = () => {
 
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">PSP</h3>
           </div>
           <div className="flex flex-col gap-2">
@@ -251,6 +271,7 @@ export const MORPage = () => {
 
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Merchant of Record</h3>
           </div>
           <div className="flex flex-col gap-2">
@@ -280,7 +301,9 @@ export const MORPage = () => {
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Ready to make the switch?</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
               Join thousands of teams who have already transformed their payment
               infrastructure with Polar.

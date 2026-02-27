@@ -201,7 +201,9 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
         <div className="flex flex-col gap-y-12">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h1 className="text-3xl">Integrate Checkout</h1>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-lg text-gray-600">
               Integrate checkouts with your favorite framework.
             </p>
@@ -226,6 +228,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
               className="w-full"
             >
               <Button size="lg" fullWidth variant="secondary">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>Explore All Adapters</span>
                 <ArrowOutwardOutlined className="ml-2" fontSize="small" />
               </Button>
@@ -241,6 +244,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
           <div className="dark:bg-polar-900 flex w-full max-w-3xl flex-col gap-y-12 rounded-3xl bg-white p-12">
             <div className="flex flex-col gap-y-6">
               <div className="flex flex-row items-center justify-between">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-lg">1. Install Dependencies</h2>
                 {!isPython && (
                   <Tabs
@@ -269,6 +273,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
             </div>
 
             <div className="flex flex-col gap-y-6">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-lg">2. Add Environment Variables</h2>
               <OrganizationAccessTokensSettings
                 organization={organization}
@@ -286,6 +291,7 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
             </div>
 
             <div className="flex flex-col gap-y-6">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-lg">3. Integrate the Checkout</h2>
               <CodeWrapper>
                 <SyntaxHighlighterClient
@@ -299,6 +305,7 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
               </CodeWrapper>
               <Link href={currentFramework?.link ?? ''} target="_blank">
                 <Button size="lg" variant="secondary" fullWidth>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>View Documentation</span>
                   <ArrowOutwardOutlined className="ml-2" fontSize="small" />
                 </Button>
@@ -348,6 +355,7 @@ const FrameworkCard = ({
       {icon ?? (
         <div className="dark:bg-polar-900 h-8 w-8 rounded-full bg-gray-200" />
       )}
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h2 className="text-lg">{name}</h2>
     </div>
   )

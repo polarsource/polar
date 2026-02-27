@@ -213,7 +213,12 @@ export const AddPaymentMethodModal = ({
                   },
                 }}
               />
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && (
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <p className="text-sm text-red-500">{error}</p>
+                </>
+              )}
               <div className="flex flex-row items-center gap-2">
                 <Button
                   type="submit"

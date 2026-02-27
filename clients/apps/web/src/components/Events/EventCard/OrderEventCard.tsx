@@ -78,15 +78,20 @@ export const OrderEventCard = ({ event }: OrderEventCardProps) => {
         >
           <div className="flex flex-row items-center gap-x-4 p-2">
             <div className="flex flex-row items-center gap-x-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="">{order.product?.name}</span>
             </div>
             {billingReason && (
-              <span className="dark:text-polar-500 text-gray-500">
-                {billingReason}
-              </span>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="dark:text-polar-500 text-gray-500">
+                  {billingReason}
+                </span>
+              </>
             )}
           </div>
           <div className="flex flex-row items-center gap-x-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {contextValue}
             </span>

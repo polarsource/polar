@@ -62,6 +62,7 @@ const GithubLoginButton = (props: {
             clipRule="evenodd"
           />
         </svg>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="whitespace-nowrap">{props.text}</span>
       </Button>
     </Link>

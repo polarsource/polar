@@ -127,6 +127,7 @@ export default function ConfirmationButton({
             />
           </svg>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span>{warningMessage}</span>
       </div>
 

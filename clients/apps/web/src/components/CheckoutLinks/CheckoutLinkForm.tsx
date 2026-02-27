@@ -300,7 +300,7 @@ export const CheckoutLinkForm = ({
                   />
                 </FormControl>
                 <FormDescription className="text-xs">
-                  Include{' '}
+                  Include {/* eslint-disable-next-line no-restricted-syntax */}
                   <code>
                     {'{'}CHECKOUT_ID{'}'}
                   </code>{' '}

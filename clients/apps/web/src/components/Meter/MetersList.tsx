@@ -46,6 +46,7 @@ export const MetersList = ({
         <DataTableColumnHeader column={column} title="Name" />
       ),
       cell: ({ row: { original: meter } }) => {
+        // eslint-disable-next-line no-restricted-syntax
         return <span>{meter.name}</span>
       },
     },

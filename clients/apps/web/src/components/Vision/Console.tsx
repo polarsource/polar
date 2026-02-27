@@ -28,7 +28,9 @@ export const Console = ({
     >
       <div className="border-polar-200 bg-polar-900 relative w-full border-2">
         <div className="bg-polar-200 flex flex-row justify-between px-2 py-1 text-xs text-black">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="font-bold">{title ?? 'Terminal'}</span>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="mb-1 h-0.5 w-2 self-end bg-black" />
         </div>
         <div className="flex flex-col overflow-auto p-4 font-mono text-sm">
@@ -42,7 +44,9 @@ export const Console = ({
             </SyntaxHighlighterProvider>
           ) : (
             <pre className="flex flex-col gap-y-2 pb-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <code>{input}</code>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <code className="text-polar-500">{output}</code>
             </pre>
           )}

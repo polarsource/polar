@@ -35,6 +35,7 @@ const ProductPriceListItem = ({
       onSelect={onSelect}
       size="small"
     >
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="font-medium">{product.name}</h3>
       <ProductPriceLabel product={product} currency={currency} />
     </ListItem>
@@ -243,10 +244,12 @@ const CustomerChangePlanModal = ({
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">Change Plan</h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="font-medium">Current Plan</h3>
         <List size="small">
           <ProductPriceListItem
@@ -255,11 +258,15 @@ const CustomerChangePlanModal = ({
             selected
           />
         </List>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="font-medium">Available Plans</h3>
         {availableProducts.length === 0 ? (
-          <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
-            No other plans available
-          </p>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
+              No other plans available
+            </p>
+          </>
         ) : (
           <List size="small">
             {availableProducts.map((product) => (
@@ -276,15 +283,18 @@ const CustomerChangePlanModal = ({
         <div className="flex flex-col gap-y-6">
           {addedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-sm font-medium text-green-400">
                 You&apos;ll get access to the following benefits
               </h3>
               <div className="flex flex-col gap-y-2">
                 {addedBenefits.map((benefit) => (
                   <div key={benefit.id} className="flex flex-row align-middle">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
                       {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
                     </span>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="ml-2 text-sm">{benefit.description}</span>
                   </div>
                 ))}
@@ -293,15 +303,18 @@ const CustomerChangePlanModal = ({
           )}
           {removedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-sm font-medium text-red-400">
                 You&apos;ll lose access to the following benefits
               </h3>
               <div className="flex flex-col gap-y-2">
                 {removedBenefits.map((benefit) => (
                   <div key={benefit.id} className="flex flex-row align-middle">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
                       {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
                     </span>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="ml-2 text-sm">{benefit.description}</span>
                   </div>
                 ))}
@@ -309,27 +322,34 @@ const CustomerChangePlanModal = ({
             </div>
           )}
           {invoicingMessage && (
-            <label className="flex flex-row items-center gap-x-2">
-              {willIssueInvoice && (
-                <Checkbox
-                  checked={approveImmediateInvoice}
-                  onCheckedChange={(checked) =>
-                    setApproveImmediateInvoice(checked === true)
-                  }
-                />
-              )}
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <label className="flex flex-row items-center gap-x-2">
+                {willIssueInvoice && (
+                  <Checkbox
+                    checked={approveImmediateInvoice}
+                    onCheckedChange={(checked) =>
+                      setApproveImmediateInvoice(checked === true)
+                    }
+                  />
+                )}
 
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                {invoicingMessage}
-              </span>
-            </label>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  {invoicingMessage}
+                </span>
+              </label>
+            </>
           )}
         </div>
         {needToAddPaymentMethod && (
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            You need to add a payment method before updating your plan. Head to
-            the Customer Portal Settings to add a payment method.
-          </p>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              You need to add a payment method before updating your plan. Head
+              to the Customer Portal Settings to add a payment method.
+            </p>
+          </>
         )}
         <Button
           disabled={!canChangePlan}

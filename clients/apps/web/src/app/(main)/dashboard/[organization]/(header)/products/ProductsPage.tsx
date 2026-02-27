@@ -198,6 +198,7 @@ export default function ClientPage({
               className="w-full"
             >
               <AddOutlined className="h-4 w-4" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>New Product</span>
             </Button>
           </Link>
@@ -234,13 +235,16 @@ export default function ClientPage({
             />
             <div className="flex flex-col items-center gap-y-6">
               <div className="flex flex-col items-center gap-y-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-lg font-medium">No products found</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-gray-500">
                   Start selling digital products today
                 </p>
               </div>
               <Link href={`/dashboard/${org.slug}/products/new`}>
                 <Button role="link" variant="secondary">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>Create Product</span>
                 </Button>
               </Link>

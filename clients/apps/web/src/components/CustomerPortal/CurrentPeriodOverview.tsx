@@ -66,7 +66,9 @@ export const CurrentPeriodOverview = ({
   return (
     <div className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8">
       <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h4 className="text-lg font-medium">{headerTitle}</h4>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 text-sm text-gray-500">
           {dateLabel} —{' '}
           {chargeDate
@@ -79,9 +81,11 @@ export const CurrentPeriodOverview = ({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-400 text-gray-600">
             {subscription.product.name}
           </span>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span
             className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
           >
@@ -98,13 +102,16 @@ export const CurrentPeriodOverview = ({
 
         {hasMeters && (
           <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="font-medium">Metered Charges</span>
 
             {subscription.meters.map((meter) => (
               <div key={meter.id} className="flex items-center justify-between">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-400 text-gray-600">
                   {meter.meter.name}
                 </span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="font-medium">
                   {formatCurrency('compact')(
                     meter.amount,
@@ -119,7 +126,9 @@ export const CurrentPeriodOverview = ({
         <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
           {(hasTaxes || hasDiscount) && (
             <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>Subtotal</span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>
                 {formatCurrency('compact')(
                   subscriptionPreview.subtotal_amount,
@@ -131,7 +140,9 @@ export const CurrentPeriodOverview = ({
 
           {hasDiscount && (
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>Discount</span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>
                 {formatCurrency('compact')(
                   -1 * subscriptionPreview.discount_amount,
@@ -143,7 +154,9 @@ export const CurrentPeriodOverview = ({
 
           {hasTaxes && (
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>Taxes</span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>
                 {formatCurrency('compact')(
                   subscriptionPreview.tax_amount,
@@ -154,9 +167,11 @@ export const CurrentPeriodOverview = ({
           )}
 
           <div className="flex items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="font-medium">
               {hasMeters ? 'Estimated Total' : 'Total'}
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-lg font-medium">
               {subscriptionPreview ? (
                 formatCurrency('compact')(
@@ -164,29 +179,38 @@ export const CurrentPeriodOverview = ({
                   subscription.currency,
                 )
               ) : (
-                <span className="dark:text-polar-500 animate-pulse text-gray-500">
-                  Loading…
-                </span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span className="dark:text-polar-500 animate-pulse text-gray-500">
+                    Loading…
+                  </span>
+                </>
               )}
             </span>
           </div>
 
           {isCancelingAtPeriodEnd && (
-            <p className="max-w-sm text-xs text-gray-500">
-              This will be the final charge before the subscription ends.
-              {hasMeters &&
-                ' Final amount may vary based on usage until the end of the billing period.'}
-            </p>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <p className="max-w-sm text-xs text-gray-500">
+                This will be the final charge before the subscription ends.
+                {hasMeters &&
+                  ' Final amount may vary based on usage until the end of the billing period.'}
+              </p>
+            </>
           )}
 
           {!isCancelingAtPeriodEnd && hasMeters && (
-            <p className="max-w-sm text-xs text-gray-500">
-              {isActive
-                ? 'Final charges may vary based on usage until the end of the billing period.'
-                : isTrialing
-                  ? 'Final charges may vary based on usage during the trial period.'
-                  : 'Final charges may vary.'}
-            </p>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <p className="max-w-sm text-xs text-gray-500">
+                {isActive
+                  ? 'Final charges may vary based on usage until the end of the billing period.'
+                  : isTrialing
+                    ? 'Final charges may vary based on usage during the trial period.'
+                    : 'Final charges may vary.'}
+              </p>
+            </>
           )}
         </div>
       </div>

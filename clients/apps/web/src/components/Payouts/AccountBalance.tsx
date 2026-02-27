@@ -51,6 +51,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     <div className="flex flex-col gap-8 md:flex-row">
       <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-lg font-medium capitalize">Balance</h2>
           <Button className="self-start" onClick={showPayoutConfirmModal}>
             Withdraw
@@ -74,6 +75,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </div>
         </WellContent>
         <WellFooter>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-gray-500">
             You may only withdraw funds above $10.
           </p>
@@ -81,6 +83,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
       </Well>
       <Well className="flex-1 justify-between rounded-2xl bg-gray-50 p-6">
         <WellHeader className="flex flex-row items-center justify-between gap-x-6">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-lg font-medium capitalize">Fee Credits</h2>
           <Button
             className="self-start"
@@ -105,6 +108,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </div>
         </WellContent>
         <WellFooter>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-gray-500">
             Fees are first deducted from any available credits.
           </p>

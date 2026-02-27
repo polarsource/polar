@@ -57,6 +57,7 @@ const CustomerPortalOrder = ({
     <div className="flex flex-col gap-12">
       <div className="flex w-full flex-col gap-8">
         <div className="flex flex-row flex-wrap gap-x-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-2xl">{order.description}</h3>
           <Status
             status={OrderStatusDisplayTitle[order.status]}
@@ -80,6 +81,7 @@ const CustomerPortalOrder = ({
             {order.product && (
               <DetailRow
                 label="Product"
+                // eslint-disable-next-line no-restricted-syntax
                 value={<span>{order.product.name}</span>}
               />
             )}
@@ -87,6 +89,7 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Date"
               value={
+                // eslint-disable-next-line no-restricted-syntax
                 <span>{new Date(order.created_at).toLocaleDateString()}</span>
               }
             />
@@ -94,6 +97,7 @@ const CustomerPortalOrder = ({
 
           {order.items.length > 0 && (
             <div className="flex flex-col gap-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">Order Items</h3>
               <div className="flex flex-col gap-4">
                 {order.items.map((item) => (
@@ -101,6 +105,7 @@ const CustomerPortalOrder = ({
                     key={item.id}
                     label={item.label}
                     value={
+                      // eslint-disable-next-line no-restricted-syntax
                       <span>
                         {formatCurrency('accounting')(
                           item.amount,
@@ -119,6 +124,7 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Subtotal"
               value={
+                // eslint-disable-next-line no-restricted-syntax
                 <span>
                   {formatCurrency('accounting')(
                     order.subtotal_amount,
@@ -131,6 +137,7 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Discount"
               value={
+                // eslint-disable-next-line no-restricted-syntax
                 <span>
                   {order.discount_amount
                     ? formatCurrency('accounting')(
@@ -145,6 +152,7 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Net amount"
               value={
+                // eslint-disable-next-line no-restricted-syntax
                 <span>
                   {formatCurrency('accounting')(
                     order.net_amount,
@@ -157,6 +165,7 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Tax"
               value={
+                // eslint-disable-next-line no-restricted-syntax
                 <span>
                   {formatCurrency('accounting')(
                     order.tax_amount,
@@ -169,6 +178,7 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Total"
               value={
+                // eslint-disable-next-line no-restricted-syntax
                 <span>
                   {formatCurrency('accounting')(
                     order.total_amount,
@@ -183,6 +193,7 @@ const CustomerPortalOrder = ({
                 <DetailRow
                   label="Applied balance"
                   value={
+                    // eslint-disable-next-line no-restricted-syntax
                     <span>
                       {formatCurrency('accounting')(
                         order.applied_balance_amount,
@@ -195,6 +206,7 @@ const CustomerPortalOrder = ({
                 <DetailRow
                   label="To be paid"
                   value={
+                    // eslint-disable-next-line no-restricted-syntax
                     <span>
                       {formatCurrency('accounting')(
                         order.due_amount,
@@ -211,6 +223,7 @@ const CustomerPortalOrder = ({
               <DetailRow
                 label="Refunded amount"
                 value={
+                  // eslint-disable-next-line no-restricted-syntax
                   <span>
                     {formatCurrency('accounting')(
                       order.refunded_amount,

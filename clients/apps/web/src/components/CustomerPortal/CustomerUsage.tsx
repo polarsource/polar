@@ -21,6 +21,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
     <div className="flex flex-col">
       <Tabs defaultValue="meters">
         <div className="flex flex-row items-center justify-between gap-x-12">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-2xl">Usage</h3>
         </div>
         <TabsContent className="flex flex-col gap-y-12 pt-4" value="meters">
@@ -39,6 +40,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
           </div>
 
           <div className="flex flex-col gap-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Overview</h3>
             <DataTable
               isLoading={isLoading}
@@ -65,6 +67,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                             }}
                           />
                         </div>
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span>{meter.name}</span>
                       </div>
                     )

@@ -8,6 +8,7 @@ export interface JobSectionProps {
 export const JobSection = ({ title, jobs }: JobSectionProps) => {
   return (
     <section className="flex flex-col gap-6 lg:gap-8">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h4 className="text-xl">{title}</h4>
       <div className="flex flex-col gap-2">
         {jobs.map((job) => (

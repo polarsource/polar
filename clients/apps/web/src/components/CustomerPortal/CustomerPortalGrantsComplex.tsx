@@ -55,6 +55,7 @@ export const CustomerPortalGrantsComplex = ({
 
   return (
     <div className="flex w-full flex-col gap-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-xl">Benefit Grants</h3>
 
       {/* Search box */}

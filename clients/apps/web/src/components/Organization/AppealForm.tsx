@@ -80,6 +80,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
             <div className="flex-1">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">
                 {decision === 'approved'
                   ? 'Appeal Approved'
@@ -87,6 +88,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
                     ? 'Appeal Denied'
                     : 'Appeal Under Review'}
               </h3>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-400 mt-1 text-sm text-gray-600">
                 {decision === 'approved'
                   ? 'Your appeal has been approved. Payment access has been restored.'
@@ -95,11 +97,14 @@ const AppealForm: React.FC<AppealFormProps> = ({
                     : 'Thank you for submitting your appeal. Our team will review your case and get back to you as soon as possible.'}
               </p>
               {submissionDate && (
-                <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
-                  Submitted: {new Date(submissionDate).toLocaleDateString()}
-                  {reviewedAt &&
-                    ` • Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
-                </p>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
+                    Submitted: {new Date(submissionDate).toLocaleDateString()}
+                    {reviewedAt &&
+                      ` • Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
+                  </p>
+                </>
               )}
             </div>
           </div>
@@ -124,10 +129,12 @@ const AppealForm: React.FC<AppealFormProps> = ({
           {/* Show the appeal reason */}
           {appealReason && (
             <div className="border-t pt-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="dark:text-polar-300 mb-2 text-sm font-medium text-gray-700">
                 Your Appeal:
               </h4>
               <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-300 text-sm whitespace-pre-wrap text-gray-700">
                   {appealReason}
                 </p>
@@ -143,7 +150,9 @@ const AppealForm: React.FC<AppealFormProps> = ({
     return (
       <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
         <div className="space-y-4 text-center">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg font-medium">Submit an Appeal</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 text-sm text-gray-600">
             {disabled
               ? 'Appeal functionality is currently disabled. Please contact support if you believe this decision is incorrect.'
@@ -166,6 +175,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
     <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg font-medium">Submit Appeal</h3>
           <Button
             type="button"
@@ -179,9 +189,11 @@ const AppealForm: React.FC<AppealFormProps> = ({
         </div>
 
         <div className="space-y-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <label className="text-sm font-medium">
             Why should your organization be approved? *
           </label>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 text-xs text-gray-500">
             {disabled
               ? 'Appeal submission is currently disabled. Please contact support for assistance.'
@@ -200,11 +212,13 @@ const AppealForm: React.FC<AppealFormProps> = ({
             maxLength={5000}
           />
           <div className="flex justify-between text-xs">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span
               className={characterCount < 50 ? 'text-red-500' : 'text-gray-500'}
             >
               Minimum 50 characters required
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span
               className={
                 characterCount > 5000 ? 'text-red-500' : 'text-gray-500'

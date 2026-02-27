@@ -20,9 +20,11 @@ export default function Layout({ children }: PropsWithChildren) {
               </ProseWrapper>
               <Section className="flex flex-col gap-y-24 border-t">
                 <div className="flex flex-col items-center gap-y-8 text-center">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h2 className="text-2xl md:text-3xl">
                     Ready to simplify your billing?
                   </h2>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-500 text-lg text-balance text-gray-500 md:w-[480px]">
                     Join the best companies using Polar for their payments &
                     billing stack.

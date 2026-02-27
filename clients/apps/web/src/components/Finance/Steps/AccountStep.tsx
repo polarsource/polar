@@ -37,8 +37,10 @@ export default function AccountStep({
       {/* Header */}
       <div className="space-y-3 text-center">
         <div className="flex items-center justify-center space-x-3">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h1 className="text-2xl font-semibold">Payout Account</h1>
         </div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
           {isAccountSetupComplete
             ? 'Your payout account details and status.'
@@ -53,7 +55,9 @@ export default function AccountStep({
         <StepCard>
           <div className="space-y-4 text-center">
             <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-8">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="mb-2 font-medium">Account Setup Complete</h4>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-400 text-sm text-gray-600">
                 Your payout account is configured and ready.
               </p>
@@ -73,9 +77,11 @@ export default function AccountStep({
                       <UserCheck className="dark:text-polar-400 h-6 w-6 text-gray-500" />
                     </div>
                   </div>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h4 className="dark:text-polar-400 mb-2 font-medium text-gray-600">
                     Account Setup Restricted
                   </h4>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-500 mx-auto mb-4 max-w-md text-sm text-gray-500">
                     You are not the admin of the account. Only the account admin
                     can set up payout accounts.
@@ -90,6 +96,7 @@ export default function AccountStep({
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   )}
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 mt-3 text-xs text-gray-500">
                     The account admin will need to complete this step separately
                   </p>
@@ -100,7 +107,9 @@ export default function AccountStep({
             <div className="space-y-4">
               <div className="space-y-4 text-center">
                 <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-8">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h4 className="mb-2 font-medium">Create Payout Account</h4>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 mx-auto mb-6 max-w-md text-sm text-gray-600">
                     Connect or create a Stripe account to receive payments from
                     your customers.

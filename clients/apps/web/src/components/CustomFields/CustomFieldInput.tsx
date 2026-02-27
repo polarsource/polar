@@ -23,12 +23,19 @@ const markdownOptions: MarkdownToJSX.Options = {
   disableParsingRawHTML: true,
   forceBlock: false,
   overrides: {
+    // eslint-disable-next-line no-restricted-syntax
     h1: (props) => <span {...props} />,
+    // eslint-disable-next-line no-restricted-syntax
     h2: (props) => <span {...props} />,
+    // eslint-disable-next-line no-restricted-syntax
     h3: (props) => <span {...props} />,
+    // eslint-disable-next-line no-restricted-syntax
     h4: (props) => <span {...props} />,
+    // eslint-disable-next-line no-restricted-syntax
     h5: (props) => <span {...props} />,
+    // eslint-disable-next-line no-restricted-syntax
     h6: (props) => <span {...props} />,
+    // eslint-disable-next-line no-restricted-syntax
     p: (props) => <span {...props} />,
     embed: () => <></>,
     iframe: () => <></>,

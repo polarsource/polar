@@ -12,8 +12,10 @@ const DataRow = ({
   return (
     <div className="flex flex-row items-center gap-x-4">
       <div className="flex w-48 flex-row items-center gap-x-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span>{label}</span>
       </div>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="dark:text-polar-500 text-gray-500">{value}</span>
     </div>
   )

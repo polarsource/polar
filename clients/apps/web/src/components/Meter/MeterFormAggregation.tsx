@@ -93,7 +93,9 @@ const AggregationRadioItem = ({
           id={`aggregation-${option.value}`}
         />
         <div className="flex flex-1 flex-col gap-1">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="cursor-pointer font-medium">{option.label}</span>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 text-sm text-gray-600">
             {option.description}
           </p>

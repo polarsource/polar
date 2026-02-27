@@ -78,16 +78,20 @@ const CreateMeterModalContent = ({
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
       <div>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-lg">Create Meter</h2>
         <div className="dark:text-polar-500 mt-2 space-y-2 text-sm text-gray-500">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             Meters are aggregated filters on ingested events. They are used to
             calculate your customer&apos;s usage of whatever you choose to
             measure.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             For example, if you want to measure the number of API calls your
             customer makes, you can create a meter that counts the number of
+            {/* eslint-disable-next-line no-restricted-syntax */}
             events with an arbitrary name like <code>api_call</code>.
           </p>
         </div>
@@ -97,9 +101,12 @@ const CreateMeterModalContent = ({
           <form className="flex flex-col gap-y-6">
             <MeterForm organizationId={organization.id} />
             {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              </>
             )}
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button

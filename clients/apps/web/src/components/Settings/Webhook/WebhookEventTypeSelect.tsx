@@ -68,6 +68,7 @@ export const WebhookEventTypeSelect = ({
           type="button"
           className={`dark:border-polar-700 dark:bg-polar-800 dark:text-polar-300 dark:hover:bg-polar-700 flex h-10 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-xs hover:bg-gray-50 ${className ?? ''}`}
         >
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="truncate">{triggerLabel}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </button>
@@ -87,6 +88,7 @@ export const WebhookEventTypeSelect = ({
           />
         </div>
         <div className="dark:border-polar-700 flex items-center justify-between border-b px-3 py-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-xs text-gray-500">
             {selectedEventTypes.length === 0
               ? 'All events'
@@ -105,16 +107,20 @@ export const WebhookEventTypeSelect = ({
         <div className="max-h-64 overflow-y-auto p-1">
           {filteredEventTypes.length > 0 ? (
             filteredEventTypes.map((eventType) => (
-              <label
-                key={eventType}
-                className="dark:hover:bg-polar-700 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50"
-              >
-                <Checkbox
-                  checked={selectedEventTypes.includes(eventType)}
-                  onCheckedChange={() => handleToggleEventType(eventType)}
-                />
-                <span className="text-sm">{eventType}</span>
-              </label>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <label
+                  key={eventType}
+                  className="dark:hover:bg-polar-700 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50"
+                >
+                  <Checkbox
+                    checked={selectedEventTypes.includes(eventType)}
+                    onCheckedChange={() => handleToggleEventType(eventType)}
+                  />
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span className="text-sm">{eventType}</span>
+                </label>
+              </>
             ))
           ) : (
             <div className="dark:text-polar-500 py-4 text-center text-sm text-gray-500">

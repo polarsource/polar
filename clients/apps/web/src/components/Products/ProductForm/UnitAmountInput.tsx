@@ -100,6 +100,7 @@ const UnitAmountInput = ({
   )
 
   const currencyLabel = (
+    // eslint-disable-next-line no-restricted-syntax
     <span className="dark:text-polar-500 text-sm font-medium text-gray-500">
       {currency.toUpperCase()}
     </span>

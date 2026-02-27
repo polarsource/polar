@@ -79,6 +79,7 @@ export const CustomerSelector = ({
 
   return (
     <div className="flex flex-col gap-y-2" onBlur={handleBlur}>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-sm">Customers</h3>
       <Popover open={open}>
         <PopoverTrigger asChild>

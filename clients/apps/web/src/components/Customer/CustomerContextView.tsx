@@ -73,6 +73,7 @@ export const CustomerContextView = ({
             className="size-12 text-sm"
           />
           <div className="flex flex-col">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p>
               {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
               {customer.deleted_at && (
@@ -143,9 +144,12 @@ export const CustomerContextView = ({
             </div>
 
             {customerSessionError && (
-              <p className="text-destructive-foreground text-sm">
-                {customerSessionError}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="text-destructive-foreground text-sm">
+                  {customerSessionError}
+                </p>
+              </>
             )}
           </div>
         )}
@@ -180,8 +184,11 @@ export const CustomerContextView = ({
           label="Tax ID"
           value={
             customer.tax_id ? (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="flex flex-row items-center gap-1.5">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>{customer.tax_id[0]}</span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="font-mono text-xs opacity-70">
                   {customer.tax_id[1].toLocaleUpperCase().replace('_', ' ')}
                 </span>
@@ -198,6 +205,7 @@ export const CustomerContextView = ({
         />
       </ShadowBox>
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h4 className="text-lg">Billing Address</h4>
         <div className="flex flex-col gap-4 md:gap-0">
           <DetailRow
@@ -235,6 +243,7 @@ export const CustomerContextView = ({
       {!customer.deleted_at && Object.keys(customer.metadata).length > 0 && (
         <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
           <div className="flex flex-row items-center justify-between gap-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Metadata</h3>
           </div>
           {Object.entries(customer.metadata).map(([key, value]) => (

@@ -52,7 +52,9 @@ export default async function Page(props: {
       <div className="flex flex-col items-center justify-center gap-y-8">
         <LinkOutlined fontSize="large" />
         <div className="flex flex-col items-center justify-center gap-y-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-xl">No Checkout Links</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-gray-500">
             Create a new checkout link to share with your customers
           </p>

@@ -37,6 +37,7 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
           })
         ) : (
           <ShadowListGroup.Item>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.org.name} doesn&apos;t have any webhooks yet
             </p>
@@ -52,6 +53,7 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
               className="shrink-0"
             >
               <Button className="gap-x-1" asChild variant="ghost">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>Documentation</span>
                 <ArrowUpRightIcon className="h-4 w-4" />
               </Button>
@@ -88,6 +90,7 @@ const Endpoint = ({
     <div className="flex items-center justify-between overflow-hidden">
       <div className="flex w-2/3 flex-col gap-y-1">
         <div className="flex items-center gap-x-2 pl-0.5">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span
             className={`inline-block h-2 w-2 shrink-0 rounded-full ${
               endpoint.enabled
@@ -97,16 +100,26 @@ const Endpoint = ({
             title={endpoint.enabled ? 'Enabled' : 'Disabled'}
           />
           {hasName ? (
-            <p className="truncate text-sm font-medium">{endpoint.name}</p>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <p className="truncate text-sm font-medium">{endpoint.name}</p>
+            </>
           ) : (
-            <p className="truncate font-mono text-sm">{endpoint.url}</p>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <p className="truncate font-mono text-sm">{endpoint.url}</p>
+            </>
           )}
         </div>
         {hasName && (
-          <p className="dark:text-polar-400 truncate pl-4 font-mono text-xs text-gray-500">
-            {endpoint.url}
-          </p>
+          <>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <p className="dark:text-polar-400 truncate pl-4 font-mono text-xs text-gray-500">
+              {endpoint.url}
+            </p>
+          </>
         )}
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-400 pl-4 text-sm text-gray-500">
           Added on{' '}
           <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />

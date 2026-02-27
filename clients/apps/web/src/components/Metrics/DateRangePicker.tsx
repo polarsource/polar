@@ -166,7 +166,10 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
               format(date.from, 'LLL dd, yy')
             )
           ) : (
-            <span>Pick a date</span>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span>Pick a date</span>
+            </>
           )}
         </PopoverTrigger>
         <PopoverContent className="p-2">

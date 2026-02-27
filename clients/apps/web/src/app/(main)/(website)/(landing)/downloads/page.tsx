@@ -78,7 +78,9 @@ export default function Downloads() {
             height={160}
             alt="App Icon"
           />
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-4xl md:text-7xl">Polar in your pocket</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 text-2xl text-balance text-gray-500">
             Take Polar with you. Now available on a variety of platforms.
           </p>
@@ -87,7 +89,9 @@ export default function Downloads() {
       <div className="flex flex-col gap-y-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-2xl">Mobile Apps</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-lg text-gray-500">
               Your business in the palm of your hand
             </p>
@@ -102,15 +106,21 @@ export default function Downloads() {
               target={link.target}
             >
               <div className="flex flex-row items-center gap-x-4">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>{link.icon}</span>
                 {!link.href ? (
-                  <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
-                    Coming Soon
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
+                      Coming Soon
+                    </span>
+                  </>
                 ) : null}
               </div>
               <div className="flex flex-col gap-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-xl">{link.title}</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
                 </p>
@@ -122,7 +132,9 @@ export default function Downloads() {
       <div className="flex flex-col gap-y-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-2xl">Plugins</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-lg text-gray-500">
               Polar integrated in your favourite apps
             </p>
@@ -135,15 +147,21 @@ export default function Downloads() {
               target="_blank"
             >
               <div className="flex flex-row items-center gap-x-4">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span>{link.icon}</span>
                 {!link.href ? (
-                  <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
-                    Coming Soon
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
+                      Coming Soon
+                    </span>
+                  </>
                 ) : null}
               </div>
               <div className="flex flex-col gap-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h3 className="text-xl">{link.title}</h3>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
                 </p>

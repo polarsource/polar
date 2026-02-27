@@ -37,7 +37,9 @@ export const ProductCheckoutSection = ({
         <AccordionItem value="checkout-page" className="border-none">
           <AccordionTrigger className="cursor-pointer hover:no-underline">
             <div className="flex flex-col items-start gap-y-2 text-left">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h2 className="text-lg font-medium">Checkout Page</h2>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-sm leading-snug font-normal text-gray-500">
                 Customize how this product is presented during checkout
               </p>
@@ -52,6 +54,7 @@ export const ProductCheckoutSection = ({
                   <FormItem className="flex flex-col gap-2">
                     <div className="flex flex-row items-center justify-between">
                       <FormLabel>Description</FormLabel>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <p className="dark:text-polar-500 text-sm text-gray-500">
                         Markdown format
                       </p>
@@ -92,6 +95,7 @@ export const ProductCheckoutSection = ({
               <div className="flex flex-col gap-2">
                 <div className="flex flex-row items-center justify-between">
                   <FormLabel>Checkout Fields</FormLabel>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-500 text-sm text-gray-500">
                     <Link
                       className="text-blue-500 hover:underline"

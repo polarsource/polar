@@ -55,17 +55,21 @@ export const OrganizationNavigation = ({
               href={route.link}
             >
               {'icon' in route && route.icon ? (
-                <span
-                  className={twMerge(
-                    'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-                    route.isActive
-                      ? 'text-blue-500 dark:text-white'
-                      : 'bg-transparent',
-                  )}
-                >
-                  {route.icon}
-                </span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span
+                    className={twMerge(
+                      'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
+                      route.isActive
+                        ? 'text-blue-500 dark:text-white'
+                        : 'bg-transparent',
+                    )}
+                  >
+                    {route.icon}
+                  </span>
+                </>
               ) : undefined}
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="ml-2 text-sm font-medium">{route.title}</span>
             </Link>
           </SidebarMenuButton>
@@ -111,9 +115,11 @@ export const AccountNavigation = () => {
             href="/dashboard"
             className="flex flex-row items-center gap-4 border border-transparent text-black dark:text-white"
           >
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]">
               <ArrowBack fontSize="inherit" />
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Account Settings</span>
           </Link>
         </SidebarMenuButton>
@@ -138,17 +144,21 @@ export const AccountNavigation = () => {
               href={route.link}
             >
               {'icon' in route && route.icon ? (
-                <span
-                  className={twMerge(
-                    'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-                    route.isActive
-                      ? 'text-blue-500 dark:text-white'
-                      : 'bg-transparent',
-                  )}
-                >
-                  {route.icon}
-                </span>
+                <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
+                  <span
+                    className={twMerge(
+                      'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
+                      route.isActive
+                        ? 'text-blue-500 dark:text-white'
+                        : 'bg-transparent',
+                    )}
+                  >
+                    {route.icon}
+                  </span>
+                </>
               ) : undefined}
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="ml-2 text-sm font-medium">{route.title}</span>
             </Link>
           </SidebarMenuButton>

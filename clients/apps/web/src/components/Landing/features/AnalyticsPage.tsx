@@ -46,10 +46,12 @@ export const AnalyticsPage = () => {
           <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
             <div className="flex flex-col gap-y-4">
               <div className="flex items-center gap-x-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-2xl leading-normal! md:text-3xl">
                   Revenue metrics that matter
                 </h2>
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-lg text-gray-500">
                 Track the metrics that drive your business forward. From MRR and
                 ARR to churn and lifetime value, get instant visibility into
@@ -75,6 +77,7 @@ export const AnalyticsPage = () => {
                     className="mt-0.5 text-emerald-500"
                     fontSize="small"
                   />
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{item}</span>
                 </motion.li>
               ))}
@@ -86,6 +89,7 @@ export const AnalyticsPage = () => {
               variants={itemVariants}
             >
               <div className="flex flex-row items-center justify-between gap-x-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-sm font-medium text-black dark:text-white">
                   Monthly Recurring Revenue
                 </span>
@@ -95,27 +99,34 @@ export const AnalyticsPage = () => {
                 />
               </div>
               <div className="flex flex-col gap-y-1">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-3xl text-black dark:text-white">
                   $48,392
                 </span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 text-sm text-gray-500">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="text-emerald-500">+12.5%</span> from last
                   month
                 </span>
               </div>
               <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-4">
                 <div className="flex flex-col">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     New Customers
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-black dark:text-white">
                     127
                   </span>
                 </div>
                 <div className="flex flex-col">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 text-xs text-gray-500">
                     Churn Rate
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-black dark:text-white">
                     2.3%
                   </span>
@@ -163,7 +174,9 @@ export const AnalyticsPage = () => {
               >
                 <div className="flex flex-row gap-x-2">{feature.icon}</div>
                 <div className="flex flex-col gap-y-4">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="text-2xl">{feature.title}</h3>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 text-balance text-gray-600">
                     {feature.description}
                   </p>

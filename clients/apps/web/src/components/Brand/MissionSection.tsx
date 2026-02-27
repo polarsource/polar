@@ -39,6 +39,7 @@ export function MissionSection() {
                 className="text-center text-pretty"
                 text={['From prompt to revenue.', 'Automatically.']}
               />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-louize text-xl md:text-4xl">polar.sh</span>
             </div>
           </ShaderCanvas>
@@ -54,6 +55,7 @@ export function MissionSection() {
                 className="text-center text-pretty"
                 text={['We count tokens.', "So you don't have to."]}
               />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="font-louize text-xl md:text-4xl">polar.sh</span>
             </div>
           </ShaderCanvas>

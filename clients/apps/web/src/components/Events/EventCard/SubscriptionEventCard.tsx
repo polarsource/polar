@@ -55,8 +55,10 @@ export const SubscriptionEventCard = ({
           <div className="flex flex-row items-center gap-x-4 p-2">
             <div className="flex flex-row items-center gap-x-4">
               <AllInclusiveOutlined fontSize="inherit" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="">{subscription.product.name}</span>
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               <ProductPriceLabel
                 product={subscription.product}

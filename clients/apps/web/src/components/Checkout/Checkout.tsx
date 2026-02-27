@@ -362,6 +362,7 @@ const Checkout = ({
           name={checkout.organization.name}
           className={isFlat ? 'h-6 w-6' : 'h-8 w-8'}
         />
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span
           className={
             isFlat ? 'text-sm dark:text-white' : 'font-medium dark:text-white'
@@ -400,9 +401,12 @@ const Checkout = ({
                                 className="h-10 w-10 rounded-lg object-cover"
                               />
                               {checkout.product.medias.length > 1 && (
-                                <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
-                                  +{checkout.product.medias.length - 1}
-                                </span>
+                                <>
+                                  {/* eslint-disable-next-line no-restricted-syntax */}
+                                  <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                                    +{checkout.product.medias.length - 1}
+                                  </span>
+                                </>
                               )}
                             </button>
                           </DialogTrigger>
@@ -422,6 +426,7 @@ const Checkout = ({
                         </Dialog>
                       )}
                       <div className="flex min-w-0 flex-col gap-y-1">
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {checkout.product.name}
                         </span>
@@ -436,6 +441,7 @@ const Checkout = ({
                         )}
                       </div>
                     </div>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="text-3xl font-medium">
                       {checkout.productPrice.amountType === 'seat_based' ? (
                         formatCurrency('compact', locale)(

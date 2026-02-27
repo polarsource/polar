@@ -155,6 +155,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Amount" />
       ),
       cell: ({ row: { original: order } }) => (
+        // eslint-disable-next-line no-restricted-syntax
         <span>
           {formatCurrency('compact')(order.net_amount, order.currency)}
         </span>
@@ -172,6 +173,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         },
       }) => {
         if (!product) {
+          // eslint-disable-next-line no-restricted-syntax
           return <span>{description}</span>
         }
         return (
@@ -194,6 +196,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row: { original: order } }) => (
+        // eslint-disable-next-line no-restricted-syntax
         <span className="flex shrink">
           <OrderStatus status={order.status} />
         </span>
@@ -224,6 +227,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <DataTableColumnHeader column={column} title={key} />
           ),
           cell: (props) => (
+            // eslint-disable-next-line no-restricted-syntax
             <span className="font-mono">{props.getValue() as string}</span>
           ),
         }))
@@ -289,6 +293,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             wrapperClassNames="gap-x-2"
           >
             <FileDownloadOutlined fontSize="inherit" />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>Export</span>
           </Button>
         </div>

@@ -61,6 +61,7 @@ const OAuthSettings = () => {
         })
       ) : (
         <ShadowListGroup.Item>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 text-sm text-gray-500">
             You don&apos;t have any configured OAuth Applications
           </p>
@@ -122,9 +123,11 @@ const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {
             name={client.client_name}
           />
           <div className="flex flex-col">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-md mr-4 text-ellipsis whitespace-nowrap">
               {client.client_name}
             </h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-sm text-gray-500">
               <FormattedDateTime
                 datetime={client.created_at}

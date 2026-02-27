@@ -77,7 +77,9 @@ export const EditEventTypeModal = ({
     <SyntaxHighlighterProvider>
       <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
         <div>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">Edit Event Type</h2>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
             {/* eslint-disable-next-line react/no-unescaped-entities */}
             Update the display label for event type "{eventName}"
@@ -157,7 +159,9 @@ export const EditEventTypeModal = ({
 
         <div className="dark:border-polar-700 border-t border-gray-200 pt-6">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3>Ingesting Events</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-500">
               {form.watch('label_property_selector')
                 ? 'To ingest events with dynamic labels, include the property in metadata.'

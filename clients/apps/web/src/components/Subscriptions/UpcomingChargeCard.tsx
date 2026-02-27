@@ -59,7 +59,9 @@ const UpcomingChargeCard = ({
     <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
       <div className="flex flex-col gap-6 p-8">
         <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg font-medium">{headerTitle}</h3>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-sm text-gray-500">
             {dateLabel} —{' '}
             {chargeDate
@@ -75,6 +77,7 @@ const UpcomingChargeCard = ({
             label={subscription.product.name}
             value={
               isCancelingAtPeriodEnd ? (
+                // eslint-disable-next-line no-restricted-syntax
                 <span className="text-gray-500">Canceled</span>
               ) : (
                 formatCurrency('compact')(
@@ -88,6 +91,7 @@ const UpcomingChargeCard = ({
           {hasMeters && (
             <>
               <div className="mt-2">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="font-medium">Metered Charges</span>
               </div>
 
@@ -107,7 +111,9 @@ const UpcomingChargeCard = ({
           <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
             {isFetching ? (
               <div className="flex items-center justify-between">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="font-medium">Total</span>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-500 animate-pulse text-gray-500">
                   Loading…
                 </span>
@@ -159,6 +165,7 @@ const UpcomingChargeCard = ({
                       .filter(Boolean)
                       .join(' ')}
                     value={
+                      // eslint-disable-next-line no-restricted-syntax
                       <span className="text-lg font-semibold">
                         {formatCurrency('accounting')(
                           chargePreview.total_amount,
@@ -171,21 +178,28 @@ const UpcomingChargeCard = ({
                   />
 
                   {isCancelingAtPeriodEnd && (
-                    <p className="max-w-sm text-xs text-gray-500">
-                      This will be the final charge when the subscription ends.
-                      {hasMeters &&
-                        ' Final amount may vary based on usage until the end of the billing period.'}
-                    </p>
+                    <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
+                      <p className="max-w-sm text-xs text-gray-500">
+                        This will be the final charge when the subscription
+                        ends.
+                        {hasMeters &&
+                          ' Final amount may vary based on usage until the end of the billing period.'}
+                      </p>
+                    </>
                   )}
 
                   {!isCancelingAtPeriodEnd && hasMeters && (
-                    <p className="max-w-sm text-xs text-gray-500">
-                      {isActive
-                        ? 'Final charges may vary based on usage until the end of the billing period.'
-                        : isTrialing
-                          ? 'Final charges may vary based on usage during the trial period.'
-                          : 'Final charges may vary.'}
-                    </p>
+                    <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
+                      <p className="max-w-sm text-xs text-gray-500">
+                        {isActive
+                          ? 'Final charges may vary based on usage until the end of the billing period.'
+                          : isTrialing
+                            ? 'Final charges may vary based on usage during the trial period.'
+                            : 'Final charges may vary.'}
+                      </p>
+                    </>
                   )}
                 </>
               )

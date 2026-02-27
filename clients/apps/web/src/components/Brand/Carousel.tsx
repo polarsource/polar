@@ -122,6 +122,7 @@ export function CarouselSection() {
           opacity,
         }}
       >
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="text-5xl text-black dark:text-white">
           {words[wordIndex]}
         </span>

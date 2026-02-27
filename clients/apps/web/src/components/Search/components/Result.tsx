@@ -12,9 +12,12 @@ export const Result = ({ icon, title, description }: Props) => {
       <div className="flex w-full flex-col gap-0.5">
         <div className="flex flex-row items-center gap-2">
           {icon && (
-            <span className="dark:text-polar-400 flex h-5 w-5 items-center justify-center text-gray-500">
-              {icon}
-            </span>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span className="dark:text-polar-400 flex h-5 w-5 items-center justify-center text-gray-500">
+                {icon}
+              </span>
+            </>
           )}
           <div className="font-medium text-gray-700 dark:text-white">
             {title}

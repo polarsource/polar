@@ -14,6 +14,7 @@ export function SpacingSection() {
     <SectionLayout label="Spacing & Grid">
       <div className="flex flex-col gap-10">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-sm font-medium text-neutral-500">
             8px Base Unit
           </span>
@@ -30,6 +31,7 @@ export function SpacingSection() {
                     height: multiplier * 8,
                   }}
                 />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-xs text-neutral-400">
                   {multiplier * 8}
                 </span>
@@ -38,6 +40,7 @@ export function SpacingSection() {
           </div>
         </div>
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="text-sm font-medium text-neutral-500">
             Border Radius
           </span>
@@ -50,6 +53,7 @@ export function SpacingSection() {
                 <div
                   className={`h-20 w-20 border-2 border-neutral-300 ${item.className}`}
                 />
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="text-xs text-neutral-400">{item.label}</span>
               </div>
             ))}

@@ -41,10 +41,12 @@ export const DownloadableItem = ({
       <div className="flex w-full min-w-0 shrink flex-row items-center gap-x-4">
         {fileIcon && <FilePreview mimeType={downloadable.file.mime_type} />}
         <div className="flex w-full min-w-0 flex-col gap-y-1">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="min-w-0 truncate text-sm">
             {downloadable.file.name}
           </span>
           <div className="flex flex-row items-center gap-x-2 text-xs">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {downloadable.file.size_readable}
             </span>

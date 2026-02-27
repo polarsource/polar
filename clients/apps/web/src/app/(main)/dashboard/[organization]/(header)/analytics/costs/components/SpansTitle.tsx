@@ -40,6 +40,7 @@ export function SpansTitle({
 
   return (
     <div className="flex flex-row items-center justify-between gap-1.5">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h2 className="flex flex-row items-center gap-1.5 text-2xl font-medium whitespace-nowrap dark:text-white">
         <Link
           href={`/dashboard/${organization.slug}/analytics/costs${searchString ? `?${searchString}` : ''}`}

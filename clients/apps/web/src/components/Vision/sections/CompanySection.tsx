@@ -71,12 +71,14 @@ export const CompanySection = ({ active }: { active: boolean }) => {
         </div>
       }
     >
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p>
         We believe the next unicorns will be created by individual developers.
         As lines blur between indie hackers, startups, and enterprises,
         we&apos;re building Polar to empower solo builders and early-stage
         startups – the future enterprises, without the headcount.
       </p>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p>
         Polar is a small team with big ambitions, empowered by a culture of
         ownership and autonomy. We&apos;re proud to be open source & built for
@@ -111,7 +113,9 @@ const Profile = ({ name, title, image }: ProfileProps) => {
         height={200}
       />
       <div className="flex flex-col text-left">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-xs">{name}</h1>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-polar-500 text-xs">{title}</h1>
       </div>
     </div>

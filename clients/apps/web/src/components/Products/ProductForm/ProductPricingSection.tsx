@@ -345,9 +345,12 @@ export const ProductPriceSeatBasedItem: React.FC<
   return (
     <div className="flex flex-col gap-3">
       {!hasSingleTier && (
-        <span className="dark:text-polar-400 text-xs font-medium tracking-wider text-gray-500 uppercase">
-          Volume pricing
-        </span>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <span className="dark:text-polar-400 text-xs font-medium tracking-wider text-gray-500 uppercase">
+            Volume pricing
+          </span>
+        </>
       )}
 
       {fields.map((field, tierIndex) => {
@@ -368,6 +371,7 @@ export const ProductPriceSeatBasedItem: React.FC<
           >
             {!hasSingleTier && (
               <div className="mb-3 flex items-center justify-between">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span
                   id={`tier-title-${index}-${tierIndex}`}
                   className="dark:text-polar-300 text-sm font-medium text-gray-500"
@@ -858,27 +862,31 @@ const CurrencyTabs: React.FC<CurrencyTabsProps> = ({
               value={currency}
               className="flex h-8 items-center gap-1"
             >
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>{currency.toUpperCase()}</span>
               {currency !== defaultCurrency &&
                 selectedCurrency === currency && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onRemoveCurrency(currency)
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
                         e.stopPropagation()
                         onRemoveCurrency(currency)
-                      }
-                    }}
-                    className="dark:text-polar-400 dark:hover:text-polar-200 cursor-pointer text-gray-400 hover:text-gray-600"
-                  >
-                    <CloseOutlined className="h-3.5 w-3.5" />
-                  </span>
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          onRemoveCurrency(currency)
+                        }
+                      }}
+                      className="dark:text-polar-400 dark:hover:text-polar-200 cursor-pointer text-gray-400 hover:text-gray-600"
+                    >
+                      <CloseOutlined className="h-3.5 w-3.5" />
+                    </span>
+                  </>
                 )}
             </TabsTrigger>
           ))}
@@ -889,6 +897,7 @@ const CurrencyTabs: React.FC<CurrencyTabsProps> = ({
         <Select onValueChange={onAddCurrency}>
           <SelectTrigger className="h-8 w-auto gap-1 border-none bg-transparent px-2 shadow-none">
             <PlusIcon className="h-3.5 w-3.5" />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-sm">Add Currency</span>
           </SelectTrigger>
           <SelectContent>
@@ -1217,15 +1226,18 @@ export const ProductPricingSection = ({
         compact={compact}
       >
         <div className="prose dark:bg-polar-700 dark:text-polar-500 rounded-2xl bg-gray-100 p-6 text-sm text-gray-500">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             This product uses a deprecated pricing model with both a monthly and
             yearly pricing.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             To better support future pricing model, the billing cycle is now set
             at the product level, meaning you need to create a separate product
             for each billing cycle.
           </p>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p>
             If you want to make any changes to the pricing model, you need to
             create a new product. Feel free to reach out to our support team if
@@ -1274,6 +1286,7 @@ export const ProductPricingSection = ({
                   </div>
                   {option === 'recurring' && productType === 'recurring' && (
                     <div className="mt-4 flex items-start gap-3 text-sm">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="flex h-10 items-center">Every</span>
                       <FormField
                         control={control}
@@ -1403,7 +1416,9 @@ export const ProductPricingSection = ({
 
         {update && recurringInterval && (
           <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 rounded-2xl! border-none! p-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-sm font-medium">Updating pricing model</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-gray-5 00 text-sm">
               Changing pricing model on subscription products will only affect
               new customers. Current customers will keep their original pricing

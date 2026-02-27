@@ -25,7 +25,9 @@ export const CustomerStatBox = ({
           : 'rounded-lg px-4 py-3 text-sm',
       )}
     >
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span className="dark:text-polar-500 text-gray-500">{title}</span>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <span
         className={twMerge(
           'font-mono',

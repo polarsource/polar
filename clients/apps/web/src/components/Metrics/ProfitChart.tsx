@@ -61,7 +61,9 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
       >
         <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-y-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl">Profit</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-5xl font-light">
               {formatCurrency('statistics')(
                 data
@@ -70,6 +72,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                 'usd',
               )}
             </h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-500">
               Calculated as Revenue minus Costs
             </p>
@@ -134,6 +137,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                   includeHidden
                   content={({ payload }) => (
                     <div className="dark:bg-polar-800 flex w-48 flex-col gap-y-2 rounded-md bg-white p-2 text-black shadow-xl dark:text-white">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span>Revenue vs. Cost</span>
                       <div className="flex flex-col">
                         {payload?.map((item, index, array) => (
@@ -146,16 +150,19 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                             )}
                           >
                             <div className="flex flex-row items-center gap-x-2">
+                              {/* eslint-disable-next-line no-restricted-syntax */}
                               <span
                                 className="h-2 w-2 rounded-full"
                                 style={{
                                   backgroundColor: item?.color,
                                 }}
                               />
+                              {/* eslint-disable-next-line no-restricted-syntax */}
                               <span className="capitalize">
                                 {item.name?.toString().split('_').join(' ')}
                               </span>
                             </div>
+                            {/* eslint-disable-next-line no-restricted-syntax */}
                             <span>
                               {getFormattedMetricValue(
                                 {

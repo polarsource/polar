@@ -91,6 +91,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       title={
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-xl font-normal">Order</h2>
             <OrderStatus status={order.status} />
           </div>
@@ -264,6 +265,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
         {(customFields?.items?.length ?? 0) > 0 && (
           <div className="flex flex-col gap-6 p-8">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Custom Fields</h3>
             <div className="flex flex-col gap-2">
               {customFields?.items?.map((field) => (
@@ -290,6 +292,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
         {Object.keys(order.metadata).length > 0 && (
           <div className="flex flex-col gap-6 p-8">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Metadata</h3>
             <div className="flex flex-col gap-2">
               {Object.entries(order.metadata).map(([key, value]) => (
@@ -309,6 +312,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       <div className="flex flex-col gap-6">
         <div className="flex flex-row items-center justify-between gap-x-8">
           <div className="flex flex-row items-center justify-between gap-x-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Payment Attempts</h3>
           </div>
         </div>
@@ -354,6 +358,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-6">
           <div className="flex flex-row items-center justify-between gap-x-8">
             <div className="flex flex-row items-center justify-between gap-x-6">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg">Refunds</h3>
             </div>
             {canRefund && (
@@ -424,6 +429,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
       {disputes && disputes.items.length > 0 && (
         <div className="flex flex-col gap-6">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h3 className="text-lg">Disputes</h3>
 
           <DataTable
@@ -470,7 +476,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
       {hasSeatBasedOrder && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Seats</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-500">
               {availableSeats} of {totalSeats} seats available
             </p>
@@ -478,20 +486,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
           {!isLoadingSeats && seats.length > 0 && (
             <div className="flex flex-col gap-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h4 className="text-base font-medium">Assigned Seats</h4>
               <SeatViewOnlyTable seats={seats} />
             </div>
           )}
 
           {!isLoadingSeats && seats.length === 0 && (
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              No seats have been assigned yet.
-            </p>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                No seats have been assigned yet.
+              </p>
+            </>
           )}
         </div>
       )}
 
       <div className="flex flex-col gap-y-6 md:hidden">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-lg">Customer</h3>
         <CustomerContextView
           organization={organization}

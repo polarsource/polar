@@ -85,10 +85,12 @@ export const UsageBillingPage = () => {
             <div className="flex flex-1 grow flex-col gap-y-10 p-8 xl:p-16">
               <div className="flex flex-col gap-y-4">
                 <div className="flex items-center gap-x-3">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h2 className="text-2xl leading-normal! md:text-3xl">
                     Track any metric with precision
                   </h2>
                 </div>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <p className="dark:text-polar-500 text-lg text-gray-500">
                   Use our Ingestion Strategies to track any usage with
                   precision.
@@ -113,6 +115,7 @@ export const UsageBillingPage = () => {
                       className="mt-0.5 text-emerald-500"
                       fontSize="small"
                     />
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>{item}</span>
                   </motion.li>
                 ))}
@@ -163,7 +166,9 @@ export const UsageBillingPage = () => {
                 >
                   <div className="flex flex-row gap-x-2">{feature.icon}</div>
                   <div className="flex flex-col gap-y-4">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <h3 className="text-2xl">{feature.title}</h3>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <p className="dark:text-polar-400 text-balance text-gray-600">
                       {feature.description}
                     </p>

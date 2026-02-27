@@ -199,6 +199,7 @@ export default function SpanDetailPage({
   return (
     <div>
       <div className="-mt-1 mb-11 flex flex-row items-center justify-between gap-y-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-2xl font-medium whitespace-nowrap dark:text-white">
           {eventType?.label ?? ''}
         </h3>
@@ -213,7 +214,9 @@ export default function SpanDetailPage({
             <div className="col-span-1">
               <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
                 <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="text-lg font-medium">Occurrences</h3>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="tabular-nums">
                     {costMetrics.totalOccurrences}
                   </span>
@@ -254,6 +257,7 @@ export default function SpanDetailPage({
             <div className="col-span-1 2xl:col-span-2">
               <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
                 <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="text-lg font-medium">Cost</h3>
                   <dl className="flex flex-row gap-x-6">
                     <div className="flex flex-row gap-x-2">

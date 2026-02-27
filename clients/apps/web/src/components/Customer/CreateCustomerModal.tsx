@@ -64,6 +64,7 @@ export const CreateCustomerModal = ({
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-xl">Create Customer</h2>
       </div>
       <Form {...form}>

@@ -57,7 +57,9 @@ export const LicenseKeysList = ({
               name={licenseKey.customer.name || licenseKey.customer.email}
             />
             <div className="flex flex-col">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="text-sm">{licenseKey.customer.name}</span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-xs text-gray-500">
                 {licenseKey.customer.email}
               </span>
@@ -74,6 +76,7 @@ export const LicenseKeysList = ({
       ),
       cell: ({ row: { original: licenseKey } }) => {
         return (
+          // eslint-disable-next-line no-restricted-syntax
           <span className="font-mono text-xs">{licenseKey.display_key}</span>
         )
       },

@@ -34,6 +34,7 @@ export const ActiveSubscriptionsOverview = ({
 
   return (
     <div className="flex flex-col gap-y-4">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h3 className="text-xl">Subscriptions</h3>
       <div className="flex flex-col gap-y-4">
         {subscriptions.length > 0 ? (
@@ -49,6 +50,7 @@ export const ActiveSubscriptionsOverview = ({
           ))
         ) : (
           <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-12 text-gray-500">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p>No Subscriptions Found</p>
           </div>
         )}
@@ -136,6 +138,7 @@ export const InactiveSubscriptionsOverview = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-xl">Inactive Subscriptions</h3>
       </div>
       <DataTable
@@ -151,6 +154,7 @@ export const InactiveSubscriptionsOverview = ({
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="capitalize">
                 {row.original.status.split('_').join(' ')}
               </span>
@@ -174,6 +178,7 @@ export const InactiveSubscriptionsOverview = ({
             accessorKey: 'id',
             header: '',
             cell: ({ row }) => (
+              // eslint-disable-next-line no-restricted-syntax
               <span className="flex justify-end gap-2">
                 {row.original.status === 'past_due' && (
                   <Button

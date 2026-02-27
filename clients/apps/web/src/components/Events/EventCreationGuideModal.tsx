@@ -15,7 +15,9 @@ export const EventCreationGuideModal = ({
   return (
     <SyntaxHighlighterProvider>
       <div className="flex flex-col gap-4 p-8">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h1 className="text-2xl">Event Ingestion</h1>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p>Events can only be created through the Polar Ingestion API.</p>
         <Well className="dark:bg-polar-900 rounded-lg bg-gray-100 p-4 text-sm">
           <SyntaxHighlighterClient

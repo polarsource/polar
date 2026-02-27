@@ -55,10 +55,12 @@ export const CustomersPage = () => {
           <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
             <div className="flex flex-col gap-y-4">
               <div className="flex items-center gap-x-3">
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <h2 className="text-2xl leading-normal! md:text-3xl">
                   Complete Customer Profiles
                 </h2>
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-lg text-gray-500">
                 Get a 360° view of your customers with comprehensive profiles
                 that track subscriptions, usage, payment history, and more.
@@ -83,6 +85,7 @@ export const CustomersPage = () => {
                     className="mt-0.5 text-emerald-500"
                     fontSize="small"
                   />
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{item}</span>
                 </motion.li>
               ))}
@@ -104,12 +107,17 @@ export const CustomersPage = () => {
                   />
                 </div>
                 <div className="flex flex-col">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="font-medium text-black dark:text-white">
                     John Doe
                   </span>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>Premium Plan</span>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>•</span>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span>$49/month</span>
                   </span>
                 </div>
@@ -155,7 +163,9 @@ export const CustomersPage = () => {
               >
                 <div className="flex flex-row gap-x-2">{feature.icon}</div>
                 <div className="flex flex-col gap-y-4">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <h3 className="text-2xl">{feature.title}</h3>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <p className="dark:text-polar-400 text-balance text-gray-600">
                     {feature.description}
                   </p>

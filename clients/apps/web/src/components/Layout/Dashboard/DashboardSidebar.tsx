@@ -123,10 +123,12 @@ export const DashboardSidebar = ({
               />
               {!isCollapsed && (
                 <>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="dark:text-polar-500 flex-1 text-left text-gray-500">
                     Search...
                   </span>
                   <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[11px] text-gray-600 select-none">
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="text-sm">⌘</span>K
                   </kbd>
                 </>
@@ -162,7 +164,12 @@ export const DashboardSidebar = ({
           )}
         >
           <SupportIcon fontSize="inherit" />
-          {!isCollapsed && <span className="ml-4 font-medium">Support</span>}
+          {!isCollapsed && (
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span className="ml-4 font-medium">Support</span>
+            </>
+          )}
         </Link>
         <Link
           className={twMerge(
@@ -175,7 +182,10 @@ export const DashboardSidebar = ({
         >
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
           {!isCollapsed && (
-            <span className="ml-4 font-medium">Documentation</span>
+            <>
+              {/* eslint-disable-next-line no-restricted-syntax */}
+              <span className="ml-4 font-medium">Documentation</span>
+            </>
           )}
         </Link>
         <Separator />
@@ -192,6 +202,7 @@ export const DashboardSidebar = ({
                     />
                     {!isCollapsed && (
                       <>
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <span className="min-w-0 truncate">
                           {organization.name}
                         </span>
@@ -219,6 +230,7 @@ export const DashboardSidebar = ({
                         avatar_url={org.avatar_url}
                         className="h-6 w-6"
                       />
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="min-w-0 truncate">{org.name}</span>
                     </DropdownMenuItem>
                   ))}

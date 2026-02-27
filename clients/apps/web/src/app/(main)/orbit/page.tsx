@@ -156,11 +156,7 @@ export default function OrbitIntroductionPage() {
         <Stack vertical gap={5}>
           {sections.map(({ label, links }) => (
             <Stack vertical key={label} gap={1}>
-              <Text
-                as="span"
-                variant="caption"
-                className="tracking-widest uppercase"
-              >
+              <Text as="span" variant="caption">
                 {label}
               </Text>
               <div className="dark:bg-polar-800 grid grid-cols-2 gap-px bg-neutral-200">

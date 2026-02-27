@@ -71,7 +71,9 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
       <ShadowListGroup.Item>
         <div className="flex flex-row items-start justify-between">
           <div className="flex flex-col gap-y-1">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3>Theme</h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 text-sm text-gray-400">
               Override your browser&apos;s preferred theme settings
             </p>
@@ -82,6 +84,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="justify-between" variant="secondary">
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span className="capitalize">{theme}</span>
                   <ExpandMoreOutlined className="ml-2" fontSize="small" />
                 </Button>
@@ -91,12 +94,15 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
                 align="end"
               >
                 <DropdownMenuItem onClick={handleThemeChange('system')}>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>System</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleThemeChange('light')}>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>Light</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleThemeChange('dark')}>
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>Dark</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

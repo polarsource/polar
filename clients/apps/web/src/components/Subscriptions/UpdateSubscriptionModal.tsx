@@ -495,11 +495,13 @@ const UpdateTrial = ({
         {/* Section 2: Set/Update trial end date */}
         <div className="dark:bg-polar-800 flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6">
           <div className="flex flex-col gap-y-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg font-medium">
               {subscription.status === 'trialing'
                 ? 'Update Trial'
                 : 'Add Trial Period'}
             </h3>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-500 mt-1 text-sm text-gray-500">
               {subscription.status === 'trialing'
                 ? 'Set a new trial end date to extend or reduce the current trial period.'
@@ -554,7 +556,9 @@ const UpdateTrial = ({
         {subscription.status === 'trialing' && (
           <div className="dark:bg-polar-800 flex flex-col items-start gap-y-4 rounded-2xl bg-gray-50 p-6">
             <div className="flex flex-col gap-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="text-lg font-medium">End Trial</h3>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-sm text-gray-500">
                 This will immediately end the trial period and charge the
                 customer for a new billing cycle.
@@ -643,7 +647,9 @@ const UpdateBillingPeriod = ({
   return (
     <div className="dark:bg-polar-800 flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6">
       <div className="flex flex-col gap-y-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-lg font-medium">Update Billing Period</h3>
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <p className="dark:text-polar-500 mt-1 text-sm text-gray-500">
           Extend the current billing period by setting a new end date in the
           future. This is useful for providing additional free subscription time
@@ -710,6 +716,7 @@ const UpdateSubscriptionModal = ({
   return (
     <div className="flex h-full flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h2 className="text-xl">Update Subscription</h2>
       </div>
       <Tabs defaultValue="product">

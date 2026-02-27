@@ -190,17 +190,22 @@ export default function CostsEventsTable({
                     className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
                     onClick={() => fetchNextPage()}
                   >
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
                       Showing first {events.length} events
                     </span>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
                     <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
                       Load more
                     </span>
                   </button>
                 ) : (
-                  <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
-                    Showing all {events.length} events
-                  </span>
+                  <>
+                    {/* eslint-disable-next-line no-restricted-syntax */}
+                    <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
+                      Showing all {events.length} events
+                    </span>
+                  </>
                 )}
               </td>
             </tr>
@@ -210,7 +215,9 @@ export default function CostsEventsTable({
     </div>
   ) : (
     <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h1 className="text-2xl font-normal">No events found</h1>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p className="dark:text-polar-500 text-gray-500">
         There are no events matching these filters
       </p>

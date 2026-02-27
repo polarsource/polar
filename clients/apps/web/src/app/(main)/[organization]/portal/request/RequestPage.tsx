@@ -94,9 +94,11 @@ const ClientPage = ({
       <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
         <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-2xl text-black dark:text-white">
               Select an account
             </h2>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-gray-500">
               Multiple accounts are associated with this email. Please select
               the account you want to access.
@@ -153,7 +155,9 @@ const ClientPage = ({
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-2xl text-black dark:text-white">Sign in</h2>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <p className="dark:text-polar-400 text-gray-500">
             Enter your email address to access your purchases. A verification
             code will be sent to you.

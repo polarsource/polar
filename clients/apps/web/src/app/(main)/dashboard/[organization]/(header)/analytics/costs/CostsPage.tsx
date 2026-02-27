@@ -96,6 +96,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
   return (
     <div className="">
       <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <h3 className="text-2xl font-medium whitespace-nowrap dark:text-white">
           Events
         </h3>

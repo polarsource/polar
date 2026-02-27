@@ -42,13 +42,17 @@ const FeatureCard = ({
       >
         <div className="flex h-full flex-col gap-y-6">
           <div className="flex h-full flex-col gap-y-2 md:gap-y-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-xl text-pretty text-black md:text-3xl md:leading-tight! dark:text-white">
               {title}
             </h3>
             {typeof description === 'string' ? (
-              <p className="dark:text-polar-500 w-full grow text-lg text-gray-500 md:max-w-96">
-                {description}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="dark:text-polar-500 w-full grow text-lg text-gray-500 md:max-w-96">
+                  {description}
+                </p>
+              </>
             ) : (
               description
             )}
@@ -73,11 +77,16 @@ const CustomerCard = () => {
         />
       </div>
       <div className="flex flex-col">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="font-medium text-black dark:text-white">John Doe</span>
 
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>Premium Plan</span>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>•</span>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>Monthly</span>
         </span>
       </div>
@@ -135,6 +144,7 @@ const Features = ({ className }: FeaturesProps) => {
               className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-3 rounded-lg border border-transparent bg-gray-50 px-3 py-2"
             >
               {item.icon}
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-50 text-xs text-gray-950">
                 {item.text}
               </span>
@@ -171,23 +181,29 @@ const Features = ({ className }: FeaturesProps) => {
       children: (
         <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-2 rounded-lg border border-transparent bg-gray-50 p-4">
           <div className="flex items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-sm text-black dark:text-white">
               Tax Report 2025
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-sm text-emerald-500">Submitted</span>
           </div>
           <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-sm text-gray-500">
               VAT (EU)
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-sm text-gray-500">
               €2,450.00
             </span>
           </div>
           <div className="flex items-center justify-between">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-sm text-gray-500">
               Sales Tax (US)
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-sm text-gray-500">
               $3,120.00
             </span>

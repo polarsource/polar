@@ -117,6 +117,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
                       </SelectItem>
                     ))}
                     <SelectItem value="no-expiration">
+                      {/* eslint-disable-next-line no-restricted-syntax */}
                       <span className="text-red-500 dark:text-red-400">
                         No expiration
                       </span>
@@ -131,6 +132,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
       )}
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             Scopes
           </h2>
@@ -222,6 +224,7 @@ const CreateAccessTokenModal = ({
     <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">Create organization access token</h2>
         </div>
       </InlineModalHeader>
@@ -288,6 +291,7 @@ const UpdateAccessTokenModal = ({
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <h2 className="text-xl">Update Organization Access Token</h2>
         </div>
       </InlineModalHeader>
@@ -356,35 +360,42 @@ const AccessTokenItem = ({
       <div className="flex flex-row items-center justify-between">
         <div className="flex flex-row">
           <div className="gap-y flex flex-col">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-md">{token.comment}</h3>
             {!minimal && (
-              <p className="dark:text-polar-400 text-sm text-gray-500">
-                {token.expires_at ? (
-                  <>
-                    Expires on{' '}
-                    <FormattedDateTime
-                      datetime={token.expires_at}
-                      dateStyle="long"
-                    />
-                  </>
-                ) : (
-                  <span className="text-red-500 dark:text-red-400">
-                    Never expires
-                  </span>
-                )}{' '}
-                —{' '}
-                {token.last_used_at ? (
-                  <>
-                    Last used on{' '}
-                    <FormattedDateTime
-                      datetime={token.last_used_at}
-                      dateStyle="long"
-                    />
-                  </>
-                ) : (
-                  'Never used'
-                )}
-              </p>
+              <>
+                {/* eslint-disable-next-line no-restricted-syntax */}
+                <p className="dark:text-polar-400 text-sm text-gray-500">
+                  {token.expires_at ? (
+                    <>
+                      Expires on{' '}
+                      <FormattedDateTime
+                        datetime={token.expires_at}
+                        dateStyle="long"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {/* eslint-disable-next-line no-restricted-syntax */}
+                      <span className="text-red-500 dark:text-red-400">
+                        Never expires
+                      </span>
+                    </>
+                  )}{' '}
+                  —{' '}
+                  {token.last_used_at ? (
+                    <>
+                      Last used on{' '}
+                      <FormattedDateTime
+                        datetime={token.last_used_at}
+                        dateStyle="long"
+                      />
+                    </>
+                  ) : (
+                    'Never used'
+                  )}
+                </p>
+              </>
             )}
           </div>
         </div>{' '}
@@ -409,6 +420,7 @@ const AccessTokenItem = ({
             variant="mono"
           />
           <Banner color="blue">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="text-sm">
               Copy the access token and save it somewhere safe. You won&rsquo;t
               be able to see it again.
@@ -538,6 +550,7 @@ const OrganizationAccessTokensSettings = ({
           })
         ) : (
           <ShadowListGroup.Item>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-sm text-gray-500">
               You don&rsquo;t have any active organization access tokens.
             </p>

@@ -22,12 +22,15 @@ const SubscriptionCancellationSelect: React.FC<
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="whitespace-nowrap">All active subscriptions</span>
         </SelectItem>
         <SelectItem value="false">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="whitespace-nowrap">Renewing subscriptions</span>
         </SelectItem>
         <SelectItem value="true">
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="whitespace-nowrap">Ending at period end</span>
         </SelectItem>
       </SelectContent>

@@ -63,8 +63,10 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
           <div className="flex flex-row items-center gap-x-4 px-1.5 py-2">
             <div className="flex flex-row items-center gap-x-6">
               {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="">{benefit.description ?? '—'}</span>
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-500 text-gray-500">
               {benefitsDisplayNames[benefit.type]}
             </span>

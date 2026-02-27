@@ -93,6 +93,7 @@ export const FileList = ({
           </div>
           {showPagination && (
             <div className="flex items-center justify-between gap-4">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 text-sm text-gray-500">
                 {files.length === 1
                   ? 'Viewing the only file'
@@ -109,6 +110,7 @@ export const FileList = ({
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+                {/* eslint-disable-next-line no-restricted-syntax */}
                 <span className="dark:text-polar-400 min-w-[80px] text-center text-sm text-gray-600">
                   {currentPage + 1} / {totalPages}
                 </span>

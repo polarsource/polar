@@ -78,7 +78,9 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
 
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <h2 className="text-xl">Refund Order</h2>
+      {/* eslint-disable-next-line no-restricted-syntax */}
       <p className="dark:text-polar-500 text-gray-500">
         You can refund in part or full. Your customer will see it on their bank
         statement in 5-10 days.
@@ -166,6 +168,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                           defaultChecked={field.value}
                           onCheckedChange={field.onChange}
                         />
+                        {/* eslint-disable-next-line no-restricted-syntax */}
                         <p className="text-sm">
                           Revoke the associated customer benefits
                         </p>
@@ -179,11 +182,13 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
           </div>
           <Well className="p-6">
             <WellHeader>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <h3 className="font-medium">
                 Original payment fees are not returned
               </h3>
             </WellHeader>
             <WellContent>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-gray-500">
                 Underlying payment processors still charge us for the original
                 payment - even in case of a full refund. However, no additional

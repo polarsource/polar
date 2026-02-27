@@ -26,7 +26,10 @@ export const EventCardBase = ({
       {...props}
     >
       {loading ? (
-        <span className="w-full px-2 py-2">Loading...</span>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <span className="w-full px-2 py-2">Loading...</span>
+        </>
       ) : (
         children
       )}

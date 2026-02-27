@@ -107,9 +107,11 @@ export function CostDeviationBar({
       <TooltipContent side="right" className="max-w-xs">
         <div className="flex flex-col gap-y-2 p-1">
           <div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="text-left text-sm font-medium">
               {deviation.deviationFormatted}
             </p>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <p className="dark:text-polar-400 text-xs text-gray-400">
               compared to average cost for this event type
             </p>
@@ -124,6 +126,7 @@ export function CostDeviationBar({
                 <div className="dark:bg-polar-500 h-2 w-0.5 bg-gray-400" />
                 <div className="dark:bg-polar-600 h-full w-1/2 rounded-r-full bg-gray-300" />
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-400 text-gray-500">
                 Below average
               </span>
@@ -137,6 +140,7 @@ export function CostDeviationBar({
                   style={{ backgroundColor: COLORS.red }}
                 />
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-400 text-gray-500">
                 Above average
               </span>

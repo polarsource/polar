@@ -31,8 +31,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
       title={
         <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-xl font-normal">Checkout</h2>
           </div>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
             {checkout.id}
           </span>
@@ -63,6 +65,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
       <div className="flex flex-col gap-6">
         <div className="flex flex-row items-center justify-between gap-x-8">
           <div className="flex flex-row items-center justify-between gap-x-6">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h3 className="text-lg">Payment Attempts</h3>
           </div>
         </div>

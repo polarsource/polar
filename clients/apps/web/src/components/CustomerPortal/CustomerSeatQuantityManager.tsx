@@ -106,6 +106,7 @@ export const CustomerSeatQuantityManager = ({
       <div className="flex flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
           <div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="font-medium">Total seats</span>
           </div>
           <div className="flex items-center gap-1">
@@ -119,6 +120,7 @@ export const CustomerSeatQuantityManager = ({
               <MinusIcon className="h-4 w-4" />
             </Button>
 
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-200 flex h-8 min-w-8 items-center justify-center px-2 font-medium">
               {seats}
             </span>
@@ -149,10 +151,13 @@ export const CustomerSeatQuantityManager = ({
       )}
 
       {!canDecrease && seats !== undefined && seats < assignedSeats && (
-        <p className="text-xs text-red-500 dark:text-red-400">
-          Cannot decrease below {assignedSeats} assigned seats. Revoke seats
-          first.
-        </p>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <p className="text-xs text-red-500 dark:text-red-400">
+            Cannot decrease below {assignedSeats} assigned seats. Revoke seats
+            first.
+          </p>
+        </>
       )}
     </form>
   )

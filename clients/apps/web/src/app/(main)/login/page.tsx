@@ -21,9 +21,11 @@ export default async function Page(props: {
         <div className="flex flex-col gap-y-4">
           <PolarLogotype logoVariant="icon" size={60} />
           <div className="flex flex-col gap-4">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <h2 className="text-2xl text-black dark:text-white">
               Welcome to Polar
             </h2>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="dark:text-polar-400 text-lg text-balance text-gray-500">
               Monetize your software
             </span>

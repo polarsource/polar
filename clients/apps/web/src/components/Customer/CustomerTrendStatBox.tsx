@@ -51,6 +51,7 @@ export const CustomerTrendStatBox = ({
       size={size}
     >
       <div className="flex flex-col gap-2">
+        {/* eslint-disable-next-line no-restricted-syntax */}
         <span>{children}</span>
         {trend ? (
           <Tooltip>
@@ -74,14 +75,17 @@ export const CustomerTrendStatBox = ({
                   ) : trend.direction === 'down' ? (
                     <ArrowDownRight className="h-4 w-4" />
                   ) : null}
+                  {/* eslint-disable-next-line no-restricted-syntax */}
                   <span>{Math.abs(trend.value).toFixed(1)}%</span>
                 </div>
               </div>
             </TooltipTrigger>
             <TooltipContent className="flex flex-col gap-1">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="dark:text-polar-500 font-sans text-sm text-gray-500">
                 Previous Period
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span>{formatter?.(trend.previousValue, 'usd')}</span>
             </TooltipContent>
           </Tooltip>

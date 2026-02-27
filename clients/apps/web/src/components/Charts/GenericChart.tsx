@@ -156,16 +156,19 @@ export const GenericChart = <T extends Record<string, unknown>>({
         return (
           <div className="flex w-40 flex-row justify-between gap-x-8">
             <div className="flex flex-row items-center gap-x-2">
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span
                 className="h-2 w-2 rounded-full"
                 style={{
                   backgroundColor: item?.color,
                 }}
               />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <span className="capitalize">
                 {name.toString().split('_').join(' ')}
               </span>
             </div>
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span>{formattedValue}</span>
           </div>
         )
@@ -174,16 +177,19 @@ export const GenericChart = <T extends Record<string, unknown>>({
       return (
         <div className="flex w-40 flex-row justify-between gap-x-8">
           <div className="flex flex-row items-center gap-x-2">
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span
               className="h-2 w-2 rounded-full"
               style={{
                 backgroundColor: item?.color,
               }}
             />
+            {/* eslint-disable-next-line no-restricted-syntax */}
             <span className="capitalize">
               {name.toString().split('_').join(' ')}
             </span>
           </div>
+          {/* eslint-disable-next-line no-restricted-syntax */}
           <span>{value}</span>
         </div>
       )

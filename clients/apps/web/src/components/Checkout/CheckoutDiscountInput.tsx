@@ -100,12 +100,17 @@ export const CheckoutDiscountInput = ({
   return (
     <div className="flex flex-col gap-1">
       {!collapsible && (
-        <label className="flex flex-row items-center justify-between text-sm">
-          <span>{t('checkout.form.discountCode')}</span>
-          <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
-            {t('checkout.form.optional')}
-          </span>
-        </label>
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <label className="flex flex-row items-center justify-between text-sm">
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <span>{t('checkout.form.discountCode')}</span>
+            {/* eslint-disable-next-line no-restricted-syntax */}
+            <span className="dark:text-polar-500 text-xs font-normal text-gray-500">
+              {t('checkout.form.optional')}
+            </span>
+          </label>
+        </>
       )}
       <div className="relative">
         <Input
@@ -149,7 +154,12 @@ export const CheckoutDiscountInput = ({
           )}
         </div>
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <>
+          {/* eslint-disable-next-line no-restricted-syntax */}
+          <p className="text-sm text-red-500">{error}</p>
+        </>
+      )}
     </div>
   )
 }

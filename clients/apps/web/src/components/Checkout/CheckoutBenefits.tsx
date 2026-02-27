@@ -69,6 +69,7 @@ const CheckoutBenefits = ({
           {benefitGrants && benefitGrants.items.length < expectedBenefits && (
             <ListItem className="flex flex-row items-center justify-center gap-2">
               <SpinnerNoMargin className="h-4 w-4" />
+              {/* eslint-disable-next-line no-restricted-syntax */}
               <p className="dark:text-polar-500 text-gray-500">
                 {t('checkout.benefits.granting')}
               </p>

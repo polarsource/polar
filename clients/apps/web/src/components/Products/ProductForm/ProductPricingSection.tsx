@@ -849,9 +849,9 @@ const CurrencyTabs: React.FC<CurrencyTabsProps> = ({
   )
 
   return (
-    <div className="flex flex-row items-center gap-2">
+    <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-1">
       <Tabs value={selectedCurrency} onValueChange={onSelectCurrency}>
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
           {activeCurrencies.map((currency) => (
             <TabsTrigger
               key={currency}

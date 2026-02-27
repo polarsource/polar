@@ -5,10 +5,12 @@ import pytest
 
 from polar.models.organization import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
+from polar.models.payment import PaymentStatus
 from polar.models.user import User
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_payment
 
 
 def _make_report(
@@ -641,3 +643,117 @@ class TestRecordAgentDecision:
         await session.refresh(first)
         assert first.is_current is False
         assert second.is_current is True
+
+
+@pytest.mark.asyncio
+class TestGetRiskScorePercentiles:
+    async def test_no_payments(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Returns (None, None) when no succeeded payments with risk scores exist."""
+        repo = OrganizationReviewRepository.from_session(session)
+        p50, p90 = await repo.get_risk_score_percentiles(organization.id)
+        assert p50 is None
+        assert p90 is None
+
+    async def test_single_payment(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Single score returns the same value for both percentiles."""
+        await create_payment(
+            save_fixture, organization, risk_score=42, status=PaymentStatus.succeeded
+        )
+        repo = OrganizationReviewRepository.from_session(session)
+        p50, p90 = await repo.get_risk_score_percentiles(organization.id)
+        assert p50 == 42
+        assert p90 == 42
+
+    async def test_multiple_payments(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Percentiles computed over 10 scores: 1..10."""
+        for score in range(1, 11):
+            await create_payment(
+                save_fixture,
+                organization,
+                risk_score=score,
+                status=PaymentStatus.succeeded,
+            )
+        repo = OrganizationReviewRepository.from_session(session)
+        p50, p90 = await repo.get_risk_score_percentiles(organization.id)
+        # percentile_cont(0.5) over [1..10] = 5.5 → int = 5
+        assert p50 == 5
+        # percentile_cont(0.9) over [1..10] = 9.1 → int = 9
+        assert p90 == 9
+
+    async def test_excludes_null_risk_scores(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Payments with risk_score=None are excluded from the calculation."""
+        await create_payment(
+            save_fixture, organization, risk_score=10, status=PaymentStatus.succeeded
+        )
+        await create_payment(
+            save_fixture, organization, risk_score=None, status=PaymentStatus.succeeded
+        )
+        await create_payment(
+            save_fixture, organization, risk_score=90, status=PaymentStatus.succeeded
+        )
+        repo = OrganizationReviewRepository.from_session(session)
+        p50, p90 = await repo.get_risk_score_percentiles(organization.id)
+        # Only [10, 90] → p50 = 50, p90 = 82
+        assert p50 == 50
+        assert p90 == 82
+
+    async def test_excludes_non_succeeded_payments(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Only succeeded payments contribute to the percentile."""
+        await create_payment(
+            save_fixture, organization, risk_score=99, status=PaymentStatus.failed
+        )
+        await create_payment(
+            save_fixture, organization, risk_score=20, status=PaymentStatus.succeeded
+        )
+        repo = OrganizationReviewRepository.from_session(session)
+        p50, p90 = await repo.get_risk_score_percentiles(organization.id)
+        # Only [20]
+        assert p50 == 20
+        assert p90 == 20
+
+    async def test_skewed_distribution(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Heavily skewed: many low scores with one outlier."""
+        for _ in range(9):
+            await create_payment(
+                save_fixture,
+                organization,
+                risk_score=1,
+                status=PaymentStatus.succeeded,
+            )
+        await create_payment(
+            save_fixture, organization, risk_score=100, status=PaymentStatus.succeeded
+        )
+        repo = OrganizationReviewRepository.from_session(session)
+        p50, p90 = await repo.get_risk_score_percentiles(organization.id)
+        # [1,1,1,1,1,1,1,1,1,100]: p50=1, p90=int(10.9)=10
+        assert p50 == 1
+        assert p90 == 10

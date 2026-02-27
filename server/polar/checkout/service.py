@@ -406,8 +406,8 @@ class CheckoutService:
                 ) from e
 
         # Validate seats for seat-based pricing
-        min_seats = getattr(checkout_create, "min_seats", None)
-        max_seats = getattr(checkout_create, "max_seats", None)
+        min_seats = checkout_create.min_seats
+        max_seats = checkout_create.max_seats
         self._validate_checkout_seat_constraints(price, min_seats, max_seats)
 
         if is_seat_price(price):

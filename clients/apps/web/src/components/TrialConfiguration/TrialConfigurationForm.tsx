@@ -21,7 +21,6 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
 
 const trialIntervalValueDisplayNames: Record<
   schemas['TrialInterval'],
@@ -76,15 +75,10 @@ export const TrialConfigurationForm = ({
   }, [count])
 
   return (
-    <label
-      className={twMerge(
-        'dark:border-polar-700 dark:bg-polar-900 w-full rounded-2xl border border-gray-100 px-6 py-4',
-      )}
-      htmlFor="trial-enable"
-    >
+    <label htmlFor="trial-enable">
       <div className="flex flex-col gap-4">
         <FormItem className="flex-1">
-          <div className="flex h-10 flex-row items-center justify-between gap-x-4 whitespace-nowrap">
+          <div className="flex flex-row items-center justify-between gap-x-4 whitespace-nowrap">
             <FormLabel htmlFor="trial-enable">Free trial period</FormLabel>
             <Switch
               id="trial-enable"

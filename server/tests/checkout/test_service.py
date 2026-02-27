@@ -2086,51 +2086,54 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_max_seats_clamps_seats(
+    async def test_seats_outside_min_max_rejected(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product_seat_based: Product,
     ) -> None:
-        price = product_seat_based.prices[0]
+        price_id = product_seat_based.prices[0].id
 
-        checkout = await checkout_service.create(
-            session,
+        with pytest.raises(ValidationError):
             CheckoutPriceCreate(
-                product_price_id=price.id,
-                seats=10,
-                max_seats=5,
-            ),
-            auth_subject,
-        )
+                product_price_id=price_id, seats=10, max_seats=5
+            )
 
-        assert checkout.seats == 5
-        assert checkout.max_seats == 5
+        with pytest.raises(ValidationError):
+            CheckoutPriceCreate(
+                product_price_id=price_id, seats=2, min_seats=5
+            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_min_seats_clamped_to_tier_minimum(
+    async def test_min_max_seats_outside_tier_rejected(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
-        product_seat_based_with_min: Product,
+        product_seat_based_with_min_max: Product,
     ) -> None:
-        """min_seats below tier minimum (3) gets clamped up."""
-        checkout = await checkout_service.create(
-            session,
-            CheckoutPriceCreate(
-                product_price_id=product_seat_based_with_min.prices[0].id,
-                min_seats=1,
-            ),
-            auth_subject,
-        )
+        """Tier has min=2, max=20."""
+        price_id = product_seat_based_with_min_max.prices[0].id
 
-        assert checkout.min_seats == 3
-        assert checkout.seats == 3
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(product_price_id=price_id, min_seats=1),
+                auth_subject,
+            )
+        assert e.value.errors()[0]["loc"] == ("body", "min_seats")
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(product_price_id=price_id, max_seats=50),
+                auth_subject,
+            )
+        assert e.value.errors()[0]["loc"] == ("body", "max_seats")
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2408,22 +2411,19 @@ class TestClientCreate:
         assert checkout.seats == 3
         assert checkout.min_seats == 3
 
-    async def test_max_seats_clamps_seats(
+    async def test_seats_outside_min_max_rejected(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         product_seat_based: Product,
     ) -> None:
-        checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(
-                product_id=product_seat_based.id, seats=10, max_seats=5
-            ),
-            auth_subject,
-        )
+        product_id = product_seat_based.id
 
-        assert checkout.seats == 5
-        assert checkout.max_seats == 5
+        with pytest.raises(ValidationError):
+            CheckoutCreatePublic(product_id=product_id, seats=10, max_seats=5)
+
+        with pytest.raises(ValidationError):
+            CheckoutCreatePublic(product_id=product_id, seats=2, min_seats=5)
 
 
 @pytest.mark.asyncio

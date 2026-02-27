@@ -11,6 +11,7 @@ from pydantic import (
     IPvAnyAddress,
     Tag,
     computed_field,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -226,6 +227,21 @@ class CheckoutCreateBase(
         le=1000,
         description=("Maximum number of seats (works with seat-based pricing only)"),
     )
+
+
+    @model_validator(mode="after")
+    def _validate_seat_constraints(self) -> "CheckoutCreateBase":
+        if self.min_seats is not None and self.max_seats is not None:
+            if self.min_seats > self.max_seats:
+                raise ValueError("min_seats must be less than or equal to max_seats")
+        if self.seats is not None and self.min_seats is not None:
+            if self.seats < self.min_seats:
+                raise ValueError("seats must be greater than or equal to min_seats")
+        if self.seats is not None and self.max_seats is not None:
+            if self.seats > self.max_seats:
+                raise ValueError("seats must be less than or equal to max_seats")
+        return self
+
     allow_trial: bool = Field(default=True, description=_allow_trial_description)
     customer_id: UUID4 | None = Field(
         default=None,
@@ -353,6 +369,20 @@ class CheckoutCreatePublic(Schema):
         le=1000,
         description=("Maximum number of seats (works with seat-based pricing only)"),
     )
+
+    @model_validator(mode="after")
+    def _validate_seat_constraints(self) -> "CheckoutCreatePublic":
+        if self.min_seats is not None and self.max_seats is not None:
+            if self.min_seats > self.max_seats:
+                raise ValueError("min_seats must be less than or equal to max_seats")
+        if self.seats is not None and self.min_seats is not None:
+            if self.seats < self.min_seats:
+                raise ValueError("seats must be greater than or equal to min_seats")
+        if self.seats is not None and self.max_seats is not None:
+            if self.seats > self.max_seats:
+                raise ValueError("seats must be less than or equal to max_seats")
+        return self
+
     customer_email: CustomerEmail | None = None
     subscription_id: UUID4 | None = Field(
         default=None,

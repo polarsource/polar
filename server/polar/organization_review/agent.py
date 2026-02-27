@@ -1,6 +1,7 @@
 import asyncio
 import time
 from datetime import UTC, datetime
+from typing import cast
 from uuid import UUID
 
 import structlog
@@ -29,6 +30,8 @@ from .schemas import (
     HistoryData,
     IdentityData,
     PaymentMetrics,
+    PriorFeedbackData,
+    PriorFeedbackEntry,
     ProductsData,
     ReviewContext,
     SetupData,
@@ -218,6 +221,37 @@ async def _collect_website(organization: Organization) -> WebsiteData | None:
         return None
 
 
+async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationReviewRepository.from_session(session)
+        records = await repo.get_feedback_history(organization_id)
+
+    entries: list[PriorFeedbackEntry] = []
+    for fb in records:
+        agent_summary: str | None = None
+        if fb.agent_review_id is not None:
+            try:
+                parsed = fb.agent_review.parsed_report
+                agent_summary = parsed.report.summary
+            except Exception:
+                pass
+
+        entries.append(
+            PriorFeedbackEntry(
+                actor_type=fb.actor_type or "unknown",
+                decision=fb.decision or "unknown",
+                review_context=fb.review_context or "unknown",
+                verdict=fb.verdict,
+                risk_score=fb.risk_score,
+                reason=fb.reason,
+                agent_summary=agent_summary,
+                created_at=fb.created_at,
+            )
+        )
+
+    return PriorFeedbackData(entries=entries)
+
+
 async def _collect_data(
     organization: Organization,
     context: ReviewContext,
@@ -228,6 +262,26 @@ async def _collect_data(
     # Run all collectors in parallel.
     # Each DB-bound collector creates its own session so queries
     # can execute concurrently across separate connections.
+    results = cast(
+        tuple[
+            ProductsData,
+            SetupData,
+            PaymentMetrics,
+            HistoryData,
+            tuple[AccountData, IdentityData],
+            WebsiteData | None,
+            PriorFeedbackData,
+        ],
+        await asyncio.gather(
+            _collect_products(organization.id, context),
+            _collect_setup(organization.id, context),
+            _collect_metrics(organization.id, context),
+            _collect_history(organization),
+            _collect_account_identity(organization, context),
+            _collect_website(organization),
+            _collect_prior_feedback(organization.id),
+        ),
+    )
     (
         products_data,
         setup_data,
@@ -235,14 +289,8 @@ async def _collect_data(
         history_data,
         (account_data, identity_data),
         website_data,
-    ) = await asyncio.gather(
-        _collect_products(organization.id, context),
-        _collect_setup(organization.id, context),
-        _collect_metrics(organization.id, context),
-        _collect_history(organization),
-        _collect_account_identity(organization, context),
-        _collect_website(organization),
-    )
+        prior_feedback_data,
+    ) = results
 
     return DataSnapshot(
         context=context,
@@ -254,5 +302,6 @@ async def _collect_data(
         history=history_data,
         setup=setup_data,
         website=website_data,
+        prior_feedback=prior_feedback_data,
         collected_at=datetime.now(UTC),
     )

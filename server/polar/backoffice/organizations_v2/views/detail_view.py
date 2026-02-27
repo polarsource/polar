@@ -35,9 +35,15 @@ def _get_logfire_url(organization_id: UUID) -> str:
 class OrganizationDetailView:
     """Render the organization detail view with horizontal section tabs."""
 
-    def __init__(self, organization: Organization, ai_verdict: str = ""):
+    def __init__(
+        self,
+        organization: Organization,
+        ai_verdict: str = "",
+        admin_email: str | None = None,
+    ):
         self.org = organization
         self.ai_verdict = ai_verdict
+        self.admin_email = admin_email
 
     @contextlib.contextmanager
     def section_tabs(
@@ -452,7 +458,7 @@ class OrganizationDetailView:
                                 text("Run Review Agent")
                         with tag.li():
                             with tag.a(
-                                href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.org.email or self.org.slug}",
+                                href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.admin_email or self.org.slug}",
                                 target="_blank",
                             ):
                                 text("Search in Plain")

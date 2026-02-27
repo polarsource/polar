@@ -128,9 +128,7 @@ def _make_mock_feedback(
         fb.agent_review.parsed_report = mock_report
     elif agent_review_id:
         # agent_review exists but has no parseable report
-        fb.agent_review.parsed_report = MagicMock(
-            side_effect=Exception("parse error")
-        )
+        fb.agent_review.parsed_report = MagicMock(side_effect=Exception("parse error"))
 
     return fb
 
@@ -182,7 +180,9 @@ class TestCollectFeedbackData:
         result = collect_feedback_data([fb])
 
         assert len(result.entries) == 1
-        assert result.entries[0].agent_summary == "High risk: pricing anomalies detected"
+        assert (
+            result.entries[0].agent_summary == "High risk: pricing anomalies detected"
+        )
 
     def test_multiple_records_preserve_order(self) -> None:
         records = [

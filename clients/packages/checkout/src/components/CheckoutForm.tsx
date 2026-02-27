@@ -43,11 +43,7 @@ import { hasLegacyRecurringPrices } from '../utils/product'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
 
-const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay'] as const
-type WalletPaymentMethod = (typeof WALLET_PAYMENT_METHODS)[number]
-
-const isWalletPaymentMethod = (type: string): type is WalletPaymentMethod =>
-  WALLET_PAYMENT_METHODS.includes(type as WalletPaymentMethod)
+const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -756,7 +752,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     string | undefined
   >()
   const isWalletPayment = selectedPaymentMethod
-    ? isWalletPaymentMethod(selectedPaymentMethod)
+    ? WALLET_PAYMENT_METHODS.includes(selectedPaymentMethod)
     : false
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {

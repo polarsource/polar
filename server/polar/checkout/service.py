@@ -1095,8 +1095,8 @@ class CheckoutService:
             ):
                 raise PaymentNotReady()
 
-        # For wallet payments (Apple Pay, Google Pay), we hide the customer name field
-        # for better UX and instead extract the name from Stripe's confirmation token.
+        # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
+        # field for better UX and instead extract the name from Stripe's confirmation token.
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and checkout_confirm.confirmation_token_id is not None
@@ -2478,7 +2478,7 @@ class CheckoutService:
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
         fields: set[tuple[str, ...]] = {("customer_email",)}
         if checkout.is_payment_form_required:
-            fields.update({("customer_name",), ("customer_billing_address",)})
+            fields.update({("customer_billing_address",)})
             for (
                 address_field,
                 required,

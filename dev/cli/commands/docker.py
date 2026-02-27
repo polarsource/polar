@@ -13,12 +13,14 @@ from typing import Annotated, Optional
 
 import typer
 
-from shared import ROOT_DIR, console, run_command
+from shared import ROOT_DIR, SECRETS_FILE, SERVER_DIR, console, run_command
 
 DOCKER_DIR = ROOT_DIR / "dev" / "docker"
 COMPOSE_FILE = DOCKER_DIR / "docker-compose.dev.yml"
 ENV_TEMPLATE = DOCKER_DIR / ".env.docker.template"
 ENV_FILE = DOCKER_DIR / ".env.docker"
+SERVER_ENV_FILE = SERVER_DIR / ".env"
+SERVER_ENV_TEMPLATE = SERVER_DIR / ".env.template"
 
 VALID_SERVICES = ["api", "worker", "web", "db", "redis", "minio", "minio-setup", "prometheus", "grafana"]
 
@@ -104,6 +106,54 @@ def _ensure_env_file() -> None:
     if not ENV_FILE.exists():
         console.print("[dim]Creating Docker environment file from template...[/dim]")
         shutil.copy(ENV_TEMPLATE, ENV_FILE)
+
+
+def _load_central_secrets() -> dict[str, str]:
+    """Load secrets from central file if it exists."""
+    if not SECRETS_FILE.exists():
+        return {}
+    from dotenv import dotenv_values
+    return {k: v for k, v in dotenv_values(SECRETS_FILE).items() if v}
+
+
+def _ensure_server_env() -> None:
+    """Create server/.env from template if it doesn't exist.
+
+    Applies central secrets from ~/.config/polar/secrets.env when available,
+    mirroring what `dev/setup-environment` does.
+    """
+    if SERVER_ENV_FILE.exists():
+        return
+
+    if not SERVER_ENV_TEMPLATE.exists():
+        console.print("[red]server/.env.template not found[/red]")
+        raise typer.Exit(1)
+
+    console.print("[dim]Creating server/.env from template...[/dim]")
+
+    from dotenv import dotenv_values
+
+    template_env = dotenv_values(SERVER_ENV_TEMPLATE)
+    central_secrets = _load_central_secrets()
+
+    # Map backend secrets to frontend env vars
+    if "POLAR_STRIPE_PUBLISHABLE_KEY" in central_secrets:
+        central_secrets["NEXT_PUBLIC_STRIPE_KEY"] = central_secrets[
+            "POLAR_STRIPE_PUBLISHABLE_KEY"
+        ]
+    if "POLAR_GITHUB_APP_NAMESPACE" in central_secrets:
+        central_secrets["NEXT_PUBLIC_GITHUB_APP_NAMESPACE"] = central_secrets[
+            "POLAR_GITHUB_APP_NAMESPACE"
+        ]
+
+    with open(SERVER_ENV_FILE, "w") as f:
+        for key, value in template_env.items():
+            output_value = central_secrets.get(key, value)
+            delimiter = "'" if '"' in str(output_value) else '"'
+            f.write(f"{key}={delimiter}{output_value}{delimiter}\n")
+
+    if central_secrets:
+        console.print(f"[dim]  Applied secrets from {SECRETS_FILE}[/dim]")
 
 
 def _build_compose_env(instance: int) -> dict[str, str]:
@@ -213,6 +263,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         """Start the full stack in Docker containers."""
         instance = _get_instance(ctx)
         _ensure_env_file()
+        _ensure_server_env()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance, monitoring)
 

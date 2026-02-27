@@ -36,7 +36,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job
+from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import CustomerSeatRepository
 
@@ -1057,6 +1057,51 @@ class SeatService:
             email=None,
             seat_member_email=customer.email,
         )
+
+    async def update_product_benefits_grants(
+        self, session: AsyncReadSession, product: Product
+    ) -> None:
+        """Re-sync benefit grants for all claimed seats of a product.
+
+        When a merchant updates the benefits of a seat-based product,
+        we need to enqueue benefit grant jobs for each claimed seat holder
+        so they receive the updated benefits.
+        """
+        repository = CustomerSeatRepository.from_session(session)
+
+        sub_count = await repository.count_claimed_by_product_via_subscriptions(
+            product.id
+        )
+        ord_count = await repository.count_claimed_by_product_via_orders(product.id)
+        total_count = sub_count + ord_count
+        calculate_delay = make_bulk_job_delay_calculator(total_count)
+
+        index = 0
+        sub_stmt = repository.get_claimed_by_product_via_subscriptions(product.id)
+        async for seat in repository.stream(sub_stmt):
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=product.id,
+                member_id=seat.member_id,
+                subscription_id=seat.subscription_id,
+                delay=calculate_delay(index),
+            )
+            index += 1
+
+        ord_stmt = repository.get_claimed_by_product_via_orders(product.id)
+        async for seat in repository.stream(ord_stmt):
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=product.id,
+                member_id=seat.member_id,
+                order_id=seat.order_id,
+                delay=calculate_delay(index),
+            )
+            index += 1
 
 
 seat_service = SeatService()

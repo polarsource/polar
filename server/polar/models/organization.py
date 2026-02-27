@@ -137,6 +137,15 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
 }
 
 
+class OrganizationCheckoutSettings(TypedDict):
+    require_3ds: bool
+
+
+_default_checkout_settings: OrganizationCheckoutSettings = {
+    "require_3ds": False,
+}
+
+
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"
@@ -273,6 +282,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     customer_portal_settings: Mapped[OrganizationCustomerPortalSettings] = (
         mapped_column(JSONB, nullable=False, default=_default_customer_portal_settings)
+    )
+
+    checkout_settings: Mapped[OrganizationCheckoutSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_checkout_settings
     )
 
     @property

@@ -298,6 +298,9 @@ class OrganizationService:
         if update_schema.notification_settings is not None:
             organization.notification_settings = update_schema.notification_settings
 
+        if update_schema.checkout_settings is not None:
+            organization.checkout_settings = update_schema.checkout_settings
+
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -311,6 +314,7 @@ class OrganizationService:
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
+                "checkout_settings",
                 "details",
             },
         )

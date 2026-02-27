@@ -1815,6 +1815,100 @@ async def edit_features(
 
 
 @router.api_route(
+    "/{organization_id}/edit-checkout-settings",
+    name="organizations:edit_checkout_settings",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_checkout_settings(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization checkout settings (e.g., require 3DS)."""
+    repository = OrganizationRepository(session)
+
+    # Fetch organization
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        data = await request.form()
+
+        # Parse checkout settings from form data
+        checkout_settings = {
+            "require_3ds": "require_3ds" in data,
+        }
+
+        # Merge with existing checkout_settings
+        updated_checkout_settings = {
+            **organization.checkout_settings,
+            **checkout_settings,
+        }
+
+        # Update organization
+        await repository.update(
+            organization,
+            update_dict={"checkout_settings": updated_checkout_settings},
+        )
+
+        redirect_url = (
+            str(
+                request.url_for(
+                    "organizations:detail", organization_id=organization_id
+                )
+            )
+            + "?section=settings"
+        )
+        return HXRedirectResponse(request, redirect_url, 303)
+
+    # Render checkout settings form
+    require_3ds = organization.checkout_settings.get("require_3ds", False)
+
+    with modal("Edit Checkout Settings", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text("Configure checkout behavior for this organization")
+
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_checkout_settings",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            # Checkout settings checkboxes
+            with tag.div(classes="space-y-3"):
+                with tag.div(classes="form-control"):
+                    with tag.label(classes="label cursor-pointer justify-start gap-3"):
+                        with tag.input(
+                            type="checkbox",
+                            name="require_3ds",
+                            classes="checkbox checkbox-sm",
+                            **{"checked": ""} if require_3ds else {},
+                        ):
+                            pass
+                        with tag.span(classes="label-text"):
+                            text("Require 3DS on all checkouts")
+
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/add-note",
     name="organizations:add_note",
     methods=["GET", "POST"],

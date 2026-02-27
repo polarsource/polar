@@ -100,6 +100,39 @@ class SettingsSection:
                             )
                             text(numbering_label)
 
+            # Checkout settings card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Checkout Settings")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:edit_checkout_settings",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                with tag.div(classes="space-y-2"):
+                    checkout_settings = self.org.checkout_settings or {}
+                    require_3ds = checkout_settings.get("require_3ds", False)
+
+                    with tag.div(classes="flex items-center gap-2"):
+                        # Status indicator
+                        status_class = "bg-success" if require_3ds else "bg-base-300"
+                        with tag.div(classes=f"w-2 h-2 rounded-full {status_class}"):
+                            pass
+                        with tag.div(classes="text-sm"):
+                            text("Require 3DS")
+                        with tag.div(classes="text-xs text-base-content/60 ml-auto"):
+                            text("Enabled" if require_3ds else "Disabled")
+
             # Feature flags card
             with card(bordered=True):
                 with tag.div(classes="flex items-center justify-between mb-4"):

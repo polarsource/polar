@@ -16,18 +16,16 @@ import Spinner from '../Shared/Spinner'
 
 interface RevenueWidgetProps {
   className?: string
-  productId?: string
 }
 
-const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
+const RevenueWidget = ({ className }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
 
   const revenueMetrics = useMetrics({
-    startDate: startOfMonth(subMonths(new Date(), 5)),
+    startDate: startOfMonth(subMonths(new Date(), 2)),
     endDate: endOfMonth(new Date()),
     organization_id: organization.id,
     interval: 'month',
-    product_id: productId ? [productId] : undefined,
     metrics: ['revenue'],
   })
 
@@ -39,23 +37,18 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
   return (
     <Card
       className={twMerge(
-        'dark:bg-polar-800 flex h-full w-full flex-col gap-y-8 bg-gray-50 p-6',
+        'dark:bg-polar-800 flex h-full w-full flex-col gap-y-6 bg-gray-50 p-6',
         className,
       )}
     >
-      <div className="flex flex-col gap-y-4">
+      <div className="flex flex-row items-center justify-between gap-y-4">
+        <h3 className="text-lg">Revenue</h3>
         <div className="flex items-center justify-between">
-          <h2 className="dark:text-polar-500 text-lg text-gray-500">
-            Last 6 Months
-          </h2>
+          <h2 className="dark:text-polar-500 text-gray-500">Last 3 Months</h2>
         </div>
-
-        <h3 className="text-4xl font-light">
-          {productId ? 'Product Revenue' : 'Revenue'}
-        </h3>
       </div>
 
-      <div className="grid h-full grid-cols-3 gap-4 lg:grid-cols-6 lg:gap-6">
+      <div className="grid h-full grid-cols-3 gap-4">
         {revenueMetrics.data?.periods.map((period, index, array) => {
           const currentPeriodValue = period.revenue ?? 0
           const previousPeriodValue = array[index - 1]?.revenue ?? 0

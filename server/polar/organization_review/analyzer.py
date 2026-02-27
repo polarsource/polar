@@ -74,6 +74,74 @@ reviewer will review the decision.
 
 You MUST return only APPROVE or DENY. Never return any other verdict.
 
+## Few-Shot Examples
+
+These examples come from real reviews where a human reviewer confirmed the correct \
+verdict. Study them to calibrate your risk assessment.
+
+### Example 1: AI Video Generation SaaS → APPROVE
+**Business**: SaaS that auto-generates and auto-publishes short-form videos to social \
+platforms. Subscription tiers at $19/$39/$69 per month.
+**Agent concern**: Positioning around "generate additional income" and "complete autopilot" \
+plus automated mass content publishing could overlap with restricted marketing automation.
+**Correct verdict**: APPROVE. The product is a legitimate SaaS tool that generates and \
+publishes content. It is not a spam/bulk outreach tool — it creates original video content \
+for the user's own accounts. Aggressive marketing copy ("autopilot", income potential) is \
+common in SaaS and does not make the product prohibited. Evaluate what the tool DOES. How
+it makerts itself is important, but not decisive.
+**Lesson**: Software tools that COULD theoretically be misused for spam are not prohibited \
+if their primary use case is legitimate content creation or productivity.
+
+### Example 2: AI Content Generation SaaS with Agency Website → APPROVE
+**Business**: SaaS selling credits for AI content generation/translation for WordPress. \
+Website shows a digital marketing agency offering SEO/ads/design services.
+**Agent concern**: Website presents as a marketing agency offering human services, creating \
+a mismatch with the SaaS product description.
+**Correct verdict**: APPROVE. The key question is what they SELL ON POLAR, not what their \
+broader business is. A company can be a marketing agency AND sell a SaaS product. As long \
+as the Polar products are software subscriptions/credits with automated digital delivery, \
+the parent company's other services are irrelevant.
+**Lesson**: Website-to-Polar mismatch is only a red flag when the Polar products themselves \
+are prohibited. A design agency selling Figma templates, or a marketing agency selling a \
+SaaS tool, is perfectly fine.
+
+### Example 3: Space Rental Marketplace → DENY
+**Business**: Online marketplace connecting property owners with creators for short-term \
+space rentals for photography/filming. Commission-based revenue with payout routing to hosts.
+**Agent concern**: Marketplace model with physical fulfillment and payment facilitation to \
+third parties.
+**Correct verdict**: DENY. This is a textbook prohibited marketplace: it connects buyers \
+and sellers, takes a commission, and routes payments to third-party hosts. The underlying \
+product is access to PHYSICAL spaces, not a digital good. Polar explicitly prohibits \
+marketplaces and does not support payment splitting/facilitation to third parties.
+**Lesson**: Marketplaces are prohibited regardless of how they describe themselves. Key \
+signals: commission on transactions, payment routing to third parties, physical/offline \
+fulfillment.
+
+### Example 4: Crypto Trading AI Assistant → DENY
+**Business**: AI app providing trade setups and real-time analysis for crypto futures \
+traders. Monthly subscription and lifetime plans.
+**Agent concern**: Financial trading/investment advisory platform.
+**Correct verdict**: DENY. An AI that generates trade setups, signals, and recommendations \
+for crypto futures is a financial trading/advisory/insights platform — explicitly prohibited. \
+Even though the identity is verified and payment metrics are clean, policy non-compliance \
+is decisive. Clean financials do not override a prohibited business model.
+**Lesson**: Financial trading tools, investment advisory, and trading signal services are \
+always prohibited regardless of how they frame it ("research tool", "AI assistant"). \
+If it generates trade recommendations, it's advisory.
+
+### Example 5: Dating Platform → DENY
+**Business**: Subscription-based dating and community platform for adults 18+. Monthly \
+subscriptions plus virtual currency (Seeds/Boosts).
+**Agent concern**: Category borders on prohibited adult services with elevated chargeback \
+risk.
+**Correct verdict**: DENY. Dating services are not allowed under Stripe's Acceptable Use \
+Policy, which Polar must follow as a Stripe-based MoR. Even though this is a mainstream \
+(non-adult) dating platform with verified identity and clean metrics, the business category \
+itself is prohibited by the payment processor.
+**Lesson**: Some business categories are prohibited by Stripe's AUP regardless of legitimacy. \
+Dating services, even mainstream ones, fall into this category.
+
 ## Important Notes
 
 - Polar is a Merchant of Record for DIGITAL products. Physical goods and pure human \

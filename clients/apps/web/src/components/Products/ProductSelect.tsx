@@ -25,16 +25,18 @@ const ProductsCommandGroup = ({
   groupedProducts,
   productPriceType,
   onSelectProduct,
-  onSelectProductType,
+  onSelectProducts,
   selectedProducts,
   className,
+  isArchived,
 }: {
   groupedProducts: Record<schemas['ProductPriceType'], schemas['Product'][]>
   productPriceType: schemas['ProductPriceType']
   onSelectProduct: (product: schemas['Product']) => void
-  onSelectProductType: (productPriceType: schemas['ProductPriceType']) => void
+  onSelectProducts: (products: schemas['Product'][]) => void
   selectedProducts: schemas['Product'][]
   className?: string
+  isArchived?: boolean
 }) => {
   const areAllSelected = useMemo(() => {
     return groupedProducts[productPriceType].every((product) =>
@@ -51,11 +53,12 @@ const ProductsCommandGroup = ({
       <CommandItem
         className="flex flex-row items-center justify-between py-2 text-black dark:text-white"
         key={productPriceType}
-        value={productPriceType}
-        onSelect={() => onSelectProductType(productPriceType)}
+        value={`${productPriceType}${isArchived ? '-archived' : ''}`}
+        onSelect={() => onSelectProducts(groupedProducts[productPriceType])}
       >
         <div className="flew-row flex items-center gap-2 font-medium">
           <ProductPriceTypeLabel productPriceType={productPriceType} />
+          {isArchived ? ' (Archived)' : ''}
         </div>
 
         <div className="text-xs opacity-70">
@@ -89,6 +92,24 @@ const ProductsCommandGroup = ({
     </CommandGroup>
   )
 }
+
+const groupProducts = (products: schemas['Product'][], archived: boolean) =>
+  products
+    .filter((product) => product.is_archived === archived)
+    .reduce<Record<schemas['ProductPriceType'], schemas['Product'][]>>(
+      (acc, product) => {
+        const type = product.is_recurring ? 'recurring' : 'one_time'
+        return {
+          ...acc,
+          [type]: [...acc[type], product],
+        }
+      },
+      {
+        one_time: [],
+        recurring: [],
+      },
+    )
+
 interface ProductSelectProps {
   organization: schemas['Organization']
   value: string[]
@@ -146,26 +167,13 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
     return products
   }, [queriedProducts, selectedProducts, query])
 
-  // Group displayed products by product price type
   const groupedProducts = useMemo<
     Record<schemas['ProductPriceType'], schemas['Product'][]>
-  >(() => {
-    return displayedProducts.reduce<
-      Record<schemas['ProductPriceType'], schemas['Product'][]>
-    >(
-      (acc, product) => {
-        const type = product.is_recurring ? 'recurring' : 'one_time'
-        return {
-          ...acc,
-          [type]: [...acc[type], product],
-        }
-      },
-      {
-        one_time: [],
-        recurring: [],
-      },
-    )
-  }, [displayedProducts])
+  >(() => groupProducts(displayedProducts, false), [displayedProducts])
+
+  const groupedArchivedProducts = useMemo<
+    Record<schemas['ProductPriceType'], schemas['Product'][]>
+  >(() => groupProducts(displayedProducts, true), [displayedProducts])
 
   const buttonLabel = useMemo(() => {
     if (value.length === 0) {
@@ -188,9 +196,8 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
     [onChange, value],
   )
 
-  const onSelectProductType = useCallback(
-    (productPriceType: schemas['ProductPriceType']) => {
-      const products = groupedProducts[productPriceType]
+  const onSelectProducts = useCallback(
+    (products: schemas['Product'][]) => {
       const allSelected = products.every((product) =>
         value.includes(product.id),
       )
@@ -207,7 +214,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         ])
       }
     },
-    [groupedProducts, onChange, value],
+    [onChange, value],
   )
 
   return (
@@ -245,7 +252,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   groupedProducts={groupedProducts}
                   productPriceType="one_time"
                   onSelectProduct={onSelectProduct}
-                  onSelectProductType={onSelectProductType}
+                  onSelectProducts={onSelectProducts}
                   selectedProducts={
                     value.length > 0 ? selectedProducts || [] : []
                   }
@@ -256,10 +263,41 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   groupedProducts={groupedProducts}
                   productPriceType="recurring"
                   onSelectProduct={onSelectProduct}
-                  onSelectProductType={onSelectProductType}
+                  onSelectProducts={onSelectProducts}
                   selectedProducts={
                     value.length > 0 ? selectedProducts || [] : []
                   }
+                />
+
+                {(groupedProducts.one_time.length > 0 ||
+                  groupedProducts.recurring.length > 0) &&
+                  groupedArchivedProducts.one_time.length > 0 && (
+                    <CommandSeparator />
+                  )}
+                <ProductsCommandGroup
+                  groupedProducts={groupedArchivedProducts}
+                  productPriceType="one_time"
+                  onSelectProduct={onSelectProduct}
+                  onSelectProducts={onSelectProducts}
+                  selectedProducts={
+                    value.length > 0 ? selectedProducts || [] : []
+                  }
+                  isArchived
+                />
+
+                {groupedArchivedProducts.one_time.length > 0 &&
+                  groupedArchivedProducts.recurring.length > 0 && (
+                    <CommandSeparator />
+                  )}
+                <ProductsCommandGroup
+                  groupedProducts={groupedArchivedProducts}
+                  productPriceType="recurring"
+                  onSelectProduct={onSelectProduct}
+                  onSelectProducts={onSelectProducts}
+                  selectedProducts={
+                    value.length > 0 ? selectedProducts || [] : []
+                  }
+                  isArchived
                 />
               </>
             ) : (

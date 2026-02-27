@@ -76,6 +76,7 @@ from polar.models.subscription import CustomerCancellationReason, SubscriptionSt
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
+    MaintainerSubscriptionCanceledNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -2039,6 +2040,9 @@ class SubscriptionService:
         # as revocation has its own email.
         if not revoked:
             await self.send_cancellation_email(session, subscription)
+            await self._send_subscription_canceled_notification(
+                session, subscription
+            )
 
     async def _on_subscription_revoked(
         self,
@@ -2090,6 +2094,38 @@ class SubscriptionService:
                         tier_organization_name=product.organization.name,
                         tier_organization_slug=product.organization.slug,
                         subscription_id=str(subscription.id),
+                    ),
+                ),
+            )
+
+    async def _send_subscription_canceled_notification(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        product = subscription.product
+
+        if product.organization.notification_settings.get(
+            "subscription_canceled", False
+        ):
+            await notifications_service.send_to_org_members(
+                session,
+                org_id=product.organization_id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_subscription_canceled,
+                    payload=MaintainerSubscriptionCanceledNotificationPayload(
+                        subscriber_name=subscription.customer.email,
+                        tier_name=product.name,
+                        tier_price_amount=subscription.amount,
+                        tier_price_recurring_interval=subscription.recurring_interval,
+                        tier_organization_name=product.organization.name,
+                        tier_organization_slug=product.organization.slug,
+                        subscription_id=str(subscription.id),
+                        cancel_at_period_end=subscription.cancel_at_period_end,
+                        cancellation_reason=(
+                            subscription.customer_cancellation_reason
+                        ),
+                        cancellation_comment=(
+                            subscription.customer_cancellation_comment
+                        ),
                     ),
                 ),
             )

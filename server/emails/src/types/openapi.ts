@@ -829,6 +829,36 @@ export interface components {
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }
+    /** MaintainerSubscriptionCanceledNotificationPayload */
+    MaintainerSubscriptionCanceledNotificationPayload: {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Tier Name */
+      tier_name: string
+      /** Tier Price Amount */
+      tier_price_amount: number | null
+      /** Tier Price Recurring Interval */
+      tier_price_recurring_interval: string
+      /** Tier Organization Name */
+      tier_organization_name: string
+      /**
+       * Cancel At Period End
+       * @default false
+       */
+      cancel_at_period_end: boolean
+      /**
+       * Cancellation Reason
+       * @default null
+       */
+      cancellation_reason: string | null
+      /**
+       * Cancellation Comment
+       * @default null
+       */
+      cancellation_comment: string | null
+      /** Formatted Price Amount */
+      readonly formatted_price_amount: string
+    }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {
       /** Product Name */
@@ -934,6 +964,16 @@ export interface components {
        */
       template: 'notification_new_subscription'
       props: components['schemas']['MaintainerNewPaidSubscriptionNotificationPayload']
+    }
+    /** NotificationSubscriptionCanceledEmail */
+    NotificationSubscriptionCanceledEmail: {
+      /**
+       * Template
+       * @default notification_subscription_canceled
+       * @constant
+       */
+      template: 'notification_subscription_canceled'
+      props: components['schemas']['MaintainerSubscriptionCanceledNotificationPayload']
     }
     /** OAuth2LeakedClientEmail */
     OAuth2LeakedClientEmail: {

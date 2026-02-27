@@ -10,6 +10,7 @@ from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerSubscriptionCanceledNotificationPayload,
 )
 from polar.order.schemas import OrderBase, OrderItemSchema
 from polar.organization.schemas import Organization
@@ -42,6 +43,7 @@ class EmailTemplate(StrEnum):
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
+    notification_subscription_canceled = "notification_subscription_canceled"
     notification_create_account = "notification_create_account"
     notification_credits_granted = "notification_credits_granted"
 
@@ -329,6 +331,13 @@ class NotificationNewSubscriptionEmail(BaseModel):
     props: MaintainerNewPaidSubscriptionNotificationPayload
 
 
+class NotificationSubscriptionCanceledEmail(BaseModel):
+    template: Literal[EmailTemplate.notification_subscription_canceled] = (
+        EmailTemplate.notification_subscription_canceled
+    )
+    props: MaintainerSubscriptionCanceledNotificationPayload
+
+
 class NotificationCreateAccountEmail(BaseModel):
     template: Literal[EmailTemplate.notification_create_account] = (
         EmailTemplate.notification_create_account
@@ -380,6 +389,7 @@ Email = Annotated[
     | WebhookEndpointDisabledEmail
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
+    | NotificationSubscriptionCanceledEmail
     | NotificationCreateAccountEmail
     | NotificationCreditsGrantedEmail,
     Discriminator("template"),

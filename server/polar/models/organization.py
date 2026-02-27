@@ -54,11 +54,13 @@ class OrganizationDetails(TypedDict):
 class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
+    subscription_canceled: bool
 
 
 _default_notification_settings: OrganizationNotificationSettings = {
     "new_order": True,
     "new_subscription": True,
+    "subscription_canceled": False,
 }
 
 

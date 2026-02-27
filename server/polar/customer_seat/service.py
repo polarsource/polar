@@ -1067,6 +1067,9 @@ class SeatService:
         we need to enqueue benefit grant jobs for each claimed seat holder
         so they receive the updated benefits.
         """
+        if not product.has_seat_based_price:
+            return
+
         repository = CustomerSeatRepository.from_session(session)
 
         sub_count = await repository.count_claimed_by_product_via_subscriptions(

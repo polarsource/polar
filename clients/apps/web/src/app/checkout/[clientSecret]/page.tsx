@@ -8,8 +8,29 @@ import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
+import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import CheckoutPage from './CheckoutPage'
+
+export async function generateMetadata(props: {
+  params: Promise<{ clientSecret: string }>
+}): Promise<Metadata> {
+  const params = await props.params
+  const { clientSecret } = params
+
+  const client = new PolarCore({ serverURL: getServerURL() })
+  const { ok, value: checkout } = await checkoutsClientGet(client, {
+    clientSecret,
+  })
+
+  if (!ok || !checkout.product) {
+    return { title: 'Checkout | Polar' }
+  }
+
+  return {
+    title: `${checkout.organization.name} | ${checkout.product.name}`,
+  }
+}
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>

@@ -64,8 +64,6 @@ from polar.models import (
     CheckoutLink,
     Customer,
     Discount,
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     Organization,
     Payment,
     PaymentMethod,
@@ -1812,25 +1810,6 @@ class CheckoutService:
                         "type": "value_error",
                         "loc": ("body", loc_field),
                         "msg": "Discount does not exist.",
-                        "input": discount_id,
-                    }
-                ]
-            )
-
-        if (
-            product.recurring_interval is None
-            and not isinstance(
-                price,
-                LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
-            )
-            and discount.duration == DiscountDuration.repeating
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", loc_field),
-                        "msg": "Discount is not applicable to this product.",
                         "input": discount_id,
                     }
                 ]

@@ -131,6 +131,7 @@ playground.py
 
 .DS_Store
 .pnpm-store
+pnpm-workspace.yaml
 
 # Secrets
 .secrets/

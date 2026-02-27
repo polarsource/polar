@@ -146,7 +146,7 @@ async def run_review_agent(
                     verdict=mapped_verdict,
                     risk_score=report.overall_risk_score,
                     violated_sections=report.violated_sections,
-                    reason=report.summary,
+                    reason=report.merchant_summary,
                     timed_out=result.timed_out,
                     organization_details_snapshot={
                         "name": organization.name,

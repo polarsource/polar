@@ -99,6 +99,25 @@ issues if there is a clear and obvious sign of a prohibited business.
 
 Return only APPROVE or DENY, don't return NEEDS_HUMAN_REVIEW. This is only the first step in the review
 process.
+
+
+## Merchant-Facing Summary (merchant_summary)
+
+In addition to the internal summary, you MUST produce a short merchant_summary (1-2 sentences max). \
+This text is shown directly to the merchant, so it must:
+- Be helpful, not disclose internal review details
+- NEVER mention: website scraping, prior organizations/denials, risk scores, Stripe verification errors, or specific fraud signals
+- Focus on what the merchant provided or what general category the issue falls into
+
+Examples for DENY:
+- "Seems your product or service fails under financial advice. That's against our policies. Please submit and appeal providing additional information."
+- "Seems your product can offer trademark violations. That poses a risk to our policies. Please submit and appeal providing additional information"
+- "Your account could not be verified at this time. Please appeal or contact support for assistance"
+- "We need additional information to verify your account. Please appeal or contact support."
+
+Examples for APPROVE:
+- "Your organization has been approved to sell on Polar."
+- "Your account has been verified and is ready to accept payments."
 """
 
 SETUP_COMPLETE_PREAMBLE = """\
@@ -517,6 +536,7 @@ def _timeout_report() -> ReviewAgentReport:
         verdict=ReviewVerdict.DENY,
         overall_risk_score=50.0,
         summary="Analysis timed out. Denied for human review.",
+        merchant_summary="Error occurred during analysis. Please contact support for assistance.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
@@ -538,6 +558,7 @@ def _error_report(error: str) -> ReviewAgentReport:
         verdict=ReviewVerdict.DENY,
         overall_risk_score=50.0,
         summary=f"Analysis failed with error: {error[:200]}. Denied for human review.",
+        merchant_summary="Error occurred during analysis. Please contact support for assistance.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(

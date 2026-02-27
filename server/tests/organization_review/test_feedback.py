@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -229,10 +229,12 @@ class TestCollectFeedbackData:
     def test_agent_review_parse_error_gracefully_handled(self) -> None:
         """If the linked agent review can't be parsed, agent_summary should be None."""
         fb = _make_mock_feedback(agent_review_id="bad-id")
-        # Make parsed_report raise an exception
-        fb.agent_review.parsed_report = property(
-            lambda self: (_ for _ in ()).throw(Exception("corrupt"))
+        # Replace agent_review with a mock whose parsed_report raises on access
+        broken_review = MagicMock()
+        type(broken_review).parsed_report = PropertyMock(
+            side_effect=Exception("corrupt")
         )
+        fb.agent_review = broken_review
 
         result = collect_feedback_data([fb])
 

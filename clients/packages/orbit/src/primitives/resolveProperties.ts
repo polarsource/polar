@@ -30,7 +30,7 @@ export type FlexChildProps = {
 // Never concatenate prefix + class — always look up from pre-built tables.
 // Tailwind JIT can scan this file and compile every literal string it finds.
 
-function resolveFlexProp<V extends string>(
+export function resolveFlexProp<V extends string>(
   value: V | Partial<Record<Breakpoint, V>> | undefined,
   map: Record<Breakpoint, Record<V, string>>,
 ): string[] {

@@ -1,7 +1,6 @@
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
-import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useDiscounts } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
@@ -304,8 +303,6 @@ export const ProductOverview = ({
           isLoading={productOrdersIsLoading}
         />
       </div>
-
-      <RevenueWidget productId={product.id} />
 
       {!product.is_archived && (
         <div className="flex flex-col gap-y-6">

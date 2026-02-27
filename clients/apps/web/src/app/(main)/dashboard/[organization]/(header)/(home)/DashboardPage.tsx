@@ -5,10 +5,8 @@ import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { IOSAppBanner } from '@/components/Upsell/IOSAppBanner'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
-import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
-import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
 import {
   ALL_METRICS,
@@ -18,7 +16,6 @@ import {
 import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface HeroChartProps {
   organization: schemas['Organization']
@@ -95,6 +92,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         <PaymentOnboardingStepper organization={organization} />
       )}
       <HeroChart organization={organization} />
+
       <motion.div
         className="grid grid-cols-1 gap-6 md:gap-10 xl:grid-cols-3"
         initial="initial"
@@ -103,19 +101,10 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         transition={{ staggerChildren: 0.1 }}
       >
         <motion.div className={cardClassName} {...motionVariants}>
-          <MonthWidget />
-        </motion.div>
-        <motion.div
-          className={twMerge(cardClassName, 'xl:col-span-2')}
-          {...motionVariants}
-        >
           <RevenueWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <OrdersWidget />
-        </motion.div>
-        <motion.div className={cardClassName} {...motionVariants}>
-          <SubscribersWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <AccountWidget />

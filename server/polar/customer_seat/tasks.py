@@ -1,9 +1,11 @@
 import uuid
 
 import structlog
+from sqlalchemy.orm import selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
+from polar.models.product import Product
 from polar.product.repository import ProductRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
@@ -62,7 +64,9 @@ async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
     """Re-sync benefit grants for all claimed seats of a product."""
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(product_id)
+        product = await product_repository.get_by_id(
+            product_id, options=(selectinload(Product.prices),)
+        )
         if product is None:
             raise ProductDoesNotExist(product_id)
 

@@ -519,6 +519,7 @@ async def update(
 
             form_dict = form.model_dump(exclude_none=True)
             feature_flags_from_form = form_dict.pop("feature_flags", None)
+            checkout_settings_from_form = form_dict.pop("checkout_settings", None)
 
             # Dynamically handle all feature flags from OrganizationFeatureSettings
             # If None, all checkboxes were unchecked - set all to False
@@ -541,12 +542,26 @@ async def update(
                 **feature_flags,
             }
 
-            # Update organization with both basic fields and feature_settings
+            # Handle checkout_settings - if None, all checkboxes were unchecked
+            checkout_settings = {
+                "require_3ds": checkout_settings_from_form.get("require_3ds", False)
+                if checkout_settings_from_form
+                else False
+            }
+
+            # Merge with existing checkout_settings
+            updated_checkout_settings = {
+                **organization.checkout_settings,
+                **checkout_settings,
+            }
+
+            # Update organization with basic fields, feature_settings, and checkout_settings
             organization = await org_repo.update(
                 organization,
                 update_dict={
                     **form_dict,
                     "feature_settings": updated_feature_settings,
+                    "checkout_settings": updated_checkout_settings,
                 },
             )
             return HXRedirectResponse(
@@ -565,6 +580,9 @@ async def update(
         "feature_flags": {
             field_name: organization.feature_settings.get(field_name, False)
             for field_name in OrganizationFeatureSettings.model_fields.keys()
+        },
+        "checkout_settings": {
+            "require_3ds": organization.checkout_settings.get("require_3ds", False),
         },
     }
 

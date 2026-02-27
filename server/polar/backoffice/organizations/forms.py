@@ -10,10 +10,16 @@ from pydantic import (
     model_validator,
 )
 
-from polar.kit.schemas import HttpUrlToStr
+from polar.kit.schemas import HttpUrlToStr, Schema
 from polar.organization.schemas import NameInput, OrganizationFeatureSettings, SlugInput
 
 from .. import forms
+
+
+class OrganizationCheckoutSettingsForm(Schema):
+    """Checkout settings form schema."""
+
+    require_3ds: bool = False
 
 
 class ApproveOrganizationForm(forms.BaseForm):
@@ -105,6 +111,11 @@ class UpdateOrganizationForm(forms.BaseForm):
         OrganizationFeatureSettings | None,
         forms.SubFormField(OrganizationFeatureSettings),
         Field(default=None, title="Feature Flags"),
+    ]
+    checkout_settings: Annotated[
+        OrganizationCheckoutSettingsForm | None,
+        forms.SubFormField(OrganizationCheckoutSettingsForm),
+        Field(default=None, title="Checkout Settings"),
     ]
 
 

@@ -29,6 +29,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.organization import (
+    OrganizationCheckoutSettings,
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
     OrganizationNotificationSettings,
@@ -315,6 +316,9 @@ class Organization(OrganizationBase):
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
         description="Settings related to the customer portal",
     )
+    checkout_settings: OrganizationCheckoutSettings = Field(
+        description="Settings related to checkout",
+    )
 
 
 class OrganizationCreate(Schema):
@@ -338,6 +342,7 @@ class OrganizationCreate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    checkout_settings: OrganizationCheckoutSettings | None = None
     default_presentment_currency: PresentmentCurrency = Field(
         PresentmentCurrency.usd,
         description="Default presentment currency for the organization",
@@ -365,6 +370,7 @@ class OrganizationUpdate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    checkout_settings: OrganizationCheckoutSettings | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"
     )

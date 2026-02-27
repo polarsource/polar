@@ -1193,6 +1193,11 @@ class CheckoutService:
                     ) is not None:
                         intent_metadata["tax_state"] = state
 
+                    # Dynamic and rule-based by default
+                    three_d_secure = checkout.organization.checkout_settings.get(
+                        "require_3ds", False
+                    )
+
                     try:
                         if checkout.is_payment_required:
                             payment_intent_params: PaymentIntentCreateParams = {
@@ -1214,6 +1219,12 @@ class CheckoutService:
                                 payment_intent_params["setup_future_usage"] = (
                                     "off_session"
                                 )
+
+                            if three_d_secure:
+                                payment_intent_params["payment_method_options"] = {
+                                    "card": {"request_three_d_secure": "any"}
+                                }
+
                             intent = await stripe_service.create_payment_intent(
                                 **payment_intent_params
                             )
@@ -1230,6 +1241,12 @@ class CheckoutService:
                                 ),
                                 "expand": ["payment_method"],
                             }
+
+                            if three_d_secure:
+                                setup_intent_params["payment_method_options"] = {
+                                    "card": {"request_three_d_secure": "any"}
+                                }
+
                             intent = await stripe_service.create_setup_intent(
                                 **setup_intent_params
                             )

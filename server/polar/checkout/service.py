@@ -64,8 +64,6 @@ from polar.models import (
     CheckoutLink,
     Customer,
     Discount,
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     Organization,
     Payment,
     PaymentMethod,

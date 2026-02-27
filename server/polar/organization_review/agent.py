@@ -14,6 +14,7 @@ from polar.worker import AsyncReadSessionMaker
 from .analyzer import review_analyzer
 from .collectors import (
     collect_account_data,
+    collect_feedback_data,
     collect_history_data,
     collect_identity_data,
     collect_metrics_data,
@@ -31,7 +32,6 @@ from .schemas import (
     IdentityData,
     PaymentMetrics,
     PriorFeedbackData,
-    PriorFeedbackEntry,
     ProductsData,
     ReviewContext,
     SetupData,
@@ -225,31 +225,7 @@ async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         records = await repo.get_feedback_history(organization_id)
-
-    entries: list[PriorFeedbackEntry] = []
-    for fb in records:
-        agent_summary: str | None = None
-        if fb.agent_review_id is not None:
-            try:
-                parsed = fb.agent_review.parsed_report
-                agent_summary = parsed.report.summary
-            except Exception:
-                pass
-
-        entries.append(
-            PriorFeedbackEntry(
-                actor_type=fb.actor_type or "unknown",
-                decision=fb.decision or "unknown",
-                review_context=fb.review_context or "unknown",
-                verdict=fb.verdict,
-                risk_score=fb.risk_score,
-                reason=fb.reason,
-                agent_summary=agent_summary,
-                created_at=fb.created_at,
-            )
-        )
-
-    return PriorFeedbackData(entries=entries)
+        return collect_feedback_data(records)
 
 
 async def _collect_data(

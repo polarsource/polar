@@ -66,7 +66,7 @@ for automatic denial.
 
 ## Verdict Guidelines
 
-- **APPROVE**: All dimensions are low risk (scores < 40), no policy violations, \
+- **APPROVE**: All dimensions are LOW risk, no policy violations, \
 legitimate products. Most organizations should be approved.
 - **DENY**: Clear policy violations, prior denials with re-creation, confirmed fraud \
 signals, sanctioned country, or edgy payment metrics. Be confident before denying. When you deny, a human \
@@ -142,6 +142,13 @@ itself is prohibited by the payment processor.
 **Lesson**: Some business categories are prohibited by Stripe's AUP regardless of legitimacy. \
 Dating services, even mainstream ones, fall into this category.
 
+## Overall Risk Level
+
+After assessing each dimension, provide an overall_risk_level:
+- LOW: All dimensions are low risk
+- MEDIUM: Some concerns but no clear violations
+- HIGH: Serious risk signals or clear violations
+
 ## Important Notes
 
 - Polar is a Merchant of Record for DIGITAL products. Physical goods and pure human \
@@ -157,7 +164,7 @@ SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
 No Stripe account, payments, or products exist yet. \
 Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, PRIOR_HISTORY. \
-Skip IDENTITY_TRUST and FINANCIAL_RISK — set those scores to 0 with confidence 0. \
+Skip IDENTITY_TRUST and FINANCIAL_RISK — set those to LOW risk with confidence 0. \
 Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged.
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
@@ -222,7 +229,7 @@ individual and business. Compare the Stripe business name and URL with the \
 Polar organization name and website. Significant mismatches are yellow flags.
 - **Prior history**: Check for prior denials or blocked organizations.
 
-Set FINANCIAL_RISK score to 0 with confidence 0 — no payments have occurred yet.
+Set FINANCIAL_RISK to LOW risk with confidence 0 — no payments have occurred yet.
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
@@ -598,45 +605,45 @@ class ReviewAnalyzer:
 
 
 def _timeout_report() -> ReviewAgentReport:
-    from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict
+    from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict, RiskLevel
 
     return ReviewAgentReport(
         verdict=ReviewVerdict.DENY,
-        overall_risk_score=50.0,
         summary="Analysis timed out. Denied for human review.",
         merchant_summary="Error occurred during analysis. Please contact support for assistance.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
                 dimension=ReviewDimension.POLICY_COMPLIANCE,
-                score=50.0,
+                risk_level=RiskLevel.MEDIUM,
                 confidence=0.0,
                 findings=["Analysis timed out"],
                 recommendation="Human review required",
             )
         ],
+        overall_risk_level=RiskLevel.MEDIUM,
         recommended_action="Human review required due to timeout.",
     )
 
 
 def _error_report(error: str) -> ReviewAgentReport:
-    from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict
+    from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict, RiskLevel
 
     return ReviewAgentReport(
         verdict=ReviewVerdict.DENY,
-        overall_risk_score=50.0,
         summary=f"Analysis failed with error: {error[:200]}. Denied for human review.",
         merchant_summary="Error occurred during analysis. Please contact support for assistance.",
         violated_sections=[],
         dimensions=[
             DimensionAssessment(
                 dimension=ReviewDimension.POLICY_COMPLIANCE,
-                score=50.0,
+                risk_level=RiskLevel.MEDIUM,
                 confidence=0.0,
                 findings=[f"Analysis error: {error[:200]}"],
                 recommendation="Human review required",
             )
         ],
+        overall_risk_level=RiskLevel.MEDIUM,
         recommended_action="Human review required due to analysis error.",
     )
 

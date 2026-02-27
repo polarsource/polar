@@ -127,19 +127,18 @@ class ReviewSection:
                 with tag.div(classes=f"badge {badge_class} badge-lg"):
                     text(display_verdict)
 
-                risk_score = review_report.overall_risk_score
-                score_color = (
-                    "text-success"
-                    if risk_score < 30
-                    else "text-warning"
-                    if risk_score < 70
-                    else "text-error"
-                )
+                risk_badge = {
+                    "LOW": "badge-ghost",
+                    "MEDIUM": "badge-warning",
+                    "HIGH": "badge-error",
+                }
+                risk_level = review_report.overall_risk_level.value
+                risk_badge_class = risk_badge.get(risk_level, "badge-ghost")
                 with tag.div(classes="flex items-center gap-1"):
                     with tag.span(classes="text-sm font-medium"):
                         text("AI Risk:")
-                    with tag.span(classes=f"text-sm font-bold {score_color}"):
-                        text(f"{risk_score:.0f}/100")
+                    with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
+                        text(risk_level)
 
             # Summary
             if review_report.summary:
@@ -216,21 +215,20 @@ class ReviewSection:
         """Render a single dimension assessment."""
         name = dim.dimension.value.replace("_", " ").title()
 
-        score_color = (
-            "badge-success"
-            if dim.score < 30
-            else "badge-warning"
-            if dim.score < 70
-            else "badge-error"
-        )
+        risk_badge = {
+            "LOW": "badge-ghost",
+            "MEDIUM": "badge-warning",
+            "HIGH": "badge-error",
+        }
+        badge_class = risk_badge.get(dim.risk_level.value, "badge-ghost")
 
         with tag.div(classes="border border-base-200 rounded p-3"):
             with tag.div(classes="flex items-center justify-between mb-1"):
                 with tag.span(classes="text-sm font-medium"):
                     text(name)
                 with tag.div(classes="flex items-center gap-2"):
-                    with tag.div(classes=f"badge badge-sm {score_color}"):
-                        text(f"{dim.score:.0f}")
+                    with tag.div(classes=f"badge badge-sm {badge_class}"):
+                        text(dim.risk_level.value)
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(f"{dim.confidence:.0%} confidence")
 

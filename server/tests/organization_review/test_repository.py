@@ -7,7 +7,7 @@ from polar.models.organization import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.payment import PaymentStatus
 from polar.models.user import User
-from polar.organization_review.report import AgentReportV1
+from polar.organization_review.report import AnyAgentReport, AgentReportV1, AgentReportV2
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import (
     AccountData,
@@ -22,6 +22,7 @@ from polar.organization_review.schemas import (
     ReviewContext,
     ReviewDimension,
     ReviewVerdict,
+    RiskLevel,
     UsageInfo,
 )
 from polar.postgres import AsyncSession
@@ -33,26 +34,26 @@ def _make_typed_report(
     *,
     review_type: str = "submission",
     verdict: ReviewVerdict = ReviewVerdict.APPROVE,
-    risk_score: float = 10.0,
+    risk_level: RiskLevel = RiskLevel.LOW,
     model_used: str = "test-model",
-) -> AgentReportV1:
+) -> AnyAgentReport:
     """Build a minimal typed agent report for tests."""
     return AgentReportV1(
         review_type=review_type,
         report=ReviewAgentReport(
             verdict=verdict,
-            overall_risk_score=risk_score,
             summary="Test summary",
             violated_sections=[],
             dimensions=[
                 DimensionAssessment(
                     dimension=ReviewDimension.POLICY_COMPLIANCE,
-                    score=risk_score,
+                    risk_level=risk_level,
                     confidence=0.9,
                     findings=[],
                     recommendation="OK",
                 )
             ],
+            overall_risk_level=risk_level,
             recommended_action="Approve",
         ),
         data_snapshot=DataSnapshot(
@@ -135,7 +136,7 @@ class TestSaveAgentReview:
         typed_report = _make_typed_report(
             review_type="threshold",
             verdict=ReviewVerdict.DENY,
-            risk_score=75.0,
+            risk_level=RiskLevel.HIGH,
         )
         review = await repo.save_agent_review(
             organization_id=organization.id,
@@ -146,7 +147,7 @@ class TestSaveAgentReview:
 
         assert review.report["review_type"] == "threshold"
         assert review.report["report"]["verdict"] == "DENY"
-        assert review.report["report"]["overall_risk_score"] == 75.0
+        assert review.report["report"]["overall_risk_score"] == 85.0  # HIGH
         assert review.report["duration_seconds"] == 1.0
 
     async def test_parsed_report_roundtrips(
@@ -166,7 +167,8 @@ class TestSaveAgentReview:
         await session.flush()
 
         parsed = review.parsed_report
-        assert parsed.version == 1
+        assert isinstance(parsed, AgentReportV2)
+        assert parsed.version == 2  # V1 stored → migrated to V2 on read
         assert parsed.review_type == "manual"
         assert parsed.report.verdict == ReviewVerdict.APPROVE
 
@@ -267,7 +269,9 @@ class TestGetLatestAgentReview:
         latest = await repo.get_latest_agent_review(organization.id)
         assert latest is not None
         assert latest.model_used == "model-b"
-        assert latest.parsed_report.review_type == "setup_complete"
+        parsed = latest.parsed_report
+        assert isinstance(parsed, AgentReportV2)
+        assert parsed.review_type == "setup_complete"
 
 
 @pytest.mark.asyncio
@@ -286,7 +290,7 @@ class TestRecordHumanDecision:
             report=_make_typed_report(
                 review_type="submission",
                 verdict=ReviewVerdict.APPROVE,
-                risk_score=12.0,
+                risk_level=RiskLevel.LOW,
             ),
             reviewed_at=datetime.now(UTC),
         )
@@ -304,7 +308,7 @@ class TestRecordHumanDecision:
         assert decision.decision == "APPROVE"
         assert decision.review_context == "submission"
         assert decision.verdict == "APPROVE"
-        assert decision.risk_score == 12.0
+        assert decision.risk_score == 15.0  # LOW
         assert decision.reason == "Looks good"
         assert decision.is_current is True
 
@@ -322,7 +326,7 @@ class TestRecordHumanDecision:
             report=_make_typed_report(
                 review_type="threshold",
                 verdict=ReviewVerdict.DENY,
-                risk_score=78.0,
+                risk_level=RiskLevel.HIGH,
             ),
             reviewed_at=datetime.now(UTC),
         )
@@ -338,7 +342,7 @@ class TestRecordHumanDecision:
 
         assert decision.review_context == "threshold"
         assert decision.verdict == "DENY"
-        assert decision.risk_score == 78.0
+        assert decision.risk_score == 85.0  # HIGH
 
     async def test_explicit_context_overrides_agent_review(
         self,
@@ -354,7 +358,7 @@ class TestRecordHumanDecision:
             report=_make_typed_report(
                 review_type="submission",
                 verdict=ReviewVerdict.DENY,
-                risk_score=80.0,
+                risk_level=RiskLevel.HIGH,
             ),
             reviewed_at=datetime.now(UTC),
         )
@@ -463,7 +467,7 @@ class TestSaveReviewDecision:
             report=_make_typed_report(
                 review_type="submission",
                 verdict=ReviewVerdict.DENY,
-                risk_score=85.0,
+                risk_level=RiskLevel.HIGH,
             ),
             reviewed_at=datetime.now(UTC),
         )
@@ -637,7 +641,7 @@ class TestRecordAgentDecision:
             report=_make_typed_report(
                 review_type="threshold",
                 verdict=ReviewVerdict.APPROVE,
-                risk_score=10.0,
+                risk_level=RiskLevel.LOW,
             ),
             reviewed_at=datetime.now(UTC),
         )
@@ -673,7 +677,7 @@ class TestRecordAgentDecision:
             report=_make_typed_report(
                 review_type="threshold",
                 verdict=ReviewVerdict.APPROVE,
-                risk_score=10.0,
+                risk_level=RiskLevel.LOW,
             ),
             reviewed_at=datetime.now(UTC),
         )

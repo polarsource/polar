@@ -48,20 +48,6 @@ SQL >
                 )
         )
     GROUP BY ss.subscription_id
-    {% if defined(product_ids) and product_ids != '' %}
-        HAVING
-            argMaxMerge(ss.product_id) IN (
-                SELECT
-                    toUUIDOrNull(
-                        arrayJoin(
-                            splitByChar(
-                                ',',
-                                {{ String(product_ids, description="Comma-separated product UUIDs") }}
-                            )
-                        )
-                    )
-            )
-    {% end %}
 
 NODE credit_fx
 SQL >
@@ -695,6 +681,19 @@ SQL >
             {{ String(end_dt, '2024-01-02 00:00:00', description="End datetime") }},
             {{ String(tz, 'UTC') }}
         )
+        {% if defined(product_ids) and product_ids != '' %}
+            AND ss.product_id IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(product_ids, description="Comma-separated product UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
         AND (
             ss.ends_at <= toDateTime64(0, 3, 'UTC')
             {% if not defined(interval) or interval == 'day' %}

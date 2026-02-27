@@ -9524,9 +9524,19 @@ export interface components {
       amount: number
       /**
        * Seats
-       * @description Number of seats for seat-based pricing.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /**
        * Price Per Seat
        * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
@@ -9783,9 +9793,19 @@ export interface components {
       product_id: string
       /**
        * Seats
-       * @description Number of seats for seat-based pricing.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /** Customer Email */
       customer_email?: string | null
       /**
@@ -10593,9 +10613,19 @@ export interface components {
       amount?: number | null
       /**
        * Seats
-       * @description Number of seats for seat-based pricing. Required for seat-based products.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
@@ -10822,9 +10852,19 @@ export interface components {
       amount?: number | null
       /**
        * Seats
-       * @description Number of seats for seat-based pricing. Required for seat-based products.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
@@ -10966,9 +11006,19 @@ export interface components {
       amount?: number | null
       /**
        * Seats
-       * @description Number of seats for seat-based pricing. Required for seat-based products.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
@@ -11140,9 +11190,19 @@ export interface components {
       amount: number
       /**
        * Seats
-       * @description Number of seats for seat-based pricing.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /**
        * Price Per Seat
        * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
@@ -11382,9 +11442,19 @@ export interface components {
       amount: number
       /**
        * Seats
-       * @description Number of seats for seat-based pricing.
+       * @description Predefined number of seats (works with seat-based pricing only)
        */
       seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
       /**
        * Price Per Seat
        * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.

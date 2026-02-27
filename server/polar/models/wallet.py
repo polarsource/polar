@@ -32,9 +32,7 @@ class Wallet(RecordModel):
     type: Mapped[WalletType] = mapped_column(StringEnum(WalletType), nullable=False)
     currency: Mapped[str] = mapped_column(String(3))
     customer_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("customers.id", ondelete="cascade"),
-        unique=True,
+        Uuid, ForeignKey("customers.id", ondelete="cascade"), index=True
     )
 
     @declared_attr

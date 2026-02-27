@@ -423,6 +423,12 @@ class CheckoutService:
                     checkout_create.seats = min_seats
                 else:
                     checkout_create.seats = price.get_minimum_seats()
+            else:
+                # Clamp seats to checkout min/max constraints
+                if min_seats is not None:
+                    checkout_create.seats = max(checkout_create.seats, min_seats)
+                if max_seats is not None:
+                    checkout_create.seats = min(checkout_create.seats, max_seats)
             self._validate_seat_limits(
                 price,
                 checkout_create.seats,
@@ -716,6 +722,12 @@ class CheckoutService:
                     checkout_create.seats = min_seats
                 else:
                     checkout_create.seats = price.get_minimum_seats()
+            else:
+                # Clamp seats to checkout min/max constraints
+                if min_seats is not None:
+                    checkout_create.seats = max(checkout_create.seats, min_seats)
+                if max_seats is not None:
+                    checkout_create.seats = min(checkout_create.seats, max_seats)
             self._validate_seat_limits(
                 price,
                 checkout_create.seats,

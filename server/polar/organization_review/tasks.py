@@ -18,6 +18,7 @@ from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
+from .report import build_agent_report
 from .repository import OrganizationReviewRepository
 from .schemas import ReviewContext, ReviewVerdict
 
@@ -103,11 +104,10 @@ async def run_review_agent(
 
         # Persist agent report to its own table (both contexts)
         review_repository = OrganizationReviewRepository.from_session(session)
+        typed_report = build_agent_report(result, review_type=review_context.value)
         agent_review = await review_repository.save_agent_review(
             organization_id=organization_id,
-            review_type=review_context.value,
-            report=result.model_dump(mode="json"),
-            model_used=result.model_used,
+            report=typed_report,
             reviewed_at=datetime.now(UTC),
         )
 

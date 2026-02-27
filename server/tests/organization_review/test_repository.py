@@ -7,28 +7,82 @@ from polar.models.organization import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.payment import PaymentStatus
 from polar.models.user import User
+from polar.organization_review.report import AgentReportV1
 from polar.organization_review.repository import OrganizationReviewRepository
+from polar.organization_review.schemas import (
+    AccountData,
+    DataSnapshot,
+    DimensionAssessment,
+    HistoryData,
+    IdentityData,
+    OrganizationData,
+    PaymentMetrics,
+    ProductsData,
+    ReviewAgentReport,
+    ReviewContext,
+    ReviewDimension,
+    ReviewVerdict,
+    UsageInfo,
+)
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payment
 
 
-def _make_report(
+def _make_typed_report(
     *,
-    review_type: str | None = None,
+    review_type: str = "submission",
+    verdict: ReviewVerdict = ReviewVerdict.APPROVE,
+    risk_score: float = 10.0,
+    model_used: str = "test-model",
+) -> AgentReportV1:
+    """Build a minimal typed agent report for tests."""
+    return AgentReportV1(
+        review_type=review_type,
+        report=ReviewAgentReport(
+            verdict=verdict,
+            overall_risk_score=risk_score,
+            summary="Test summary",
+            violated_sections=[],
+            dimensions=[
+                DimensionAssessment(
+                    dimension=ReviewDimension.POLICY_COMPLIANCE,
+                    score=risk_score,
+                    confidence=0.9,
+                    findings=[],
+                    recommendation="OK",
+                )
+            ],
+            recommended_action="Approve",
+        ),
+        data_snapshot=DataSnapshot(
+            context=ReviewContext.SUBMISSION,
+            organization=OrganizationData(name="Test", slug="test"),
+            products=ProductsData(),
+            identity=IdentityData(),
+            account=AccountData(),
+            metrics=PaymentMetrics(),
+            history=HistoryData(),
+            collected_at=datetime(2026, 1, 1, tzinfo=UTC),
+        ),
+        model_used=model_used,
+        duration_seconds=1.0,
+        usage=UsageInfo(),
+    )
+
+
+def _make_legacy_report(
+    *,
     context: str | None = None,
 ) -> dict[str, Any]:
-    """Build a minimal report dict.
+    """Build a legacy (pre-versioning) report dict for backward-compat tests.
 
-    If review_type is given it is set as a top-level key (new format).
-    If context is given it is nested under data_snapshot (legacy format).
+    If context is given it is nested under data_snapshot (old format).
     """
     report: dict[str, Any] = {
         "report": {"verdict": "APPROVE", "overall_risk_score": 10.0},
         "model_used": "test-model",
     }
-    if review_type is not None:
-        report["review_type"] = review_type
     if context is not None:
         report.setdefault("data_snapshot", {})["context"] = context
     return report
@@ -36,62 +90,85 @@ def _make_report(
 
 @pytest.mark.asyncio
 class TestSaveAgentReview:
-    async def test_stores_review_type_in_report(
+    async def test_stores_version_and_review_type(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
+        typed_report = _make_typed_report(review_type="submission")
         review = await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="submission",
-            report={"report": {"verdict": "APPROVE"}},
-            model_used="test-model",
+            report=typed_report,
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
 
+        assert review.report["version"] == 1
         assert review.report["review_type"] == "submission"
 
-    async def test_does_not_mutate_original_report(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        original_report: dict[str, Any] = {"report": {"verdict": "APPROVE"}}
-        repo = OrganizationReviewRepository.from_session(session)
-        await repo.save_agent_review(
-            organization_id=organization.id,
-            review_type="setup_complete",
-            report=original_report,
-            model_used="test-model",
-            reviewed_at=datetime.now(UTC),
-        )
-
-        # The original dict should not be modified
-        assert "review_type" not in original_report
-
-    async def test_preserves_existing_report_keys(
+    async def test_stores_model_used_from_report(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
+        typed_report = _make_typed_report(model_used="gpt-4o-mini")
         review = await repo.save_agent_review(
             organization_id=organization.id,
+            report=typed_report,
+            reviewed_at=datetime.now(UTC),
+        )
+        await session.flush()
+
+        assert review.model_used == "gpt-4o-mini"
+
+    async def test_preserves_all_report_keys(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        typed_report = _make_typed_report(
             review_type="threshold",
-            report={"report": {"verdict": "DENY"}, "duration_seconds": 1.5},
-            model_used="test-model",
+            verdict=ReviewVerdict.DENY,
+            risk_score=75.0,
+        )
+        review = await repo.save_agent_review(
+            organization_id=organization.id,
+            report=typed_report,
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
 
         assert review.report["review_type"] == "threshold"
         assert review.report["report"]["verdict"] == "DENY"
-        assert review.report["duration_seconds"] == 1.5
+        assert review.report["report"]["overall_risk_score"] == 75.0
+        assert review.report["duration_seconds"] == 1.0
+
+    async def test_parsed_report_roundtrips(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """saved report can be parsed back into a typed schema."""
+        repo = OrganizationReviewRepository.from_session(session)
+        typed_report = _make_typed_report(review_type="manual")
+        review = await repo.save_agent_review(
+            organization_id=organization.id,
+            report=typed_report,
+            reviewed_at=datetime.now(UTC),
+        )
+        await session.flush()
+
+        parsed = review.parsed_report
+        assert parsed.version == 1
+        assert parsed.review_type == "manual"
+        assert parsed.report.verdict == ReviewVerdict.APPROVE
 
 
 @pytest.mark.asyncio
@@ -104,11 +181,10 @@ class TestHasSetupCompleteReview:
     ) -> None:
         """New records with top-level review_type are found."""
         repo = OrganizationReviewRepository.from_session(session)
+        typed_report = _make_typed_report(review_type="setup_complete")
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="setup_complete",
-            report={"report": {"verdict": "APPROVE"}},
-            model_used="test-model",
+            report=typed_report,
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -122,11 +198,10 @@ class TestHasSetupCompleteReview:
         organization: Organization,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
+        typed_report = _make_typed_report(review_type="submission")
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="submission",
-            report={"report": {"verdict": "APPROVE"}},
-            model_used="test-model",
+            report=typed_report,
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -152,7 +227,7 @@ class TestHasSetupCompleteReview:
         """
         legacy_review = OrganizationAgentReview(
             organization_id=organization.id,
-            report=_make_report(context="setup_complete"),
+            report=_make_legacy_report(context="setup_complete"),
             model_used="test-model",
             reviewed_at=datetime.now(UTC),
         )
@@ -175,16 +250,16 @@ class TestGetLatestAgentReview:
 
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="submission",
-            report={"report": {"verdict": "APPROVE"}},
-            model_used="model-a",
+            report=_make_typed_report(review_type="submission", model_used="model-a"),
             reviewed_at=datetime(2024, 1, 1, tzinfo=UTC),
         )
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="setup_complete",
-            report={"report": {"verdict": "DENY"}},
-            model_used="model-b",
+            report=_make_typed_report(
+                review_type="setup_complete",
+                model_used="model-b",
+                verdict=ReviewVerdict.DENY,
+            ),
             reviewed_at=datetime(2024, 6, 1, tzinfo=UTC),
         )
         await session.flush()
@@ -192,7 +267,7 @@ class TestGetLatestAgentReview:
         latest = await repo.get_latest_agent_review(organization.id)
         assert latest is not None
         assert latest.model_used == "model-b"
-        assert latest.report["review_type"] == "setup_complete"
+        assert latest.parsed_report.review_type == "setup_complete"
 
 
 @pytest.mark.asyncio
@@ -208,9 +283,11 @@ class TestRecordHumanDecision:
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="submission",
-            report={"report": {"verdict": "APPROVE", "overall_risk_score": 12.0}},
-            model_used="test-model",
+            report=_make_typed_report(
+                review_type="submission",
+                verdict=ReviewVerdict.APPROVE,
+                risk_score=12.0,
+            ),
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -242,9 +319,11 @@ class TestRecordHumanDecision:
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="threshold",
-            report={"report": {"verdict": "DENY", "overall_risk_score": 78.0}},
-            model_used="test-model",
+            report=_make_typed_report(
+                review_type="threshold",
+                verdict=ReviewVerdict.DENY,
+                risk_score=78.0,
+            ),
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -272,9 +351,11 @@ class TestRecordHumanDecision:
         repo = OrganizationReviewRepository.from_session(session)
         await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="submission",
-            report={"report": {"verdict": "DENY", "overall_risk_score": 80.0}},
-            model_used="test-model",
+            report=_make_typed_report(
+                review_type="submission",
+                verdict=ReviewVerdict.DENY,
+                risk_score=80.0,
+            ),
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -379,9 +460,11 @@ class TestSaveReviewDecision:
         # Create an agent review first
         agent_review = await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="submission",
-            report={"report": {"verdict": "DENY", "overall_risk_score": 85.0}},
-            model_used="test-model",
+            report=_make_typed_report(
+                review_type="submission",
+                verdict=ReviewVerdict.DENY,
+                risk_score=85.0,
+            ),
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -551,9 +634,11 @@ class TestRecordAgentDecision:
         repo = OrganizationReviewRepository.from_session(session)
         agent_review = await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="threshold",
-            report={"report": {"verdict": "APPROVE", "overall_risk_score": 10.0}},
-            model_used="test-model",
+            report=_make_typed_report(
+                review_type="threshold",
+                verdict=ReviewVerdict.APPROVE,
+                risk_score=10.0,
+            ),
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()
@@ -585,9 +670,11 @@ class TestRecordAgentDecision:
         repo = OrganizationReviewRepository.from_session(session)
         agent_review = await repo.save_agent_review(
             organization_id=organization.id,
-            review_type="threshold",
-            report={"report": {"verdict": "APPROVE", "overall_risk_score": 10.0}},
-            model_used="test-model",
+            report=_make_typed_report(
+                review_type="threshold",
+                verdict=ReviewVerdict.APPROVE,
+                risk_score=10.0,
+            ),
             reviewed_at=datetime.now(UTC),
         )
         await session.flush()

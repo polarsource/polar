@@ -27,7 +27,11 @@ export const OrganizationNavigation = ({
   const generalRoutesList = useGeneralRoutes(org)
   const organizationRoutes = useOrganizationRoutes(org)
 
-  const { state } = useSidebar()
+  const { state, isMobile, setOpenMobile } = useSidebar()
+
+  const handleSidebarClose = () => {
+    if(isMobile) setOpenMobile(false)
+  }
 
   const isCollapsed = state === 'collapsed'
 
@@ -53,6 +57,7 @@ export const OrganizationNavigation = ({
                 isCollapsed && '!dark:text-polar-600',
               )}
               href={route.link}
+              onClick={handleSidebarClose}
             >
               {'icon' in route && route.icon ? (
                 <span
@@ -81,6 +86,7 @@ export const OrganizationNavigation = ({
                         'dark:text-polar-500 ml-4 inline-flex flex-row items-center gap-x-2 text-sm font-medium text-gray-500 transition-colors hover:text-black dark:hover:text-white',
                         subRoute.isActive && 'text-blue-500 dark:text-white',
                       )}
+                      onClick={handleSidebarClose}
                     >
                       {subRoute.title}
                       {subRoute.extra}

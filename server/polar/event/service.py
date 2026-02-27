@@ -41,6 +41,7 @@ from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
+from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import (
@@ -311,6 +312,12 @@ class EventService:
             name=name,
             source=source,
             event_type_id=event_type_id,
+            depth=depth,
+            parent_id=parent_id,
+            meter_id=meter_id,
+            filter=filter,
+            metadata=metadata,
+            query=query,
             pagination=pagination,
             sorting=sorting,
         )
@@ -749,9 +756,18 @@ class EventService:
         name: Sequence[str] | None,
         source: Sequence[EventSource] | None,
         event_type_id: uuid.UUID | None,
+        depth: int | None,
+        parent_id: uuid.UUID | None,
+        meter_id: uuid.UUID | None,
+        filter: Filter | None,
+        metadata: MetadataQuery | None,
+        query: str | None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventSortProperty]],
     ) -> None:
+        if depth is not None and depth > 0 and parent_id is None:
+            return
+
         org = await self._get_tinybird_enabled_org(
             session, auth_subject, organization_id
         )
@@ -762,16 +778,80 @@ class EventService:
             tb_query = TinybirdEventsQuery(org.id)
             if start_timestamp is not None or end_timestamp is not None:
                 tb_query.filter_timestamp_range(start_timestamp, end_timestamp)
+
             if customer_id is not None:
-                tb_query.filter_customer_id(customer_id)
+                cross_ref = await session.execute(
+                    select(Customer.external_id).where(
+                        Customer.id.in_(customer_id),
+                        Customer.external_id.isnot(None),
+                    )
+                )
+                cross_external_ids = [r[0] for r in cross_ref.all()]
+                tb_query.filter_customer_id_with_cross_ref(
+                    customer_id, cross_external_ids
+                )
+
             if external_customer_id is not None:
-                tb_query.filter_external_customer_id(external_customer_id)
+                cross_ref = await session.execute(
+                    select(Customer.id).where(
+                        Customer.external_id.in_(external_customer_id)
+                    )
+                )
+                cross_customer_ids = [r[0] for r in cross_ref.all()]
+                tb_query.filter_external_customer_id_with_cross_ref(
+                    external_customer_id, cross_customer_ids
+                )
+
             if name is not None:
                 tb_query.filter_names(name)
             if source is not None:
                 tb_query.filter_sources(source)
             if event_type_id is not None:
                 tb_query.filter_event_type_id(event_type_id)
+            if filter is not None:
+                tb_query.filter_by_filter(filter)
+            if metadata is not None:
+                tb_query.filter_by_metadata(metadata)
+
+            if query is not None:
+                cust_results = await session.execute(
+                    select(Customer.id, Customer.external_id).where(
+                        Customer.organization_id == org.id,
+                        or_(
+                            cast(Customer.id, String).ilike(f"%{query}%"),
+                            Customer.external_id.ilike(f"%{query}%"),
+                            Customer.name.ilike(f"%{query}%"),
+                            Customer.email.ilike(f"%{query}%"),
+                        ),
+                    )
+                )
+                matching_rows = cust_results.all()
+                matching_cust_ids = [r.id for r in matching_rows]
+                matching_ext_ids = [
+                    r.external_id for r in matching_rows if r.external_id is not None
+                ]
+                tb_query.filter_by_query(query, matching_cust_ids, matching_ext_ids)
+
+            if meter_id is not None:
+                meter_repository = MeterRepository.from_session(session)
+                meter = await meter_repository.get_readable_by_id(
+                    meter_id, auth_subject
+                )
+                if meter is not None:
+                    tb_query.filter_by_filter(meter.filter)
+                    if isinstance(meter.aggregation, PropertyAggregation):
+                        prop = meter.aggregation.property
+                        if prop in Event._filterable_fields:
+                            allowed_type, _ = Event._filterable_fields[prop]
+                            if allowed_type is not int:
+                                return
+                        else:
+                            tb_query.filter_numeric_metadata_property(prop)
+
+            if parent_id is not None:
+                tb_query.filter_parent_id(parent_id)
+            elif depth is not None and depth == 0:
+                tb_query.filter_root_events()
 
             descending = sorting[0][1] if sorting else True
             offset = (pagination.page - 1) * pagination.limit

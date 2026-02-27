@@ -9,13 +9,27 @@ from uuid import UUID
 import logfire
 import structlog
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
-from sqlalchemy import Column, DateTime, MetaData, String, Table, func, select
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    MetaData,
+    String,
+    Table,
+    and_,
+    false,
+    func,
+    or_,
+    select,
+    true,
+)
 from sqlalchemy.sql import Select
 
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event
 from polar.models.event import EventSource
 
@@ -40,7 +54,23 @@ events_table = Table(
     Column("root_id", String),
     Column("event_type_id", String),
     Column("timestamp", DateTime),
+    Column("cost_amount", Float),
+    Column("cost_currency", String),
+    Column("llm_vendor", String),
+    Column("llm_model", String),
+    Column("llm_input_tokens", Float),
+    Column("llm_output_tokens", Float),
+    Column("user_metadata", String),
 )
+
+DENORMALIZED_COLUMNS: dict[str, Any] = {
+    "_cost.amount": events_table.c.cost_amount,
+    "_cost.currency": events_table.c.cost_currency,
+    "_llm.vendor": events_table.c.llm_vendor,
+    "_llm.model": events_table.c.llm_model,
+    "_llm.input_tokens": events_table.c.llm_input_tokens,
+    "_llm.output_tokens": events_table.c.llm_output_tokens,
+}
 
 
 @dataclass
@@ -333,6 +363,144 @@ class TinybirdEventsQuery:
     def filter_event_type_id(self, event_type_id: UUID) -> Self:
         self._filters.append(events_table.c.event_type_id == str(event_type_id))
         return self
+
+    def filter_by_filter(self, f: Filter) -> Self:
+        self._filters.append(self._translate_filter(f))
+        return self
+
+    def filter_by_metadata(self, query: dict[str, list[str]]) -> Self:
+        for key, values in query.items():
+            col = DENORMALIZED_COLUMNS.get(key)
+            attr = (
+                col
+                if col is not None
+                else func.JSONExtractString(events_table.c.user_metadata, key)
+            )
+            self._filters.append(or_(*[attr == v for v in values]))
+        return self
+
+    def filter_by_query(
+        self,
+        query: str,
+        matching_customer_ids: Sequence[UUID] | None = None,
+        matching_external_customer_ids: Sequence[str] | None = None,
+    ) -> Self:
+        conditions: list[Any] = [
+            events_table.c.name.ilike(f"%{query}%"),
+            events_table.c.source.ilike(f"%{query}%"),
+            events_table.c.user_metadata.ilike(f"%{query}%"),
+        ]
+        if matching_customer_ids:
+            conditions.append(
+                events_table.c.customer_id.in_([str(c) for c in matching_customer_ids])
+            )
+        if matching_external_customer_ids:
+            conditions.append(
+                events_table.c.external_customer_id.in_(
+                    list(matching_external_customer_ids)
+                )
+            )
+        self._filters.append(or_(*conditions))
+        return self
+
+    def filter_customer_id_with_cross_ref(
+        self, customer_ids: Sequence[UUID], cross_external_ids: Sequence[str]
+    ) -> Self:
+        conditions: list[Any] = [
+            events_table.c.customer_id.in_([str(c) for c in customer_ids])
+        ]
+        if cross_external_ids:
+            conditions.append(
+                events_table.c.external_customer_id.in_(list(cross_external_ids))
+            )
+        self._filters.append(or_(*conditions))
+        return self
+
+    def filter_external_customer_id_with_cross_ref(
+        self, external_ids: Sequence[str], cross_customer_ids: Sequence[UUID]
+    ) -> Self:
+        conditions: list[Any] = [
+            events_table.c.external_customer_id.in_(list(external_ids))
+        ]
+        if cross_customer_ids:
+            conditions.append(
+                events_table.c.customer_id.in_([str(c) for c in cross_customer_ids])
+            )
+        self._filters.append(or_(*conditions))
+        return self
+
+    def filter_numeric_metadata_property(self, property: str) -> Self:
+        col = DENORMALIZED_COLUMNS.get(property)
+        if col is not None:
+            self._filters.append(col.isnot(None))
+            return self
+        parts = property.split(".")
+        raw = func.JSONExtractRaw(events_table.c.user_metadata, *parts)
+        self._filters.append(func.toFloat64OrNull(raw).isnot(None))
+        return self
+
+    def _translate_filter(self, f: Filter) -> Any:
+        clauses = [
+            self._translate_filter_clause(c)
+            if isinstance(c, FilterClause)
+            else self._translate_filter(c)
+            for c in f.clauses
+        ]
+        conjunction = and_ if f.conjunction == FilterConjunction.and_ else or_
+        return conjunction(*clauses or (true(),))
+
+    def _translate_filter_clause(self, clause: FilterClause) -> Any:
+        if clause.property == "name":
+            if not isinstance(clause.value, str):
+                return false()
+            return self._ch_comparison(events_table.c.name, clause)
+        if clause.property == "source":
+            if not isinstance(clause.value, str):
+                return false()
+            return self._ch_comparison(events_table.c.source, clause)
+        if clause.property == "timestamp":
+            if not isinstance(clause.value, int):
+                return false()
+            return self._ch_comparison(
+                func.toUnixTimestamp(events_table.c.timestamp), clause
+            )
+
+        col = DENORMALIZED_COLUMNS.get(clause.property)
+        if col is not None:
+            return self._ch_comparison(col, clause)
+
+        parts = clause.property.split(".")
+        if clause.operator in (FilterOperator.like, FilterOperator.not_like):
+            attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
+        elif isinstance(clause.value, str):
+            attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
+        else:
+            attr = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
+        return self._ch_comparison(attr, clause)
+
+    @staticmethod
+    def _ch_comparison(attr: Any, clause: FilterClause) -> Any:
+        v = clause.value
+        if clause.operator in (FilterOperator.like, FilterOperator.not_like):
+            v = str(v) if not isinstance(v, bool) else ("t" if v else "f")
+        op = clause.operator
+        if op == FilterOperator.eq:
+            return attr == v
+        if op == FilterOperator.ne:
+            return attr != v
+        if op == FilterOperator.gt:
+            return attr > v
+        if op == FilterOperator.gte:
+            return attr >= v
+        if op == FilterOperator.lt:
+            return attr < v
+        if op == FilterOperator.lte:
+            return attr <= v
+        if op == FilterOperator.like:
+            return attr.like(f"%{v}%")
+        if op == FilterOperator.not_like:
+            return attr.notlike(f"%{v}%")
+        return false()
 
     _SORT_COLUMN_MAP = {
         "name": events_table.c.name,

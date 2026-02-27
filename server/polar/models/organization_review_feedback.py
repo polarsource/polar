@@ -1,10 +1,8 @@
-from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    TIMESTAMP,
     Boolean,
     Float,
     ForeignKey,
@@ -27,24 +25,6 @@ if TYPE_CHECKING:
 class OrganizationReviewFeedback(RecordModel):
     """Captures review decisions for organizations — both AI agent and human reviewer."""
 
-    # --- Existing enums (kept for backward compat during expand phase) ---
-
-    class AIVerdict(StrEnum):
-        APPROVE = "APPROVE"
-        DENY = "DENY"
-        NEEDS_HUMAN_REVIEW = "NEEDS_HUMAN_REVIEW"
-
-    class HumanVerdict(StrEnum):
-        APPROVE = "APPROVE"
-        DENY = "DENY"
-
-    class Agreement(StrEnum):
-        AGREE = "AGREE"
-        OVERRIDE_TO_APPROVE = "OVERRIDE_TO_APPROVE"
-        OVERRIDE_TO_DENY = "OVERRIDE_TO_DENY"
-
-    # --- New enums ---
-
     class ActorType(StrEnum):
         AGENT = "agent"
         HUMAN = "human"
@@ -65,7 +45,7 @@ class OrganizationReviewFeedback(RecordModel):
         ),
     )
 
-    # --- Existing columns (now nullable for agent decisions) ---
+    # --- FK columns (nullable — not all decisions have both) ---
 
     agent_review_id: Mapped[UUID | None] = mapped_column(
         Uuid,
@@ -81,19 +61,7 @@ class OrganizationReviewFeedback(RecordModel):
         index=True,
     )
 
-    ai_verdict: Mapped[str | None] = mapped_column(String, nullable=True)
-    human_verdict: Mapped[str | None] = mapped_column(String, nullable=True)
-    agreement: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    override_reason: Mapped[str | None] = mapped_column(
-        Text, nullable=True, default=None
-    )
-
-    reviewed_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
-
-    # --- New columns ---
+    # --- Decision columns ---
 
     organization_id: Mapped[UUID | None] = mapped_column(
         Uuid,

@@ -526,7 +526,6 @@ class MetricsService:
                 timezone=timezone.key,
                 bounds_start=original_start_timestamp,
                 bounds_end=original_end_timestamp,
-                now=now_dt,
                 product_id=product_id,
                 customer_id=tinybird_customer_ids,
                 external_customer_id=external_customer_id,

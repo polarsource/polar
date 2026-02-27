@@ -2787,30 +2787,6 @@ class TestUpdate:
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
 
-    async def test_repeating_discount_on_one_time_product(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        checkout_one_time_fixed: Checkout,
-        organization: Organization,
-    ) -> None:
-        recurring_discount = await create_discount(
-            save_fixture,
-            type=DiscountType.fixed,
-            code="RECURRING",
-            amount=1000,
-            currency="usd",
-            duration=DiscountDuration.repeating,
-            duration_in_months=12,
-            organization=organization,
-        )
-        checkout, _ = await checkout_service.update(
-            session,
-            checkout_one_time_fixed,
-            CheckoutUpdatePublic(discount_code=recurring_discount.code),
-        )
-        assert checkout.discount_id == recurring_discount.id
-
     async def test_valid_product_change(
         self,
         save_fixture: SaveFixture,

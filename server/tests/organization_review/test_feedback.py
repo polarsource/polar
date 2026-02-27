@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from polar.models.organization import Organization
-from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
 from polar.models.user import User
 from polar.organization_review.collectors.feedback import collect_feedback_data
@@ -32,7 +31,6 @@ from polar.organization_review.schemas import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-
 
 # ---------------------------------------------------------------------------
 # Helpers

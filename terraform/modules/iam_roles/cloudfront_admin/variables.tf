@@ -8,3 +8,4 @@ variable "lambda_function_arns" {
   type        = list(string)
 }
 
+

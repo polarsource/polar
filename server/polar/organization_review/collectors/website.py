@@ -265,12 +265,17 @@ with server-side rendering. Use this by default."""
     except Exception as e:
         return f"Error fetching {url}: {str(e)[:100]}"
 
+    # Guard against SSRF via open redirects: validate the *final* URL after
+    # any redirects have been followed by the HTTP client.
+    final_url = str(resp.url)
+    if not _is_allowed_origin(final_url, deps.allowed_domain):
+        return f"Error: redirect led off-origin to {final_url} (only {deps.allowed_domain} is allowed)"
+
     html = resp.text
     content = trafilatura.extract(html, output_format="markdown") or ""
 
     title_match = re.search(r"<title[^>]*>([^<]+)</title>", html, re.IGNORECASE)
     title = title_match.group(1).strip() if title_match else None
-    final_url = str(resp.url)
 
     truncated = len(content) > MAX_CHARS_PER_PAGE
     if truncated:
@@ -326,6 +331,12 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
         pass  # Best-effort; don't fail if network stays busy
     await page.wait_for_timeout(1_000)
 
+    # Guard against SSRF via open redirects: validate the *final* URL after
+    # any redirects followed by the browser.
+    current_url = page.url
+    if not _is_allowed_origin(current_url, deps.allowed_domain):
+        return f"Error: redirect led off-origin to {current_url} (only {deps.allowed_domain} is allowed)"
+
     # Extract content via trafilatura
     try:
         html = await page.content()
@@ -334,7 +345,6 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
         content = ""
 
     title = await page.title() or None
-    current_url = page.url
 
     truncated = len(content) > MAX_CHARS_PER_PAGE
     if truncated:

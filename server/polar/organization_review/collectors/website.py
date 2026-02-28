@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import re
+import socket
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 
@@ -171,6 +173,25 @@ _website_agent: Agent[WebsiteDeps, str] = Agent(
 # ---------------------------------------------------------------------------
 
 
+def _resolves_to_private_ip(hostname: str) -> bool:
+    """Check if a hostname resolves to a private/reserved IP address.
+
+    Blocks access to internal networks, cloud metadata services, and
+    loopback addresses to prevent SSRF even when the domain name looks
+    legitimate (e.g. attacker-controlled DNS pointing to 169.254.169.254).
+    """
+    try:
+        infos = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+    except socket.gaierror:
+        return False
+
+    for _family, _type, _proto, _canonname, sockaddr in infos:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            return True
+    return False
+
+
 def _is_allowed_origin(url: str, allowed_domain: str) -> bool:
     """Check if URL belongs to the allowed domain (including subdomains)."""
     parsed = urlparse(url)
@@ -179,7 +200,11 @@ def _is_allowed_origin(url: str, allowed_domain: str) -> bool:
     hostname = parsed.hostname
     if not hostname:
         return False
-    return hostname == allowed_domain or hostname.endswith("." + allowed_domain)
+    if not (hostname == allowed_domain or hostname.endswith("." + allowed_domain)):
+        return False
+    if _resolves_to_private_ip(hostname):
+        return False
+    return True
 
 
 def _extract_links_from_html(html: str, page_url: str) -> list[str]:

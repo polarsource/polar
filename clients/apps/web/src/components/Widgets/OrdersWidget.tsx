@@ -13,6 +13,7 @@ import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { WidgetContainer } from './WidgetContainer'
 
 const orderStatusBadgeClassNames = (order: schemas['Order']) => {
   switch (order.status) {
@@ -46,10 +47,10 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
     <Card
       className={twMerge(
         className,
-        'dark:bg-polar-700 flex flex-col gap-y-1 rounded-2xl border-none bg-white transition-opacity hover:opacity-60',
+        'dark:bg-polar-800 flex flex-col gap-y-1 rounded-lg border-none bg-gray-50 transition-opacity hover:opacity-60',
       )}
     >
-      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pt-2 pb-0 text-sm text-gray-400">
+      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pt-2 pb-0 text-sm text-gray-500">
         <span>{displayDate}</span>
         <Status
           className={twMerge(
@@ -79,46 +80,41 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   const orders = useOrders(org.id, { limit: 10, sorting: ['-created_at'] })
 
   return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-800 relative h-full min-h-80 rounded-4xl bg-gray-50 md:min-h-fit',
-        className,
-      )}
+    <WidgetContainer
+      title="Latest Orders"
+      action={
+        <Link href={`/dashboard/${org.slug}/sales`}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-full border-none"
+          >
+            View All
+          </Button>
+        </Link>
+      }
+      className={twMerge('min-h-80 md:min-h-fit', className)}
     >
       {(orders.data?.items.length ?? 0) > 0 ? (
-        <div className="absolute inset-2 flex flex-col">
-          <div className="flex items-center justify-between p-4">
-            <h3 className="text-lg">Latest Orders</h3>
-            <Link href={`/dashboard/${org.slug}/sales`}>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-full border-none"
-              >
-                View All
-              </Button>
+        <div className="flex h-full flex-col gap-y-2 overflow-y-auto">
+          {orders.data?.items?.map((order) => (
+            <Link
+              key={order.id}
+              href={`/dashboard/${org.slug}/sales/${order.id}`}
+            >
+              <OrderCard order={order} />
             </Link>
-          </div>
-          <div className="flex h-full flex-col gap-y-2 overflow-y-auto rounded-t-2xl rounded-b-4xl pb-4">
-            {orders.data?.items?.map((order) => (
-              <Link
-                key={order.id}
-                href={`/dashboard/${org.slug}/sales/${order.id}`}
-              >
-                <OrderCard order={order} />
-              </Link>
-            ))}
-          </div>
+          ))}
         </div>
       ) : (
-        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 bg-gray-50 p-6 text-gray-400">
+        <div className="dark:text-polar-600 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-500">
           <ShoppingCartOutlined
-            className="dark:text-polar-600 text-gray-300"
+            className="dark:text-polar-700 text-gray-400"
             fontSize="large"
           />
           <h3>No orders found</h3>
-        </Card>
+        </div>
       )}
-    </div>
+    </WidgetContainer>
   )
 }

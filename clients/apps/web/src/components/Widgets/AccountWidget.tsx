@@ -2,9 +2,7 @@ import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
@@ -31,29 +29,18 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
 
   return (
     <WidgetContainer
-      title="Account Balance"
+      title="Balance"
       action={
-        <Link href={`/dashboard/${org.slug}/finance`}>
-          <Button
-            variant={canWithdraw ? 'default' : 'secondary'}
-            size="sm"
-            className="rounded-full border-none"
-          >
-            {canWithdraw ? 'Withdraw' : 'Transactions'}
-          </Button>
-        </Link>
+        <h2 className="text-lg">
+          {formatCurrency('compact')(
+            summary?.balance.amount ?? 0,
+            summary?.balance.currency ?? 'usd',
+          )}
+        </h2>
       }
       className={className}
     >
-      <div className="flex flex-col gap-y-4">
-        <h2 className="text-5xl font-light">
-          {summary &&
-            formatCurrency('compact')(
-              summary.balance.amount,
-              summary.balance.currency,
-            )}
-        </h2>
-      </div>
+      <div className="flex flex-col gap-y-4"></div>
       <div className="dark:bg-polar-800 flex flex-1 flex-col gap-y-4 rounded-xl bg-gray-50 p-4">
         {lastPayout ? (
           <div className="flex flex-col">

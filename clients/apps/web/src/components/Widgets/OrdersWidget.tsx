@@ -1,14 +1,9 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
+import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
 import { useContext } from 'react'
@@ -47,10 +42,10 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
     <Card
       className={twMerge(
         className,
-        'dark:bg-polar-800 flex flex-col gap-y-1 rounded-lg border-none bg-gray-50 transition-opacity hover:opacity-60',
+        'dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60',
       )}
     >
-      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pt-2 pb-0 text-sm text-gray-500">
+      <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
         <span>{displayDate}</span>
         <Status
           className={twMerge(
@@ -59,13 +54,13 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
           )}
           status={order.status.split('_').join(' ')}
         />
-      </CardHeader>
-      <CardContent className="flex flex-row justify-between gap-x-4 p-4 pt-0 pb-3">
+      </div>
+      <div className="flex flex-row justify-between gap-x-4">
         <h3 className="min-w-0 truncate">{order.description}</h3>
-        <span className="">
+        <span>
           {formatCurrency('compact')(order.net_amount, order.currency)}
         </span>
-      </CardContent>
+      </div>
     </Card>
   )
 }
@@ -96,7 +91,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
       className={twMerge('min-h-80 md:min-h-fit', className)}
     >
       {(orders.data?.items.length ?? 0) > 0 ? (
-        <div className="flex h-full flex-col gap-y-2 overflow-y-auto">
+        <div className="flex flex-col gap-y-2 pb-6">
           {orders.data?.items?.map((order) => (
             <Link
               key={order.id}
@@ -107,12 +102,11 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
           ))}
         </div>
       ) : (
-        <div className="dark:text-polar-600 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-500">
-          <ShoppingCartOutlined
-            className="dark:text-polar-700 text-gray-400"
-            fontSize="large"
-          />
+        <div className="mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 text-center dark:bg-polar-800">
           <h3>No orders found</h3>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Your most recent orders will appear here.
+          </p>
         </div>
       )}
     </WidgetContainer>

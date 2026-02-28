@@ -42,7 +42,7 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
       }
       className={className}
     >
-      <div className="grid h-full grid-cols-3 gap-4">
+      <div className="grid flex-1 grid-cols-3 gap-4 pb-6">
         {revenueMetrics.data?.periods.map((period, index, array) => {
           const currentPeriodValue = period.revenue ?? 0
           const previousPeriodValue = array[index - 1]?.revenue ?? 0
@@ -58,12 +58,9 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
           const isTrendingUp = percentageChangeComparedToPreviousPeriod > 0
 
           return (
-            <div
-              key={period.timestamp}
-              className="flex h-full flex-col gap-y-2"
-            >
+            <div key={period.timestamp} className="flex flex-col gap-y-2">
               <Tooltip>
-                <TooltipTrigger className="relative h-full min-h-48 overflow-hidden rounded-lg bg-[repeating-linear-gradient(-45deg,rgba(0,0,0,0.08),rgba(0,0,0,0.08)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03),rgba(255,255,255,0.03)_2px,transparent_2px,transparent_8px)]">
+                <TooltipTrigger className="relative min-h-48 flex-1 overflow-hidden rounded-lg bg-[repeating-linear-gradient(-45deg,rgba(0,0,0,0.08),rgba(0,0,0,0.08)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03),rgba(255,255,255,0.03)_2px,transparent_2px,transparent_8px)]">
                   {revenueMetrics.isLoading ? (
                     <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-lg bg-gray-200">
                       <Spinner />

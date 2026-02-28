@@ -1,5 +1,6 @@
 'use client'
 
+import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { IOSAppBanner } from '@/components/Upsell/IOSAppBanner'
@@ -8,7 +9,6 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useOrganizationPaymentStatus } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
 
 const cellClassName =
   'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200'
@@ -21,7 +21,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
 
   return (
-    <DashboardBody fullWidth className="gap-y-8 pb-16 md:gap-y-12">
+    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
       <IOSAppBanner />
       {paymentStatus && !paymentStatus.payment_ready && (
         <PaymentOnboardingStepper organization={organization} />

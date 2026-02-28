@@ -39,7 +39,11 @@ class TestGetSucceededPaymentsStats:
         org = await create_organization(save_fixture)
         # Payment in EUR: 900 EUR cents
         payment = await create_payment(
-            save_fixture, org, amount=900, currency="eur", status=PaymentStatus.succeeded
+            save_fixture,
+            org,
+            amount=900,
+            currency="eur",
+            status=PaymentStatus.succeeded,
         )
         # Transaction in USD: 1000 USD cents (after currency conversion)
         await create_payment_transaction(
@@ -105,16 +109,18 @@ class TestGetRefundStats:
         )
         order = await create_order(save_fixture, customer=customer)
         payment = await create_payment(
-            save_fixture, org, amount=900, currency="eur", status=PaymentStatus.succeeded
+            save_fixture,
+            org,
+            amount=900,
+            currency="eur",
+            status=PaymentStatus.succeeded,
         )
         # Refund in EUR: 900 EUR cents
         refund = await create_refund(
             save_fixture, order, payment, amount=900, currency="eur"
         )
         # Refund transaction in USD: -1000 USD cents (negative because money goes out)
-        await create_refund_transaction(
-            save_fixture, amount=-1000, refund=refund
-        )
+        await create_refund_transaction(save_fixture, amount=-1000, refund=refund)
 
         service = PaymentAnalyticsService(session)
         count, refund_amount = await service.get_refund_stats(org.id)
@@ -152,7 +158,11 @@ class TestGetDisputeStats:
         )
         order = await create_order(save_fixture, customer=customer)
         payment = await create_payment(
-            save_fixture, org, amount=900, currency="eur", status=PaymentStatus.succeeded
+            save_fixture,
+            org,
+            amount=900,
+            currency="eur",
+            status=PaymentStatus.succeeded,
         )
         # Dispute in EUR: 900 EUR cents
         dispute = await create_dispute(
@@ -187,7 +197,11 @@ class TestGetDisputeStats:
         )
         order = await create_order(save_fixture, customer=customer)
         payment = await create_payment(
-            save_fixture, org, amount=900, currency="eur", status=PaymentStatus.succeeded
+            save_fixture,
+            org,
+            amount=900,
+            currency="eur",
+            status=PaymentStatus.succeeded,
         )
         dispute = await create_dispute(
             save_fixture,
@@ -216,9 +230,12 @@ class TestGetDisputeStats:
     ) -> None:
         org = await create_organization(save_fixture)
         service = PaymentAnalyticsService(session)
-        dispute_count, dispute_amount, chargeback_count, chargeback_amount = (
-            await service.get_dispute_stats(org.id)
-        )
+        (
+            dispute_count,
+            dispute_amount,
+            chargeback_count,
+            chargeback_amount,
+        ) = await service.get_dispute_stats(org.id)
         assert dispute_count == 0
         assert dispute_amount == 0
         assert chargeback_count == 0

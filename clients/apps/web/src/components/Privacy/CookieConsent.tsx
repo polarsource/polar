@@ -23,7 +23,11 @@ export function cookieConsentGiven() {
 export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   const isEU = countryCode ? EU_COUNTRY_CODES.includes(countryCode) : false
   const [consentGiven, setConsentGiven] = useState<string | null>('')
-  const { isShown: preferencesOpen, show: showPreferences, hide: hidePreferences } = useModal()
+  const {
+    isShown: preferencesOpen,
+    show: showPreferences,
+    hide: hidePreferences,
+  } = useModal()
   const { setPersistence } = usePostHog()
   const searchParams = useSearchParams()
 

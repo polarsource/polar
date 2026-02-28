@@ -8,7 +8,7 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useOrganizationPaymentStatus } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { OverviewSection } from './components/OverviewSection'
+import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
 
 const cellClassName =
   'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200'

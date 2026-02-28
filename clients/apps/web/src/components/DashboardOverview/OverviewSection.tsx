@@ -5,6 +5,7 @@ import { useMetrics } from '@/hooks/queries'
 import { CHART_RANGES, ChartRange, getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const OVERVIEW_METRICS: (keyof schemas['Metrics'])[] = [
   'revenue',
@@ -46,11 +47,12 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
               <button
                 key={key}
                 onClick={() => setRange(key)}
-                className={
+                className={twMerge(
+                  'cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium',
                   range === key
-                    ? 'rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white'
-                    : 'dark:text-polar-400 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white'
-                }
+                    ? 'dark:bg-polar-700 bg-gray-100 text-white'
+                    : 'dark:text-polar-400 text-gray-500 hover:text-gray-900 dark:hover:text-white',
+                )}
               >
                 {label}
               </button>

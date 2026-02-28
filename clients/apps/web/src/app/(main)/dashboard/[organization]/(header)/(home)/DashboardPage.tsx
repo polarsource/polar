@@ -21,7 +21,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
 
   return (
-    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
+    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
       <IOSAppBanner />
       {paymentStatus && !paymentStatus.payment_ready && (
         <PaymentOnboardingStepper organization={organization} />

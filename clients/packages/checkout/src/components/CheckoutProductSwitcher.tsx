@@ -14,7 +14,7 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
-import { Fragment, useCallback } from 'react'
+import { Fragment, useCallback, useMemo } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
@@ -42,8 +42,23 @@ const CheckoutProductSwitcher = ({
     product: selectedProduct,
     productPrice: selectedPrice,
     products,
-    prices,
+    prices: allPrices,
+    currency,
   } = checkout
+
+  // Filter prices to only show ones matching the checkout's detected currency.
+  // Products with presentment currencies may have prices in multiple currencies,
+  // but the switcher should only display prices in the checkout's currency.
+  const prices = useMemo(() => {
+    const filtered: typeof allPrices = {}
+    for (const [productId, productPrices] of Object.entries(allPrices)) {
+      const currencyPrices = productPrices.filter(
+        (p) => p.priceCurrency === currency,
+      )
+      filtered[productId] = currencyPrices.length > 0 ? currencyPrices : productPrices
+    }
+    return filtered
+  }, [allPrices, currency])
 
   const selectProduct = useCallback(
     (value: string) => {
@@ -60,7 +75,7 @@ const CheckoutProductSwitcher = ({
         }
       }
     },
-    [update, products],
+    [update, products, prices],
   )
 
   if (

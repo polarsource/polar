@@ -102,7 +102,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
           ))}
         </div>
       ) : (
-        <div className="mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 text-center dark:bg-polar-800">
+        <div className="dark:bg-polar-800 mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 p-8 text-center">
           <h3>No orders found</h3>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             Your most recent orders will appear here.

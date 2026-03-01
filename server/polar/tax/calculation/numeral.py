@@ -191,6 +191,13 @@ class NumeralTaxService(TaxServiceProtocol):
             response = await self.client.post("/tax/calculations", json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            if e.response.is_server_error:
+                log.debug(
+                    "Numeral tax calculation server error",
+                    status_code=e.response.status_code,
+                    text=e.response.text,
+                )
+                raise TaxCalculationTechnicalError("Numeral server error") from e
             if e.response.status_code == 429:
                 log.debug("Numeral rate limit exceeded")
                 raise TaxCalculationTechnicalError("Rate limit exceeded") from e

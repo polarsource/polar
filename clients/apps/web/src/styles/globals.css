@@ -73,17 +73,17 @@
   --color-gray-900: oklch(0.21 0.034 264.665);
   --color-gray-950: oklch(0.13 0.028 261.692);
 
-  --color-polar-50: hsl(233, 6%, 85%);
-  --color-polar-100: hsl(233, 6%, 79%);
-  --color-polar-200: hsl(233, 6%, 68%);
-  --color-polar-300: hsl(233, 6%, 62%);
-  --color-polar-400: hsl(233, 6%, 52%);
-  --color-polar-500: hsl(233, 6%, 46%);
-  --color-polar-600: hsl(233, 6%, 16%);
-  --color-polar-700: hsl(233, 6%, 12%);
-  --color-polar-800: hsl(233, 6%, 9.5%);
-  --color-polar-900: hsl(233, 6%, 6.5%);
-  --color-polar-950: hsl(233, 6%, 3%);
+  --color-polar-50: hsl(233, 4%, 85%);
+  --color-polar-100: hsl(233, 4%, 79%);
+  --color-polar-200: hsl(233, 4%, 68%);
+  --color-polar-300: hsl(233, 4%, 62%);
+  --color-polar-400: hsl(233, 4%, 52%);
+  --color-polar-500: hsl(233, 4%, 46%);
+  --color-polar-600: hsl(233, 4%, 16%);
+  --color-polar-700: hsl(233, 4%, 12%);
+  --color-polar-800: hsl(233, 4%, 9.5%);
+  --color-polar-900: hsl(233, 4%, 6.5%);
+  --color-polar-950: hsl(233, 4%, 3.5%);
 
   /* shadcn */
   --color-border: var(--border);

@@ -15,10 +15,12 @@ from polar.models import (
     Product,
     ProductBenefit,
     Refund,
+    Transaction,
     WebhookEndpoint,
 )
 from polar.models.dispute import DisputeStatus
 from polar.models.payment import PaymentStatus
+from polar.models.transaction import TransactionType
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
 
@@ -41,7 +43,7 @@ class PaymentAnalyticsService:
     async def get_succeeded_payments_stats(
         self, organization_id: UUID4
     ) -> tuple[int, int, list[float]]:
-        """Get succeeded payments count, total amount, and risk scores."""
+        """Get succeeded payments count, total amount in USD cents, and risk scores."""
         statement = self.payment_repo.get_base_statement().where(
             Payment.organization_id == organization_id,
             Payment.status == PaymentStatus.succeeded,
@@ -55,10 +57,14 @@ class PaymentAnalyticsService:
         )
         risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
 
-        # Get count and total amount
+        # Get count and total amount in USD via Transaction (avoids mixing currencies)
         stats_result = await self.session.execute(
-            statement.with_only_columns(
-                func.count(Payment.id), func.coalesce(func.sum(Payment.amount), 0)
+            statement.outerjoin(
+                Transaction,
+                onclause=(Transaction.charge_id == Payment.processor_id)
+                & (Transaction.type == TransactionType.payment),
+            ).with_only_columns(
+                func.count(Payment.id), func.coalesce(func.sum(Transaction.amount), 0)
             )
         )
         count, total_amount = stats_result.first() or (0, 0)
@@ -66,11 +72,19 @@ class PaymentAnalyticsService:
         return count, total_amount, risk_scores
 
     async def get_refund_stats(self, organization_id: UUID4) -> tuple[int, int]:
-        """Get refund count and total amount for organization."""
+        """Get refund count and total amount in USD cents for organization."""
         result = await self.session.execute(
-            select(func.count(Refund.id), func.coalesce(func.sum(Refund.amount), 0))
+            select(
+                func.count(Refund.id),
+                func.coalesce(-func.sum(Transaction.amount), 0),
+            )
             .join(Order, Refund.order_id == Order.id)
             .join(Customer, Order.customer_id == Customer.id)
+            .outerjoin(
+                Transaction,
+                onclause=(Transaction.refund_id == Refund.id)
+                & (Transaction.type == TransactionType.refund),
+            )
             .where(Customer.organization_id == organization_id)
         )
         result_row = result.first()
@@ -96,6 +110,7 @@ class PaymentAnalyticsService:
         """Get dispute and chargeback stats for organization.
 
         Returns (dispute_count, dispute_amount, chargeback_count, chargeback_amount).
+        Amounts are in USD cents via related Transaction records.
         Disputes = all non-prevented/non-early_warning disputes.
         Chargebacks = disputes with status 'lost'.
         """
@@ -109,9 +124,14 @@ class PaymentAnalyticsService:
         result = await self.session.execute(
             select(
                 func.count(Dispute.id),
-                func.coalesce(func.sum(Dispute.amount), 0),
+                func.coalesce(-func.sum(Transaction.amount), 0),
             )
             .join(Payment, Dispute.payment_id == Payment.id)
+            .outerjoin(
+                Transaction,
+                onclause=(Transaction.dispute_id == Dispute.id)
+                & (Transaction.type == TransactionType.dispute),
+            )
             .where(
                 Payment.organization_id == organization_id,
                 Dispute.status.in_(actual_dispute_statuses),
@@ -125,9 +145,14 @@ class PaymentAnalyticsService:
         cb_result = await self.session.execute(
             select(
                 func.count(Dispute.id),
-                func.coalesce(func.sum(Dispute.amount), 0),
+                func.coalesce(-func.sum(Transaction.amount), 0),
             )
             .join(Payment, Dispute.payment_id == Payment.id)
+            .outerjoin(
+                Transaction,
+                onclause=(Transaction.dispute_id == Dispute.id)
+                & (Transaction.type == TransactionType.dispute),
+            )
             .where(
                 Payment.organization_id == organization_id,
                 Dispute.status == DisputeStatus.lost,

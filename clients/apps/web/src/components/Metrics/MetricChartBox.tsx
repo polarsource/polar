@@ -149,14 +149,20 @@ const MetricChartBox = ({
     <ShadowBox
       ref={ref}
       className={twMerge(
-        'dark:bg-polar-800 group flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
+        'dark:bg-polar-800 group relative flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
         className,
       )}
     >
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <Spinner />
+        </div>
+      )}
       <div
         className={twMerge(
           'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
           compact ? 'p-4' : 'px-6 py-4',
+          loading && 'invisible',
         )}
       >
         <div
@@ -320,9 +326,7 @@ const MetricChartBox = ({
           <div
             style={{ height }}
             className="flex flex-col items-center justify-center"
-          >
-            <Spinner />
-          </div>
+          />
         ) : data && selectedMetric ? (
           <MetricChart
             height={height}

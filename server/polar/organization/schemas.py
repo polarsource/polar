@@ -97,6 +97,10 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has checkout localization enabled",
     )
+    overview_metrics: list[str] | None = Field(
+        None,
+        description="Ordered list of metric slugs shown on the dashboard overview.",
+    )
 
 
 class OrganizationDetails(Schema):

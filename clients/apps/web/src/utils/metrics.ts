@@ -191,6 +191,14 @@ export const getPreviousDateRange = (
   return [previousStartDate, previousEndDate]
 }
 
+export const DEFAULT_OVERVIEW_METRICS: (keyof schemas['Metrics'])[] = [
+  'revenue',
+  'monthly_recurring_revenue',
+  'active_subscriptions',
+  'orders',
+  'checkouts_conversion',
+]
+
 export const ALL_METRICS: {
   slug: keyof schemas['Metrics']
   display_name: string

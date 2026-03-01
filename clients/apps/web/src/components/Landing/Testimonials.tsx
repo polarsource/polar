@@ -204,8 +204,18 @@ export const Testimonials = () => {
           Testimonials
         </span>
         <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
-          Why people love Polar
+          Trusted by industry leaders
         </h1>
+      </div>
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        {companyTestimonials.map((testimonial, index) => (
+          <Testamonial
+            key={`testimonial-${index}`}
+            size="lg"
+            className={index === 0 ? 'xl:col-span-2' : ''}
+            {...testimonial}
+          />
+        ))}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {userTestimonials.map((testimonial, index) => (

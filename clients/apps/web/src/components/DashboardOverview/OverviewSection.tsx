@@ -49,7 +49,7 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
     [range, organization.created_at],
   )
 
-  const { data } = useMetrics({
+  const { data, isLoading } = useMetrics({
     organization_id: organization.id,
     startDate,
     endDate,
@@ -94,7 +94,12 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
           </Button>
         </div>
       </div>
-      <MetricGroup data={data} metricKeys={activeMetrics} interval={interval} />
+      <MetricGroup
+        data={data}
+        metricKeys={activeMetrics}
+        interval={interval}
+        loading={isLoading}
+      />
       <Modal
         title="Customize Overview Metrics"
         isShown={isShown}

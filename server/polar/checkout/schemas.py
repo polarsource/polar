@@ -11,6 +11,7 @@ from pydantic import (
     IPvAnyAddress,
     Tag,
     computed_field,
+    field_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -302,6 +303,14 @@ class CheckoutProductsCreate(CheckoutCreateBase):
         ),
         min_length=1,
     )
+
+    @field_validator("products")
+    @classmethod
+    def products_must_be_unique(cls, v: list[UUID4]) -> list[UUID4]:
+        if len(v) != len(set(v)):
+            raise ValueError("Product IDs must be unique.")
+        return v
+
     prices: dict[UUID4, ProductPriceCreateList] | None = Field(
         default=None,
         description=(

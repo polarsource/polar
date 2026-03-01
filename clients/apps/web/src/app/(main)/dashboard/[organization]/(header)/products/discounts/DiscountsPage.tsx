@@ -1,6 +1,5 @@
 'use client'
 
-import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClipboardButton'
 import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountModalContent'
 import UpdateDiscountModalContent from '@/components/Discounts/UpdateDiscountModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -193,18 +192,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         const code = getValue() as string | null
         return code ? (
           <div className="flex flex-row items-center gap-1 font-mono">
-            <div>{code}</div>
-            <div>
-              <CopyToClipboardButton
-                text={code}
-                onCopy={() => {
-                  toast({
-                    title: 'Copied To Clipboard',
-                    description: `Discount Code was copied to clipboard`,
-                  })
-                }}
-              />
-            </div>
+            {code}
           </div>
         ) : (
           '—'

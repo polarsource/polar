@@ -133,6 +133,7 @@ export const MetricSelectorModalContent = ({
       id: organization.id,
       body: {
         feature_settings: {
+          ...organization.feature_settings!,
           overview_metrics: slugs as string[],
         },
       },

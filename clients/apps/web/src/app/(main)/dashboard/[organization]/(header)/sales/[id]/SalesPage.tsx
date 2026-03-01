@@ -28,6 +28,7 @@ import {
   DisputeStatusDisplayColor,
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -37,6 +38,7 @@ import { List } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { Separator } from '@radix-ui/react-dropdown-menu'
+import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -151,8 +153,33 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
             <DetailRow
               label="Discount Code"
-              value={order.discount ? order.discount.code : '—'}
-              valueClassName="font-mono capitalize"
+              value={
+                order.discount ? (
+                  <div className="flex flex-row gap-x-2">
+                    <span className="font-mono capitalize">
+                      {order.discount.code}
+                    </span>
+                    <span className="text-polar-500 dark:text-polar-500">
+                      {order.discount.name}
+                    </span>
+                  </div>
+                ) : (
+                  '—'
+                )
+              }
+              action={
+                <Link
+                  href={`/dashboard/${organization.slug}/products/discounts?query=${order.discount?.code}`}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-xxs h-4 w-4"
+                  >
+                    <ArrowOutwardOutlined fontSize="inherit" />
+                  </Button>
+                </Link>
+              }
             />
 
             <DetailRow

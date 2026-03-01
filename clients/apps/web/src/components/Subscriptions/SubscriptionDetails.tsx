@@ -1,9 +1,14 @@
 'use client'
 
+import { OrganizationContext } from '@/providers/maintainerOrganization'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import Link from 'next/link'
+import { useContext } from 'react'
 import { DetailRow } from '../Shared/DetailRow'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
@@ -65,6 +70,8 @@ interface SubscriptionDetailsProps {
 }
 
 const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
+  const { organization } = useContext(OrganizationContext)
+
   const cancellationReason = subscription.customer_cancellation_reason
   const cancellationComment = subscription.customer_cancellation_comment
 
@@ -126,8 +133,30 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
         />
 
         <DetailRow
-          label="Discount"
-          value={subscription.discount ? subscription.discount.code : '—'}
+          label="Discount Code"
+          value={
+            subscription.discount ? (
+              <div className="flex flex-row gap-x-2">
+                <span className="font-mono capitalize">
+                  {subscription.discount.code}
+                </span>
+                <span className="text-polar-500 dark:text-polar-500">
+                  {subscription.discount.name}
+                </span>
+              </div>
+            ) : (
+              '—'
+            )
+          }
+          action={
+            <Link
+              href={`/dashboard/${organization.slug}/products/discounts?query=${subscription.discount?.code}`}
+            >
+              <Button variant="ghost" size="icon" className="text-xxs h-4 w-4">
+                <ArrowOutwardOutlined fontSize="inherit" />
+              </Button>
+            </Link>
+          }
         />
 
         <DetailRow

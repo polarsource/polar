@@ -676,7 +676,6 @@ def _get_review_report(
 def _render_ai_review_summary(report: ReviewAgentReport) -> None:
     """Render a compact AI review summary for use in approve/deny dialogs."""
     verdict = report.verdict.value
-    risk_score = report.overall_risk_score
 
     verdict_classes = {
         "APPROVE": "badge-success",
@@ -685,21 +684,24 @@ def _render_ai_review_summary(report: ReviewAgentReport) -> None:
     }
     badge_class = verdict_classes.get(verdict, "badge-ghost")
 
+    risk_badge = {
+        "LOW": "badge-ghost",
+        "MEDIUM": "badge-warning",
+        "HIGH": "badge-error",
+    }
+    risk_level = report.overall_risk_level.value
+    risk_badge_class = risk_badge.get(risk_level, "badge-ghost")
+
     with tag.div(classes="bg-base-200 p-4 rounded-lg space-y-3"):
         with tag.div(classes="flex items-center gap-3"):
             with tag.span(classes="text-sm font-semibold"):
                 text("AI Verdict:")
             with tag.div(classes=f"badge {badge_class} badge-sm"):
                 text(verdict)
-            score_color = (
-                "text-success"
-                if risk_score < 30
-                else "text-warning"
-                if risk_score < 70
-                else "text-error"
-            )
-            with tag.span(classes=f"text-sm font-bold {score_color}"):
-                text(f"Risk: {risk_score:.0f}/100")
+            with tag.span(classes="text-sm font-semibold"):
+                text("Risk:")
+            with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
+                text(risk_level)
 
         if report.summary:
             with tag.p(classes="text-sm"):

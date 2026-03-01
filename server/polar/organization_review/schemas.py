@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import Field
+from pydantic import Field, computed_field, model_validator
 
 from polar.kit.schemas import Schema
 
@@ -238,12 +238,25 @@ class ReviewDimension(StrEnum):
     PRIOR_HISTORY = "prior_history"
 
 
+class RiskLevel(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+RISK_LEVEL_SCORES: dict[RiskLevel, float] = {
+    RiskLevel.LOW: 15.0,
+    RiskLevel.MEDIUM: 50.0,
+    RiskLevel.HIGH: 85.0,
+}
+
+
 class DimensionAssessment(Schema):
     dimension: ReviewDimension = Field(
         description="The review dimension being assessed"
     )
-    score: float = Field(
-        ge=0, le=100, description="Risk score 0-100 (0=no risk, 100=highest risk)"
+    risk_level: RiskLevel = Field(
+        description="Risk level: LOW (no/minimal risk), MEDIUM (some concerns, needs attention), HIGH (serious risk, likely violation)"
     )
     confidence: float = Field(
         ge=0,
@@ -258,6 +271,36 @@ class DimensionAssessment(Schema):
         description="Brief recommendation for this dimension",
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_score_to_risk_level(cls, data: Any) -> Any:
+        """Backward compat: convert old float score to RiskLevel.
+
+        Also drops ``score`` from input when ``risk_level`` is already present,
+        because ``score`` is now a computed_field and must not appear in the
+        constructor kwargs.
+
+        Works on a copy to avoid mutating the caller's dict.
+        """
+        if isinstance(data, dict) and "score" in data:
+            score_val = data["score"]
+            # Copy without score (it's a computed_field now)
+            data = {k: v for k, v in data.items() if k != "score"}
+            if "risk_level" not in data:
+                if score_val < 30:
+                    data["risk_level"] = "LOW"
+                elif score_val < 70:
+                    data["risk_level"] = "MEDIUM"
+                else:
+                    data["risk_level"] = "HIGH"
+        return data
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def score(self) -> float:
+        """Backward compat: derived numeric score so old code can read new data."""
+        return RISK_LEVEL_SCORES[self.risk_level]
+
 
 class ReviewVerdict(StrEnum):
     APPROVE = "APPROVE"
@@ -269,11 +312,6 @@ class ReviewAgentReport(Schema):
 
     verdict: ReviewVerdict = Field(
         description="Overall review verdict: APPROVE or DENY"
-    )
-    overall_risk_score: float = Field(
-        ge=0,
-        le=100,
-        description="Aggregate risk score 0-100",
     )
     summary: str = Field(
         description="2-3 sentence summary of the review findings for internal reviewers",
@@ -293,9 +331,54 @@ class ReviewAgentReport(Schema):
     dimensions: list[DimensionAssessment] = Field(
         description="Per-dimension risk assessments",
     )
+    overall_risk_level: RiskLevel = Field(
+        description="Overall risk level across all dimensions: LOW, MEDIUM, or HIGH"
+    )
     recommended_action: str = Field(
         description="Specific recommended action for human reviewer",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _backfill_overall_risk_level(cls, data: Any) -> Any:
+        """V1 compat: derive overall_risk_level from dimensions if missing."""
+        if isinstance(data, dict) and "overall_risk_level" not in data:
+            data = {k: v for k, v in data.items() if k != "overall_risk_score"}
+            dimensions = data.get("dimensions", [])
+            if dimensions:
+                levels = set()
+                for d in dimensions:
+                    if not isinstance(d, dict):
+                        continue
+                    rl = d.get("risk_level")
+                    if not rl and "score" in d:
+                        # Old-style float score: convert to risk level
+                        score_val = d["score"]
+                        if score_val < 30:
+                            rl = "LOW"
+                        elif score_val < 70:
+                            rl = "MEDIUM"
+                        else:
+                            rl = "HIGH"
+                    if rl:
+                        levels.add(rl)
+                if "HIGH" in levels:
+                    data["overall_risk_level"] = "HIGH"
+                elif "MEDIUM" in levels:
+                    data["overall_risk_level"] = "MEDIUM"
+                else:
+                    data["overall_risk_level"] = "LOW"
+            else:
+                data["overall_risk_level"] = "MEDIUM"
+        elif isinstance(data, dict) and "overall_risk_score" in data:
+            data = {k: v for k, v in data.items() if k != "overall_risk_score"}
+        return data
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def overall_risk_score(self) -> float:
+        """Backward compat: numeric score from overall_risk_level."""
+        return RISK_LEVEL_SCORES[self.overall_risk_level]
 
 
 class AgentReviewResult(Schema):

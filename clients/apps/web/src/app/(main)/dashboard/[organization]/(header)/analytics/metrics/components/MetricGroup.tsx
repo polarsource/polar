@@ -9,9 +9,15 @@ interface MetricGroupProps {
   data?: ParsedMetricsResponse
   metricKeys: (keyof schemas['Metrics'])[]
   interval: schemas['TimeInterval']
+  loading?: boolean
 }
 
-export function MetricGroup({ metricKeys, data, interval }: MetricGroupProps) {
+export function MetricGroup({
+  metricKeys,
+  data,
+  interval,
+  loading,
+}: MetricGroupProps) {
   return (
     <div className="flex flex-col gap-y-6">
       <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
@@ -24,6 +30,7 @@ export function MetricGroup({ metricKeys, data, interval }: MetricGroupProps) {
               metric={metricKey}
               height={200}
               chartType="line"
+              loading={loading}
               className={twMerge(
                 'rounded-none! bg-transparent dark:bg-transparent',
                 index === 0 && 'lg:col-span-2',

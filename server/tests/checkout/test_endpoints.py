@@ -288,6 +288,24 @@ class TestCreateCheckout:
         assert response.status_code == 201
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_duplicate_products(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id), str(product.id)],
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     @pytest.mark.parametrize(
         "customer_billing_address",
         [

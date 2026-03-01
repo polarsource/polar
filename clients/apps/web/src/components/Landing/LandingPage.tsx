@@ -3,7 +3,6 @@
 import { Hero } from '@/components/Landing/Hero/Hero'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
-import useIsMobile from '@/utils/mobile'
 import { Stream } from '@cloudflare/stream-react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
@@ -24,14 +23,12 @@ export default function Page() {
 }
 
 export const PageContent = () => {
-  const { isMobile } = useIsMobile()
-
   return (
     <>
-      <Section className="flex flex-col gap-y-32 py-0 md:py-0">
+      <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
         <Hero
-          title="Monetize your software"
-          description="Turn your software into a business with 6 lines of code"
+          title="Turn Usage Into Revenue"
+          description="The billing solution for applied AI companies"
         >
           <GetStartedButton size="lg" text="Get Started" />
           <Link
@@ -48,19 +45,19 @@ export const PageContent = () => {
             </Button>
           </Link>
         </Hero>
-        <Features />
+        <div className="dark:border-polar-700 relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
+          <Stream
+            src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
+            letterboxColor="black"
+            autoplay
+            muted
+            loop
+          />
+        </div>
         <Logotypes />
-        {isMobile ? null : (
-          <div className="dark:border-polar-700 relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
-            <Stream
-              src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-              letterboxColor="black"
-              autoplay
-              muted
-              loop
-            />
-          </div>
-        )}
+        <Features />
+      </Section>
+      <Section className="flex flex-col gap-y-32">
         <Adapters />
         <Usage />
       </Section>

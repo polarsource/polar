@@ -43,7 +43,7 @@ export const Hero = ({
       viewport={{ once: true }}
     >
       <motion.h1
-        className="text-5xl leading-tight! tracking-tight text-balance md:px-0 md:text-7xl"
+        className="leading-tighter! text-5xl tracking-tight text-balance md:px-0 md:text-9xl"
         variants={itemVariants}
       >
         {title}

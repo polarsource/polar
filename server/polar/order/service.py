@@ -1354,6 +1354,7 @@ class OrderService:
                         organization_name=organization.name,
                         organization_slug=organization.slug,
                         billing_reason=order.billing_reason,
+                        currency=order.currency,
                     ),
                 ),
             )

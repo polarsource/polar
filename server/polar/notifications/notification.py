@@ -68,12 +68,13 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     tier_organization_name: str
     tier_organization_slug: str | None = None
     subscription_id: str | None = None
+    currency: str = "usd"
 
     @computed_field
     def formatted_price_amount(self) -> str:
         if self.tier_price_amount is None:
             return ""
-        return format_currency(self.tier_price_amount, "usd")
+        return format_currency(self.tier_price_amount, self.currency)
 
     def subject(self) -> str:
         if self.tier_price_amount:
@@ -109,10 +110,11 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
     order_date: str | None = None
     organization_slug: str | None = None
     billing_reason: OrderBillingReasonInternal | None = None
+    currency: str = "usd"
 
     @computed_field
     def formatted_price_amount(self) -> str:
-        return format_currency(self.product_price_amount, "usd")
+        return format_currency(self.product_price_amount, self.currency)
 
     @computed_field
     def formatted_billing_reason(self) -> str | None:
@@ -178,10 +180,11 @@ class MaintainerCreateAccountNotification(NotificationBase):
 class MaintainerAccountCreditsGrantedNotificationPayload(NotificationPayloadBase):
     organization_name: str
     amount: int
+    currency: str = "usd"
 
     @computed_field
     def formatted_amount(self) -> str:
-        return format_currency(self.amount, "usd")
+        return format_currency(self.amount, self.currency)
 
     def subject(self) -> str:
         return f"{self.organization_name} has received {self.formatted_amount} in fee credits!"

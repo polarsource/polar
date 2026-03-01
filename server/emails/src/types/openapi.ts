@@ -826,6 +826,11 @@ export interface components {
       tier_price_recurring_interval: string
       /** Tier Organization Name */
       tier_organization_name: string
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }
@@ -890,6 +895,11 @@ export interface components {
        * @default null
        */
       billing_reason: components['schemas']['OrderBillingReasonInternal'] | null
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /**

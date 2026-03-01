@@ -21360,6 +21360,11 @@ export interface components {
        * @default false
        */
       checkout_localization_enabled: boolean
+      /**
+       * Overview Metrics
+       * @description Ordered list of metric slugs shown on the dashboard overview.
+       */
+      overview_metrics?: string[] | null
     }
     /** OrganizationMember */
     OrganizationMember: {

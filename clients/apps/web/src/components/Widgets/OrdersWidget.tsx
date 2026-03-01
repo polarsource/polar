@@ -88,7 +88,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
           </Button>
         </Link>
       }
-      className={twMerge('min-h-80 md:min-h-fit', className)}
+      className={twMerge('min-h-80', className)}
     >
       {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="flex flex-col gap-y-2 pb-6">

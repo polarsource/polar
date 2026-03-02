@@ -1430,6 +1430,18 @@ METRICS_TINYBIRD_SETTLEMENT: list[type[TinybirdMetric]] = [
 ]
 
 
+METRICS_PG_ONLY: list[type[SQLMetric]] = [
+    ActiveSubscriptionsMetric,
+    CommittedSubscriptionsMetric,
+    MonthlyRecurringRevenueMetric,
+    CommittedMonthlyRecurringRevenueMetric,
+    AverageRevenuePerUserMetric,
+    CheckoutsMetric,
+    SucceededCheckoutsMetric,
+    CheckoutsConversionMetric,
+    ChurnedSubscriptionsMetric,
+]
+
 METRICS_SQL: list[type[SQLMetric]] = [
     OrdersMetric,
     RevenueMetric,
@@ -1480,12 +1492,14 @@ METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
 ]
 
 METRICS: list[type[Metric]] = [
-    *METRICS_SQL,
+    *METRICS_PG_ONLY,
+    *METRICS_TINYBIRD_SETTLEMENT,
     *METRICS_POST_COMPUTE,
 ]
 
 __all__ = [
     "METRICS",
+    "METRICS_PG_ONLY",
     "METRICS_POST_COMPUTE",
     "METRICS_SQL",
     "METRICS_TINYBIRD_SETTLEMENT",

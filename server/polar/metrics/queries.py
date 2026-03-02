@@ -928,20 +928,13 @@ def get_events_metrics_cte(
 
 
 QUERIES: list[QueryCallable] = [
-    get_orders_metrics_cte,
     get_active_subscriptions_cte,
     get_checkouts_cte,
-    get_canceled_subscriptions_cte,
     get_churned_subscriptions_cte,
-    get_events_metrics_cte,
 ]
 
-# Mapping from MetricQuery enum to query function for filtering
 QUERY_TO_FUNCTION: dict[MetricQuery, QueryCallable] = {
-    MetricQuery.orders: get_orders_metrics_cte,
     MetricQuery.active_subscriptions: get_active_subscriptions_cte,
     MetricQuery.checkouts: get_checkouts_cte,
-    MetricQuery.canceled_subscriptions: get_canceled_subscriptions_cte,
     MetricQuery.churned_subscriptions: get_churned_subscriptions_cte,
-    MetricQuery.events: get_events_metrics_cte,
 }

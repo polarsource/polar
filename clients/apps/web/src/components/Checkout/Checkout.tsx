@@ -414,14 +414,7 @@ const Checkout = ({
                         {checkout.product.name}
                       </span>
                       {checkout.product.description &&
-                        (hasMarkdown(checkout.product.description) ? (
-                          <a
-                            href="#description"
-                            className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700"
-                          >
-                            {t('checkout.productDescription.readMore')}
-                          </a>
-                        ) : (
+                        !hasMarkdown(checkout.product.description) && (
                           <TruncatedDescription
                             description={checkout.product.description}
                             productName={checkout.product.name}
@@ -429,7 +422,7 @@ const Checkout = ({
                               'checkout.productDescription.readMore',
                             )}
                           />
-                        ))}
+                        )}
                     </div>
                   </div>
                   <span className="text-3xl font-medium">

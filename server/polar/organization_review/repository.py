@@ -259,7 +259,7 @@ class OrganizationReviewRepository(
             risk_score = parsed.report.overall_risk_score
 
             if review_context is None:
-                derived_context = parsed.review_type
+                derived_context = parsed.review_type or "manual"
 
         await self.deactivate_current_decisions(organization_id)
         return await self.save_review_decision(

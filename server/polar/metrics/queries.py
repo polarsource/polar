@@ -313,8 +313,37 @@ def get_active_subscriptions_cte(
         .group_by(fx_day, fx_currency)
     )
 
+    closest_global_fx_rate = (
+        select(fx_value)
+        .select_from(Transaction)
+        .where(
+            Transaction.type == TransactionType.payment,
+            Transaction.presentment_currency.is_not(None),
+            func.lower(Transaction.presentment_currency)
+            == func.lower(Subscription.currency),
+            Transaction.created_at >= start_timestamp,
+            Transaction.created_at <= end_timestamp,
+        )
+        .order_by(
+            func.abs(
+                func.extract(
+                    "epoch",
+                    Transaction.created_at - timestamp_column,
+                )
+            )
+        )
+        .limit(1)
+        .correlate(Subscription, timestamp_series)
+        .scalar_subquery()
+    )
+
     converted_amount = func.round(
-        Subscription.amount * func.coalesce(bucketed_fx.c.avg_exchange_rate, 1)
+        Subscription.amount
+        * func.coalesce(
+            bucketed_fx.c.avg_exchange_rate,
+            closest_global_fx_rate,
+            1,
+        )
     )
     monthly_amount = case(
         (

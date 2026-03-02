@@ -25,7 +25,7 @@ def collect_feedback_data(
                 dimensions = [
                     PriorDimensionAssessment(
                         dimension=dim.dimension.value,
-                        score=dim.score,
+                        risk_level=dim.risk_level.value,
                         findings=list(dim.findings),
                     )
                     for dim in report.dimensions

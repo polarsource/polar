@@ -216,7 +216,7 @@ class PriorDimensionAssessment(Schema):
     """Summary of a single dimension from a prior agent review."""
 
     dimension: str = Field(description="e.g. policy_compliance, product_legitimacy")
-    score: float = Field(description="Risk score 0-100")
+    risk_level: str = Field(description="LOW, MEDIUM, or HIGH")
     findings: list[str] = Field(default_factory=list)
 
 

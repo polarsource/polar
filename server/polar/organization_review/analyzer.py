@@ -623,13 +623,13 @@ class ReviewAnalyzer:
                         f"- Violated Sections: {', '.join(entry.violated_sections)}"
                     )
                 if entry.dimensions:
-                    parts.append("- Dimension Scores:")
+                    parts.append("- Dimension Assessments:")
                     for dim in entry.dimensions:
                         findings_str = (
                             f" — {'; '.join(dim.findings)}" if dim.findings else ""
                         )
                         parts.append(
-                            f"  - {dim.dimension}: {dim.score:.1f}/100{findings_str}"
+                            f"  - {dim.dimension}: {dim.risk_level}{findings_str}"
                         )
                 if entry.reason:
                     parts.append(f"- Reviewer Reason: {entry.reason}")

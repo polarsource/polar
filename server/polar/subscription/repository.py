@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, case, select
+from sqlalchemy import Select, and_, case, func, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -41,8 +42,10 @@ from polar.models import (
     SubscriptionProductPrice,
     UserOrganization,
 )
+from polar.kit.utils import utc_now
 from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_reminder import SubscriptionReminder, SubscriptionReminderType
 from polar.product.guard import is_metered_price
 
 from .sorting import SubscriptionSortProperty
@@ -184,6 +187,137 @@ class SubscriptionRepository(
         )
 
         return statement
+
+    async def get_subscriptions_needing_renewal_reminder(
+        self,
+        *,
+        reminder_days: int = 7,
+        window_hours: int = 1,
+    ) -> Sequence[Subscription]:
+        """
+        Find active subscriptions with billing cycle > 45 days
+        where current_period_end is ~7 days away and no reminder has been sent
+        for this period.
+        """
+        now = utc_now()
+        target = now + timedelta(days=reminder_days)
+        window_start = target - timedelta(hours=window_hours)
+        window_end = target + timedelta(hours=window_hours)
+
+        # Billing cycle > 45 days:
+        # year: always > 45
+        # month with count >= 2: always > 45
+        # week with count >= 7: 49 days > 45
+        # day with count >= 45
+        long_cycle_filter = or_(
+            Subscription.recurring_interval == SubscriptionRecurringInterval.year,
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.month,
+                Subscription.recurring_interval_count >= 2,
+            ),
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.week,
+                Subscription.recurring_interval_count >= 7,
+            ),
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.day,
+                Subscription.recurring_interval_count >= 45,
+            ),
+        )
+
+        # Check no reminder already sent for this period
+        already_sent = (
+            select(SubscriptionReminder.id)
+            .where(
+                SubscriptionReminder.subscription_id == Subscription.id,
+                SubscriptionReminder.type == SubscriptionReminderType.renewal,
+                SubscriptionReminder.target_date == Subscription.current_period_end,
+            )
+            .exists()
+        )
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.active,
+                Subscription.cancel_at_period_end.is_(False),
+                Subscription.current_period_end.is_not(None),
+                Subscription.current_period_end.between(window_start, window_end),
+                long_cycle_filter,
+                ~already_sent,
+            )
+            .options(*self.get_eager_options())
+        )
+        return await self.get_all(statement)
+
+    async def get_subscriptions_needing_trial_conversion_reminder(
+        self,
+        *,
+        window_hours: int = 1,
+    ) -> Sequence[Subscription]:
+        """
+        Find trialing subscriptions where trial is about to convert to paid
+        and no reminder has been sent yet.
+
+        - Trial >= 3 days: send 3-day reminder
+        - Trial 1-3 days: send 1-day reminder
+        - Trial < 1 day: don't send
+        """
+        now = utc_now()
+
+        # Use COALESCE(trial_end, current_period_end) as conversion date
+        conversion_date = func.coalesce(
+            Subscription.trial_end, Subscription.current_period_end
+        )
+
+        # Trial length in days
+        trial_length_seconds = func.extract(
+            "epoch", conversion_date - Subscription.trial_start
+        )
+        trial_length_days = trial_length_seconds / 86400
+
+        # 3-day reminder window
+        three_day_start = now + timedelta(days=3) - timedelta(hours=window_hours)
+        three_day_end = now + timedelta(days=3) + timedelta(hours=window_hours)
+
+        # 1-day reminder window
+        one_day_start = now + timedelta(days=1) - timedelta(hours=window_hours)
+        one_day_end = now + timedelta(days=1) + timedelta(hours=window_hours)
+
+        # Check no reminder already sent for this subscription's conversion date
+        already_sent = (
+            select(SubscriptionReminder.id)
+            .where(
+                SubscriptionReminder.subscription_id == Subscription.id,
+                SubscriptionReminder.type == SubscriptionReminderType.trial_conversion,
+                SubscriptionReminder.target_date == conversion_date,
+            )
+            .exists()
+        )
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.trialing,
+                Subscription.cancel_at_period_end.is_(False),
+                ~already_sent,
+                or_(
+                    # 3-day reminder for trials >= 3 days
+                    and_(
+                        conversion_date.between(three_day_start, three_day_end),
+                        trial_length_days >= 3,
+                    ),
+                    # 1-day reminder for short trials (< 3 days but >= 1 day)
+                    and_(
+                        conversion_date.between(one_day_start, one_day_end),
+                        trial_length_days < 3,
+                        trial_length_days >= 1,
+                    ),
+                ),
+            )
+            .options(*self.get_eager_options())
+        )
+        return await self.get_all(statement)
 
     def get_sorting_clause(self, property: SubscriptionSortProperty) -> SortingClause:
         match property:

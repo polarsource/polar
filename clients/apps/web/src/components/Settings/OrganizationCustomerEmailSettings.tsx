@@ -72,6 +72,18 @@ const customerEmails: {
     title: 'Subscription past due',
     description: 'Sent when a subscription payment fails and becomes overdue',
   },
+  {
+    key: 'subscription_renewal_reminder',
+    title: 'Subscription renewal reminder',
+    description:
+      'Sent 7 days before a subscription with a billing cycle longer than 45 days renews',
+  },
+  {
+    key: 'subscription_trial_conversion_reminder',
+    title: 'Trial conversion reminder',
+    description:
+      'Sent before a free trial ends and the subscription converts to paid',
+  },
 ]
 
 const OrganizationCustomerEmailSettings: React.FC<

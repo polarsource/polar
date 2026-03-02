@@ -728,7 +728,7 @@ class TestV1BackwardCompatibility:
         assert parsed.version == 2
 
     def test_score_boundary_migration_values(self) -> None:
-        """Verify boundary values for score → risk_level migration."""
+        """Verify boundary values for score → risk_level migration via parse_agent_report."""
         for score, expected_level in [
             (0.0, RiskLevel.LOW),
             (29.9, RiskLevel.LOW),
@@ -737,7 +737,8 @@ class TestV1BackwardCompatibility:
             (70.0, RiskLevel.HIGH),
             (100.0, RiskLevel.HIGH),
         ]:
-            dim = DimensionAssessment.model_validate(
+            data = _make_old_style_v1_dict()
+            data["report"]["dimensions"] = [
                 {
                     "dimension": "policy_compliance",
                     "score": score,
@@ -745,7 +746,11 @@ class TestV1BackwardCompatibility:
                     "findings": [],
                     "recommendation": "test",
                 }
-            )
+            ]
+            data["report"].pop("overall_risk_level", None)
+            data["report"].pop("overall_risk_score", None)
+            parsed = parse_agent_report(data)
+            dim = parsed.report.dimensions[0]
             assert dim.risk_level == expected_level, (
                 f"score={score} should map to {expected_level}, got {dim.risk_level}"
             )

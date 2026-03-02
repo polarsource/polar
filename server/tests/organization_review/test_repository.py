@@ -8,7 +8,6 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.payment import PaymentStatus
 from polar.models.user import User
 from polar.organization_review.report import (
-    AgentReportV1,
     AgentReportV2,
     AnyAgentReport,
 )
@@ -42,7 +41,7 @@ def _make_typed_report(
     model_used: str = "test-model",
 ) -> AnyAgentReport:
     """Build a minimal typed agent report for tests."""
-    return AgentReportV1(
+    return AgentReportV2(
         review_type=review_type,
         report=ReviewAgentReport(
             verdict=verdict,
@@ -97,7 +96,6 @@ def _make_legacy_report(
 class TestSaveAgentReview:
     async def test_stores_version_and_review_type(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -110,12 +108,11 @@ class TestSaveAgentReview:
         )
         await session.flush()
 
-        assert review.report["version"] == 1
+        assert review.report["version"] == 2
         assert review.report["review_type"] == "submission"
 
     async def test_stores_model_used_from_report(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -132,7 +129,6 @@ class TestSaveAgentReview:
 
     async def test_preserves_all_report_keys(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -156,7 +152,6 @@ class TestSaveAgentReview:
 
     async def test_parsed_report_roundtrips(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:

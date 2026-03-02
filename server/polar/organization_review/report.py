@@ -32,7 +32,11 @@ from polar.kit.schemas import Schema
 from .schemas import (
     AgentReviewResult,
     DataSnapshot,
+    DimensionAssessment,
     ReviewAgentReport,
+    ReviewDimension,
+    ReviewVerdict,
+    RiskLevel,
     UsageInfo,
 )
 
@@ -47,21 +51,39 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Version 1
+# Version 1 — legacy types (only used for parsing old DB rows)
 # ---------------------------------------------------------------------------
+
+
+class DimensionAssessmentV1(Schema):
+    """V1 dimension: may have a float ``score`` instead of ``risk_level``."""
+
+    dimension: ReviewDimension
+    score: float | None = None
+    risk_level: RiskLevel | None = None
+    confidence: float
+    findings: list[str] = Field(default_factory=list)
+    recommendation: str
+
+
+class ReviewAgentReportV1(Schema):
+    """V1 report: has ``overall_risk_score`` float, no ``overall_risk_level``."""
+
+    verdict: ReviewVerdict
+    summary: str
+    merchant_summary: str = ""
+    violated_sections: list[str] = Field(default_factory=list)
+    dimensions: list[DimensionAssessmentV1]
+    overall_risk_score: float | None = None
+    recommended_action: str
 
 
 class AgentReportV1(Schema):
     """Version 1 of the persisted agent review report.
 
     Matches the structure that was written to JSONB before versioning was added,
-    plus an explicit ``version`` field.  Fields mirror ``AgentReviewResult`` with
-    the addition of ``review_type`` (injected at save time).
-
-    DimensionAssessment originally had ``score: float`` and ReviewAgentReport
-    had an explicit ``overall_risk_score: float``.  The current schemas handle
-    backward-compat via model validators that convert scores → RiskLevel and
-    derive overall_risk_score from dimension risk levels.
+    plus an explicit ``version`` field.  The inner ``report`` uses V1-specific
+    types that accept the old float-score format.
     """
 
     version: Literal[1] = 1
@@ -70,7 +92,7 @@ class AgentReportV1(Schema):
         description="Review trigger context: submission, setup_complete, threshold, manual"
     )
 
-    report: ReviewAgentReport = Field(description="The core AI analysis output")
+    report: ReviewAgentReportV1 = Field(description="The core AI analysis output")
     data_snapshot: DataSnapshot = Field(
         description="All collected data that was fed to the analyzer"
     )
@@ -120,17 +142,56 @@ class AgentReportV2(Schema):
 # ---------------------------------------------------------------------------
 
 
-def _migrate_v1_to_v2(v1: AgentReportV1) -> AgentReportV2:
-    """Migrate a V1 report to V2.
+def _score_to_risk_level(score: float) -> RiskLevel:
+    if score < 30:
+        return RiskLevel.LOW
+    if score < 70:
+        return RiskLevel.MEDIUM
+    return RiskLevel.HIGH
 
-    The inner ``ReviewAgentReport`` already handles backfilling
-    ``overall_risk_level`` from dimensions via its model validator, so we
-    just need to copy fields across and set version=2.
-    """
+
+def _migrate_dimension(d: DimensionAssessmentV1) -> DimensionAssessment:
+    risk_level = d.risk_level
+    if risk_level is None and d.score is not None:
+        risk_level = _score_to_risk_level(d.score)
+    if risk_level is None:
+        risk_level = RiskLevel.MEDIUM
+    return DimensionAssessment(
+        dimension=d.dimension,
+        risk_level=risk_level,
+        confidence=d.confidence,
+        findings=d.findings,
+        recommendation=d.recommendation,
+    )
+
+
+def _migrate_report(r: ReviewAgentReportV1) -> ReviewAgentReport:
+    dimensions = [_migrate_dimension(d) for d in r.dimensions]
+    levels = [d.risk_level for d in dimensions]
+    if RiskLevel.HIGH in levels:
+        overall = RiskLevel.HIGH
+    elif RiskLevel.MEDIUM in levels:
+        overall = RiskLevel.MEDIUM
+    elif levels:
+        overall = RiskLevel.LOW
+    else:
+        overall = RiskLevel.MEDIUM
+    return ReviewAgentReport(
+        verdict=r.verdict,
+        summary=r.summary,
+        merchant_summary=r.merchant_summary,
+        violated_sections=r.violated_sections,
+        dimensions=dimensions,
+        overall_risk_level=overall,
+        recommended_action=r.recommended_action,
+    )
+
+
+def _migrate_v1_to_v2(v1: AgentReportV1) -> AgentReportV2:
+    """Migrate a V1 report to V2 with type-safe conversion."""
     return AgentReportV2(
-        version=2,
+        report=_migrate_report(v1.report),
         review_type=v1.review_type,
-        report=v1.report,
         data_snapshot=v1.data_snapshot,
         model_used=v1.model_used,
         duration_seconds=v1.duration_seconds,
@@ -141,13 +202,16 @@ def _migrate_v1_to_v2(v1: AgentReportV1) -> AgentReportV2:
 
 
 # ---------------------------------------------------------------------------
-# Union of all versions
+# Public type aliases
 # ---------------------------------------------------------------------------
 
 LATEST_VERSION: Literal[2] = 2
 
-AnyAgentReport = AgentReportV1 | AgentReportV2
+# V1 is always migrated on read, so both aliases resolve to AgentReportV2.
+# AnyAgentReport is kept as the public API for callers that accept any version
+# (repository, model property, views); LatestAgentReport for write-path code.
 LatestAgentReport = AgentReportV2
+AnyAgentReport = LatestAgentReport
 
 
 # ---------------------------------------------------------------------------

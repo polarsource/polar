@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import Field, computed_field, model_validator
+from pydantic import Field, computed_field
 
 from polar.kit.schemas import Schema
 
@@ -209,7 +209,7 @@ class WebsiteData(Schema):
     scrape_error: str | None = None
     total_pages_attempted: int = 0
     total_pages_succeeded: int = 0
-    usage: UsageInfo | None = Field(default_factory=UsageInfo)
+    usage: UsageInfo = Field(default_factory=UsageInfo)
 
 
 class DataSnapshot(Schema):
@@ -271,30 +271,6 @@ class DimensionAssessment(Schema):
         description="Brief recommendation for this dimension",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def _migrate_score_to_risk_level(cls, data: Any) -> Any:
-        """Backward compat: convert old float score to RiskLevel.
-
-        Also drops ``score`` from input when ``risk_level`` is already present,
-        because ``score`` is now a computed_field and must not appear in the
-        constructor kwargs.
-
-        Works on a copy to avoid mutating the caller's dict.
-        """
-        if isinstance(data, dict) and "score" in data:
-            score_val = data["score"]
-            # Copy without score (it's a computed_field now)
-            data = {k: v for k, v in data.items() if k != "score"}
-            if "risk_level" not in data:
-                if score_val < 30:
-                    data["risk_level"] = "LOW"
-                elif score_val < 70:
-                    data["risk_level"] = "MEDIUM"
-                else:
-                    data["risk_level"] = "HIGH"
-        return data
-
     @computed_field  # type: ignore[prop-decorator]
     @property
     def score(self) -> float:
@@ -337,42 +313,6 @@ class ReviewAgentReport(Schema):
     recommended_action: str = Field(
         description="Specific recommended action for human reviewer",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _backfill_overall_risk_level(cls, data: Any) -> Any:
-        """V1 compat: derive overall_risk_level from dimensions if missing."""
-        if isinstance(data, dict) and "overall_risk_level" not in data:
-            data = {k: v for k, v in data.items() if k != "overall_risk_score"}
-            dimensions = data.get("dimensions", [])
-            if dimensions:
-                levels = set()
-                for d in dimensions:
-                    if not isinstance(d, dict):
-                        continue
-                    rl = d.get("risk_level")
-                    if not rl and "score" in d:
-                        # Old-style float score: convert to risk level
-                        score_val = d["score"]
-                        if score_val < 30:
-                            rl = "LOW"
-                        elif score_val < 70:
-                            rl = "MEDIUM"
-                        else:
-                            rl = "HIGH"
-                    if rl:
-                        levels.add(rl)
-                if "HIGH" in levels:
-                    data["overall_risk_level"] = "HIGH"
-                elif "MEDIUM" in levels:
-                    data["overall_risk_level"] = "MEDIUM"
-                else:
-                    data["overall_risk_level"] = "LOW"
-            else:
-                data["overall_risk_level"] = "MEDIUM"
-        elif isinstance(data, dict) and "overall_risk_score" in data:
-            data = {k: v for k, v in data.items() if k != "overall_risk_score"}
-        return data
 
     @computed_field  # type: ignore[prop-decorator]
     @property

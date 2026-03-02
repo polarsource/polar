@@ -10,7 +10,6 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
-from polar.organization_review.schemas import DimensionAssessment
 from polar.organization_review.thresholds import (
     AUTH_RATE,
     CHARGEBACK_RATE,
@@ -23,9 +22,15 @@ from polar.organization_review.thresholds import (
 
 from ....components import card
 from ....components._metric_card import Variant
+from ._shared import (
+    RISK_LEVEL_BADGE,
+    ChecklistMixin,
+    render_checklist_row,
+    render_dimension,
+)
 
 
-class OverviewSection:
+class OverviewSection(ChecklistMixin):
     """Render the overview section as a 2x2 grid of cards."""
 
     def __init__(
@@ -41,35 +46,6 @@ class OverviewSection:
         self.unrefunded_orders_count = unrefunded_orders_count
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
-
-    # ------------------------------------------------------------------
-    # Checklist helpers (ported from review_section.py)
-    # ------------------------------------------------------------------
-
-    @property
-    def has_email(self) -> bool:
-        return bool(self.org.email)
-
-    @property
-    def has_website(self) -> bool:
-        return bool(self.org.website)
-
-    @property
-    def has_socials(self) -> bool:
-        return bool(self.org.socials and len(self.org.socials) >= 1)
-
-    @property
-    def missing_items(self) -> list[str]:
-        items = []
-        if not self.has_email:
-            items.append("Add a support email in your organization settings")
-        if not self.has_website:
-            items.append("Add your website URL in your organization settings")
-        if not self.has_socials:
-            items.append(
-                "Add at least one social media link in your organization settings"
-            )
-        return items
 
     # ------------------------------------------------------------------
     # Top-left: Organization Review card
@@ -227,13 +203,8 @@ class OverviewSection:
                 with tag.div(classes=f"badge {badge_class} badge-lg font-semibold"):
                     text(display_verdict)
 
-                risk_badge = {
-                    "LOW": "badge-ghost",
-                    "MEDIUM": "badge-warning",
-                    "HIGH": "badge-error",
-                }
                 risk_level = review_report.overall_risk_level.value
-                risk_badge_class = risk_badge.get(risk_level, "badge-ghost")
+                risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
                 with tag.div(classes="flex items-center gap-1"):
                     with tag.span(classes="text-sm text-base-content/60"):
                         text("AI Risk:")
@@ -271,7 +242,7 @@ class OverviewSection:
                         text("Dimension Breakdown")
                     with tag.div(classes="space-y-3 mt-2"):
                         for dim in review_report.dimensions:
-                            self._render_dimension(dim)
+                            render_dimension(dim)
 
             # Appeal information
             if self.org.review and self.org.review.appeal_submitted_at:
@@ -622,42 +593,6 @@ class OverviewSection:
 
             yield
 
-    # ------------------------------------------------------------------
-    # Shared helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _render_dimension(dim: DimensionAssessment) -> None:
-        """Render a single dimension assessment."""
-        name = dim.dimension.value.replace("_", " ").title()
-
-        risk_badge = {
-            "LOW": "badge-ghost",
-            "MEDIUM": "badge-warning",
-            "HIGH": "badge-error",
-        }
-        badge_class = risk_badge.get(dim.risk_level.value, "badge-ghost")
-
-        with tag.div(classes="border border-base-200 rounded p-3"):
-            with tag.div(classes="flex items-center justify-between mb-1"):
-                with tag.span(classes="text-sm font-medium"):
-                    text(name)
-                with tag.div(classes="flex items-center gap-2"):
-                    with tag.div(classes=f"badge badge-sm {badge_class}"):
-                        text(dim.risk_level.value)
-                    with tag.span(classes="text-xs text-base-content/60"):
-                        text(f"{dim.confidence:.0%} confidence")
-
-            if dim.findings:
-                with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
-                    for finding in dim.findings:
-                        with tag.li():
-                            text(finding)
-
-            if dim.recommendation:
-                with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
-                    text(dim.recommendation)
-
     def _render_checklist(self) -> None:
         """Render the account checklist rows."""
         with tag.div(classes="pt-4 mt-4 border-t border-base-200"):
@@ -665,13 +600,13 @@ class OverviewSection:
                 text("Account Checklist")
 
             with tag.div(classes="space-y-3"):
-                self._checklist_row(
+                render_checklist_row(
                     "Support Email",
                     self.has_email,
                     self.org.email if self.has_email else None,
                 )
 
-                self._checklist_row(
+                render_checklist_row(
                     "Website URL",
                     self.has_website,
                     self.org.website if self.has_website else None,
@@ -679,13 +614,13 @@ class OverviewSection:
 
                 if self.has_socials:
                     social_count = len(self.org.socials)
-                    self._checklist_row(
+                    render_checklist_row(
                         "Social Media",
                         True,
                         f"{social_count} link{'s' if social_count != 1 else ''}",
                     )
                 else:
-                    self._checklist_row("Social Media", False, None)
+                    render_checklist_row("Social Media", False, None)
 
                 # Test Sales — dot color based on unrefunded orders
                 # Green: no orders, or all refunded
@@ -720,25 +655,6 @@ class OverviewSection:
                         text(
                             f"{self.unrefunded_orders_count} unrefunded order{'s' if self.unrefunded_orders_count != 1 else ''} — should be auto-refunded before approval."
                         )
-
-    @staticmethod
-    def _checklist_row(label: str, is_set: bool, value: str | None) -> None:
-        """Render a single checklist row."""
-        with tag.div(
-            classes="flex items-center justify-between py-2 border-b border-base-200"
-        ):
-            with tag.div(classes="flex items-center gap-2"):
-                dot_class = "bg-success" if is_set else "bg-error"
-                with tag.span(
-                    classes=f"w-2.5 h-2.5 rounded-full {dot_class} inline-block"
-                ):
-                    pass
-                with tag.span(classes="text-sm font-medium"):
-                    text(label)
-            with tag.span(
-                classes="text-sm" + (" text-base-content/60" if not is_set else "")
-            ):
-                text((value or "Set") if is_set else "Missing")
 
     # ------------------------------------------------------------------
     # Main render: 2x2 grid

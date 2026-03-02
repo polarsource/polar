@@ -74,6 +74,7 @@ from ..toast import add_toast
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import OrganizationListView
 from .views.modals import DeleteStripeModal, DisconnectStripeModal
+from .views.sections._shared import RISK_LEVEL_BADGE, VERDICT_BADGE
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
@@ -284,13 +285,13 @@ async def list_organizations(
         stmt = stmt.join(Organization.account).order_by(country_order)
     elif sort == "created":
         stmt = stmt.order_by(
-            Organization.created_at.asc() if is_desc else Organization.created_at.desc()
+            Organization.created_at.desc() if is_desc else Organization.created_at.asc()
         )
     elif sort == "updated":
         stmt = stmt.order_by(
-            Organization.modified_at.asc()
+            Organization.modified_at.desc()
             if is_desc
-            else Organization.modified_at.desc()
+            else Organization.modified_at.asc()
         )
     elif sort == "status_duration":
         status_order = (
@@ -677,20 +678,10 @@ def _render_ai_review_summary(report: ReviewAgentReport) -> None:
     """Render a compact AI review summary for use in approve/deny dialogs."""
     verdict = report.verdict.value
 
-    verdict_classes = {
-        "APPROVE": "badge-success",
-        "DENY": "badge-error",
-        "NEEDS_HUMAN_REVIEW": "badge-warning",
-    }
-    badge_class = verdict_classes.get(verdict, "badge-ghost")
+    badge_class = VERDICT_BADGE.get(verdict, "badge-ghost")
 
-    risk_badge = {
-        "LOW": "badge-ghost",
-        "MEDIUM": "badge-warning",
-        "HIGH": "badge-error",
-    }
     risk_level = report.overall_risk_level.value
-    risk_badge_class = risk_badge.get(risk_level, "badge-ghost")
+    risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
 
     with tag.div(classes="bg-base-200 p-4 rounded-lg space-y-3"):
         with tag.div(classes="flex items-center gap-3"):

@@ -21,7 +21,7 @@ const EDGE_HI = 'border-[0.5px] border-gray-500 dark:border-[#D0D6E0]'
 
 const BillingIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(-10px) scale(1.4)' }}>
+    <div style={{ transform: 'translateY(16px) scale(1.4)' }}>
       <Isometric style={{ width: 200, height: 130 }}>
         {/* Base plate */}
         <IsometricBox
@@ -104,7 +104,7 @@ const BillingIllustration = () => (
 
 const CustomerIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(8px) scale(1.4)' }}>
+    <div style={{ transform: 'translateY(34px) scale(1.4)' }}>
       <Isometric style={{ width: 200, height: 160 }}>
         {/* Card 3 – back (dimmest) */}
         <IsometricBox

@@ -6,7 +6,6 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useMemo } from 'react'
 import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { BillingAsCode } from './billing/BillingAsCode'
 
@@ -118,10 +117,6 @@ const itemVariants = {
 }
 
 export const Usage = () => {
-  const tabsTriggerClassName = useMemo(() => {
-    return 'rounded-full! px-4 py-2 data-[state=active]:bg-white hidden md:flex'
-  }, [])
-
   return (
     <SyntaxHighlighterProvider>
       <Tabs defaultValue={strategies[0].name}>

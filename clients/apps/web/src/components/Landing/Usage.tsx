@@ -1,26 +1,18 @@
 'use client'
 
-import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useMemo } from 'react'
-import {
-  SyntaxHighlighterClient,
-  SyntaxHighlighterProvider,
-} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { BillingAsCode } from './billing/BillingAsCode'
 
 const strategies = [
   {
-    name: 'LLM',
+    name: 'billing = fn(events)',
     description: "Capture your Customer's LLM Usage & bill them for it",
     bullets: [
       'Automatic Token Consumption Ingestion',
@@ -141,43 +133,24 @@ export const Usage = () => {
             <h1 className="w-fit max-w-3xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
               Usage Based Billing on Autopilot
             </h1>
-            <TabsList>
-              {strategies.map((strategy) => (
-                <TabsTrigger
-                  key={strategy.name}
-                  value={strategy.name}
-                  className={tabsTriggerClassName}
-                >
-                  {strategy.name}
-                </TabsTrigger>
-              ))}
-              <Link
-                href="https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
-                target="_blank"
-              >
-                <Button className="rounded-full" variant="ghost">
-                  <span>All Ingestion Strategies</span>
-                  <ArrowOutwardOutlined className="ml-2" />
-                </Button>
-              </Link>
-            </TabsList>
           </div>
           {strategies.map((strategy) => (
             <TabsContent value={strategy.name} key={strategy.name}>
               <motion.div
-                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row md:rounded-4xl`}
+                className={`flex w-full flex-col gap-12 md:flex-row`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
+                <BillingAsCode />
+                <div className="dark:bg-polar-900 flex flex-col justify-center gap-y-8 rounded-2xl bg-white p-8 md:w-1/2 md:rounded-xl md:p-16">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
                       className="text-2xl leading-normal! md:text-4xl"
                       variants={itemVariants}
                     >
-                      {strategy.name} Strategy
+                      {strategy.name}
                     </motion.h2>
                     <motion.p
                       className="text-lg leading-relaxed text-pretty"
@@ -216,23 +189,6 @@ export const Usage = () => {
                         </Button>
                       </Link>
                     </motion.span>
-                  </div>
-                </div>
-
-                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-4 text-sm md:w-1/2 xl:p-12">
-                  <StaticImage
-                    className="absolute inset-0 h-full w-full object-cover"
-                    src="/assets/landing/abstract_02.jpg"
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
-                    loading="lazy"
-                    alt=""
-                  />
-                  <div className="dark:bg-polar-900 z-1 rounded-lg bg-white p-4">
-                    <SyntaxHighlighterClient
-                      lang="typescript"
-                      code={strategy.code}
-                    />
                   </div>
                 </div>
               </motion.div>

@@ -28,7 +28,7 @@ export const PageContent = () => {
       <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
         <Hero
           title="Turn Usage Into Revenue"
-          description="The billing solution for applied AI companies"
+          description="A billing platform built for AI companies"
         >
           <GetStartedButton size="lg" text="Get Started" />
           <Link
@@ -60,8 +60,8 @@ export const PageContent = () => {
         <Features />
       </Section>
       <Section className="flex flex-col gap-y-32">
-        <Adapters />
         <Usage />
+        <Adapters />
       </Section>
       <Section className="flex flex-col gap-y-24">
         <MerchantOfRecord />

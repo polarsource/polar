@@ -442,9 +442,9 @@ const FeatureCard = ({
       hidden: { opacity: 0 },
       visible: { opacity: 1, transition: { duration: 1.5 } },
     }}
-    className={twMerge('flex flex-col', className)}
+    className={twMerge('flex flex-col px-0 py-6 md:px-6 md:py-0', className)}
   >
-    <div className="relative flex items-center justify-center px-6">
+    <div className="relative flex items-center justify-center p-6">
       <span className="dark:text-polar-500 absolute top-5 left-6 font-mono text-[10px] tracking-widest text-gray-500 uppercase">
         {header}
       </span>
@@ -467,7 +467,7 @@ const Features = ({ className }: { className?: string }) => (
       initial="hidden"
       animate="visible"
       transition={{ staggerChildren: 0.15 }}
-      className="dark:divide-polar-700 grid grid-cols-1 gap-4 divide-x-0 divide-y divide-gray-200 md:grid-cols-3 md:gap-6 md:divide-x md:divide-y-0"
+      className="dark:divide-polar-700 grid grid-cols-1 divide-x-0 divide-y divide-gray-200 md:grid-cols-3 md:divide-x md:divide-y-0"
     >
       <FeatureCard
         header="— 01"

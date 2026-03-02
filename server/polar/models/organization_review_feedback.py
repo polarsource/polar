@@ -84,11 +84,19 @@ class OrganizationReviewFeedback(RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise")
+        return relationship(
+            "Organization",
+            lazy="raise",
+            back_populates="review_feedbacks",
+        )
 
     @declared_attr
     def agent_review(cls) -> Mapped["OrganizationAgentReview"]:
-        return relationship("OrganizationAgentReview", lazy="raise")
+        return relationship(
+            "OrganizationAgentReview",
+            lazy="raise",
+            back_populates="review_feedbacks",
+        )
 
     @declared_attr
     def reviewer(cls) -> Mapped["User"]:

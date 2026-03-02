@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
     from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
+    from .organization_review_feedback import OrganizationReviewFeedback
     from .product import Product
 
 
@@ -404,6 +405,16 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def agent_reviews(cls) -> Mapped[list["OrganizationAgentReview"]]:
         return relationship(
             "OrganizationAgentReview",
+            lazy="raise",
+            back_populates="organization",
+        )
+
+    @declared_attr
+    def review_feedbacks(
+        cls,
+    ) -> Mapped[list["OrganizationReviewFeedback"]]:
+        return relationship(
+            "OrganizationReviewFeedback",
             lazy="raise",
             back_populates="organization",
         )

@@ -11,6 +11,7 @@ from polar.organization_review.report import AnyAgentReport
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
+    from polar.models.organization_review_feedback import OrganizationReviewFeedback
 
 
 class OrganizationAgentReview(RecordModel):
@@ -37,6 +38,16 @@ class OrganizationAgentReview(RecordModel):
             "Organization",
             lazy="raise",
             back_populates="agent_reviews",
+        )
+
+    @declared_attr
+    def review_feedbacks(
+        cls,
+    ) -> Mapped[list["OrganizationReviewFeedback"]]:
+        return relationship(
+            "OrganizationReviewFeedback",
+            lazy="raise",
+            back_populates="agent_review",
         )
 
     @property

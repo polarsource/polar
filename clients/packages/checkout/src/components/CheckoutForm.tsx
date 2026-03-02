@@ -35,11 +35,10 @@ import {
 } from '@stripe/stripe-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
-import { hasProductCheckout } from '../guards'
+import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
-import { hasLegacyRecurringPrices } from '../utils/product'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
 
@@ -96,7 +95,7 @@ const BaseCheckoutForm = ({
   beforeSubmit,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
-    ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
+    ? isLegacyRecurringProductPrice(checkout.productPrice)
       ? checkout.productPrice.recurringInterval
       : checkout.product.recurringInterval
     : null

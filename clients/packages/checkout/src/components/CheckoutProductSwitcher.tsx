@@ -16,6 +16,7 @@ import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { useCallback, useMemo } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
+import { isLegacyRecurringProductPrice } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
 import AmountLabel from './AmountLabel'
@@ -88,7 +89,7 @@ const CheckoutProductSwitcher = ({
     product: ProductCheckoutPublic['product'],
     price: ProductPrice | LegacyRecurringProductPrice,
   ) => {
-    const interval = hasLegacyRecurringPrices(prices[product.id])
+    const interval = isLegacyRecurringProductPrice(price)
       ? price.recurringInterval
       : product.recurringInterval
     const count = product.recurringIntervalCount ?? 1

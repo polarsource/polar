@@ -542,13 +542,13 @@ def _make_old_style_v1_dict() -> dict[str, Any]:
     }
 
 
-def _make_new_style_v1_dict() -> dict[str, Any]:
-    """Build a V1 report dict in the NEW format (risk_level enum, no float score).
+def _make_v2_style_dict() -> dict[str, Any]:
+    """Build a V2 report dict with risk_level enums and overall_risk_level.
 
     Simulates data written by the current code.
     """
     return {
-        "version": 1,
+        "version": 2,
         "review_type": "manual",
         "report": {
             "verdict": "DENY",
@@ -581,6 +581,7 @@ def _make_new_style_v1_dict() -> dict[str, Any]:
                     "recommendation": "Deny",
                 },
             ],
+            "overall_risk_level": "HIGH",
             "overall_risk_score": 50.0,
             "recommended_action": "Deny pending investigation",
         },
@@ -628,9 +629,9 @@ class TestV1BackwardCompatibility:
         # overall_risk_level backfilled: HIGH wins
         assert parsed.report.overall_risk_level == RiskLevel.HIGH
 
-    def test_new_data_with_risk_levels_parses(self) -> None:
-        """New V1 data with risk_level and computed score parses OK."""
-        data = _make_new_style_v1_dict()
+    def test_v2_data_with_risk_levels_parses(self) -> None:
+        """V2 data with risk_level and computed score parses OK."""
+        data = _make_v2_style_dict()
         parsed = parse_agent_report(data)
 
         assert isinstance(parsed, AgentReportV2)
@@ -639,10 +640,11 @@ class TestV1BackwardCompatibility:
         assert dims[0].risk_level == RiskLevel.LOW
         assert dims[1].risk_level == RiskLevel.MEDIUM
         assert dims[2].risk_level == RiskLevel.HIGH
+        assert parsed.report.overall_risk_level == RiskLevel.HIGH
 
-    def test_new_data_with_risk_level_only_no_score_parses(self) -> None:
-        """New data with risk_level but NO score field parses OK."""
-        data = _make_new_style_v1_dict()
+    def test_v2_data_with_risk_level_only_no_score_parses(self) -> None:
+        """V2 data with risk_level but NO score field parses OK."""
+        data = _make_v2_style_dict()
         for dim in data["report"]["dimensions"]:
             dim.pop("score", None)
         data["report"].pop("overall_risk_score", None)

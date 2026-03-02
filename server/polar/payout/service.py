@@ -93,6 +93,14 @@ class InsufficientBalance(PayoutError):
         super().__init__(message, 400)
 
 
+class PayoutAmountTooLarge(PayoutError):
+    def __init__(self, payout: Payout, account_amount: int) -> None:
+        self.payout = payout
+        self.account_amount = account_amount
+        message = f"Payout amount {account_amount} is too large for payout {payout.id}."
+        super().__init__(message, 400)
+
+
 class UnderReviewAccount(PayoutError):
     def __init__(self, account: Account) -> None:
         self.account = account
@@ -433,24 +441,34 @@ class PayoutService:
             enqueue_job("payout.trigger_stripe_payout", payout_id=payout.id)
 
     async def trigger_stripe_payout(
-        self, session: AsyncSession, payout: Payout
+        self, session: AsyncSession, payout: Payout, account_amount: int | None = None
     ) -> PayoutAttempt:
         """
         Trigger a Stripe payout for the given payout.
         Creates a new payout attempt if none exists yet.
+
+        If account_amount is provided, only this amount will be attempted to be paid out,
+        instead of the full payout.account_amount.
+        This is useful for cases where Stripe refuses to pay out the full amount,
+        because it's too large for the given currency.
         """
         account = payout.account
         assert account.stripe_id is not None
 
-        _, balance = await stripe_service.retrieve_balance(account.stripe_id)
+        if account_amount is not None:
+            if account_amount > payout.account_amount:
+                raise PayoutAmountTooLarge(payout, account_amount)
+        else:
+            account_amount = payout.account_amount
 
-        if balance < payout.account_amount:
+        _, balance = await stripe_service.retrieve_balance(account.stripe_id)
+        if balance < account_amount:
             log.info(
                 "The Stripe Connect account doesn't have enough balance to make the payout yet",
                 payout_id=str(payout.id),
                 account_id=str(account.id),
                 balance=balance,
-                payout_amount=payout.account_amount,
+                payout_amount=account_amount,
             )
             raise InsufficientBalance(account, balance)
 
@@ -460,7 +478,7 @@ class PayoutService:
             PayoutAttempt(
                 payout=payout,
                 processor=account.account_type,
-                amount=payout.account_amount,
+                amount=account_amount,
                 currency=payout.account_currency,
                 status=PayoutAttemptStatus.pending,
             ),
@@ -471,7 +489,7 @@ class PayoutService:
         try:
             stripe_payout = await stripe_service.create_payout(
                 stripe_account=account.stripe_id,
-                amount=payout.account_amount,
+                amount=account_amount,
                 currency=payout.account_currency,
                 metadata={
                     "payout_id": str(payout.id),

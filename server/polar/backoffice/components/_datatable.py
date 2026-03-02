@@ -288,6 +288,15 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
         PE: Type parameter for the sorting field enum.
     """
 
+    def __init__(
+        self,
+        *args: Any,
+        currency_attr: str = "currency",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.currency_attr = currency_attr
+
     def get_value(self, item: M) -> str | None:
         """Get the formatted currency string for display.
 
@@ -305,7 +314,7 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     def get_currency(self, item: M) -> str:
         """Get the currency code for formatting.
 
-        By default, tries to extract the attribute 'currency' from the item,
+        By default, tries to extract the attribute from the item,
         falling back to "usd" if not present. This can be overridden in subclasses
         to provide custom currency handling.
 
@@ -315,7 +324,7 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
         Returns:
             The currency code.
         """
-        return getattr(item, "currency", "usd")
+        return getattr(item, self.currency_attr, "usd")
 
 
 class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):

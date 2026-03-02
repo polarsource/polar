@@ -5,7 +5,7 @@ import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpub
 import type { CheckoutStatus } from '@polar-sh/sdk/models/components/checkoutstatus'
 import { useCallback, useState } from 'react'
 
-import { hasProductCheckout } from '../guards'
+import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutFulfillmentListener = (
@@ -27,7 +27,7 @@ export const useCheckoutFulfillmentListener = (
       let orderCreated = false
       let subscriptionCreated =
         !hasProductCheckout(checkout) ||
-        checkout.productPrice.type !== 'recurring'
+        !isLegacyRecurringProductPrice(checkout.productPrice)
       let webhookEventDelivered = false
 
       const checkResolution = () => {

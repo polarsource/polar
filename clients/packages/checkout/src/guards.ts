@@ -1,5 +1,6 @@
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 
 interface ProductCheckoutMixin {
@@ -16,4 +17,10 @@ export const hasProductCheckout = (
   checkout: CheckoutPublic,
 ): checkout is ProductCheckoutPublic => {
   return checkout.product !== null && checkout.prices !== null
+}
+
+export const isLegacyRecurringProductPrice = (
+  price: ProductPrice | LegacyRecurringProductPrice,
+): price is LegacyRecurringProductPrice => {
+  return (price as LegacyRecurringProductPrice).type === 'recurring'
 }

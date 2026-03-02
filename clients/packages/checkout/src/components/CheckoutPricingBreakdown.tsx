@@ -10,9 +10,9 @@ import { formatDate } from '@polar-sh/i18n/formatters/date'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { PropsWithChildren, useMemo } from 'react'
-import { hasProductCheckout } from '../guards'
+import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
-import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
+import { getMeteredPrices } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
@@ -52,7 +52,7 @@ const CheckoutPricingBreakdown = ({
   const t = useTranslations(locale)
 
   const interval = hasProductCheckout(checkout)
-    ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
+    ? isLegacyRecurringProductPrice(checkout.productPrice)
       ? checkout.productPrice.recurringInterval
       : checkout.product.recurringInterval
     : null

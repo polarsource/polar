@@ -147,7 +147,7 @@ class Settings(BaseSettings):
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
     # Checkout
-    CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
+    CHECKOUT_TTL_SECONDS: int = 60 * 60 * 24  # 24 hours
     IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent
     IP_GEOLOCATION_DATABASE_NAME: str = "ip-geolocation.mmdb"
 

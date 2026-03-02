@@ -8,7 +8,7 @@ import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
 import { getResizedImage } from '@/utils/getResizedImage'
-import { markdownOptions } from '@/utils/markdown'
+import { hasMarkdown, markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
@@ -413,15 +413,23 @@ const Checkout = ({
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {checkout.product.name}
                       </span>
-                      {checkout.product.description && (
-                        <TruncatedDescription
-                          description={checkout.product.description}
-                          productName={checkout.product.name}
-                          readMoreLabel={t(
-                            'checkout.productDescription.readMore',
-                          )}
-                        />
-                      )}
+                      {checkout.product.description &&
+                        (hasMarkdown(checkout.product.description) ? (
+                          <a
+                            href="#description"
+                            className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700"
+                          >
+                            {t('checkout.productDescription.readMore')}
+                          </a>
+                        ) : (
+                          <TruncatedDescription
+                            description={checkout.product.description}
+                            productName={checkout.product.name}
+                            readMoreLabel={t(
+                              'checkout.productDescription.readMore',
+                            )}
+                          />
+                        ))}
                     </div>
                   </div>
                   <span className="text-3xl font-medium">
@@ -487,6 +495,17 @@ const Checkout = ({
                     />
                   </div>
                 )}
+                {checkout.product.description &&
+                  hasMarkdown(checkout.product.description) && (
+                    <div
+                      id="description"
+                      className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800"
+                    >
+                      <Markdown options={markdownOptions}>
+                        {checkout.product.description}
+                      </Markdown>
+                    </div>
+                  )}
               </>
             )}
           </div>

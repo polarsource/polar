@@ -2,6 +2,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
+import { CookiePreferencesButton } from '../Privacy/CookiePreferencesButton'
 
 const Footer = () => {
   return (
@@ -72,6 +73,7 @@ const Footer = () => {
               <FooterLink href="https://polar.sh/legal/privacy">
                 Privacy Policy
               </FooterLink>
+              <CookiePreferencesButton />
             </div>
           </div>
           <div className="flex flex-col gap-y-4 text-sm">

@@ -307,12 +307,29 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        return await repository.update(
-            customer,
-            update_dict=customer_update.model_dump(
-                exclude={"email"}, exclude_unset=True, by_alias=True
-            ),
-        )
+        try:
+            return await repository.update(
+                customer,
+                update_dict=customer_update.model_dump(
+                    exclude={"email"}, exclude_unset=True, by_alias=True
+                ),
+            )
+        except IntegrityError as e:
+            error_str = str(e)
+            if "customers_organization_id_external_id_key" in error_str:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "A customer with this external ID already exists.",
+                            "input": customer_update.external_id
+                            if isinstance(customer_update, CustomerUpdate)
+                            else None,
+                        }
+                    ]
+                ) from e
+            raise
 
     async def delete(
         self,

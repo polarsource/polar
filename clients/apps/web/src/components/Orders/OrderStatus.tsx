@@ -23,13 +23,16 @@ const OrderStatusDisplayColor: Record<schemas['Order']['status'], string> = {
 
 export const OrderStatus = ({
   status,
+  size,
 }: {
   status: schemas['Order']['status']
+  size?: 'small' | 'medium'
 }) => {
   return (
     <Status
       className={twMerge(OrderStatusDisplayColor[status], 'w-fit')}
       status={OrderStatusDisplayTitle[status]}
+      size={size}
     />
   )
 }

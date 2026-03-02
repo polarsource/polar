@@ -2090,6 +2090,7 @@ class SubscriptionService:
                         tier_organization_name=product.organization.name,
                         tier_organization_slug=product.organization.slug,
                         subscription_id=str(subscription.id),
+                        currency=subscription.currency,
                     ),
                 ),
             )

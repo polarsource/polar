@@ -6,7 +6,7 @@ import { schemas } from '@polar-sh/client'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricGroupProps {
-  data: ParsedMetricsResponse
+  data?: ParsedMetricsResponse
   metricKeys: (keyof schemas['Metrics'])[]
   interval: schemas['TimeInterval']
 }
@@ -18,7 +18,7 @@ export function MetricGroup({ metricKeys, data, interval }: MetricGroupProps) {
         <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
           {metricKeys.map((metricKey, index) => (
             <MetricChartBox
-              key={metricKey}
+              key={String(metricKey)}
               data={data}
               interval={interval}
               metric={metricKey}

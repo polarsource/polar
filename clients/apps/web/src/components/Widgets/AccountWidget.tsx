@@ -2,11 +2,12 @@ import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { WidgetContainer } from './WidgetContainer'
+
 export interface AccountWidgetProps {
   className?: string
 }
@@ -17,82 +18,67 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
   const { data: account } = useOrganizationAccount(org.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
   const { data: payouts } = usePayouts(account?.id, {
-    limit: 1,
+    limit: 10,
     sorting: ['-created_at'],
   })
 
-  const lastPayout = payouts?.items[0]
-
-  const canWithdraw =
-    org.status === 'active' &&
-    summary?.balance?.amount &&
-    summary.balance.amount > 0
+  const allPayouts = payouts?.items ?? []
 
   return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-800 flex h-80 flex-col justify-between rounded-4xl bg-gray-50',
-        className,
-      )}
-    >
-      <div className="flex flex-col gap-y-4 p-6 pb-2">
-        <div className="flex flex-row items-center justify-between">
-          <span className="text-lg">Account Balance</span>
-          <Link href={`/dashboard/${org.slug}/finance`}>
-            <Button
-              variant={canWithdraw ? 'default' : 'secondary'}
-              size="sm"
-              className="rounded-full border-none"
-            >
-              {canWithdraw ? 'Withdraw' : 'Transactions'}
-            </Button>
-          </Link>
-        </div>
-        <h2 className="text-5xl font-light">
-          {summary &&
-            formatCurrency('compact')(
-              summary.balance.amount,
-              summary.balance.currency,
-            )}
+    <WidgetContainer
+      title="Balance"
+      action={
+        <h2 className="text-lg">
+          {formatCurrency('compact')(
+            summary?.balance.amount ?? 0,
+            summary?.balance.currency ?? 'usd',
+          )}
         </h2>
-      </div>
-      <div className="dark:bg-polar-700 m-2 flex flex-col gap-y-4 rounded-3xl bg-white p-4">
-        {lastPayout ? (
-          <div className="flex flex-col">
-            <div className="flex flex-row items-center justify-between gap-x-2">
-              <h3 className="text-lg">
-                {formatCurrency('compact')(
-                  lastPayout.amount,
-                  lastPayout.currency,
-                )}
-              </h3>
-              <Status
-                status={lastPayout.status.split('_').join(' ')}
-                className={twMerge(
-                  'px-2 py-1 text-sm capitalize',
-                  lastPayout.status === 'succeeded'
-                    ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
-                    : 'bg-yellow-50 text-yellow-500 dark:bg-yellow-950',
-                )}
-              />
-            </div>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              {new Date(lastPayout.created_at).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            <h3>No payouts yet</h3>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              You may only withdraw funds above $10.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+      }
+      className={className}
+    >
+      {allPayouts.length > 0 ? (
+        <div className="flex flex-col gap-y-2 pb-6">
+          {allPayouts.map((payout, i) => (
+            <Card
+              key={i}
+              className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4"
+            >
+              <div className="dark:text-polar-400 flex flex-row items-baseline justify-between text-sm text-gray-700">
+                <span>
+                  {new Date(payout.created_at).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+                <Status
+                  status={payout.status.split('_').join(' ')}
+                  className={twMerge(
+                    'px-1.5 py-0.5 text-xs capitalize',
+                    payout.status === 'succeeded'
+                      ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
+                      : 'bg-yellow-50 text-yellow-500 dark:bg-yellow-950',
+                  )}
+                />
+              </div>
+              <div className="flex flex-row justify-between gap-x-4">
+                <h3>Payout</h3>
+                <span>
+                  {formatCurrency('compact')(payout.amount, payout.currency)}
+                </span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="dark:bg-polar-800 mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 p-8 text-center">
+          <h3>No payouts yet</h3>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            You may only withdraw funds above $10.
+          </p>
+        </div>
+      )}
+    </WidgetContainer>
   )
 }

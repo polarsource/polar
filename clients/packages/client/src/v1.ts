@@ -18911,6 +18911,11 @@ export interface components {
       organization_name: string
       /** Amount */
       amount: number
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Amount */
       readonly formatted_amount: string
     }
@@ -18975,6 +18980,11 @@ export interface components {
       tier_organization_slug?: string | null
       /** Subscription Id */
       subscription_id?: string | null
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }
@@ -19032,6 +19042,11 @@ export interface components {
       billing_reason?:
         | components['schemas']['OrderBillingReasonInternal']
         | null
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /** Formatted Billing Reason */

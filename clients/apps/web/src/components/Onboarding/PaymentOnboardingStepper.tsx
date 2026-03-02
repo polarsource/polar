@@ -99,7 +99,7 @@ export const PaymentOnboardingStepper = ({
       )}
       <div className="space-y-4 md:space-y-6">
         {/* Steps */}
-        <div className="dark:bg-polar-800 relative grid grid-cols-1 divide-x-0 divide-y divide-gray-100 rounded-3xl border border-gray-100 bg-white lg:grid-cols-3 lg:divide-x lg:divide-y-0 dark:divide-white/5 dark:border-white/5">
+        <div className="relative grid grid-cols-1 divide-x-0 divide-y divide-gray-100 rounded-3xl border border-gray-100 lg:grid-cols-3 lg:divide-x lg:divide-y-0 dark:divide-white/5 dark:border-white/5">
           {paymentStatus.steps.map((step) => {
             const action = stepActions[step.id as keyof typeof stepActions]
             const icon = stepIcons[step.id as keyof typeof stepIcons] || (

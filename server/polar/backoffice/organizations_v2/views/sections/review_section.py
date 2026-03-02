@@ -4,12 +4,13 @@ import contextlib
 import json
 from collections.abc import Generator
 from datetime import datetime
-from typing import Any
 
 from fastapi import Request
 from tagflow import tag, text
 
 from polar.models import Organization
+from polar.organization_review.report import AnyAgentReport
+from polar.organization_review.schemas import DimensionAssessment
 
 from ....components import button, card
 
@@ -21,7 +22,7 @@ class ReviewSection:
         self,
         organization: Organization,
         orders_count: int = 0,
-        agent_report: dict[str, Any] | None = None,
+        agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
     ) -> None:
         self.org = organization
@@ -86,8 +87,9 @@ class ReviewSection:
                 yield
                 return
 
-            report = self.agent_report.get("report", {})
-            usage = self.agent_report.get("usage", {})
+            ar = self.agent_report
+            review_report = ar.report
+            usage = ar.usage
 
             # Header with timestamp and re-run button
             with tag.div(classes="flex items-center justify-between mb-4"):
@@ -109,7 +111,7 @@ class ReviewSection:
             # Verdict badge + risk score
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
-                verdict = report.get("verdict", "")
+                verdict = review_report.verdict.value
                 verdict_classes = {
                     "APPROVE": "badge-success",
                     "DENY": "badge-error",
@@ -125,64 +127,59 @@ class ReviewSection:
                 with tag.div(classes=f"badge {badge_class} badge-lg"):
                     text(display_verdict)
 
-                risk_score = report.get("overall_risk_score")
-                if risk_score is not None:
-                    score_color = (
-                        "text-success"
-                        if risk_score < 30
-                        else "text-warning"
-                        if risk_score < 70
-                        else "text-error"
-                    )
-                    with tag.div(classes="flex items-center gap-1"):
-                        with tag.span(classes="text-sm font-medium"):
-                            text("AI Risk:")
-                        with tag.span(classes=f"text-sm font-bold {score_color}"):
-                            text(f"{risk_score:.0f}/100")
+                risk_score = review_report.overall_risk_score
+                score_color = (
+                    "text-success"
+                    if risk_score < 30
+                    else "text-warning"
+                    if risk_score < 70
+                    else "text-error"
+                )
+                with tag.div(classes="flex items-center gap-1"):
+                    with tag.span(classes="text-sm font-medium"):
+                        text("AI Risk:")
+                    with tag.span(classes=f"text-sm font-bold {score_color}"):
+                        text(f"{risk_score:.0f}/100")
 
             # Summary
-            summary = report.get("summary", "")
-            if summary:
+            if review_report.summary:
                 with tag.p(classes="text-sm mb-4"):
-                    text(summary)
+                    text(review_report.summary)
 
             # Violated sections
-            violated = report.get("violated_sections", [])
-            if violated:
+            if review_report.violated_sections:
                 with tag.div(classes="mb-4"):
                     with tag.span(classes="text-sm font-medium text-error"):
                         text("Violated sections: ")
                     with tag.span(classes="text-sm"):
-                        text(", ".join(violated))
+                        text(", ".join(review_report.violated_sections))
 
             # Per-dimension breakdown
-            dimensions = report.get("dimensions", [])
-            if dimensions:
+            if review_report.dimensions:
                 with tag.div(classes="mb-4"):
                     with tag.h3(classes="text-sm font-bold mb-2"):
                         text("Dimension Breakdown")
                     with tag.div(classes="space-y-3"):
-                        for dim in dimensions:
+                        for dim in review_report.dimensions:
                             self._render_dimension(dim)
 
             # Recommended action
-            recommended = report.get("recommended_action", "")
-            if recommended:
+            if review_report.recommended_action:
                 with tag.div(
                     classes="p-3 bg-info/10 border border-info/30 rounded text-sm mb-4"
                 ):
                     with tag.span(classes="font-medium"):
                         text("Recommended action: ")
-                    text(recommended)
+                    text(review_report.recommended_action)
 
             # Account checklist (always shown)
             self._render_checklist()
 
             # Usage info
-            total_tokens = usage.get("total_tokens", 0)
-            cost = usage.get("estimated_cost_usd")
-            model_used = self.agent_report.get("model_used", "")
-            duration = self.agent_report.get("duration_seconds")
+            total_tokens = usage.total_tokens
+            cost = usage.estimated_cost_usd
+            model_used = ar.model_used
+            duration = ar.duration_seconds
             if total_tokens or cost or model_used:
                 with tag.div(
                     classes="flex flex-wrap gap-3 text-xs text-base-content/60 pt-3 border-t border-base-200"
@@ -196,39 +193,34 @@ class ReviewSection:
                     if cost is not None:
                         with tag.span():
                             text(f"Cost: ${cost:.4f}")
-                    if duration is not None:
+                    if duration:
                         with tag.span():
                             text(f"Duration: {duration:.1f}s")
 
             # Data snapshot (collapsible)
-            data_snapshot = self.agent_report.get("data_snapshot")
-            if data_snapshot:
-                with tag.details(classes="mt-4"):
-                    with tag.summary(
-                        classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
-                    ):
-                        text("View data snapshot used for this review")
-                    with tag.pre(
-                        classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
-                    ):
-                        text(json.dumps(data_snapshot, indent=2, default=str))
+            snapshot_data = ar.data_snapshot.model_dump(mode="json")
+            with tag.details(classes="mt-4"):
+                with tag.summary(
+                    classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
+                ):
+                    text("View data snapshot used for this review")
+                with tag.pre(
+                    classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
+                ):
+                    text(json.dumps(snapshot_data, indent=2, default=str))
 
             yield
 
     @staticmethod
-    def _render_dimension(dim: dict[str, Any]) -> None:
+    def _render_dimension(dim: DimensionAssessment) -> None:
         """Render a single dimension assessment."""
-        name = dim.get("dimension", "").replace("_", " ").title()
-        score = dim.get("score", 0)
-        confidence = dim.get("confidence", 0)
-        findings = dim.get("findings", [])
-        recommendation = dim.get("recommendation", "")
+        name = dim.dimension.value.replace("_", " ").title()
 
         score_color = (
             "badge-success"
-            if score < 30
+            if dim.score < 30
             else "badge-warning"
-            if score < 70
+            if dim.score < 70
             else "badge-error"
         )
 
@@ -238,19 +230,19 @@ class ReviewSection:
                     text(name)
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.div(classes=f"badge badge-sm {score_color}"):
-                        text(f"{score:.0f}")
+                        text(f"{dim.score:.0f}")
                     with tag.span(classes="text-xs text-base-content/60"):
-                        text(f"{confidence:.0%} confidence")
+                        text(f"{dim.confidence:.0%} confidence")
 
-            if findings:
+            if dim.findings:
                 with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
-                    for finding in findings:
+                    for finding in dim.findings:
                         with tag.li():
                             text(finding)
 
-            if recommendation:
+            if dim.recommendation:
                 with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
-                    text(recommendation)
+                    text(dim.recommendation)
 
     def _render_checklist(self) -> None:
         """Render the account checklist inline within the report card."""

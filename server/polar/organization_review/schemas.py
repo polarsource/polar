@@ -276,7 +276,15 @@ class ReviewAgentReport(Schema):
         description="Aggregate risk score 0-100",
     )
     summary: str = Field(
-        description="2-3 sentence summary of the review findings",
+        description="2-3 sentence summary of the review findings for internal reviewers",
+    )
+    merchant_summary: str = Field(
+        default="",
+        description=(
+            "1-2 sentence reason shown to the merchant. "
+            "Must NOT mention: scraped website content, prior organizations, "
+            "internal risk scores, or Stripe verification specifics. "
+        ),
     )
     violated_sections: list[str] = Field(
         default_factory=list,

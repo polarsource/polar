@@ -156,7 +156,7 @@ const MetricChartBox = ({
       <div
         className={twMerge(
           'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
-          compact ? 'p-4' : 'p-6',
+          compact ? 'p-4' : 'px-6 py-4',
         )}
       >
         <div
@@ -314,7 +314,6 @@ const MetricChartBox = ({
       <div
         className={twMerge(
           'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
-          compact ? 'p-2' : 'p-4',
         )}
       >
         {loading ? (

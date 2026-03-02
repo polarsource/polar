@@ -5,7 +5,19 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Isometric, IsometricBox } from './Isometric'
 
-// ── Illustration 1: Billing / usage bar chart ────────────────────────────────
+// ── Shared face / edge classes ────────────────────────────────────────────────
+
+// Base face colors: grays in light mode, near-black in dark mode
+const FACE_T = 'bg-gray-100 dark:bg-[#08090A]'
+const FACE_F = 'bg-gray-200 dark:bg-[#040506]'
+const FACE_R = 'bg-gray-300 dark:bg-[#020304]'
+
+// Border edge variants: gray palette in light, progressively brighter in dark
+const EDGE_DIM = 'border-[0.5px] border-gray-200 dark:border-[#3E3E44]'
+const EDGE_MID = 'border-[0.5px] border-gray-300 dark:border-[#62666D]'
+const EDGE_HI = 'border-[0.5px] border-gray-500 dark:border-[#D0D6E0]'
+
+// ── Illustration 1: Billing / usage bar chart ─────────────────────────────────
 
 const BillingIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
@@ -19,9 +31,9 @@ const BillingIllustration = () => (
           width={200}
           height={100}
           depth={4}
-          topStyle={{ background: CARD_BG, border: DIM_BORDER }}
-          frontStyle={{ background: FRONT_BG }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_DIM}`}
+          frontClassName={FACE_F}
+          rightClassName={FACE_R}
         />
         {/* Bar 1 – short */}
         <IsometricBox
@@ -31,9 +43,9 @@ const BillingIllustration = () => (
           width={24}
           height={60}
           depth={32}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: DIM_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={`${FACE_R} ${EDGE_DIM}`}
         />
         {/* Bar 2 – medium */}
         <IsometricBox
@@ -43,9 +55,9 @@ const BillingIllustration = () => (
           width={24}
           height={60}
           depth={56}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: DIM_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={`${FACE_R} ${EDGE_DIM}`}
         />
         {/* Bar 3 – medium-short */}
         <IsometricBox
@@ -55,9 +67,9 @@ const BillingIllustration = () => (
           width={24}
           height={60}
           depth={42}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: DIM_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={`${FACE_R} ${EDGE_DIM}`}
         />
         {/* Bar 4 – tallest, highlighted */}
         <IsometricBox
@@ -67,9 +79,9 @@ const BillingIllustration = () => (
           width={24}
           height={60}
           depth={84}
-          topStyle={{ background: CARD_BG, border: HI_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: MID_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: MID_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_HI}`}
+          frontClassName={`${FACE_F} ${EDGE_MID}`}
+          rightClassName={`${FACE_R} ${EDGE_MID}`}
         />
         {/* Bar 5 – medium-tall */}
         <IsometricBox
@@ -79,27 +91,19 @@ const BillingIllustration = () => (
           width={24}
           height={60}
           depth={62}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: DIM_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={`${FACE_R} ${EDGE_DIM}`}
         />
       </Isometric>
     </div>
   </div>
 )
 
-// ── Illustration 2: Customer cards (CSS isometric) ───────────────────────────
-
-const DIM_BORDER = '0.5px solid #3E3E44'
-const MID_BORDER = '0.5px solid #62666D'
-const HI_BORDER = '0.5px solid #D0D6E0'
-const CARD_BG = '#08090A'
-const FRONT_BG = '#040506'
-const RIGHT_BG = '#020304'
+// ── Illustration 2: Customer cards ───────────────────────────────────────────
 
 const CustomerIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    {/* Offset wrapper to visually center the isometric scene */}
     <div style={{ transform: 'translateY(-24px) translateX(8px)' }}>
       <Isometric style={{ width: 200, height: 160 }}>
         {/* Card 3 – back (dimmest) */}
@@ -110,9 +114,9 @@ const CustomerIllustration = () => (
           width={150}
           height={100}
           depth={5}
-          topStyle={{ background: CARD_BG, border: DIM_BORDER }}
-          frontStyle={{ background: FRONT_BG }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_DIM}`}
+          frontClassName={FACE_F}
+          rightClassName={FACE_R}
         />
         {/* Card 2 – middle */}
         <IsometricBox
@@ -122,9 +126,9 @@ const CustomerIllustration = () => (
           width={150}
           height={100}
           depth={5}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: MID_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: MID_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_MID}`}
+          rightClassName={`${FACE_R} ${EDGE_MID}`}
         />
         {/* Card 1 – front (highlighted) */}
         <IsometricBox
@@ -134,9 +138,9 @@ const CustomerIllustration = () => (
           width={150}
           height={100}
           depth={5}
-          topStyle={{ background: CARD_BG, border: HI_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: HI_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: HI_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_HI}`}
+          frontClassName={`${FACE_F} ${EDGE_HI}`}
+          rightClassName={`${FACE_R} ${EDGE_HI}`}
         />
         {/* Header bar on front card */}
         <IsometricBox
@@ -146,9 +150,9 @@ const CustomerIllustration = () => (
           width={90}
           height={8}
           depth={2}
-          topStyle={{ background: '#D0D6E0', opacity: 0.35 }}
-          frontStyle={{ background: '#D0D6E0', opacity: 0.1 }}
-          rightStyle={{ background: '#D0D6E0', opacity: 0.08 }}
+          topClassName="bg-gray-400/40 dark:bg-[#D0D6E0]/35"
+          frontClassName="bg-gray-300/15 dark:bg-[#D0D6E0]/10"
+          rightClassName="bg-gray-200/10 dark:bg-[#D0D6E0]/8"
         />
         {/* Data row 1 */}
         <IsometricBox
@@ -158,9 +162,9 @@ const CustomerIllustration = () => (
           width={70}
           height={6}
           depth={1}
-          topStyle={{ background: '#62666D', opacity: 0.55 }}
-          frontStyle={{ background: '#62666D', opacity: 0.15 }}
-          rightStyle={{ background: '#62666D', opacity: 0.1 }}
+          topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
+          frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
+          rightClassName="bg-gray-200/10 dark:bg-[#62666D]/10"
         />
         {/* Data row 2 */}
         <IsometricBox
@@ -170,9 +174,9 @@ const CustomerIllustration = () => (
           width={85}
           height={6}
           depth={1}
-          topStyle={{ background: '#62666D', opacity: 0.4 }}
-          frontStyle={{ background: '#62666D', opacity: 0.1 }}
-          rightStyle={{ background: '#62666D', opacity: 0.08 }}
+          topClassName="bg-gray-400/40 dark:bg-[#62666D]/40"
+          frontClassName="bg-gray-300/10 dark:bg-[#62666D]/10"
+          rightClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
         />
         {/* Data row 3 */}
         <IsometricBox
@@ -182,16 +186,16 @@ const CustomerIllustration = () => (
           width={55}
           height={6}
           depth={1}
-          topStyle={{ background: '#62666D', opacity: 0.3 }}
-          frontStyle={{ background: '#62666D', opacity: 0.08 }}
-          rightStyle={{ background: '#62666D', opacity: 0.06 }}
+          topClassName="bg-gray-400/30 dark:bg-[#62666D]/30"
+          frontClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
+          rightClassName="bg-gray-200/6 dark:bg-[#62666D]/6"
         />
       </Isometric>
     </div>
   </div>
 )
 
-// ── Illustration 3: Global merchant panels ──────────────────────────────────
+// ── Illustration 3: Global merchant panels ────────────────────────────────────
 
 const MerchantIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
@@ -205,9 +209,9 @@ const MerchantIllustration = () => (
           width={220}
           height={160}
           depth={4}
-          topStyle={{ background: CARD_BG, border: DIM_BORDER }}
-          frontStyle={{ background: FRONT_BG }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_DIM}`}
+          frontClassName={FACE_F}
+          rightClassName={FACE_R}
         />
         {/* Region – top left */}
         <IsometricBox
@@ -217,9 +221,9 @@ const MerchantIllustration = () => (
           width={65}
           height={48}
           depth={5}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={FACE_R}
         />
         {/* Region – top right */}
         <IsometricBox
@@ -229,9 +233,9 @@ const MerchantIllustration = () => (
           width={70}
           height={48}
           depth={5}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={FACE_R}
         />
         {/* Region – center, highlighted */}
         <IsometricBox
@@ -241,9 +245,9 @@ const MerchantIllustration = () => (
           width={92}
           height={62}
           depth={8}
-          topStyle={{ background: CARD_BG, border: HI_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: MID_BORDER }}
-          rightStyle={{ background: RIGHT_BG, border: MID_BORDER }}
+          topClassName={`${FACE_T} ${EDGE_HI}`}
+          frontClassName={`${FACE_F} ${EDGE_MID}`}
+          rightClassName={`${FACE_R} ${EDGE_MID}`}
         />
         {/* Region – bottom left */}
         <IsometricBox
@@ -253,9 +257,9 @@ const MerchantIllustration = () => (
           width={54}
           height={48}
           depth={5}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={FACE_R}
         />
         {/* Region – bottom right */}
         <IsometricBox
@@ -265,9 +269,9 @@ const MerchantIllustration = () => (
           width={58}
           height={48}
           depth={5}
-          topStyle={{ background: CARD_BG, border: MID_BORDER }}
-          frontStyle={{ background: FRONT_BG, border: DIM_BORDER }}
-          rightStyle={{ background: RIGHT_BG }}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={FACE_R}
         />
         {/* Details on highlighted region */}
         <IsometricBox
@@ -277,9 +281,9 @@ const MerchantIllustration = () => (
           width={65}
           height={7}
           depth={2}
-          topStyle={{ background: '#D0D6E0', opacity: 0.35 }}
-          frontStyle={{ background: '#D0D6E0', opacity: 0.1 }}
-          rightStyle={{ background: '#D0D6E0', opacity: 0.06 }}
+          topClassName="bg-gray-400/40 dark:bg-[#D0D6E0]/35"
+          frontClassName="bg-gray-300/10 dark:bg-[#D0D6E0]/10"
+          rightClassName="bg-gray-200/6 dark:bg-[#D0D6E0]/6"
         />
         <IsometricBox
           x={68}
@@ -288,9 +292,9 @@ const MerchantIllustration = () => (
           width={45}
           height={5}
           depth={1}
-          topStyle={{ background: '#62666D', opacity: 0.55 }}
-          frontStyle={{ background: '#62666D', opacity: 0.12 }}
-          rightStyle={{ background: '#62666D', opacity: 0.06 }}
+          topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
+          frontClassName="bg-gray-300/12 dark:bg-[#62666D]/12"
+          rightClassName="bg-gray-200/6 dark:bg-[#62666D]/6"
         />
         <IsometricBox
           x={68}
@@ -299,9 +303,9 @@ const MerchantIllustration = () => (
           width={56}
           height={5}
           depth={1}
-          topStyle={{ background: '#62666D', opacity: 0.4 }}
-          frontStyle={{ background: '#62666D', opacity: 0.08 }}
-          rightStyle={{ background: '#62666D', opacity: 0.04 }}
+          topClassName="bg-gray-400/40 dark:bg-[#62666D]/40"
+          frontClassName="bg-gray-300/8 dark:bg-[#62666D]/8"
+          rightClassName="bg-gray-200/4 dark:bg-[#62666D]/4"
         />
       </Isometric>
     </div>

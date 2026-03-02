@@ -590,6 +590,50 @@ class ReviewAnalyzer:
         else:
             parts.append("No other organizations for this user.")
 
+        # Prior Review Decisions
+        prior_feedback = snapshot.prior_feedback
+        if prior_feedback.entries:
+            parts.append("\n## Prior Review Decisions")
+            parts.append(
+                "The following previous review decisions exist for this organization. "
+                "If a human reviewer has already evaluated and approved the organization, "
+                "do NOT re-raise the same concerns unless you have new, concrete evidence "
+                "that was not available during the prior review. Focus your analysis on "
+                "what has CHANGED since the last review."
+            )
+            for entry in prior_feedback.entries:
+                date_str = (
+                    entry.created_at.strftime("%Y-%m-%d")
+                    if entry.created_at
+                    else "unknown date"
+                )
+                parts.append(
+                    f"\n### {entry.review_context.upper()} review ({date_str})"
+                )
+                parts.append(f"- Actor: {entry.actor_type}")
+                parts.append(f"- Decision: {entry.decision}")
+                if entry.agent_verdict:
+                    parts.append(f"- Agent Verdict: {entry.agent_verdict}")
+                if entry.agent_risk_level is not None:
+                    parts.append(f"- Agent Risk Level: {entry.agent_risk_level}")
+                if entry.agent_report_summary:
+                    parts.append(f"- Agent Summary: {entry.agent_report_summary}")
+                if entry.violated_sections:
+                    parts.append(
+                        f"- Violated Sections: {', '.join(entry.violated_sections)}"
+                    )
+                if entry.dimensions:
+                    parts.append("- Dimension Assessments:")
+                    for dim in entry.dimensions:
+                        findings_str = (
+                            f" — {'; '.join(dim.findings)}" if dim.findings else ""
+                        )
+                        parts.append(
+                            f"  - {dim.dimension}: {dim.risk_level}{findings_str}"
+                        )
+                if entry.reason:
+                    parts.append(f"- Reviewer Reason: {entry.reason}")
+
         # Policy
         parts.append("\n## Acceptable Use Policy")
         parts.append(policy_content)

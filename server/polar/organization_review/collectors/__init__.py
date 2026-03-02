@@ -1,4 +1,5 @@
 from .account import collect_account_data
+from .feedback import collect_feedback_data
 from .history import collect_history_data
 from .identity import collect_identity_data
 from .metrics import collect_metrics_data
@@ -9,6 +10,7 @@ from .website import collect_website_data
 
 __all__ = [
     "collect_account_data",
+    "collect_feedback_data",
     "collect_history_data",
     "collect_identity_data",
     "collect_metrics_data",

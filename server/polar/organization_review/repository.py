@@ -324,6 +324,26 @@ class OrganizationReviewRepository(
         )
         await self.session.execute(statement)
 
+    async def get_feedback_history(
+        self, organization_id: UUID
+    ) -> list[OrganizationReviewFeedback]:
+        """Get all feedback records for an organization, with linked agent reviews.
+
+        Returns entries ordered by creation time (oldest first) so the prompt
+        shows the chronological review trail.
+        """
+        statement = (
+            select(OrganizationReviewFeedback)
+            .where(
+                OrganizationReviewFeedback.organization_id == organization_id,
+                OrganizationReviewFeedback.deleted_at.is_(None),
+            )
+            .options(joinedload(OrganizationReviewFeedback.agent_review))
+            .order_by(OrganizationReviewFeedback.created_at.asc())
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().unique().all())
+
     async def get_checkout_return_urls(
         self, organization_id: UUID, *, months: int = 3
     ) -> list[str]:

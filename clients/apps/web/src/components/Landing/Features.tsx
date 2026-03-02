@@ -17,83 +17,107 @@ const EDGE_DIM = 'border-[0.5px] border-gray-200 dark:border-[#3E3E44]'
 const EDGE_MID = 'border-[0.5px] border-gray-300 dark:border-[#62666D]'
 const EDGE_HI = 'border-[0.5px] border-gray-500 dark:border-[#D0D6E0]'
 
-// ── Illustration 1: Billing / usage bar chart ─────────────────────────────────
+// ── Illustration 1: Payment terminal + card ───────────────────────────────────
 
-const BillingIllustration = () => (
+const PaymentIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(16px) scale(1.4)' }}>
+    <div style={{ transform: 'translateY(16px) scale(1.2)' }}>
       <Isometric style={{ width: 200, height: 130 }}>
         {/* Base plate */}
         <IsometricBox
-          x={0}
-          y={20}
+          x={-10}
+          y={0}
           z={0}
-          width={200}
-          height={100}
+          width={240}
+          height={140}
           depth={4}
           topClassName={`${FACE_T} ${EDGE_DIM}`}
           frontClassName={FACE_F}
           rightClassName={FACE_R}
         />
-        {/* Bar 1 – short */}
+        {/* Payment card */}
         <IsometricBox
-          x={12}
-          y={38}
+          x={150}
+          y={30}
           z={4}
-          width={24}
+          width={55}
           height={60}
-          depth={32}
+          depth={5}
           topClassName={`${FACE_T} ${EDGE_MID}`}
           frontClassName={`${FACE_F} ${EDGE_DIM}`}
           rightClassName={`${FACE_R} ${EDGE_DIM}`}
         />
-        {/* Bar 2 – medium */}
+        {/* Card chip */}
         <IsometricBox
-          x={46}
-          y={38}
-          z={4}
-          width={24}
-          height={60}
-          depth={56}
+          x={158}
+          y={40}
+          z={10}
+          width={12}
+          height={10}
+          depth={1}
           topClassName={`${FACE_T} ${EDGE_MID}`}
-          frontClassName={`${FACE_F} ${EDGE_DIM}`}
-          rightClassName={`${FACE_R} ${EDGE_DIM}`}
+          frontClassName={FACE_F}
+          rightClassName={FACE_R}
         />
-        {/* Bar 3 – medium-short */}
+        {/* Card stripe line */}
         <IsometricBox
-          x={80}
-          y={38}
-          z={4}
-          width={24}
-          height={60}
-          depth={42}
-          topClassName={`${FACE_T} ${EDGE_MID}`}
-          frontClassName={`${FACE_F} ${EDGE_DIM}`}
-          rightClassName={`${FACE_R} ${EDGE_DIM}`}
+          x={158}
+          y={62}
+          z={10}
+          width={38}
+          height={2}
+          depth={1}
+          topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
+          frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
+          rightClassName="bg-gray-200/10 dark:bg-[#62666D]/10"
         />
-        {/* Bar 4 – tallest, highlighted */}
+        {/* Terminal body */}
         <IsometricBox
-          x={114}
-          y={38}
+          x={10}
+          y={25}
           z={4}
-          width={24}
-          height={60}
-          depth={84}
+          width={122}
+          height={82}
+          depth={22}
           topClassName={`${FACE_T} ${EDGE_HI}`}
           frontClassName={`${FACE_F} ${EDGE_MID}`}
           rightClassName={`${FACE_R} ${EDGE_MID}`}
         />
-        {/* Bar 5 – medium-tall */}
+        {/* Screen header bar */}
         <IsometricBox
-          x={148}
-          y={38}
-          z={4}
-          width={24}
-          height={60}
-          depth={62}
-          topClassName={`${FACE_T} ${EDGE_MID}`}
-          frontClassName={`${FACE_F} ${EDGE_DIM}`}
-          rightClassName={`${FACE_R} ${EDGE_DIM}`}
+          x={20}
+          y={36}
+          z={27}
+          width={90}
+          height={2}
+          depth={2}
+          topClassName="bg-gray-400/40 dark:bg-[#D0D6E0]/35"
+          frontClassName="bg-gray-300/15 dark:bg-[#D0D6E0]/10"
+          rightClassName="bg-gray-200/10 dark:bg-[#D0D6E0]/8"
+        />
+        {/* Screen line 1 */}
+        <IsometricBox
+          x={20}
+          y={43}
+          z={27}
+          width={72}
+          height={2}
+          depth={1}
+          topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
+          frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
+          rightClassName="bg-gray-200/10 dark:bg-[#62666D]/10"
+        />
+        {/* Screen line 2 */}
+        <IsometricBox
+          x={20}
+          y={53}
+          z={27}
+          width={54}
+          height={2}
+          depth={1}
+          topClassName="bg-gray-400/40 dark:bg-[#62666D]/40"
+          frontClassName="bg-gray-300/10 dark:bg-[#62666D]/10"
+          rightClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
         />
       </Isometric>
     </div>
@@ -142,41 +166,89 @@ const CustomerIllustration = () => (
           frontClassName={`${FACE_F} ${EDGE_HI}`}
           rightClassName={`${FACE_R} ${EDGE_HI}`}
         />
-        {/* Header bar on front card */}
+        {/* Avatar placeholder */}
         <IsometricBox
           x={12}
           y={12}
           z={62}
-          width={90}
+          width={16}
+          height={16}
+          depth={2}
+          topClassName={`${FACE_T} ${EDGE_MID} rounded-full`}
+          frontClassName={`${FACE_F} rounded-full`}
+          rightClassName={`${FACE_R} rounded-full`}
+        />
+        {/* Name line */}
+        <IsometricBox
+          x={34}
+          y={14}
+          z={62}
+          width={65}
           height={2}
           depth={2}
           topClassName="bg-gray-400/40 dark:bg-[#D0D6E0]/35"
           frontClassName="bg-gray-300/15 dark:bg-[#D0D6E0]/10"
           rightClassName="bg-gray-200/10 dark:bg-[#D0D6E0]/8"
         />
-        {/* Data row 1 */}
+        {/* Subtitle line */}
         <IsometricBox
-          x={12}
+          x={34}
           y={20}
           z={62}
-          width={70}
+          width={42}
+          height={1}
+          depth={1}
+          topClassName="bg-gray-400/35 dark:bg-[#62666D]/45"
+          frontClassName="bg-gray-300/10 dark:bg-[#62666D]/10"
+          rightClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
+        />
+        {/* Divider */}
+        <IsometricBox
+          x={12}
+          y={34}
+          z={62}
+          width={118}
+          height={1}
+          depth={1}
+          topClassName="bg-gray-300/40 dark:bg-[#3E3E44]/60"
+          frontClassName="bg-transparent"
+          rightClassName="bg-transparent"
+        />
+        {/* Field value 1 */}
+        <IsometricBox
+          x={12}
+          y={42}
+          z={62}
+          width={50}
           height={2}
           depth={1}
           topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
           frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
           rightClassName="bg-gray-200/10 dark:bg-[#62666D]/10"
         />
-        {/* Data row 2 */}
+        {/* Field value 2 */}
         <IsometricBox
-          x={12}
-          y={30}
+          x={76}
+          y={42}
           z={62}
-          width={32}
+          width={40}
           height={2}
           depth={1}
           topClassName="bg-gray-400/40 dark:bg-[#62666D]/40"
           frontClassName="bg-gray-300/10 dark:bg-[#62666D]/10"
           rightClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
+        />
+        {/* Status badge */}
+        <IsometricBox
+          x={12}
+          y={58}
+          z={62}
+          width={36}
+          height={7}
+          depth={2}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={`${FACE_R} ${EDGE_DIM}`}
         />
       </Isometric>
     </div>
@@ -353,7 +425,7 @@ const Features = ({ className }: { className?: string }) => (
         fig="0.1"
         title="Payments, Usage & Billing"
         description="Create digital products and SaaS billing with flexible pricing models and seamless payment processing."
-        illustration={<BillingIllustration />}
+        illustration={<PaymentIllustration />}
       />
       <FeatureCard
         fig="0.2"

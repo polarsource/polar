@@ -10,12 +10,18 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
-from polar.organization_review.schemas import DimensionAssessment
 
 from ....components import button, card
+from ._shared import (
+    RISK_LEVEL_BADGE,
+    VERDICT_BADGE,
+    ChecklistMixin,
+    render_checklist_row,
+    render_dimension,
+)
 
 
-class ReviewSection:
+class ReviewSection(ChecklistMixin):
     """Render the review section with agent report, account checklist and reply template."""
 
     def __init__(
@@ -29,31 +35,6 @@ class ReviewSection:
         self.orders_count = orders_count
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
-
-    @property
-    def has_email(self) -> bool:
-        return bool(self.org.email)
-
-    @property
-    def has_website(self) -> bool:
-        return bool(self.org.website)
-
-    @property
-    def has_socials(self) -> bool:
-        return bool(self.org.socials and len(self.org.socials) >= 1)
-
-    @property
-    def missing_items(self) -> list[str]:
-        items = []
-        if not self.has_email:
-            items.append("Add a support email in your organization settings")
-        if not self.has_website:
-            items.append("Add your website URL in your organization settings")
-        if not self.has_socials:
-            items.append(
-                "Add at least one social media link in your organization settings"
-            )
-        return items
 
     @contextlib.contextmanager
     def agent_report_card(self, request: Request) -> Generator[None]:
@@ -112,34 +93,23 @@ class ReviewSection:
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = review_report.verdict.value
-                verdict_classes = {
-                    "APPROVE": "badge-success",
-                    "DENY": "badge-error",
-                    "NEEDS_HUMAN_REVIEW": "badge-warning",
-                }
                 # Override APPROVE to warning when checklist items are missing
                 if verdict == "APPROVE" and has_missing:
                     badge_class = "badge-warning"
                     display_verdict = "APPROVE (checklist incomplete)"
                 else:
-                    badge_class = verdict_classes.get(verdict, "badge-ghost")
+                    badge_class = VERDICT_BADGE.get(verdict, "badge-ghost")
                     display_verdict = verdict
                 with tag.div(classes=f"badge {badge_class} badge-lg"):
                     text(display_verdict)
 
-                risk_score = review_report.overall_risk_score
-                score_color = (
-                    "text-success"
-                    if risk_score < 30
-                    else "text-warning"
-                    if risk_score < 70
-                    else "text-error"
-                )
+                risk_level = review_report.overall_risk_level.value
+                risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
                 with tag.div(classes="flex items-center gap-1"):
                     with tag.span(classes="text-sm font-medium"):
                         text("AI Risk:")
-                    with tag.span(classes=f"text-sm font-bold {score_color}"):
-                        text(f"{risk_score:.0f}/100")
+                    with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
+                        text(risk_level)
 
             # Summary
             if review_report.summary:
@@ -161,7 +131,7 @@ class ReviewSection:
                         text("Dimension Breakdown")
                     with tag.div(classes="space-y-3"):
                         for dim in review_report.dimensions:
-                            self._render_dimension(dim)
+                            render_dimension(dim)
 
             # Recommended action
             if review_report.recommended_action:
@@ -211,39 +181,6 @@ class ReviewSection:
 
             yield
 
-    @staticmethod
-    def _render_dimension(dim: DimensionAssessment) -> None:
-        """Render a single dimension assessment."""
-        name = dim.dimension.value.replace("_", " ").title()
-
-        score_color = (
-            "badge-success"
-            if dim.score < 30
-            else "badge-warning"
-            if dim.score < 70
-            else "badge-error"
-        )
-
-        with tag.div(classes="border border-base-200 rounded p-3"):
-            with tag.div(classes="flex items-center justify-between mb-1"):
-                with tag.span(classes="text-sm font-medium"):
-                    text(name)
-                with tag.div(classes="flex items-center gap-2"):
-                    with tag.div(classes=f"badge badge-sm {score_color}"):
-                        text(f"{dim.score:.0f}")
-                    with tag.span(classes="text-xs text-base-content/60"):
-                        text(f"{dim.confidence:.0%} confidence")
-
-            if dim.findings:
-                with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
-                    for finding in dim.findings:
-                        with tag.li():
-                            text(finding)
-
-            if dim.recommendation:
-                with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
-                    text(dim.recommendation)
-
     def _render_checklist(self) -> None:
         """Render the account checklist inline within the report card."""
         with tag.div(classes="pt-4 mt-4 border-t border-base-200"):
@@ -252,14 +189,14 @@ class ReviewSection:
 
             with tag.div(classes="space-y-3"):
                 # Support Email
-                self._checklist_row(
+                render_checklist_row(
                     "Support Email",
                     self.has_email,
                     self.org.email if self.has_email else None,
                 )
 
                 # Website URL
-                self._checklist_row(
+                render_checklist_row(
                     "Website URL",
                     self.has_website,
                     self.org.website if self.has_website else None,
@@ -268,13 +205,13 @@ class ReviewSection:
                 # Social Media
                 if self.has_socials:
                     social_count = len(self.org.socials)
-                    self._checklist_row(
+                    render_checklist_row(
                         "Social Media",
                         True,
                         f"{social_count} link{'s' if social_count != 1 else ''}",
                     )
                 else:
-                    self._checklist_row("Social Media", False, None)
+                    render_checklist_row("Social Media", False, None)
 
                 # Test Sales (info row, not pass/fail)
                 with tag.div(
@@ -299,25 +236,6 @@ class ReviewSection:
                         text(
                             "This organization has orders that should be auto-refunded before approval."
                         )
-
-    @staticmethod
-    def _checklist_row(label: str, is_set: bool, value: str | None) -> None:
-        """Render a single checklist row."""
-        with tag.div(
-            classes="flex items-center justify-between py-2 border-b border-base-200"
-        ):
-            with tag.div(classes="flex items-center gap-2"):
-                dot_class = "bg-success" if is_set else "bg-error"
-                with tag.span(
-                    classes=f"w-2.5 h-2.5 rounded-full {dot_class} inline-block"
-                ):
-                    pass
-                with tag.span(classes="text-sm font-medium"):
-                    text(label)
-            with tag.span(
-                classes="text-sm" + (" text-base-content/60" if not is_set else "")
-            ):
-                text((value or "Set") if is_set else "Missing")
 
     @contextlib.contextmanager
     def reply_template_card(self) -> Generator[None]:

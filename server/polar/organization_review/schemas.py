@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import Field
+from pydantic import Field, computed_field
 
 from polar.kit.schemas import Schema
 
@@ -209,7 +209,7 @@ class WebsiteData(Schema):
     scrape_error: str | None = None
     total_pages_attempted: int = 0
     total_pages_succeeded: int = 0
-    usage: UsageInfo | None = Field(default_factory=UsageInfo)
+    usage: UsageInfo = Field(default_factory=UsageInfo)
 
 
 class DataSnapshot(Schema):
@@ -238,12 +238,25 @@ class ReviewDimension(StrEnum):
     PRIOR_HISTORY = "prior_history"
 
 
+class RiskLevel(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+RISK_LEVEL_SCORES: dict[RiskLevel, float] = {
+    RiskLevel.LOW: 15.0,
+    RiskLevel.MEDIUM: 50.0,
+    RiskLevel.HIGH: 85.0,
+}
+
+
 class DimensionAssessment(Schema):
     dimension: ReviewDimension = Field(
         description="The review dimension being assessed"
     )
-    score: float = Field(
-        ge=0, le=100, description="Risk score 0-100 (0=no risk, 100=highest risk)"
+    risk_level: RiskLevel = Field(
+        description="Risk level: LOW (no/minimal risk), MEDIUM (some concerns, needs attention), HIGH (serious risk, likely violation)"
     )
     confidence: float = Field(
         ge=0,
@@ -258,6 +271,12 @@ class DimensionAssessment(Schema):
         description="Brief recommendation for this dimension",
     )
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def score(self) -> float:
+        """Backward compat: derived numeric score so old code can read new data."""
+        return RISK_LEVEL_SCORES[self.risk_level]
+
 
 class ReviewVerdict(StrEnum):
     APPROVE = "APPROVE"
@@ -270,11 +289,6 @@ class ReviewAgentReport(Schema):
 
     verdict: ReviewVerdict = Field(
         description="Overall review verdict: APPROVE or DENY"
-    )
-    overall_risk_score: float = Field(
-        ge=0,
-        le=100,
-        description="Aggregate risk score 0-100",
     )
     summary: str = Field(
         description="2-3 sentence summary of the review findings for internal reviewers",
@@ -294,9 +308,18 @@ class ReviewAgentReport(Schema):
     dimensions: list[DimensionAssessment] = Field(
         description="Per-dimension risk assessments",
     )
+    overall_risk_level: RiskLevel = Field(
+        description="Overall risk level across all dimensions: LOW, MEDIUM, or HIGH"
+    )
     recommended_action: str = Field(
         description="Specific recommended action for human reviewer",
     )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def overall_risk_score(self) -> float:
+        """Backward compat: numeric score from overall_risk_level."""
+        return RISK_LEVEL_SCORES[self.overall_risk_level]
 
 
 class AgentReviewResult(Schema):

@@ -49,7 +49,9 @@ async def trigger_stripe_payouts() -> None:
 
 
 @actor(actor_name="payout.trigger_stripe_payout", priority=TaskPriority.LOW)
-async def trigger_payout(payout_id: uuid.UUID) -> None:
+async def trigger_payout(
+    payout_id: uuid.UUID, account_amount: int | None = None
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         payout = await repository.get_by_id(
@@ -59,7 +61,7 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
             raise PayoutDoesNotExist(payout_id)
 
         try:
-            await payout_service.trigger_stripe_payout(session, payout)
+            await payout_service.trigger_stripe_payout(session, payout, account_amount)
         except InsufficientBalance:
             # Swallow it, since it's likely the money not having arrived in the Stripe account yet.
             # The payout will be triggered again later.

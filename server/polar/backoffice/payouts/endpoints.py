@@ -4,7 +4,8 @@ from collections.abc import Generator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import UUID4, BeforeValidator
+from pydantic import UUID4, BeforeValidator, ValidationError
+from pydantic_core import PydanticCustomError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import attr, classes, tag, text
@@ -21,9 +22,11 @@ from polar.payout.sorting import ListSorting, PayoutSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 
+from .. import formatters
 from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
 from ..toast import add_toast
+from .forms import RetryPayoutForm
 
 router = APIRouter()
 
@@ -265,6 +268,12 @@ async def get(
     if payout is None:
         raise HTTPException(status_code=404)
 
+    can_retry = (
+        payout.status == PayoutStatus.failed
+        or len(payout.attempts) == 0
+        or sum(attempt.amount for attempt in payout.attempts) < payout.account_amount
+    )
+
     with layout(
         request,
         [
@@ -289,13 +298,18 @@ async def get(
                         ),
                         PayoutStatusListItem("status", "Status"),
                         description_list.DescriptionListCurrencyItem(
-                            "amount", "Amount"
+                            "gross_amount", "Gross Amount"
                         ),
                         description_list.DescriptionListCurrencyItem(
                             "fees_amount", "Fees"
                         ),
                         description_list.DescriptionListCurrencyItem(
-                            "gross_amount", "Gross Amount"
+                            "amount", "Amount"
+                        ),
+                        description_list.DescriptionListCurrencyItem(
+                            "account_amount",
+                            "Account Amount",
+                            currency_attr="account_currency",
                         ),
                         description_list.DescriptionListDateTimeItem(
                             "created_at", "Created At"
@@ -332,10 +346,7 @@ async def get(
                         text(f"Payout Attempts ({len(payout.attempts)})")
 
                     with tag.div(classes="flex justify-end gap-2"):
-                        if (
-                            payout.status == PayoutStatus.failed
-                            or len(payout.attempts) == 0
-                        ):
+                        if can_retry:
                             with tag.button(
                                 classes="btn btn-primary",
                                 hx_get=str(
@@ -378,18 +389,70 @@ async def retry(
     if payout is None:
         raise HTTPException(status_code=404)
 
+    remaining_amount = payout.account_amount - sum(
+        attempt.amount for attempt in payout.attempts
+    )
+
+    validation_error: ValidationError | None = None
+
     if request.method == "POST":
-        # Enqueue the payout task
-        enqueue_job("payout.trigger_stripe_payout", payout_id=payout.id)
+        data = await request.form()
+        try:
+            form = RetryPayoutForm.model_validate_form(data)
+            if (
+                form.account_amount is not None
+                and form.account_amount > payout.account_amount
+            ):
+                raise ValidationError.from_exception_data(
+                    title="InvalidAmount",
+                    line_errors=[
+                        {
+                            "loc": ("account_amount",),
+                            "type": PydanticCustomError(
+                                "InvalidAmount",
+                                "Account amount is greater than the original payout amount",
+                            ),
+                            "input": form.account_amount,
+                        }
+                    ],
+                )
+            elif (
+                form.account_amount is not None
+                and form.account_amount > remaining_amount
+            ):
+                raise ValidationError.from_exception_data(
+                    title="InvalidAmount",
+                    line_errors=[
+                        {
+                            "loc": ("account_amount",),
+                            "type": PydanticCustomError(
+                                "InvalidAmount",
+                                "Account amount is greater than the remaining amount",
+                            ),
+                            "input": form.account_amount,
+                        }
+                    ],
+                )
+        except ValidationError as e:
+            validation_error = e
+        else:
+            # Enqueue the payout task
+            enqueue_job(
+                "payout.trigger_stripe_payout",
+                payout_id=payout.id,
+                account_amount=form.account_amount,
+            )
 
-        await add_toast(
-            request, f"Payout retry enqueued for payout {payout.id}", variant="success"
-        )
+            await add_toast(
+                request,
+                f"Payout retry enqueued for payout {payout.id}",
+                variant="success",
+            )
 
-        # Close the modal and refresh the page
-        with tag.div(hx_redirect=str(request.url_for("payouts:get", id=payout.id))):
-            pass
-        return
+            # Close the modal and refresh the page
+            with tag.div(hx_redirect=str(request.url_for("payouts:get", id=payout.id))):
+                pass
+            return
 
     # GET method - show confirmation modal
     with modal(f"Retry Payout {payout.id}", open=True):
@@ -407,16 +470,24 @@ async def retry(
                 with tag.li():
                     text("Update the payout status accordingly")
 
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with tag.form(method="dialog"):
+            with tag.p(classes="text-warning"):
+                text(
+                    f"Remaining amount: {formatters.currency(remaining_amount, payout.account_currency)}"
+                )
+
+            with RetryPayoutForm.render(
+                hx_post=str(request.url_for("payouts:retry", id=id)),
+                hx_target="#modal",
+                classes="flex flex-col gap-4",
+                validation_error=validation_error,
+            ):
+                with tag.div(classes="modal-action"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
                     with button(
-                        type="button",
+                        type="submit",
                         variant="primary",
-                        hx_post=str(request.url_for("payouts:retry", id=payout.id)),
-                        hx_target="#modal",
                     ):
                         text("Retry")
 

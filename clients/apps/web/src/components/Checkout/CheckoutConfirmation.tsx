@@ -175,72 +175,76 @@ export const CheckoutConfirmation = ({
   }, [checkout.status, maxWaitingTimeMs, updateCheckout])
 
   return (
-    <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
-      <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
-        <Avatar
-          className="h-16 w-16"
-          avatar_url={organization.avatarUrl}
-          name={organization.name}
-        />
-        <h1 className="text-2xl font-medium">
-          {status === 'confirmed' && t('checkout.confirmation.processingTitle')}
-          {status === 'succeeded' && t('checkout.confirmation.successTitle')}
-          {status === 'failed' && t('checkout.confirmation.failedTitle')}
-        </h1>
-        <p className="dark:text-polar-500 text-gray-500">
-          {status === 'confirmed' &&
-            t('checkout.confirmation.processingDescription')}
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <ShadowBox className="flex w-full max-w-xl flex-col items-center justify-between gap-y-12 p-8 md:p-16">
+        <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
+          <Avatar
+            className="h-16 w-16"
+            avatar_url={organization.avatarUrl}
+            name={organization.name}
+          />
+          <h1 className="text-2xl font-medium">
+            {status === 'confirmed' &&
+              t('checkout.confirmation.processingTitle')}
+            {status === 'succeeded' && t('checkout.confirmation.successTitle')}
+            {status === 'failed' && t('checkout.confirmation.failedTitle')}
+          </h1>
+          <p className="dark:text-polar-500 text-gray-500">
+            {status === 'confirmed' &&
+              t('checkout.confirmation.processingDescription')}
+            {status === 'succeeded' && (
+              <>
+                {hasProductCheckout(checkout) &&
+                  t('checkout.confirmation.successDescription', {
+                    product: checkout.product.name,
+                  })}
+              </>
+            )}
+            {status === 'failed' &&
+              t('checkout.confirmation.failedDescription')}
+          </p>
+          {status === 'confirmed' && (
+            <div className="flex items-center justify-center">
+              {checkout.paymentProcessor === 'stripe' ? (
+                <Elements stripe={stripePromise}>
+                  <ElementsConsumer>
+                    {({ stripe }) => (
+                      <StripeRequiresAction
+                        stripe={stripe}
+                        checkout={checkout}
+                        locale={locale}
+                      />
+                    )}
+                  </ElementsConsumer>
+                </Elements>
+              ) : (
+                <SpinnerNoMargin className="h-8 w-8" />
+              )}
+            </div>
+          )}
           {status === 'succeeded' && (
             <>
+              <CheckoutSeatInvitations checkout={checkout} />
               {hasProductCheckout(checkout) &&
-                t('checkout.confirmation.successDescription', {
-                  product: checkout.product.name,
-                })}
+                checkout.productPrice.amountType !== 'seat_based' && (
+                  <CheckoutBenefits
+                    checkout={checkout}
+                    locale={locale}
+                    customerSessionToken={customerSessionToken}
+                    maxWaitingTimeMs={maxWaitingTimeMs}
+                  />
+                )}
+              <p className="dark:text-polar-500 text-center text-xs text-gray-500">
+                {t('checkout.footer.merchantOfRecord')}
+              </p>
             </>
           )}
-          {status === 'failed' && t('checkout.confirmation.failedDescription')}
-        </p>
-        {status === 'confirmed' && (
-          <div className="flex items-center justify-center">
-            {checkout.paymentProcessor === 'stripe' ? (
-              <Elements stripe={stripePromise}>
-                <ElementsConsumer>
-                  {({ stripe }) => (
-                    <StripeRequiresAction
-                      stripe={stripe}
-                      checkout={checkout}
-                      locale={locale}
-                    />
-                  )}
-                </ElementsConsumer>
-              </Elements>
-            ) : (
-              <SpinnerNoMargin className="h-8 w-8" />
-            )}
-          </div>
-        )}
-        {status === 'succeeded' && (
-          <>
-            <CheckoutSeatInvitations checkout={checkout} />
-            {hasProductCheckout(checkout) &&
-              checkout.productPrice.amountType !== 'seat_based' && (
-                <CheckoutBenefits
-                  checkout={checkout}
-                  locale={locale}
-                  customerSessionToken={customerSessionToken}
-                  maxWaitingTimeMs={maxWaitingTimeMs}
-                />
-              )}
-            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-              {t('checkout.footer.merchantOfRecord')}
-            </p>
-          </>
-        )}
-      </div>
-      <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
-        <span>{t('checkout.footer.poweredBy')}</span>
-        <LogoType className="h-5" />
-      </div>
-    </ShadowBox>
+        </div>
+        <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
+          <span>{t('checkout.footer.poweredBy')}</span>
+          <LogoType className="h-5" />
+        </div>
+      </ShadowBox>
+    </div>
   )
 }

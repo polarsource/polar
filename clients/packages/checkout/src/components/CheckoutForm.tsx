@@ -20,7 +20,6 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { cn } from '@polar-sh/ui/lib/utils'
 import {
   Elements,
   ElementsConsumer,
@@ -76,7 +75,6 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
-  flattenExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
   beforeSubmit?: React.ReactNode
 }
@@ -93,7 +91,6 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
   locale: localeProp,
-  flattenExperiment,
   isWalletPayment,
   beforeSubmit,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -651,10 +648,7 @@ const BaseCheckoutForm = ({
                 type="submit"
                 size="lg"
                 wrapperClassNames="text-base"
-                className={cn(
-                  'w-full',
-                  flattenExperiment === 'treatment' && 'rounded-xl',
-                )}
+                className="w-full rounded-xl"
                 disabled={disabled || isUpdatePending}
                 loading={loading}
               >
@@ -724,7 +718,6 @@ interface CheckoutFormProps {
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
-  flattenExperiment?: 'treatment' | 'control'
   beforeSubmit?: React.ReactNode
 }
 

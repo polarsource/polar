@@ -43,15 +43,12 @@ const DetailRow = ({
 export interface CheckoutPricingBreakdownProps {
   checkout: CheckoutPublic
   locale?: AcceptedLocale
-  flattenExperiment?: 'treatment' | 'control'
 }
 
 const CheckoutPricingBreakdown = ({
   checkout,
   locale = DEFAULT_LOCALE,
-  flattenExperiment,
 }: CheckoutPricingBreakdownProps) => {
-  const isFlat = flattenExperiment === 'treatment'
   const t = useTranslations(locale)
 
   const interval = hasProductCheckout(checkout)
@@ -143,7 +140,7 @@ const CheckoutPricingBreakdown = ({
         <>
           <DetailRow
             title={t('checkout.pricing.subtotal')}
-            className={isFlat ? 'text-gray-600' : undefined}
+            className="text-gray-600"
           >
             <AmountLabel
               amount={checkout.amount}
@@ -159,7 +156,7 @@ const CheckoutPricingBreakdown = ({
             <>
               <DetailRow
                 title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
-                className={isFlat ? 'text-gray-600' : undefined}
+                className="text-gray-600"
               >
                 {formatCurrency('standard', locale)(
                   -checkout.discountAmount,
@@ -168,7 +165,7 @@ const CheckoutPricingBreakdown = ({
               </DetailRow>
               <DetailRow
                 title={t('checkout.pricing.taxableAmount')}
-                className={isFlat ? 'text-gray-600' : undefined}
+                className="text-gray-600"
               >
                 {formatCurrency('standard', locale)(
                   checkout.netAmount,
@@ -180,7 +177,7 @@ const CheckoutPricingBreakdown = ({
 
           <DetailRow
             title={t('checkout.pricing.taxes')}
-            className={isFlat ? 'text-gray-600' : undefined}
+            className="text-gray-600"
           >
             {checkout.taxAmount !== null
               ? formatCurrency('standard', locale)(
@@ -204,7 +201,7 @@ const CheckoutPricingBreakdown = ({
                 <span
                   className={cn(
                     'text-xs font-normal text-gray-500',
-                    isFlat && 'text-gray-600',
+                    'text-gray-600',
                   )}
                 >
                   {formattedDiscountDuration}
@@ -222,7 +219,7 @@ const CheckoutPricingBreakdown = ({
             <DetailRow
               title={meteredPrice.meter.name}
               key={meteredPrice.id}
-              className={isFlat ? 'text-gray-600' : undefined}
+              className="text-gray-600"
             >
               <MeteredPriceLabel price={meteredPrice} locale={locale} />
             </DetailRow>
@@ -264,7 +261,7 @@ const CheckoutPricingBreakdown = ({
             <span
               className={cn(
                 'dark:text-polar-500 text-sm text-gray-500',
-                isFlat && 'text-gray-600',
+                'text-gray-600',
               )}
             >
               {t('checkout.trial.ends', {

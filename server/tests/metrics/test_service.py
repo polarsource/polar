@@ -497,15 +497,15 @@ class TestGetMetrics:
         )
 
         for period in metrics.periods:
-            assert period.orders is None
-            assert period.revenue is None
-            assert period.average_order_value is None
-            assert period.one_time_products is None
-            assert period.one_time_products_revenue is None
-            assert period.new_subscriptions is None
-            assert period.new_subscriptions_revenue is None
-            assert period.renewed_subscriptions is None
-            assert period.renewed_subscriptions_revenue is None
+            assert period.orders == 0
+            assert period.revenue == 0
+            assert period.average_order_value == 0
+            assert period.one_time_products == 0
+            assert period.one_time_products_revenue == 0
+            assert period.new_subscriptions == 0
+            assert period.new_subscriptions_revenue == 0
+            assert period.renewed_subscriptions == 0
+            assert period.renewed_subscriptions_revenue == 0
             assert period.active_subscriptions == 0
             assert period.monthly_recurring_revenue == 0
 
@@ -823,6 +823,9 @@ class TestGetMetrics:
         products, subs, orders = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
+        subs["subscription_1"].canceled_at = datetime(2024, 1, 1, 0, 1, tzinfo=UTC)
+        subs["subscription_1"].ends_at = _date_to_datetime(date(2024, 1, 15))
+        await save_fixture(subs["subscription_1"])
         await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
@@ -1822,8 +1825,8 @@ class TestGetMetrics:
         assert len(metrics.periods) == 1
 
         jan = metrics.periods[0]
-        assert jan.costs is None
-        assert jan.cost_per_user is None
+        assert jan.costs == 0
+        assert jan.cost_per_user == 0
 
     @pytest.mark.auth
     async def test_churn_rate(

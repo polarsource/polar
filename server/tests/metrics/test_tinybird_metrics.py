@@ -20,7 +20,7 @@ from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tin
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
 from polar.metrics import queries_tinybird
-from polar.metrics.metrics import METRICS_TINYBIRD_SETTLEMENT
+from polar.metrics.metrics import METRICS_TINYBIRD
 from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import Customer, Event, Organization, Product, Subscription
@@ -49,7 +49,7 @@ YEARLY_PRICE = 600_00
 ONE_TIME_PRICE = 100_00
 FIXED_NOW = datetime(2024, 7, 1, tzinfo=UTC)
 
-SETTLEMENT_METRIC_SLUGS = [m.slug for m in METRICS_TINYBIRD_SETTLEMENT]
+SETTLEMENT_METRIC_SLUGS = [m.slug for m in METRICS_TINYBIRD]
 
 
 @dataclass(frozen=True)

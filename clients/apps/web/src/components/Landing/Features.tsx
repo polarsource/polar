@@ -77,7 +77,7 @@ const PaymentIllustration = () => (
           y={96}
           z={4}
           width={50}
-          height={28}
+          height={60}
           depth={5}
           topClassName={`${FACE_T} ${EDGE_MID}`}
           frontClassName={`${FACE_F} ${EDGE_DIM}`}
@@ -86,7 +86,7 @@ const PaymentIllustration = () => (
         {/* Inserted card chip */}
         <IsometricBox
           x={43}
-          y={111}
+          y={120}
           z={10}
           width={8}
           height={6}
@@ -98,7 +98,7 @@ const PaymentIllustration = () => (
         {/* Inserted card stripe */}
         <IsometricBox
           x={43}
-          y={119}
+          y={140}
           z={10}
           width={34}
           height={1}
@@ -423,7 +423,7 @@ const MerchantIllustration = () => (
 // ── Feature card ─────────────────────────────────────────────────────────────
 
 type FeatureCardProps = {
-  fig: string
+  header: string
   title: string
   description: string
   illustration: React.ReactNode
@@ -431,7 +431,7 @@ type FeatureCardProps = {
 }
 
 const FeatureCard = ({
-  fig,
+  header,
   title,
   description,
   illustration,
@@ -446,7 +446,7 @@ const FeatureCard = ({
   >
     <div className="relative flex items-center justify-center px-6">
       <span className="dark:text-polar-500 absolute top-5 left-6 font-mono text-[10px] tracking-widest text-gray-500 uppercase">
-        {fig}
+        {header}
       </span>
     </div>
     <div className="flex h-96 items-center justify-center">{illustration}</div>
@@ -470,19 +470,19 @@ const Features = ({ className }: { className?: string }) => (
       className="dark:divide-polar-700 grid grid-cols-1 gap-4 divide-x-0 divide-y divide-gray-200 md:grid-cols-3 md:gap-6 md:divide-x md:divide-y-0"
     >
       <FeatureCard
-        fig="0.1"
+        header="— 01"
         title="Payments, Usage & Billing"
         description="Create digital products and SaaS billing with flexible pricing models and seamless payment processing."
         illustration={<PaymentIllustration />}
       />
       <FeatureCard
-        fig="0.2"
+        header="— 02"
         title="Customer Management"
         description="Streamlined customer lifecycle management with detailed profiles and analytics."
         illustration={<CustomerIllustration />}
       />
       <FeatureCard
-        fig="0.3"
+        header="— 03"
         title="Global Merchant of Record"
         description="Focus on your passion while we handle all headaches & tax compliance."
         illustration={<MerchantIllustration />}

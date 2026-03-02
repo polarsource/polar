@@ -152,9 +152,9 @@ export const CheckoutDiscountInput = ({
                       </Button>
                     )}
                   </div>
-                  <FormMessage />
                 </div>
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

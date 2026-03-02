@@ -215,10 +215,10 @@ class WebsiteData(Schema):
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
-    context: ReviewContext
+    context: ReviewContext | None = None
     organization: OrganizationData
     products: ProductsData
-    identity: IdentityData
+    identity: IdentityData = Field(default_factory=IdentityData)
     account: AccountData
     metrics: PaymentMetrics
     history: HistoryData
@@ -262,6 +262,7 @@ class DimensionAssessment(Schema):
 class ReviewVerdict(StrEnum):
     APPROVE = "APPROVE"
     DENY = "DENY"
+    NEEDS_HUMAN_REVIEW = "NEEDS_HUMAN_REVIEW"
 
 
 class ReviewAgentReport(Schema):

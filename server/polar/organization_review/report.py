@@ -52,8 +52,9 @@ class AgentReportV1(Schema):
 
     version: Literal[1] = 1
 
-    review_type: str = Field(
-        description="Review trigger context: submission, setup_complete, threshold, manual"
+    review_type: str | None = Field(
+        default=None,
+        description="Review trigger context: submission, setup_complete, threshold, manual",
     )
 
     report: ReviewAgentReport = Field(description="The core AI analysis output")

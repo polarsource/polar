@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   openapi-diff:
-    name: "OpenAPI Diff 📄"
+    name: "OpenAPI Diff"
     runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: read
@@ -70,7 +70,7 @@ jobs:
       - name: Generate OpenAPI diff
         id: diff
         run: |
-          if uvx openapi-kit diff ${{ github.workspace }}/base.json ${{ github.workspace }}/head.json > /tmp/diff.md; then
+          if uvx openapi-kit diff ${{ github.workspace }}/base.json ${{ github.workspace }}/head.json --markdown-heading-level 3 > /tmp/diff.md; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT

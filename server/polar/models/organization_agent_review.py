@@ -33,7 +33,7 @@ class OrganizationAgentReview(RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise")
+        return relationship("Organization", lazy="raise", back_populates="agent_reviews")
 
     @property
     def parsed_report(self) -> AnyAgentReport:

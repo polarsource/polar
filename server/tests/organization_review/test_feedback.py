@@ -112,10 +112,10 @@ def _make_mock_feedback(
     decision: str = "APPROVE",
     review_context: str = "threshold",
     verdict: str | None = "DENY",
-    risk_score: float | None = 65.0,
     reason: str | None = "Verified legitimate business",
     agent_review_id: str | None = None,
     agent_summary: str | None = None,
+    agent_overall_risk_level: RiskLevel = RiskLevel.MEDIUM,
     violated_sections: list[str] | None = None,
     dimension_risk_levels: list[tuple[ReviewDimension, RiskLevel, list[str]]]
     | None = None,
@@ -127,7 +127,6 @@ def _make_mock_feedback(
     fb.decision = decision
     fb.review_context = review_context
     fb.verdict = verdict
-    fb.risk_score = risk_score
     fb.reason = reason
     fb.agent_review_id = agent_review_id
     fb.created_at = created_at or datetime(2026, 1, 10, tzinfo=UTC)
@@ -135,6 +134,7 @@ def _make_mock_feedback(
     if agent_review_id and agent_summary:
         mock_report = MagicMock()
         mock_report.report.summary = agent_summary
+        mock_report.report.overall_risk_level.value = agent_overall_risk_level.value
         mock_report.report.violated_sections = violated_sections or []
         mock_dims = []
         for dim_name, level, findings in dimension_risk_levels or []:
@@ -168,7 +168,6 @@ class TestCollectFeedbackData:
             decision="APPROVE",
             review_context="threshold",
             verdict="DENY",
-            risk_score=72.0,
             reason="False positive, legitimate SaaS business",
         )
 
@@ -180,7 +179,7 @@ class TestCollectFeedbackData:
         assert entry.decision == "APPROVE"
         assert entry.review_context == "threshold"
         assert entry.agent_verdict == "DENY"
-        assert entry.agent_risk_score == 72.0
+        assert entry.agent_risk_level is None  # no agent_review_id → no report to parse
         assert entry.reason == "False positive, legitimate SaaS business"
         assert entry.agent_report_summary is None  # no agent_review_id
 
@@ -190,10 +189,10 @@ class TestCollectFeedbackData:
             decision="DENY",
             review_context="submission",
             verdict="DENY",
-            risk_score=85.0,
             reason=None,
             agent_review_id="some-id",
             agent_summary="High risk: pricing anomalies detected",
+            agent_overall_risk_level=RiskLevel.HIGH,
         )
 
         result = collect_feedback_data([fb])
@@ -203,6 +202,7 @@ class TestCollectFeedbackData:
             result.entries[0].agent_report_summary
             == "High risk: pricing anomalies detected"
         )
+        assert result.entries[0].agent_risk_level == "HIGH"
 
     def test_agent_decision_with_dimensions(self) -> None:
         fb = _make_mock_feedback(
@@ -345,7 +345,7 @@ class TestBuildPromptPriorFeedback:
                     decision="APPROVE",
                     review_context="threshold",
                     agent_verdict="DENY",
-                    agent_risk_score=72.5,
+                    agent_risk_level="MEDIUM",
                     reason="False positive — verified SaaS business",
                     agent_report_summary="Pricing anomalies on product X",
                     created_at=datetime(2026, 1, 10, tzinfo=UTC),
@@ -358,7 +358,7 @@ class TestBuildPromptPriorFeedback:
         assert "- Actor: human" in prompt
         assert "- Decision: APPROVE" in prompt
         assert "- Agent Verdict: DENY" in prompt
-        assert "- Agent Risk Score: 72.5" in prompt
+        assert "- Agent Risk Level: MEDIUM" in prompt
         assert "- Agent Summary: Pricing anomalies on product X" in prompt
         assert "- Reviewer Reason: False positive — verified SaaS business" in prompt
 
@@ -401,7 +401,7 @@ class TestBuildPromptPriorFeedback:
                     actor_type="agent",
                     decision="APPROVE",
                     review_context="threshold",
-                    # agent_verdict, agent_risk_score, reason, agent_report_summary all None
+                    # agent_verdict, agent_risk_level, reason, agent_report_summary all None
                     # violated_sections and dimensions empty
                     created_at=datetime(2026, 1, 10, tzinfo=UTC),
                 )
@@ -411,7 +411,7 @@ class TestBuildPromptPriorFeedback:
 
         assert "- Actor: agent" in prompt
         assert "Agent Verdict" not in prompt
-        assert "Agent Risk Score" not in prompt
+        assert "Agent Risk Level" not in prompt
         assert "Agent Summary" not in prompt
         assert "Reviewer Reason" not in prompt
         assert "Violated Sections" not in prompt
@@ -517,7 +517,7 @@ class TestPriorFeedbackSchema:
             decision="APPROVE",
             review_context="threshold",
             agent_verdict="DENY",
-            agent_risk_score=72.0,
+            agent_risk_level="MEDIUM",
             reason="Verified business",
             agent_report_summary="Some concerns",
             violated_sections=["Prohibited Products"],
@@ -541,7 +541,7 @@ class TestPriorFeedbackSchema:
         assert restored_entry.actor_type == "human"
         assert restored_entry.decision == "APPROVE"
         assert restored_entry.agent_verdict == "DENY"
-        assert restored_entry.agent_risk_score == 72.0
+        assert restored_entry.agent_risk_level == "MEDIUM"
         assert restored_entry.reason == "Verified business"
         assert restored_entry.agent_report_summary == "Some concerns"
         assert restored_entry.violated_sections == ["Prohibited Products"]
@@ -561,7 +561,7 @@ class TestPriorFeedbackSchema:
         assert entry.violated_sections == []
         assert entry.dimensions == []
         assert entry.agent_verdict is None
-        assert entry.agent_risk_score is None
+        assert entry.agent_risk_level is None
 
     def test_v2_report_roundtrip_with_prior_feedback(self) -> None:
         """AgentReportV2 with prior_feedback in DataSnapshot roundtrips correctly."""

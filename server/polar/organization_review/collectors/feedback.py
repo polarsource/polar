@@ -13,6 +13,7 @@ def collect_feedback_data(
     entries: list[PriorFeedbackEntry] = []
     for fb in records:
         agent_report_summary: str | None = None
+        agent_risk_level: str | None = None
         violated_sections: list[str] = []
         dimensions: list[PriorDimensionAssessment] = []
 
@@ -21,6 +22,7 @@ def collect_feedback_data(
                 parsed = fb.agent_review.parsed_report
                 report = parsed.report
                 agent_report_summary = report.summary
+                agent_risk_level = report.overall_risk_level.value
                 violated_sections = list(report.violated_sections)
                 dimensions = [
                     PriorDimensionAssessment(
@@ -40,7 +42,7 @@ def collect_feedback_data(
                 review_context=fb.review_context or "unknown",
                 reason=fb.reason,
                 agent_verdict=fb.verdict,
-                agent_risk_score=fb.risk_score,
+                agent_risk_level=agent_risk_level,
                 agent_report_summary=agent_report_summary,
                 violated_sections=violated_sections,
                 dimensions=dimensions,

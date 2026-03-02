@@ -241,8 +241,9 @@ class PriorFeedbackEntry(Schema):
         description="The AI agent's raw verdict: 'APPROVE' or 'DENY'. "
         "Present on both agent and human entries when an agent review exists.",
     )
-    agent_risk_score: float | None = Field(
-        default=None, description="Agent's overall risk score (0-100)"
+    agent_risk_level: str | None = Field(
+        default=None,
+        description="Agent's overall risk level: 'LOW', 'MEDIUM', or 'HIGH'",
     )
     agent_report_summary: str | None = Field(
         default=None, description="Summary from the linked agent review report"

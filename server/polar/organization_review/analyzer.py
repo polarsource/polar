@@ -614,8 +614,8 @@ class ReviewAnalyzer:
                 parts.append(f"- Decision: {entry.decision}")
                 if entry.agent_verdict:
                     parts.append(f"- Agent Verdict: {entry.agent_verdict}")
-                if entry.agent_risk_score is not None:
-                    parts.append(f"- Agent Risk Score: {entry.agent_risk_score:.1f}")
+                if entry.agent_risk_level is not None:
+                    parts.append(f"- Agent Risk Level: {entry.agent_risk_level}")
                 if entry.agent_report_summary:
                     parts.append(f"- Agent Summary: {entry.agent_report_summary}")
                 if entry.violated_sections:

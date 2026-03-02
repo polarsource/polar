@@ -581,7 +581,7 @@ class TinybirdEventsQuery:
         total = count_rows[0]["total"] if count_rows else 0
 
         id_rows = await client.query(ids_sql, db_statement=ids_template)
-        event_ids = [row["id"] for row in id_rows]
+        event_ids = [str(row["id"]) for row in id_rows]
 
         return event_ids, total
 

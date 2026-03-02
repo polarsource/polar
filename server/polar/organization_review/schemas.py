@@ -212,21 +212,48 @@ class WebsiteData(Schema):
     usage: UsageInfo = Field(default_factory=UsageInfo)
 
 
+class PriorDimensionAssessment(Schema):
+    """Summary of a single dimension from a prior agent review."""
+
+    dimension: str = Field(description="e.g. policy_compliance, product_legitimacy")
+    score: float = Field(description="Risk score 0-100")
+    findings: list[str] = Field(default_factory=list)
+
+
 class PriorFeedbackEntry(Schema):
     """A single prior review decision for the organization."""
 
-    actor_type: str = Field(description="'agent' or 'human'")
-    decision: str = Field(description="'APPROVE', 'DENY', or 'ESCALATE'")
+    actor_type: str = Field(
+        description="Who made this decision: 'agent' (automated) or 'human' (backoffice reviewer)"
+    )
+    decision: str = Field(
+        description="Action taken by the actor: 'APPROVE', 'DENY', or 'ESCALATE'"
+    )
     review_context: str = Field(
         description="Review trigger: submission, setup_complete, threshold, manual, appeal"
     )
-    verdict: str | None = None
-    risk_score: float | None = None
     reason: str | None = Field(
-        default=None, description="Human-provided reason for the decision"
+        default=None,
+        description="Human-provided reason (always None for agent entries)",
     )
-    agent_summary: str | None = Field(
-        default=None, description="Summary from the linked agent review"
+    agent_verdict: str | None = Field(
+        default=None,
+        description="The AI agent's raw verdict: 'APPROVE' or 'DENY'. "
+        "Present on both agent and human entries when an agent review exists.",
+    )
+    agent_risk_score: float | None = Field(
+        default=None, description="Agent's overall risk score (0-100)"
+    )
+    agent_report_summary: str | None = Field(
+        default=None, description="Summary from the linked agent review report"
+    )
+    violated_sections: list[str] = Field(
+        default_factory=list,
+        description="Policy sections the agent flagged as violated",
+    )
+    dimensions: list[PriorDimensionAssessment] = Field(
+        default_factory=list,
+        description="Per-dimension risk assessments from the agent review",
     )
     created_at: datetime | None = None
 

@@ -1,6 +1,10 @@
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
 
-from ..schemas import PriorFeedbackData, PriorFeedbackEntry
+from ..schemas import (
+    PriorDimensionAssessment,
+    PriorFeedbackData,
+    PriorFeedbackEntry,
+)
 
 
 def collect_feedback_data(
@@ -8,11 +12,24 @@ def collect_feedback_data(
 ) -> PriorFeedbackData:
     entries: list[PriorFeedbackEntry] = []
     for fb in records:
-        agent_summary: str | None = None
+        agent_report_summary: str | None = None
+        violated_sections: list[str] = []
+        dimensions: list[PriorDimensionAssessment] = []
+
         if fb.agent_review_id is not None:
             try:
                 parsed = fb.agent_review.parsed_report
-                agent_summary = parsed.report.summary
+                report = parsed.report
+                agent_report_summary = report.summary
+                violated_sections = list(report.violated_sections)
+                dimensions = [
+                    PriorDimensionAssessment(
+                        dimension=dim.dimension.value,
+                        score=dim.score,
+                        findings=list(dim.findings),
+                    )
+                    for dim in report.dimensions
+                ]
             except Exception:
                 pass
 
@@ -21,10 +38,12 @@ def collect_feedback_data(
                 actor_type=fb.actor_type or "unknown",
                 decision=fb.decision or "unknown",
                 review_context=fb.review_context or "unknown",
-                verdict=fb.verdict,
-                risk_score=fb.risk_score,
                 reason=fb.reason,
-                agent_summary=agent_summary,
+                agent_verdict=fb.verdict,
+                agent_risk_score=fb.risk_score,
+                agent_report_summary=agent_report_summary,
+                violated_sections=violated_sections,
+                dimensions=dimensions,
                 created_at=fb.created_at,
             )
         )

@@ -612,12 +612,25 @@ class ReviewAnalyzer:
                 )
                 parts.append(f"- Actor: {entry.actor_type}")
                 parts.append(f"- Decision: {entry.decision}")
-                if entry.verdict:
-                    parts.append(f"- Agent Verdict: {entry.verdict}")
-                if entry.risk_score is not None:
-                    parts.append(f"- Agent Risk Score: {entry.risk_score:.1f}")
-                if entry.agent_summary:
-                    parts.append(f"- Agent Summary: {entry.agent_summary}")
+                if entry.agent_verdict:
+                    parts.append(f"- Agent Verdict: {entry.agent_verdict}")
+                if entry.agent_risk_score is not None:
+                    parts.append(f"- Agent Risk Score: {entry.agent_risk_score:.1f}")
+                if entry.agent_report_summary:
+                    parts.append(f"- Agent Summary: {entry.agent_report_summary}")
+                if entry.violated_sections:
+                    parts.append(
+                        f"- Violated Sections: {', '.join(entry.violated_sections)}"
+                    )
+                if entry.dimensions:
+                    parts.append("- Dimension Scores:")
+                    for dim in entry.dimensions:
+                        findings_str = (
+                            f" — {'; '.join(dim.findings)}" if dim.findings else ""
+                        )
+                        parts.append(
+                            f"  - {dim.dimension}: {dim.score:.1f}/100{findings_str}"
+                        )
                 if entry.reason:
                     parts.append(f"- Reviewer Reason: {entry.reason}")
 

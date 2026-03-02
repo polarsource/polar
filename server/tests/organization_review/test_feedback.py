@@ -20,6 +20,7 @@ from polar.organization_review.schemas import (
     IdentityData,
     OrganizationData,
     PaymentMetrics,
+    PriorDimensionAssessment,
     PriorFeedbackData,
     PriorFeedbackEntry,
     ProductsData,
@@ -44,6 +45,8 @@ def _make_typed_report(
     risk_score: float = 10.0,
     summary: str = "Test summary",
     model_used: str = "test-model",
+    violated_sections: list[str] | None = None,
+    dimensions: list[DimensionAssessment] | None = None,
 ) -> AgentReportV1:
     return AgentReportV1(
         review_type=review_type,
@@ -51,8 +54,9 @@ def _make_typed_report(
             verdict=verdict,
             overall_risk_score=risk_score,
             summary=summary,
-            violated_sections=[],
-            dimensions=[
+            violated_sections=violated_sections or [],
+            dimensions=dimensions
+            or [
                 DimensionAssessment(
                     dimension=ReviewDimension.POLICY_COMPLIANCE,
                     score=risk_score,
@@ -107,6 +111,8 @@ def _make_mock_feedback(
     reason: str | None = "Verified legitimate business",
     agent_review_id: str | None = None,
     agent_summary: str | None = None,
+    violated_sections: list[str] | None = None,
+    dimensions: list[DimensionAssessment] | None = None,
     created_at: datetime | None = None,
 ) -> OrganizationReviewFeedback:
     """Build a mock OrganizationReviewFeedback without hitting the DB."""
@@ -123,6 +129,15 @@ def _make_mock_feedback(
     if agent_review_id and agent_summary:
         mock_report = MagicMock()
         mock_report.report.summary = agent_summary
+        mock_report.report.violated_sections = violated_sections or []
+        mock_dims = []
+        for dim in dimensions or []:
+            mock_dim = MagicMock()
+            mock_dim.dimension.value = dim.dimension.value
+            mock_dim.score = dim.score
+            mock_dim.findings = list(dim.findings)
+            mock_dims.append(mock_dim)
+        mock_report.report.dimensions = mock_dims
         fb.agent_review.parsed_report = mock_report
     elif agent_review_id:
         # agent_review exists but has no parseable report
@@ -158,10 +173,10 @@ class TestCollectFeedbackData:
         assert entry.actor_type == "human"
         assert entry.decision == "APPROVE"
         assert entry.review_context == "threshold"
-        assert entry.verdict == "DENY"
-        assert entry.risk_score == 72.0
+        assert entry.agent_verdict == "DENY"
+        assert entry.agent_risk_score == 72.0
         assert entry.reason == "False positive, legitimate SaaS business"
-        assert entry.agent_summary is None  # no agent_review_id
+        assert entry.agent_report_summary is None  # no agent_review_id
 
     def test_agent_decision_with_summary(self) -> None:
         fb = _make_mock_feedback(
@@ -179,8 +194,57 @@ class TestCollectFeedbackData:
 
         assert len(result.entries) == 1
         assert (
-            result.entries[0].agent_summary == "High risk: pricing anomalies detected"
+            result.entries[0].agent_report_summary
+            == "High risk: pricing anomalies detected"
         )
+
+    def test_agent_decision_with_dimensions(self) -> None:
+        dims = [
+            DimensionAssessment(
+                dimension=ReviewDimension.POLICY_COMPLIANCE,
+                score=80.0,
+                confidence=0.9,
+                findings=["Prohibited content detected"],
+                recommendation="Deny",
+            ),
+            DimensionAssessment(
+                dimension=ReviewDimension.FINANCIAL_RISK,
+                score=30.0,
+                confidence=0.8,
+                findings=[],
+                recommendation="OK",
+            ),
+        ]
+        fb = _make_mock_feedback(
+            actor_type="agent",
+            decision="DENY",
+            review_context="submission",
+            agent_review_id="some-id",
+            agent_summary="Policy violation",
+            violated_sections=["Prohibited Products", "Adult Content"],
+            dimensions=dims,
+        )
+
+        result = collect_feedback_data([fb])
+
+        entry = result.entries[0]
+        assert entry.violated_sections == ["Prohibited Products", "Adult Content"]
+        assert len(entry.dimensions) == 2
+        assert entry.dimensions[0].dimension == "policy_compliance"
+        assert entry.dimensions[0].score == 80.0
+        assert entry.dimensions[0].findings == ["Prohibited content detected"]
+        assert entry.dimensions[1].dimension == "financial_risk"
+        assert entry.dimensions[1].score == 30.0
+        assert entry.dimensions[1].findings == []
+
+    def test_no_agent_review_has_empty_dimensions(self) -> None:
+        fb = _make_mock_feedback(agent_review_id=None)
+
+        result = collect_feedback_data([fb])
+
+        entry = result.entries[0]
+        assert entry.violated_sections == []
+        assert entry.dimensions == []
 
     def test_multiple_records_preserve_order(self) -> None:
         records = [
@@ -227,7 +291,7 @@ class TestCollectFeedbackData:
         assert result.entries[0].review_context == "unknown"
 
     def test_agent_review_parse_error_gracefully_handled(self) -> None:
-        """If the linked agent review can't be parsed, agent_summary should be None."""
+        """If the linked agent review can't be parsed, agent fields should be None/empty."""
         fb = _make_mock_feedback(agent_review_id="bad-id")
         # Replace agent_review with a mock whose parsed_report raises on access
         broken_review = MagicMock()
@@ -239,7 +303,9 @@ class TestCollectFeedbackData:
         result = collect_feedback_data([fb])
 
         assert len(result.entries) == 1
-        assert result.entries[0].agent_summary is None
+        assert result.entries[0].agent_report_summary is None
+        assert result.entries[0].violated_sections == []
+        assert result.entries[0].dimensions == []
 
 
 # ---------------------------------------------------------------------------
@@ -281,10 +347,10 @@ class TestBuildPromptPriorFeedback:
                     actor_type="human",
                     decision="APPROVE",
                     review_context="threshold",
-                    verdict="DENY",
-                    risk_score=72.5,
+                    agent_verdict="DENY",
+                    agent_risk_score=72.5,
                     reason="False positive — verified SaaS business",
-                    agent_summary="Pricing anomalies on product X",
+                    agent_report_summary="Pricing anomalies on product X",
                     created_at=datetime(2026, 1, 10, tzinfo=UTC),
                 )
             ]
@@ -299,6 +365,38 @@ class TestBuildPromptPriorFeedback:
         assert "- Agent Summary: Pricing anomalies on product X" in prompt
         assert "- Reviewer Reason: False positive — verified SaaS business" in prompt
 
+    def test_feedback_renders_dimensions(self) -> None:
+        feedback = PriorFeedbackData(
+            entries=[
+                PriorFeedbackEntry(
+                    actor_type="agent",
+                    decision="DENY",
+                    review_context="submission",
+                    violated_sections=["Prohibited Products"],
+                    dimensions=[
+                        PriorDimensionAssessment(
+                            dimension="policy_compliance",
+                            score=85.0,
+                            findings=["Prohibited content detected"],
+                        ),
+                        PriorDimensionAssessment(
+                            dimension="financial_risk",
+                            score=20.0,
+                            findings=[],
+                        ),
+                    ],
+                    created_at=datetime(2026, 1, 10, tzinfo=UTC),
+                )
+            ]
+        )
+        prompt = self._build(_make_snapshot(prior_feedback=feedback))
+
+        assert "- Violated Sections: Prohibited Products" in prompt
+        assert "- Dimension Scores:" in prompt
+        assert "policy_compliance: 85.0/100" in prompt
+        assert "Prohibited content detected" in prompt
+        assert "financial_risk: 20.0/100" in prompt
+
     def test_feedback_omits_none_fields(self) -> None:
         feedback = PriorFeedbackData(
             entries=[
@@ -306,7 +404,8 @@ class TestBuildPromptPriorFeedback:
                     actor_type="agent",
                     decision="APPROVE",
                     review_context="threshold",
-                    # verdict, risk_score, reason, agent_summary all None
+                    # agent_verdict, agent_risk_score, reason, agent_report_summary all None
+                    # violated_sections and dimensions empty
                     created_at=datetime(2026, 1, 10, tzinfo=UTC),
                 )
             ]
@@ -318,6 +417,8 @@ class TestBuildPromptPriorFeedback:
         assert "Agent Risk Score" not in prompt
         assert "Agent Summary" not in prompt
         assert "Reviewer Reason" not in prompt
+        assert "Violated Sections" not in prompt
+        assert "Dimension Scores" not in prompt
 
     def test_multiple_entries_rendered_chronologically(self) -> None:
         feedback = PriorFeedbackData(
@@ -418,10 +519,18 @@ class TestPriorFeedbackSchema:
             actor_type="human",
             decision="APPROVE",
             review_context="threshold",
-            verdict="DENY",
-            risk_score=72.0,
+            agent_verdict="DENY",
+            agent_risk_score=72.0,
             reason="Verified business",
-            agent_summary="Some concerns",
+            agent_report_summary="Some concerns",
+            violated_sections=["Prohibited Products"],
+            dimensions=[
+                PriorDimensionAssessment(
+                    dimension="policy_compliance",
+                    score=80.0,
+                    findings=["Content flagged"],
+                )
+            ],
             created_at=datetime(2026, 1, 10, tzinfo=UTC),
         )
         feedback = PriorFeedbackData(entries=[entry])
@@ -434,10 +543,28 @@ class TestPriorFeedbackSchema:
         restored_entry = restored.prior_feedback.entries[0]
         assert restored_entry.actor_type == "human"
         assert restored_entry.decision == "APPROVE"
-        assert restored_entry.verdict == "DENY"
-        assert restored_entry.risk_score == 72.0
+        assert restored_entry.agent_verdict == "DENY"
+        assert restored_entry.agent_risk_score == 72.0
         assert restored_entry.reason == "Verified business"
-        assert restored_entry.agent_summary == "Some concerns"
+        assert restored_entry.agent_report_summary == "Some concerns"
+        assert restored_entry.violated_sections == ["Prohibited Products"]
+        assert len(restored_entry.dimensions) == 1
+        assert restored_entry.dimensions[0].dimension == "policy_compliance"
+        assert restored_entry.dimensions[0].score == 80.0
+        assert restored_entry.dimensions[0].findings == ["Content flagged"]
+
+    def test_deserialize_old_entry_without_new_fields(self) -> None:
+        """Old PriorFeedbackEntry data without dimensions/violated_sections should parse."""
+        old_entry: dict[str, Any] = {
+            "actor_type": "human",
+            "decision": "APPROVE",
+            "review_context": "threshold",
+        }
+        entry = PriorFeedbackEntry.model_validate(old_entry)
+        assert entry.violated_sections == []
+        assert entry.dimensions == []
+        assert entry.agent_verdict is None
+        assert entry.agent_risk_score is None
 
     def test_v1_report_roundtrip_with_prior_feedback(self) -> None:
         """AgentReportV1 with prior_feedback in DataSnapshot roundtrips correctly."""
@@ -446,6 +573,11 @@ class TestPriorFeedbackSchema:
             decision="APPROVE",
             review_context="threshold",
             reason="Verified",
+            dimensions=[
+                PriorDimensionAssessment(
+                    dimension="identity_trust", score=15.0, findings=["All clear"]
+                )
+            ],
             created_at=datetime(2026, 1, 10, tzinfo=UTC),
         )
         snapshot = _make_snapshot(prior_feedback=PriorFeedbackData(entries=[entry]))
@@ -477,7 +609,10 @@ class TestPriorFeedbackSchema:
         parsed = parse_agent_report(dumped)
 
         assert len(parsed.data_snapshot.prior_feedback.entries) == 1
-        assert parsed.data_snapshot.prior_feedback.entries[0].reason == "Verified"
+        restored = parsed.data_snapshot.prior_feedback.entries[0]
+        assert restored.reason == "Verified"
+        assert len(restored.dimensions) == 1
+        assert restored.dimensions[0].dimension == "identity_trust"
 
 
 # ---------------------------------------------------------------------------
@@ -642,10 +777,10 @@ class TestCollectFeedbackDataIntegration:
         organization: Organization,
         user: User,
     ) -> None:
-        """Fetch from DB → transform via collector → verify schema output."""
+        """Fetch from DB -> transform via collector -> verify schema output."""
         repo = OrganizationReviewRepository.from_session(session)
 
-        # Create agent review
+        # Create agent review with dimensions
         agent_review = await repo.save_agent_review(
             organization_id=organization.id,
             report=_make_typed_report(
@@ -653,6 +788,23 @@ class TestCollectFeedbackDataIntegration:
                 verdict=ReviewVerdict.DENY,
                 risk_score=75.0,
                 summary="Suspicious pricing patterns",
+                violated_sections=["Pricing Policy"],
+                dimensions=[
+                    DimensionAssessment(
+                        dimension=ReviewDimension.PRODUCT_LEGITIMACY,
+                        score=75.0,
+                        confidence=0.85,
+                        findings=["Price mismatch between website and Polar"],
+                        recommendation="Deny",
+                    ),
+                    DimensionAssessment(
+                        dimension=ReviewDimension.POLICY_COMPLIANCE,
+                        score=20.0,
+                        confidence=0.9,
+                        findings=[],
+                        recommendation="OK",
+                    ),
+                ],
             ),
             reviewed_at=datetime.now(UTC),
         )
@@ -694,7 +846,14 @@ class TestCollectFeedbackDataIntegration:
         agent_entry = result.entries[0]
         assert agent_entry.actor_type == "agent"
         assert agent_entry.decision == "DENY"
-        assert agent_entry.agent_summary == "Suspicious pricing patterns"
+        assert agent_entry.agent_report_summary == "Suspicious pricing patterns"
+        assert agent_entry.violated_sections == ["Pricing Policy"]
+        assert len(agent_entry.dimensions) == 2
+        assert agent_entry.dimensions[0].dimension == "product_legitimacy"
+        assert agent_entry.dimensions[0].score == 75.0
+        assert agent_entry.dimensions[0].findings == [
+            "Price mismatch between website and Polar"
+        ]
 
         human_entry = result.entries[1]
         assert human_entry.actor_type == "human"
@@ -702,4 +861,6 @@ class TestCollectFeedbackDataIntegration:
         assert human_entry.reason == (
             "Reviewed pricing, it's legitimate for enterprise SaaS"
         )
-        assert human_entry.agent_summary == "Suspicious pricing patterns"
+        assert human_entry.agent_report_summary == "Suspicious pricing patterns"
+        # Human entry also has dimension data from the linked agent review
+        assert len(human_entry.dimensions) == 2

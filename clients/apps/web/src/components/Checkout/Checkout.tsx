@@ -365,7 +365,7 @@ const Checkout = ({
   return (
     <div className="md:grid md:min-h-screen md:grid-cols-2">
       <div className="md:flex md:justify-end">
-        <div className="flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:py-12 md:pr-12 md:pl-4">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-12 md:pl-4">
           {orgHeader}
           <div className="flex flex-col gap-y-8 md:sticky md:top-8">
             {hasProductCheckout(checkout) && (
@@ -493,7 +493,7 @@ const Checkout = ({
         </div>
       </div>
       <div className="dark:md:bg-polar-900 md:bg-white">
-        <div className="flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:py-12 md:pr-4 md:pl-12">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
           <PaymentNotReadyBanner />
           <CheckoutForm
             form={form}

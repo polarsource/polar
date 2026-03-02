@@ -449,7 +449,7 @@ const FeatureCard = ({
         {header}
       </span>
     </div>
-    <div className="flex h-96 items-center justify-center">{illustration}</div>
+    <div className="flex h-64 items-center justify-center">{illustration}</div>
     <div className="flex flex-col gap-y-2 px-6">
       <h3 className="text-lg font-semibold">{title}</h3>
       <p className="dark:text-polar-500 leading-relaxed text-gray-500">

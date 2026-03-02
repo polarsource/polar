@@ -16,9 +16,9 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from .metrics import (
     METRICS,
-    METRICS_PG_ONLY,
     METRICS_POST_COMPUTE,
-    METRICS_TINYBIRD_SETTLEMENT,
+    METRICS_POSTGRES,
+    METRICS_TINYBIRD,
     SQLMetric,
 )
 from .queries import (
@@ -43,8 +43,8 @@ def _expand_metrics_with_dependencies(
     - tb_slugs: Set of Tinybird metric slugs needed
     - meta_slugs: Set of MetaMetric slugs needed
     """
-    pg_by_slug = {m.slug: m for m in METRICS_PG_ONLY}
-    tb_by_slug = {m.slug: m for m in METRICS_TINYBIRD_SETTLEMENT}
+    pg_by_slug = {m.slug: m for m in METRICS_POSTGRES}
+    tb_by_slug = {m.slug: m for m in METRICS_TINYBIRD}
     meta_by_slug = {m.slug: m for m in METRICS_POST_COMPUTE}
 
     if metrics is None:
@@ -117,14 +117,14 @@ class MetricsService:
 
         pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(metrics)
 
-        filtered_pg_metrics = [m for m in METRICS_PG_ONLY if m.slug in pg_slugs]
-        filtered_tb_metrics = [
-            m for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_slugs
-        ]
+        filtered_pg_metrics = [m for m in METRICS_POSTGRES if m.slug in pg_slugs]
+        filtered_tb_metrics = [m for m in METRICS_TINYBIRD if m.slug in tb_slugs]
         filtered_post_compute = [
             m for m in METRICS_POST_COMPUTE if m.slug in meta_slugs
         ]
-        filtered_all_metrics = [m for m in METRICS if m.slug in metrics] if metrics else list(METRICS)
+        filtered_all_metrics = (
+            [m for m in METRICS if m.slug in metrics] if metrics else list(METRICS)
+        )
         required_queries = {m.query for m in filtered_pg_metrics}
         pg_query_fns: list[QueryCallable] = [
             fn for qt, fn in QUERY_TO_FUNCTION.items() if qt in required_queries
@@ -209,14 +209,16 @@ class MetricsService:
             period_dict: dict[str, object] = {"timestamp": ts}
 
             pg_period = pg_periods.get(ts)
-            if pg_period is not None:
-                for pg_m in filtered_pg_metrics:
-                    period_dict[pg_m.slug] = getattr(pg_period, pg_m.slug, None)
+            for pg_m in filtered_pg_metrics:
+                period_dict[pg_m.slug] = (
+                    getattr(pg_period, pg_m.slug, 0) if pg_period is not None else 0
+                )
 
             tb_period = tb_periods.get(ts)
-            if tb_period is not None:
-                for tb_m in filtered_tb_metrics:
-                    period_dict[tb_m.slug] = getattr(tb_period, tb_m.slug, None)
+            for tb_m in filtered_tb_metrics:
+                period_dict[tb_m.slug] = (
+                    getattr(tb_period, tb_m.slug, 0) if tb_period is not None else 0
+                )
 
             temp_dict = dict(period_dict)
             for meta_metric in filtered_post_compute:
@@ -267,9 +269,6 @@ class MetricsService:
         pg_metrics: list[type[SQLMetric]],
         now: datetime | None = None,
     ) -> dict[datetime, MetricsPeriod]:
-        if not query_fns:
-            return {}
-
         now_dt = now or datetime.now(tz=start_timestamp.tzinfo or ZoneInfo("UTC"))
 
         timestamp_series = get_timestamp_series_cte(
@@ -277,41 +276,48 @@ class MetricsService:
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-        with logfire.span(
-            "Build PG metrics query",
-            num_query_functions=len(query_fns),
-        ):
-            queries = [
-                query_fn(
-                    timestamp_series,
-                    interval,
-                    auth_subject,
-                    pg_metrics,
-                    now_dt,
-                    bounds=(original_start_timestamp, original_end_timestamp),
-                    organization_id=organization_id,
-                    product_id=product_id,
-                    billing_type=billing_type,
-                    customer_id=customer_id,
+        if query_fns:
+            with logfire.span(
+                "Build PG metrics query",
+                num_query_functions=len(query_fns),
+            ):
+                queries = [
+                    query_fn(
+                        timestamp_series,
+                        interval,
+                        auth_subject,
+                        pg_metrics,
+                        now_dt,
+                        bounds=(original_start_timestamp, original_end_timestamp),
+                        organization_id=organization_id,
+                        product_id=product_id,
+                        billing_type=billing_type,
+                        customer_id=customer_id,
+                    )
+                    for query_fn in query_fns
+                ]
+
+            from_query: FromClause = timestamp_series
+            for query in queries:
+                from_query = from_query.join(
+                    query,
+                    onclause=query.c.timestamp == timestamp_column,
                 )
-                for query_fn in query_fns
-            ]
 
-        from_query: FromClause = timestamp_series
-        for query in queries:
-            from_query = from_query.join(
-                query,
-                onclause=query.c.timestamp == timestamp_column,
+            statement = (
+                select(
+                    timestamp_column.label("timestamp"),
+                    *queries,
+                )
+                .select_from(from_query)
+                .order_by(timestamp_column.asc())
             )
-
-        statement = (
-            select(
-                timestamp_column.label("timestamp"),
-                *queries,
+        else:
+            statement = (
+                select(timestamp_column.label("timestamp"))
+                .select_from(timestamp_series)
+                .order_by(timestamp_column.asc())
             )
-            .select_from(from_query)
-            .order_by(timestamp_column.asc())
-        )
 
         periods: dict[datetime, MetricsPeriod] = {}
         with logfire.span("Stream PG metrics query"):
@@ -353,9 +359,7 @@ class MetricsService:
         external_customer_id: Sequence[str] | None = None,
         tb_needed: set[str],
     ) -> list[uuid.UUID] | None:
-        tb_queries = list(
-            {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
-        )
+        tb_queries = list({m.query for m in METRICS_TINYBIRD if m.slug in tb_needed})
 
         result: list[uuid.UUID] | None = (
             list(customer_id) if customer_id is not None else None
@@ -396,9 +400,7 @@ class MetricsService:
         if not tb_needed or not tb_org_ids:
             return {}
 
-        tb_queries = list(
-            {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
-        )
+        tb_queries = list({m.query for m in METRICS_TINYBIRD if m.slug in tb_needed})
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
 
         with logfire.span(

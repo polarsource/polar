@@ -20,10 +20,8 @@ from sqlalchemy import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
-from polar.models import Checkout, Order, Subscription
+from polar.models import Checkout, Subscription
 from polar.models.checkout import CheckoutStatus
-from polar.models.event import Event
-from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
 from .queries_tinybird import TinybirdQuery
@@ -74,312 +72,6 @@ class TinybirdMetric(Metric, Protocol):
 class MetaMetric(Metric, Protocol):
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> int | float: ...
-
-
-class OrdersMetric(SQLMetric):
-    slug = "orders"
-    display_name = "Orders"
-    type = MetricType.scalar
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Order.id)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class RevenueMetric(SQLMetric):
-    slug = "revenue"
-    display_name = "Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.net_amount)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class NetRevenueMetric(SQLMetric):
-    slug = "net_revenue"
-    display_name = "Net Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.payout_amount)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CumulativeRevenueMetric(SQLMetric):
-    slug = "cumulative_revenue"
-    display_name = "Cumulative Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.net_amount)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_last(periods, cls.slug)
-
-
-class NetCumulativeRevenueMetric(SQLMetric):
-    slug = "net_cumulative_revenue"
-    display_name = "Net Cumulative Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.payout_amount)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_last(periods, cls.slug)
-
-
-class AverageOrderValueMetric(SQLMetric):
-    slug = "average_order_value"
-    display_name = "Average Order Value"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.cast(func.ceil(func.avg(Order.net_amount)), Integer)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        total_orders = sum(getattr(p, "orders") or 0 for p in periods)
-        revenue = sum(getattr(p, "revenue") or 0 for p in periods)
-        return revenue / total_orders if total_orders > 0 else 0.0
-
-
-class NetAverageOrderValueMetric(SQLMetric):
-    slug = "net_average_order_value"
-    display_name = "Net Average Order Value"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.cast(func.ceil(func.avg(Order.payout_amount)), Integer)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        total_orders = sum(getattr(p, "orders") or 0 for p in periods)
-        revenue = sum(getattr(p, "net_revenue") or 0 for p in periods)
-        return revenue / total_orders if total_orders > 0 else 0.0
-
-
-class OneTimeProductsMetric(SQLMetric):
-    slug = "one_time_products"
-    display_name = "One-Time Products"
-    type = MetricType.scalar
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Order.id).filter(Order.subscription_id.is_(None))
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class OneTimeProductsRevenueMetric(SQLMetric):
-    slug = "one_time_products_revenue"
-    display_name = "One-Time Products Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.net_amount).filter(Order.subscription_id.is_(None))
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class OneTimeProductsNetRevenueMetric(SQLMetric):
-    slug = "one_time_products_net_revenue"
-    display_name = "One-Time Products Net Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.payout_amount).filter(Order.subscription_id.is_(None))
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class NewSubscriptionsMetric(SQLMetric):
-    slug = "new_subscriptions"
-    display_name = "New Subscriptions"
-    type = MetricType.scalar
-    query = MetricQuery.active_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
-            )
-            == i.sql_date_trunc(t)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class NewSubscriptionsRevenueMetric(SQLMetric):
-    slug = "new_subscriptions_revenue"
-    display_name = "New Subscriptions Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.net_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
-            )
-            == i.sql_date_trunc(t)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class NewSubscriptionsNetRevenueMetric(SQLMetric):
-    slug = "new_subscriptions_net_revenue"
-    display_name = "New Subscriptions Net Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.payout_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
-            )
-            == i.sql_date_trunc(t)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class RenewedSubscriptionsMetric(SQLMetric):
-    slug = "renewed_subscriptions"
-    display_name = "Renewed Subscriptions"
-    type = MetricType.scalar
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id.distinct()).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
-            )
-            != i.sql_date_trunc(t)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class RenewedSubscriptionsRevenueMetric(SQLMetric):
-    slug = "renewed_subscriptions_revenue"
-    display_name = "Renewed Subscriptions Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.net_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
-            )
-            != i.sql_date_trunc(t)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class RenewedSubscriptionsNetRevenueMetric(SQLMetric):
-    slug = "renewed_subscriptions_net_revenue"
-    display_name = "Renewed Subscriptions Net Revenue"
-    type = MetricType.currency
-    query = MetricQuery.orders
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(Order.payout_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
-            )
-            != i.sql_date_trunc(t)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
 
 
 class ActiveSubscriptionsMetric(SQLMetric):
@@ -616,186 +308,6 @@ class CheckoutsConversionMetric(SQLMetric):
         return total_succeeded / total_checkouts if total_checkouts > 0 else 0.0
 
 
-class CanceledSubscriptionsMetric(SQLMetric):
-    slug = "canceled_subscriptions"
-    display_name = "Canceled Subscriptions"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id)
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsCustomerServiceMetric(SQLMetric):
-    slug = "canceled_subscriptions_customer_service"
-    display_name = "Canceled Subscriptions - Customer Service"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.customer_service
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsLowQualityMetric(SQLMetric):
-    slug = "canceled_subscriptions_low_quality"
-    display_name = "Canceled Subscriptions - Low Quality"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.low_quality
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsMissingFeaturesMetric(SQLMetric):
-    slug = "canceled_subscriptions_missing_features"
-    display_name = "Canceled Subscriptions - Missing Features"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.missing_features
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsSwitchedServiceMetric(SQLMetric):
-    slug = "canceled_subscriptions_switched_service"
-    display_name = "Canceled Subscriptions - Switched Service"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.switched_service
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsTooComplexMetric(SQLMetric):
-    slug = "canceled_subscriptions_too_complex"
-    display_name = "Canceled Subscriptions - Too Complex"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.too_complex
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsTooExpensiveMetric(SQLMetric):
-    slug = "canceled_subscriptions_too_expensive"
-    display_name = "Canceled Subscriptions - Too Expensive"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.too_expensive
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsUnusedMetric(SQLMetric):
-    slug = "canceled_subscriptions_unused"
-    display_name = "Canceled Subscriptions - Unused"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.unused
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CanceledSubscriptionsOtherMetric(SQLMetric):
-    slug = "canceled_subscriptions_other"
-    display_name = "Canceled Subscriptions - Other"
-    type = MetricType.scalar
-    query = MetricQuery.canceled_subscriptions
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            or_(
-                Subscription.customer_cancellation_reason
-                == CustomerCancellationReason.other,
-                Subscription.customer_cancellation_reason.is_(None),
-            )
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
 class ChurnedSubscriptionsMetric(SQLMetric):
     slug = "churned_subscriptions"
     display_name = "Churned Subscriptions"
@@ -811,44 +323,6 @@ class ChurnedSubscriptionsMetric(SQLMetric):
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
         return cumulative_sum(periods, cls.slug)
-
-
-class CostsMetric(SQLMetric):
-    slug = "costs"
-    display_name = "Costs"
-    type = MetricType.currency_sub_cent
-    query = MetricQuery.events
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(
-            Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)
-        ).filter(Event.user_metadata["_cost"].is_not(None))
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_sum(periods, cls.slug)
-
-
-class CumulativeCostsMetric(SQLMetric):
-    slug = "cumulative_costs"
-    display_name = "Cumulative Costs"
-    type = MetricType.currency_sub_cent
-    query = MetricQuery.events
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.sum(
-            Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)
-        ).filter(Event.user_metadata["_cost"].is_not(None))
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
-        return cumulative_last(periods, cls.slug)
 
 
 class AverageRevenuePerUserMetric(SQLMetric):
@@ -913,39 +387,6 @@ class AverageRevenuePerUserMetric(SQLMetric):
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
         return cumulative_last(periods, cls.slug)
-
-
-class CostPerUserMetric(SQLMetric):
-    slug = "cost_per_user"
-    display_name = "Cost Per User"
-    type = MetricType.currency_sub_cent
-    query = MetricQuery.events
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[float]:
-        total_customers = func.count(func.distinct(Event.customer_id)) + func.count(
-            func.distinct(Event.external_customer_id)
-        )
-
-        total_costs = func.sum(
-            func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)
-        )
-
-        return type_coerce(
-            case(
-                (total_customers == 0, 0),
-                else_=total_costs / total_customers,
-            ),
-            Float,
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        total_active_users = cumulative_last(periods, ActiveSubscriptionsMetric.slug)
-        total_costs = sum(getattr(p, CostsMetric.slug) or 0 for p in periods)
-        return total_costs / total_active_users if total_active_users > 0 else 0.0
 
 
 class GrossMarginMetric(MetaMetric):
@@ -1053,26 +494,7 @@ class LTVMetric(MetaMetric):
         return int(cumulative_last(periods, cls.slug))
 
 
-class ActiveUserMetric(SQLMetric):
-    slug = "active_user_by_event"
-    display_name = "Active User (By event)"
-    type = MetricType.scalar
-    query = MetricQuery.events
-
-    @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[int]:
-        return func.count(func.distinct(Event.customer_id)) + func.count(
-            func.distinct(Event.external_customer_id)
-        )
-
-    @classmethod
-    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int:
-        return int(cumulative_last(periods, ActiveSubscriptionsMetric.slug))
-
-
-class TBOrdersMetric(TinybirdMetric):
+class OrdersMetric(TinybirdMetric):
     slug = "orders"
     display_name = "Orders"
     type = MetricType.scalar
@@ -1083,7 +505,7 @@ class TBOrdersMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBRevenueMetric(TinybirdMetric):
+class RevenueMetric(TinybirdMetric):
     slug = "revenue"
     display_name = "Revenue"
     type = MetricType.currency
@@ -1094,7 +516,7 @@ class TBRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBNetRevenueMetric(TinybirdMetric):
+class NetRevenueMetric(TinybirdMetric):
     slug = "net_revenue"
     display_name = "Net Revenue"
     type = MetricType.currency
@@ -1105,7 +527,7 @@ class TBNetRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCumulativeRevenueMetric(TinybirdMetric):
+class CumulativeRevenueMetric(TinybirdMetric):
     slug = "cumulative_revenue"
     display_name = "Cumulative Revenue"
     type = MetricType.currency
@@ -1116,7 +538,7 @@ class TBCumulativeRevenueMetric(TinybirdMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class TBNetCumulativeRevenueMetric(TinybirdMetric):
+class NetCumulativeRevenueMetric(TinybirdMetric):
     slug = "net_cumulative_revenue"
     display_name = "Net Cumulative Revenue"
     type = MetricType.currency
@@ -1127,7 +549,7 @@ class TBNetCumulativeRevenueMetric(TinybirdMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class TBAverageOrderValueMetric(TinybirdMetric):
+class AverageOrderValueMetric(TinybirdMetric):
     slug = "average_order_value"
     display_name = "Average Order Value"
     type = MetricType.currency
@@ -1140,7 +562,7 @@ class TBAverageOrderValueMetric(TinybirdMetric):
         return revenue / total_orders if total_orders > 0 else 0.0
 
 
-class TBNetAverageOrderValueMetric(TinybirdMetric):
+class NetAverageOrderValueMetric(TinybirdMetric):
     slug = "net_average_order_value"
     display_name = "Net Average Order Value"
     type = MetricType.currency
@@ -1153,7 +575,7 @@ class TBNetAverageOrderValueMetric(TinybirdMetric):
         return revenue / total_orders if total_orders > 0 else 0.0
 
 
-class TBOneTimeProductsMetric(TinybirdMetric):
+class OneTimeProductsMetric(TinybirdMetric):
     slug = "one_time_products"
     display_name = "One-Time Products"
     type = MetricType.scalar
@@ -1164,7 +586,7 @@ class TBOneTimeProductsMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBOneTimeProductsRevenueMetric(TinybirdMetric):
+class OneTimeProductsRevenueMetric(TinybirdMetric):
     slug = "one_time_products_revenue"
     display_name = "One-Time Products Revenue"
     type = MetricType.currency
@@ -1175,7 +597,7 @@ class TBOneTimeProductsRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBOneTimeProductsNetRevenueMetric(TinybirdMetric):
+class OneTimeProductsNetRevenueMetric(TinybirdMetric):
     slug = "one_time_products_net_revenue"
     display_name = "One-Time Products Net Revenue"
     type = MetricType.currency
@@ -1186,7 +608,7 @@ class TBOneTimeProductsNetRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBNewSubscriptionsMetric(TinybirdMetric):
+class NewSubscriptionsMetric(TinybirdMetric):
     slug = "new_subscriptions"
     display_name = "New Subscriptions"
     type = MetricType.scalar
@@ -1197,7 +619,7 @@ class TBNewSubscriptionsMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBNewSubscriptionsRevenueMetric(TinybirdMetric):
+class NewSubscriptionsRevenueMetric(TinybirdMetric):
     slug = "new_subscriptions_revenue"
     display_name = "New Subscriptions Revenue"
     type = MetricType.currency
@@ -1208,7 +630,7 @@ class TBNewSubscriptionsRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBNewSubscriptionsNetRevenueMetric(TinybirdMetric):
+class NewSubscriptionsNetRevenueMetric(TinybirdMetric):
     slug = "new_subscriptions_net_revenue"
     display_name = "New Subscriptions Net Revenue"
     type = MetricType.currency
@@ -1219,7 +641,7 @@ class TBNewSubscriptionsNetRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBRenewedSubscriptionsMetric(TinybirdMetric):
+class RenewedSubscriptionsMetric(TinybirdMetric):
     slug = "renewed_subscriptions"
     display_name = "Renewed Subscriptions"
     type = MetricType.scalar
@@ -1230,7 +652,7 @@ class TBRenewedSubscriptionsMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBRenewedSubscriptionsRevenueMetric(TinybirdMetric):
+class RenewedSubscriptionsRevenueMetric(TinybirdMetric):
     slug = "renewed_subscriptions_revenue"
     display_name = "Renewed Subscriptions Revenue"
     type = MetricType.currency
@@ -1241,7 +663,7 @@ class TBRenewedSubscriptionsRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBRenewedSubscriptionsNetRevenueMetric(TinybirdMetric):
+class RenewedSubscriptionsNetRevenueMetric(TinybirdMetric):
     slug = "renewed_subscriptions_net_revenue"
     display_name = "Renewed Subscriptions Net Revenue"
     type = MetricType.currency
@@ -1252,7 +674,7 @@ class TBRenewedSubscriptionsNetRevenueMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCostsMetric(TinybirdMetric):
+class CostsMetric(TinybirdMetric):
     slug = "costs"
     display_name = "Costs"
     type = MetricType.currency_sub_cent
@@ -1263,7 +685,7 @@ class TBCostsMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCumulativeCostsMetric(TinybirdMetric):
+class CumulativeCostsMetric(TinybirdMetric):
     slug = "cumulative_costs"
     display_name = "Cumulative Costs"
     type = MetricType.currency_sub_cent
@@ -1274,7 +696,7 @@ class TBCumulativeCostsMetric(TinybirdMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class TBActiveUserMetric(TinybirdMetric):
+class ActiveUserMetric(TinybirdMetric):
     slug = "active_user_by_event"
     display_name = "Active User (By event)"
     type = MetricType.scalar
@@ -1285,7 +707,7 @@ class TBActiveUserMetric(TinybirdMetric):
         return int(cumulative_last(periods, ActiveSubscriptionsMetric.slug))
 
 
-class TBCostPerUserMetric(TinybirdMetric):
+class CostPerUserMetric(TinybirdMetric):
     slug = "cost_per_user"
     display_name = "Cost Per User"
     type = MetricType.currency_sub_cent
@@ -1298,7 +720,7 @@ class TBCostPerUserMetric(TinybirdMetric):
         return total_costs / total_active_users if total_active_users > 0 else 0.0
 
 
-class TBCanceledSubscriptionsMetric(TinybirdMetric):
+class CanceledSubscriptionsMetric(TinybirdMetric):
     slug = "canceled_subscriptions"
     display_name = "Canceled Subscriptions"
     type = MetricType.scalar
@@ -1309,7 +731,7 @@ class TBCanceledSubscriptionsMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsCustomerServiceMetric(TinybirdMetric):
+class CanceledSubscriptionsCustomerServiceMetric(TinybirdMetric):
     slug = "canceled_subscriptions_customer_service"
     display_name = "Canceled Subscriptions - Customer Service"
     type = MetricType.scalar
@@ -1320,7 +742,7 @@ class TBCanceledSubscriptionsCustomerServiceMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsLowQualityMetric(TinybirdMetric):
+class CanceledSubscriptionsLowQualityMetric(TinybirdMetric):
     slug = "canceled_subscriptions_low_quality"
     display_name = "Canceled Subscriptions - Low Quality"
     type = MetricType.scalar
@@ -1331,7 +753,7 @@ class TBCanceledSubscriptionsLowQualityMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsMissingFeaturesMetric(TinybirdMetric):
+class CanceledSubscriptionsMissingFeaturesMetric(TinybirdMetric):
     slug = "canceled_subscriptions_missing_features"
     display_name = "Canceled Subscriptions - Missing Features"
     type = MetricType.scalar
@@ -1342,7 +764,7 @@ class TBCanceledSubscriptionsMissingFeaturesMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsSwitchedServiceMetric(TinybirdMetric):
+class CanceledSubscriptionsSwitchedServiceMetric(TinybirdMetric):
     slug = "canceled_subscriptions_switched_service"
     display_name = "Canceled Subscriptions - Switched Service"
     type = MetricType.scalar
@@ -1353,7 +775,7 @@ class TBCanceledSubscriptionsSwitchedServiceMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsTooComplexMetric(TinybirdMetric):
+class CanceledSubscriptionsTooComplexMetric(TinybirdMetric):
     slug = "canceled_subscriptions_too_complex"
     display_name = "Canceled Subscriptions - Too Complex"
     type = MetricType.scalar
@@ -1364,7 +786,7 @@ class TBCanceledSubscriptionsTooComplexMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsTooExpensiveMetric(TinybirdMetric):
+class CanceledSubscriptionsTooExpensiveMetric(TinybirdMetric):
     slug = "canceled_subscriptions_too_expensive"
     display_name = "Canceled Subscriptions - Too Expensive"
     type = MetricType.scalar
@@ -1375,7 +797,7 @@ class TBCanceledSubscriptionsTooExpensiveMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsUnusedMetric(TinybirdMetric):
+class CanceledSubscriptionsUnusedMetric(TinybirdMetric):
     slug = "canceled_subscriptions_unused"
     display_name = "Canceled Subscriptions - Unused"
     type = MetricType.scalar
@@ -1386,7 +808,7 @@ class TBCanceledSubscriptionsUnusedMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class TBCanceledSubscriptionsOtherMetric(TinybirdMetric):
+class CanceledSubscriptionsOtherMetric(TinybirdMetric):
     slug = "canceled_subscriptions_other"
     display_name = "Canceled Subscriptions - Other"
     type = MetricType.scalar
@@ -1397,52 +819,7 @@ class TBCanceledSubscriptionsOtherMetric(TinybirdMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-METRICS_TINYBIRD_SETTLEMENT: list[type[TinybirdMetric]] = [
-    TBOrdersMetric,
-    TBRevenueMetric,
-    TBNetRevenueMetric,
-    TBCumulativeRevenueMetric,
-    TBNetCumulativeRevenueMetric,
-    TBCostsMetric,
-    TBCumulativeCostsMetric,
-    TBAverageOrderValueMetric,
-    TBNetAverageOrderValueMetric,
-    TBCostPerUserMetric,
-    TBActiveUserMetric,
-    TBOneTimeProductsMetric,
-    TBOneTimeProductsRevenueMetric,
-    TBOneTimeProductsNetRevenueMetric,
-    TBNewSubscriptionsMetric,
-    TBNewSubscriptionsRevenueMetric,
-    TBNewSubscriptionsNetRevenueMetric,
-    TBRenewedSubscriptionsMetric,
-    TBRenewedSubscriptionsRevenueMetric,
-    TBRenewedSubscriptionsNetRevenueMetric,
-    TBCanceledSubscriptionsMetric,
-    TBCanceledSubscriptionsCustomerServiceMetric,
-    TBCanceledSubscriptionsLowQualityMetric,
-    TBCanceledSubscriptionsMissingFeaturesMetric,
-    TBCanceledSubscriptionsSwitchedServiceMetric,
-    TBCanceledSubscriptionsTooComplexMetric,
-    TBCanceledSubscriptionsTooExpensiveMetric,
-    TBCanceledSubscriptionsUnusedMetric,
-    TBCanceledSubscriptionsOtherMetric,
-]
-
-
-METRICS_PG_ONLY: list[type[SQLMetric]] = [
-    ActiveSubscriptionsMetric,
-    CommittedSubscriptionsMetric,
-    MonthlyRecurringRevenueMetric,
-    CommittedMonthlyRecurringRevenueMetric,
-    AverageRevenuePerUserMetric,
-    CheckoutsMetric,
-    SucceededCheckoutsMetric,
-    CheckoutsConversionMetric,
-    ChurnedSubscriptionsMetric,
-]
-
-METRICS_SQL: list[type[SQLMetric]] = [
+METRICS_TINYBIRD: list[type[TinybirdMetric]] = [
     OrdersMetric,
     RevenueMetric,
     NetRevenueMetric,
@@ -1452,7 +829,6 @@ METRICS_SQL: list[type[SQLMetric]] = [
     CumulativeCostsMetric,
     AverageOrderValueMetric,
     NetAverageOrderValueMetric,
-    AverageRevenuePerUserMetric,
     CostPerUserMetric,
     ActiveUserMetric,
     OneTimeProductsMetric,
@@ -1464,13 +840,6 @@ METRICS_SQL: list[type[SQLMetric]] = [
     RenewedSubscriptionsMetric,
     RenewedSubscriptionsRevenueMetric,
     RenewedSubscriptionsNetRevenueMetric,
-    ActiveSubscriptionsMetric,
-    CommittedSubscriptionsMetric,
-    MonthlyRecurringRevenueMetric,
-    CommittedMonthlyRecurringRevenueMetric,
-    CheckoutsMetric,
-    SucceededCheckoutsMetric,
-    CheckoutsConversionMetric,
     CanceledSubscriptionsMetric,
     CanceledSubscriptionsCustomerServiceMetric,
     CanceledSubscriptionsLowQualityMetric,
@@ -1480,6 +849,18 @@ METRICS_SQL: list[type[SQLMetric]] = [
     CanceledSubscriptionsTooExpensiveMetric,
     CanceledSubscriptionsUnusedMetric,
     CanceledSubscriptionsOtherMetric,
+]
+
+
+METRICS_POSTGRES: list[type[SQLMetric]] = [
+    ActiveSubscriptionsMetric,
+    CommittedSubscriptionsMetric,
+    MonthlyRecurringRevenueMetric,
+    CommittedMonthlyRecurringRevenueMetric,
+    AverageRevenuePerUserMetric,
+    CheckoutsMetric,
+    SucceededCheckoutsMetric,
+    CheckoutsConversionMetric,
     ChurnedSubscriptionsMetric,
 ]
 
@@ -1492,17 +873,16 @@ METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
 ]
 
 METRICS: list[type[Metric]] = [
-    *METRICS_PG_ONLY,
-    *METRICS_TINYBIRD_SETTLEMENT,
+    *METRICS_POSTGRES,
+    *METRICS_TINYBIRD,
     *METRICS_POST_COMPUTE,
 ]
 
 __all__ = [
     "METRICS",
-    "METRICS_PG_ONLY",
+    "METRICS_POSTGRES",
     "METRICS_POST_COMPUTE",
-    "METRICS_SQL",
-    "METRICS_TINYBIRD_SETTLEMENT",
+    "METRICS_TINYBIRD",
     "MetaMetric",
     "Metric",
     "MetricType",

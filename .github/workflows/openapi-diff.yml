@@ -18,6 +18,9 @@ jobs:
       contents: read
       pull-requests: write
 
+    env:
+      POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
+
     steps:
       - name: Checkout PR (head)
         uses: actions/checkout@v6
@@ -40,13 +43,21 @@ jobs:
         with:
           python-version-file: "head/server/pyproject.toml"
 
+      - name: Create mock email renderer binary
+        run: |
+          touch /tmp/email-renderer
+
       - name: Install head dependencies
         working-directory: ./head/server
-        run: uv sync
+        run: |
+          uv sync
+          uv run task generate_dev_jwks
 
       - name: Install base dependencies
         working-directory: ./base/server
-        run: uv sync
+        run: |
+          uv sync
+          uv run task generate_dev_jwks
 
       - name: Generate OpenAPI schema from head
         working-directory: ./head/server

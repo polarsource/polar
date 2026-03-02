@@ -423,16 +423,19 @@ const Checkout = ({
                     </div>
                   </div>
                   <span className="text-3xl font-medium">
-                    {checkout.productPrice.amountType === 'seat_based' ? (
-                      formatCurrency('compact', locale)(
-                        checkout.netAmount || 0,
-                        checkout.productPrice.priceCurrency,
+                    {checkout.discount ||
+                    checkout.productPrice.amountType === 'seat_based' ? (
+                      formatCurrency('standard', locale)(
+                        checkout.totalAmount ?? checkout.netAmount ?? 0,
+                        checkout.currency ??
+                          checkout.productPrice.priceCurrency,
                       )
                     ) : (
                       <ProductPriceLabel
                         product={checkout.product}
                         price={checkout.productPrice}
                         locale={locale}
+                        mode="standard"
                       />
                     )}
                   </span>

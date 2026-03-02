@@ -180,7 +180,7 @@ const CheckoutProductSwitcher = ({
                 currency={item.price.priceCurrency}
                 interval={item.product.recurringInterval}
                 intervalCount={item.product.recurringIntervalCount}
-                mode="compact"
+                mode="standard"
                 locale={locale}
               />
             ) : (
@@ -188,6 +188,7 @@ const CheckoutProductSwitcher = ({
                 product={item.product}
                 price={item.price}
                 locale={locale}
+                mode="standard"
               />
             )}
           </span>

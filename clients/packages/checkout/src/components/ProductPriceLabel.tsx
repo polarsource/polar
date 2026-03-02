@@ -14,12 +14,14 @@ interface ProductPriceLabelProps {
   product: CheckoutProduct
   price: ProductPrice | LegacyRecurringProductPrice
   locale?: AcceptedLocale
+  mode?: 'compact' | 'standard'
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   price,
   locale = DEFAULT_LOCALE,
+  mode = 'compact',
 }) => {
   const t = useTranslations(locale)
 
@@ -34,7 +36,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             : product.recurringInterval
         }
         intervalCount={product.recurringIntervalCount}
-        mode="compact"
+        mode={mode}
         locale={locale}
       />
     )
@@ -58,7 +60,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         currency={price.priceCurrency}
         interval={product.recurringInterval}
         intervalCount={product.recurringIntervalCount}
-        mode="compact"
+        mode={mode}
         locale={locale}
       />
     )

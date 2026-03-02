@@ -49,9 +49,12 @@ const CheckoutSeatSelector = ({
   const seatTiers = productPrice.seatTiers
   const tiers = seatTiers?.tiers ?? []
   const sortedTiers = [...tiers].sort((a, b) => a.minSeats - b.minSeats)
-  const minimumSeats = sortedTiers[0]?.minSeats ?? 1
-  const maximumSeats = sortedTiers[sortedTiers.length - 1]?.maxSeats ?? null
+  const tierMinimumSeats = sortedTiers[0]?.minSeats ?? 1
+  const tierMaximumSeats = sortedTiers[sortedTiers.length - 1]?.maxSeats ?? null
+  const minimumSeats = checkout.minSeats ?? tierMinimumSeats
+  const maximumSeats = checkout.maxSeats ?? tierMaximumSeats
   const hasMaximumLimit = maximumSeats !== null
+  const isFixedSeats = hasMaximumLimit && minimumSeats === maximumSeats
 
   // Display seats clamped to at least the minimum
   const displaySeats = Math.max(checkout.seats || minimumSeats, minimumSeats)
@@ -67,7 +70,12 @@ const CheckoutSeatSelector = ({
 
   // Auto-correct seat count if it's below the minimum (only attempt once)
   useEffect(() => {
-    if (needsSeatCorrection && !isUpdating && !autoCorrectAttempted) {
+    if (
+      needsSeatCorrection &&
+      !isFixedSeats &&
+      !isUpdating &&
+      !autoCorrectAttempted
+    ) {
       setAutoCorrectAttempted(true)
       update({ seats: minimumSeats } as CheckoutUpdatePublic).catch((err) => {
         setError(getErrorMessage(err))
@@ -75,6 +83,7 @@ const CheckoutSeatSelector = ({
     }
   }, [
     needsSeatCorrection,
+    isFixedSeats,
     minimumSeats,
     isUpdating,
     update,
@@ -157,75 +166,83 @@ const CheckoutSeatSelector = ({
               seat
             </span>
           </div>
-          <div className="dark:border-polar-700 flex items-center gap-0 rounded-lg border border-gray-200">
-            <button
-              type="button"
-              onClick={() => handleUpdateSeats(displaySeats - 1)}
-              disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
-              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-l-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Decrease seats"
-            >
-              <svg
-                className="h-3 w-3"
-                viewBox="0 0 14 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d="M3 7h8" />
-              </svg>
-            </button>
-            {isEditing ? (
-              <Input
-                type="text"
-                inputMode="numeric"
-                value={inputValue}
-                onChange={handleInputChange}
-                onBlur={handleInputBlur}
-                onKeyDown={handleInputKeyDown}
-                autoFocus
-                min={minimumSeats}
-                max={hasMaximumLimit ? maximumSeats : undefined}
-                className="h-7 w-10 cursor-text rounded-none border-x border-y-0 px-1 text-center text-sm font-medium tabular-nums"
-              />
-            ) : (
+          {isFixedSeats ? (
+            <span className="text-sm font-medium dark:text-white">
+              {displaySeats}
+            </span>
+          ) : (
+            <div className="dark:border-polar-700 flex items-center gap-0 rounded-lg border border-gray-200">
               <button
                 type="button"
-                onClick={handleSeatClick}
-                disabled={isUpdating}
-                className="dark:border-polar-700 dark:hover:bg-polar-800 h-7 w-10 cursor-pointer border-x border-gray-200 text-center text-sm font-medium tabular-nums transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Click to edit seat count"
-                title="Click to edit"
+                onClick={() => handleUpdateSeats(displaySeats - 1)}
+                disabled={
+                  displaySeats <= minimumSeats || isUpdating || isEditing
+                }
+                className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-l-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Decrease seats"
               >
-                {displaySeats}
+                <svg
+                  className="h-3 w-3"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M3 7h8" />
+                </svg>
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => handleUpdateSeats(displaySeats + 1)}
-              disabled={
-                (hasMaximumLimit && displaySeats >= maximumSeats) ||
-                isUpdating ||
-                isEditing
-              }
-              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-r-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Increase seats"
-            >
-              <svg
-                className="h-3 w-3"
-                viewBox="0 0 14 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
+              {isEditing ? (
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
+                  onKeyDown={handleInputKeyDown}
+                  autoFocus
+                  min={minimumSeats}
+                  max={hasMaximumLimit ? maximumSeats : undefined}
+                  className="h-7 w-10 cursor-text rounded-none border-x border-y-0 px-1 text-center text-sm font-medium tabular-nums"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSeatClick}
+                  disabled={isUpdating}
+                  className="dark:border-polar-700 dark:hover:bg-polar-800 h-7 w-10 cursor-pointer border-x border-gray-200 text-center text-sm font-medium tabular-nums transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Click to edit seat count"
+                  title="Click to edit"
+                >
+                  {displaySeats}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleUpdateSeats(displaySeats + 1)}
+                disabled={
+                  (hasMaximumLimit && displaySeats >= maximumSeats) ||
+                  isUpdating ||
+                  isEditing
+                }
+                className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-r-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Increase seats"
               >
-                <path d="M7 3v8M3 7h8" />
-              </svg>
-            </button>
-          </div>
+                <svg
+                  className="h-3 w-3"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M7 3v8M3 7h8" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
-        {seatLimitText && (
+        {!isFixedSeats && seatLimitText && (
           <p className="dark:text-polar-400 text-xs text-gray-500">
             {seatLimitText}
           </p>
@@ -252,78 +269,88 @@ const CheckoutSeatSelector = ({
       {/* Seat Selector */}
       <div className="flex flex-col gap-2">
         <label className="text-lg">Number of seats</label>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleUpdateSeats(displaySeats - 1)}
-            disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
-            className="h-10 w-10 rounded-full disabled:opacity-40"
-            aria-label="Decrease seats"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
+        {isFixedSeats ? (
+          <span className="min-w-[3.5rem] text-2xl font-light text-gray-900 dark:text-white">
+            {displaySeats}
+          </span>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleUpdateSeats(displaySeats - 1)}
+              disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
+              className="h-10 w-10 rounded-full disabled:opacity-40"
+              aria-label="Decrease seats"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-            </svg>
-          </Button>
-          {isEditing ? (
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={inputValue}
-              onChange={handleInputChange}
-              onBlur={handleInputBlur}
-              onKeyDown={handleInputKeyDown}
-              autoFocus
-              min={minimumSeats}
-              max={hasMaximumLimit ? maximumSeats : undefined}
-              className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={handleSeatClick}
-              disabled={isUpdating}
-              className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
-              aria-label="Click to edit seat count"
-              title="Click to edit"
-            >
-              <span>{displaySeats}</span>
-            </button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleUpdateSeats(displaySeats + 1)}
-            disabled={
-              (hasMaximumLimit && displaySeats >= maximumSeats) ||
-              isUpdating ||
-              isEditing
-            }
-            className="h-10 w-10 rounded-full disabled:opacity-40"
-            aria-label="Increase seats"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 5v14m-7-7h14"
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 12h14"
+                />
+              </svg>
+            </Button>
+            {isEditing ? (
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={inputValue}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                onKeyDown={handleInputKeyDown}
+                autoFocus
+                min={minimumSeats}
+                max={hasMaximumLimit ? maximumSeats : undefined}
+                className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
               />
-            </svg>
-          </Button>
-        </div>
-        {seatLimitText && (
+            ) : (
+              <button
+                type="button"
+                onClick={handleSeatClick}
+                disabled={isUpdating}
+                className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
+                aria-label="Click to edit seat count"
+                title="Click to edit"
+              >
+                <span>{displaySeats}</span>
+              </button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleUpdateSeats(displaySeats + 1)}
+              disabled={
+                (hasMaximumLimit && displaySeats >= maximumSeats) ||
+                isUpdating ||
+                isEditing
+              }
+              className="h-10 w-10 rounded-full disabled:opacity-40"
+              aria-label="Increase seats"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 5v14m-7-7h14"
+                />
+              </svg>
+            </Button>
+          </div>
+        )}
+        {!isFixedSeats && seatLimitText && (
           <p className="dark:text-polar-400 text-xs text-gray-500">
             {seatLimitText}
           </p>

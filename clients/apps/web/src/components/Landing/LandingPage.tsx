@@ -3,7 +3,6 @@
 import { Hero } from '@/components/Landing/Hero/Hero'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
-import { Stream } from '@cloudflare/stream-react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
@@ -45,15 +44,6 @@ export const PageContent = () => {
             </Button>
           </Link>
         </Hero>
-      </Section>
-      <Section className="flex max-w-[1620px]! flex-col gap-y-32">
-        <Stream
-          src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-          letterboxColor="black"
-          autoplay
-          muted
-          loop
-        />
       </Section>
       <Section className="flex flex-col gap-y-32" border>
         <Logotypes />

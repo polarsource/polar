@@ -8,14 +8,14 @@ import { Isometric, IsometricBox } from './Isometric'
 // ── Shared face / edge classes ────────────────────────────────────────────────
 
 // Base face colors: grays in light mode, near-black in dark mode
-const FACE_T = 'bg-gray-100 dark:bg-[#08090A]'
-const FACE_F = 'bg-gray-200 dark:bg-[#040506]'
-const FACE_R = 'bg-gray-300 dark:bg-[#020304]'
+const FACE_T = 'bg-gray-100 dark:bg-polar-950'
+const FACE_F = 'bg-gray-200 dark:bg-polar-900'
+const FACE_R = 'bg-gray-300 dark:bg-polar-950'
 
 // Border edge variants: gray palette in light, progressively brighter in dark
-const EDGE_DIM = 'border-[0.5px] border-gray-200 dark:border-[#3E3E44]'
-const EDGE_MID = 'border-[0.5px] border-gray-300 dark:border-[#62666D]'
-const EDGE_HI = 'border-[0.5px] border-gray-500 dark:border-[#D0D6E0]'
+const EDGE_DIM = 'border-[0.5px] border-gray-200 dark:border-polar-700'
+const EDGE_MID = 'border-[0.5px] border-gray-300 dark:border-polar-600'
+const EDGE_HI = 'border-[0.5px] border-gray-400 dark:border-polar-500'
 
 // ── Illustration 1: Payment terminal + card ───────────────────────────────────
 
@@ -307,7 +307,7 @@ const CustomerIllustration = () => (
 
 const MerchantIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(4px) translateX(-8px) scale(1.4)' }}>
+    <div style={{ transform: 'translateY(4px) translateX(-8px) scale(1.2)' }}>
       <Isometric style={{ width: 220, height: 160 }}>
         {/* Base world surface */}
         <IsometricBox
@@ -451,7 +451,7 @@ const FeatureCard = ({
     </div>
     <div className="flex h-96 items-center justify-center">{illustration}</div>
     <div className="flex flex-col gap-y-2 px-6">
-      <h3 className="text-base font-semibold">{title}</h3>
+      <h3 className="text-lg font-semibold">{title}</h3>
       <p className="dark:text-polar-500 leading-relaxed text-gray-500">
         {description}
       </p>

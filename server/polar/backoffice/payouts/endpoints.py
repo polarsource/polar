@@ -271,7 +271,12 @@ async def get(
     can_retry = (
         payout.status == PayoutStatus.failed
         or len(payout.attempts) == 0
-        or sum(attempt.amount for attempt in payout.attempts) < payout.account_amount
+        or sum(
+            attempt.amount
+            for attempt in payout.attempts
+            if attempt.status != PayoutAttemptStatus.failed
+        )
+        < payout.account_amount
     )
 
     with layout(
@@ -390,7 +395,9 @@ async def retry(
         raise HTTPException(status_code=404)
 
     remaining_amount = payout.account_amount - sum(
-        attempt.amount for attempt in payout.attempts
+        attempt.amount
+        for attempt in payout.attempts
+        if attempt.status != PayoutAttemptStatus.failed
     )
 
     validation_error: ValidationError | None = None

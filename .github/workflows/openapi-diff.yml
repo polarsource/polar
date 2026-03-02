@@ -70,17 +70,14 @@ jobs:
       - name: Generate OpenAPI diff
         id: diff
         run: |
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          uvx openapi-kit diff ${{ github.workspace }}/base.json ${{ github.workspace }}/head.json >> $GITHUB_OUTPUT
-          EXIT_CODE=$?
-          echo "EOF" >> $GITHUB_OUTPUT
-          if [ $EXIT_CODE -eq 0 ]; then
+          if uvx openapi-kit diff ${{ github.workspace }}/base.json ${{ github.workspace }}/head.json > /tmp/diff.md; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-          elif [ $EXIT_CODE -eq 1 ]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
           else
-            exit $EXIT_CODE
+            echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/diff.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Find existing comment
         uses: peter-evans/find-comment@v4

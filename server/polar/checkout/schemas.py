@@ -411,7 +411,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
             "Must be present in the checkout's product list."
         ),
     )
-    product_price_id: SkipJsonSchema[UUID4 | None] = Field(
+    product_price_id: UUID4 | None = Field(
         default=None,
         description=(
             "ID of the product price to checkout. "
@@ -605,7 +605,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="ID of the organization owning the checkout session."
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
-    product_price_id: SkipJsonSchema[UUID4 | None] = Field(
+    product_price_id: UUID4 | None = Field(
         description="ID of the product price to checkout.", deprecated=True
     )
     discount_id: UUID4 | None = Field(
@@ -763,7 +763,7 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
         description="List of products available to select."
     )
     product: CheckoutProduct | None = Field(description="Product selected to checkout.")
-    product_price: SkipJsonSchema[ProductPrice | None] = Field(
+    product_price: ProductPrice | None = Field(
         description="Price of the selected product.", deprecated=True
     )
     prices: dict[UUID4, ProductPriceList] | None = Field(
@@ -782,7 +782,7 @@ class CheckoutPublic(CheckoutBase):
         description="List of products available to select."
     )
     product: CheckoutProduct | None = Field(description="Product selected to checkout.")
-    product_price: SkipJsonSchema[ProductPrice | None] = Field(
+    product_price: ProductPrice | None = Field(
         description="Price of the selected product.", deprecated=True
     )
     prices: dict[UUID4, ProductPriceList] | None = Field(

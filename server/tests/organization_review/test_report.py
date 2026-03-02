@@ -386,6 +386,14 @@ class TestV1ToV2Migration:
         assert isinstance(parsed, AgentReportV2)
         assert parsed.version == 2
 
+    def test_v1_with_null_review_type_defaults_to_unknown(self) -> None:
+        """V1 data with review_type=None should migrate to 'unknown'."""
+        data = _make_v1_report_dict(version=1)
+        data["review_type"] = None
+        parsed = parse_agent_report(data)
+        assert isinstance(parsed, AgentReportV2)
+        assert parsed.review_type == "unknown"
+
     def test_migration_preserves_all_fields(self) -> None:
         data = _make_v1_report_dict(version=1, review_type="threshold")
         parsed = parse_agent_report(data)

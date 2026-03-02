@@ -191,7 +191,7 @@ def _migrate_v1_to_v2(v1: AgentReportV1) -> AgentReportV2:
     """Migrate a V1 report to V2 with type-safe conversion."""
     return AgentReportV2(
         report=_migrate_report(v1.report),
-        review_type=v1.review_type,
+        review_type=v1.review_type,  # type: ignore[arg-type]
         data_snapshot=v1.data_snapshot,
         model_used=v1.model_used,
         duration_seconds=v1.duration_seconds,

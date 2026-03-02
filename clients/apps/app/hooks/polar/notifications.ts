@@ -114,6 +114,7 @@ export type MaintainerNewPaidSubscriptionNotificationPayload = {
   tier_price_amount: number | null
   tier_price_recurring_interval: string
   tier_organization_name: string
+  currency: string
 }
 
 export type MaintainerNewProductSaleNotificationPayload = {
@@ -121,12 +122,14 @@ export type MaintainerNewProductSaleNotificationPayload = {
   product_name: string
   product_price_amount: number
   organization_name: string
+  currency: string
 }
 
 export type MaintainerAccountCreditsGrantedNotificationPayload = {
   organization_name: string
   amount: number
   title: string
+  currency: string
 }
 
 export type Notification = {

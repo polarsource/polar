@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { cn } from '@polar-sh/ui/lib/utils'
 import {
   Elements,
   ElementsConsumer,
@@ -527,7 +528,10 @@ const BaseCheckoutForm = ({
                         <div className="flex flex-row items-center space-y-0 space-x-2">
                           <FormControl>
                             <Checkbox
-                              className="dark:border-polar-600 cursor-pointer border-gray-300"
+                              className={cn(
+                                'dark:border-polar-600 cursor-pointer border-gray-300',
+                                field.value ? 'border-primary' : '',
+                              )}
                               checked={field.value ? field.value : false}
                               onCheckedChange={(checked) => {
                                 if (isUpdatePending) return

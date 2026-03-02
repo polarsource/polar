@@ -45,15 +45,17 @@ export const PageContent = () => {
             </Button>
           </Link>
         </Hero>
-        <div className="dark:border-polar-700 relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
-          <Stream
-            src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-            letterboxColor="black"
-            autoplay
-            muted
-            loop
-          />
-        </div>
+      </Section>
+      <Section className="flex max-w-[1620px]! flex-col gap-y-32">
+        <Stream
+          src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
+          letterboxColor="black"
+          autoplay
+          muted
+          loop
+        />
+      </Section>
+      <Section className="flex flex-col gap-y-32">
         <Logotypes />
         <Features />
       </Section>

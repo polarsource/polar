@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Validate input
+if [[ $# -ne 1 ]]; then
+    echo -e "${RED}Error: Exactly one argument (candidate name) is required.${NC}" >&2
+    echo "Usage: $0 <candidate>" >&2
+    exit 1
+fi
+
+CANDIDATE="$1"
+FORK_NAME="polar-${CANDIDATE}"
+
+# Validate candidate name format
+if ! [[ "$CANDIDATE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo -e "${RED}Error: Candidate name contains invalid characters. Use only alphanumeric, hyphens, and underscores.${NC}" >&2
+    exit 1
+fi
+
+echo "Starting fork process for candidate: ${CANDIDATE}"
+echo "Fork name will be: ${FORK_NAME}"
+
+# Step 1: Fork the repository
+echo -e "\n${GREEN}Step 1: Forking repository...${NC}"
+if gh repo fork polarsource/polar \
+    --default-branch-only \
+    --org polarsource \
+    --clone=false \
+    --fork-name "$FORK_NAME"; then
+    echo -e "${GREEN}Fork created successfully.${NC}"
+else
+    echo -e "${RED}Error: Failed to fork repository.${NC}" >&2
+    exit 1
+fi
+
+# Step 2: Wait for fork to be ready
+echo -e "\n${GREEN}Step 2: Waiting for fork to be ready (5 seconds)...${NC}"
+sleep 5
+
+# Step 3: Set repository to private
+echo -e "\n${GREEN}Step 3: Setting repository visibility to private...${NC}"
+if gh repo edit "polarsource/${FORK_NAME}" --visibility private --accept-visibility-change-consequences; then
+    echo -e "${GREEN}Repository visibility set to private.${NC}"
+else
+    echo -e "${RED}Error: Failed to set repository visibility.${NC}" >&2
+    exit 1
+fi
+
+echo -e "\n${GREEN}✓ Fork process completed successfully!${NC}"
+echo "Repository: polarsource/${FORK_NAME}"

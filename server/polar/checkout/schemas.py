@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Any, Literal
 
 from annotated_types import Ge, Le, MaxLen, MinLen
@@ -52,6 +52,7 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
+from polar.kit.utils import utc_now
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -173,6 +174,14 @@ _customer_metadata_description = METADATA_DESCRIPTION.format(
         "that'll be copied to the created customer."
     )
 )
+CHECKOUT_EXPIRES_AT_MIN = timedelta(minutes=30)
+CHECKOUT_EXPIRES_AT_MAX = timedelta(hours=24)
+_expires_at_description = (
+    "Optional expiration date and time for the checkout session. "
+    "Must be between 30 minutes and 24 hours from now. "
+    "If not provided, defaults to 24 hours."
+)
+
 CheckoutCurrency = Annotated[
     PresentmentCurrency,
     Field(
@@ -253,6 +262,23 @@ class CheckoutCreateBase(
     return_url: ReturnURL = None
     embed_origin: EmbedOrigin = None
     locale: Locale | None = None
+    expires_at: datetime | None = Field(
+        default=None, description=_expires_at_description
+    )
+
+    @field_validator("expires_at")
+    @classmethod
+    def validate_expires_at(cls, v: datetime | None) -> datetime | None:
+        if v is None:
+            return v
+        now = utc_now()
+        min_expires = now + CHECKOUT_EXPIRES_AT_MIN
+        max_expires = now + CHECKOUT_EXPIRES_AT_MAX
+        if v < min_expires:
+            raise ValueError("Expiration must be at least 30 minutes from now.")
+        if v > max_expires:
+            raise ValueError("Expiration must be at most 24 hours from now.")
+        return v
 
 
 class CheckoutPriceCreate(CheckoutCreateBase):

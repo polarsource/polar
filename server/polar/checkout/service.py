@@ -520,10 +520,14 @@ class CheckoutService:
                     "customer_tax_id",
                     "subscription_id",
                     "custom_field_data",
+                    "expires_at",
                 },
                 by_alias=True,
             ),
         )
+
+        if checkout_create.expires_at is not None:
+            checkout.expires_at = checkout_create.expires_at
 
         if checkout.customer is not None:
             prefill_attributes = (

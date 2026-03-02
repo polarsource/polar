@@ -107,6 +107,7 @@ class OrderScenario:
     balance_net_amount: int | None = None
     include_balance_net_amount: bool = True
     balance_exchange_rate: float | None = None
+    balance_presentment_currency: str = "usd"
     include_order_created_at_metadata: bool = True
     include_order_paid: bool = True
     include_balance: bool = True
@@ -467,6 +468,7 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                     balance_amount=2_000,
                     balance_net_amount=2_000,
                     balance_exchange_rate=2.0,
+                    balance_presentment_currency="gbp",
                 ),
                 OrderScenario(
                     product_key="one_time",
@@ -1055,6 +1057,7 @@ async def _create_paid_order_events(
     balance_net_amount: int | None = None,
     include_balance_net_amount: bool = True,
     balance_exchange_rate: float | None = None,
+    balance_presentment_currency: str = "usd",
     include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
     include_balance: bool = True,
@@ -1124,7 +1127,7 @@ async def _create_paid_order_events(
     if not emit_balance_credit_order:
         balance_metadata["transaction_id"] = str(transaction.id)
         balance_metadata["presentment_amount"] = balance_amount_value
-        balance_metadata["presentment_currency"] = "usd"
+        balance_metadata["presentment_currency"] = balance_presentment_currency
     if balance_exchange_rate is not None:
         balance_metadata["exchange_rate"] = balance_exchange_rate
 
@@ -1325,6 +1328,7 @@ async def _seed_customer_scenario(
                         subscription_order.include_balance_net_amount
                     ),
                     balance_exchange_rate=subscription_order.balance_exchange_rate,
+                    balance_presentment_currency=subscription_order.balance_presentment_currency,
                     include_order_created_at_metadata=(
                         subscription_order.include_order_created_at_metadata
                     ),
@@ -1417,6 +1421,7 @@ async def _seed_customer_scenario(
                 balance_net_amount=one_time_order.balance_net_amount,
                 include_balance_net_amount=one_time_order.include_balance_net_amount,
                 balance_exchange_rate=one_time_order.balance_exchange_rate,
+                balance_presentment_currency=one_time_order.balance_presentment_currency,
                 include_order_created_at_metadata=(
                     one_time_order.include_order_created_at_metadata
                 ),

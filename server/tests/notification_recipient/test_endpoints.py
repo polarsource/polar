@@ -62,6 +62,60 @@ class TestCreateNotificationRecipient:
         assert json["platform"] == "ios"
         assert json["expo_push_token"] == "123"
 
+    @pytest.mark.auth
+    async def test_duplicate_same_user(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+    ) -> None:
+        existing = await create_notification_recipient(
+            save_fixture,
+            user=user,
+            expo_push_token="123",
+            platform=NotificationRecipientPlatform.ios,
+        )
+
+        response = await client.post(
+            "/v1/notifications/recipients",
+            json={
+                "platform": "ios",
+                "expo_push_token": "123",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["id"] == str(existing.id)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_reassign_from_other_user(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        user_second: User,
+    ) -> None:
+        await create_notification_recipient(
+            save_fixture,
+            user=user,
+            expo_push_token="shared_token",
+            platform=NotificationRecipientPlatform.ios,
+        )
+
+        response = await client.post(
+            "/v1/notifications/recipients",
+            json={
+                "platform": "ios",
+                "expo_push_token": "shared_token",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["expo_push_token"] == "shared_token"
+        assert json["user_id"] == str(user_second.id)
+
 
 @pytest.mark.asyncio
 class TestListNotificationRecipients:

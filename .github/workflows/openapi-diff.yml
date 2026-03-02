@@ -1,0 +1,91 @@
+name: OpenAPI Diff
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "server/polar/**"
+
+concurrency:
+  group: openapi-diff-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  openapi-diff:
+    name: "OpenAPI Diff 📄"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR (head)
+        uses: actions/checkout@v6
+        with:
+          path: head
+
+      - name: Checkout base branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "head/server/pyproject.toml"
+
+      - name: Install head dependencies
+        working-directory: ./head/server
+        run: uv sync
+
+      - name: Install base dependencies
+        working-directory: ./base/server
+        run: uv sync
+
+      - name: Generate OpenAPI schema from head
+        working-directory: ./head/server
+        run: uv run -m scripts.generate_openapi > ${{ github.workspace }}/head.json
+
+      - name: Generate OpenAPI schema from base
+        working-directory: ./base/server
+        run: uv run -m scripts.generate_openapi > ${{ github.workspace }}/base.json
+
+      - name: Generate OpenAPI diff
+        id: diff
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          uvx openapi-kit diff ${{ github.workspace }}/base.json ${{ github.workspace }}/head.json >> $GITHUB_OUTPUT
+          EXIT_CODE=$?
+          echo "EOF" >> $GITHUB_OUTPUT
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          elif [ $EXIT_CODE -eq 1 ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            exit $EXIT_CODE
+          fi
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- __OPENAPI_DIFF -->"
+
+      - name: Create or update PR comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- __OPENAPI_DIFF -->
+            ## OpenAPI Changes
+
+            ${{ steps.diff.outputs.has_changes == 'true' && steps.diff.outputs.content || '_No changes detected in the OpenAPI schema._' }}

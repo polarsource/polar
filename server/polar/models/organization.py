@@ -31,6 +31,7 @@ from .account import Account
 if TYPE_CHECKING:
     from polar.email.sender import EmailFromReply
 
+    from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
     from .product import Product
 
@@ -397,6 +398,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
             back_populates="organization",
             cascade="delete, delete-orphan",
             uselist=False,  # This makes it a one-to-one relationship
+        )
+
+    @declared_attr
+    def agent_reviews(cls) -> Mapped[list["OrganizationAgentReview"]]:
+        return relationship(
+            "OrganizationAgentReview",
+            lazy="raise",
+            back_populates="organization",
         )
 
     def is_blocked(self) -> bool:

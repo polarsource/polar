@@ -5,6 +5,7 @@ export type SectionProps = PropsWithChildren<{
   id?: string
   className?: string
   wrapperClassName?: string
+  border?: boolean
 }>
 
 export const Section = ({
@@ -12,12 +13,14 @@ export const Section = ({
   className,
   wrapperClassName,
   children,
+  border,
 }: SectionProps) => {
   return (
     <div
       id={id}
       className={twMerge(
-        'dark:border-polar-700 relative flex flex-col border-b border-gray-200 md:items-center',
+        'relative flex flex-col md:items-center',
+        border ? 'dark:border-polar-700 border-b border-gray-200' : '',
         wrapperClassName,
       )}
     >

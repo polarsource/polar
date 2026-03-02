@@ -55,7 +55,7 @@ export const PageContent = () => {
           loop
         />
       </Section>
-      <Section className="flex flex-col gap-y-32">
+      <Section className="flex flex-col gap-y-32" border>
         <Logotypes />
         <Features />
       </Section>

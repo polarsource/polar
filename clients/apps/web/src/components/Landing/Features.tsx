@@ -21,7 +21,7 @@ const EDGE_HI = 'border-[0.5px] border-gray-500 dark:border-[#D0D6E0]'
 
 const BillingIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(36px)' }}>
+    <div style={{ transform: 'translateY(-10px) scale(1.4)' }}>
       <Isometric style={{ width: 200, height: 130 }}>
         {/* Base plate */}
         <IsometricBox
@@ -104,7 +104,7 @@ const BillingIllustration = () => (
 
 const CustomerIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(-24px) translateX(8px)' }}>
+    <div style={{ transform: 'translateY(8px) scale(1.4)' }}>
       <Isometric style={{ width: 200, height: 160 }}>
         {/* Card 3 – back (dimmest) */}
         <IsometricBox
@@ -148,7 +148,7 @@ const CustomerIllustration = () => (
           y={12}
           z={62}
           width={90}
-          height={8}
+          height={2}
           depth={2}
           topClassName="bg-gray-400/40 dark:bg-[#D0D6E0]/35"
           frontClassName="bg-gray-300/15 dark:bg-[#D0D6E0]/10"
@@ -157,10 +157,10 @@ const CustomerIllustration = () => (
         {/* Data row 1 */}
         <IsometricBox
           x={12}
-          y={30}
+          y={20}
           z={62}
           width={70}
-          height={6}
+          height={2}
           depth={1}
           topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
           frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
@@ -169,26 +169,14 @@ const CustomerIllustration = () => (
         {/* Data row 2 */}
         <IsometricBox
           x={12}
-          y={46}
+          y={30}
           z={62}
-          width={85}
-          height={6}
+          width={32}
+          height={2}
           depth={1}
           topClassName="bg-gray-400/40 dark:bg-[#62666D]/40"
           frontClassName="bg-gray-300/10 dark:bg-[#62666D]/10"
           rightClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
-        />
-        {/* Data row 3 */}
-        <IsometricBox
-          x={12}
-          y={62}
-          z={62}
-          width={55}
-          height={6}
-          depth={1}
-          topClassName="bg-gray-400/30 dark:bg-[#62666D]/30"
-          frontClassName="bg-gray-200/8 dark:bg-[#62666D]/8"
-          rightClassName="bg-gray-200/6 dark:bg-[#62666D]/6"
         />
       </Isometric>
     </div>
@@ -199,7 +187,7 @@ const CustomerIllustration = () => (
 
 const MerchantIllustration = () => (
   <div className="flex h-full w-full items-center justify-center overflow-hidden">
-    <div style={{ transform: 'translateY(-20px) translateX(4px)' }}>
+    <div style={{ transform: 'translateY(4px) translateX(-8px) scale(1.4)' }}>
       <Isometric style={{ width: 220, height: 160 }}>
         {/* Base world surface */}
         <IsometricBox
@@ -276,10 +264,10 @@ const MerchantIllustration = () => (
         {/* Details on highlighted region */}
         <IsometricBox
           x={68}
-          y={60}
+          y={64}
           z={13}
           width={65}
-          height={7}
+          height={2}
           depth={2}
           topClassName="bg-gray-400/40 dark:bg-[#D0D6E0]/35"
           frontClassName="bg-gray-300/10 dark:bg-[#D0D6E0]/10"
@@ -287,10 +275,10 @@ const MerchantIllustration = () => (
         />
         <IsometricBox
           x={68}
-          y={76}
+          y={70}
           z={13}
           width={45}
-          height={5}
+          height={2}
           depth={1}
           topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
           frontClassName="bg-gray-300/12 dark:bg-[#62666D]/12"
@@ -298,10 +286,10 @@ const MerchantIllustration = () => (
         />
         <IsometricBox
           x={68}
-          y={90}
+          y={76}
           z={13}
-          width={56}
-          height={5}
+          width={32}
+          height={2}
           depth={1}
           topClassName="bg-gray-400/40 dark:bg-[#62666D]/40"
           frontClassName="bg-gray-300/8 dark:bg-[#62666D]/8"

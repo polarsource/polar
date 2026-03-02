@@ -71,6 +71,42 @@ const PaymentIllustration = () => (
           frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
           rightClassName="bg-gray-200/10 dark:bg-[#62666D]/10"
         />
+        {/* Inserted card – rendered before terminal so terminal occludes the inside portion */}
+        <IsometricBox
+          x={36}
+          y={96}
+          z={4}
+          width={50}
+          height={28}
+          depth={5}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={`${FACE_F} ${EDGE_DIM}`}
+          rightClassName={`${FACE_R} ${EDGE_DIM}`}
+        />
+        {/* Inserted card chip */}
+        <IsometricBox
+          x={43}
+          y={111}
+          z={10}
+          width={8}
+          height={6}
+          depth={1}
+          topClassName={`${FACE_T} ${EDGE_MID}`}
+          frontClassName={FACE_F}
+          rightClassName={FACE_R}
+        />
+        {/* Inserted card stripe */}
+        <IsometricBox
+          x={43}
+          y={119}
+          z={10}
+          width={34}
+          height={1}
+          depth={1}
+          topClassName="bg-gray-400/55 dark:bg-[#62666D]/55"
+          frontClassName="bg-gray-300/15 dark:bg-[#62666D]/15"
+          rightClassName="bg-gray-200/10 dark:bg-[#62666D]/10"
+        />
         {/* Terminal body */}
         <IsometricBox
           x={10}
@@ -82,6 +118,18 @@ const PaymentIllustration = () => (
           topClassName={`${FACE_T} ${EDGE_HI}`}
           frontClassName={`${FACE_F} ${EDGE_MID}`}
           rightClassName={`${FACE_R} ${EDGE_MID}`}
+        />
+        {/* Card slot shadow – dark line at terminal/card intersection */}
+        <IsometricBox
+          x={35}
+          y={107}
+          z={4}
+          width={52}
+          height={2}
+          depth={6}
+          topClassName="bg-gray-600/25 dark:bg-[#62666D]/50"
+          frontClassName="bg-gray-600/30 dark:bg-[#62666D]/40"
+          rightClassName="bg-gray-500/20 dark:bg-[#62666D]/30"
         />
         {/* Screen header bar */}
         <IsometricBox
@@ -175,8 +223,8 @@ const CustomerIllustration = () => (
           height={16}
           depth={2}
           topClassName={`${FACE_T} ${EDGE_MID} rounded-full`}
-          frontClassName={`${FACE_F} rounded-full`}
-          rightClassName={`${FACE_R} rounded-full`}
+          frontClassName="bg-transparent"
+          rightClassName="bg-transparent"
         />
         {/* Name line */}
         <IsometricBox
@@ -275,11 +323,11 @@ const MerchantIllustration = () => (
         />
         {/* Region – top left */}
         <IsometricBox
-          x={8}
-          y={8}
+          x={6}
+          y={6}
           z={4}
-          width={65}
-          height={48}
+          width={36}
+          height={26}
           depth={5}
           topClassName={`${FACE_T} ${EDGE_MID}`}
           frontClassName={`${FACE_F} ${EDGE_DIM}`}
@@ -287,11 +335,11 @@ const MerchantIllustration = () => (
         />
         {/* Region – top right */}
         <IsometricBox
-          x={138}
+          x={160}
           y={6}
           z={4}
-          width={70}
-          height={48}
+          width={40}
+          height={26}
           depth={5}
           topClassName={`${FACE_T} ${EDGE_MID}`}
           frontClassName={`${FACE_F} ${EDGE_DIM}`}
@@ -312,10 +360,10 @@ const MerchantIllustration = () => (
         {/* Region – bottom left */}
         <IsometricBox
           x={6}
-          y={100}
+          y={114}
           z={4}
-          width={54}
-          height={48}
+          width={34}
+          height={26}
           depth={5}
           topClassName={`${FACE_T} ${EDGE_MID}`}
           frontClassName={`${FACE_F} ${EDGE_DIM}`}
@@ -323,11 +371,11 @@ const MerchantIllustration = () => (
         />
         {/* Region – bottom right */}
         <IsometricBox
-          x={152}
-          y={98}
+          x={164}
+          y={112}
           z={4}
-          width={58}
-          height={48}
+          width={36}
+          height={26}
           depth={5}
           topClassName={`${FACE_T} ${EDGE_MID}`}
           frontClassName={`${FACE_F} ${EDGE_DIM}`}

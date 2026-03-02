@@ -185,8 +185,12 @@ const MaintainerNewPaidSubscription = ({
             )}{' '}
             {payload.tier_price_amount !== null && (
               <>
-                ({formatCurrency('compact')(payload.tier_price_amount, 'usd')}/
-                {payload.tier_price_recurring_interval})
+                (
+                {formatCurrency('compact')(
+                  payload.tier_price_amount,
+                  payload.currency || 'usd',
+                )}
+                /{payload.tier_price_recurring_interval})
               </>
             )}
           </>
@@ -222,7 +226,12 @@ const MaintainerNewProductSale = ({
             ) : (
               <span className="font-bold">{payload.product_name}</span>
             )}{' '}
-            ({formatCurrency('compact')(payload.product_price_amount, 'usd')})
+            (
+            {formatCurrency('compact')(
+              payload.product_price_amount,
+              payload.currency || 'usd',
+            )}
+            )
           </>
         ),
         icon: <ShoppingBagOutlined fontSize="small" />,
@@ -268,7 +277,10 @@ const MaintainerAccountCreditsGranted = ({
           <>
             {payload.organization_name} has received{' '}
             <span className="font-bold">
-              {formatCurrency('compact')(payload.amount, 'usd')}
+              {formatCurrency('compact')(
+                payload.amount,
+                payload.currency || 'usd',
+              )}
             </span>{' '}
             in fee credits!
           </>

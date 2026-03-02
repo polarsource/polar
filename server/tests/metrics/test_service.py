@@ -289,10 +289,14 @@ class TestGetMetrics:
         )
         assert len(metrics.periods) == expected_count
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
     async def test_timezones(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
         metrics_backend: str,
     ) -> None:
@@ -493,15 +497,15 @@ class TestGetMetrics:
         )
 
         for period in metrics.periods:
-            assert period.orders == 0
-            assert period.revenue == 0
-            assert period.average_order_value == 0
-            assert period.one_time_products == 0
-            assert period.one_time_products_revenue == 0
-            assert period.new_subscriptions == 0
-            assert period.new_subscriptions_revenue == 0
-            assert period.renewed_subscriptions == 0
-            assert period.renewed_subscriptions_revenue == 0
+            assert period.orders is None
+            assert period.revenue is None
+            assert period.average_order_value is None
+            assert period.one_time_products is None
+            assert period.one_time_products_revenue is None
+            assert period.new_subscriptions is None
+            assert period.new_subscriptions_revenue is None
+            assert period.renewed_subscriptions is None
+            assert period.renewed_subscriptions_revenue is None
             assert period.active_subscriptions == 0
             assert period.monthly_recurring_revenue == 0
 
@@ -1818,8 +1822,8 @@ class TestGetMetrics:
         assert len(metrics.periods) == 1
 
         jan = metrics.periods[0]
-        assert jan.costs == 0
-        assert jan.cost_per_user == 0
+        assert jan.costs is None
+        assert jan.cost_per_user is None
 
     @pytest.mark.auth
     async def test_churn_rate(
@@ -1848,6 +1852,7 @@ class TestGetMetrics:
 
         subscription_1 = subs["subscription_1"]
         subscription_1.canceled_at = _date_to_datetime(date(2024, 2, 15))
+        subscription_1.ends_at = _date_to_datetime(date(2024, 3, 1))
         subscription_1.ended_at = _date_to_datetime(date(2024, 3, 1))
         await save_fixture(subscription_1)
         await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)

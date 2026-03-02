@@ -75,6 +75,8 @@ async def create_events_for_fixtures(
             events.append(ev)
 
     for order in orders.values():
+        if not order.paid:
+            continue
         product = next((p for p in products.values() if p.id == order.product_id), None)
 
         paid_metadata: dict[str, Any] = {

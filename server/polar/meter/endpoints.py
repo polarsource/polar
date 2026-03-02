@@ -145,8 +145,8 @@ async def quantities(
                 {
                     "loc": ("query",),
                     "msg": (
-                        "The interval is too big. "
-                        "Try to change the interval or reduce the date range."
+                        "The interval does not match the date range. "
+                        "Try to change the interval or adjust the date range."
                     ),
                     "type": "value_error",
                     "input": (start_timestamp, end_timestamp, interval),

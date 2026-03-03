@@ -54,8 +54,7 @@ const CustomerPortalOrder = ({
   const hasSeatBasedOrder = order.seats && order.seats > 0
 
   // Check customer portal settings for seat management visibility
-  const portalSettings =
-    order.product?.organization.customer_portal_settings
+  const portalSettings = order.product?.organization.customer_portal_settings
   const showSeatManagement = portalSettings?.subscription.update_seats === true
 
   return (

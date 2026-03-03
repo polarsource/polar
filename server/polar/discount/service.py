@@ -82,6 +82,8 @@ class DiscountService(ResourceServiceReader[Discount]):
                 order_by_clauses.append(clause_function(Discount.code))
             elif criterion == DiscountSortProperty.redemptions_count:
                 order_by_clauses.append(clause_function(Discount.redemptions_count))
+            elif criterion == DiscountSortProperty.ends_at:
+                order_by_clauses.append(clause_function(Discount.ends_at))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)

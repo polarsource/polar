@@ -73,21 +73,22 @@ export const useCheckoutConfirmedRedirect = (
         )
       }
 
-      if (isInternalURL || !embed) {
-        // If we don't have a customer session token, redirect to customer portal login
-        if (!customerSessionToken) {
-          const {
-            organization: { slug },
-            customerEmail,
-          } = checkout
-          if (customerEmail) {
-            parsedURL.searchParams.set('email', customerEmail)
-          }
-          router.push(`/${slug}/portal/request?${parsedURL.searchParams}`)
-        } else {
-          // Otherwise, redirect to the success URL with the customer session token
-          router.push(parsedURL.toString())
+      // If we don't have a customer session token, redirect to customer portal login
+      // instead of internal success URL
+      if (isInternalURL && !customerSessionToken) {
+        const {
+          organization: { slug },
+          customerEmail,
+        } = checkout
+        if (customerEmail) {
+          parsedURL.searchParams.set('email', customerEmail)
         }
+        router.push(`/${slug}/portal/request?${parsedURL.searchParams}`)
+        return
+      }
+
+      if (isInternalURL || !embed) {
+        router.push(parsedURL.toString())
       }
     },
     [router, embed, theme, listenFulfillment],

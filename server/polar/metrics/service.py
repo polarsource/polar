@@ -2,6 +2,7 @@ import asyncio
 import uuid
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 import logfire
@@ -74,6 +75,13 @@ def _expand_metrics_with_dependencies(
     return pg_slugs, tb_slugs, meta_slugs
 
 
+class _TinybirdFilters(NamedTuple):
+    org_ids: list[uuid.UUID]
+    product_id: Sequence[uuid.UUID] | None
+    customer_ids: list[uuid.UUID] | None
+    external_customer_id: list[str] | None
+
+
 class MetricsService:
     async def get_metrics(
         self,
@@ -130,41 +138,13 @@ class MetricsService:
             fn for qt, fn in QUERY_TO_FUNCTION.items() if qt in required_queries
         ]
 
-        external_customer_id: list[str] | None = None
-        if customer_id is not None:
-            customer_stmt = select(Customer.external_id).where(
-                Customer.id.in_(customer_id),
-                Customer.external_id.is_not(None),
-                Customer.external_id != "",
-            )
-            external_ids = [eid for eid in await session.scalars(customer_stmt) if eid]
-            if external_ids:
-                external_customer_id = external_ids
-
-        tb_org_ids = await self._resolve_tb_org_ids(
-            session, auth_subject, organization_id=organization_id
-        )
-
-        tb_product_id = product_id
-        if billing_type is not None and tb_org_ids:
-            product_stmt = select(Product.id).where(
-                Product.organization_id.in_(tb_org_ids),
-                Product.billing_type.in_(billing_type),
-                Product.is_deleted.is_(False),
-            )
-            billing_type_product_ids = list(await session.scalars(product_stmt))
-            if product_id is not None:
-                tb_product_id = [
-                    pid for pid in product_id if pid in billing_type_product_ids
-                ]
-            else:
-                tb_product_id = billing_type_product_ids
-
-        tb_customer_ids = await self._resolve_tb_customer_ids(
+        tb_filters = await self._resolve_tinybird_filters(
             session,
-            tb_org_ids=tb_org_ids,
+            auth_subject,
+            organization_id=organization_id,
+            product_id=product_id,
+            billing_type=billing_type,
             customer_id=customer_id,
-            external_customer_id=external_customer_id,
             tb_needed=tb_slugs,
         )
 
@@ -192,11 +172,11 @@ class MetricsService:
             original_end_timestamp=original_end_timestamp,
             timezone=timezone,
             interval=interval,
-            tb_org_ids=tb_org_ids,
-            product_id=tb_product_id,
+            tb_org_ids=tb_filters.org_ids,
+            product_id=tb_filters.product_id,
             billing_type=billing_type,
-            tb_customer_ids=tb_customer_ids,
-            external_customer_id=external_customer_id,
+            tb_customer_ids=tb_filters.customer_ids,
+            external_customer_id=tb_filters.external_customer_id,
             tb_needed=tb_slugs,
         )
 
@@ -220,14 +200,13 @@ class MetricsService:
                     getattr(tb_period, tb_m.slug, 0) if tb_period is not None else 0
                 )
 
-            temp_dict = dict(period_dict)
+            # Seed meta metric values to 0 before computing
+            # in the event that one meta-metric depends on another
             for meta_metric in filtered_post_compute:
-                temp_dict[meta_metric.slug] = 0
+                period_dict[meta_metric.slug] = 0
             for meta_metric in filtered_post_compute:
-                temp_period = MetricsPeriod.model_validate(temp_dict)
-                computed = meta_metric.compute_from_period(temp_period)
-                temp_dict[meta_metric.slug] = computed
-                period_dict[meta_metric.slug] = computed
+                period = MetricsPeriod.model_validate(period_dict)
+                period_dict[meta_metric.slug] = meta_metric.compute_from_period(period)
 
             if metrics is not None:
                 requested = set(metrics)
@@ -331,7 +310,7 @@ class MetricsService:
 
         return periods
 
-    async def _resolve_tb_org_ids(
+    async def _get_org_ids_for_subject(
         self,
         session: AsyncSession | AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
@@ -350,36 +329,76 @@ class MetricsService:
             return list(await session.scalars(stmt))
         return []
 
-    async def _resolve_tb_customer_ids(
+    async def _resolve_tinybird_filters(
         self,
         session: AsyncSession | AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
         *,
-        tb_org_ids: list[uuid.UUID],
+        organization_id: Sequence[uuid.UUID] | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
         tb_needed: set[str],
-    ) -> list[uuid.UUID] | None:
-        tb_queries = list({m.query for m in METRICS_TINYBIRD if m.slug in tb_needed})
+    ) -> _TinybirdFilters:
+        external_customer_id: list[str] | None = None
+        if customer_id is not None:
+            stmt = select(Customer.external_id).where(
+                Customer.id.in_(customer_id),
+                Customer.external_id.is_not(None),
+                Customer.external_id != "",
+            )
+            external_ids = [eid for eid in await session.scalars(stmt) if eid]
+            if external_ids:
+                external_customer_id = external_ids
 
-        result: list[uuid.UUID] | None = (
+        tb_org_ids = await self._get_org_ids_for_subject(
+            session, auth_subject, organization_id=organization_id
+        )
+
+        tb_product_id = product_id
+        if billing_type is not None and tb_org_ids:
+            product_stmt = select(Product.id).where(
+                Product.organization_id.in_(tb_org_ids),
+                Product.billing_type.in_(billing_type),
+                Product.is_deleted.is_(False),
+            )
+            billing_type_product_ids = list(await session.scalars(product_stmt))
+            if product_id is not None:
+                tb_product_id = [
+                    pid for pid in product_id if pid in billing_type_product_ids
+                ]
+            else:
+                tb_product_id = billing_type_product_ids
+
+        tb_customer_ids: list[uuid.UUID] | None = (
             list(customer_id) if customer_id is not None else None
         )
+        # The cancellations endpoint filters by internal customer ID, but callers
+        # can pass external IDs. Resolve external IDs back to internal IDs so the
+        # cancellations query can match on them.
+        tb_queries = list({m.query for m in METRICS_TINYBIRD if m.slug in tb_needed})
         if (
             TinybirdQuery.cancellations in tb_queries
             and external_customer_id is not None
             and len(external_customer_id) > 0
             and tb_org_ids
         ):
-            stmt = select(Customer.id).where(
+            customer_stmt = select(Customer.id).where(
                 Customer.organization_id.in_(tb_org_ids),
                 Customer.external_id.in_(external_customer_id),
             )
-            resolved = list(await session.scalars(stmt))
-            merged = list(result or [])
+            resolved = list(await session.scalars(customer_stmt))
+            merged = list(tb_customer_ids or [])
             merged.extend(resolved)
             if merged:
-                result = list(dict.fromkeys(merged))
-        return result
+                tb_customer_ids = list(dict.fromkeys(merged))
+
+        return _TinybirdFilters(
+            org_ids=tb_org_ids,
+            product_id=tb_product_id,
+            customer_ids=tb_customer_ids,
+            external_customer_id=external_customer_id,
+        )
 
     async def _get_metrics_from_tinybird(
         self,

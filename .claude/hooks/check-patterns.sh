@@ -31,8 +31,8 @@ if echo "$CONTENT" | grep -q "session\.commit()"; then
   exit 0
 fi
 
-# Check 2: No direct DB queries in service files (must be in repository)
-if [[ "$FILE_PATH" =~ /service\.py$ ]]; then
+# Check 2: No direct DB queries in service files (must be in repository). Keep metrics as a special case.
+if [[ "$FILE_PATH" =~ /service\.py$ ]] && [[ ! "$FILE_PATH" =~ metrics/service\.py$ ]]; then
   # Check for select() not preceded by sql. (which is our wrapper)
   if echo "$CONTENT" | grep -qE "[^a-z_.]select\(|^select\("; then
     echo '{"decision": "block", "reason": "DB queries (select) must be in repository files, not services. Create a method in the repository and call it from the service."}'

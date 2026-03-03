@@ -7,6 +7,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
+from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
 from .schemas import DataSnapshot, ReviewAgentReport, ReviewContext, UsageInfo
 from .thresholds import thresholds_for_prompt
@@ -240,7 +241,7 @@ Return only APPROVE or DENY.
 """
 
 
-THRESHOLD_PREAMBLE = """\
+THRESHOLD_PREAMBLE = f"""\
 This is a THRESHOLD review triggered when a payment threshold is hit. \
 Perform a comprehensive analysis across ALL five dimensions. \
 If website content is not available, flag this as a red flag.
@@ -253,7 +254,12 @@ organization's website. Mismatched or suspicious domains are yellow flags.
 mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
 or API keys configured.
 - **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
-Webhook domains should match the organization's website or known services.
+Webhook domains should match the organization's website or known services. \
+Domains marked '(known service)' in the webhook domain list are legitimate third-party \
+integration platforms and should NOT be flagged as suspicious mismatches.
+
+Known integration platform domains:
+{known_domains_for_prompt()}
 
 Return only APPROVE or DENY.
 """
@@ -303,10 +309,26 @@ organization's website. Mismatched or suspicious domains are yellow flags.
 mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
 or API keys configured.
 - **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
-Webhook domains should match the organization's website or known services.
+Webhook domains should match the organization's website or known services. \
+Domains marked '(known service)' in the webhook domain list are legitimate third-party \
+integration platforms and should NOT be flagged as suspicious mismatches.
+
+Known integration platform domains:
+{known_domains_for_prompt()}
 
 Return only APPROVE or DENY.
 """
+
+
+def _annotate_domains(domains: list[str]) -> str:
+    """Join domain names, tagging known service domains for the AI agent."""
+    parts = []
+    for d in domains:
+        if match_known_domain(d) is not None:
+            parts.append(f"{d} (known service)")
+        else:
+            parts.append(d)
+    return ", ".join(parts)
 
 
 class ReviewAnalyzer:
@@ -466,7 +488,7 @@ class ReviewAnalyzer:
                 for url in setup.integration.webhook_urls:
                     parts.append(f"  - {url}")
                 parts.append(
-                    f"Webhook Domains: {', '.join(setup.integration.webhook_domains)}"
+                    f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
                 )
             else:
                 parts.append("No webhook endpoints configured.")
@@ -648,12 +670,12 @@ class ReviewAnalyzer:
         return "\n".join(parts)
 
 
-def _timeout_report() -> ReviewAgentReport:
+def _fallback_report(summary: str, finding: str, action: str) -> ReviewAgentReport:
     from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict, RiskLevel
 
     return ReviewAgentReport(
         verdict=ReviewVerdict.DENY,
-        summary="Analysis timed out. Denied for human review.",
+        summary=summary,
         merchant_summary="Error occurred during analysis. Please contact support for assistance.",
         violated_sections=[],
         dimensions=[
@@ -661,34 +683,29 @@ def _timeout_report() -> ReviewAgentReport:
                 dimension=ReviewDimension.POLICY_COMPLIANCE,
                 risk_level=RiskLevel.MEDIUM,
                 confidence=0.0,
-                findings=["Analysis timed out"],
+                findings=[finding],
                 recommendation="Human review required",
             )
         ],
         overall_risk_level=RiskLevel.MEDIUM,
-        recommended_action="Human review required due to timeout.",
+        recommended_action=action,
+    )
+
+
+def _timeout_report() -> ReviewAgentReport:
+    return _fallback_report(
+        "Analysis timed out. Denied for human review.",
+        "Analysis timed out",
+        "Human review required due to timeout.",
     )
 
 
 def _error_report(error: str) -> ReviewAgentReport:
-    from .schemas import DimensionAssessment, ReviewDimension, ReviewVerdict, RiskLevel
-
-    return ReviewAgentReport(
-        verdict=ReviewVerdict.DENY,
-        summary=f"Analysis failed with error: {error[:200]}. Denied for human review.",
-        merchant_summary="Error occurred during analysis. Please contact support for assistance.",
-        violated_sections=[],
-        dimensions=[
-            DimensionAssessment(
-                dimension=ReviewDimension.POLICY_COMPLIANCE,
-                risk_level=RiskLevel.MEDIUM,
-                confidence=0.0,
-                findings=[f"Analysis error: {error[:200]}"],
-                recommendation="Human review required",
-            )
-        ],
-        overall_risk_level=RiskLevel.MEDIUM,
-        recommended_action="Human review required due to analysis error.",
+    msg = error[:200]
+    return _fallback_report(
+        f"Analysis failed with error: {msg}. Denied for human review.",
+        f"Analysis error: {msg}",
+        "Human review required due to analysis error.",
     )
 
 

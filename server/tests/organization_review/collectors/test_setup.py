@@ -204,6 +204,38 @@ class TestCollectSetupDataIntegration:
         assert result.integration.webhook_domains == []
 
 
+class TestCollectSetupDataKnownDomains:
+    def test_webhook_known_domains(self) -> None:
+        ep1 = _build_webhook_endpoint(url="https://myapp.com/webhook")
+        ep2 = _build_webhook_endpoint(url="https://discord.com/api/webhooks/123")
+        ep3 = _build_webhook_endpoint(url="https://hooks.zapier.com/hook/abc")
+
+        result = collect_setup_data([], [], 0, [ep1, ep2, ep3])
+
+        assert set(result.integration.webhook_known_service_domains) == {
+            "discord.com",
+            "hooks.zapier.com",
+        }
+
+    def test_webhook_wildcard_known_domains(self) -> None:
+        ep = _build_webhook_endpoint(
+            url="https://myproject.supabase.co/functions/v1/hook"
+        )
+
+        result = collect_setup_data([], [], 0, [ep])
+
+        assert result.integration.webhook_known_service_domains == [
+            "myproject.supabase.co"
+        ]
+
+    def test_empty_when_all_custom(self) -> None:
+        ep = _build_webhook_endpoint(url="https://mystore.com/webhook")
+
+        result = collect_setup_data([], [], 0, [ep])
+
+        assert result.integration.webhook_known_service_domains == []
+
+
 class TestCollectSetupDataCombined:
     def test_full_setup(self) -> None:
         """Integration test with all data populated."""

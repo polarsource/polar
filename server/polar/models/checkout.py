@@ -369,7 +369,7 @@ class Checkout(
         return getattr(self, "_customer_session_token", None)
 
     @customer_session_token.setter
-    def customer_session_token(self, value: str) -> None:
+    def customer_session_token(self, value: str | None) -> None:
         self._customer_session_token = value
 
     attached_custom_fields: AssociationProxy[

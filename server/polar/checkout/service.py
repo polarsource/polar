@@ -1188,7 +1188,7 @@ class CheckoutService:
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
                 session, auth_subject, checkout
-            ) as customer:
+            ) as (customer, generate_customer_session):
                 checkout.customer = customer
                 stripe_customer_id = customer.stripe_customer_id
                 assert stripe_customer_id is not None
@@ -1286,6 +1286,8 @@ class CheckoutService:
                     )
                     if trial_already_redeemed:
                         raise TrialAlreadyRedeemed(checkout)
+        else:
+            raise NotImplementedError()
 
         if not checkout.is_payment_form_required:
             enqueue_job("checkout.handle_free_success", checkout_id=checkout.id)
@@ -1296,13 +1298,16 @@ class CheckoutService:
         await self._after_checkout_updated(session, checkout)
 
         assert checkout.customer is not None
-        (
-            customer_session_token,
-            _,
-        ) = await customer_session_service.create_customer_session(
-            session, checkout.customer
-        )
-        checkout.customer_session_token = customer_session_token
+        if generate_customer_session:
+            (
+                customer_session_token,
+                _,
+            ) = await customer_session_service.create_customer_session(
+                session, checkout.customer
+            )
+            checkout.customer_session_token = customer_session_token
+        else:
+            checkout.customer_session_token = None
 
         return checkout
 
@@ -2594,11 +2599,12 @@ class CheckoutService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
-    ) -> AsyncGenerator[Customer]:
+    ) -> AsyncGenerator[tuple[Customer, bool]]:
         repository = CustomerRepository.from_session(session)
 
         created = False
         customer = checkout.customer
+        generate_customer_session = True
 
         if customer is not None and customer.is_deleted:
             raise CheckoutCustomerDeleted(checkout)
@@ -2618,6 +2624,10 @@ class CheckoutService:
                     user_metadata={},
                 )
                 created = True
+            else:
+                # Don't automatically create a session for customer associated by email.
+                # Could be a malicious user trying to take over an existing customer's account by using their email
+                generate_customer_session = False
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
@@ -2674,9 +2684,12 @@ class CheckoutService:
                 await member_service.create_owner_member(
                     session, customer, checkout.organization
                 )
-                yield customer
+                yield customer, generate_customer_session
         else:
-            yield await repository.update(customer, flush=True)
+            yield (
+                await repository.update(customer, flush=True),
+                generate_customer_session,
+            )
 
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout

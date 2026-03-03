@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
 
+from ..known_domains import match_known_domain
 from ..schemas import (
     CheckoutLinkBenefitData,
     CheckoutLinksData,
@@ -21,6 +22,18 @@ def _extract_domain(url: str) -> str | None:
         return None
 
 
+def _unique_domains(urls: list[str]) -> list[str]:
+    """Extract and deduplicate domains from a list of URLs, preserving order."""
+    seen: set[str] = set()
+    result: list[str] = []
+    for url in urls:
+        domain = _extract_domain(url)
+        if domain and domain not in seen:
+            seen.add(domain)
+            result.append(domain)
+    return result
+
+
 def collect_setup_data(
     checkout_links: list[CheckoutLink],
     checkout_return_urls: list[str],
@@ -35,31 +48,15 @@ def collect_setup_data(
             seen_urls.add(link.success_url)
             unique_urls.append(link.success_url)
 
-    url_domains = []
-    seen_domains: set[str] = set()
-    for url in unique_urls:
-        domain = _extract_domain(url)
-        if domain and domain not in seen_domains:
-            seen_domains.add(domain)
-            url_domains.append(domain)
-
     success_url_data = CheckoutSuccessUrlData(
         unique_urls=unique_urls,
-        domains=url_domains,
+        domains=_unique_domains(unique_urls),
     )
 
     # Checkout return URLs (from the checkouts table, API-created)
-    return_url_domains: list[str] = []
-    seen_return_domains: set[str] = set()
-    for url in checkout_return_urls:
-        domain = _extract_domain(url)
-        if domain and domain not in seen_return_domains:
-            seen_return_domains.add(domain)
-            return_url_domains.append(domain)
-
     return_url_data = CheckoutReturnUrlData(
         unique_urls=checkout_return_urls,
-        domains=return_url_domains,
+        domains=_unique_domains(checkout_return_urls),
     )
 
     # Checkout links with benefit info
@@ -93,18 +90,15 @@ def collect_setup_data(
 
     # Integration data
     webhook_urls = [ep.url for ep in webhook_endpoints]
-    webhook_domains: list[str] = []
-    seen_wh_domains: set[str] = set()
-    for url in webhook_urls:
-        domain = _extract_domain(url)
-        if domain and domain not in seen_wh_domains:
-            seen_wh_domains.add(domain)
-            webhook_domains.append(domain)
+    webhook_domains = _unique_domains(webhook_urls)
 
     integration_data = IntegrationData(
         api_key_count=api_key_count,
         webhook_urls=webhook_urls,
         webhook_domains=webhook_domains,
+        webhook_known_service_domains=[
+            d for d in webhook_domains if match_known_domain(d) is not None
+        ],
     )
 
     return SetupData(

@@ -1,9 +1,8 @@
 from decimal import Decimal
 from enum import StrEnum
-from typing import cast
 
 from babel.numbers import format_currency as _format_currency
-from countryinfo import CountryInfo
+from babel.numbers import get_territory_currencies
 
 
 class PresentmentCurrency(StrEnum):
@@ -29,17 +28,15 @@ def get_presentment_currency(country: str) -> PresentmentCurrency | None:
         The presentment currency or None if no supported currency is found.
     """
     try:
-        countryinfo = CountryInfo(country)
-        currencies = cast(list[str], countryinfo.currencies())
-    except KeyError:
+        currencies = get_territory_currencies(country)
+    except Exception:
         return None
-    else:
-        for currency in currencies:
-            try:
-                return PresentmentCurrency(currency.lower())
-            except ValueError:
-                continue
-        return None
+    for currency in currencies:
+        try:
+            return PresentmentCurrency(currency.lower())
+        except ValueError:
+            continue
+    return None
 
 
 _ZERO_DECIMAL_CURRENCIES: set[str] = {

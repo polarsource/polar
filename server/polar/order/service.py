@@ -21,9 +21,8 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderUpdate,
 )
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
-from polar.email.sender import Attachment, enqueue_email
+from polar.email.sender import Attachment, enqueue_email_template
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -1478,12 +1477,11 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        body = render_email_template(email)
-        enqueue_email(
+        enqueue_email_template(
+            email,
             **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=subject,
-            html_content=body,
             attachments=attachments,
         )
 

@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
+from polar.email.schemas import OrderConfirmationEmail
 from polar.enums import (
     InvoiceNumbering,
     PaymentProcessor,
@@ -153,7 +154,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.order.service.enqueue_email", autospec=True)
+    return mocker.patch("polar.order.service.enqueue_email_template", autospec=True)
 
 
 @pytest.fixture
@@ -2151,6 +2152,7 @@ class TestSendConfirmationEmail:
 
         assert order.invoice_path is None
         enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 0
 
@@ -2175,6 +2177,7 @@ class TestSendConfirmationEmail:
 
         assert order.invoice_path is not None
         enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
 

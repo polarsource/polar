@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.email.schemas import OAuth2LeakedTokenEmail
 from polar.enums import TokenType
 from polar.models import OAuth2Client, Organization, User, UserOrganization
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
@@ -15,7 +16,7 @@ from ..conftest import create_oauth2_token
 @pytest.fixture(autouse=True)
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch(
-        "polar.oauth2.service.oauth2_token.enqueue_email", autospec=True
+        "polar.oauth2.service.oauth2_token.enqueue_email_template", autospec=True
     )
 
 
@@ -79,6 +80,7 @@ class TestRevokeLeaked:
         assert oauth2_token.refresh_token_revoked_at is not None
 
         enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], OAuth2LeakedTokenEmail)
 
     @pytest.mark.parametrize(
         ("token", "token_type"),
@@ -116,6 +118,7 @@ class TestRevokeLeaked:
         assert oauth2_token.refresh_token_revoked_at is not None
 
         enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], OAuth2LeakedTokenEmail)
 
     async def test_already_revoked(
         self,

@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.email.schemas import PersonalAccessTokenLeakedEmail
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
@@ -19,7 +20,7 @@ from tests.fixtures.database import SaveFixture
 @pytest.fixture(autouse=True)
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch(
-        "polar.personal_access_token.service.enqueue_email", autospec=True
+        "polar.personal_access_token.service.enqueue_email_template", autospec=True
     )
 
 
@@ -73,3 +74,6 @@ class TestRevokeLeaked:
         assert updated_personal_access_token.deleted_at is not None
 
         enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], PersonalAccessTokenLeakedEmail
+        )

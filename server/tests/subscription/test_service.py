@@ -16,6 +16,7 @@ from sqlalchemy.util.typing import TypeAlias
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
+from polar.email.schemas import SubscriptionRevokedEmail
 from polar.enums import (
     PaymentProcessor,
     SubscriptionProrationBehavior,
@@ -170,7 +171,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.subscription.service.enqueue_email")
+    return mocker.patch("polar.subscription.service.enqueue_email_template")
 
 
 @pytest.fixture
@@ -1047,6 +1048,7 @@ class TestCycle:
         )
 
         enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], SubscriptionRevokedEmail)
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
 

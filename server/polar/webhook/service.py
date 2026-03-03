@@ -14,9 +14,8 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.schemas.state import CustomerState
-from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
@@ -389,12 +388,10 @@ class WebhookService:
                         }
                     )
 
-                    body = render_email_template(email)
-
-                    enqueue_email(
+                    enqueue_email_template(
+                        email,
                         to_email_addr=user.email,
                         subject=f"Webhook endpoint disabled for {organization.name}",
-                        html_content=body,
                     )
 
     async def count_earlier_pending_events(

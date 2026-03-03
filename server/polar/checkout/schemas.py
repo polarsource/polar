@@ -802,4 +802,4 @@ class CheckoutPublicConfirmed(CheckoutPublic):
     """
 
     status: Literal[CheckoutStatus.confirmed]
-    customer_session_token: str
+    customer_session_token: str | None

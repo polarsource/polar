@@ -1,5 +1,9 @@
+import typing
+
 from typing_extensions import TypeIs
 
+from polar.enums import SubscriptionRecurringInterval
+from polar.models.product import Product
 from polar.models.product_price import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
@@ -80,3 +84,16 @@ def is_discount_applicable(
         or is_metered_price(price)
         or is_seat_price(price)
     )
+
+
+if typing.TYPE_CHECKING:
+
+    class RecurringProduct(Product):
+        recurring_interval: SubscriptionRecurringInterval  # pyright: ignore
+        recurring_interval_count: int  # pyright: ignore
+else:
+    RecurringProduct = Product
+
+
+def is_recurring_product(product: Product) -> TypeIs[RecurringProduct]:
+    return product.recurring_interval is not None

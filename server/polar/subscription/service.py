@@ -85,6 +85,7 @@ from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
     is_free_price,
+    is_recurring_product,
     is_seat_price,
     is_static_price,
 )
@@ -455,8 +456,7 @@ class SubscriptionService:
         assert product is not None
         assert customer is not None
 
-        assert product.recurring_interval is not None
-        assert product.recurring_interval_count is not None
+        assert is_recurring_product(product)
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count
 
@@ -531,8 +531,7 @@ class SubscriptionService:
             recurring_interval = subscription_prices[0].recurring_interval
             recurring_interval_count = 1
         else:
-            assert product.recurring_interval is not None
-            assert product.recurring_interval_count is not None
+            assert is_recurring_product(product)
             recurring_interval = product.recurring_interval
             recurring_interval_count = product.recurring_interval_count
             subscription_prices = list(currency_prices)
@@ -989,8 +988,6 @@ class SubscriptionService:
                     }
                 ]
             )
-        assert previous_product.recurring_interval is not None
-        assert product.recurring_interval is not None
 
         try:
             currency_prices = PriceSet.from_product(product, subscription.currency)
@@ -1052,13 +1049,14 @@ class SubscriptionService:
         organization = await organization_repository.get_by_id(product.organization_id)
         assert organization is not None
 
+        assert is_recurring_product(product)
+        assert is_recurring_product(previous_product)
+
         subscription.product = product
         subscription.subscription_product_prices = [
             SubscriptionProductPrice.from_price(price, seats=subscription.seats)
             for price in currency_prices
         ]
-        assert product.recurring_interval is not None
-        assert product.recurring_interval_count is not None
         subscription.recurring_interval = product.recurring_interval
         subscription.recurring_interval_count = product.recurring_interval_count
 

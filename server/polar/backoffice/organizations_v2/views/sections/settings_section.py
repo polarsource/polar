@@ -126,8 +126,11 @@ class SettingsSection:
                     feature_settings = self.org.feature_settings or {}
                     if feature_settings:
                         for (
-                            field_name
-                        ) in OrganizationFeatureSettings.model_fields.keys():
+                            field_name,
+                            field_info,
+                        ) in OrganizationFeatureSettings.model_fields.items():
+                            if field_info.annotation is not bool:
+                                continue
                             enabled = feature_settings.get(field_name, False)
                             label = field_name.replace("_", " ").title()
 

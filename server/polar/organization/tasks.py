@@ -31,7 +31,6 @@ from .repository import OrganizationRepository
 log = structlog.get_logger()
 
 _BACKFILL_BATCH_SIZE = 100
-_AUTO_APPROVE_MIN_THRESHOLD = 25_000  # $250 in cents
 
 
 class OrganizationTaskError(PolarTaskError): ...
@@ -107,7 +106,6 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
 
         is_auto_approve_eligible = (
             organization.status == OrganizationStatus.ONGOING_REVIEW
-            and organization.next_review_threshold >= _AUTO_APPROVE_MIN_THRESHOLD
         )
 
         if not is_auto_approve_eligible:

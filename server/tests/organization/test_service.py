@@ -19,6 +19,7 @@ from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
+from polar.organization_review.schemas import ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -463,8 +464,6 @@ class TestHandleOngoingReviewVerdict:
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
 
-        from polar.organization_review.schemas import ReviewVerdict
-
         # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
@@ -493,8 +492,6 @@ class TestHandleOngoingReviewVerdict:
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
 
-        from polar.organization_review.schemas import ReviewVerdict
-
         # When: verdict is DENY
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.DENY
@@ -522,8 +519,6 @@ class TestHandleOngoingReviewVerdict:
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
 
-        from polar.organization_review.schemas import ReviewVerdict
-
         # When: verdict is DENY
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.DENY
@@ -535,15 +530,15 @@ class TestHandleOngoingReviewVerdict:
         plain_mock.assert_called_once_with(session, organization)
         enqueue_job_mock.assert_not_called()
 
-    async def test_eligible_threshold_at_250(
+    async def test_auto_approve_low_threshold(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        # Given: org is ONGOING_REVIEW with threshold exactly $250 (25_000 cents)
+        # Given: org is ONGOING_REVIEW with a low threshold (no min threshold required)
         organization.status = OrganizationStatus.ONGOING_REVIEW
-        organization.next_review_threshold = 25_000
+        organization.next_review_threshold = 100
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
@@ -551,17 +546,43 @@ class TestHandleOngoingReviewVerdict:
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
 
-        from polar.organization_review.schemas import ReviewVerdict
-
-        # When: verdict is APPROVE and threshold is exactly $250
+        # When: verdict is APPROVE
         result = await organization_service.handle_ongoing_review_verdict(
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: eligible, auto-approved, threshold doubled
+        # Then: auto-approved regardless of threshold, next threshold floored to $100
         assert result is True
         assert organization.status == OrganizationStatus.ACTIVE
-        assert organization.next_review_threshold == 50_000
+        assert organization.next_review_threshold == 10_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_auto_approve_zero_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with default threshold of $0
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 0
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is APPROVE
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: auto-approved even with default $0 threshold, next threshold set to $100
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 10_000
         enqueue_job_mock.assert_called_once()
         plain_mock.assert_not_called()
 
@@ -579,8 +600,6 @@ class TestHandleOngoingReviewVerdict:
         plain_mock = mocker.patch(
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
-
-        from polar.organization_review.schemas import ReviewVerdict
 
         # When: verdict is APPROVE but status is INITIAL_REVIEW
         result = await organization_service.handle_ongoing_review_verdict(
@@ -608,8 +627,6 @@ class TestHandleOngoingReviewVerdict:
         plain_mock = mocker.patch(
             "polar.organization.service.plain_service.create_organization_review_thread"
         )
-
-        from polar.organization_review.schemas import ReviewVerdict
 
         # When: verdict is APPROVE but status is ACTIVE (not ONGOING_REVIEW)
         result = await organization_service.handle_ongoing_review_verdict(

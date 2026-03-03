@@ -138,8 +138,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     current_period_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
-    current_period_end: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
+    current_period_end: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=None
     )
     trial_start: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None

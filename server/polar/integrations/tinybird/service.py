@@ -191,13 +191,8 @@ async def ingest_events(events: Sequence[Event]) -> None:
     if not events:
         return
 
-    try:
-        tinybird_events = [_event_to_tinybird(e) for e in events]
-        await client.ingest(DATASOURCE_EVENTS, tinybird_events)
-    except Exception as e:
-        log.error(
-            "tinybird.ingest_events.failed", error=str(e), event_count=len(events)
-        )
+    tinybird_events = [_event_to_tinybird(e) for e in events]
+    await client.ingest(DATASOURCE_EVENTS, tinybird_events)
 
 
 RECONCILE_BATCH_SIZE = 1000

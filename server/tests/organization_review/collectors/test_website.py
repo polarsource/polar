@@ -792,7 +792,9 @@ class TestPlaywrightRouteInterceptor:
         mock_page = AsyncMock()
         handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
 
-        async def capture_route(pattern: str, h: Callable[[Any], Awaitable[Any]]) -> None:
+        async def capture_route(
+            pattern: str, h: Callable[[Any], Awaitable[Any]]
+        ) -> None:
             handler["handler"] = h
 
         mock_page.route = capture_route
@@ -816,7 +818,9 @@ class TestPlaywrightRouteInterceptor:
         mock_page = AsyncMock()
         handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
 
-        async def capture_route(pattern: str, h: Callable[[Any], Awaitable[Any]]) -> None:
+        async def capture_route(
+            pattern: str, h: Callable[[Any], Awaitable[Any]]
+        ) -> None:
             handler["handler"] = h
 
         mock_page.route = capture_route
@@ -841,7 +845,9 @@ class TestPlaywrightRouteInterceptor:
         mock_page = AsyncMock()
         handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
 
-        async def capture_route(pattern: str, h: Callable[[Any], Awaitable[Any]]) -> None:
+        async def capture_route(
+            pattern: str, h: Callable[[Any], Awaitable[Any]]
+        ) -> None:
             handler["handler"] = h
 
         mock_page.route = capture_route

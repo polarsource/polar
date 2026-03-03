@@ -5,6 +5,7 @@ from httpx import AsyncClient
 
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.models import Customer, Member, Organization, UserOrganization
+from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from tests.fixtures.auth import AuthSubjectFixture
@@ -240,3 +241,217 @@ class TestCreate:
         )
 
         assert response.status_code == 201
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_member_id_creates_session_for_specific_member(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        # Create owner and a second member
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        other_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="other@example.com",
+            name="Other Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(owner)
+        await save_fixture(other_member)
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "member_id": str(other_member.id),
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_member_id_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "member_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_team_customer_without_member_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_team_customer_with_member_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Team Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "member_id": str(member.id),
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_external_member_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+            external_id="ext_member_123",
+        )
+        await save_fixture(member)
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "external_member_id": "ext_member_123",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_external_member_id_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "external_member_id": "nonexistent",
+            },
+        )
+
+        assert response.status_code == 422

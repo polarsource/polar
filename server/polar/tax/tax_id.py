@@ -9,6 +9,7 @@ import stdnum.co.nit
 import stdnum.exceptions
 import stdnum.il.idnr
 import stdnum.in_.gstin
+import stdnum.mk.edb
 import stdnum.tr.vkn
 import stdnum.vn.mst
 from pydantic import Field
@@ -77,6 +78,7 @@ class TaxIDFormat(StrEnum):
     kr_brn = "kr_brn"
     kz_bin = "kz_bin"
     li_uid = "li_uid"
+    mk_vat = "mk_vat"
     mx_rfc = "mx_rfc"
     my_frp = "my_frp"
     my_itn = "my_itn"
@@ -164,6 +166,7 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "LU": (TaxIDFormat.eu_vat,),
     "LV": (TaxIDFormat.eu_vat,),
     "MT": (TaxIDFormat.eu_vat,),
+    "MK": (TaxIDFormat.mk_vat,),
     "MX": (TaxIDFormat.mx_rfc,),
     "MY": (TaxIDFormat.my_frp, TaxIDFormat.my_itn, TaxIDFormat.my_sst),
     "NG": (TaxIDFormat.ng_tin,),
@@ -311,6 +314,15 @@ class ILVATValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class MKVATValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.mk.edb.compact(number)
+        try:
+            return stdnum.mk.edb.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ae_trn:
@@ -323,6 +335,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CONITValidator()
         case TaxIDFormat.il_vat:
             return ILVATValidator()
+        case TaxIDFormat.mk_vat:
+            return MKVATValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
         case TaxIDFormat.in_gst:

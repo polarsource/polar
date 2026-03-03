@@ -660,7 +660,6 @@ class SubscriptionService:
         else:
             if update_cycle_dates:
                 current_period_end = subscription.current_period_end
-                assert current_period_end is not None
                 subscription.current_period_start = current_period_end
                 subscription.current_period_end = (
                     subscription.recurring_interval.get_next_period(
@@ -1316,10 +1315,7 @@ class SubscriptionService:
             else:
                 trial_end_datetime = cast(datetime, trial_end)
                 # Ensure trial_end is after current_period_end to prevent customer loss
-                if (
-                    subscription.current_period_end is not None
-                    and trial_end_datetime <= subscription.current_period_end
-                ):
+                if trial_end_datetime <= subscription.current_period_end:
                     raise PolarRequestValidationError(
                         [
                             {
@@ -1474,18 +1470,6 @@ class SubscriptionService:
 
         if subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
-
-        if subscription.current_period_end is None:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "current_billing_period_end"),
-                        "msg": "Subscription has no current period end",
-                        "input": new_period_end,
-                    }
-                ]
-            )
 
         if new_period_end < subscription.current_period_end:
             raise PolarRequestValidationError(
@@ -1825,7 +1809,6 @@ class SubscriptionService:
 
         # Ensure the discount has not expired yet for the next charge (so at current_period_end)
         if subscription.discount is not None:
-            assert subscription.current_period_end is not None
             # If discount hasn't been applied yet, it will be applied at the next cycle
             # (current_period_end will become the new current_period_start)
             discount_applied_at = (

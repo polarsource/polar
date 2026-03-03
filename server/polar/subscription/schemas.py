@@ -76,7 +76,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     current_period_start: datetime = Field(
         description="The start timestamp of the current billing period."
     )
-    current_period_end: datetime | None = Field(
+    current_period_end: datetime = Field(
         description="The end timestamp of the current billing period."
     )
     trial_start: datetime | None = Field(

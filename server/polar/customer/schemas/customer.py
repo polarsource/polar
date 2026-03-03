@@ -63,7 +63,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
-    tax_id: TaxID | None = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
     type: CustomerType | None = Field(
         default=None,
@@ -97,7 +97,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
-    tax_id: TaxID | None = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
 
 

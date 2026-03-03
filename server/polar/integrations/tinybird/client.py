@@ -109,7 +109,7 @@ class TinybirdClient:
         self._read_client = httpx.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {read_token}"} if read_token else {},
-            timeout=httpx.Timeout(15.0, connect=3.0),
+            timeout=httpx.Timeout(30.0, connect=15.0),
             transport=(
                 httpx.MockTransport(lambda _: httpx.Response(200, json={"data": []}))
                 if read_token is None

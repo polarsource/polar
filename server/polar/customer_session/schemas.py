@@ -19,6 +19,15 @@ class CustomerSessionCreateBase(Schema):
             ),
         ),
     ] = None
+    external_member_id: Annotated[
+        str | None,
+        Field(
+            description=(
+                "External ID of the member to create a session for. "
+                "Alternative to `member_id`."
+            ),
+        ),
+    ] = None
     return_url: Annotated[
         HttpUrl | None,
         Field(

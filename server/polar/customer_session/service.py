@@ -106,6 +106,11 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 member_repository, customer, customer_create.member_id
             )
 
+        if customer_create.external_member_id is not None:
+            return await self._get_member_by_external_id(
+                member_repository, customer, customer_create.external_member_id
+            )
+
         customer_type = customer.type or CustomerType.individual
         if customer_type == CustomerType.team:
             raise PolarRequestValidationError(
@@ -142,6 +147,31 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 ]
             )
         # get_by_id_and_customer_id doesn't joinedload the customer,
+        # set it for response serialization
+        member.customer = customer
+        return member
+
+    async def _get_member_by_external_id(
+        self,
+        member_repository: MemberRepository,
+        customer: Customer,
+        external_member_id: str,
+    ) -> Member:
+        member = await member_repository.get_by_customer_id_and_external_id(
+            customer.id, external_member_id
+        )
+        if member is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "external_member_id"),
+                        "msg": "Member does not exist for this customer.",
+                        "type": "value_error",
+                        "input": external_member_id,
+                    }
+                ]
+            )
+        # get_by_customer_id_and_external_id doesn't joinedload the customer,
         # set it for response serialization
         member.customer = customer
         return member

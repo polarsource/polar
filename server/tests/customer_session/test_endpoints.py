@@ -386,3 +386,72 @@ class TestCreate:
         json = response.json()
         assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_external_member_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+            external_id="ext_member_123",
+        )
+        await save_fixture(member)
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "external_member_id": "ext_member_123",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_external_member_id_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "customer_id": str(customer.id),
+                "external_member_id": "nonexistent",
+            },
+        )
+
+        assert response.status_code == 422

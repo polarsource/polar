@@ -14447,9 +14447,10 @@ export interface components {
       current_period_start: string
       /**
        * Current Period End
+       * Format: date-time
        * @description The end timestamp of the current billing period.
        */
-      current_period_end: string | null
+      current_period_end: string
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -15372,10 +15373,11 @@ export interface components {
       current_period_start: string
       /**
        * Current Period End
+       * Format: date-time
        * @description The end timestamp of the current billing period.
        * @example 2025-03-03T13:37:00Z
        */
-      current_period_end: string | null
+      current_period_end: string
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -15533,9 +15535,10 @@ export interface components {
       current_period_start: string
       /**
        * Current Period End
+       * Format: date-time
        * @description The end timestamp of the current billing period.
        */
-      current_period_end: string | null
+      current_period_end: string
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -19651,6 +19654,24 @@ export interface components {
        * @description Timestamp of this period data.
        */
       timestamp: string
+      /** Active Subscriptions */
+      active_subscriptions?: number | null
+      /** Committed Subscriptions */
+      committed_subscriptions?: number | null
+      /** Monthly Recurring Revenue */
+      monthly_recurring_revenue?: number | null
+      /** Committed Monthly Recurring Revenue */
+      committed_monthly_recurring_revenue?: number | null
+      /** Average Revenue Per User */
+      average_revenue_per_user?: number | null
+      /** Checkouts */
+      checkouts?: number | null
+      /** Succeeded Checkouts */
+      succeeded_checkouts?: number | null
+      /** Checkouts Conversion */
+      checkouts_conversion?: number | null
+      /** Churned Subscriptions */
+      churned_subscriptions?: number | null
       /** Orders */
       orders?: number | null
       /** Revenue */
@@ -19669,8 +19690,6 @@ export interface components {
       average_order_value?: number | null
       /** Net Average Order Value */
       net_average_order_value?: number | null
-      /** Average Revenue Per User */
-      average_revenue_per_user?: number | null
       /** Cost Per User */
       cost_per_user?: number | null
       /** Active User By Event */
@@ -19693,20 +19712,6 @@ export interface components {
       renewed_subscriptions_revenue?: number | null
       /** Renewed Subscriptions Net Revenue */
       renewed_subscriptions_net_revenue?: number | null
-      /** Active Subscriptions */
-      active_subscriptions?: number | null
-      /** Committed Subscriptions */
-      committed_subscriptions?: number | null
-      /** Monthly Recurring Revenue */
-      monthly_recurring_revenue?: number | null
-      /** Committed Monthly Recurring Revenue */
-      committed_monthly_recurring_revenue?: number | null
-      /** Checkouts */
-      checkouts?: number | null
-      /** Succeeded Checkouts */
-      succeeded_checkouts?: number | null
-      /** Checkouts Conversion */
-      checkouts_conversion?: number | null
       /** Canceled Subscriptions */
       canceled_subscriptions?: number | null
       /** Canceled Subscriptions Customer Service */
@@ -19725,8 +19730,6 @@ export interface components {
       canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other?: number | null
-      /** Churned Subscriptions */
-      churned_subscriptions?: number | null
       /** Churn Rate */
       churn_rate?: number | null
       /** Ltv */
@@ -19745,6 +19748,17 @@ export interface components {
     MetricType: 'scalar' | 'currency' | 'currency_sub_cent' | 'percentage'
     /** Metrics */
     Metrics: {
+      active_subscriptions?: components['schemas']['Metric'] | null
+      committed_subscriptions?: components['schemas']['Metric'] | null
+      monthly_recurring_revenue?: components['schemas']['Metric'] | null
+      committed_monthly_recurring_revenue?:
+        | components['schemas']['Metric']
+        | null
+      average_revenue_per_user?: components['schemas']['Metric'] | null
+      checkouts?: components['schemas']['Metric'] | null
+      succeeded_checkouts?: components['schemas']['Metric'] | null
+      checkouts_conversion?: components['schemas']['Metric'] | null
+      churned_subscriptions?: components['schemas']['Metric'] | null
       orders?: components['schemas']['Metric'] | null
       revenue?: components['schemas']['Metric'] | null
       net_revenue?: components['schemas']['Metric'] | null
@@ -19754,7 +19768,6 @@ export interface components {
       cumulative_costs?: components['schemas']['Metric'] | null
       average_order_value?: components['schemas']['Metric'] | null
       net_average_order_value?: components['schemas']['Metric'] | null
-      average_revenue_per_user?: components['schemas']['Metric'] | null
       cost_per_user?: components['schemas']['Metric'] | null
       active_user_by_event?: components['schemas']['Metric'] | null
       one_time_products?: components['schemas']['Metric'] | null
@@ -19766,15 +19779,6 @@ export interface components {
       renewed_subscriptions?: components['schemas']['Metric'] | null
       renewed_subscriptions_revenue?: components['schemas']['Metric'] | null
       renewed_subscriptions_net_revenue?: components['schemas']['Metric'] | null
-      active_subscriptions?: components['schemas']['Metric'] | null
-      committed_subscriptions?: components['schemas']['Metric'] | null
-      monthly_recurring_revenue?: components['schemas']['Metric'] | null
-      committed_monthly_recurring_revenue?:
-        | components['schemas']['Metric']
-        | null
-      checkouts?: components['schemas']['Metric'] | null
-      succeeded_checkouts?: components['schemas']['Metric'] | null
-      checkouts_conversion?: components['schemas']['Metric'] | null
       canceled_subscriptions?: components['schemas']['Metric'] | null
       canceled_subscriptions_customer_service?:
         | components['schemas']['Metric']
@@ -19796,7 +19800,6 @@ export interface components {
         | null
       canceled_subscriptions_unused?: components['schemas']['Metric'] | null
       canceled_subscriptions_other?: components['schemas']['Metric'] | null
-      churned_subscriptions?: components['schemas']['Metric'] | null
       churn_rate?: components['schemas']['Metric'] | null
       ltv?: components['schemas']['Metric'] | null
       gross_margin?: components['schemas']['Metric'] | null
@@ -19866,6 +19869,24 @@ export interface components {
     }
     /** MetricsTotals */
     MetricsTotals: {
+      /** Active Subscriptions */
+      active_subscriptions?: number | null
+      /** Committed Subscriptions */
+      committed_subscriptions?: number | null
+      /** Monthly Recurring Revenue */
+      monthly_recurring_revenue?: number | null
+      /** Committed Monthly Recurring Revenue */
+      committed_monthly_recurring_revenue?: number | null
+      /** Average Revenue Per User */
+      average_revenue_per_user?: number | null
+      /** Checkouts */
+      checkouts?: number | null
+      /** Succeeded Checkouts */
+      succeeded_checkouts?: number | null
+      /** Checkouts Conversion */
+      checkouts_conversion?: number | null
+      /** Churned Subscriptions */
+      churned_subscriptions?: number | null
       /** Orders */
       orders?: number | null
       /** Revenue */
@@ -19884,8 +19905,6 @@ export interface components {
       average_order_value?: number | null
       /** Net Average Order Value */
       net_average_order_value?: number | null
-      /** Average Revenue Per User */
-      average_revenue_per_user?: number | null
       /** Cost Per User */
       cost_per_user?: number | null
       /** Active User By Event */
@@ -19908,20 +19927,6 @@ export interface components {
       renewed_subscriptions_revenue?: number | null
       /** Renewed Subscriptions Net Revenue */
       renewed_subscriptions_net_revenue?: number | null
-      /** Active Subscriptions */
-      active_subscriptions?: number | null
-      /** Committed Subscriptions */
-      committed_subscriptions?: number | null
-      /** Monthly Recurring Revenue */
-      monthly_recurring_revenue?: number | null
-      /** Committed Monthly Recurring Revenue */
-      committed_monthly_recurring_revenue?: number | null
-      /** Checkouts */
-      checkouts?: number | null
-      /** Succeeded Checkouts */
-      succeeded_checkouts?: number | null
-      /** Checkouts Conversion */
-      checkouts_conversion?: number | null
       /** Canceled Subscriptions */
       canceled_subscriptions?: number | null
       /** Canceled Subscriptions Customer Service */
@@ -19940,8 +19945,6 @@ export interface components {
       canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other?: number | null
-      /** Churned Subscriptions */
-      churned_subscriptions?: number | null
       /** Churn Rate */
       churn_rate?: number | null
       /** Ltv */
@@ -20956,9 +20959,10 @@ export interface components {
       current_period_start: string
       /**
        * Current Period End
+       * Format: date-time
        * @description The end timestamp of the current billing period.
        */
-      current_period_end: string | null
+      current_period_end: string
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -23906,9 +23910,10 @@ export interface components {
       current_period_start: string
       /**
        * Current Period End
+       * Format: date-time
        * @description The end timestamp of the current billing period.
        */
-      current_period_end: string | null
+      current_period_end: string
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -25255,6 +25260,7 @@ export interface components {
       | 'kr_brn'
       | 'kz_bin'
       | 'li_uid'
+      | 'mk_vat'
       | 'mx_rfc'
       | 'my_frp'
       | 'my_itn'
@@ -44209,6 +44215,7 @@ export const taxIDFormatValues: ReadonlyArray<
   'kr_brn',
   'kz_bin',
   'li_uid',
+  'mk_vat',
   'mx_rfc',
   'my_frp',
   'my_itn',

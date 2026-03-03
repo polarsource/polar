@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
+from sqlalchemy import inspect as sa_inspect
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
@@ -265,7 +266,6 @@ class SeatService:
         metadata: dict[str, Any] | None = None,
         immediate_claim: bool = False,
     ) -> CustomerSeat:
-        # 1. Common setup and validation
         product = self._get_product(container)
         source_id = self._get_container_id(container)
 
@@ -291,17 +291,10 @@ class SeatService:
         if available_seats <= 0:
             raise SeatNotAvailable(source_id)
 
-        # 2. Get organization and check feature flag
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(organization_id)
-        member_model_enabled = (
-            organization.feature_settings.get("member_model_enabled", False)
-            if organization
-            else False
-        )
 
-        # 3. Resolve seat assignment target (the ONLY branching point)
-        if member_model_enabled:
+        if external_member_id or member_id:
             target = await self._resolve_member_model_target(
                 session,
                 repository,
@@ -315,34 +308,18 @@ class SeatService:
                 member_id,
             )
         else:
-            if external_member_id or member_id:
-                # Merchant explicitly opts into member model for this seat
-                target = await self._resolve_member_model_target(
-                    session,
-                    repository,
-                    container,
-                    billing_customer_id,
-                    organization_id,
-                    email,
-                    customer_id,
-                    external_customer_id,
-                    external_member_id,
-                    member_id,
-                )
-            else:
-                target = await self._resolve_legacy_target(
-                    session,
-                    repository,
-                    container,
-                    organization,
-                    organization_id,
-                    billing_customer_id,
-                    email,
-                    customer_id,
-                    external_customer_id,
-                )
+            target = await self._resolve_legacy_target(
+                session,
+                repository,
+                container,
+                organization,
+                organization_id,
+                billing_customer_id,
+                email,
+                customer_id,
+                external_customer_id,
+            )
 
-        # 4. Generate invitation token (unified)
         if immediate_claim:
             invitation_token = None
             token_expires_at = None
@@ -350,7 +327,6 @@ class SeatService:
             invitation_token = secrets.token_urlsafe(32)
             token_expires_at = datetime.now(UTC) + timedelta(days=1)
 
-        # 5. Create or reuse seat (unified)
         revoked_seat = await repository.get_revoked_seat_by_container(container)
 
         if revoked_seat:
@@ -385,10 +361,8 @@ class SeatService:
 
         await session.flush()
 
-        # Refresh to load relationships needed for webhook serialization
         await session.refresh(seat, ["member", "customer"])
 
-        # 6. Post-creation actions (unified)
         if immediate_claim:
             log.info(
                 "Seat immediately claimed",
@@ -396,7 +370,6 @@ class SeatService:
                 order_id=seat.order_id,
                 email=target.seat_member_email,
                 customer_id=seat.customer_id,
-                member_model_enabled=member_model_enabled,
             )
             await self._publish_seat_claimed_event(seat, product.id)
             await self._enqueue_benefit_grant(seat, product.id)
@@ -409,7 +382,6 @@ class SeatService:
                 email=target.seat_member_email,
                 customer_id=seat.customer_id,
                 invitation_token=invitation_token or "none",
-                member_model_enabled=member_model_enabled,
             )
             if organization:
                 send_seat_invitation_email(
@@ -718,9 +690,6 @@ class SeatService:
 
         if not seat.invitation_token:
             raise InvalidInvitationToken(seat.invitation_token or "")
-
-        # Determine the seat member email: seat.email > member.email > customer.email
-        from sqlalchemy import inspect as sa_inspect
 
         state = sa_inspect(seat)
         seat_member_email = None

@@ -1,7 +1,7 @@
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 from typing import Any, Self
 from uuid import UUID
@@ -350,9 +350,13 @@ class TinybirdEventsQuery:
         self, start: datetime | None = None, end: datetime | None = None
     ) -> Self:
         if start is not None:
-            self._filters.append(events_table.c.timestamp > start)
+            self._filters.append(
+                events_table.c.timestamp > start.astimezone(UTC).replace(tzinfo=None)
+            )
         if end is not None:
-            self._filters.append(events_table.c.timestamp < end)
+            self._filters.append(
+                events_table.c.timestamp < end.astimezone(UTC).replace(tzinfo=None)
+            )
         return self
 
     def filter_names(self, names: Sequence[str]) -> Self:

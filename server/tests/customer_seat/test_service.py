@@ -697,8 +697,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
     ) -> None:
-        """Test that assign_seat creates a member under billing customer even when member_model is disabled."""
-        customer = await create_customer(
+        seat_customer = await create_customer(
             save_fixture,
             organization=subscription_with_seats.product.organization,
             email="test@example.com",
@@ -708,10 +707,15 @@ class TestAssignSeat:
             session, subscription_with_seats, email="test@example.com"
         )
 
-        assert seat.customer_id == customer.id
-        # Phase 0A: legacy seats now always create a member under the billing customer
+        billing_customer_id = subscription_with_seats.customer_id
+        assert seat.customer_id == seat_customer.id
+        assert seat.customer_id != billing_customer_id
         assert seat.member_id is not None
         assert seat.email == "test@example.com"
+
+        await session.refresh(seat, ["member"])
+        assert seat.member.customer_id == billing_customer_id
+        assert seat.member.email == "test@example.com"
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_customer_id_backward_compat_member_model(

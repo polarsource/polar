@@ -3,7 +3,6 @@ import string
 import uuid
 from dataclasses import dataclass
 from math import ceil
-from urllib.parse import urlparse
 
 import structlog
 
@@ -204,7 +203,7 @@ class CustomerSessionService:
         delta = customer_session_code.expires_at - utc_now()
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
-        domain = urlparse(settings.FRONTEND_BASE_URL).hostname or "polar.sh"
+        domain = settings.frontend_hostname
         enqueue_email_template(
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(

@@ -2,7 +2,6 @@ import datetime
 import secrets
 import string
 from math import ceil
-from urllib.parse import urlparse
 
 import structlog
 from sqlalchemy import select
@@ -67,7 +66,7 @@ class LoginCodeService:
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         email = login_code.email
-        domain = urlparse(settings.FRONTEND_BASE_URL).hostname or "polar.sh"
+        domain = settings.frontend_hostname
         subject = "Sign in to Polar"
         body = render_email_template(
             LoginCodeEmail(

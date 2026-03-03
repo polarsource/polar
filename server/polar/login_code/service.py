@@ -66,6 +66,7 @@ class LoginCodeService:
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         email = login_code.email
+        domain = settings.frontend_hostname
         subject = "Sign in to Polar"
         body = render_email_template(
             LoginCodeEmail(
@@ -73,6 +74,7 @@ class LoginCodeService:
                     email=email,
                     code=code,
                     code_lifetime_minutes=code_lifetime_minutes,
+                    domain=domain,
                 )
             )
         )

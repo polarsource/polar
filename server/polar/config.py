@@ -4,6 +4,7 @@ from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlparse
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
@@ -490,6 +491,10 @@ class Settings(BaseSettings):
 
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
+
+    @property
+    def frontend_hostname(self) -> str:
+        return urlparse(self.FRONTEND_BASE_URL).hostname or "polar.sh"
 
     def generate_backoffice_url(self, path: str) -> str:
         if self.BACKOFFICE_HOST is None:

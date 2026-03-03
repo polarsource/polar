@@ -203,6 +203,7 @@ class CustomerSessionService:
         delta = customer_session_code.expires_at - utc_now()
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
+        domain = settings.frontend_hostname
         enqueue_email_template(
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
@@ -214,6 +215,7 @@ class CustomerSessionService:
                         "url": settings.generate_frontend_url(
                             f"/{organization.slug}/portal/authenticate"
                         ),
+                        "domain": domain,
                     }
                 )
             ),

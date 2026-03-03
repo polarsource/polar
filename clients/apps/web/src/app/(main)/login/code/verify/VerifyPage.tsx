@@ -70,6 +70,7 @@ const ClientPage = ({
                     maxLength={6}
                     pattern="^[a-zA-Z0-9]+$"
                     inputMode="text"
+                    autoComplete="one-time-code"
                     {...field}
                     autoFocus={true}
                     onChange={(value) => field.onChange(value.toUpperCase())}

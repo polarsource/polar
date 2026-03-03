@@ -9,6 +9,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
+    field_validator,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -101,6 +102,13 @@ class OrganizationFeatureSettings(Schema):
         None,
         description="Ordered list of metric slugs shown on the dashboard overview.",
     )
+
+    @field_validator("overview_metrics", mode="before")
+    @classmethod
+    def _coerce_overview_metrics(cls, v: Any) -> list[str] | None:
+        if isinstance(v, bool):
+            return None
+        return v
 
 
 class OrganizationDetails(Schema):

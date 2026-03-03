@@ -1997,11 +1997,14 @@ async def edit_features(
         try:
             data = await request.form()
 
-            # Parse feature flags from form data
-            feature_flags = {}
-            for field_name in OrganizationFeatureSettings.model_fields.keys():
-                # Checkboxes that are unchecked won't be in form data
-                feature_flags[field_name] = field_name in data
+            # Parse boolean feature flags from form data
+            feature_flags: dict[str, bool] = {}
+            for (
+                field_name,
+                field_info,
+            ) in OrganizationFeatureSettings.model_fields.items():
+                if field_info.annotation is bool:
+                    feature_flags[field_name] = field_name in data
 
             # Merge with existing feature_settings
             old_member_model = organization.feature_settings.get(
@@ -2054,12 +2057,14 @@ async def edit_features(
             hx_target="#modal",
             classes="space-y-4",
         ):
-            # Feature flags checkboxes
+            # Feature flags checkboxes (boolean fields only)
             with tag.div(classes="space-y-3"):
                 for (
                     field_name,
                     field_info,
                 ) in OrganizationFeatureSettings.model_fields.items():
+                    if field_info.annotation is not bool:
+                        continue
                     enabled = organization.feature_settings.get(field_name, False)
                     label = field_name.replace("_", " ").title()
 

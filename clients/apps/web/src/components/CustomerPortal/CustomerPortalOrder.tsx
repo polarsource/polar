@@ -53,6 +53,10 @@ const CustomerPortalOrder = ({
   // Seats management
   const hasSeatBasedOrder = order.seats && order.seats > 0
 
+  // Check customer portal settings for seat management visibility
+  const portalSettings = order.product?.organization.customer_portal_settings
+  const showSeatManagement = portalSettings?.subscription.update_seats === true
+
   return (
     <div className="flex flex-col gap-12">
       <div className="flex w-full flex-col gap-8">
@@ -233,7 +237,7 @@ const CustomerPortalOrder = ({
           )}
         </div>
 
-        {hasSeatBasedOrder && (
+        {hasSeatBasedOrder && showSeatManagement && (
           <SeatManagementTable
             api={api}
             identifier={

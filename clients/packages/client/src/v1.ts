@@ -9596,6 +9596,12 @@ export interface components {
        */
       product_id: string | null
       /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout.
+       */
+      product_price_id: string | null
+      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -9688,6 +9694,17 @@ export interface components {
       /** @description Product selected to checkout. */
       product: components['schemas']['CheckoutProduct'] | null
       /**
+       * Product Price
+       * @deprecated
+       * @description Price of the selected product.
+       */
+      product_price:
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
+      /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
@@ -9743,6 +9760,12 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
+      /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+       */
+      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -11262,6 +11285,12 @@ export interface components {
        */
       product_id: string | null
       /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout.
+       */
+      product_price_id: string | null
+      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -11340,6 +11369,17 @@ export interface components {
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
       product: components['schemas']['CheckoutProduct'] | null
+      /**
+       * Product Price
+       * @deprecated
+       * @description Price of the selected product.
+       */
+      product_price:
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
@@ -11514,6 +11554,12 @@ export interface components {
        */
       product_id: string | null
       /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout.
+       */
+      product_price_id: string | null
+      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -11593,6 +11639,17 @@ export interface components {
       /** @description Product selected to checkout. */
       product: components['schemas']['CheckoutProduct'] | null
       /**
+       * Product Price
+       * @deprecated
+       * @description Price of the selected product.
+       */
+      product_price:
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
+      /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
@@ -11617,7 +11674,7 @@ export interface components {
         | components['schemas']['AttachedCustomField'][]
         | null
       /** Customer Session Token */
-      customer_session_token: string
+      customer_session_token: string | null
     }
     /**
      * CheckoutSortProperty
@@ -11652,6 +11709,12 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
+      /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+       */
+      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -11769,6 +11832,12 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
+      /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+       */
+      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**

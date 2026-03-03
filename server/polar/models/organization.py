@@ -139,6 +139,15 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
 }
 
 
+class OrganizationCheckoutSettings(TypedDict):
+    require_3ds: bool
+
+
+_default_checkout_settings: OrganizationCheckoutSettings = {
+    "require_3ds": False,
+}
+
+
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"
@@ -277,6 +286,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         mapped_column(JSONB, nullable=False, default=_default_customer_portal_settings)
     )
 
+    _checkout_settings: Mapped[OrganizationCheckoutSettings | None] = mapped_column(
+        "checkout_settings", JSONB, nullable=True, default=None
+    )
+
     @property
     def allow_customer_updates(self) -> bool:
         return self.customer_portal_settings["subscription"]["update_plan"]
@@ -372,6 +385,20 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get(
             "update_plan", True
         )
+
+    @property
+    def checkout_settings(self) -> OrganizationCheckoutSettings:
+        if self._checkout_settings is None:
+            return _default_checkout_settings
+        return self._checkout_settings
+
+    @checkout_settings.setter
+    def checkout_settings(self, value: OrganizationCheckoutSettings) -> None:
+        self._checkout_settings = value
+
+    @property
+    def checkout_require_3ds(self) -> bool:
+        return self.checkout_settings.get("require_3ds", False)
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

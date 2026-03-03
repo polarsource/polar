@@ -9,6 +9,16 @@ from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 
 class CustomerSessionCreateBase(Schema):
+    member_id: Annotated[
+        UUID4 | None,
+        Field(
+            description=(
+                "ID of the member to create a session for. "
+                "When not provided and the organization has `member_model_enabled`, "
+                "the owner member of the customer will be used for individual customers."
+            ),
+        ),
+    ] = None
     return_url: Annotated[
         HttpUrl | None,
         Field(

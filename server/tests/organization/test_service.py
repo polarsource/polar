@@ -551,10 +551,10 @@ class TestHandleOngoingReviewVerdict:
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: auto-approved regardless of threshold, threshold doubled
+        # Then: auto-approved regardless of threshold, next threshold floored to $100
         assert result is True
         assert organization.status == OrganizationStatus.ACTIVE
-        assert organization.next_review_threshold == 200
+        assert organization.next_review_threshold == 10_000
         enqueue_job_mock.assert_called_once()
         plain_mock.assert_not_called()
 

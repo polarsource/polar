@@ -8,7 +8,10 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.utils import utc_now
-from polar.member_session.schemas import MemberSessionCreate
+from polar.member_session.schemas import (
+    MemberSessionExternalMemberIDCreate,
+    MemberSessionMemberIDCreate,
+)
 from polar.member_session.service import member_session
 from polar.models import Member, Organization, User, UserOrganization
 from polar.models.member import MemberRole
@@ -106,7 +109,7 @@ class TestCreate:
         await save_fixture(member)
 
         auth_subject = AuthSubject(user, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(member_id=member.id)
+        create_schema = MemberSessionMemberIDCreate(member_id=member.id)
 
         result = await member_session.create(session, auth_subject, create_schema)
 
@@ -142,7 +145,7 @@ class TestCreate:
         await save_fixture(member)
 
         auth_subject = AuthSubject(user, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(
+        create_schema = MemberSessionMemberIDCreate(
             member_id=member.id,
             return_url=HttpUrl("https://example.com/return"),
         )
@@ -166,7 +169,7 @@ class TestCreate:
         await save_fixture(organization)
 
         auth_subject = AuthSubject(user, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(member_id=uuid.uuid4())
+        create_schema = MemberSessionMemberIDCreate(member_id=uuid.uuid4())
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_session.create(session, auth_subject, create_schema)
@@ -203,7 +206,7 @@ class TestCreate:
         await save_fixture(member)
 
         auth_subject = AuthSubject(user, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(member_id=member.id)
+        create_schema = MemberSessionMemberIDCreate(member_id=member.id)
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_session.create(session, auth_subject, create_schema)
@@ -238,7 +241,7 @@ class TestCreate:
         await save_fixture(member)
 
         auth_subject = AuthSubject(user, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(member_id=member.id)
+        create_schema = MemberSessionMemberIDCreate(member_id=member.id)
 
         with pytest.raises(NotPermitted) as exc_info:
             await member_session.create(session, auth_subject, create_schema)
@@ -273,7 +276,7 @@ class TestCreate:
         await save_fixture(member)
 
         auth_subject = AuthSubject(user, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(member_id=member.id)
+        create_schema = MemberSessionMemberIDCreate(member_id=member.id)
 
         with pytest.raises(NotPermitted) as exc_info:
             await member_session.create(session, auth_subject, create_schema)
@@ -306,12 +309,115 @@ class TestCreate:
         await save_fixture(member)
 
         auth_subject = AuthSubject(organization, {Scope.web_write}, None)
-        create_schema = MemberSessionCreate(member_id=member.id)
+        create_schema = MemberSessionMemberIDCreate(member_id=member.id)
 
         result = await member_session.create(session, auth_subject, create_schema)
 
         assert result.raw_token is not None
         assert result.member_id == member.id
+
+    async def test_creates_session_with_external_member_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Test Member",
+            external_id="ext_member_456",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        auth_subject = AuthSubject(user, {Scope.web_write}, None)
+        create_schema = MemberSessionExternalMemberIDCreate(
+            external_member_id="ext_member_456"
+        )
+
+        result = await member_session.create(session, auth_subject, create_schema)
+
+        assert result.raw_token is not None
+        assert result.raw_token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert result.member_id == member.id
+        assert result.member.customer.id == customer.id
+
+    async def test_error_external_member_id_not_found(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        auth_subject = AuthSubject(user, {Scope.web_write}, None)
+        create_schema = MemberSessionExternalMemberIDCreate(
+            external_member_id="nonexistent"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_session.create(session, auth_subject, create_schema)
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "external_member_id")
+        assert "does not exist" in exc_info.value.errors()[0]["msg"]
+
+    async def test_error_external_member_id_not_accessible(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Create member in a different organization that user can't access
+        organization_second.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization_second)
+
+        customer = await create_customer(
+            save_fixture, organization=organization_second, email="test@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization_second.id,
+            email=customer.email,
+            name="Test Member",
+            external_id="ext_inaccessible",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        auth_subject = AuthSubject(user, {Scope.web_write}, None)
+        create_schema = MemberSessionExternalMemberIDCreate(
+            external_member_id="ext_inaccessible"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_session.create(session, auth_subject, create_schema)
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "external_member_id")
 
 
 @pytest.mark.asyncio

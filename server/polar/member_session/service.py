@@ -1,3 +1,5 @@
+import uuid
+
 import structlog
 from pydantic import HttpUrl
 from sqlalchemy.orm import joinedload
@@ -15,7 +17,7 @@ from polar.models.organization import Organization as OrganizationModel
 from polar.postgres import AsyncSession
 
 from .repository import MemberSessionRepository
-from .schemas import MemberSessionCreate
+from .schemas import MemberSessionCreate, MemberSessionMemberIDCreate
 
 log: Logger = structlog.get_logger()
 
@@ -28,13 +30,24 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
         member_session_create: MemberSessionCreate,
     ) -> MemberSession:
         repository = MemberRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .where(Member.id == member_session_create.member_id)
-            .options(
-                joinedload(Member.customer).joinedload(Customer.organization),
-            )
+        statement = repository.get_readable_statement(auth_subject).options(
+            joinedload(Member.customer).joinedload(Customer.organization),
         )
+
+        id_field: str
+        id_value: uuid.UUID | str
+        if isinstance(member_session_create, MemberSessionMemberIDCreate):
+            statement = statement.where(
+                Member.id == member_session_create.member_id
+            )
+            id_field = "member_id"
+            id_value = member_session_create.member_id
+        else:
+            statement = statement.where(
+                Member.external_id == member_session_create.external_member_id
+            )
+            id_field = "external_member_id"
+            id_value = member_session_create.external_member_id
 
         member = await repository.get_one_or_none(statement)
 
@@ -42,10 +55,10 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
             raise PolarRequestValidationError(
                 [
                     {
-                        "loc": ("body", "member_id"),
+                        "loc": ("body", id_field),
                         "msg": "Member does not exist.",
                         "type": "value_error",
-                        "input": member_session_create.member_id,
+                        "input": id_value,
                     }
                 ]
             )

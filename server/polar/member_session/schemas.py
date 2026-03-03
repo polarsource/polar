@@ -8,12 +8,7 @@ from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.member.schemas import Member
 
 
-class MemberSessionCreate(Schema):
-    """
-    Schema for creating a member session using a member ID.
-    """
-
-    member_id: UUID4 = Field(description="ID of the member to create a session for.")
+class MemberSessionCreateBase(Schema):
     return_url: Annotated[
         HttpUrl | None,
         Field(
@@ -24,6 +19,29 @@ class MemberSessionCreate(Schema):
             examples=["https://example.com/account"],
         ),
     ] = None
+
+
+class MemberSessionMemberIDCreate(MemberSessionCreateBase):
+    """
+    Schema for creating a member session using a member ID.
+    """
+
+    member_id: UUID4 = Field(description="ID of the member to create a session for.")
+
+
+class MemberSessionExternalMemberIDCreate(MemberSessionCreateBase):
+    """
+    Schema for creating a member session using an external member ID.
+    """
+
+    external_member_id: str = Field(
+        description="External ID of the member to create a session for.",
+    )
+
+
+MemberSessionCreate = (
+    MemberSessionMemberIDCreate | MemberSessionExternalMemberIDCreate
+)
 
 
 class MemberSession(IDSchema, TimestampedSchema):

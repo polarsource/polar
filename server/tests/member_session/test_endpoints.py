@@ -34,6 +34,17 @@ class TestCreate:
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=MEMBER_SESSION_SCOPES))
+    async def test_external_member_id_not_found(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        """Should return 422 when external_member_id doesn't match any member."""
+        response = await client.post(
+            "/v1/member-sessions/",
+            json={"external_member_id": "nonexistent_ext_id"},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=MEMBER_SESSION_SCOPES))
     async def test_member_not_accessible(
         self,
         client: AsyncClient,
@@ -96,6 +107,51 @@ class TestCreate:
 
         response = await client.post(
             "/v1/member-sessions/", json={"member_id": str(member.id)}
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert json["member_id"] == str(member.id)
+        assert json["customer_id"] == str(customer.id)
+        assert json["token"] in json["member_portal_url"]
+        assert "member" in json
+        assert "customer" in json
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user", scopes=MEMBER_SESSION_SCOPES),
+        AuthSubjectFixture(subject="organization", scopes=MEMBER_SESSION_SCOPES),
+    )
+    async def test_valid_external_member_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Should create session successfully with valid external_member_id."""
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Test Member",
+            external_id="ext_member_123",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        response = await client.post(
+            "/v1/member-sessions/",
+            json={"external_member_id": "ext_member_123"},
         )
         assert response.status_code == 201
 

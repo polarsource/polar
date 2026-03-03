@@ -6,9 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.email.react import render_email_template
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
@@ -100,7 +99,7 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         oauth2_client = oauth2_token.client
 
         for recipient in recipients:
-            body = render_email_template(
+            enqueue_email_template(
                 OAuth2LeakedTokenEmail(
                     props=OAuth2LeakedTokenProps(
                         email=recipient,
@@ -108,12 +107,9 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
                         notifier=notifier,
                         url=url or "",
                     )
-                )
-            )
-            enqueue_email(
+                ),
                 to_email_addr=recipient,
                 subject="Security Notice - Your Polar Access Token has been leaked",
-                html_content=body,
             )
 
         log.info(

@@ -8,9 +8,8 @@ from polar.account.service import account as account_service
 from polar.auth.models import is_anonymous, is_user
 from polar.auth.scope import Scope
 from polar.config import settings
-from polar.email.react import render_email_template
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import (
     NotPermitted,
     PolarRequestValidationError,
@@ -377,7 +376,7 @@ async def invite_member(
 
     # Send invitation email
     email = invite_body.email
-    body = render_email_template(
+    enqueue_email_template(
         OrganizationInviteEmail(
             props=OrganizationInviteProps(
                 email=email,
@@ -387,13 +386,9 @@ async def invite_member(
                     f"/dashboard/{organization.slug}"
                 ),
             )
-        )
-    )
-
-    enqueue_email(
+        ),
         to_email_addr=email,
         subject=f"You've been invited to {organization.name} on Polar",
-        html_content=body,
     )
 
     # Get the user organization relationship to return

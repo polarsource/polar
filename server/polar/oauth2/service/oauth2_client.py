@@ -6,9 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.email.react import render_email_template
 from polar.email.schemas import OAuth2LeakedClientEmail, OAuth2LeakedClientProps
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
 from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams, paginate
@@ -91,7 +90,7 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
 
         if client.user is not None:
             email = client.user.email
-            body = render_email_template(
+            enqueue_email_template(
                 OAuth2LeakedClientEmail(
                     props=OAuth2LeakedClientProps(
                         email=email,
@@ -100,10 +99,10 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
                         notifier=notifier,
                         url=url or "",
                     )
-                )
+                ),
+                to_email_addr=email,
+                subject=subject,
             )
-
-            enqueue_email(to_email_addr=email, subject=subject, html_content=body)
 
         log.info(
             "Revoke leaked OAuth2 client",

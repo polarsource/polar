@@ -8,9 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.email.react import render_email_template
 from polar.email.schemas import LoginCodeEmail, LoginCodeProps
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
@@ -68,7 +67,7 @@ class LoginCodeService:
         email = login_code.email
         domain = settings.frontend_hostname
         subject = "Sign in to Polar"
-        body = render_email_template(
+        enqueue_email_template(
             LoginCodeEmail(
                 props=LoginCodeProps(
                     email=email,
@@ -76,10 +75,10 @@ class LoginCodeService:
                     code_lifetime_minutes=code_lifetime_minutes,
                     domain=domain,
                 )
-            )
+            ),
+            to_email_addr=email,
+            subject=subject,
         )
-
-        enqueue_email(to_email_addr=email, subject=subject, html_content=body)
 
         if settings.is_development():
             log.info(

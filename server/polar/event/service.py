@@ -867,7 +867,7 @@ class EventService:
                 tinybird_count=tb_count,
                 db_ids=db_ids,
                 tinybird_ids=tb_ids,
-                has_diff=db_count != tb_count or db_ids != tb_ids,
+                has_diff=db_ids != tb_ids,
             ):
                 pass
         except Exception as e:

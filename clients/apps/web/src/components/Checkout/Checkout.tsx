@@ -259,13 +259,13 @@ const Checkout = ({
       }
 
       await checkoutConfirmedRedirect(
-        checkout,
+        confirmedCheckout,
         confirmedCheckout.customerSessionToken,
       )
 
       return confirmedCheckout
     },
-    [_confirm, checkout, checkoutConfirmedRedirect],
+    [_confirm, checkoutConfirmedRedirect],
   )
 
   if (embed) {

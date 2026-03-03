@@ -63,7 +63,7 @@ if TYPE_CHECKING:
 
 log = structlog.get_logger()
 
-_AUTO_APPROVE_MIN_THRESHOLD = 25_000  # $250 in cents
+_MIN_REVIEW_THRESHOLD = 10_000
 
 
 class PaymentStepID(StrEnum):
@@ -736,16 +736,17 @@ class OrganizationService:
         """Handle AI agent verdict for an ongoing threshold review.
 
         Returns True if auto-approved, False if escalated to human review (Plain ticket created).
-        Only auto-approves when: status is ONGOING_REVIEW, threshold >= $250, and verdict is APPROVE.
+        Only auto-approves when: status is ONGOING_REVIEW and verdict is APPROVE.
         """
         is_eligible = (
             organization.status == OrganizationStatus.ONGOING_REVIEW
-            and organization.next_review_threshold >= _AUTO_APPROVE_MIN_THRESHOLD
             and verdict == ReviewVerdict.APPROVE
         )
 
         if is_eligible:
-            next_threshold = organization.next_review_threshold * 2
+            next_threshold = max(
+                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
+            )
             await self.confirm_organization_reviewed(
                 session, organization, next_threshold
             )

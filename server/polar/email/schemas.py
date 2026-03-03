@@ -65,6 +65,7 @@ class EmailProps(BaseModel):
 class LoginCodeProps(EmailProps):
     code: str
     code_lifetime_minutes: int
+    domain: str
 
 
 class LoginCodeEmail(BaseModel):
@@ -77,6 +78,7 @@ class CustomerSessionCodeProps(EmailProps):
     code: str
     code_lifetime_minutes: int
     url: str
+    domain: str
 
 
 class CustomerSessionCodeEmail(BaseModel):

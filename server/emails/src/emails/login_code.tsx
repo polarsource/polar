@@ -8,6 +8,7 @@ export function LoginCode({
   email,
   code,
   code_lifetime_minutes,
+  domain,
 }: schemas['LoginCodeProps']) {
   return (
     <WrapperPolar>
@@ -25,6 +26,9 @@ export function LoginCode({
         <Text className="text-5xl font-bold tracking-wider text-black">
           {code}
         </Text>
+        <Text className="m-0 mt-2 text-xs text-gray-100">
+          @{domain} #{code}
+        </Text>
       </Section>
       <Text className="text-gray-500">
         If you didn't request this email, you can safely ignore it.
@@ -38,6 +42,7 @@ LoginCode.PreviewProps = {
   email: 'john@example.com',
   code: 'ABC123',
   code_lifetime_minutes: 30,
+  domain: 'polar.sh',
 }
 
 export default LoginCode

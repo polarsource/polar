@@ -768,6 +768,8 @@ export interface components {
       code_lifetime_minutes: number
       /** Url */
       url: string
+      /** Domain */
+      domain: string
     }
     /** EmailUpdateEmail */
     EmailUpdateEmail: {
@@ -806,6 +808,8 @@ export interface components {
       code: string
       /** Code Lifetime Minutes */
       code_lifetime_minutes: number
+      /** Domain */
+      domain: string
     }
     /** MaintainerCreateAccountNotificationPayload */
     MaintainerCreateAccountNotificationPayload: {

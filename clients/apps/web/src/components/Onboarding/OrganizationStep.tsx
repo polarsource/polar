@@ -213,7 +213,11 @@ export const OrganizationStep = ({
                       <FormItem className="w-full">
                         <FormLabel htmlFor="name">Organization Name</FormLabel>
                         <FormControl className="flex w-full flex-col gap-y-4">
-                          <Input {...field} placeholder="Acme Inc." />
+                          <Input
+                            {...field}
+                            placeholder="Acme Inc."
+                            autoComplete="off"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -228,16 +232,28 @@ export const OrganizationStep = ({
                     }}
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel htmlFor="slug">Organization Slug</FormLabel>
-                        <FormControl className="flex w-full flex-col gap-y-4">
-                          <Input
-                            type="text"
-                            {...field}
-                            size={slug?.length || 1}
-                            placeholder="acme-inc"
-                            onFocus={() => setEditedSlug(true)}
-                          />
-                        </FormControl>
+                        <div className="flex items-center gap-x-0 text-xs text-gray-500">
+                          <span>https://polar.sh/dashboard/</span>
+                          <FormControl className="w-full">
+                            <input
+                              type="text"
+                              {...field}
+                              size={slug?.length || 1}
+                              placeholder="acme-inc"
+                              className="appearance-none border-none bg-transparent p-0 text-xs text-gray-900 focus:ring-0 focus-visible:ring-0 dark:text-gray-100"
+                              onFocus={() => {
+                                setEditedSlug(true)
+                              }}
+                              onBlur={() => {
+                                if (slug?.length) {
+                                  setEditedSlug(true)
+                                } else {
+                                  setEditedSlug(false)
+                                }
+                              }}
+                            />
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

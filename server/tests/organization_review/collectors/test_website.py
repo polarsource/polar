@@ -1,4 +1,7 @@
 import asyncio
+import socket
+from collections.abc import Awaitable, Callable
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -7,14 +10,24 @@ import pytest
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
     MAX_PAGES,
+    MAX_REDIRECTS,
+    SSRFBlockedError,
     WebsiteDeps,
     _build_tool_response,
     _extract_links_from_html,
     _is_allowed_origin,
+    _resolve_and_validate_ip,
+    browse_page,
     collect_website_data,
     fetch_page,
 )
 from polar.organization_review.schemas import WebsiteData
+
+# Shorthand for patching _resolve_and_validate_ip to allow all IPs
+_PATCH_SSRF = patch(
+    "polar.organization_review.collectors.website._resolve_and_validate_ip",
+    new_callable=AsyncMock,
+)
 
 # ---------------------------------------------------------------------------
 # _is_allowed_origin
@@ -249,6 +262,8 @@ class TestFetchPage:
         response.status_code = 200
         response.text = html
         response.url = httpx.URL("https://example.com/")
+        response.is_redirect = False
+        response.has_redirect_location = False
 
         client = AsyncMock(spec=httpx.AsyncClient)
         client.get.return_value = response
@@ -257,7 +272,8 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        result = await fetch_page(ctx, "https://example.com/")
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/")
 
         assert deps.pages_navigated == 1
         assert len(deps.pages_visited) == 1
@@ -269,6 +285,8 @@ class TestFetchPage:
     async def test_http_error(self) -> None:
         response = MagicMock(spec=httpx.Response)
         response.status_code = 404
+        response.is_redirect = False
+        response.has_redirect_location = False
 
         client = AsyncMock(spec=httpx.AsyncClient)
         client.get.return_value = response
@@ -277,7 +295,8 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        result = await fetch_page(ctx, "https://example.com/missing")
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/missing")
 
         assert "Error: HTTP 404" in result
         assert deps.pages_navigated == 1
@@ -291,7 +310,8 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        result = await fetch_page(ctx, "https://example.com/")
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/")
 
         assert "Error fetching" in result
         assert deps.pages_navigated == 1
@@ -305,6 +325,8 @@ class TestFetchPage:
         response.status_code = 200
         response.text = html
         response.url = httpx.URL("https://example.com/")
+        response.is_redirect = False
+        response.has_redirect_location = False
 
         client = AsyncMock(spec=httpx.AsyncClient)
         client.get.return_value = response
@@ -313,7 +335,8 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        result = await fetch_page(ctx, "https://example.com/")
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/")
 
         assert deps.pages_visited[0].content_truncated is True
         assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
@@ -429,3 +452,416 @@ class TestWebsiteDepsCleanup:
         await deps.cleanup()
 
         mock_playwright.stop.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _resolve_and_validate_ip
+# ---------------------------------------------------------------------------
+
+
+def _fake_getaddrinfo(*addrs: str) -> list[tuple[int, int, int, str, tuple[str, int]]]:
+    """Build a fake getaddrinfo result list from IP strings."""
+    return [
+        (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (a, 0))
+        for a in addrs
+    ]
+
+
+class TestResolveAndValidateIp:
+    @pytest.mark.asyncio
+    async def test_blocks_loopback(self) -> None:
+        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("127.0.0.1")):
+            with pytest.raises(SSRFBlockedError, match="private/reserved"):
+                await _resolve_and_validate_ip("localhost")
+
+    @pytest.mark.asyncio
+    async def test_blocks_private_10x(self) -> None:
+        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("10.0.0.1")):
+            with pytest.raises(SSRFBlockedError):
+                await _resolve_and_validate_ip("internal.example.com")
+
+    @pytest.mark.asyncio
+    async def test_blocks_private_172_16(self) -> None:
+        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("172.16.0.1")):
+            with pytest.raises(SSRFBlockedError):
+                await _resolve_and_validate_ip("internal.example.com")
+
+    @pytest.mark.asyncio
+    async def test_blocks_private_192_168(self) -> None:
+        with patch("socket.getaddrinfo", return_value=_fake_getaddrinfo("192.168.1.1")):
+            with pytest.raises(SSRFBlockedError):
+                await _resolve_and_validate_ip("internal.example.com")
+
+    @pytest.mark.asyncio
+    async def test_blocks_link_local_metadata(self) -> None:
+        """169.254.169.254 (AWS/GCP metadata) is link-local and must be blocked."""
+        with patch(
+            "socket.getaddrinfo", return_value=_fake_getaddrinfo("169.254.169.254")
+        ):
+            with pytest.raises(SSRFBlockedError, match="private/reserved"):
+                await _resolve_and_validate_ip("metadata.internal")
+
+    @pytest.mark.asyncio
+    async def test_blocks_ipv6_loopback(self) -> None:
+        info = [
+            (
+                socket.AF_INET6,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                ("::1", 0, 0, 0),
+            )
+        ]
+        with patch("socket.getaddrinfo", return_value=info):
+            with pytest.raises(SSRFBlockedError):
+                await _resolve_and_validate_ip("localhost6")
+
+    @pytest.mark.asyncio
+    async def test_allows_public_ip(self) -> None:
+        with patch(
+            "socket.getaddrinfo", return_value=_fake_getaddrinfo("93.184.216.34")
+        ):
+            # Should not raise
+            await _resolve_and_validate_ip("example.com")
+
+    @pytest.mark.asyncio
+    async def test_blocks_mixed_public_and_private(self) -> None:
+        """If even one resolved IP is private, the request must be blocked."""
+        with patch(
+            "socket.getaddrinfo",
+            return_value=_fake_getaddrinfo("93.184.216.34", "10.0.0.1"),
+        ):
+            with pytest.raises(SSRFBlockedError):
+                await _resolve_and_validate_ip("dual-homed.example.com")
+
+    @pytest.mark.asyncio
+    async def test_dns_failure(self) -> None:
+        with patch("socket.getaddrinfo", side_effect=socket.gaierror("NXDOMAIN")):
+            with pytest.raises(SSRFBlockedError, match="DNS resolution failed"):
+                await _resolve_and_validate_ip("nonexistent.invalid")
+
+
+# ---------------------------------------------------------------------------
+# fetch_page — SSRF & redirect tests
+# ---------------------------------------------------------------------------
+
+
+class TestFetchPageSSRF:
+    @pytest.mark.asyncio
+    async def test_blocks_initial_ssrf(self) -> None:
+        """fetch_page should block a URL that resolves to a private IP."""
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with patch(
+            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            new_callable=AsyncMock,
+            side_effect=SSRFBlockedError("resolves to private IP 10.0.0.1"),
+        ):
+            result = await fetch_page(ctx, "https://example.com/")
+
+        assert "private IP" in result
+        assert deps.pages_navigated == 0
+        client.get.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_blocks_redirect_to_private_ip(self) -> None:
+        """Redirect targets that resolve to private IPs should be blocked."""
+        redirect_resp = MagicMock(spec=httpx.Response)
+        redirect_resp.is_redirect = True
+        redirect_resp.has_redirect_location = True
+        redirect_resp.headers = {"location": "https://example.com/internal"}
+        redirect_resp.status_code = 302
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        client.get.return_value = redirect_resp
+
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        call_count = 0
+
+        async def _validate_side_effect(hostname: str) -> None:
+            nonlocal call_count
+            call_count += 1
+            if call_count > 1:
+                raise SSRFBlockedError(f"Blocked: {hostname} resolves to private IP")
+
+        with patch(
+            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            new_callable=AsyncMock,
+            side_effect=_validate_side_effect,
+        ):
+            result = await fetch_page(ctx, "https://example.com/")
+
+        assert "private IP" in result
+
+    @pytest.mark.asyncio
+    async def test_blocks_redirect_to_different_domain(self) -> None:
+        """Redirects to a different domain should be blocked."""
+        redirect_resp = MagicMock(spec=httpx.Response)
+        redirect_resp.is_redirect = True
+        redirect_resp.has_redirect_location = True
+        redirect_resp.headers = {"location": "https://evil.com/steal"}
+        redirect_resp.status_code = 302
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        client.get.return_value = redirect_resp
+
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/")
+
+        assert "off-origin" in result
+
+    @pytest.mark.asyncio
+    async def test_follows_valid_same_origin_redirect(self) -> None:
+        """Valid same-origin redirects should be followed."""
+        redirect_resp = MagicMock(spec=httpx.Response)
+        redirect_resp.is_redirect = True
+        redirect_resp.has_redirect_location = True
+        redirect_resp.headers = {"location": "https://example.com/new-page"}
+        redirect_resp.status_code = 301
+
+        final_resp = MagicMock(spec=httpx.Response)
+        final_resp.is_redirect = False
+        final_resp.has_redirect_location = False
+        final_resp.status_code = 200
+        final_resp.text = "<html><head><title>New</title></head><body><p>Content here</p></body></html>"
+        final_resp.url = httpx.URL("https://example.com/new-page")
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        client.get.side_effect = [redirect_resp, final_resp]
+
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/old-page")
+
+        assert client.get.call_count == 2
+        assert "Page: New" in result
+
+    @pytest.mark.asyncio
+    async def test_follows_www_to_non_www_redirect(self) -> None:
+        """www -> non-www redirects should work when allowed_domain is the root."""
+        redirect_resp = MagicMock(spec=httpx.Response)
+        redirect_resp.is_redirect = True
+        redirect_resp.has_redirect_location = True
+        redirect_resp.headers = {"location": "https://example.com/home"}
+        redirect_resp.status_code = 301
+
+        final_resp = MagicMock(spec=httpx.Response)
+        final_resp.is_redirect = False
+        final_resp.has_redirect_location = False
+        final_resp.status_code = 200
+        final_resp.text = (
+            "<html><head><title>Home</title></head><body><p>Welcome</p></body></html>"
+        )
+        final_resp.url = httpx.URL("https://example.com/home")
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        client.get.side_effect = [redirect_resp, final_resp]
+
+        # allowed_domain is root (as _run_website_agent now strips www.)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://www.example.com/")
+
+        assert client.get.call_count == 2
+        assert "Page: Home" in result
+
+    @pytest.mark.asyncio
+    async def test_max_redirects_exceeded(self) -> None:
+        """Exceeding MAX_REDIRECTS should return an error."""
+        redirect_resp = MagicMock(spec=httpx.Response)
+        redirect_resp.is_redirect = True
+        redirect_resp.has_redirect_location = True
+        redirect_resp.headers = {"location": "https://example.com/loop"}
+        redirect_resp.status_code = 302
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        client.get.return_value = redirect_resp
+
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/start")
+
+        assert "too many redirects" in result
+        assert client.get.call_count == MAX_REDIRECTS
+
+
+# ---------------------------------------------------------------------------
+# browse_page — SSRF tests
+# ---------------------------------------------------------------------------
+
+
+class TestBrowsePageSSRF:
+    @pytest.mark.asyncio
+    async def test_blocks_initial_ssrf(self) -> None:
+        """browse_page should block a URL that resolves to a private IP."""
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with patch(
+            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            new_callable=AsyncMock,
+            side_effect=SSRFBlockedError("resolves to private IP 10.0.0.1"),
+        ):
+            result = await browse_page(ctx, "https://example.com/")
+
+        assert "private IP" in result
+        assert deps.pages_navigated == 0
+
+    @pytest.mark.asyncio
+    async def test_detects_post_navigation_off_origin_redirect(self) -> None:
+        """browse_page should detect when the browser ended up on a different domain."""
+        mock_page = AsyncMock()
+        mock_page.goto = AsyncMock(return_value=MagicMock(status=200))
+        mock_page.wait_for_load_state = AsyncMock()
+        mock_page.wait_for_timeout = AsyncMock()
+        mock_page.url = "https://evil.com/phished"  # JS redirect happened
+
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps._browser_page = mock_page
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await browse_page(ctx, "https://example.com/")
+
+        assert "off-origin" in result
+        assert "evil.com" in result
+
+
+# ---------------------------------------------------------------------------
+# Playwright route interceptor
+# ---------------------------------------------------------------------------
+
+
+class TestPlaywrightRouteInterceptor:
+    @pytest.mark.asyncio
+    async def test_route_installed_on_page(self) -> None:
+        """get_browser_page should install the route handler."""
+        mock_page = AsyncMock()
+        mock_context = AsyncMock()
+        mock_context.new_page.return_value = mock_page
+        mock_browser = AsyncMock()
+        mock_browser.new_context.return_value = mock_context
+        mock_pw = AsyncMock()
+        mock_pw.chromium.launch.return_value = mock_browser
+
+        with patch(
+            "polar.organization_review.collectors.website.async_playwright"
+        ) as mock_apw:
+            mock_apw.return_value.start = AsyncMock(return_value=mock_pw)
+
+            client = AsyncMock(spec=httpx.AsyncClient)
+            deps = WebsiteDeps(client=client, allowed_domain="example.com")
+            page = await deps.get_browser_page()
+
+        assert page is mock_page
+        mock_page.route.assert_called_once()
+        call_args = mock_page.route.call_args[0]
+        assert call_args[0] == "**/*"
+        assert callable(call_args[1])
+
+    @pytest.mark.asyncio
+    async def test_blocks_off_origin_document_request(self) -> None:
+        """Route handler should block document requests to different domains."""
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+
+        # Capture the handler
+        mock_page = AsyncMock()
+        handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
+
+        async def capture_route(
+            pattern: str, h: Callable[[Any], Awaitable[Any]]
+        ) -> None:
+            handler["handler"] = h
+
+        mock_page.route = capture_route
+        await deps._install_request_interceptor(mock_page)
+
+        route = AsyncMock()
+        route.request.url = "https://evil.com/page"
+        route.request.resource_type = "document"
+
+        with _PATCH_SSRF:
+            await handler["handler"](route)
+
+        route.abort.assert_called_once_with("blockedbyclient")
+
+    @pytest.mark.asyncio
+    async def test_allows_cdn_subresources(self) -> None:
+        """Route handler should allow image/script/stylesheet from CDN domains."""
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+
+        mock_page = AsyncMock()
+        handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
+
+        async def capture_route(
+            pattern: str, h: Callable[[Any], Awaitable[Any]]
+        ) -> None:
+            handler["handler"] = h
+
+        mock_page.route = capture_route
+        await deps._install_request_interceptor(mock_page)
+
+        route = AsyncMock()
+        route.request.url = "https://cdn.jsdelivr.net/some-lib.js"
+        route.request.resource_type = "script"
+
+        with _PATCH_SSRF:
+            await handler["handler"](route)
+
+        route.continue_.assert_called_once()
+        route.abort.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_blocks_ssrf_on_any_resource_type(self) -> None:
+        """Route handler should block any request resolving to a private IP."""
+        client = AsyncMock(spec=httpx.AsyncClient)
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+
+        mock_page = AsyncMock()
+        handler: dict[str, Callable[[Any], Awaitable[Any]]] = {}
+
+        async def capture_route(
+            pattern: str, h: Callable[[Any], Awaitable[Any]]
+        ) -> None:
+            handler["handler"] = h
+
+        mock_page.route = capture_route
+        await deps._install_request_interceptor(mock_page)
+
+        route = AsyncMock()
+        route.request.url = "https://example.com/api/data"
+        route.request.resource_type = "image"
+
+        with patch(
+            "polar.organization_review.collectors.website._resolve_and_validate_ip",
+            new_callable=AsyncMock,
+            side_effect=SSRFBlockedError("private IP"),
+        ):
+            await handler["handler"](route)
+
+        route.abort.assert_called_once_with("blockedbyclient")

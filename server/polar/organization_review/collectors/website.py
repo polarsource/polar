@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import re
+import socket
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 
 import httpx
 import structlog
 import trafilatura
-from playwright.async_api import Browser, Page, Playwright, async_playwright
+from playwright.async_api import Browser, Page, Playwright, Route, async_playwright
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -23,6 +25,38 @@ OVERALL_TIMEOUT_S = 90
 MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 15_000
 PAGE_TIMEOUT_MS = 15_000
+MAX_REDIRECTS = 10
+
+
+class SSRFBlockedError(Exception):
+    """Raised when a request targets a private/reserved IP address."""
+
+
+async def _resolve_and_validate_ip(hostname: str) -> None:
+    """Resolve *hostname* and raise `SSRFBlockedError` if any IP is private/reserved."""
+    loop = asyncio.get_running_loop()
+    try:
+        infos = await loop.run_in_executor(
+            None,
+            lambda: socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP),
+        )
+    except socket.gaierror as exc:
+        raise SSRFBlockedError(f"DNS resolution failed for {hostname}") from exc
+
+    for info in infos:
+        addr = ipaddress.ip_address(info[4][0])
+        if (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_reserved
+            or addr.is_link_local
+            or addr.is_multicast
+            or addr.is_unspecified
+        ):
+            raise SSRFBlockedError(
+                f"Blocked request to {hostname}: resolves to private/reserved IP {addr}"
+            )
+
 
 # Realistic Chrome user-agent to avoid bot detection by CDNs (Cloudflare, Vercel, etc.)
 _USER_AGENT = (
@@ -134,7 +168,53 @@ class WebsiteDeps:
                 locale="en-US",
             )
             self._browser_page = await context.new_page()
+            await self._install_request_interceptor(self._browser_page)
         return self._browser_page
+
+    async def _install_request_interceptor(self, page: Page) -> None:
+        """Install a route handler that blocks off-origin navigations and SSRF."""
+        allowed_domain = self.allowed_domain
+
+        async def _handler(route: Route) -> None:
+            request = route.request
+            url = request.url
+            parsed = urlparse(url)
+
+            # Allow data: and blob: URLs (inline resources)
+            if parsed.scheme in ("data", "blob"):
+                await route.continue_()
+                return
+
+            resource_type = request.resource_type
+
+            # Origin check: only for document/fetch/xhr (allows CDN subresources)
+            if resource_type in ("document", "fetch", "xhr"):
+                if not _is_allowed_origin(url, allowed_domain):
+                    log.info(
+                        "website_collector.playwright_blocked_origin",
+                        url=url,
+                        resource_type=resource_type,
+                    )
+                    await route.abort("blockedbyclient")
+                    return
+
+            # SSRF check: for all requests with a hostname
+            hostname = parsed.hostname
+            if hostname:
+                try:
+                    await _resolve_and_validate_ip(hostname)
+                except SSRFBlockedError:
+                    log.info(
+                        "website_collector.playwright_blocked_ssrf",
+                        url=url,
+                        resource_type=resource_type,
+                    )
+                    await route.abort("blockedbyclient")
+                    return
+
+            await route.continue_()
+
+        await page.route("**/*", _handler)
 
     async def cleanup(self) -> None:
         """Close browser resources if they were initialized."""
@@ -256,12 +336,46 @@ with server-side rendering. Use this by default."""
     if not _is_allowed_origin(url, deps.allowed_domain):
         return f"Error: URL is off-origin (only {deps.allowed_domain} is allowed)"
 
+    # SSRF check on initial URL
+    initial_host = urlparse(url).hostname
+    if initial_host:
+        try:
+            await _resolve_and_validate_ip(initial_host)
+        except SSRFBlockedError as e:
+            return f"Error: {e}"
+
     deps.pages_navigated += 1
 
+    # Manual redirect loop with domain + SSRF validation
+    current_url = url
     try:
-        resp = await deps.client.get(url)
+        for _ in range(MAX_REDIRECTS):
+            resp = await deps.client.get(current_url)
+
+            if not resp.is_redirect or not resp.has_redirect_location:
+                break
+
+            location = resp.headers["location"]
+            redirect_url = urljoin(current_url, location)
+
+            if not _is_allowed_origin(redirect_url, deps.allowed_domain):
+                return (
+                    f"Error: redirect to off-origin URL blocked "
+                    f"(only {deps.allowed_domain} is allowed)"
+                )
+
+            redirect_host = urlparse(redirect_url).hostname
+            if redirect_host:
+                await _resolve_and_validate_ip(redirect_host)
+
+            current_url = redirect_url
+        else:
+            return f"Error: too many redirects (>{MAX_REDIRECTS}) for {url}"
+
         if resp.status_code >= 400:
-            return f"Error: HTTP {resp.status_code} for {url}"
+            return f"Error: HTTP {resp.status_code} for {current_url}"
+    except SSRFBlockedError as e:
+        return f"Error: {e}"
     except Exception as e:
         return f"Error fetching {url}: {str(e)[:100]}"
 
@@ -270,7 +384,7 @@ with server-side rendering. Use this by default."""
 
     title_match = re.search(r"<title[^>]*>([^<]+)</title>", html, re.IGNORECASE)
     title = title_match.group(1).strip() if title_match else None
-    final_url = str(resp.url)
+    final_url = current_url
 
     truncated = len(content) > MAX_CHARS_PER_PAGE
     if truncated:
@@ -307,6 +421,14 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
     if not _is_allowed_origin(url, deps.allowed_domain):
         return f"Error: URL is off-origin (only {deps.allowed_domain} is allowed)"
 
+    # SSRF pre-check (defense-in-depth — interceptor also blocks)
+    initial_host = urlparse(url).hostname
+    if initial_host:
+        try:
+            await _resolve_and_validate_ip(initial_host)
+        except SSRFBlockedError as e:
+            return f"Error: {e}"
+
     deps.pages_navigated += 1
     page = await deps.get_browser_page()
 
@@ -326,6 +448,14 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
         pass  # Best-effort; don't fail if network stays busy
     await page.wait_for_timeout(1_000)
 
+    # Post-navigation origin check — catch JS-driven redirects
+    current_url = page.url
+    if not _is_allowed_origin(current_url, deps.allowed_domain):
+        return (
+            f"Error: page redirected to off-origin URL {current_url} "
+            f"(only {deps.allowed_domain} is allowed)"
+        )
+
     # Extract content via trafilatura
     try:
         html = await page.content()
@@ -334,7 +464,6 @@ Slower but handles SPAs and JS-heavy sites. Use when fetch_page returns empty co
         content = ""
 
     title = await page.title() or None
-    current_url = page.url
 
     truncated = len(content) > MAX_CHARS_PER_PAGE
     if truncated:
@@ -410,9 +539,12 @@ async def collect_website_data(website_url: str) -> WebsiteData:
 async def _run_website_agent(base_url: str) -> WebsiteData:
     """Run the AI agent with both HTTP and browser tools available."""
     allowed_domain = urlparse(base_url).hostname or ""
+    # Strip www. so redirects between www and non-www are both allowed
+    if allowed_domain.startswith("www."):
+        allowed_domain = allowed_domain[4:]
 
     async with httpx.AsyncClient(
-        follow_redirects=True,
+        follow_redirects=False,
         timeout=PAGE_TIMEOUT_MS / 1000,
         headers={"User-Agent": _USER_AGENT},
     ) as client:

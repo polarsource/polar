@@ -97,10 +97,13 @@ async def resolve_member(
         "member_model_enabled", False
     )
 
-    if not member_model_enabled:
-        return None
-
     member_repository = MemberRepository.from_session(session)
+
+    if not member_model_enabled:
+        if member_id is not None:
+            member = await member_repository.get_by_id(member_id)
+            return member  # may be None if member was deleted
+        return None
 
     if member_id is not None:
         member = await member_repository.get_by_id(member_id)

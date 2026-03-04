@@ -57,7 +57,7 @@ SLUG_PATTERN = re.compile(r"Organization Appeal - (\S+)")
 TIMELINE_QUERY = """
 query ThreadTimeline($threadId: ID!) {
   thread(threadId: $threadId) {
-    timeline(first: 50) {
+    timelineEntries(first: 50) {
       edges {
         node {
           actor {
@@ -136,7 +136,7 @@ async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
     if not thread_data:
         return True
 
-    entries = thread_data.get("timeline", {}).get("edges", [])
+    entries = thread_data.get("timelineEntries", {}).get("edges", [])
     for edge in entries:
         node = edge.get("node", {})
         actor = node.get("actor", {})

@@ -908,7 +908,7 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
         query ThreadTimeline($threadId: ID!) {
           thread(threadId: $threadId) {
             title
-            timeline(first: 50) {
+            timelineEntries(first: 50) {
               edges {
                 node {
                   actor {
@@ -925,7 +925,7 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                       text
                     }
                     ... on EmailEntry {
-                      text
+                      textContent
                       from { name email }
                       to { name email }
                     }
@@ -958,14 +958,14 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
 
         parts = [f"Thread: {thread_data.get('title', 'Untitled')}"]
 
-        entries = thread_data.get("timeline", {}).get("edges", [])
+        entries = thread_data.get("timelineEntries", {}).get("edges", [])
         if not entries:
             parts.append("No messages in this thread.")
         else:
             for edge in entries:
                 node = edge.get("node", {})
                 entry = node.get("entry", {})
-                text = entry.get("text", "")
+                text = entry.get("text") or entry.get("textContent") or ""
                 if not text:
                     continue
 

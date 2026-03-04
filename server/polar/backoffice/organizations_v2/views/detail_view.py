@@ -457,9 +457,7 @@ class OrganizationDetailView:
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.a(
                         href=str(
-                            request.url_for(
-                                "organizations-classic:get", id=self.org.id
-                            )
+                            request.url_for("organizations-classic:get", id=self.org.id)
                         ),
                         classes="btn btn-ghost btn-sm",
                     ):
@@ -522,9 +520,7 @@ class OrganizationDetailView:
                                     hx_target="#modal",
                                 ):
                                     text("Add Domain to Allowlist")
-                            with tag.li(
-                                classes="border-t border-base-200 mt-1 pt-1"
-                            ):
+                            with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
                                 with tag.a(
                                     hx_get=str(
                                         request.url_for(

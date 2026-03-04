@@ -57,14 +57,14 @@ SLUG_PATTERN = re.compile(r"Organization Appeal - (\S+)")
 TIMELINE_QUERY = """
 query ThreadTimeline($threadId: ID!) {
   thread(threadId: $threadId) {
-    timelineEntries(first: 50) {
+    timeline(first: 50) {
       edges {
         node {
-          ... on ChatEntry {
-            userActor { user { fullName } }
+          actor {
+            __typename
           }
-          ... on EmailEntry {
-            from { email }
+          entry {
+            __typename
           }
         }
       }
@@ -136,14 +136,16 @@ async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
     if not thread_data:
         return True
 
-    entries = thread_data.get("timelineEntries", {}).get("edges", [])
+    entries = thread_data.get("timeline", {}).get("edges", [])
     for edge in entries:
         node = edge.get("node", {})
-        # Staff replied via chat
-        if node.get("userActor"):
-            return True
-        # Outbound email sent
-        if "from" in node and node["from"]:
+        actor = node.get("actor", {})
+        entry = node.get("entry", {})
+        # Staff replied via chat or email
+        if actor.get("__typename") == "UserActor" and entry.get("__typename") in (
+            "ChatEntry",
+            "EmailEntry",
+        ):
             return True
 
     return False

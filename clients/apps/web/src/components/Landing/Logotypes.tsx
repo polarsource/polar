@@ -5,15 +5,15 @@ import { Goals, Speakeasy, Spotify, StillaAIWordmark, Tailwind } from './Logos'
 
 const items = [
   {
-    icon: <Spotify size={42} />,
+    icon: <Spotify size={34} />,
     link: 'https://confidence.spotify.com/',
   },
   {
-    icon: <Tailwind size={24} />,
+    icon: <Tailwind size={20} />,
     link: 'https://tailwindcss.com',
   },
   {
-    icon: <Goals size={24} />,
+    icon: <Goals size={20} />,
     link: 'https://playgoals.com',
   },
   {
@@ -21,7 +21,7 @@ const items = [
     link: 'https://speakeasy.com',
   },
   {
-    icon: <StillaAIWordmark size={30} />,
+    icon: <StillaAIWordmark size={24} />,
     link: 'https://stilla.ai',
   },
 ]

@@ -144,7 +144,7 @@ class OrganizationCheckoutSettings(TypedDict):
 
 
 _default_checkout_settings: OrganizationCheckoutSettings = {
-    "require_3ds": False,
+    "require_3ds": True,
 }
 
 

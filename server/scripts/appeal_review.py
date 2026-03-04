@@ -1012,9 +1012,9 @@ def main() -> None:
         help="Skip Plain thread lookups",
     )
     parser.add_argument(
-        "--interactive", "-i",
+        "--no-interactive",
         action="store_true",
-        help="Chat with the agent after the initial review to refine the recommendation",
+        help="Disable interactive mode (exit after initial review instead of chatting)",
     )
     args = parser.parse_args()
 
@@ -1034,7 +1034,7 @@ def main() -> None:
                 plain_api_key=args.plain_api_key,
                 skip_website=args.skip_website,
                 skip_plain=args.skip_plain,
-                interactive=args.interactive,
+                interactive=not args.no_interactive,
             )
         )
     except KeyboardInterrupt:

@@ -908,18 +908,27 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
         query ThreadTimeline($threadId: ID!) {
           thread(threadId: $threadId) {
             title
-            timelineEntries(first: 50) {
+            timeline(first: 50) {
               edges {
                 node {
-                  ... on ChatEntry {
-                    text
-                    customerActor { customer { fullName email { email } } }
-                    userActor { user { fullName } }
+                  actor {
+                    __typename
+                    ... on UserActor {
+                      user { fullName }
+                    }
+                    ... on CustomerActor {
+                      customer { fullName email { email } }
+                    }
                   }
-                  ... on EmailEntry {
-                    text
-                    from { name email }
-                    to { name email }
+                  entry {
+                    ... on ChatEntry {
+                      text
+                    }
+                    ... on EmailEntry {
+                      text
+                      from { name email }
+                      to { name email }
+                    }
                   }
                 }
               }
@@ -949,26 +958,29 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
 
         parts = [f"Thread: {thread_data.get('title', 'Untitled')}"]
 
-        entries = thread_data.get("timelineEntries", {}).get("edges", [])
+        entries = thread_data.get("timeline", {}).get("edges", [])
         if not entries:
             parts.append("No messages in this thread.")
         else:
             for edge in entries:
                 node = edge.get("node", {})
-                text = node.get("text", "")
+                entry = node.get("entry", {})
+                text = entry.get("text", "")
                 if not text:
                     continue
 
-                # Determine sender
+                # Determine sender from the actor on the timeline entry
+                actor = node.get("actor", {})
+                actor_type = actor.get("__typename", "")
                 sender = "Unknown"
-                if "customerActor" in node and node["customerActor"]:
-                    cust = node["customerActor"].get("customer", {})
+                if actor_type == "CustomerActor":
+                    cust = actor.get("customer", {})
                     sender = cust.get("fullName") or "Customer"
-                elif "userActor" in node and node["userActor"]:
-                    user = node["userActor"].get("user", {})
+                elif actor_type == "UserActor":
+                    user = actor.get("user", {})
                     sender = user.get("fullName") or "Agent"
-                elif "from" in node and node["from"]:
-                    sender = node["from"].get("name") or node["from"].get("email", "")
+                elif entry.get("from"):
+                    sender = entry["from"].get("name") or entry["from"].get("email", "")
 
                 parts.append(f"\n[{sender}]: {text[:1000]}")
 

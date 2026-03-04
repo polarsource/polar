@@ -84,6 +84,14 @@ class OrganizationDetailView:
                 active=current_section == "files",
             ),
             Tab(
+                "Reviews",
+                str(
+                    request.url_for("organizations:detail", organization_id=self.org.id)
+                )
+                + "?section=reviews",
+                active=current_section == "reviews",
+            ),
+            Tab(
                 "Settings",
                 str(
                     request.url_for("organizations:detail", organization_id=self.org.id)

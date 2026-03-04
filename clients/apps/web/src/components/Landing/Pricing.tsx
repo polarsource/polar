@@ -90,7 +90,7 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
   return (
     <div
       className={twMerge(
-        'relative flex flex-col gap-y-6 overflow-hidden px-0 py-8 md:px-8 md:py-0',
+        'relative flex flex-col gap-y-6 overflow-hidden p-12',
         className,
       )}
     >
@@ -105,12 +105,10 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
             </span>
           )}
         </div>
-        <p className="dark:text-polar-500 text-lg text-gray-500">
-          {tier.description}
-        </p>
+        <p className="dark:text-polar-500 text-gray-500">{tier.description}</p>
       </div>
       <div className="relative z-10 flex items-baseline gap-x-2">
-        <span className="text-5xl font-light text-black dark:text-white">
+        <span className="text-4xl font-light text-black dark:text-white">
           {tier.price}
         </span>
         {tier.period && (
@@ -119,7 +117,7 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
           </span>
         )}
       </div>
-      <ul className="relative z-10 flex flex-col gap-y-3">
+      <ul className="relative z-10 flex flex-col gap-y-3 text-sm">
         {tier.features.map((feature, index) => (
           <li key={index} className="flex items-center gap-x-2">
             <CheckOutlined className="text-blue-500" fontSize="small" />
@@ -165,14 +163,16 @@ export const Pricing = () => {
   return (
     <div className="relative flex flex-col gap-y-12">
       <Section className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200">
-        <div className="flex flex-col gap-y-4 pb-12">
-          <h2 className="text-2xl md:text-4xl">Simple, transparent pricing.</h2>
-          <p className="dark:text-polar-500 text-2xl text-gray-500 md:text-4xl">
-            Start free, scale as you grow. No hidden fees.
-          </p>
-        </div>
-        <div className="flex flex-col py-12">
-          <div className="dark:divide-polar-700 grid grid-cols-1 divide-x-0 divide-y divide-gray-200 md:grid-cols-4 md:divide-x md:divide-y-0">
+        <div className="dark:divide-polar-700 grid grid-cols-3 divide-x-0 divide-y divide-gray-200 md:divide-x md:divide-y-0">
+          <div className="flex flex-col gap-y-8">
+            <h2 className="text-2xl md:text-4xl">
+              Simple, transparent pricing.
+            </h2>
+            <p className="dark:text-polar-500 text-2xl text-gray-500">
+              Start free, scale as you grow. No hidden fees.
+            </p>
+          </div>
+          <div className="dark:divide-polar-700 col-span-2 grid grid-cols-1 divide-x-0 divide-y divide-gray-200 md:grid-cols-2 md:divide-x">
             {tiers.map((tier) => (
               <PricingCard key={tier.name} tier={tier} />
             ))}

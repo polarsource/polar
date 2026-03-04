@@ -108,7 +108,7 @@ class OrganizationDetailView:
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
         """Render right sidebar with contextual actions and metadata."""
-        with tag.aside(classes="w-80 pl-4"):
+        with tag.aside(classes="w-full lg:w-80 lg:pl-4"):
             # Metadata card - at the top for quick reference
             with card(bordered=True, classes="mb-4"):
                 with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
@@ -433,7 +433,7 @@ class OrganizationDetailView:
         self, request: Request, section: str = "overview"
     ) -> Generator[None]:
         """Render main content area (delegated to section components)."""
-        with tag.main(classes="flex-1"):
+        with tag.main(classes="flex-1 min-w-0"):
             # Section content will be rendered by specific section components
             yield
 
@@ -443,7 +443,7 @@ class OrganizationDetailView:
 
         # Header
         with tag.div(classes="mb-6"):
-            with tag.div(classes="flex items-center justify-between gap-4"):
+            with tag.div(classes="flex flex-wrap items-center justify-between gap-4"):
                 with tag.div(classes="flex items-center gap-3 min-w-0 flex-1"):
                     with tag.h1(
                         classes="text-3xl font-bold truncate",
@@ -454,90 +454,95 @@ class OrganizationDetailView:
                         with status_badge(self.org.status):
                             pass
 
-                with tag.a(
-                    href=str(
-                        request.url_for("organizations-classic:get", id=self.org.id)
-                    ),
-                    classes="btn btn-ghost btn-sm",
-                ):
-                    text("Switch to Classic View")
-
-                # Top-right menu
-                with tag.div(classes="dropdown dropdown-end"):
-                    with tag.button(
-                        classes="btn btn-circle btn-ghost",
-                        tabindex="0",
-                        **{"aria-label": "More options"},
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.a(
+                        href=str(
+                            request.url_for(
+                                "organizations-classic:get", id=self.org.id
+                            )
+                        ),
+                        classes="btn btn-ghost btn-sm",
                     ):
-                        text("⋮")
-                    with tag.ul(
-                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
-                        tabindex="0",
-                    ):
-                        with tag.li():
-                            with tag.a(
-                                hx_post=str(
-                                    request.url_for(
-                                        "organizations:run_review_agent",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_confirm="Run organization review agent?",
-                            ):
-                                text("Run Review Agent")
-                        with tag.li():
-                            with tag.a(
-                                href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.admin_email or self.org.slug}",
-                                target="_blank",
-                            ):
-                                text("Search in Plain")
-                        with tag.li():
-                            with tag.a(
-                                href=_get_logfire_url(self.org.id),
-                                target="_blank",
-                            ):
-                                text("View API Logs in Logfire")
-                        with tag.li():
-                            with tag.a(
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:import_orders",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Import Orders")
-                        with tag.li():
-                            with tag.a(
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:add_payment_method_domain",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Add Domain to Allowlist")
-                        with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
-                            with tag.a(
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:delete_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                text("Delete Organization")
+                        text("Switch to Classic View")
 
-        # Section tabs
-        with tag.div(classes="mb-6"):
+                    # Top-right menu
+                    with tag.div(classes="dropdown dropdown-end"):
+                        with tag.button(
+                            classes="btn btn-circle btn-ghost",
+                            tabindex="0",
+                            **{"aria-label": "More options"},
+                        ):
+                            text("\u22ee")
+                        with tag.ul(
+                            classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                            tabindex="0",
+                        ):
+                            with tag.li():
+                                with tag.a(
+                                    hx_post=str(
+                                        request.url_for(
+                                            "organizations:run_review_agent",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_confirm="Run organization review agent?",
+                                ):
+                                    text("Run Review Agent")
+                            with tag.li():
+                                with tag.a(
+                                    href=f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={self.admin_email or self.org.slug}",
+                                    target="_blank",
+                                ):
+                                    text("Search in Plain")
+                            with tag.li():
+                                with tag.a(
+                                    href=_get_logfire_url(self.org.id),
+                                    target="_blank",
+                                ):
+                                    text("View API Logs in Logfire")
+                            with tag.li():
+                                with tag.a(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:import_orders",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Import Orders")
+                            with tag.li():
+                                with tag.a(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:add_payment_method_domain",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Add Domain to Allowlist")
+                            with tag.li(
+                                classes="border-t border-base-200 mt-1 pt-1"
+                            ):
+                                with tag.a(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:delete_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Delete Organization")
+
+        # Section tabs (scrollable on mobile)
+        with tag.div(classes="mb-6 overflow-x-auto"):
             with self.section_tabs(request, section):
                 pass
 
-        # Two-column layout: main content + right sidebar
-        with tag.div(classes="flex gap-6"):
+        # Two-column layout: main content + right sidebar (stacks on mobile)
+        with tag.div(classes="flex flex-col lg:flex-row gap-6"):
             # Main content (will be filled by section components)
             with self.main_content(request, section):
                 yield

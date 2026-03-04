@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Isometric, IsometricBox } from './Isometric'
 
@@ -25,16 +26,16 @@ const PH = 160 // plate height (Y depth)
 const PD = 6 // plate thickness
 const PX = 70
 const PY = 60
-const ZSTEP = 52 // vertical gap between layers
+const ZSTEP = 38  // vertical gap between layers (tighter default)
+const EXPAND = 20 // z-offset applied to layers above/below the hovered one
 
-// Approximate screen-space positions of each layer's top-right corner within
-// the Isometric container, derived from rotateX(60deg) rotateZ(45deg) math.
-// Used to anchor the floating annotation labels.
+// Approximate screen-space positions of each layer's top-right corner.
+// Recalculated for ZSTEP=38: each step shifts x+23, y-23 (32/52 * 38 ≈ 23).
 const ANCHORS = [
   { x: 341, y: 207 }, // z = 0
-  { x: 373, y: 175 }, // z = 52
-  { x: 405, y: 143 }, // z = 104
-  { x: 437, y: 111 }, // z = 156
+  { x: 364, y: 184 }, // z = 38
+  { x: 387, y: 161 }, // z = 76
+  { x: 410, y: 138 }, // z = 114
 ]
 
 // ── Layer data ─────────────────────────────────────────────────────────────────
@@ -376,13 +377,23 @@ export const BillingDiagram = () => {
             }}
           >
             <Isometric style={{ width: SW, height: SH }}>
-              {LAYERS.map((layer, i) => (
-                <Plate
-                  key={layer.z}
-                  layer={layer}
-                  hovered={hoveredIndex === i}
-                />
-              ))}
+              {LAYERS.map((layer, i) => {
+                const zOffset =
+                  hoveredIndex === null ? 0
+                  : i < hoveredIndex ? -EXPAND
+                  : i === hoveredIndex ? 0
+                  : EXPAND
+                return (
+                  <motion.div
+                    key={layer.z}
+                    style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}
+                    animate={{ z: zOffset }}
+                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  >
+                    <Plate layer={layer} hovered={hoveredIndex === i} />
+                  </motion.div>
+                )
+              })}
             </Isometric>
 
             {/* Floating annotation labels */}

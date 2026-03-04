@@ -83,7 +83,7 @@ async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
         kwargs: dict[str, Any] = dict(
             filters=ThreadsFilter(
                 label_type_ids=[APPEAL_LABEL_TYPE_ID],
-                statuses=[ThreadStatus.TODO, ThreadStatus.SNOOZED],
+                statuses=[ThreadStatus.TODO],
             ),
             first=50,
         )
@@ -141,8 +141,10 @@ async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
         node = edge.get("node", {})
         actor = node.get("actor", {})
         entry = node.get("entry", {})
-        # Staff replied via chat or email
-        if actor.get("__typename") == "UserActor" and entry.get("__typename") in (
+        # Staff or bot replied via chat or email
+        if actor.get("__typename") in ("UserActor", "MachineUserActor") and entry.get(
+            "__typename"
+        ) in (
             "ChatEntry",
             "EmailEntry",
         ):

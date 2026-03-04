@@ -7,10 +7,12 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
+import { BillingDiagram } from './BillingDiagram'
 import Features from './Features'
 import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
+import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -51,14 +53,21 @@ export const PageContent = () => {
       </Section>
       <Section className="flex flex-col gap-y-32">
         <Usage />
+        <BillingDiagram />
         <Adapters />
+      </Section>
+      <Section className="flex flex-col gap-y-24" border>
+        <BillingDiagram />
       </Section>
       <Section className="flex flex-col gap-y-24">
         <MerchantOfRecord />
         <Testimonials />
       </Section>
-      <Section className="flex flex-col gap-y-24">
+      <Section className="flex flex-col gap-y-24" border>
         <Pricing />
+      </Section>
+      <Section className="flex flex-col gap-y-24">
+        <Upsell />
       </Section>
     </>
   )

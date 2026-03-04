@@ -930,7 +930,7 @@ def _print_result(result: AppealReviewResult) -> None:
 async def run_appeal_review(
     org_slug: str,
     *,
-    model: str = "gpt-4o",
+    model: str = "gpt-5.2-2025-12-11",
     plain_api_key: str | None = None,
     skip_website: bool = False,
     skip_plain: bool = False,

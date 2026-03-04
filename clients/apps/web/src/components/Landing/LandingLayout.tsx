@@ -31,7 +31,6 @@ export default function Layout({ children }: PropsWithChildren) {
           <LandingPageTopbar />
           <LandingPageMobileNavigation />
         </SidebarProvider>
-
         <div className="dark:bg-polar-950 relative flex flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
           {children}
         </div>

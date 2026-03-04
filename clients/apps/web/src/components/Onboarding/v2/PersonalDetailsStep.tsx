@@ -36,7 +36,7 @@ interface FormSchema {
 export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
-  const { data, updateData } = useOnboardingData()
+  const { data, updateData, showApiResponse } = useOnboardingData()
 
   const parsedDob = data.dateOfBirth ? data.dateOfBirth.split('-') : []
 
@@ -78,13 +78,14 @@ export function PersonalDetailsStep() {
     String(i + 1).padStart(2, '0'),
   )
 
-  const onSubmit = (formData: FormSchema) => {
+  const onSubmit = async (formData: FormSchema) => {
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay}`
     updateData({
       fullName: formData.fullName,
       country: formData.country,
       dateOfBirth,
     })
+    await showApiResponse(201, 'Created')
     router.push('/onboarding/business')
   }
 

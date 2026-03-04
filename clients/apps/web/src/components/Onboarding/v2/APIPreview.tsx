@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOnboardingData } from './OnboardingContext'
 
 const ENDPOINT_MAP = {
@@ -9,8 +9,14 @@ const ENDPOINT_MAP = {
   product: '/v1/products',
 } as const
 
+interface Line {
+  key: string
+  fingerprint: string
+  content: React.ReactNode
+}
+
 export function APIPreview({ step }: { step: 'personal' | 'business' | 'product' }) {
-  const { data } = useOnboardingData()
+  const { data, apiResponse } = useOnboardingData()
 
   const body = useMemo(() => {
     switch (step) {
@@ -53,6 +59,47 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
   const endpoint = ENDPOINT_MAP[step]
   const lines = useMemo(() => buildLines(body), [body])
 
+  // Track which lines changed to flash them (debounced so typing doesn't perma-highlight)
+  const prevFingerprints = useRef<Map<string, string>>(new Map())
+  const [flashedKeys, setFlashedKeys] = useState<Set<string>>(new Set())
+  const pendingChanges = useRef<Set<string>>(new Set())
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const fadeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    const prev = prevFingerprints.current
+
+    for (const line of lines) {
+      const old = prev.get(line.key)
+      if (old !== undefined && old !== line.fingerprint) {
+        pendingChanges.current.add(line.key)
+      }
+    }
+
+    // Update stored fingerprints
+    const next = new Map<string, string>()
+    for (const line of lines) {
+      next.set(line.key, line.fingerprint)
+    }
+    prevFingerprints.current = next
+
+    // Debounce: wait for typing to pause before flashing
+    clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      if (pendingChanges.current.size > 0) {
+        setFlashedKeys(new Set(pendingChanges.current))
+        pendingChanges.current.clear()
+        clearTimeout(fadeTimer.current)
+        fadeTimer.current = setTimeout(() => setFlashedKeys(new Set()), 800)
+      }
+    }, 300)
+
+    return () => {
+      clearTimeout(debounceTimer.current)
+      clearTimeout(fadeTimer.current)
+    }
+  }, [lines])
+
   return (
     <div className="flex flex-col gap-4 font-mono text-xs">
       <div className="inline-flex self-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-[11px] dark:border-gray-800 dark:bg-gray-900/50">
@@ -68,70 +115,120 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
         </div>
         {/* Code */}
         <pre className="flex-1 leading-relaxed">
-          {lines.map((line, i) => (
-            <span key={i}>
-              {line}
-              {i < lines.length - 1 && '\n'}
-            </span>
-          ))}
+          {lines.map((line, i) => {
+            const isFlashed = flashedKeys.has(line.key)
+            return (
+              <span key={line.key}>
+                <span
+                  className={`-mx-1 rounded px-1 transition-colors duration-500 ${
+                    isFlashed
+                      ? 'bg-blue-500/15 dark:bg-blue-400/10'
+                      : 'bg-transparent'
+                  }`}
+                >
+                  {line.content}
+                </span>
+                {i < lines.length - 1 && '\n'}
+              </span>
+            )
+          })}
         </pre>
       </div>
+
+      {/* API Response */}
+      {apiResponse && (
+        <div className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4 font-mono dark:border-gray-800">
+          <span className="text-[11px] font-semibold text-green-600 dark:text-green-500">
+            {apiResponse.status} {apiResponse.message}
+          </span>
+          <div className="h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+            <div className="h-full animate-pulse rounded-full bg-green-500" style={{ width: '100%' }} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-/** Convert the object into an array of JSX lines for line-numbering. */
-function buildLines(obj: Record<string, unknown>): React.ReactNode[] {
+/** Convert the object into an array of keyed lines with fingerprints for change detection. */
+function buildLines(obj: Record<string, unknown>): Line[] {
   const entries = Object.entries(obj)
   if (entries.length === 0) {
-    return [<span key="empty" className="text-gray-400 dark:text-gray-500">{'{ }'}</span>]
+    return [{
+      key: 'empty',
+      fingerprint: '{}',
+      content: <span className="text-gray-400 dark:text-gray-500">{'{ }'}</span>,
+    }]
   }
 
-  const lines: React.ReactNode[] = []
-  lines.push(<span key="open" className="text-gray-400">{'{'}</span>)
+  const lines: Line[] = []
+  lines.push({
+    key: '__open',
+    fingerprint: '{',
+    content: <span className="text-gray-400">{'{'}</span>,
+  })
 
   entries.forEach(([key, value], i) => {
     const comma = i < entries.length - 1
     if (Array.isArray(value) && value.length > 0) {
-      // Array opening
-      lines.push(
-        <span key={`${key}-open`}>
-          {'  '}
-          <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
-          <span className="text-gray-400">{': ['}</span>
-        </span>
-      )
-      // Array items
-      value.forEach((item, j) => {
-        lines.push(
-          <span key={`${key}-${j}`}>
-            {'    '}
-            <JsonValue value={item} />
-            {j < value.length - 1 && <span className="text-gray-400">,</span>}
+      lines.push({
+        key: `${key}-open`,
+        fingerprint: `${key}:[`,
+        content: (
+          <span>
+            {'  '}
+            <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
+            <span className="text-gray-400">{': ['}</span>
           </span>
-        )
+        ),
       })
-      // Array closing
-      lines.push(
-        <span key={`${key}-close`}>
-          {'  '}
-          <span className="text-gray-400">{']'}{comma && ','}</span>
-        </span>
-      )
+      value.forEach((item, j) => {
+        const itemStr = JSON.stringify(item)
+        lines.push({
+          key: `${key}-${j}`,
+          fingerprint: `${key}-${j}:${itemStr}`,
+          content: (
+            <span>
+              {'    '}
+              <JsonValue value={item} />
+              {j < value.length - 1 && <span className="text-gray-400">,</span>}
+            </span>
+          ),
+        })
+      })
+      lines.push({
+        key: `${key}-close`,
+        fingerprint: `${key}:]${comma ? ',' : ''}`,
+        content: (
+          <span>
+            {'  '}
+            <span className="text-gray-400">{']'}{comma && ','}</span>
+          </span>
+        ),
+      })
     } else {
-      lines.push(
-        <span key={key}>
-          {'  '}
-          <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
-          <span className="text-gray-400">: </span>
-          <JsonValue value={value} />
-          {comma && <span className="text-gray-400">,</span>}
-        </span>
-      )
+      const valStr = JSON.stringify(value)
+      lines.push({
+        key,
+        fingerprint: `${key}:${valStr}`,
+        content: (
+          <span>
+            {'  '}
+            <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
+            <span className="text-gray-400">: </span>
+            <JsonValue value={value} />
+            {comma && <span className="text-gray-400">,</span>}
+          </span>
+        ),
+      })
     }
   })
 
-  lines.push(<span key="close" className="text-gray-400">{'}'}</span>)
+  lines.push({
+    key: '__close',
+    fingerprint: '}',
+    content: <span className="text-gray-400">{'}'}</span>,
+  })
   return lines
 }
 

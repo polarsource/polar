@@ -88,12 +88,12 @@ class ReviewsSection:
                             verdict_val = report.verdict.value
                             badge_class = VERDICT_BADGE.get(verdict_val, "badge-ghost")
                             with tag.div(classes=f"badge {badge_class}"):
-                                text(f"AI: {verdict_val}")
+                                text(verdict_val)
 
                             risk_val = report.overall_risk_level.value
                             risk_badge = RISK_LEVEL_BADGE.get(risk_val, "badge-ghost")
                             with tag.div(classes=f"badge badge-sm {risk_badge}"):
-                                text(f"AI Risk: {risk_val}")
+                                text(f"Risk: {risk_val}")
 
                             if report.overall_risk_score is not None:
                                 with tag.span(classes="text-xs text-base-content/60"):

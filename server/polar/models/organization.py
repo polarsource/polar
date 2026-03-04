@@ -286,8 +286,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
         mapped_column(JSONB, nullable=False, default=_default_customer_portal_settings)
     )
 
-    _checkout_settings: Mapped[OrganizationCheckoutSettings | None] = mapped_column(
-        "checkout_settings", JSONB, nullable=True, default=None
+    checkout_settings: Mapped[OrganizationCheckoutSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_checkout_settings
     )
 
     @property
@@ -385,16 +385,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get(
             "update_plan", True
         )
-
-    @property
-    def checkout_settings(self) -> OrganizationCheckoutSettings:
-        if self._checkout_settings is None:
-            return _default_checkout_settings
-        return self._checkout_settings
-
-    @checkout_settings.setter
-    def checkout_settings(self, value: OrganizationCheckoutSettings) -> None:
-        self._checkout_settings = value
 
     @property
     def checkout_require_3ds(self) -> bool:

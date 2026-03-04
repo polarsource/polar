@@ -87,6 +87,187 @@ const LAYERS: LayerDef[] = [
   },
 ]
 
+// ── Checkout layer elements ─────────────────────────────────────────────────
+const CheckoutElements = ({ z, active }: { z: number; active: boolean }) => {
+  const BZ = z + PD + 1
+  const W = 160
+  const X = PX + (PW - W) / 2       // = 130 — horizontally centered
+  const HALF = (W - 16) / 2         // = 72  — expiry + cvv with 16px gap
+  const BW = 140
+  const BX = PX + (PW - BW) / 2     // = 140
+  // Content height: rows(3)+gap(7)+rows(3)+gap(7)+divider(1)+gap(7)+email(5)+gap(9)+card(5)+gap(9)+expiry(5)+gap(11)+button(16) ≈ 88px
+  // Vertically center in PH=160: top offset = (160−88)/2 = 36
+  const Y0 = PY + 36
+
+  const fieldClass = `transition-colors duration-300 ${
+    active
+      ? 'bg-blue-200/70 dark:bg-blue-400/40'
+      : 'bg-gray-300/50 dark:bg-polar-600/40'
+  }`
+  const rowClass = `transition-colors duration-300 ${
+    active
+      ? 'bg-blue-200/50 dark:bg-blue-400/30'
+      : 'bg-gray-300/40 dark:bg-polar-600/35'
+  }`
+  const priceClass = `transition-colors duration-300 ${
+    active
+      ? 'bg-blue-300/60 dark:bg-blue-400/40'
+      : 'bg-gray-400/40 dark:bg-polar-500/40'
+  }`
+  return (
+    <>
+      {/* Order summary — line item 1: name stub + price stub */}
+      <IsometricBox
+        x={X}
+        y={Y0}
+        z={BZ}
+        width={100}
+        height={3}
+        depth={2}
+        topClassName={rowClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      <IsometricBox
+        x={X + 134}
+        y={Y0}
+        z={BZ}
+        width={26}
+        height={3}
+        depth={2}
+        topClassName={priceClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* Order summary — line item 2 */}
+      <IsometricBox
+        x={X}
+        y={Y0 + 10}
+        z={BZ}
+        width={80}
+        height={3}
+        depth={2}
+        topClassName={rowClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      <IsometricBox
+        x={X + 134}
+        y={Y0 + 10}
+        z={BZ}
+        width={26}
+        height={3}
+        depth={2}
+        topClassName={priceClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* Divider */}
+      <IsometricBox
+        x={X}
+        y={Y0 + 20}
+        z={BZ}
+        width={W}
+        height={1}
+        depth={1}
+        topClassName={`transition-colors duration-300 ${
+          active
+            ? 'bg-blue-200/40 dark:bg-blue-700/30'
+            : 'bg-gray-200/60 dark:bg-polar-700/50'
+        }`}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* Email / customer field */}
+      <IsometricBox
+        x={X}
+        y={Y0 + 28}
+        z={BZ}
+        width={W}
+        height={5}
+        depth={3}
+        topClassName={fieldClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* Card number field */}
+      <IsometricBox
+        x={X}
+        y={Y0 + 42}
+        z={BZ}
+        width={W}
+        height={5}
+        depth={3}
+        topClassName={fieldClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* Expiry field */}
+      <IsometricBox
+        x={X}
+        y={Y0 + 56}
+        z={BZ}
+        width={HALF}
+        height={5}
+        depth={3}
+        topClassName={fieldClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* CVV field */}
+      <IsometricBox
+        x={X + HALF + 16}
+        y={Y0 + 56}
+        z={BZ}
+        width={HALF}
+        height={5}
+        depth={3}
+        topClassName={fieldClass}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
+      {/* Pay button */}
+      <IsometricBox
+        x={BX}
+        y={Y0 + 72}
+        z={BZ}
+        width={BW}
+        height={16}
+        depth={5}
+        topClassName={`transition-colors duration-300 ${
+          active
+            ? 'bg-blue-400/90 dark:bg-blue-500/80 border-[0.5px] border-blue-300 dark:border-blue-400'
+            : 'bg-blue-500/60 dark:bg-blue-600/50 border-[0.5px] border-blue-400/60 dark:border-blue-500/60'
+        }`}
+        frontClassName={`transition-colors duration-300 ${
+          active
+            ? 'bg-blue-500/70 dark:bg-blue-600/60'
+            : 'bg-blue-600/50 dark:bg-blue-700/40'
+        }`}
+        rightClassName={`transition-colors duration-300 ${
+          active
+            ? 'bg-blue-600/60 dark:bg-blue-700/50'
+            : 'bg-blue-700/40 dark:bg-blue-800/40'
+        }`}
+      />
+      {/* Button label stub */}
+      <IsometricBox
+        x={BX + (BW - 60) / 2}
+        y={Y0 + 78}
+        z={BZ + 6}
+        width={60}
+        height={2}
+        depth={1}
+        topClassName="text-[6px] font-mono uppercase text-center tracking-widest"
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      >
+        Pay Now
+      </IsometricBox>
+    </>
+  )
+}
+
 // ── Plate primitive ────────────────────────────────────────────────────────────
 const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
   const { z, rows } = layer
@@ -104,24 +285,28 @@ const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
         frontClassName={`transition-colors duration-300 ${active ? AF : F}`}
         rightClassName={`transition-colors duration-300 ${active ? AR : R}`}
       />
-      {rows.map((w, i) => (
-        <IsometricBox
-          key={i}
-          x={PX + 20}
-          y={PY + 20 + i * 28}
-          z={z + PD + 1}
-          width={w}
-          height={3}
-          depth={2}
-          topClassName={`transition-colors duration-300 ${
-            active
-              ? 'bg-blue-300/70 dark:bg-blue-400/50'
-              : 'bg-gray-400/40 dark:bg-polar-600/50'
-          }`}
-          frontClassName="bg-transparent"
-          rightClassName="bg-transparent"
-        />
-      ))}
+      {layer.label === 'CHECKOUT' ? (
+        <CheckoutElements z={z} active={active} />
+      ) : (
+        rows.map((w, i) => (
+          <IsometricBox
+            key={i}
+            x={PX + 20}
+            y={PY + 20 + i * 28}
+            z={z + PD + 1}
+            width={w}
+            height={3}
+            depth={2}
+            topClassName={`transition-colors duration-300 ${
+              active
+                ? 'bg-blue-300/70 dark:bg-blue-400/50'
+                : 'bg-gray-400/40 dark:bg-polar-600/50'
+            }`}
+            frontClassName="bg-transparent"
+            rightClassName="bg-transparent"
+          />
+        ))
+      )}
     </>
   )
 }

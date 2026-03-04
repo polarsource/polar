@@ -56,9 +56,6 @@ export const PageContent = () => {
         <BillingDiagram />
         <Adapters />
       </Section>
-      <Section className="flex flex-col gap-y-24" border>
-        <BillingDiagram />
-      </Section>
       <Section className="flex flex-col gap-y-24">
         <MerchantOfRecord />
         <Testimonials />

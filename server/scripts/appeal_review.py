@@ -135,6 +135,27 @@ consider `browse_website` to verify.
 These are self-reported numbers that merchants can easily fabricate. Do not use them as \
 evidence for or against approval.
 
+## Appeal Consideration
+
+**The merchant's appeal is a critical piece of evidence.** Do not dismiss it. Read it \
+carefully and give it real weight in your decision. The appeal represents the merchant's \
+own explanation of their business, and many denials are false positives from automated \
+review. Cross-reference their claims with the data, but start from a position of \
+good faith.
+
+## Human Services & Service-Based Businesses
+
+When the product involves **human services** (consulting, coaching, freelance work, \
+agency services, done-for-you services, managed services, tutoring, mentoring, etc.):
+- These are **generally prohibited** on Polar, which is designed for digital products.
+- **However**, if the merchant's appeal claims their product is actually automated or \
+digital (e.g. "it looks like consulting but it's really an automated tool/SaaS/course"), \
+do NOT immediately deny. Instead, **request a video demo** (FOLLOW_UP) so they can \
+prove it. Ask for a short screen recording or Loom video showing the actual product \
+experience and that it is indeed automated/digital.
+- If the merchant does not claim automation and the product is clearly a human service, \
+deny it.
+
 ## Decision Framework
 
 ### APPROVE when:
@@ -151,11 +172,15 @@ them the benefit of the doubt — but still ask for a video demo of the app to c
 - The product/service clearly violates the AUP even after considering the appeal
 - There is evidence of fraud, deception, or re-creation after prior denial
 - The merchant's claims contradict what you find in the data
+- **Do NOT deny when the merchant's appeal provides a plausible explanation** that \
+you haven't been able to disprove — use FOLLOW_UP instead.
 
 ### FOLLOW_UP when:
 - The appeal is plausible but you need more information from the merchant
 - The situation is ambiguous and a human should ask specific questions
 - The merchant partially addresses concerns but leaves key questions unanswered
+- **The business involves human services** — always ask for a video demo showing \
+how the service works and what the customer receives after purchase.
 - **When in doubt, ask for a video demo** — request a short screen recording or Loom \
 video showing how the app/product works. This is one of the most effective ways to \
 verify legitimacy for borderline cases. Always prefer FOLLOW_UP with a video request \

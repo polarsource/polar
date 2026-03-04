@@ -1,7 +1,7 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
+import { useRef, useState } from 'react'
 import { Isometric, IsometricBox } from './Isometric'
 
 // ── Colors (same system as Features.tsx) ──────────────────────────────────────
@@ -315,9 +315,27 @@ const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
 // ── Main export ────────────────────────────────────────────────────────────────
 export const BillingDiagram = () => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [scrollLayer, setScrollLayer] = useState<number | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start 0.85', 'end 0.15'],
+  })
+
+  useMotionValueEvent(scrollYProgress, 'change', (v: number) => {
+    if (v < 0.25 || v > 0.75) setScrollLayer(null)
+    else if (v < 0.375) setScrollLayer(3)
+    else if (v < 0.5) setScrollLayer(2)
+    else if (v < 0.625) setScrollLayer(1)
+    else setScrollLayer(0)
+  })
+
+  // Hover takes priority; scroll-driven state is the fallback
+  const activeIndex = hoveredIndex ?? scrollLayer
 
   return (
-    <div className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16">
+    <div ref={containerRef} className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16">
       {/* Left — pipeline description */}
       <div className="flex flex-col gap-y-8 md:w-2/5">
         <span className="dark:text-polar-500 font-mono text-[11px] tracking-[0.2em] text-gray-400 uppercase">
@@ -334,7 +352,7 @@ export const BillingDiagram = () => {
         </p>
         <ul className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {LAYERS.map((layer, i) => {
-            const active = hoveredIndex === i
+            const active = activeIndex === i
             return (
               <li
                 key={layer.index}
@@ -379,9 +397,9 @@ export const BillingDiagram = () => {
             <Isometric style={{ width: SW, height: SH }}>
               {LAYERS.map((layer, i) => {
                 const zOffset =
-                  hoveredIndex === null ? 0
-                  : i < hoveredIndex ? -EXPAND
-                  : i === hoveredIndex ? 0
+                  activeIndex === null ? 0
+                  : i < activeIndex ? -EXPAND
+                  : i === activeIndex ? 0
                   : EXPAND
                 return (
                   <motion.div
@@ -390,7 +408,7 @@ export const BillingDiagram = () => {
                     animate={{ z: zOffset }}
                     transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    <Plate layer={layer} hovered={hoveredIndex === i} />
+                    <Plate layer={layer} hovered={activeIndex === i} />
                   </motion.div>
                 )
               })}
@@ -398,7 +416,7 @@ export const BillingDiagram = () => {
 
             {/* Floating annotation labels */}
             {LAYERS.map((layer, i) => {
-              const active = hoveredIndex === i
+              const active = activeIndex === i
               return (
                 <div
                   key={layer.index}

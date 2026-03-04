@@ -1,6 +1,6 @@
 'use client'
 
-import React, { CSSProperties, PropsWithChildren } from 'react'
+import { CSSProperties, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // ── Scene wrapper ─────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ export const Isometric = ({ children, className, style }: IsometricProps) => (
 
 // ── Box primitive ─────────────────────────────────────────────────────────────
 
-type IsometricBoxProps = {
+type IsometricBoxProps = PropsWithChildren & {
   /** Position in scene (px) */
   x?: number
   y?: number
@@ -68,6 +68,7 @@ export const IsometricBox = ({
   frontClassName,
   rightClassName,
   className,
+  children,
 }: IsometricBoxProps) => (
   <div
     className={twMerge('absolute', className)}
@@ -84,7 +85,9 @@ export const IsometricBox = ({
     <div
       className={twMerge('absolute inset-0', topClassName)}
       style={{ transform: `translateZ(${depth}px)`, ...topStyle }}
-    />
+    >
+      {children}
+    </div>
     {/* Front face — at y = height, rotated into the YZ plane */}
     <div
       className={twMerge('absolute', frontClassName)}

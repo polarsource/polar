@@ -199,7 +199,7 @@ export const Google = ({ size = 30 }) => (
 
 export const Speakeasy = () => {
   return (
-    <div className="flex items-center">
+    <div className="flex scale-90 items-center">
       <div className="relative size-8">
         <svg
           xmlns="http://www.w3.org/2000/svg"

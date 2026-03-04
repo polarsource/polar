@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Isometric, IsometricBox } from './Isometric'
 
 // ── Colors (same system as Features.tsx) ──────────────────────────────────────
@@ -87,8 +88,9 @@ const LAYERS: LayerDef[] = [
 ]
 
 // ── Plate primitive ────────────────────────────────────────────────────────────
-const Plate = ({ layer }: { layer: LayerDef }) => {
-  const { z, highlight, rows, highlightRow } = layer
+const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
+  const { z, rows } = layer
+  const active = hovered
   return (
     <>
       <IsometricBox
@@ -98,9 +100,9 @@ const Plate = ({ layer }: { layer: LayerDef }) => {
         width={PW}
         height={PH}
         depth={PD}
-        topClassName={highlight ? AT : `${T} ${EDGE}`}
-        frontClassName={highlight ? AF : F}
-        rightClassName={highlight ? AR : R}
+        topClassName={`transition-colors duration-300 ${active ? AT : `${T} ${EDGE}`}`}
+        frontClassName={`transition-colors duration-300 ${active ? AF : F}`}
+        rightClassName={`transition-colors duration-300 ${active ? AR : R}`}
       />
       {rows.map((w, i) => (
         <IsometricBox
@@ -111,11 +113,11 @@ const Plate = ({ layer }: { layer: LayerDef }) => {
           width={w}
           height={3}
           depth={2}
-          topClassName={
-            i === highlightRow
+          topClassName={`transition-colors duration-300 ${
+            active
               ? 'bg-blue-300/70 dark:bg-blue-400/50'
               : 'bg-gray-400/40 dark:bg-polar-600/50'
-          }
+          }`}
           frontClassName="bg-transparent"
           rightClassName="bg-transparent"
         />
@@ -125,90 +127,107 @@ const Plate = ({ layer }: { layer: LayerDef }) => {
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
-export const BillingDiagram = () => (
-  <div className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16">
-    {/* Left — pipeline description */}
-    <div className="flex flex-col gap-y-8 md:w-2/5">
-      <span className="dark:text-polar-500 font-mono text-[11px] tracking-[0.2em] text-gray-400 uppercase">
-        Billing Pipeline
-      </span>
-      <h2 className="text-3xl leading-snug text-pretty md:text-4xl">
-        Event to invoice,
-        <br />
-        end-to-end
-      </h2>
-      <p className="dark:text-polar-500 text-lg leading-relaxed text-pretty text-gray-500">
-        Every API call and token flows through a complete billing pipeline —
-        from raw usage events to itemized invoices and hosted checkout.
-      </p>
-      <ul className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        {LAYERS.map((layer) => (
-          <li key={layer.index} className="flex flex-col gap-y-1">
-            <div className="flex items-baseline gap-x-3">
-              <span
-                className={
-                  layer.highlight
-                    ? 'font-mono text-xs font-medium tracking-[0.15em] text-blue-500 uppercase'
-                    : 'dark:text-polar-200 font-mono text-xs font-medium tracking-[0.15em] text-gray-700 uppercase'
-                }
-              >
-                {layer.label}
-              </span>
-            </div>
-            <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-500">
-              {layer.description}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </div>
+export const BillingDiagram = () => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-    {/* Right — isometric illustration with floating labels */}
-    <div
-      className="relative flex-1 overflow-visible"
-      style={{ minHeight: 510 }}
-    >
-      {/* Illustration, centered and shifted down to prevent top overflow */}
-      <div className="absolute inset-0 flex justify-center overflow-visible">
-        <div
-          style={{
-            transform: 'scale(1.35)',
-            transformOrigin: 'top center',
-            marginTop: 120,
-            position: 'relative',
-            overflow: 'visible',
-          }}
-        >
-          <Isometric style={{ width: SW, height: SH }}>
-            {LAYERS.map((layer) => (
-              <Plate key={layer.z} layer={layer} />
-            ))}
-          </Isometric>
-
-          {/* Floating annotation labels */}
-          {LAYERS.map((layer, i) => (
-            <div
-              key={layer.index}
-              className="absolute hidden items-center gap-x-2 whitespace-nowrap md:flex"
-              style={{
-                top: ANCHORS[i].y - 8,
-                left: ANCHORS[i].x + 14,
-              }}
-            >
-              <div className="dark:bg-polar-600 h-px w-5 bg-gray-300" />
-              <span
-                className={
-                  layer.highlight
-                    ? 'font-mono text-[10px] font-medium tracking-[0.15em] text-blue-500 uppercase'
-                    : 'dark:text-polar-500 font-mono text-[10px] tracking-[0.15em] text-gray-400 uppercase'
-                }
+  return (
+    <div className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16">
+      {/* Left — pipeline description */}
+      <div className="flex flex-col gap-y-8 md:w-2/5">
+        <span className="dark:text-polar-500 font-mono text-[11px] tracking-[0.2em] text-gray-400 uppercase">
+          Billing Pipeline
+        </span>
+        <h2 className="font-display text-3xl leading-tight! text-pretty md:text-5xl">
+          Event to invoice.
+          <br />
+          End-to-end.
+        </h2>
+        <p className="dark:text-polar-500 text-lg leading-relaxed text-pretty text-gray-500">
+          Every API call and token flows through a complete billing pipeline —
+          from raw usage events to itemized invoices and hosted checkout.
+        </p>
+        <ul className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          {LAYERS.map((layer, i) => {
+            const active = hoveredIndex === i
+            return (
+              <li
+                key={layer.index}
+                className="flex cursor-pointer flex-col gap-y-1"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
               >
-                {layer.label}
-              </span>
-            </div>
-          ))}
+                <span
+                  className={`font-mono text-xs font-medium tracking-[0.15em] uppercase transition-colors ${
+                    active
+                      ? 'text-blue-500'
+                      : 'dark:text-polar-200 text-gray-700'
+                  }`}
+                >
+                  {layer.label}
+                </span>
+                <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-500">
+                  {layer.description}
+                </p>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+
+      {/* Right — isometric illustration with floating labels */}
+      <div
+        className="relative flex-1 overflow-visible"
+        style={{ minHeight: 510 }}
+      >
+        {/* Illustration, centered and shifted down to prevent top overflow */}
+        <div className="absolute inset-0 flex justify-center overflow-visible">
+          <div
+            style={{
+              transform: 'scale(1.35)',
+              transformOrigin: 'top center',
+              marginTop: 120,
+              position: 'relative',
+              overflow: 'visible',
+            }}
+          >
+            <Isometric style={{ width: SW, height: SH }}>
+              {LAYERS.map((layer, i) => (
+                <Plate
+                  key={layer.z}
+                  layer={layer}
+                  hovered={hoveredIndex === i}
+                />
+              ))}
+            </Isometric>
+
+            {/* Floating annotation labels */}
+            {LAYERS.map((layer, i) => {
+              const active = hoveredIndex === i
+              return (
+                <div
+                  key={layer.index}
+                  className="absolute hidden items-center gap-x-2 whitespace-nowrap md:flex"
+                  style={{
+                    top: ANCHORS[i].y - 8,
+                    left: ANCHORS[i].x + 14,
+                  }}
+                >
+                  <div className="dark:bg-polar-600 h-px w-5 bg-gray-300" />
+                  <span
+                    className={`font-mono text-[10px] tracking-[0.15em] uppercase transition-colors ${
+                      active
+                        ? 'font-medium text-blue-500'
+                        : 'dark:text-polar-500 text-gray-400'
+                    }`}
+                  >
+                    {layer.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-)
+  )
+}

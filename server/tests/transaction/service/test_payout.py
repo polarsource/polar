@@ -31,6 +31,7 @@ async def create_payout(
     (
         balance_amount_after_fees,
         payout_fees_balances,
+        _,
     ) = await platform_fee_transaction_service.create_payout_fees_balances(
         session, account=account, balance_amount=balance_amount
     )

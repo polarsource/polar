@@ -240,17 +240,22 @@ class PayoutService:
             raise InsufficientBalance(account, balance_amount)
 
         try:
-            payout_fees = await platform_fee_transaction_service.get_payout_fees(
+            (
+                payout_fees,
+                existing_fees_amount,
+            ) = await platform_fee_transaction_service.get_payout_fees(
                 session, account=account, balance_amount=balance_amount
             )
         except PayoutAmountTooLow as e:
             raise InsufficientBalance(account, balance_amount) from e
 
+        new_fees_amount = sum(fee for _, fee in payout_fees)
+        total_fees_amount = new_fees_amount + existing_fees_amount
         return PayoutEstimate(
             account_id=account.id,
             gross_amount=balance_amount,
-            fees_amount=sum(fee for _, fee in payout_fees),
-            net_amount=balance_amount - sum(fee for _, fee in payout_fees),
+            fees_amount=total_fees_amount,
+            net_amount=balance_amount - new_fees_amount,
         )
 
     async def create(
@@ -278,6 +283,7 @@ class PayoutService:
                 (
                     balance_amount_after_fees,
                     payout_fees_balances,
+                    total_fees_amount,
                 ) = await platform_fee_transaction_service.create_payout_fees_balances(
                     session, account=account, balance_amount=balance_amount
                 )
@@ -290,7 +296,7 @@ class PayoutService:
                     processor=account.account_type,
                     currency="usd",  # FIXME: Main Polar currency
                     amount=balance_amount_after_fees,
-                    fees_amount=balance_amount - balance_amount_after_fees,
+                    fees_amount=total_fees_amount,
                     account_currency=account.currency,
                     account_amount=balance_amount_after_fees,
                     account=account,

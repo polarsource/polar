@@ -11,7 +11,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import Order, Payment, Transaction
-from polar.models.transaction import TransactionType
+from polar.models.transaction import PlatformFeeType, TransactionType
 
 
 class TransactionRepository(
@@ -81,6 +81,23 @@ class BalanceTransactionRepository(TransactionRepository):
                 selectinload(Transaction.balance_reversal_transactions),
                 selectinload(Transaction.payment_transaction),
             )
+        )
+        return await self.get_all(statement)
+
+    _PAYOUT_FEE_TYPES = {
+        PlatformFeeType.account,
+        PlatformFeeType.payout,
+        PlatformFeeType.cross_border_transfer,
+    }
+
+    async def get_unpaid_payout_fees_by_account(
+        self, account_id: UUID
+    ) -> Sequence[Transaction]:
+        statement = self.get_base_statement().where(
+            Transaction.type == TransactionType.balance,
+            Transaction.account_id == account_id,
+            Transaction.payout_transaction_id.is_(None),
+            Transaction.platform_fee_type.in_(self._PAYOUT_FEE_TYPES),
         )
         return await self.get_all(statement)
 

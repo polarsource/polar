@@ -19,6 +19,7 @@ from polar.transaction.fees.stripe import (
     get_stripe_subscription_fee,
 )
 
+from ..repository import BalanceTransactionRepository
 from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
 
@@ -71,12 +72,22 @@ class PlatformFeeTransactionService(BaseTransactionService):
 
     async def get_payout_fees(
         self, session: AsyncSession, *, account: Account, balance_amount: int
-    ) -> list[tuple[PlatformFeeType, int]]:
+    ) -> tuple[list[tuple[PlatformFeeType, int]], int]:
         if not account.processor_fees_applicable:
-            return []
+            return [], 0
 
         if account.account_type != AccountType.stripe:
-            return []
+            return [], 0
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        existing_unpaid_fees = (
+            await balance_transaction_repository.get_unpaid_payout_fees_by_account(
+                account.id
+            )
+        )
+        existing_fees_amount = abs(sum(t.amount for t in existing_unpaid_fees))
 
         payout_fees: list[tuple[PlatformFeeType, int]] = []
 
@@ -101,16 +112,17 @@ class PlatformFeeTransactionService(BaseTransactionService):
         if payout_fee_amount > 0:
             payout_fees.append((PlatformFeeType.payout, payout_fee_amount))
 
-        return payout_fees
+        return payout_fees, existing_fees_amount
 
     async def create_payout_fees_balances(
         self, session: AsyncSession, *, account: Account, balance_amount: int
-    ) -> tuple[int, list[tuple[Transaction, Transaction]]]:
-        payout_fees = await self.get_payout_fees(
+    ) -> tuple[int, list[tuple[Transaction, Transaction]], int]:
+        payout_fees, existing_fees_amount = await self.get_payout_fees(
             session, account=account, balance_amount=balance_amount
         )
 
         payout_fees_balances: list[tuple[Transaction, Transaction]] = []
+        new_fees_amount = 0
         for payout_fee_type, fee_amount in payout_fees:
             fee_balances = await balance_transaction_service.create_balance(
                 session,
@@ -121,8 +133,10 @@ class PlatformFeeTransactionService(BaseTransactionService):
             )
             payout_fees_balances.append(fee_balances)
             balance_amount -= fee_amount
+            new_fees_amount += fee_amount
 
-        return balance_amount, payout_fees_balances
+        total_fees_amount = new_fees_amount + existing_fees_amount
+        return balance_amount, payout_fees_balances, total_fees_amount
 
     async def _create_payment_fees(
         self,

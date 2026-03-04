@@ -236,7 +236,7 @@ class TestEstimate:
         """Test that regular currencies return net_amount unchanged."""
         mocker.patch(
             "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
-            return_value=[],
+            return_value=([], 0),
         )
 
         account = await create_account(save_fixture, organization, user, currency="usd")

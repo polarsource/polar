@@ -496,6 +496,7 @@ class TestCreatePayoutFeesBalances:
         (
             balance_amount,
             payout_fees_balances,
+            _,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
             session, account=account, balance_amount=10000
         )
@@ -523,6 +524,7 @@ class TestCreatePayoutFeesBalances:
         (
             balance_amount,
             payout_fees_balances,
+            _,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
             session, account=account, balance_amount=10000
         )
@@ -571,6 +573,7 @@ class TestCreatePayoutFeesBalances:
         (
             balance_amount,
             payout_fees_balances,
+            _,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
             session, account=account_processor_fees, balance_amount=10000
         )
@@ -615,6 +618,7 @@ class TestCreatePayoutFeesBalances:
         (
             balance_amount,
             payout_fees_balances,
+            _,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
             session, account=account_processor_fees, balance_amount=10000
         )
@@ -649,6 +653,7 @@ class TestCreatePayoutFeesBalances:
         (
             balance_amount,
             payout_fees_balances,
+            _,
         ) = await platform_fee_transaction_service.create_payout_fees_balances(
             session, account=account, balance_amount=10000
         )

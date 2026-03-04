@@ -142,6 +142,9 @@ evidence for or against approval.
 - The denial was based on a misunderstanding or false positive
 - The product/service is actually compliant with the AUP
 - The merchant has made changes to come into compliance
+- **The merchant expresses willingness to make significant changes** to come into \
+compliance (e.g. removing prohibited products, changing their business model). Give \
+them the benefit of the doubt — but still ask for a video demo of the app to confirm.
 
 ### DENY when:
 - The appeal does not address the specific reason for denial
@@ -155,7 +158,8 @@ evidence for or against approval.
 - The merchant partially addresses concerns but leaves key questions unanswered
 - **When in doubt, ask for a video demo** — request a short screen recording or Loom \
 video showing how the app/product works. This is one of the most effective ways to \
-verify legitimacy for borderline cases.
+verify legitimacy for borderline cases. Always prefer FOLLOW_UP with a video request \
+over a hard DENY when the case is borderline.
 
 ## Currently Allowed Categories (Edge Cases)
 
@@ -889,13 +893,23 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
 # ---------------------------------------------------------------------------
 
 
+def _print_result(result: AppealReviewResult) -> None:
+    print("\n" + "=" * 40)
+    print(f"APPEAL REVIEW: {result.org_slug}")
+    print("=" * 40)
+    print(f"\nAction: {result.action}")
+    print(f"\nReasoning:\n{result.reasoning}")
+    print(f"\nDraft Email:\n---\n{result.draft_email}\n---")
+
+
 async def run_appeal_review(
     org_slug: str,
     *,
-    model: str = "gpt-5.2-2025-12-11",
+    model: str = "gpt-4o",
     plain_api_key: str | None = None,
     skip_website: bool = False,
     skip_plain: bool = False,
+    interactive: bool = False,
 ) -> AppealReviewResult:
     engine = create_async_engine("script")
     session_maker = create_async_sessionmaker(engine)
@@ -928,12 +942,41 @@ async def run_appeal_review(
 
         agent = _create_agent(model)
 
-        result = await agent.run(
+        run_result = await agent.run(
             f"Review the appeal for organization: {org_slug}",
             deps=deps,
         )
+        output = run_result.output
+        _print_result(output)
 
-        return result.output
+        if not interactive:
+            return output
+
+        # Interactive chat loop — let the reviewer provide feedback
+        print(
+            "\n--- Interactive mode. Type your comments to refine the review. "
+            "Press Ctrl+C or type 'quit' to exit. ---\n"
+        )
+        message_history = run_result.all_messages()
+
+        while True:
+            try:
+                user_input = input("You> ").strip()
+            except EOFError:
+                break
+            if not user_input or user_input.lower() in ("quit", "exit", "q"):
+                break
+
+            run_result = await agent.run(
+                user_input,
+                deps=deps,
+                message_history=message_history,
+            )
+            output = run_result.output
+            message_history = run_result.all_messages()
+            _print_result(output)
+
+        return output
 
     finally:
         if plain_client is not None:
@@ -968,6 +1011,11 @@ def main() -> None:
         action="store_true",
         help="Skip Plain thread lookups",
     )
+    parser.add_argument(
+        "--interactive", "-i",
+        action="store_true",
+        help="Chat with the agent after the initial review to refine the recommendation",
+    )
     args = parser.parse_args()
 
     structlog.configure(
@@ -979,13 +1027,14 @@ def main() -> None:
     )
 
     try:
-        result = asyncio.run(
+        asyncio.run(
             run_appeal_review(
                 args.org_slug,
                 model=args.model,
                 plain_api_key=args.plain_api_key,
                 skip_website=args.skip_website,
                 skip_plain=args.skip_plain,
+                interactive=args.interactive,
             )
         )
     except KeyboardInterrupt:
@@ -994,14 +1043,6 @@ def main() -> None:
     except Exception as e:
         log.error("Script failed", error=str(e), exc_info=True)
         sys.exit(1)
-
-    # Print formatted output
-    print("\n" + "=" * 40)
-    print(f"APPEAL REVIEW: {result.org_slug}")
-    print("=" * 40)
-    print(f"\nAction: {result.action}")
-    print(f"\nReasoning:\n{result.reasoning}")
-    print(f"\nDraft Email:\n---\n{result.draft_email}\n---")
 
 
 if __name__ == "__main__":

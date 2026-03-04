@@ -158,6 +158,8 @@ async def process_appeals(
     engine = create_async_engine("script")
     session_maker = create_async_sessionmaker(engine)
     plain_token = settings.PLAIN_TOKEN
+    if not plain_token:
+        raise RuntimeError("PLAIN_TOKEN is not configured")
 
     async with httpx.AsyncClient(
         headers={"Authorization": f"Bearer {plain_token}"},
@@ -174,8 +176,7 @@ async def process_appeals(
             unanswered: list[dict[str, str]] = []
             for thread_data in all_threads:
                 answered = await is_thread_answered(
-                    plain_token,
-                    thread_data["thread_id"],  # type: ignore[arg-type]
+                    plain_token, thread_data["thread_id"]
                 )
                 if not answered:
                     unanswered.append(thread_data)

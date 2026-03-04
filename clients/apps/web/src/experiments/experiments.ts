@@ -18,4 +18,9 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  onboarding_v2: {
+    description: 'New onboarding flow v2',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

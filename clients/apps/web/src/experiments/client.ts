@@ -38,7 +38,6 @@ export interface UseExperimentOptions {
 function getUrlOverride<T extends ExperimentName>(
   experimentName: T,
 ): ExperimentVariant<T> | null {
-  if (process.env.NODE_ENV !== 'development') return null
   if (typeof window === 'undefined') return null
   const params = new URLSearchParams(window.location.search)
   const value = params.get(`experiment_${experimentName}`)

@@ -1028,6 +1028,39 @@ def _print_result(result: AppealReviewResult) -> None:
     print(f"\nDraft Email:\n---\n{result.draft_email}\n---")
 
 
+async def run_appeal_review_with_deps(
+    org_slug: str,
+    *,
+    session_maker: Any,
+    plain_client: Any | None,
+    plain_token: str | None,
+    model: str = "gpt-5.2-2025-12-11",
+    skip_website: bool = False,
+) -> AppealReviewResult:
+    """Run the appeal review agent with pre-created dependencies.
+
+    This allows callers (e.g. bulk processing scripts) to share a single
+    DB engine and Plain client across multiple reviews.
+    """
+    deps = AppealAgentDeps(
+        sessionmaker=session_maker,
+        plain_client=plain_client,
+        plain_token=plain_token,
+        skip_website=skip_website,
+        org_slug=org_slug,
+    )
+
+    agent = _create_agent(model)
+
+    run_result = await agent.run(
+        f"Review the appeal for organization: {org_slug}",
+        deps=deps,
+    )
+    output = run_result.output
+    _print_result(output)
+    return output
+
+
 async def run_appeal_review(
     org_slug: str,
     *,
@@ -1058,14 +1091,26 @@ async def run_appeal_review(
             )
             await plain_client.__aenter__()
 
+        effective_plain_token = plain_token if not skip_plain else None
+
+        if not interactive:
+            return await run_appeal_review_with_deps(
+                org_slug,
+                session_maker=session_maker,
+                plain_client=plain_client,
+                plain_token=effective_plain_token,
+                model=model,
+                skip_website=skip_website,
+            )
+
+        # Interactive mode: run agent directly to keep message_history
         deps = AppealAgentDeps(
             sessionmaker=session_maker,
             plain_client=plain_client,
-            plain_token=plain_token if not skip_plain else None,
+            plain_token=effective_plain_token,
             skip_website=skip_website,
             org_slug=org_slug,
         )
-
         agent = _create_agent(model)
 
         run_result = await agent.run(
@@ -1075,10 +1120,6 @@ async def run_appeal_review(
         output = run_result.output
         _print_result(output)
 
-        if not interactive:
-            return output
-
-        # Interactive chat loop — let the reviewer provide feedback
         print(
             "\n--- Interactive mode. Type your comments to refine the review. "
             "Press Ctrl+C or type 'quit' to exit. ---\n"

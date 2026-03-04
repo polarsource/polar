@@ -1,5 +1,5 @@
-import { OnboardingV2 } from '@/components/Onboarding/OnboardingV2'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <OnboardingV2 />
+  redirect('/onboarding/personal')
 }

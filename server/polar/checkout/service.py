@@ -2217,6 +2217,14 @@ class CheckoutService:
         ).items():
             setattr(checkout, attr, value)
 
+        # `None` locale would opt in to browser-based language detection.
+        # If people haven't opted in to this yet, we hardcode the default locale
+        # to `en-US` to keep the current behavior
+        if not checkout.organization.feature_settings.get(
+            "checkout_localization_enabled", False
+        ):
+            checkout.locale = "en-US"
+
         # Reset is_business_customer if payment form is no longer required
         # This handles the case where a 100% discount is applied and the
         # billing address section disappears from the frontend

@@ -4,9 +4,9 @@ import { useMemo } from 'react'
 import { useOnboardingData } from './OnboardingContext'
 
 const ENDPOINT_MAP = {
-  personal: 'POST /v1/organizations',
-  business: 'POST /v1/organizations',
-  product: 'POST /v1/products',
+  personal: '/v1/organizations',
+  business: '/v1/organizations',
+  product: '/v1/products',
 } as const
 
 export function APIPreview({ step }: { step: 'personal' | 'business' | 'product' }) {
@@ -51,43 +51,88 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
   }, [step, data])
 
   const endpoint = ENDPOINT_MAP[step]
+  const lines = useMemo(() => buildLines(body), [body])
 
   return (
-    <div className="flex flex-col gap-4 font-mono text-sm">
-      <div className="inline-flex self-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-[11px] text-gray-500 dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-600">
-        {endpoint}
+    <div className="flex flex-col gap-4 font-mono text-xs">
+      <div className="inline-flex self-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-[11px] dark:border-gray-800 dark:bg-gray-900/50">
+        <span className="font-semibold text-green-600 dark:text-green-500">POST</span>
+        <span className="ml-1.5 text-gray-500 dark:text-gray-600">{endpoint}</span>
       </div>
-      <pre className="leading-relaxed">
-        <SyntaxHighlight obj={body} />
-      </pre>
+      <div className="flex">
+        {/* Line numbers */}
+        <div className="mr-4 flex flex-col items-end select-none text-gray-300 dark:text-gray-700">
+          {lines.map((_, i) => (
+            <span key={i} className="leading-relaxed">{i + 1}</span>
+          ))}
+        </div>
+        {/* Code */}
+        <pre className="flex-1 leading-relaxed">
+          {lines.map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < lines.length - 1 && '\n'}
+            </span>
+          ))}
+        </pre>
+      </div>
     </div>
   )
 }
 
-function SyntaxHighlight({ obj }: { obj: Record<string, unknown> }) {
+/** Convert the object into an array of JSX lines for line-numbering. */
+function buildLines(obj: Record<string, unknown>): React.ReactNode[] {
   const entries = Object.entries(obj)
-
   if (entries.length === 0) {
-    return <span className="text-gray-400 dark:text-gray-500">{'{ }'}</span>
+    return [<span key="empty" className="text-gray-400 dark:text-gray-500">{'{ }'}</span>]
   }
 
-  return (
-    <>
-      <span className="text-gray-400 dark:text-gray-400">{'{'}</span>
-      {'\n'}
-      {entries.map(([key, value], i) => (
+  const lines: React.ReactNode[] = []
+  lines.push(<span key="open" className="text-gray-400">{'{'}</span>)
+
+  entries.forEach(([key, value], i) => {
+    const comma = i < entries.length - 1
+    if (Array.isArray(value) && value.length > 0) {
+      // Array opening
+      lines.push(
+        <span key={`${key}-open`}>
+          {'  '}
+          <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
+          <span className="text-gray-400">{': ['}</span>
+        </span>
+      )
+      // Array items
+      value.forEach((item, j) => {
+        lines.push(
+          <span key={`${key}-${j}`}>
+            {'    '}
+            <JsonValue value={item} />
+            {j < value.length - 1 && <span className="text-gray-400">,</span>}
+          </span>
+        )
+      })
+      // Array closing
+      lines.push(
+        <span key={`${key}-close`}>
+          {'  '}
+          <span className="text-gray-400">{']'}{comma && ','}</span>
+        </span>
+      )
+    } else {
+      lines.push(
         <span key={key}>
           {'  '}
           <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
           <span className="text-gray-400">: </span>
           <JsonValue value={value} />
-          {i < entries.length - 1 && <span className="text-gray-400">,</span>}
-          {'\n'}
+          {comma && <span className="text-gray-400">,</span>}
         </span>
-      ))}
-      <span className="text-gray-400">{'}'}</span>
-    </>
-  )
+      )
+    }
+  })
+
+  lines.push(<span key="close" className="text-gray-400">{'}'}</span>)
+  return lines
 }
 
 function JsonValue({ value }: { value: unknown }) {
@@ -102,20 +147,7 @@ function JsonValue({ value }: { value: unknown }) {
   }
   if (Array.isArray(value)) {
     if (value.length === 0) return <span className="text-gray-400">[]</span>
-    return (
-      <>
-        <span className="text-gray-400">[</span>
-        {value.map((item, i) => (
-          <span key={i}>
-            {'\n    '}
-            <JsonValue value={item} />
-            {i < value.length - 1 && <span className="text-gray-400">,</span>}
-          </span>
-        ))}
-        {'\n  '}
-        <span className="text-gray-400">]</span>
-      </>
-    )
+    return null
   }
   return <span className="text-gray-400">null</span>
 }

@@ -78,6 +78,7 @@ from .views.sections._shared import RISK_LEVEL_BADGE, VERDICT_BADGE
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
+from .views.sections.reviews_section import ReviewsSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
 
@@ -647,6 +648,13 @@ async def get_organization_detail(
                     total_count=files_count,
                 )
                 with files_section.render(request):
+                    pass
+            elif section == "reviews":
+                agent_reviews = await review_repo.get_all_agent_reviews(organization_id)
+                reviews_section = ReviewsSection(
+                    organization, agent_reviews=agent_reviews
+                )
+                with reviews_section.render(request):
                     pass
             elif section == "history":
                 # TODO: Implement history section

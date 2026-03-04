@@ -82,6 +82,30 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_all_agent_reviews(
+        self, organization_id: UUID
+    ) -> list[OrganizationAgentReview]:
+        """Get all agent reviews for an organization, newest first.
+
+        Eagerly loads associated review_feedbacks (and their reviewers)
+        so they can be displayed together.
+        """
+        statement = (
+            select(OrganizationAgentReview)
+            .where(
+                OrganizationAgentReview.organization_id == organization_id,
+                OrganizationAgentReview.is_deleted.is_(False),
+            )
+            .options(
+                selectinload(OrganizationAgentReview.review_feedbacks).joinedload(
+                    OrganizationReviewFeedback.reviewer
+                ),
+            )
+            .order_by(OrganizationAgentReview.reviewed_at.desc())
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().unique().all())
+
     async def get_account_with_admin(self, account_id: UUID) -> Account | None:
         statement = (
             select(Account)
@@ -338,7 +362,10 @@ class OrganizationReviewRepository(
                 OrganizationReviewFeedback.organization_id == organization_id,
                 OrganizationReviewFeedback.deleted_at.is_(None),
             )
-            .options(joinedload(OrganizationReviewFeedback.agent_review))
+            .options(
+                joinedload(OrganizationReviewFeedback.agent_review),
+                joinedload(OrganizationReviewFeedback.reviewer),
+            )
             .order_by(OrganizationReviewFeedback.created_at.asc())
         )
         result = await self.session.execute(statement)

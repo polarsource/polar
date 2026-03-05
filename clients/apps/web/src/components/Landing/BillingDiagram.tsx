@@ -2,6 +2,7 @@
 
 import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
 import { useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Isometric, IsometricBox } from './Isometric'
 
 // ── Colors (same system as Features.tsx) ──────────────────────────────────────
@@ -26,7 +27,7 @@ const PH = 160 // plate height (Y depth)
 const PD = 6 // plate thickness
 const PX = 70
 const PY = 60
-const ZSTEP = 38  // vertical gap between layers (tighter default)
+const ZSTEP = 38 // vertical gap between layers (tighter default)
 const EXPAND = 20 // z-offset applied to layers above/below the hovered one
 
 // Approximate screen-space positions of each layer's top-right corner.
@@ -92,10 +93,10 @@ const LAYERS: LayerDef[] = [
 const CheckoutElements = ({ z, active }: { z: number; active: boolean }) => {
   const BZ = z + PD + 1
   const W = 160
-  const X = PX + (PW - W) / 2       // = 130 — horizontally centered
-  const HALF = (W - 16) / 2         // = 72  — expiry + cvv with 16px gap
+  const X = PX + (PW - W) / 2 // = 130 — horizontally centered
+  const HALF = (W - 16) / 2 // = 72  — expiry + cvv with 16px gap
   const BW = 140
-  const BX = PX + (PW - BW) / 2     // = 140
+  const BX = PX + (PW - BW) / 2 // = 140
   // Content height: rows(3)+gap(7)+rows(3)+gap(7)+divider(1)+gap(7)+email(5)+gap(9)+card(5)+gap(9)+expiry(5)+gap(11)+button(16) ≈ 88px
   // Vertically center in PH=160: top offset = (160−88)/2 = 36
   const Y0 = PY + 36
@@ -259,7 +260,7 @@ const CheckoutElements = ({ z, active }: { z: number; active: boolean }) => {
         width={60}
         height={2}
         depth={1}
-        topClassName="text-[6px] font-mono uppercase text-center tracking-widest"
+        topClassName="text-[6px] font-mono uppercase text-center tracking-widest text-white"
         frontClassName="bg-transparent"
         rightClassName="bg-transparent"
       >
@@ -317,6 +318,7 @@ export const BillingDiagram = () => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [scrollLayer, setScrollLayer] = useState<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const prevLayerRef = useRef<number | null>(null)
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -324,20 +326,35 @@ export const BillingDiagram = () => {
   })
 
   useMotionValueEvent(scrollYProgress, 'change', (v: number) => {
-    if (v < 0.25 || v > 0.75) setScrollLayer(null)
-    else if (v < 0.375) setScrollLayer(3)
-    else if (v < 0.5) setScrollLayer(2)
-    else if (v < 0.625) setScrollLayer(1)
-    else setScrollLayer(0)
+    const prev = prevLayerRef.current
+    const H = 0.015 // hysteresis — each boundary shifts toward the side we're coming from
+
+    const b1 = 0.375 + (prev === 3 ? H : prev === 2 ? -H : 0)
+    const b2 = 0.5 + (prev === 2 ? H : prev === 1 ? -H : 0)
+    const b3 = 0.625 + (prev === 1 ? H : prev === 0 ? -H : 0)
+
+    let next: number | null
+    if (v < b1) next = 3
+    else if (v < b2) next = 2
+    else if (v < b3) next = 1
+    else next = 0
+
+    if (next !== prev) {
+      prevLayerRef.current = next
+      setScrollLayer(next)
+    }
   })
 
   // Hover takes priority; scroll-driven state is the fallback
   const activeIndex = hoveredIndex ?? scrollLayer
 
   return (
-    <div ref={containerRef} className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16">
+    <div
+      ref={containerRef}
+      className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16"
+    >
       {/* Left — pipeline description */}
-      <div className="flex flex-col gap-y-8 md:w-2/5">
+      <div className="flex flex-col gap-y-12 md:w-2/5">
         <span className="dark:text-polar-500 font-mono text-[11px] tracking-[0.2em] text-gray-400 uppercase">
           Billing Pipeline
         </span>
@@ -350,31 +367,38 @@ export const BillingDiagram = () => {
           Every API call and token flows through a complete billing pipeline —
           from raw usage events to itemized invoices and hosted checkout.
         </p>
-        <ul className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {LAYERS.map((layer, i) => {
-            const active = activeIndex === i
-            return (
-              <li
-                key={layer.index}
-                className="flex cursor-pointer flex-col gap-y-1"
-                onMouseEnter={() => setHoveredIndex(i)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              >
-                <span
-                  className={`font-mono text-xs font-medium tracking-[0.15em] uppercase transition-colors ${
-                    active
-                      ? 'text-blue-500'
-                      : 'dark:text-polar-200 text-gray-700'
-                  }`}
+        <ul
+          className="grid grid-cols-1 md:grid-cols-2"
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
+          {LAYERS.map((layer, i) => [layer, i] as const)
+            .reverse()
+            .map(([layer, i]) => {
+              const active = activeIndex === i
+              return (
+                <li
+                  key={layer.index}
+                  className={twMerge(
+                    'flex cursor-pointer flex-col gap-y-1 p-4 transition-colors',
+                    active ? 'dark:bg-polar-900 bg-gray-100' : '',
+                  )}
+                  onMouseEnter={() => setHoveredIndex(i)}
                 >
-                  {layer.label}
-                </span>
-                <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-500">
-                  {layer.description}
-                </p>
-              </li>
-            )
-          })}
+                  <span
+                    className={`font-mono text-xs font-medium tracking-[0.15em] uppercase transition-colors ${
+                      active
+                        ? 'text-black dark:text-white'
+                        : 'dark:text-polar-200 text-gray-700'
+                    }`}
+                  >
+                    {layer.label}
+                  </span>
+                  <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-500">
+                    {layer.description}
+                  </p>
+                </li>
+              )
+            })}
         </ul>
       </div>
 
@@ -397,14 +421,21 @@ export const BillingDiagram = () => {
             <Isometric style={{ width: SW, height: SH }}>
               {LAYERS.map((layer, i) => {
                 const zOffset =
-                  activeIndex === null ? 0
-                  : i < activeIndex ? -EXPAND
-                  : i === activeIndex ? 0
-                  : EXPAND
+                  activeIndex === null
+                    ? 0
+                    : i < activeIndex
+                      ? -EXPAND
+                      : i === activeIndex
+                        ? 0
+                        : EXPAND
                 return (
                   <motion.div
                     key={layer.z}
-                    style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      transformStyle: 'preserve-3d',
+                    }}
                     animate={{ z: zOffset }}
                     transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                   >

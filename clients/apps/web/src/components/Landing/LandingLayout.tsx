@@ -24,7 +24,7 @@ import { NavPopover, NavPopoverSection } from './NavPopover'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 px-0 md:w-full md:flex-1 md:items-center md:px-4">
+    <div className="dark:bg-polar-950 relative flex flex-col bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
       <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageDesktopNavigation />
         <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">

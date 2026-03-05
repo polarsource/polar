@@ -1876,26 +1876,6 @@ export interface paths {
     patch: operations['checkouts:client_update']
     trace?: never
   }
-  '/v1/checkouts/client/': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Create Checkout Session from Client
-     * @description Create a checkout session from a client. Suitable to build checkout links.
-     */
-    post: operations['checkouts:client_create']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/checkouts/client/{client_secret}/confirm': {
     parameters: {
       query?: never
@@ -3712,31 +3692,6 @@ export interface paths {
      *     **Scopes**: `customer_sessions:write`
      */
     post: operations['customer-sessions:create']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/member-sessions/': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Create Member Session
-     * @description Create a member session.
-     *
-     *     This endpoint is only available for organizations with `member_model_enabled`
-     *     and `seat_based_pricing_enabled` feature flags enabled.
-     *
-     *     **Scopes**: `member_sessions:write`
-     */
-    post: operations['member-sessions:create']
     delete?: never
     options?: never
     head?: never
@@ -9804,42 +9759,6 @@ export interface components {
     }
     CheckoutCreate: components['schemas']['CheckoutProductsCreate']
     /**
-     * CheckoutCreatePublic
-     * @description Create a new checkout session from a client.
-     */
-    CheckoutCreatePublic: {
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description ID of the product to checkout.
-       */
-      product_id: string
-      /**
-       * Seats
-       * @description Predefined number of seats (works with seat-based pricing only)
-       */
-      seats?: number | null
-      /**
-       * Min Seats
-       * @description Minimum number of seats (works with seat-based pricing only)
-       */
-      min_seats?: number | null
-      /**
-       * Max Seats
-       * @description Maximum number of seats (works with seat-based pricing only)
-       */
-      max_seats?: number | null
-      /** Customer Email */
-      customer_email?: string | null
-      /**
-       * Subscription Id
-       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-       */
-      subscription_id?: string | null
-      /** Locale */
-      locale?: string | null
-    }
-    /**
      * CheckoutCreatedEvent
      * @description An event created by Polar when a checkout is created.
      */
@@ -13693,7 +13612,7 @@ export interface components {
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
-      tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      tax_id?: string | null
       /** Locale */
       locale?: string | null
       /**
@@ -15071,6 +14990,16 @@ export interface components {
      */
     CustomerSessionCustomerExternalIDCreate: {
       /**
+       * Member Id
+       * @description ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description External ID of the member to create a session for. Alternative to `member_id`.
+       */
+      external_member_id?: string | null
+      /**
        * Return Url
        * @description When set, a back button will be shown in the customer portal to return to this URL.
        * @example https://example.com/account
@@ -15087,6 +15016,16 @@ export interface components {
      * @description Schema for creating a customer session using a customer ID.
      */
     CustomerSessionCustomerIDCreate: {
+      /**
+       * Member Id
+       * @description ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description External ID of the member to create a session for. Alternative to `member_id`.
+       */
+      external_member_id?: string | null
       /**
        * Return Url
        * @description When set, a back button will be shown in the customer portal to return to this URL.
@@ -15876,7 +15815,7 @@ export interface components {
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
-      tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      tax_id?: string | null
       /** Locale */
       locale?: string | null
       /**
@@ -15920,7 +15859,7 @@ export interface components {
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
-      tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      tax_id?: string | null
       /** Locale */
       locale?: string | null
     }
@@ -19218,70 +19157,6 @@ export interface components {
      * @enum {string}
      */
     MemberRole: 'owner' | 'billing_manager' | 'member'
-    /**
-     * MemberSession
-     * @description A member session that can be used to authenticate as a member in the customer portal.
-     */
-    MemberSession: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /** Token */
-      token: string
-      /**
-       * Expires At
-       * Format: date-time
-       */
-      expires_at: string
-      /** Return Url */
-      return_url: string | null
-      /** Member Portal Url */
-      member_portal_url: string
-      /**
-       * Member Id
-       * Format: uuid4
-       */
-      member_id: string
-      member: components['schemas']['Member']
-      /**
-       * Customer Id
-       * Format: uuid4
-       */
-      customer_id: string
-      customer: components['schemas']['Customer']
-    }
-    /**
-     * MemberSessionCreate
-     * @description Schema for creating a member session using a member ID.
-     */
-    MemberSessionCreate: {
-      /**
-       * Member Id
-       * Format: uuid4
-       * @description ID of the member to create a session for.
-       */
-      member_id: string
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the customer portal to return to this URL.
-       * @example https://example.com/account
-       */
-      return_url?: string | null
-    }
     /**
      * MemberSortProperty
      * @enum {string}
@@ -31255,39 +31130,6 @@ export interface operations {
       }
     }
   }
-  'checkouts:client_create': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CheckoutCreatePublic']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CheckoutPublic']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'checkouts:client_confirm': {
     parameters: {
       query?: never
@@ -36531,39 +36373,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerSession']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'member-sessions:create': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MemberSessionCreate']
-      }
-    }
-    responses: {
-      /** @description Member session created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MemberSession']
         }
       }
       /** @description Validation Error */

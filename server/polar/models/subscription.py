@@ -3,7 +3,7 @@ import operator
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
 
 from sqlalchemy import (
@@ -48,6 +48,8 @@ if TYPE_CHECKING:
         ProductPrice,
         SubscriptionProductPrice,
     )
+
+PP = TypeVar("PP", bound="ProductPrice")
 
 
 class SubscriptionStatus(StrEnum):
@@ -416,6 +418,12 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         for subscription_meter in self.meters:
             if subscription_meter.meter_id == meter.id:
                 return subscription_meter
+        return None
+
+    def get_price_by_type(self, price_type: type[PP]) -> PP | None:
+        for price in self.prices:
+            if isinstance(price, price_type):
+                return price
         return None
 
 

@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -414,6 +414,34 @@ class OrderService:
         )
 
         return order
+
+    async def set_refunds_blocked_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        blocked: bool,
+    ) -> int:
+        refunds_blocked_at = utc_now() if blocked else None
+
+        stmt = (
+            update(Order)
+            .where(Order.customer_id == Customer.id)
+            .where(Customer.organization_id == organization.id)
+            .values(refunds_blocked_at=refunds_blocked_at)
+        )
+
+        result = await session.execute(stmt)
+        count = result.rowcount or 0
+
+        log.info(
+            "organization.orders_refunds_blocked_changed",
+            organization_id=organization.id,
+            refunds_blocked=blocked,
+            refunds_blocked_at=refunds_blocked_at,
+            orders_affected=count,
+        )
+
+        return count
 
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order

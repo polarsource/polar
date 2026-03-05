@@ -308,6 +308,61 @@ class SettingsSection:
                     text("Danger Zone")
 
                 with tag.div(classes="space-y-3"):
+                    # Block/Unblock all refunds
+                    with tag.div(classes="flex items-center justify-between"):
+                        with tag.div():
+                            with tag.div(classes="font-semibold text-sm"):
+                                text("Block All Refunds")
+                            with tag.div(classes="text-xs text-base-content/60"):
+                                text(
+                                    "Block refunds for all orders in this organization"
+                                )
+
+                        with tag.form(
+                            method="POST",
+                            action=str(
+                                request.url_for(
+                                    "organizations:block_all_refunds",
+                                    organization_id=self.org.id,
+                                )
+                            ),
+                        ):
+                            with button(
+                                type="submit",
+                                variant="error",
+                                size="sm",
+                                outline=True,
+                            ):
+                                text("Block All Refunds")
+
+                    # Unblock all refunds
+                    with tag.div(classes="flex items-center justify-between"):
+                        with tag.div():
+                            with tag.div(classes="font-semibold text-sm"):
+                                text("Unblock All Refunds")
+                            with tag.div(classes="text-xs text-base-content/60"):
+                                text(
+                                    "Unblock refunds for all orders in this organization"
+                                )
+
+                        with tag.form(
+                            method="POST",
+                            action=str(
+                                request.url_for(
+                                    "organizations:unblock_all_refunds",
+                                    organization_id=self.org.id,
+                                )
+                            ),
+                        ):
+                            with button(
+                                type="submit",
+                                variant="error",
+                                size="sm",
+                                outline=True,
+                            ):
+                                text("Unblock All Refunds")
+
+                    # Delete organization
                     with tag.div(classes="flex items-center justify-between"):
                         with tag.div():
                             with tag.div(classes="font-semibold text-sm"):

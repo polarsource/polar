@@ -9,6 +9,7 @@ from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerSubscriptionCanceledNotificationPayload,
     NotificationPayloadBase,
 )
 
@@ -43,6 +44,40 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
         tier_organization_slug="myorg",
         tier_price_recurring_interval="month",
         subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    )
+
+    await check_diff(n.render())
+
+
+@pytest.mark.asyncio
+async def test_MaintainerSubscriptionCanceledNotification() -> None:
+    n = MaintainerSubscriptionCanceledNotificationPayload(
+        subscriber_name="John Doe",
+        tier_name="My Paid Tier",
+        tier_price_amount=500,
+        tier_organization_name="myorg",
+        tier_organization_slug="myorg",
+        tier_price_recurring_interval="month",
+        subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        cancel_at_period_end=True,
+        cancellation_reason="too_expensive",
+        cancellation_comment="Switching to a different provider",
+    )
+
+    await check_diff(n.render())
+
+
+@pytest.mark.asyncio
+async def test_MaintainerSubscriptionCanceledNotification_immediate() -> None:
+    n = MaintainerSubscriptionCanceledNotificationPayload(
+        subscriber_name="Jane Doe",
+        tier_name="My Paid Tier",
+        tier_price_amount=500,
+        tier_organization_name="myorg",
+        tier_organization_slug="myorg",
+        tier_price_recurring_interval="month",
+        subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        cancel_at_period_end=False,
     )
 
     await check_diff(n.render())
@@ -120,6 +155,18 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
         MaintainerAccountCreditsGrantedNotificationPayload(
             organization_name="{{ 123456 * 9 }}",
             amount=5000,
+        ),
+        MaintainerSubscriptionCanceledNotificationPayload(
+            subscriber_name="John Doe",
+            tier_name="{{ 123456 * 9 }}",
+            tier_price_amount=500,
+            tier_organization_name="{{ 123456 * 9 }}",
+            tier_organization_slug="{{ 123456 * 9 }}",
+            tier_price_recurring_interval="month",
+            subscription_id="{{ 123456 * 9 }}",
+            cancel_at_period_end=True,
+            cancellation_reason="{{ 123456 * 9 }}",
+            cancellation_comment="{{ 123456 * 9 }}",
         ),
     ],
 )

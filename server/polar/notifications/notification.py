@@ -15,6 +15,9 @@ from polar.models.order import OrderBillingReasonInternal
 
 class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
+    maintainer_subscription_canceled = (
+        "MaintainerSubscriptionCanceledNotification"
+    )
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
     maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
@@ -93,6 +96,43 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
 class MaintainerNewPaidSubscriptionNotification(NotificationBase):
     type: Literal[NotificationType.maintainer_new_paid_subscription]
     payload: MaintainerNewPaidSubscriptionNotificationPayload
+
+
+class MaintainerSubscriptionCanceledNotificationPayload(NotificationPayloadBase):
+    subscriber_name: str
+    tier_name: str
+    tier_price_amount: int | None
+    tier_price_recurring_interval: str
+    tier_organization_name: str
+    tier_organization_slug: str | None = None
+    subscription_id: str | None = None
+    cancel_at_period_end: bool = False
+    cancellation_reason: str | None = None
+    cancellation_comment: str | None = None
+
+    @computed_field
+    def formatted_price_amount(self) -> str:
+        if self.tier_price_amount is None:
+            return ""
+        return format_currency(self.tier_price_amount, "usd")
+
+    def subject(self) -> str:
+        if self.tier_price_amount:
+            price = (
+                f"{self.formatted_price_amount}/{self.tier_price_recurring_interval}"
+            )
+        else:
+            price = "free"
+        return f"A subscriber has canceled {self.tier_name} ({price})"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_subscription_canceled"
+
+
+class MaintainerSubscriptionCanceledNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_subscription_canceled]
+    payload: MaintainerSubscriptionCanceledNotificationPayload
 
 
 class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
@@ -201,6 +241,7 @@ class MaintainerAccountCreditsGrantedNotification(NotificationBase):
 
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
+    | MaintainerSubscriptionCanceledNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerCreateAccountNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
@@ -208,6 +249,7 @@ NotificationPayload = (
 
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
+    | MaintainerSubscriptionCanceledNotification
     | MaintainerNewProductSaleNotification
     | MaintainerCreateAccountNotification
     | MaintainerAccountCreditsGrantedNotification,

@@ -714,6 +714,7 @@ class TestAssignSeat:
         assert seat.email == "test@example.com"
 
         await session.refresh(seat, ["member"])
+        assert seat.member is not None
         assert seat.member.customer_id == billing_customer_id
         assert seat.member.email == "test@example.com"
 

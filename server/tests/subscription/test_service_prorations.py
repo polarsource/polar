@@ -429,14 +429,10 @@ class TestUpdateProductProrations:
                 for args, kwargs in enqueue_job_mock.call_args_list
                 if args[0] == "order.create_subscription_order"
             ]
-            if old_product.recurring_interval != new_product.recurring_interval:
-                enqueue_job_mock.assert_any_call(
-                    "order.create_subscription_order",
-                    subscription.id,
-                    OrderBillingReasonInternal.subscription_cycle,
-                )
-                assert len(calls) == 1
-            elif expected_proration == SubscriptionProrationBehavior.invoice:
+            if (
+                old_product.recurring_interval != new_product.recurring_interval
+                or expected_proration == SubscriptionProrationBehavior.invoice
+            ):
                 enqueue_job_mock.assert_any_call(
                     "order.create_subscription_order",
                     subscription.id,

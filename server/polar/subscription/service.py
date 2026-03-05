@@ -57,7 +57,6 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
-    Event,
     Organization,
     PaymentMethod,
     Product,
@@ -82,7 +81,6 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.product.guard import (
     is_custom_price,
-    is_fixed_price,
     is_free_price,
     is_recurring_product,
     is_seat_price,
@@ -111,6 +109,7 @@ from .schemas import (
     SubscriptionUpdateTrial,
 )
 from .sorting import SubscriptionSortProperty
+from .update import generate_subscription_update
 
 log: Logger = structlog.get_logger()
 
@@ -227,54 +226,6 @@ def _from_timestamp(t: int | None) -> datetime | None:
 
 
 class SubscriptionService:
-    def _get_seat_based_price(
-        self, subscription: Subscription
-    ) -> ProductPriceSeatUnit | None:
-        """Get the seat-based price from subscription, if any."""
-        for spp in subscription.subscription_product_prices:
-            if isinstance(spp.product_price, ProductPriceSeatUnit):
-                return spp.product_price
-        return None
-
-    @staticmethod
-    def _calculate_time_proration(
-        period_start: datetime, period_end: datetime, now: datetime
-    ) -> Decimal | None:
-        """
-        Calculate proration factor for a time period.
-
-        Returns:
-            Decimal between 0 and 1 representing percentage of time remaining,
-            or None if no time is remaining.
-        """
-        period_total = (period_end - period_start).total_seconds()
-        time_remaining = (period_end - now).total_seconds()
-
-        if time_remaining <= 0:
-            return None
-
-        return Decimal(time_remaining) / Decimal(period_total)
-
-    def _calculate_proration_factor(
-        self, subscription: Subscription, *, now: datetime | None = None
-    ) -> Decimal | None:
-        """
-        Calculate proration factor for subscription's current billing period.
-
-        Returns:
-            Decimal between 0 and 1 representing percentage of time remaining,
-            or None if period has ended or no period_end exists.
-        """
-        if now is None:
-            now = datetime.now(UTC)
-
-        period_end = subscription.current_period_end
-        if period_end is None:
-            return None
-
-        period_start = subscription.current_period_start
-        return self._calculate_time_proration(period_start, period_end, now)
-
     async def list(
         self,
         session: AsyncReadSession,
@@ -1050,138 +1001,26 @@ class SubscriptionService:
         assert is_recurring_product(product)
         assert is_recurring_product(previous_product)
 
-        subscription.product = product
-        subscription.subscription_product_prices = [
-            SubscriptionProductPrice.from_price(price, seats=subscription.seats)
-            for price in currency_prices
-        ]
-        subscription.recurring_interval = product.recurring_interval
-        subscription.recurring_interval_count = product.recurring_interval_count
+        subscription_update, billing_entries = generate_subscription_update(
+            subscription, product=product
+        )
+        for entry in billing_entries:
+            entry.event = event
+            session.add(entry)
+
+        interval_changed = subscription_update.is_interval_changed()
+
+        subscription = subscription_update.apply_update()
+        session.add(subscription)
+        await session.flush()
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
 
-        now = datetime.now(UTC)
-
-        # Cycle end can change in the case of e.g. monthly to yearly
-        old_cycle_start = subscription.current_period_start
-        old_cycle_end = previous_product.recurring_interval.get_next_period(
-            subscription.current_period_start, subscription.recurring_interval_count
-        )
-
-        if previous_product.recurring_interval != product.recurring_interval:
-            # If switching from monthly to yearly or yearly to monthly, we
-            # set the cycle start to now
-            subscription.current_period_start = now
-
-        new_cycle_start = subscription.current_period_start
-        new_cycle_end = subscription.recurring_interval.get_next_period(
-            subscription.current_period_start, subscription.recurring_interval_count
-        )
-
-        old_cycle_pct_remaining = self._calculate_time_proration(
-            old_cycle_start, old_cycle_end, now
-        )
-        new_cycle_pct_remaining = self._calculate_time_proration(
-            new_cycle_start, new_cycle_end, now
-        )
-
-        # If no time remaining, skip prorations
-        if old_cycle_pct_remaining is None or new_cycle_pct_remaining is None:
-            old_cycle_pct_remaining = Decimal(0)
-            new_cycle_pct_remaining = Decimal(0)
-
-        subscription.current_period_end = new_cycle_end
-
-        # Admittedly, this gets a little crazy, but in theory you could go
-        # from a product with 1 static price to one with 2 static prices or
-        # the other way around. We don't generally support multiple static
-        # prices.
-        #
-        # But should we get there, we'll debit you for both of those prices.
-        # Similarly, if going from 2 static prices to 1 static price, we'll
-        # credit you for both prices and debit you for the 1 price.
-        #
-        # Metered prices are ignored for prorations.
-        old_static_prices = [p for p in previous_prices if is_static_price(p)]
-        new_static_prices = [p for p in currency_prices if is_static_price(p)]
-
-        for old_price in old_static_prices:
-            # Free prices don't get prorated
-            if not is_fixed_price(old_price):
-                continue
-
-            base_amount = old_price.price_amount
-            discount_amount = 0
-            if subscription.discount:
-                discount_amount = subscription.discount.get_discount_amount(base_amount)
-
-            # Prorations have discounts applied to the `BillingEntry.amount`
-            # immediately.
-            # This is because we're really applying the discount from "this" cycle
-            # whereas the `cycle` and `meter` BillingEntries should use the
-            # discount from the _next_ cycle -- the discount that applies to
-            # that upcoming order. applies to next order applies to the
-            # For example, if you have a flat "$20 off" discount, part of that
-            # $20 discount should _not_ apply to the prorations because the
-            # prorations are happening "this cycle" and shouldn't take away
-            # from next cycle's discount.
-            entry_unused_time = BillingEntry(
-                type=BillingEntryType.proration,
-                direction=BillingEntryDirection.credit,
-                start_timestamp=now,
-                end_timestamp=old_cycle_end,
-                amount=round((base_amount - discount_amount) * old_cycle_pct_remaining),
-                discount_amount=discount_amount,
-                currency=subscription.currency,
-                customer=subscription.customer,
-                product_price=old_price,
-                subscription=subscription,
-                event=event,
-            )
-            session.add(entry_unused_time)
-
-        if previous_product.recurring_interval == product.recurring_interval:
-            # If switching from monthly to yearly or yearly to monthly, we trigger a cycle immediately
-            # that means a debit billing entry for the new cycle will be added automatically.
-            # So debit prorations only apply when the cycle interval is the same.
-            for new_price in new_static_prices:
-                # Free prices don't get prorated
-                if not is_fixed_price(new_price):
-                    continue
-
-                base_amount = new_price.price_amount
-                discount_amount = 0
-                if subscription.discount and subscription.discount.is_applicable(
-                    new_price.product, subscription.currency
-                ):
-                    discount_amount = subscription.discount.get_discount_amount(
-                        base_amount
-                    )
-                entry_remaining_time = BillingEntry(
-                    type=BillingEntryType.proration,
-                    direction=BillingEntryDirection.debit,
-                    start_timestamp=now,
-                    end_timestamp=new_cycle_end,
-                    amount=round(
-                        (base_amount - discount_amount) * new_cycle_pct_remaining
-                    ),
-                    discount_amount=discount_amount,
-                    currency=subscription.currency,
-                    customer=subscription.customer,
-                    product_price=new_price,
-                    subscription=subscription,
-                    event=event,
-                )
-                session.add(entry_remaining_time)
-
-        session.add(subscription)
-        await session.flush()
-
-        if previous_product.recurring_interval != product.recurring_interval:
-            # If switching from monthly to yearly or yearly to monthly, we trigger a cycle immediately
-            await self.cycle(session, subscription, update_cycle_dates=False)
-        elif proration_behavior == SubscriptionProrationBehavior.invoice:
+        if (
+            proration_behavior == SubscriptionProrationBehavior.invoice
+            or interval_changed
+        ):
             # Invoice immediately
             enqueue_job(
                 "order.create_subscription_order",
@@ -1363,7 +1202,7 @@ class SubscriptionService:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
-        seat_price = self._get_seat_based_price(subscription)
+        seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
         if seat_price is None:
             raise NotASeatBasedSubscription(subscription)
 
@@ -1382,16 +1221,6 @@ class SubscriptionService:
         if seats < assigned_count:
             raise SeatsAlreadyAssigned(subscription, assigned_count, seats)
 
-        old_seats = subscription.seats or 1
-        old_amount = subscription.amount
-
-        subscription.seats = seats
-
-        subscription.subscription_product_prices = [
-            SubscriptionProductPrice.from_price(spp.product_price, seats=seats)
-            for spp in subscription.subscription_product_prices
-        ]
-
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
             subscription.product.organization_id
@@ -1400,6 +1229,9 @@ class SubscriptionService:
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
+
+        old_seats = subscription.seats or 1
+        old_amount = subscription.amount
 
         event = await event_service.create_event(
             session,
@@ -1416,19 +1248,17 @@ class SubscriptionService:
             ),
         )
 
+        subscription_update, billing_entries = generate_subscription_update(
+            subscription, seats=seats
+        )
+
         # Skip proration for trialing subscriptions - no billing during trial
         if not subscription.trialing:
-            await self._create_seat_proration_entry(
-                session,
-                subscription,
-                old_seats=old_seats,
-                new_seats=seats,
-                old_amount=old_amount,
-                new_amount=subscription.amount,
-                proration_behavior=proration_behavior,
-                event=event,
-            )
+            for entry in billing_entries:
+                entry.event = event
+                session.add(entry)
 
+        subscription = subscription_update.apply_update()
         session.add(subscription)
         await session.flush()
 
@@ -1451,6 +1281,13 @@ class SubscriptionService:
             previous_status=previous_status,
             previous_is_canceled=previous_is_canceled,
         )
+
+        if proration_behavior == SubscriptionProrationBehavior.invoice:
+            enqueue_job(
+                "order.create_subscription_order",
+                subscription.id,
+                OrderBillingReasonInternal.subscription_update,
+            )
 
         return subscription
 
@@ -1513,106 +1350,6 @@ class SubscriptionService:
         )
 
         return subscription
-
-    async def _create_seat_proration_entry(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        *,
-        old_seats: int,
-        new_seats: int,
-        old_amount: int,
-        new_amount: int,
-        proration_behavior: SubscriptionProrationBehavior,
-        event: "Event",
-    ) -> None:
-        """
-        Create a billing entry for the seat quantity change proration.
-
-        Prorates based on remaining time in current billing period.
-        """
-        now = datetime.now(UTC)
-        proration_factor = self._calculate_proration_factor(subscription, now=now)
-
-        if proration_factor is None:
-            log.warning(
-                "subscription.seats_proration_skipped",
-                subscription_id=subscription.id,
-                reason="no_time_remaining",
-            )
-            return
-
-        period_end = subscription.current_period_end
-        assert period_end is not None  # Already checked by _calculate_proration_factor
-
-        # Calculate the raw amounts for the seat counts (before discount)
-        seat_price = self._get_seat_based_price(subscription)
-        assert seat_price is not None
-
-        old_base_amount = seat_price.calculate_amount(old_seats)
-        new_base_amount = seat_price.calculate_amount(new_seats)
-        base_amount_delta = new_base_amount - old_base_amount
-
-        # Calculate discount on the delta amount
-        discount_amount = 0
-        if subscription.discount and subscription.discount.is_applicable(
-            subscription.product, subscription.currency
-        ):
-            discount_amount = subscription.discount.get_discount_amount(
-                abs(base_amount_delta)
-            )
-
-        # Calculate the net amount delta after discount
-        if base_amount_delta > 0:
-            # Increase: reduce the charge by discount
-            amount_delta = base_amount_delta - discount_amount
-        else:
-            # Decrease: reduce the credit by discount
-            amount_delta = base_amount_delta + discount_amount
-
-        prorated_amount = int(Decimal(amount_delta) * proration_factor)
-
-        if prorated_amount == 0:
-            return
-
-        if prorated_amount > 0:
-            direction = BillingEntryDirection.debit
-            entry_type = BillingEntryType.subscription_seats_increase
-        else:
-            direction = BillingEntryDirection.credit
-            entry_type = BillingEntryType.subscription_seats_decrease
-            prorated_amount = abs(prorated_amount)
-
-        # Calculate prorated discount amount
-        prorated_discount_amount = 0
-        if discount_amount > 0:
-            prorated_discount_amount = int(Decimal(discount_amount) * proration_factor)
-
-        billing_entry = BillingEntry(
-            start_timestamp=now,
-            end_timestamp=period_end,
-            subscription=subscription,
-            customer=subscription.customer,
-            product_price=seat_price,
-            amount=prorated_amount,
-            discount_amount=prorated_discount_amount
-            if prorated_discount_amount > 0
-            else None,
-            discount=subscription.discount if discount_amount > 0 else None,
-            currency=subscription.currency,
-            direction=direction,
-            type=entry_type,
-            event=event,
-        )
-
-        session.add(billing_entry)
-
-        if proration_behavior == SubscriptionProrationBehavior.invoice:
-            enqueue_job(
-                "order.create_subscription_order",
-                subscription.id,
-                OrderBillingReasonInternal.subscription_update,
-            )
 
     async def uncancel(
         self, session: AsyncSession, subscription: Subscription

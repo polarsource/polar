@@ -10,7 +10,7 @@ const llmIngestion = Ingestion({ accessToken: 'xxx' })
   .ingest("openai-usage");
 
 export async function POST(req: Request) {
-  const { prompt }: { prompt: string } = await req.json();
+  const { prompt } = await req.json();
 
   const model = llmIngestion.client({
     externalCustomerId: "user_123",
@@ -28,6 +28,7 @@ export async function POST(req: Request) {
 export const Ingestion = () => {
   return (
     <Terminal
+      className="row-span-2"
       title="terminal"
       subtitle="api/ai/route.ts"
       content={CODE}

@@ -17892,80 +17892,6 @@
         ]
       }
     },
-    "/v1/member-sessions/": {
-      "post": {
-        "tags": [
-          "member-sessions",
-          "public"
-        ],
-        "summary": "Create Member Session",
-        "description": "Create a member session.\n\nThis endpoint is only available for organizations with `member_model_enabled`\nand `seat_based_pricing_enabled` feature flags enabled.\n\n**Scopes**: `member_sessions:write`",
-        "operationId": "member-sessions:create",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MemberSessionCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Member session created.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemberSession"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-polar-allowed-subjects": [
-          "Organization",
-          "User"
-        ],
-        "x-speakeasy-mcp": {
-          "disabled": true
-        },
-        "x-speakeasy-group": "member-sessions",
-        "x-speakeasy-name-override": "create",
-        "x-codeSamples": [
-          {
-            "lang": "go",
-            "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.MemberSessions.Create(ctx, components.MemberSessionCreate{\n        MemberID: \"<value>\",\n        ReturnURL: polargo.Pointer(\"https://example.com/account\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MemberSession != nil {\n        // handle response\n    }\n}"
-          },
-          {
-            "lang": "python",
-            "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.member_sessions.create(request={\n        \"member_id\": \"<value>\",\n        \"return_url\": \"https://example.com/account\",\n    })\n\n    # Handle response\n    print(res)"
-          },
-          {
-            "lang": "typescript",
-            "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.memberSessions.create({\n    memberId: \"<value>\",\n    returnUrl: \"https://example.com/account\",\n  });\n\n  console.log(result);\n}\n\nrun();"
-          },
-          {
-            "lang": "php",
-            "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\MemberSessionCreate(\n    memberId: '<value>',\n    returnUrl: 'https://example.com/account',\n);\n\n$response = $sdk->memberSessions->create(\n    request: $request\n);\n\nif ($response->memberSession !== null) {\n    // handle response\n}"
-          }
-        ]
-      }
-    },
     "/v1/events/": {
       "get": {
         "tags": [
@@ -41267,15 +41193,8 @@
             "description": "The start timestamp of the current billing period."
           },
           "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Current Period End",
             "description": "The end timestamp of the current billing period."
           },
@@ -42510,6 +42429,31 @@
       },
       "CustomerSessionCustomerExternalIDCreate": {
         "properties": {
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "External ID of the member to create a session for. Alternative to `member_id`."
+          },
           "return_url": {
             "anyOf": [
               {
@@ -42543,6 +42487,31 @@
       },
       "CustomerSessionCustomerIDCreate": {
         "properties": {
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "External ID of the member to create a session for. Alternative to `member_id`."
+          },
           "return_url": {
             "anyOf": [
               {
@@ -43083,15 +43052,8 @@
             ]
           },
           "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Current Period End",
             "description": "The end timestamp of the current billing period.",
             "examples": [
@@ -43388,15 +43350,8 @@
             "description": "The start timestamp of the current billing period."
           },
           "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Current Period End",
             "description": "The end timestamp of the current billing period."
           },
@@ -50652,125 +50607,6 @@
         ],
         "title": "MemberRole"
       },
-      "MemberSession": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "token": {
-            "type": "string",
-            "title": "Token"
-          },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Expires At"
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url"
-          },
-          "member_portal_url": {
-            "type": "string",
-            "title": "Member Portal Url"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Member Id"
-          },
-          "member": {
-            "$ref": "#/components/schemas/Member"
-          },
-          "customer_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Customer Id"
-          },
-          "customer": {
-            "$ref": "#/components/schemas/Customer"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "token",
-          "expires_at",
-          "return_url",
-          "member_portal_url",
-          "member_id",
-          "member",
-          "customer_id",
-          "customer"
-        ],
-        "title": "MemberSession",
-        "description": "A member session that can be used to authenticate as a member in the customer portal."
-      },
-      "MemberSessionCreate": {
-        "properties": {
-          "member_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Member Id",
-            "description": "ID of the member to create a session for."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the customer portal to return to this URL.",
-            "examples": [
-              "https://example.com/account"
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "member_id"
-        ],
-        "title": "MemberSessionCreate",
-        "description": "Schema for creating a member session using a member ID."
-      },
       "MemberSortProperty": {
         "type": "string",
         "enum": [
@@ -51553,6 +51389,132 @@
             "title": "Timestamp",
             "description": "Timestamp of this period data."
           },
+          "active_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Subscriptions"
+          },
+          "committed_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Subscriptions"
+          },
+          "monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Recurring Revenue"
+          },
+          "committed_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Monthly Recurring Revenue"
+          },
+          "average_revenue_per_user": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Revenue Per User"
+          },
+          "checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkouts"
+          },
+          "succeeded_checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Succeeded Checkouts"
+          },
+          "checkouts_conversion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkouts Conversion"
+          },
+          "churned_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Churned Subscriptions"
+          },
           "orders": {
             "anyOf": [
               {
@@ -51678,20 +51640,6 @@
               }
             ],
             "title": "Net Average Order Value"
-          },
-          "average_revenue_per_user": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Average Revenue Per User"
           },
           "cost_per_user": {
             "anyOf": [
@@ -51847,104 +51795,6 @@
             ],
             "title": "Renewed Subscriptions Net Revenue"
           },
-          "active_subscriptions": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Active Subscriptions"
-          },
-          "committed_subscriptions": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Committed Subscriptions"
-          },
-          "monthly_recurring_revenue": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Monthly Recurring Revenue"
-          },
-          "committed_monthly_recurring_revenue": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Committed Monthly Recurring Revenue"
-          },
-          "checkouts": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checkouts"
-          },
-          "succeeded_checkouts": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Succeeded Checkouts"
-          },
-          "checkouts_conversion": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checkouts Conversion"
-          },
           "canceled_subscriptions": {
             "anyOf": [
               {
@@ -52071,20 +51921,6 @@
             ],
             "title": "Canceled Subscriptions Other"
           },
-          "churned_subscriptions": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Churned Subscriptions"
-          },
           "churn_rate": {
             "anyOf": [
               {
@@ -52174,6 +52010,96 @@
       },
       "Metrics": {
         "properties": {
+          "active_subscriptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "committed_subscriptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "committed_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "average_revenue_per_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkouts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "succeeded_checkouts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkouts_conversion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "churned_subscriptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "orders": {
             "anyOf": [
               {
@@ -52255,16 +52181,6 @@
             ]
           },
           "net_average_order_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "average_revenue_per_user": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Metric"
@@ -52384,76 +52300,6 @@
               }
             ]
           },
-          "active_subscriptions": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "committed_subscriptions": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "monthly_recurring_revenue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "committed_monthly_recurring_revenue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "checkouts": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "succeeded_checkouts": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "checkouts_conversion": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "canceled_subscriptions": {
             "anyOf": [
               {
@@ -52535,16 +52381,6 @@
             ]
           },
           "canceled_subscriptions_other": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Metric"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "churned_subscriptions": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Metric"
@@ -52714,6 +52550,132 @@
       },
       "MetricsTotals": {
         "properties": {
+          "active_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Subscriptions"
+          },
+          "committed_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Subscriptions"
+          },
+          "monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Recurring Revenue"
+          },
+          "committed_monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Committed Monthly Recurring Revenue"
+          },
+          "average_revenue_per_user": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Revenue Per User"
+          },
+          "checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkouts"
+          },
+          "succeeded_checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Succeeded Checkouts"
+          },
+          "checkouts_conversion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkouts Conversion"
+          },
+          "churned_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Churned Subscriptions"
+          },
           "orders": {
             "anyOf": [
               {
@@ -52839,20 +52801,6 @@
               }
             ],
             "title": "Net Average Order Value"
-          },
-          "average_revenue_per_user": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Average Revenue Per User"
           },
           "cost_per_user": {
             "anyOf": [
@@ -53008,104 +52956,6 @@
             ],
             "title": "Renewed Subscriptions Net Revenue"
           },
-          "active_subscriptions": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Active Subscriptions"
-          },
-          "committed_subscriptions": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Committed Subscriptions"
-          },
-          "monthly_recurring_revenue": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Monthly Recurring Revenue"
-          },
-          "committed_monthly_recurring_revenue": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Committed Monthly Recurring Revenue"
-          },
-          "checkouts": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checkouts"
-          },
-          "succeeded_checkouts": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Succeeded Checkouts"
-          },
-          "checkouts_conversion": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Checkouts Conversion"
-          },
           "canceled_subscriptions": {
             "anyOf": [
               {
@@ -53231,20 +53081,6 @@
               }
             ],
             "title": "Canceled Subscriptions Other"
-          },
-          "churned_subscriptions": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Churned Subscriptions"
           },
           "churn_rate": {
             "anyOf": [
@@ -55081,15 +54917,8 @@
             "description": "The start timestamp of the current billing period."
           },
           "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Current Period End",
             "description": "The end timestamp of the current billing period."
           },
@@ -59772,15 +59601,8 @@
             "description": "The start timestamp of the current billing period."
           },
           "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Current Period End",
             "description": "The end timestamp of the current billing period."
           },

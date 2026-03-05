@@ -317,11 +317,12 @@ const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
         width={PW + 25}
         height={PH + 25}
         depth={5}
-        topClassName={`bg-transparent border transition-colors duration-300 ${
+        topClassName={twMerge(
+          'bg-transparent border transition-colors duration-300 rounded-md',
           active
             ? 'border-blue-500/50 dark:border-blue-500/50'
-            : 'border-transparent'
-        }`}
+            : 'border-transparent',
+        )}
         frontClassName="bg-transparent"
         rightClassName="bg-transparent"
       />

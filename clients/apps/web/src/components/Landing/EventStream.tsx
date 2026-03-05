@@ -6,24 +6,24 @@ import { useEffect, useRef, useState } from 'react'
 // ── Event definitions ──────────────────────────────────────────────────────────
 const EVENT_DEFS = [
   {
-    tag: 'API_CALL',
+    tag: 'SUBSCRIPTION',
+    color: 'text-amber-500 dark:text-amber-400',
+    pill: 'bg-amber-50 dark:bg-amber-950/60',
+    valueRange: [80, 420] as [number, number],
+    unit: 'ms',
+  },
+  {
+    tag: 'PURCHASE',
     color: 'text-blue-500 dark:text-blue-400',
     pill: 'bg-blue-50 dark:bg-blue-950/60',
     valueRange: [80, 420] as [number, number],
     unit: 'ms',
   },
   {
-    tag: 'TOKENS',
+    tag: 'INFERENCE',
     color: 'text-emerald-500 dark:text-emerald-400',
     pill: 'bg-emerald-50 dark:bg-emerald-950/60',
     valueRange: [512, 16384] as [number, number],
-    unit: 'tokens',
-  },
-  {
-    tag: 'INFERENCE',
-    color: 'text-indigo-500 dark:text-indigo-400',
-    pill: 'bg-indigo-50 dark:bg-indigo-950/60',
-    valueRange: [1024, 8192] as [number, number],
     unit: 'tokens',
   },
 ] as const
@@ -117,9 +117,9 @@ export const EventStream = () => {
             >
               <div className="flex flex-row items-center gap-x-6">
                 {/* Tag */}
-                <div className="w-16">
+                <div className="w-24">
                   <span
-                    className={`text-xxs w-fit shrink-0 rounded px-1 py-px font-mono font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
+                    className={`text-xxs w-fit shrink-0 rounded px-1 py-1 font-mono font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
                   >
                     {e.def.tag}
                   </span>

@@ -63,6 +63,15 @@ def is_free_price(price: ProductPrice) -> TypeIs[FreePrice]:
     return isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree)
 
 
+def is_effectively_free_price(price: ProductPrice) -> bool:
+    """Check if a price is effectively free (either a FreePrice or a seat price with $0/seat)."""
+    if is_free_price(price):
+        return True
+    if is_seat_price(price):
+        return price.is_free()
+    return False
+
+
 def is_static_price(price: ProductPrice) -> TypeIs[StaticPrice]:
     return price.is_static
 

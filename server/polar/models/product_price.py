@@ -388,6 +388,17 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
         sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
         return sorted_tiers[-1].get("max_seats")
 
+    def is_free(self) -> bool:
+        """Check if ALL tiers have price_per_seat == 0.
+
+        A seat-based price is only considered free if every single tier
+        has a zero price per seat. If any tier charges, it's not free.
+        """
+        tiers = self.seat_tiers.get("tiers", [])
+        if not tiers:
+            return True
+        return all(tier["price_per_seat"] == 0 for tier in tiers)
+
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
         "polymorphic_load": "inline",

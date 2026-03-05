@@ -86,7 +86,7 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.product.guard import (
     is_custom_price,
-    is_free_price,
+    is_effectively_free_price,
     is_recurring_product,
     is_seat_price,
     is_static_price,
@@ -365,7 +365,7 @@ class SubscriptionService:
             default_price := PriceSet.from_product(
                 product, product.organization.default_presentment_currency
             ).get_default_price()
-        ) and not is_free_price(default_price):
+        ) and not is_effectively_free_price(default_price):
             errors.append(
                 {
                     "type": "value_error",
@@ -417,10 +417,19 @@ class SubscriptionService:
 
         currency = product.organization.default_presentment_currency
         currency_prices = PriceSet.from_product(product, currency)
+
+        # For seat-based products, determine initial seats from the price tiers
+        seats: int | None = None
+        if product.has_seat_based_price:
+            for p in currency_prices:
+                if is_seat_price(p):
+                    seats = p.get_minimum_seats()
+                    break
+
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in currency_prices:
             subscription_product_prices.append(
-                SubscriptionProductPrice.from_price(price)
+                SubscriptionProductPrice.from_price(price, seats=seats)
             )
 
         current_period_start = utc_now()
@@ -440,6 +449,7 @@ class SubscriptionService:
             customer=customer,
             subscription_product_prices=subscription_product_prices,
             currency=currency,
+            seats=seats,
             user_metadata=subscription_create.metadata,
         )
 

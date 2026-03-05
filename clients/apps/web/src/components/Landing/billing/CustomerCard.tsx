@@ -23,16 +23,11 @@ function fmt(cents: number): string {
   })
 }
 
-let _chargeId = 0
-
 export const CustomerCard = () => {
   const tokensRef = useRef(INITIAL_TOKENS)
   const overageRef = useRef(calcOverageCents(INITIAL_TOKENS))
   const [tokens, setTokens] = useState(INITIAL_TOKENS)
   const [overageCents, setOverageCents] = useState(overageRef.current)
-  const [charges, setCharges] = useState<Array<{ id: number; cents: number }>>(
-    [],
-  )
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -40,16 +35,10 @@ export const CustomerCard = () => {
       tokensRef.current += added
 
       const newOverage = calcOverageCents(tokensRef.current)
-      const delta = newOverage - overageRef.current
       overageRef.current = newOverage
 
       setTokens(tokensRef.current)
       setOverageCents(newOverage)
-
-      if (delta > 0) {
-        const id = ++_chargeId
-        setCharges((prev) => [{ id, cents: delta }, ...prev.slice(0, 2)])
-      }
     }, 750)
     return () => clearInterval(interval)
   }, [])
@@ -85,8 +74,8 @@ export const CustomerCard = () => {
         </div>
 
         {/* Tier usage */}
-        <div className="dark:border-polar-800 border-b border-gray-100 px-4 py-4">
-          <div className="mb-2 flex items-center justify-between">
+        <div className="dark:border-polar-800 flex flex-col gap-y-4 border-b border-gray-100 px-4 py-4">
+          <div className="flex items-center justify-between">
             <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
               {inTier3 ? 'Tier 3 · Token Usage' : 'Tier 2 · Token Usage'}
             </span>
@@ -104,17 +93,11 @@ export const CustomerCard = () => {
             </motion.span>
           </div>
 
-          {/* Progress bar */}
-          <div className="dark:bg-polar-800 relative h-1.5 overflow-hidden rounded-full bg-gray-100">
-            <motion.div
-              className={`absolute inset-y-0 left-0 rounded-full ${inTier3 ? 'bg-amber-500' : 'bg-blue-500'}`}
-              animate={{ width: inTier3 ? '100%' : `${tierProgress * 100}%` }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            />
-          </div>
+          {/* Segmented progress */}
+          <SegmentedBar progress={tierProgress} />
 
-          <div className="mt-1.5 flex items-center justify-between">
-            <span className="dark:text-polar-400 font-mono text-[10px] text-gray-400">
+          <div className="flex items-center justify-between">
+            <span className="dark:text-polar-400 font-mono text-xs text-gray-400">
               {inTier3 ? '$0.001' : '$0.002'} / 1k tokens
             </span>
             {!inTier3 && (
@@ -147,15 +130,25 @@ export const CustomerCard = () => {
             animKey={totalCents}
           />
         </div>
-
-        {/* Footer */}
-        <div className="dark:border-polar-800 border-t border-gray-100 px-4 py-3">
-          <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-            Next invoice Apr 1, 2026
-          </span>
-        </div>
       </div>
     </motion.div>
+  )
+}
+
+const SEGMENTS = 64
+
+const SegmentedBar = ({ progress }: { progress: number }) => {
+  const filled = Math.round(progress * SEGMENTS)
+
+  return (
+    <div className="flex gap-x-2">
+      {Array.from({ length: SEGMENTS }, (_, i) => (
+        <div
+          key={i}
+          className={`h-2 flex-1 transition-colors duration-500 ${i < filled ? 'bg-black dark:bg-white' : 'bg-gray-100 dark:bg-white/10'}`}
+        />
+      ))}
+    </div>
   )
 }
 

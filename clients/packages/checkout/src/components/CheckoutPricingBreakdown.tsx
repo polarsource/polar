@@ -6,7 +6,6 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { formatDate } from '@polar-sh/i18n/formatters/date'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { PropsWithChildren, useMemo } from 'react'
@@ -188,28 +187,33 @@ const CheckoutPricingBreakdown = ({
               : '—'}
           </DetailRow>
 
-          <DetailRow title={totalLabel} emphasis>
-            <div className="flex flex-col items-end gap-y-1">
-              <AmountLabel
-                amount={checkout.totalAmount}
-                currency={checkout.currency}
-                interval={interval}
-                intervalCount={intervalCount}
-                mode="standard"
-                locale={locale}
-              />
-              {formattedDiscountDuration && (
-                <span
-                  className={cn(
-                    'text-xs font-normal text-gray-500',
-                    'text-gray-600',
-                  )}
-                >
-                  {formattedDiscountDuration}
-                </span>
-              )}
-            </div>
-          </DetailRow>
+          {!(
+            checkout.activeTrialInterval &&
+            checkout.activeTrialIntervalCount
+          ) && (
+            <DetailRow title={totalLabel} emphasis>
+              <div className="flex flex-col items-end gap-y-1">
+                <AmountLabel
+                  amount={checkout.totalAmount}
+                  currency={checkout.currency}
+                  interval={interval}
+                  intervalCount={intervalCount}
+                  mode="standard"
+                  locale={locale}
+                />
+                {formattedDiscountDuration && (
+                  <span
+                    className={cn(
+                      'text-xs font-normal text-gray-500',
+                      'text-gray-600',
+                    )}
+                  >
+                    {formattedDiscountDuration}
+                  </span>
+                )}
+              </div>
+            </DetailRow>
+          )}
           {meteredPrices.length > 0 && (
             <DetailRow
               title={t('checkout.pricing.additionalMeteredUsage')}
@@ -229,49 +233,42 @@ const CheckoutPricingBreakdown = ({
       ) : (
         <span>{t('checkout.pricing.free')}</span>
       )}
-      {(checkout.trialEnd ||
-        (checkout.activeTrialInterval &&
-          checkout.activeTrialIntervalCount)) && (
-        <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
-          {checkout.activeTrialInterval &&
-            checkout.activeTrialIntervalCount && (
-              <DetailRow
-                emphasis
-                title={
-                  checkout.activeTrialInterval === 'year'
-                    ? t('checkout.trial.duration.years', {
-                        count: checkout.activeTrialIntervalCount,
-                      })
-                    : checkout.activeTrialInterval === 'month'
-                      ? t('checkout.trial.duration.months', {
-                          count: checkout.activeTrialIntervalCount,
-                        })
-                      : checkout.activeTrialInterval === 'week'
-                        ? t('checkout.trial.duration.weeks', {
-                            count: checkout.activeTrialIntervalCount,
-                          })
-                        : t('checkout.trial.duration.days', {
-                            count: checkout.activeTrialIntervalCount,
-                          })
-                }
-              >
-                <span>{t('checkout.pricing.free')}</span>
-              </DetailRow>
-            )}
-          {checkout.trialEnd && (
-            <span
-              className={cn(
-                'dark:text-polar-500 text-sm text-gray-500',
-                'text-gray-600',
+      {checkout.activeTrialInterval &&
+        checkout.activeTrialIntervalCount &&
+        checkout.currency && (
+          <div className="dark:border-polar-700 mt-3 flex flex-col gap-y-2 border-t border-gray-300 pt-4">
+            <DetailRow title="Total after trial" className="text-gray-600">
+              <AmountLabel
+                amount={checkout.totalAmount}
+                currency={checkout.currency}
+                interval={interval}
+                intervalCount={intervalCount}
+                mode="standard"
+                locale={locale}
+              />
+            </DetailRow>
+            {checkout.discount &&
+              checkout.discount.duration !== 'forever' &&
+              checkout.discountAmount > 0 && (
+                <DetailRow
+                  title="Total after discount"
+                  className="text-gray-600"
+                >
+                  <AmountLabel
+                    amount={checkout.amount}
+                    currency={checkout.currency}
+                    interval={interval}
+                    intervalCount={intervalCount}
+                    mode="standard"
+                    locale={locale}
+                  />
+                </DetailRow>
               )}
-            >
-              {t('checkout.trial.ends', {
-                endDate: formatDate(checkout.trialEnd, locale),
-              })}
-            </span>
-          )}
-        </div>
-      )}
+            <DetailRow title="Due today" emphasis>
+              {formatCurrency('standard', locale)(0, checkout.currency)}
+            </DetailRow>
+          </div>
+        )}
     </div>
   )
 }

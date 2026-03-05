@@ -320,8 +320,7 @@ describe('CheckoutPricingBreakdown', () => {
   })
 
   describe('trial section', () => {
-    it('shows trial duration and end date', () => {
-      const trialEnd = new Date('2026-04-05T00:00:00Z')
+    it('shows "Total after trial" and "Due today" $0', () => {
       const checkout = createBaseCheckout({
         amount: 999,
         netAmount: 999,
@@ -329,14 +328,47 @@ describe('CheckoutPricingBreakdown', () => {
         totalAmount: 999,
         activeTrialInterval: 'month',
         activeTrialIntervalCount: 1,
-        trialEnd,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/1 month trial/i)).toBeInTheDocument()
-      expect(screen.getByText(/Free/)).toBeInTheDocument()
-      expect(screen.getByText(/Trial ends/i)).toBeInTheDocument()
+      expect(screen.getByText('Total after trial')).toBeInTheDocument()
+      expect(screen.getByText('Due today')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('detail-row-Due today').textContent,
+      ).toContain('$0')
+      // Should NOT show "Total after discount" when there's no discount
+      expect(
+        screen.queryByText('Total after discount'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows "Total after discount" when there is an expiring discount', () => {
+      const checkout = createBaseCheckout({
+        amount: 999,
+        discountAmount: 500,
+        netAmount: 499,
+        taxAmount: null,
+        totalAmount: 499,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        discount: {
+          id: 'disc_1',
+          name: '50% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basisPoints: 5000,
+        } as CheckoutPublic['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByText('Total after discount')).toBeInTheDocument()
+      expect(screen.getByText('Total after trial')).toBeInTheDocument()
+      expect(screen.getByText('Due today')).toBeInTheDocument()
     })
   })
 

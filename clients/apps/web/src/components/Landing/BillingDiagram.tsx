@@ -53,12 +53,12 @@ type LayerDef = {
 const LAYERS: LayerDef[] = [
   {
     z: 0 * ZSTEP,
-    index: '01',
-    label: 'USAGE EVENTS',
-    description: 'Capture API calls, token consumption & custom events',
-    highlight: false,
-    rows: [220, 170, 195, 140],
-    highlightRow: -1,
+    index: '03',
+    label: 'INVOICING',
+    description: 'Generate itemized invoices for each billing period',
+    highlight: true,
+    rows: [260, 180, 200],
+    highlightRow: 0,
   },
   {
     z: 1 * ZSTEP,
@@ -71,12 +71,12 @@ const LAYERS: LayerDef[] = [
   },
   {
     z: 2 * ZSTEP,
-    index: '03',
-    label: 'INVOICING',
-    description: 'Generate itemized invoices for each billing period',
-    highlight: true,
-    rows: [260, 180, 200],
-    highlightRow: 0,
+    index: '01',
+    label: 'USAGE EVENTS',
+    description: 'Capture API calls, token consumption & custom events',
+    highlight: false,
+    rows: [220, 170, 195, 140],
+    highlightRow: -1,
   },
   {
     z: 3 * ZSTEP,
@@ -309,6 +309,22 @@ const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
           />
         ))
       )}
+      {/* Outline rectangle — rendered last so it sits above the plate bg via DOM order */}
+      <IsometricBox
+        x={PX}
+        y={PY}
+        z={z + PD}
+        width={PW + 25}
+        height={PH + 25}
+        depth={5}
+        topClassName={`bg-transparent border transition-colors duration-300 ${
+          active
+            ? 'border-blue-500/50 dark:border-blue-500/50'
+            : 'border-transparent'
+        }`}
+        frontClassName="bg-transparent"
+        rightClassName="bg-transparent"
+      />
     </>
   )
 }
@@ -379,7 +395,7 @@ export const BillingDiagram = () => {
                 <li
                   key={layer.index}
                   className={twMerge(
-                    'flex cursor-pointer flex-col gap-y-1 p-4 transition-colors',
+                    'flex cursor-pointer flex-col gap-y-1 rounded-sm p-4 transition-colors',
                     active ? 'dark:bg-polar-900 bg-gray-100' : '',
                   )}
                   onMouseEnter={() => setHoveredIndex(i)}

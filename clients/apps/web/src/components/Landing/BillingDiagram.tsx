@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
+import { useMotionValueEvent, useScroll } from 'framer-motion'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Isometric, IsometricBox } from './Isometric'
@@ -420,7 +420,7 @@ export const BillingDiagram = () => {
 
       {/* Right — isometric illustration with floating labels */}
       <div
-        className="relative flex-1 overflow-visible"
+        className="pointer-events-none relative flex-1 overflow-visible"
         style={{ minHeight: 510 }}
       >
         {/* Illustration, centered and shifted down to prevent top overflow */}
@@ -435,6 +435,45 @@ export const BillingDiagram = () => {
             }}
           >
             <Isometric style={{ width: SW, height: SH }}>
+              {/* Shadow floor — single IsometricBox at z=-1, below all plate layers */}
+              <IsometricBox
+                x={PX - 80}
+                y={PY - 80}
+                z={-120}
+                width={PW}
+                height={PH}
+                depth={1}
+                topClassName="bg-transparent"
+                frontClassName="bg-transparent"
+                rightClassName="bg-transparent"
+              >
+                <svg
+                  className="dark:text-polar-600 absolute text-gray-300"
+                  width={PW}
+                  height={PH}
+                >
+                  <defs>
+                    <pattern
+                      id="billing-diagram-dots"
+                      x="0"
+                      y="0"
+                      width="16"
+                      height="16"
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <circle cx="8" cy="8" r="1" fill="currentColor" />
+                    </pattern>
+                  </defs>
+                  <rect
+                    x="0"
+                    y="0"
+                    width={PW + 40}
+                    height={PH + 40}
+                    fill="url(#billing-diagram-dots)"
+                  />
+                </svg>
+              </IsometricBox>
+
               {LAYERS.map((layer, i) => {
                 const zOffset =
                   activeIndex === null
@@ -445,18 +484,19 @@ export const BillingDiagram = () => {
                         ? 0
                         : EXPAND
                 return (
-                  <motion.div
+                  <div
                     key={layer.z}
                     style={{
                       position: 'absolute',
                       inset: 0,
                       transformStyle: 'preserve-3d',
+                      transform: `translateZ(${zOffset}px)`,
+                      transition:
+                        'transform 500ms cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
-                    animate={{ z: zOffset }}
-                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                   >
                     <Plate layer={layer} hovered={activeIndex === i} />
-                  </motion.div>
+                  </div>
                 )
               })}
             </Isometric>

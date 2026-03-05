@@ -60,7 +60,7 @@ class EmailSender(ABC):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         pass
 
 
@@ -77,7 +77,7 @@ class LoggingEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         log.info(
             "Sending an email",
             to_email_addr=to_ascii_email(to_email_addr),
@@ -85,6 +85,7 @@ class LoggingEmailSender(EmailSender):
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
         )
+        return None
 
 
 class ResendEmailSender(EmailSender):
@@ -106,7 +107,7 @@ class ResendEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         to_email_addr_ascii = to_ascii_email(to_email_addr)
         payload: dict[str, Any] = {
             "from": f"{from_name} <{to_ascii_email(from_email_addr)}>",
@@ -148,6 +149,8 @@ class ResendEmailSender(EmailSender):
             subject=subject,
             email_id=email["id"],
         )
+
+        return email["id"]
 
 
 class EmailFromReply(TypedDict):

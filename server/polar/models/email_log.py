@@ -29,7 +29,7 @@ class EmailLog(RecordModel):
     from_name: Mapped[str] = mapped_column(String, nullable=False)
     subject: Mapped[str] = mapped_column(String, nullable=False)
     email_template: Mapped[str | None] = mapped_column(String, nullable=True)
-    email_props: Mapped[dict[str, Any] | None] = mapped_column(
+    email_props: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
     error: Mapped[str | None] = mapped_column(String, nullable=True)

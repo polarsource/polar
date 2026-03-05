@@ -19,19 +19,17 @@ from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit
 from polar.models import Customer as CustomerModel
 from polar.models.downloadable import Downloadable, DownloadableStatus
-from polar.models.file import File
 from polar.postgres import AsyncSession, sql
 
+from ..repository.downloadable import DownloadableRepository
 from ..schemas.downloadables import (
     DownloadableCreate,
     DownloadableRead,
     DownloadableUpdate,
     DownloadableURL,
 )
-from ..utils import get_customer_id
 
 log = structlog.get_logger()
 
@@ -51,7 +49,10 @@ class DownloadableService(
         pagination: PaginationParams,
         benefit_id: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
-        statement = self._get_base_query(auth_subject)
+        repository = DownloadableRepository.from_session(session)
+        statement = repository.get_customer_statement(auth_subject).options(
+            contains_eager(Downloadable.file)
+        )
 
         if benefit_id:
             statement = statement.where(Downloadable.benefit_id.in_(benefit_id))
@@ -64,6 +65,8 @@ class DownloadableService(
         customer: CustomerModel,
         benefit_id: UUID,
         file_id: UUID,
+        *,
+        member_id: UUID | None = None,
     ) -> Downloadable | None:
         file_repository = FileRepository.from_session(session)
         file = await file_repository.get_by_id(file_id)
@@ -99,6 +102,11 @@ class DownloadableService(
         await session.flush()
         instance = records[0]
         assert instance.id is not None
+
+        if member_id is not None and instance.member_id is None:
+            instance.member_id = member_id
+            session.add(instance)
+            await session.flush()
 
         log.info(
             "downloadables.grant",
@@ -221,25 +229,6 @@ class DownloadableService(
             file=file_schema,
         )
 
-    def _get_base_query(
-        self, auth_subject: AuthSubject[Customer | Member]
-    ) -> sql.Select[tuple[Downloadable]]:
-        return (
-            sql.select(Downloadable)
-            .join(File)
-            .join(Benefit)
-            .options(contains_eager(Downloadable.file))
-            .where(
-                Downloadable.status == DownloadableStatus.granted,
-                Downloadable.is_deleted.is_(False),
-                File.is_deleted.is_(False),
-                File.is_uploaded == True,  # noqa
-                File.is_enabled == True,  # noqa
-                Benefit.is_deleted.is_(False),
-                Downloadable.customer_id == get_customer_id(auth_subject),
-            )
-            .order_by(Downloadable.created_at.desc())
-        )
 
 
 downloadable = DownloadableService(Downloadable)

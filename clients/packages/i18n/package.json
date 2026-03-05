@@ -39,11 +39,11 @@
     "dist"
   ],
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.46",
+    "@ai-sdk/google": "^2.0.56",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^5.0.113",
-    "dotenv": "^16.4.5",
+    "ai": "^5.0.144",
+    "dotenv": "^16.6.1",
     "prettier": "^3.8.1",
     "react": "^19.2.4",
     "tsup": "^8.5.1",

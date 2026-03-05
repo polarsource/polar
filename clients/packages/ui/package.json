@@ -52,12 +52,12 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "input-otp": "^1.4.2",
-    "lucide-react": "^0.564.0",
-    "react-day-picker": "^9.13.2",
-    "react-hook-form": "~7.71.1",
+    "lucide-react": "^0.577.0",
+    "react-day-picker": "^9.14.0",
+    "react-hook-form": "~7.71.2",
     "react-timeago": "^8.3.0",
     "recharts": "^3.7.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",

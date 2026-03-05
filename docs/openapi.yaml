@@ -35527,7 +35527,14 @@
             "title": "Attached Custom Fields"
           },
           "customer_session_token": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Customer Session Token"
           }
         },
@@ -62366,6 +62373,7 @@
           "kr_brn",
           "kz_bin",
           "li_uid",
+          "mk_vat",
           "mx_rfc",
           "my_frp",
           "my_itn",

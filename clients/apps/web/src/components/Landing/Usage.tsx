@@ -1,7 +1,7 @@
 'use client'
 
 import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
-import { BillingAsCode } from './billing/BillingAsCode'
+import { Ingestion } from './billing/Ingestion'
 import { EventStream } from './EventStream'
 
 export const Usage = () => {
@@ -17,7 +17,7 @@ export const Usage = () => {
           </h1>
         </div>
         <div className="flex w-full flex-col gap-12 md:flex-row">
-          <BillingAsCode />
+          <Ingestion />
           <EventStream />
         </div>
       </div>

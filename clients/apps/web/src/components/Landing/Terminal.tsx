@@ -26,19 +26,21 @@ export const Terminal = ({
   footer,
 }: TerminalProps) => {
   // Cast is safe: our Lang union mirrors LANGUAGE_MAP keys exactly
-  const resolvedLang = lang as Parameters<typeof SyntaxHighlighterClient>[0]['lang']
+  const resolvedLang = lang as Parameters<
+    typeof SyntaxHighlighterClient
+  >[0]['lang']
 
   return (
     <div className="dark:border-polar-700 flex flex-1 flex-col rounded-2xl border border-gray-100 bg-gray-50 p-1 dark:bg-transparent">
       {/* Title bar */}
       <div className="flex flex-row items-center gap-x-4 px-4 py-3 font-mono text-sm">
         <span>{title}</span>
-        <span className="dark:text-polar-500 text-gray-400">λ</span>
+        <span className="dark:text-polar-500 text-gray-500">nvim</span>
         <span className="dark:text-polar-500 text-gray-500">{subtitle}</span>
       </div>
 
       {/* Code body */}
-      <div className="dark:bg-polar-900 z-[1] flex-1 rounded-xl bg-white p-4 text-sm shadow-xs">
+      <div className="dark:bg-polar-900 z-1 flex-1 rounded-xl bg-white p-4 text-sm shadow-xs">
         <SyntaxHighlighterClient lang={resolvedLang} code={content} />
       </div>
 
@@ -47,14 +49,14 @@ export const Terminal = ({
         {footer.map((item, i) =>
           item.type === 'input' ? (
             <div key={i} className="flex flex-row gap-x-4 font-mono text-sm">
-              <span>&gt; {item.command}</span>
+              <span>{item.command}</span>
             </div>
           ) : (
             <div
               key={i}
               className="dark:text-polar-500 flex flex-row gap-x-4 font-mono text-sm text-gray-500"
             >
-              <span>λ {item.command}</span>
+              <span>{item.command}</span>
             </div>
           ),
         )}

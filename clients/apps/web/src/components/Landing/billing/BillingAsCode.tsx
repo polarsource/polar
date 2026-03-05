@@ -23,7 +23,7 @@ export default defineBilling({
 
 export const BillingAsCode = () => {
   return (
-    <div className="dark:border-polar-700 flex-1 rounded-2xl border border-gray-200 bg-gray-50 p-1 dark:bg-transparent">
+    <div className="dark:border-polar-700 flex-1 rounded-2xl border border-gray-100 bg-gray-50 p-1 dark:bg-transparent">
       <div className="flex flex-row gap-x-4 px-4 py-3 font-mono text-sm">
         <span className="">terminal</span>
         <span className="dark:text-polar-500 text-gray-500">λ</span>

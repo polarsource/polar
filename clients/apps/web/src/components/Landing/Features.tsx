@@ -8,14 +8,14 @@ import { Isometric, IsometricBox } from './Isometric'
 // ── Shared face / edge classes ────────────────────────────────────────────────
 
 // Base face colors: grays in light mode, near-black in dark mode
-const FACE_T = 'bg-gray-100 dark:bg-polar-950'
-const FACE_F = 'bg-gray-200 dark:bg-polar-900'
-const FACE_R = 'bg-gray-300 dark:bg-polar-950'
+const FACE_T = 'bg-gray-50 dark:bg-polar-950'
+const FACE_F = 'bg-gray-100 dark:bg-polar-900'
+const FACE_R = 'bg-gray-200 dark:bg-polar-950'
 
 // Border edge variants: gray palette in light, progressively brighter in dark
-const EDGE_DIM = 'border-[0.5px] border-gray-200 dark:border-polar-700'
-const EDGE_MID = 'border-[0.5px] border-gray-300 dark:border-polar-600'
-const EDGE_HI = 'border-[0.5px] border-gray-400 dark:border-polar-500'
+const EDGE_DIM = 'border-[0.5px] border-gray-100 dark:border-polar-700'
+const EDGE_MID = 'border-[0.5px] border-gray-200 dark:border-polar-600'
+const EDGE_HI = 'border-[0.5px] border-gray-300 dark:border-polar-500'
 
 // ── Illustration 1: Payment terminal + card ───────────────────────────────────
 

@@ -6,7 +6,7 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries'
 import { hasLegacyRecurringPrices } from '@/utils/product'
-import { Client, schemas, unwrap } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -15,7 +15,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
-import { getErrorRedirect } from '../Toast/utils'
 
 const ProductPriceListItem = ({
   product,
@@ -187,34 +186,13 @@ const CustomerChangePlanModal = ({
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
     if (!selectedProduct) return
-    const { data, response } = await updateSubscription.mutateAsync({
+    const { data } = await updateSubscription.mutateAsync({
       id: subscription.id,
       body: {
         product_id: selectedProduct.id,
       },
     })
-    if (response.status === 400) {
-      const body = await response.json()
-      if (body.error === 'SubscriptionNotActiveOnStripe') {
-        router.push(
-          getErrorRedirect(
-            `/${organization.slug}/products/${subscription.product_id}`,
-            'Subscription Update Failed',
-            'Subscription is not active on Stripe',
-          ),
-        )
-      } else if (body.error === 'MissingPaymentMethod') {
-        const { url } = await unwrap(
-          api.POST('/v1/checkouts/client/', {
-            body: {
-              product_id: selectedProduct.id,
-              subscription_id: subscription.id,
-            },
-          }),
-        )
-        router.push(url)
-      }
-    } else if (data) {
+    if (data) {
       toast({
         title: 'Subscription Updated',
         description: `Subscription was updated successfully`,
@@ -226,12 +204,10 @@ const CustomerChangePlanModal = ({
   }, [
     updateSubscription,
     selectedProduct,
-    organization,
     subscription,
     onUserSubscriptionUpdate,
     hide,
     router,
-    api,
   ])
 
   const availableProducts = useMemo(

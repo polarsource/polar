@@ -70,7 +70,8 @@ SQL >
         llm_output_tokens,
         user_metadata,
         member_id,
-        external_member_id
+        external_member_id,
+        ancestors
     FROM events_by_ingested_at
 
 TYPE MATERIALIZED

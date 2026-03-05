@@ -1,6 +1,6 @@
 import uuid
 from collections import defaultdict, deque
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -765,9 +765,6 @@ class EventService:
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventSortProperty]],
     ) -> None:
-        if depth is not None and depth > 0 and parent_id is None:
-            return
-
         org = await self._get_tinybird_enabled_org(
             session, auth_subject, organization_id
         )
@@ -848,10 +845,10 @@ class EventService:
                         else:
                             tb_query.filter_numeric_metadata_property(prop)
 
-            if parent_id is not None:
+            if depth is not None:
+                tb_query.filter_by_depth(depth, parent_id)
+            elif parent_id is not None:
                 tb_query.filter_parent_id(parent_id)
-            elif depth is not None and depth == 0:
-                tb_query.filter_root_events()
 
             descending = sorting[0][1] if sorting else True
             offset = (pagination.page - 1) * pagination.limit
@@ -1145,9 +1142,9 @@ class EventService:
 
     async def populate_event_closures_batch(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
-    ) -> None:
+    ) -> Mapping[uuid.UUID, Sequence[str]]:
         if not event_ids:
-            return
+            return {}
 
         result = await session.execute(
             select(Event.id, Event.parent_id).where(Event.id.in_(event_ids))
@@ -1161,14 +1158,13 @@ class EventService:
         sorted_events = _topological_sort_events(events_list)
 
         all_closure_entries = []
-        # Map event_id -> list of its ancestor closures (including self)
         event_closures: dict[uuid.UUID, list[tuple[uuid.UUID, int]]] = {}
+        ancestors_by_event: dict[uuid.UUID, list[str]] = {}
 
         for event in sorted_events:
             event_id = event["id"]
             parent_id = event.get("parent_id")
 
-            # Self-reference
             event_closures[event_id] = [(event_id, 0)]
             all_closure_entries.append(
                 {
@@ -1210,7 +1206,12 @@ class EventService:
                             }
                         )
 
-        # Single bulk insert
+            ancestors_by_event[event_id] = [
+                str(aid)
+                for aid, d in sorted(event_closures[event_id], key=lambda x: x[1])
+                if d > 0
+            ]
+
         if all_closure_entries:
             await session.execute(
                 insert(EventClosure)
@@ -1218,10 +1219,14 @@ class EventService:
                 .on_conflict_do_nothing(index_elements=["ancestor_id", "descendant_id"])
             )
 
+        return ancestors_by_event
+
     async def ingested(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
-        await self.populate_event_closures_batch(session, event_ids)
+        ancestors_by_event = await self.populate_event_closures_batch(
+            session, event_ids
+        )
         repository = EventRepository.from_session(session)
         statement = (
             repository.get_base_statement()
@@ -1254,7 +1259,7 @@ class EventService:
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        await ingest_events(events)
+        await ingest_events(events, ancestors_by_event)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)

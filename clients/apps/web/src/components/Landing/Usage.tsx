@@ -2,7 +2,7 @@
 
 import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { BillingAsCode } from './billing/BillingAsCode'
-import { CircuitNetwork } from './CircuitNetwork'
+import { EventStream } from './EventStream'
 
 export const Usage = () => {
   return (
@@ -18,7 +18,7 @@ export const Usage = () => {
         </div>
         <div className="flex w-full flex-col gap-12 md:flex-row">
           <BillingAsCode />
-          <CircuitNetwork />
+          <EventStream />
         </div>
       </div>
     </SyntaxHighlighterProvider>

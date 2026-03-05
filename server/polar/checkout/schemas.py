@@ -355,54 +355,6 @@ CheckoutCreate = Annotated[
 ]
 
 
-class CheckoutCreatePublic(Schema):
-    """Create a new checkout session from a client."""
-
-    product_id: UUID4 = Field(description="ID of the product to checkout.")
-    seats: int | None = Field(
-        default=None,
-        ge=1,
-        le=1000,
-        description="Predefined number of seats (works with seat-based pricing only)",
-    )
-    min_seats: int | None = Field(
-        default=None,
-        ge=1,
-        le=1000,
-        description=("Minimum number of seats (works with seat-based pricing only)"),
-    )
-    max_seats: int | None = Field(
-        default=None,
-        ge=1,
-        le=1000,
-        description=("Maximum number of seats (works with seat-based pricing only)"),
-    )
-
-    @model_validator(mode="after")
-    def _validate_seat_constraints(self) -> "CheckoutCreatePublic":
-        if self.min_seats is not None and self.max_seats is not None:
-            if self.min_seats > self.max_seats:
-                raise ValueError("min_seats must be less than or equal to max_seats")
-        if self.seats is not None and self.min_seats is not None:
-            if self.seats < self.min_seats:
-                raise ValueError("seats must be greater than or equal to min_seats")
-        if self.seats is not None and self.max_seats is not None:
-            if self.seats > self.max_seats:
-                raise ValueError("seats must be less than or equal to max_seats")
-        return self
-
-    customer_email: CustomerEmail | None = None
-    subscription_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "ID of a subscription to upgrade. It must be on a free pricing. "
-            "If checkout is successful, metadata set on this checkout "
-            "will be copied to the subscription, and existing keys will be overwritten."
-        ),
-    )
-    locale: Locale | None = None
-
-
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     product_id: UUID4 | None = Field(
         default=None,

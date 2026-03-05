@@ -23,9 +23,16 @@ const CheckoutProductAmountLabel = ({
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
     return (
-      <ProductPriceLabel
-        product={product}
-        price={productPrice}
+      <AmountLabel
+        amount={checkout.totalAmount}
+        currency={checkout.currency}
+        interval={
+          isLegacyRecurringPrice(productPrice)
+            ? productPrice.recurringInterval
+            : product.recurringInterval
+        }
+        intervalCount={product.recurringIntervalCount}
+        mode="compact"
         locale={locale}
       />
     )
@@ -40,7 +47,7 @@ const CheckoutProductAmountLabel = ({
       }
     >
       <AmountLabel
-        amount={checkout.netAmount}
+        amount={checkout.totalAmount}
         currency={checkout.currency}
         interval={
           isLegacyRecurringPrice(productPrice)
@@ -100,8 +107,8 @@ const CheckoutPricing = ({
             />
           ) : (
             formatCurrency('compact', locale)(
-              amount,
-              productPrice.priceCurrency,
+              checkout.totalAmount,
+              checkout.currency,
             )
           )}
         </h1>

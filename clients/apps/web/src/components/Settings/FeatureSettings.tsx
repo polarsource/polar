@@ -60,7 +60,7 @@ export default function FeatureSettings({
   })
 
   const [showSeatBasedModal, setShowSeatBasedModal] = useState(false)
-  const seatBasedFieldRef = useRef<{ onChange: (value: boolean) => void }>()
+  const seatBasedFieldRef = useRef<{ onChange: (value: boolean) => void }>(null)
 
   const memberModelEnabled =
     !!organization.feature_settings?.member_model_enabled
@@ -68,7 +68,7 @@ export default function FeatureSettings({
     !!organization.feature_settings?.seat_based_pricing_enabled
 
   const handleSeatBasedConfirm = useCallback(() => {
-    seatBasedFieldRef.current?.onChange(true)
+    seatBasedFieldRef.current?.onChange?.(true)
   }, [])
 
   return (

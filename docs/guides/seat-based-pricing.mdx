@@ -193,13 +193,14 @@ const checkout = await polar.checkouts.create({
 
 ## Member sessions and portal
 
-To give a member access to the customer portal, create a member session:
+To give a member access to the customer portal, create a customer session with a `member_id` to scope the view:
 
 ```typescript
-const session = await polar.memberSessions.create({
+const session = await polar.customerSessions.create({
+  customer_id: "cust_123",
   member_id: "mem_789"
 });
-// Redirect to session.member_portal_url
+// Redirect to session.customer_portal_url
 ```
 
 - **Billing managers** (owner/billing_manager role) see full team management — assigning seats, managing members, and viewing seat utilization.

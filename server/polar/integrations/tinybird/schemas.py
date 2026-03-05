@@ -81,3 +81,5 @@ class TinybirdEvent(TypedDict):
     llm_output_tokens: int | None
     # Remaining metadata as JSON string
     user_metadata: str
+    # Ancestor chain (parent → root)
+    ancestors: list[str]

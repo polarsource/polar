@@ -1,5 +1,5 @@
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import partial
@@ -61,6 +61,7 @@ events_table = Table(
     Column("llm_input_tokens", Float),
     Column("llm_output_tokens", Float),
     Column("user_metadata", String),
+    Column("ancestors", String),
 )
 
 DENORMALIZED_COLUMNS: dict[str, Any] = {
@@ -102,7 +103,9 @@ def _truncate_datetime_to_millis(dt_str: str | None) -> str | None:
         return dt_str
 
 
-def _event_to_tinybird(event: Event) -> TinybirdEvent:
+def _event_to_tinybird(
+    event: Event, ancestors: Sequence[str] | None = None
+) -> TinybirdEvent:
     m = dict(event.user_metadata or {})
     cost = m.pop("_cost", None) or {}
     llm = m.pop("_llm", None) or {}
@@ -181,17 +184,23 @@ def _event_to_tinybird(event: Event) -> TinybirdEvent:
         llm_input_tokens=llm.get("input_tokens"),
         llm_output_tokens=llm.get("output_tokens"),
         user_metadata=json.dumps(m) if m else "{}",
+        ancestors=list(ancestors) if ancestors else [],
     )
 
 
-async def ingest_events(events: Sequence[Event]) -> None:
+async def ingest_events(
+    events: Sequence[Event],
+    ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
+) -> None:
     if not settings.TINYBIRD_EVENTS_WRITE:
         return
 
     if not events:
         return
 
-    tinybird_events = [_event_to_tinybird(e) for e in events]
+    tinybird_events = [
+        _event_to_tinybird(e, (ancestors_by_event or {}).get(e.id)) for e in events
+    ]
     await client.ingest(DATASOURCE_EVENTS, tinybird_events)
 
 
@@ -326,6 +335,19 @@ class TinybirdEventsQuery:
 
     def filter_parent_id(self, parent_id: UUID) -> Self:
         self._filters.append(events_table.c.parent_id == str(parent_id))
+        return self
+
+    def filter_by_depth(self, depth: int, parent_id: UUID | None = None) -> Self:
+        ancestors = events_table.c.ancestors
+        if parent_id is not None:
+            pid = str(parent_id)
+            self._filters.append(func.indexOf(ancestors, pid) > 0)
+            self._filters.append(func.indexOf(ancestors, pid) <= depth)
+        else:
+            if depth == 0:
+                self.filter_root_events()
+                return self
+            self._filters.append(func.length(ancestors) <= depth)
         return self
 
     def filter_source(self, source: EventSource) -> Self:

@@ -32,7 +32,6 @@ from .schemas import Checkout as CheckoutSchema
 from .schemas import (
     CheckoutConfirm,
     CheckoutCreate,
-    CheckoutCreatePublic,
     CheckoutOpened,
     CheckoutPublic,
     CheckoutPublicConfirmed,
@@ -208,27 +207,6 @@ async def client_get(
 ) -> Checkout:
     """Get a checkout session by client secret."""
     return await checkout_service.get_by_client_secret(session, client_secret)
-
-
-@inner_router.post(
-    "/client/",
-    summary="Create Checkout Session from Client",
-    response_model=CheckoutPublic,
-    status_code=201,
-    tags=[APITag.private],
-)
-async def client_create(
-    request: Request,
-    checkout_create: CheckoutCreatePublic,
-    auth_subject: auth.CheckoutWeb,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
-    session: AsyncSession = Depends(get_db_session),
-) -> Checkout:
-    """Create a checkout session from a client. Suitable to build checkout links."""
-    ip_address = request.client.host if request.client else None
-    return await checkout_service.client_create(
-        session, checkout_create, auth_subject, ip_geolocation_client, ip_address
-    )
 
 
 @inner_router.patch(

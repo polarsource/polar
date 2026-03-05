@@ -734,42 +734,6 @@ class TestClientGet:
 
 
 @pytest.mark.asyncio
-class TestClientCreateCheckout:
-    @pytest.mark.auth(AuthSubjectFixture(subject="user", scopes=set()))
-    async def test_missing_scope(
-        self, api_prefix: str, client: AsyncClient, product: Product
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/client/", json={"product_id": str(product.id)}
-        )
-
-        assert response.status_code == 403
-
-    async def test_anonymous(
-        self, api_prefix: str, client: AsyncClient, product: Product
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/client/", json={"product_id": str(product.id)}
-        )
-
-        assert response.status_code == 201
-
-    @pytest.mark.auth
-    async def test_user(
-        self,
-        api_prefix: str,
-        client: AsyncClient,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/client/", json={"product_id": str(product.id)}
-        )
-
-        assert response.status_code == 201
-
-
-@pytest.mark.asyncio
 class TestClientUpdate:
     async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
         response = await client.patch(

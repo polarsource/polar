@@ -69,6 +69,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
@@ -501,6 +502,16 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
 
+        # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
+        if product.has_seat_based_price:
+            customer_type = customer.type or CustomerType.individual
+            if customer_type == CustomerType.individual:
+                await customer_repository.update(
+                    customer,
+                    update_dict={"type": CustomerType.team},
+                    flush=True,
+                )
+
         await self._after_subscription_created(session, subscription)
         # ⚠️ Some users are relying on `subscription.updated` for everything
         # It was working before with Stripe since it always triggered an update
@@ -625,6 +636,17 @@ class SubscriptionService:
                 previous_status=previous_status,
                 previous_is_canceled=previous_is_canceled,
             )
+
+        # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
+        if product.has_seat_based_price:
+            customer_type = customer.type or CustomerType.individual
+            if customer_type == CustomerType.individual:
+                customer_repository = CustomerRepository.from_session(session)
+                await customer_repository.update(
+                    customer,
+                    update_dict={"type": CustomerType.team},
+                    flush=True,
+                )
 
         # Link potential discount redemption to the subscription
         if subscription.discount is not None:

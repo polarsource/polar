@@ -51,6 +51,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
@@ -391,6 +392,9 @@ class TestCreate:
         assert subscription.amount == 0
         assert subscription.currency == "usd"
         assert subscription.recurring_interval == SubscriptionRecurringInterval.month
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)

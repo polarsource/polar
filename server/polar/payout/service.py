@@ -181,6 +181,15 @@ class PayoutNotCancelable(PayoutError):
         super().__init__(message)
 
 
+class NoSyncableAttempt(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            f"Payout {payout.id} has no attempt with a provider ID that can be synced."
+        )
+        super().__init__(message, 400)
+
+
 class PayoutService:
     async def list(
         self,
@@ -424,6 +433,37 @@ class PayoutService:
             )
 
         return await attempt_repository.update(attempt, update_dict=update_dict)
+
+    async def sync_with_provider(
+        self, session: AsyncSession, payout: Payout
+    ) -> PayoutAttempt:
+        """Sync the latest payout attempt state with the payment provider.
+
+        Retrieves the current state from the provider API and updates
+        the payout attempt as if a webhook was received.
+        """
+        latest_attempt = next(
+            (
+                attempt
+                for attempt in reversed(payout.attempts)
+                if attempt.processor_id is not None
+            ),
+            None,
+        )
+        if latest_attempt is None:
+            raise NoSyncableAttempt(payout)
+
+        if latest_attempt.processor == AccountType.stripe:
+            account = payout.account
+            assert account.stripe_id is not None
+            assert latest_attempt.processor_id is not None
+            stripe_payout = await stripe_service.get_payout(
+                payout_id=latest_attempt.processor_id,
+                stripe_account=account.stripe_id,
+            )
+            return await self.update_from_stripe(session, stripe_payout)
+
+        raise NoSyncableAttempt(payout)
 
     async def trigger_stripe_payouts(self, session: AsyncSession) -> None:
         """

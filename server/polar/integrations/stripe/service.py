@@ -303,6 +303,16 @@ class StripeService:
             id, expand=expand or []
         )
 
+    async def get_payout(
+        self,
+        *,
+        payout_id: str,
+        stripe_account: str,
+    ) -> stripe_lib.Payout:
+        return await stripe_lib.Payout.retrieve_async(
+            payout_id, stripe_account=stripe_account
+        )
+
     async def create_payout(
         self,
         *,

@@ -422,24 +422,16 @@ class OrderService:
     ) -> int:
         refunds_blocked_at = utc_now() if blocked else None
 
-        # First, get all customer IDs for this organization
-        customer_ids_stmt = select(Customer.id).where(
-            Customer.organization_id == organization.id
+        # Use a subquery to let the database optimize the query execution
+        customer_subquery = (
+            select(Customer.id)
+            .where(Customer.organization_id == organization.id)
+            .scalar_subquery()
         )
-        customer_ids_result = await session.execute(customer_ids_stmt)
-        customer_ids = [row[0] for row in customer_ids_result.all()]
 
-        if not customer_ids:
-            log.info(
-                "organization.orders_refunds_blocked_changed.no_customers",
-                organization_id=organization.id,
-            )
-            return 0
-
-        # Update all orders for these customers
         stmt = (
             update(Order)
-            .where(Order.customer_id.in_(customer_ids))
+            .where(Order.customer_id.in_(customer_subquery))
             .values(refunds_blocked_at=refunds_blocked_at)
         )
 

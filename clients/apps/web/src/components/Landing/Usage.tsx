@@ -1,6 +1,7 @@
 'use client'
 
 import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { CustomerCard } from './billing/CustomerCard'
 import { Ingestion } from './billing/Ingestion'
 import { EventStream } from './EventStream'
 
@@ -16,9 +17,10 @@ export const Usage = () => {
             Usage Based Billing on Autopilot
           </h1>
         </div>
-        <div className="flex w-full flex-col gap-12 md:flex-row">
+        <div className="grid w-full grid-cols-2 grid-rows-2 gap-8">
           <Ingestion />
           <EventStream />
+          <CustomerCard />
         </div>
       </div>
     </SyntaxHighlighterProvider>

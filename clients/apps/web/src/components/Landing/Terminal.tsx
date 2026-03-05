@@ -1,6 +1,7 @@
 'use client'
 
 import { SyntaxHighlighterClient } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { twMerge } from 'tailwind-merge'
 
 // Mirror the keys accepted by SyntaxHighlighterClient (LANGUAGE_MAP is not exported)
 type Lang = 'typescript' | 'js' | 'javascript' | 'bash' | 'python'
@@ -11,6 +12,7 @@ export type TerminalFooterItem = {
 }
 
 type TerminalProps = {
+  className?: string
   title: string
   subtitle: string
   content: string
@@ -19,6 +21,7 @@ type TerminalProps = {
 }
 
 export const Terminal = ({
+  className,
   title,
   subtitle,
   content,
@@ -31,7 +34,12 @@ export const Terminal = ({
   >[0]['lang']
 
   return (
-    <div className="dark:border-polar-700 flex flex-1 flex-col rounded-2xl border border-gray-100 bg-gray-50 p-1 dark:bg-transparent">
+    <div
+      className={twMerge(
+        'dark:border-polar-700 flex flex-1 flex-col rounded-2xl border border-gray-100 bg-gray-50 p-1 dark:bg-transparent',
+        className,
+      )}
+    >
       {/* Title bar */}
       <div className="flex flex-row items-center gap-x-4 px-4 py-3 font-mono text-sm">
         <span>{title}</span>

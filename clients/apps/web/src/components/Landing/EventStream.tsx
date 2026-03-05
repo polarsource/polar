@@ -1,6 +1,6 @@
 'use client'
 
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 
 // ── Event definitions ──────────────────────────────────────────────────────────
@@ -8,47 +8,33 @@ const EVENT_DEFS = [
   {
     tag: 'API_CALL',
     color: 'text-blue-500 dark:text-blue-400',
-    pill: 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800/60',
+    pill: 'bg-blue-50 dark:bg-blue-950/60',
     valueRange: [80, 420] as [number, number],
     unit: 'ms',
   },
   {
     tag: 'TOKENS',
-    color: 'text-violet-500 dark:text-violet-400',
-    pill: 'bg-violet-50 dark:bg-violet-950/60 border-violet-200 dark:border-violet-800/60',
+    color: 'text-emerald-500 dark:text-emerald-400',
+    pill: 'bg-emerald-50 dark:bg-emerald-950/60',
     valueRange: [512, 16384] as [number, number],
-    unit: 'tok',
+    unit: 'tokens',
   },
   {
     tag: 'INFERENCE',
     color: 'text-indigo-500 dark:text-indigo-400',
-    pill: 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800/60',
+    pill: 'bg-indigo-50 dark:bg-indigo-950/60',
     valueRange: [1024, 8192] as [number, number],
-    unit: 'tok',
-  },
-  {
-    tag: 'WEBHOOK',
-    color: 'text-emerald-500 dark:text-emerald-400',
-    pill: 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60',
-    valueRange: [1, 1] as [number, number],
-    unit: 'evt',
-  },
-  {
-    tag: 'QUOTA',
-    color: 'text-amber-500 dark:text-amber-400',
-    pill: 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800/60',
-    valueRange: [60, 99] as [number, number],
-    unit: '%',
+    unit: 'tokens',
   },
 ] as const
 
 const ORG_IDS = [
-  'org_7f2a9b',
-  'org_3c1e8d',
-  'org_a4b5c6',
-  'org_9d0e1f',
-  'org_2b3c4d',
-  'org_e5f6a7',
+  'user_7f2a9b',
+  'user_3c1e8d',
+  'user_a4b5c6',
+  'user_9d0e1f',
+  'user_2b3c4d',
+  'user_e5f6a7',
 ]
 
 let _uid = 1000
@@ -71,7 +57,7 @@ function initBars() {
 // ── Component ─────────────────────────────────────────────────────────────────
 export const EventStream = () => {
   const [events, setEvents] = useState(() =>
-    Array.from({ length: 8 }, nextEvent),
+    Array.from({ length: 5 }, nextEvent),
   )
   const [bars, setBars] = useState(initBars)
   const totalRef = useRef(38_471)
@@ -79,7 +65,7 @@ export const EventStream = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setEvents((prev) => [nextEvent(), ...prev.slice(0, 7)])
+      setEvents((prev) => [nextEvent(), ...prev.slice(0, 4)])
       setBars((prev) => [...prev.slice(1), Math.random() * 0.65 + 0.12])
       totalRef.current += rand(4, 18)
       setTotal(totalRef.current)
@@ -89,8 +75,7 @@ export const EventStream = () => {
 
   return (
     <motion.div
-      className="relative flex flex-1 flex-col"
-      style={{ minHeight: 460 }}
+      className="relative flex h-fit flex-1 flex-col"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       transition={{ duration: 1.2, delay: 0.2 }}
@@ -111,50 +96,48 @@ export const EventStream = () => {
             />
             <span className="font-mono text-sm">Live Events</span>
           </div>
-          <motion.span
-            key={total}
-            className="dark:text-polar-500 font-mono text-sm text-gray-500 tabular-nums"
-            initial={{ opacity: 0.4 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
+          <span className="dark:text-polar-500 font-mono text-xs text-gray-500 tabular-nums">
             {total.toLocaleString()} ingested
-          </motion.span>
+          </span>
         </div>
 
         {/* Event log */}
-        <div className="flex flex-1 flex-col gap-y-1 overflow-hidden p-2">
-          <AnimatePresence initial={false} mode="popLayout">
-            {events.map((e) => (
-              <motion.div
-                key={e.id}
-                layout
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-                className="dark:border-polar-800 flex items-center gap-x-2.5 rounded-lg border border-gray-100 px-3 py-2"
-              >
+        <div
+          className="flex flex-col gap-y-2 overflow-auto p-2"
+          style={{ perspective: 600, perspectiveOrigin: 'center top' }}
+        >
+          {events.map((e) => (
+            <motion.div
+              key={e.id}
+              layout="position"
+              initial={{ opacity: 0, scale: 0.9, z: -40 }}
+              animate={{ opacity: 1, scale: 1, z: 0 }}
+              transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex flex-row items-center justify-between gap-x-4"
+            >
+              <div className="flex flex-row items-center gap-x-6">
                 {/* Tag */}
-                <span
-                  className={`shrink-0 rounded border px-1.5 py-px font-mono text-[9px] font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
-                >
-                  {e.def.tag}
-                </span>
+                <div className="w-16">
+                  <span
+                    className={`text-xxs w-fit shrink-0 rounded px-1 py-px font-mono font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
+                  >
+                    {e.def.tag}
+                  </span>
+                </div>
                 {/* Org */}
-                <span className="dark:text-polar-500 min-w-0 flex-1 truncate font-mono text-[10px] text-gray-500">
+                <span className="dark:text-polar-500 min-w-0 flex-1 truncate font-mono text-xs text-gray-500">
                   {e.org}
                 </span>
-                {/* Value */}
-                <span className="dark:text-polar-500 shrink-0 font-mono text-[10px] font-medium text-gray-600 tabular-nums">
-                  {e.value.toLocaleString()}{' '}
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {e.def.unit}
-                  </span>
+              </div>
+              {/* Value */}
+              <span className="dark:text-polar-500 text-xxs shrink-0 font-mono font-medium text-gray-600 tabular-nums">
+                {e.value.toLocaleString()}{' '}
+                <span className="dark:text-polar-500 text-gray-500">
+                  {e.def.unit}
                 </span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+              </span>
+            </motion.div>
+          ))}
         </div>
 
         {/* Sparkline footer */}

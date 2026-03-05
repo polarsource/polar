@@ -17,6 +17,7 @@ from polar.models import Account, Organization, Payout, PayoutAttempt, Transacti
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.payout.repository import PayoutRepository
+from polar.payout.service import NoSyncableAttempt
 from polar.payout.service import payout as payout_service
 from polar.payout.sorting import ListSorting, PayoutSortProperty
 from polar.postgres import AsyncSession, get_db_session
@@ -351,6 +352,18 @@ async def get(
                         text(f"Payout Attempts ({len(payout.attempts)})")
 
                     with tag.div(classes="flex justify-end gap-2"):
+                        if (
+                            payout.latest_attempt is not None
+                            and payout.latest_attempt.processor_id is not None
+                        ):
+                            with tag.button(
+                                classes="btn btn-secondary",
+                                hx_get=str(
+                                    request.url_for("payouts:refresh", id=payout.id)
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Refresh")
                         if can_retry:
                             with tag.button(
                                 classes="btn btn-primary",
@@ -555,3 +568,64 @@ async def cancel(
                         hx_target="#modal",
                     ):
                         text("Cancel")
+
+
+@router.api_route("/{id}/refresh", name="payouts:refresh", methods=["GET", "POST"])
+async def refresh(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    repository = PayoutRepository.from_session(session)
+    payout = await repository.get_by_id(id, options=(joinedload(Payout.account),))
+
+    if payout is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        try:
+            await payout_service.sync_with_provider(session, payout)
+        except NoSyncableAttempt:
+            await add_toast(
+                request,
+                f"Payout {payout.id} has no syncable attempt",
+                variant="error",
+            )
+        else:
+            await add_toast(
+                request,
+                f"Payout {payout.id} synced with provider",
+                variant="success",
+            )
+
+        # Close the modal and refresh the page
+        with tag.div(hx_redirect=str(request.url_for("payouts:get", id=payout.id))):
+            pass
+        return
+
+    # GET method - show confirmation modal
+    with modal(f"Refresh Payout {payout.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(f"Are you sure you want to refresh payout {payout.id}?")
+
+            with tag.p():
+                text("This will:")
+            with tag.ul(classes="list-disc list-inside"):
+                with tag.li():
+                    text("Retrieve the latest state from the payment provider")
+                with tag.li():
+                    text("Update the payout attempt status accordingly")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url_for("payouts:refresh", id=payout.id)),
+                        hx_target="#modal",
+                    ):
+                        text("Refresh")

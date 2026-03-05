@@ -98,10 +98,27 @@ After purchase, the billing manager can assign and manage seats from the **Custo
 - **Assign seats** by email, external customer ID, or existing Polar customer ID
 - **Resend invitations** for pending seats if the link expired (valid for 24 hours)
 - **Revoke seats** to remove benefits and free the seat for reassignment
+- **Reduce seat count** to lower the number of seats on the subscription (triggers a prorated credit)
 
 <Warning>
-Revoking a seat does **not** issue a refund. The billing manager continues to pay for the total number of seats in their subscription.
+**Revoking a seat** and **reducing the seat count** are different actions:
+
+- **Revoking a seat** removes a specific user's access and frees that seat for reassignment. It does **not** reduce the number of seats on the subscription, and the billing manager continues to pay for the same total.
+- **Reducing the seat count** changes the subscription quantity itself, which results in a prorated credit for the remainder of the billing period.
+
+To stop paying for an unused seat, you must reduce the seat count — not just revoke the assignment.
 </Warning>
+
+### Proration and billing adjustments
+
+When the seat count on a subscription changes mid-billing cycle, charges are prorated automatically:
+
+- **Adding seats**: The billing manager is charged immediately for the new seats, prorated for the remainder of the current billing period. The full per-seat price applies from the next billing cycle onward.
+- **Reducing seat count**: A prorated credit is applied for the removed seats, covering the unused portion of the current billing period.
+
+<Tip>
+Proration ensures billing managers only pay for seats during the time they are active. Encourage customers to adjust their seat count rather than leaving unused seats idle.
+</Tip>
 
 ## Limitations
 

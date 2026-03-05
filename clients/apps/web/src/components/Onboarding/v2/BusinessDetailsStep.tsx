@@ -4,8 +4,9 @@ import revalidate from '@/app/actions'
 import { useAuth, useOnboardingTracking } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -32,7 +33,6 @@ import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
-import { COUNTRIES } from './countries'
 
 const TEAM_SIZES = ['Just me', '2-5', '5-20', '20-50', '50+'] as const
 
@@ -317,21 +317,12 @@ export function BusinessDetailsStep() {
                     <FormItem className="w-full">
                       <FormLabel>Business Country</FormLabel>
                       <FormControl>
-                        <Select
+                        <CountryPicker
+                          allowedCountries={enums.addressInputCountryValues}
                           value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select country" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {COUNTRIES.map((c) => (
-                              <SelectItem key={c.code} value={c.code}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          onChange={field.onChange}
+                          placeholder="Select country"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -1,7 +1,9 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import { enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -23,7 +25,6 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
-import { COUNTRIES } from './countries'
 
 interface FormSchema {
   fullName: string
@@ -124,18 +125,12 @@ export function PersonalDetailsStep() {
               <FormItem className="w-full">
                 <FormLabel>Country</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CountryPicker
+                    allowedCountries={enums.addressInputCountryValues}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select country"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

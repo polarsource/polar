@@ -28,47 +28,38 @@ export function OnboardingShell({
   const currentIndex = STEPS.indexOf(step)
 
   return (
-    <div className="dark:bg-polar-950 flex h-full min-h-screen flex-col items-center bg-gray-50 px-4 py-8 md:px-8">
+    <div className="dark:bg-polar-950 flex h-full min-h-screen flex-col items-center bg-white px-4 py-8 md:px-8">
       {/* Logo */}
       <div className="mb-6">
         <LogoIcon size={36} />
       </div>
 
-      {/* Progress steps as API endpoints */}
-      <div className="mb-8 flex w-full max-w-3xl items-center gap-2 font-mono text-[11px]">
-        {STEPS.map((s, i) => {
-          const { method, path } = STEP_ENDPOINTS[i]
-          const isActive = i === currentIndex
-          const isCompleted = i < currentIndex
-          const methodColor =
-            method === 'POST'
-              ? 'text-green-600 dark:text-green-500'
-              : 'text-amber-600 dark:text-amber-500'
-          return (
-            <div key={s} className="flex flex-1 flex-col gap-1.5">
-              <div
-                className={`h-1 rounded-full transition-colors ${
-                  i <= currentIndex
-                    ? 'bg-blue-500'
-                    : 'dark:bg-polar-700 bg-gray-200'
-                }`}
-              />
-            </div>
-          )
-        })}
+      {/* Progress steps */}
+      <div className="mb-8 flex w-full max-w-4xl items-center gap-2">
+        {STEPS.map((s, i) => (
+          <div key={s} className="flex flex-1 flex-col gap-1.5">
+            <div
+              className={`h-0.5 rounded-full transition-colors ${
+                i <= currentIndex
+                  ? 'dark:bg-polar-50 bg-gray-900'
+                  : 'dark:bg-polar-700 bg-gray-200'
+              }`}
+            />
+          </div>
+        ))}
       </div>
 
-      {/* Card with form + API preview */}
+      {/* Form + API preview */}
       <div className="flex w-full max-w-4xl flex-1 items-center">
         <motion.div
           key={step}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="dark:border-polar-700 dark:bg-polar-900 flex w-full overflow-hidden rounded-3xl border border-gray-200 bg-white"
+          className="flex w-full"
         >
           {/* Left: form */}
-          <div className="flex flex-1 flex-col gap-y-8 overflow-y-auto p-8 md:p-10">
+          <div className="flex flex-1 flex-col gap-y-8 py-4 pr-8 md:pr-12">
             <div className="flex flex-col gap-y-3">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 {title}
@@ -83,7 +74,7 @@ export function OnboardingShell({
           </div>
 
           {/* Right: API preview */}
-          <div className="dark:bg-polar-950 hidden w-[340px] shrink-0 overflow-y-auto bg-gray-50 p-8 lg:block">
+          <div className="dark:border-polar-800 hidden w-[340px] shrink-0 overflow-y-auto border-l border-gray-100 py-4 pl-8 lg:block">
             <APIPreview step={step} />
           </div>
         </motion.div>

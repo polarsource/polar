@@ -11,7 +11,7 @@ import CheckoutHeroPrice from './CheckoutHeroPrice'
 
 describe('CheckoutHeroPrice', () => {
   describe('fixed price, no discount, no tax', () => {
-    it('renders the catalog price (price.priceAmount)', () => {
+    it('renders totalAmount', () => {
       const checkout = createCheckout({
         amount: 999,
         netAmount: 999,
@@ -26,7 +26,7 @@ describe('CheckoutHeroPrice', () => {
   })
 
   describe('fixed price, no discount, with tax', () => {
-    it('still renders the catalog price (does NOT include tax)', () => {
+    it('renders totalAmount (includes tax)', () => {
       const checkout = createCheckout({
         amount: 999,
         netAmount: 999,
@@ -36,7 +36,7 @@ describe('CheckoutHeroPrice', () => {
 
       render(<CheckoutHeroPrice checkout={checkout} locale="en" />)
 
-      expect(screen.getAllByText('$9.99').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('$12.49')).toBeInTheDocument()
     })
   })
 
@@ -89,7 +89,7 @@ describe('CheckoutHeroPrice', () => {
   })
 
   describe('custom (PWYW) price', () => {
-    it('renders checkout.amount', () => {
+    it('renders totalAmount', () => {
       const checkout = createCheckout({
         amount: 1550,
         netAmount: 1550,
@@ -120,7 +120,7 @@ describe('CheckoutHeroPrice', () => {
   })
 
   describe('free product', () => {
-    it('renders "Free"', () => {
+    it('renders $0', () => {
       const checkout = createCheckout({
         amount: 0,
         netAmount: 0,
@@ -131,7 +131,7 @@ describe('CheckoutHeroPrice', () => {
 
       render(<CheckoutHeroPrice checkout={checkout} locale="en" />)
 
-      expect(screen.getByText('Free')).toBeInTheDocument()
+      expect(screen.getByText('$0')).toBeInTheDocument()
     })
   })
 })

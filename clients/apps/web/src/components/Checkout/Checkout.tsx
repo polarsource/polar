@@ -16,7 +16,6 @@ import {
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
   CheckoutSeatSelector,
-  ProductPriceLabel,
 } from '@polar-sh/checkout/components'
 import {
   hasProductCheckout,
@@ -426,20 +425,9 @@ const Checkout = ({
                     </div>
                   </div>
                   <span className="text-3xl font-medium">
-                    {checkout.discount ||
-                    checkout.productPrice.amountType === 'seat_based' ? (
-                      formatCurrency('standard', locale)(
-                        checkout.totalAmount ?? checkout.netAmount ?? 0,
-                        checkout.currency ??
-                          checkout.productPrice.priceCurrency,
-                      )
-                    ) : (
-                      <ProductPriceLabel
-                        product={checkout.product}
-                        price={checkout.productPrice}
-                        locale={locale}
-                        mode="standard"
-                      />
+                    {formatCurrency('standard', locale)(
+                      checkout.totalAmount ?? checkout.netAmount ?? 0,
+                      checkout.currency ?? checkout.productPrice.priceCurrency,
                     )}
                   </span>
                 </div>

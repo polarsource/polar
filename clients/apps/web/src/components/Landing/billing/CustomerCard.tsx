@@ -7,7 +7,7 @@ const BASE_PLAN_CENTS = 49_00
 const TIER1_END = 1_000_000
 const TIER2_END = 10_000_000
 
-const INITIAL_TOKENS = 8_100_000
+const INITIAL_TOKENS = 6_100_000
 
 function calcOverageCents(tokens: number): number {
   const tier2 = Math.min(Math.max(0, tokens - TIER1_END), TIER2_END - TIER1_END)
@@ -76,7 +76,7 @@ export const CustomerCard = () => {
         {/* Tier usage */}
         <div className="dark:border-polar-800 flex flex-col gap-y-4 border-b border-gray-100 px-4 py-4">
           <div className="flex items-center justify-between">
-            <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
+            <span className="font-mono text-xs">
               {inTier3 ? 'Tier 3 · Token Usage' : 'Tier 2 · Token Usage'}
             </span>
             <motion.span
@@ -97,13 +97,13 @@ export const CustomerCard = () => {
           <SegmentedBar progress={tierProgress} />
 
           <div className="flex items-center justify-between">
-            <span className="dark:text-polar-400 font-mono text-xs text-gray-400">
+            <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
               {inTier3 ? '$0.001' : '$0.002'} / 1k tokens
             </span>
             {!inTier3 && (
               <motion.span
                 key={Math.floor(remainingM * 10)}
-                className="dark:text-polar-400 font-mono text-[10px] text-gray-400 tabular-nums"
+                className="dark:text-polar-500 font-mono text-xs text-gray-500 tabular-nums"
                 initial={{ opacity: 0.5 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
@@ -116,18 +116,18 @@ export const CustomerCard = () => {
 
         {/* Line items */}
         <div className="flex flex-col px-4 py-3">
-          <LineItem label="Base subscription" value={fmt(BASE_PLAN_CENTS)} />
+          <LineItem label="Pro Subscription" value={fmt(BASE_PLAN_CENTS)} />
           <LineItem
-            label="Token overages"
+            label="Token Overages"
             value={fmt(overageCents)}
             animKey={overageCents}
           />
-          <div className="dark:border-polar-800 my-2 border-t border-dashed border-gray-100" />
+          <div className="dark:border-polar-700 my-2 border-t border-dashed border-gray-100" />
           <LineItem
             label="Total this period"
             value={fmt(totalCents)}
-            bold
             animKey={totalCents}
+            bold
           />
         </div>
       </div>
@@ -145,7 +145,7 @@ const SegmentedBar = ({ progress }: { progress: number }) => {
       {Array.from({ length: SEGMENTS }, (_, i) => (
         <div
           key={i}
-          className={`h-2 flex-1 transition-colors duration-500 ${i < filled ? 'bg-black dark:bg-white' : 'bg-gray-100 dark:bg-white/10'}`}
+          className={`h-2 flex-1 transition-colors duration-500 ${i < filled ? 'bg-black dark:bg-white' : 'dark:bg-polar-700 bg-gray-200'}`}
         />
       ))}
     </div>
@@ -155,20 +155,20 @@ const SegmentedBar = ({ progress }: { progress: number }) => {
 const LineItem = ({
   label,
   value,
-  bold,
   animKey,
+  bold,
 }: {
   label: string
   value: string
-  bold?: boolean
   animKey?: number
+  bold?: boolean
 }) => {
   const labelCls = bold
-    ? 'font-mono text-sm font-medium'
+    ? 'font-mono text-sm'
     : 'dark:text-polar-500 font-mono text-sm text-gray-500'
   const valueCls = bold
-    ? 'font-mono text-sm font-medium tabular-nums'
-    : 'dark:text-polar-500 font-mono text-sm text-gray-600 tabular-nums'
+    ? 'font-mono tabular-nums text-sm'
+    : 'dark:text-polar-500 font-mono text-sm text-gray-500 tabular-nums'
 
   return (
     <div className="flex items-center justify-between py-1">

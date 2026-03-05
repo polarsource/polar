@@ -35,7 +35,7 @@ export function OnboardingShell({
       </div>
 
       {/* Progress steps as API endpoints */}
-      <div className="mb-8 flex w-full max-w-5xl items-center gap-2 font-mono text-[11px]">
+      <div className="mb-8 flex w-full max-w-3xl items-center gap-2 font-mono text-[11px]">
         {STEPS.map((s, i) => {
           const { method, path } = STEP_ENDPOINTS[i]
           const isActive = i === currentIndex
@@ -59,7 +59,7 @@ export function OnboardingShell({
       </div>
 
       {/* Card with form + API preview */}
-      <div className="flex w-full max-w-5xl flex-1 items-center">
+      <div className="flex w-full max-w-4xl flex-1 items-center">
         <motion.div
           key={step}
           initial={{ opacity: 0, y: 12 }}

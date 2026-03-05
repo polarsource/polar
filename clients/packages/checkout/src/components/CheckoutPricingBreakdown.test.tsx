@@ -321,8 +321,7 @@ describe('CheckoutPricingBreakdown', () => {
   })
 
   describe('trial section', () => {
-    it('shows trial duration and end date', () => {
-      const trialEnd = new Date('2026-04-05T00:00:00Z')
+    it('shows "Total after trial" and "Due today" $0', () => {
       const checkout = createBaseCheckout({
         amount: 999,
         net_amount: 999,
@@ -330,14 +329,47 @@ describe('CheckoutPricingBreakdown', () => {
         total_amount: 999,
         active_trial_interval: 'month',
         active_trial_interval_count: 1,
-        trial_end: trialEnd.toISOString(),
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/1 month trial/i)).toBeInTheDocument()
-      expect(screen.getByText(/Free/)).toBeInTheDocument()
-      expect(screen.getByText(/Trial ends/i)).toBeInTheDocument()
+      expect(screen.getByText('Total after trial')).toBeInTheDocument()
+      expect(screen.getByText('Due today')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('detail-row-Due today').textContent,
+      ).toContain('$0')
+      // Should NOT show "Total after discount" when there's no discount
+      expect(
+        screen.queryByText('Total after discount'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows "Total after discount" when there is an expiring discount', () => {
+      const checkout = createBaseCheckout({
+        amount: 999,
+        discount_amount: 500,
+        net_amount: 499,
+        tax_amount: null,
+        total_amount: 499,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
+        discount: {
+          id: 'disc_1',
+          name: '50% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basis_points: 5000,
+        } satisfies schemas['CheckoutPublic']['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByText('Total after discount')).toBeInTheDocument()
+      expect(screen.getByText('Total after trial')).toBeInTheDocument()
+      expect(screen.getByText('Due today')).toBeInTheDocument()
     })
   })
 

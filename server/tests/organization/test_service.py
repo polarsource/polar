@@ -16,7 +16,11 @@ from polar.models.organization import (
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
-from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
+from polar.organization.schemas import (
+    OrganizationCreate,
+    OrganizationFeatureSettings,
+    OrganizationUpdate,
+)
 from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
 from polar.organization_review.schemas import ReviewVerdict
@@ -1811,3 +1815,100 @@ class TestSoftDeleteOrganization:
 
         assert result.details == {}  # type: ignore[comparison-overlap]
         assert result.socials == []
+
+
+@pytest.mark.asyncio
+class TestUpdateSeatBasedPricing:
+    async def test_enable_seat_based_pricing_with_member_model(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": False,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                feature_settings=OrganizationFeatureSettings(
+                    seat_based_pricing_enabled=True,
+                ),
+            ),
+        )
+
+        assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+    async def test_enable_seat_based_pricing_without_member_model(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": False,
+            "seat_based_pricing_enabled": False,
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.update(
+                session,
+                organization,
+                OrganizationUpdate(
+                    feature_settings=OrganizationFeatureSettings(
+                        seat_based_pricing_enabled=True,
+                    ),
+                ),
+            )
+
+    async def test_disable_seat_based_pricing_when_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.update(
+                session,
+                organization,
+                OrganizationUpdate(
+                    feature_settings=OrganizationFeatureSettings(
+                        seat_based_pricing_enabled=False,
+                    ),
+                ),
+            )
+
+    async def test_keep_seat_based_pricing_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                feature_settings=OrganizationFeatureSettings(
+                    seat_based_pricing_enabled=True,
+                ),
+            ),
+        )
+
+        assert result.feature_settings["seat_based_pricing_enabled"] is True

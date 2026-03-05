@@ -190,6 +190,82 @@ class TestUpdateOrganization:
         error_detail = response.json()["detail"]
         assert any("previous_annual_revenue" in str(error) for error in error_detail)
 
+    @pytest.mark.auth
+    async def test_enable_seat_based_pricing_with_member_model(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": False,
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "feature_settings": {
+                    "seat_based_pricing_enabled": True,
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["feature_settings"]["seat_based_pricing_enabled"] is True
+
+    @pytest.mark.auth
+    async def test_enable_seat_based_pricing_without_member_model(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": False,
+            "seat_based_pricing_enabled": False,
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "feature_settings": {
+                    "seat_based_pricing_enabled": True,
+                },
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_disable_seat_based_pricing_when_enabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "feature_settings": {
+                    "seat_based_pricing_enabled": False,
+                },
+            },
+        )
+
+        assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 class TestInviteOrganization:

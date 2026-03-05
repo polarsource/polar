@@ -52,6 +52,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
@@ -365,6 +366,120 @@ class TestCreate:
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    async def test_valid_free_seat_based(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_seat_based.id,
+            customer_id=customer.id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.product_id == product_recurring_free_seat_based.id
+        assert subscription.customer_id == customer.id
+        assert subscription.seats == 1
+        assert subscription.amount == 0
+        assert subscription.currency == "usd"
+        assert subscription.recurring_interval == SubscriptionRecurringInterval.month
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
+
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    async def test_paid_seat_based_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
+
+    async def test_mixed_tier_seat_based_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Product with multi-tier pricing where tier 1 is $0/seat but tier 2 is $10/seat."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        # Create a seat price with mixed tiers manually
+        price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": 5, "price_per_seat": 0},
+                    {"min_seats": 6, "max_seats": None, "price_per_seat": 1000},
+                ]
+            },
+            product=product,
+        )
+        await save_fixture(price)
+        product.prices.append(price)
+        product.all_prices.append(price)
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
 
 
 @pytest.mark.asyncio

@@ -1304,6 +1304,18 @@ async def product_recurring_free_price(
 
 
 @pytest_asyncio.fixture
+async def product_recurring_free_seat_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[("seat", 0, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
 async def product_recurring_metered(
     save_fixture: SaveFixture, organization: Organization, meter: Meter
 ) -> Product:

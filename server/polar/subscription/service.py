@@ -68,6 +68,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
@@ -82,8 +83,8 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.product.guard import (
     is_custom_price,
+    is_effectively_free_price,
     is_fixed_price,
-    is_free_price,
     is_recurring_product,
     is_seat_price,
     is_static_price,
@@ -409,7 +410,7 @@ class SubscriptionService:
             default_price := PriceSet.from_product(
                 product, product.organization.default_presentment_currency
             ).get_default_price()
-        ) and not is_free_price(default_price):
+        ) and not is_effectively_free_price(default_price):
             errors.append(
                 {
                     "type": "value_error",
@@ -461,10 +462,19 @@ class SubscriptionService:
 
         currency = product.organization.default_presentment_currency
         currency_prices = PriceSet.from_product(product, currency)
+
+        # For seat-based products, determine initial seats from the price tiers
+        seats: int | None = None
+        if product.has_seat_based_price:
+            for p in currency_prices:
+                if is_seat_price(p):
+                    seats = p.get_minimum_seats()
+                    break
+
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in currency_prices:
             subscription_product_prices.append(
-                SubscriptionProductPrice.from_price(price)
+                SubscriptionProductPrice.from_price(price, seats=seats)
             )
 
         current_period_start = utc_now()
@@ -484,11 +494,22 @@ class SubscriptionService:
             customer=customer,
             subscription_product_prices=subscription_product_prices,
             currency=currency,
+            seats=seats,
             user_metadata=subscription_create.metadata,
         )
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
+
+        # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
+        if product.has_seat_based_price:
+            customer_type = customer.type or CustomerType.individual
+            if customer_type == CustomerType.individual:
+                await customer_repository.update(
+                    customer,
+                    update_dict={"type": CustomerType.team},
+                    flush=True,
+                )
 
         await self._after_subscription_created(session, subscription)
         # ⚠️ Some users are relying on `subscription.updated` for everything
@@ -614,6 +635,17 @@ class SubscriptionService:
                 previous_status=previous_status,
                 previous_is_canceled=previous_is_canceled,
             )
+
+        # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
+        if product.has_seat_based_price:
+            customer_type = customer.type or CustomerType.individual
+            if customer_type == CustomerType.individual:
+                customer_repository = CustomerRepository.from_session(session)
+                await customer_repository.update(
+                    customer,
+                    update_dict={"type": CustomerType.team},
+                    flush=True,
+                )
 
         # Link potential discount redemption to the subscription
         if subscription.discount is not None:

@@ -56,7 +56,7 @@ interface FormSchema {
 
 export function ProductDetailsStep() {
   const router = useRouter()
-  const { data, updateData } = useOnboardingData()
+  const { data, updateData, showApiResponse } = useOnboardingData()
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -98,7 +98,7 @@ export function ProductDetailsStep() {
     [pricingModel],
   )
 
-  const onSubmit = (formData: FormSchema) => {
+  const onSubmit = async (formData: FormSchema) => {
     updateData({
       sellingCategories: formData.sellingCategories,
       productDescription: formData.productDescription,
@@ -107,6 +107,7 @@ export function ProductDetailsStep() {
       currentlySellingOn: formData.currentlySellingOn,
       productWebsite: formData.productWebsite,
     })
+    await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
   }
 

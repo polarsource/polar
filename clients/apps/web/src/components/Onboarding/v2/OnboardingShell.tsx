@@ -5,6 +5,13 @@ import type { ReactNode } from 'react'
 import LogoIcon from '../../Brand/logos/LogoIcon'
 import { APIPreview } from './APIPreview'
 
+const STEPS = ['personal', 'business', 'product'] as const
+const STEP_ENDPOINTS = [
+  { method: 'POST', path: '/v1/organizations' },
+  { method: 'PATCH', path: '/v1/organizations/:id' },
+  { method: 'PATCH', path: '/v1/organizations/:id' },
+] as const
+
 interface OnboardingShellProps {
   title: string
   subtitle?: string
@@ -18,11 +25,37 @@ export function OnboardingShell({
   step,
   children,
 }: OnboardingShellProps) {
+  const currentIndex = STEPS.indexOf(step)
+
   return (
     <div className="dark:bg-polar-950 flex h-full min-h-screen flex-col items-center bg-gray-50 px-4 py-8 md:px-8">
       {/* Logo */}
-      <div className="mb-12">
+      <div className="mb-6">
         <LogoIcon size={36} />
+      </div>
+
+      {/* Progress steps as API endpoints */}
+      <div className="mb-8 flex w-full max-w-5xl items-center gap-2 font-mono text-[11px]">
+        {STEPS.map((s, i) => {
+          const { method, path } = STEP_ENDPOINTS[i]
+          const isActive = i === currentIndex
+          const isCompleted = i < currentIndex
+          const methodColor =
+            method === 'POST'
+              ? 'text-green-600 dark:text-green-500'
+              : 'text-amber-600 dark:text-amber-500'
+          return (
+            <div key={s} className="flex flex-1 flex-col gap-1.5">
+              <div
+                className={`h-1 rounded-full transition-colors ${
+                  i <= currentIndex
+                    ? 'bg-blue-500'
+                    : 'dark:bg-polar-700 bg-gray-200'
+                }`}
+              />
+            </div>
+          )
+        })}
       </div>
 
       {/* Card with form + API preview */}

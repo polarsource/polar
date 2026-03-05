@@ -48,6 +48,7 @@ interface OnboardingContextValue {
   /** Show a mock API response in the preview, auto-clears after duration */
   showApiResponse: (status: number, message: string) => Promise<void>
   apiResponse: { status: number; message: string } | null
+  apiPending: boolean
 }
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null)
@@ -74,6 +75,7 @@ function saveToSession(data: OnboardingData): void {
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(loadFromSession)
   const [apiResponse, setApiResponse] = useState<{ status: number; message: string } | null>(null)
+  const [apiPending, setApiPending] = useState(false)
 
   useEffect(() => {
     saveToSession(data)
@@ -91,18 +93,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const showApiResponse = useCallback((status: number, message: string) => {
+    setApiResponse({ status, message })
     return new Promise<void>((resolve) => {
-      setApiResponse({ status, message })
       setTimeout(() => {
         setApiResponse(null)
         resolve()
-      }, 1200)
+      }, 2500)
     })
   }, [])
 
   const value = useMemo(
-    () => ({ data, updateData, clearData, showApiResponse, apiResponse }),
-    [data, updateData, clearData, showApiResponse, apiResponse],
+    () => ({ data, updateData, clearData, showApiResponse, apiResponse, apiPending }),
+    [data, updateData, clearData, showApiResponse, apiResponse, apiPending],
   )
 
   return (

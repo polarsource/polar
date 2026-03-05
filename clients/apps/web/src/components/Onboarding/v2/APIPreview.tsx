@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+
 import { useOnboardingData } from './OnboardingContext'
 
-const ENDPOINT_MAP = {
-  personal: '/v1/organizations',
-  business: '/v1/organizations',
-  product: '/v1/products',
+const STEP_CONFIG = {
+  personal: { method: 'POST', path: '/v1/organizations' },
+  business: { method: 'PATCH', path: '/v1/organizations/:id' },
+  product: { method: 'PATCH', path: '/v1/organizations/:id' },
 } as const
 
 interface Line {
@@ -56,7 +57,7 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
     }
   }, [step, data])
 
-  const endpoint = ENDPOINT_MAP[step]
+  const { method, path } = STEP_CONFIG[step]
   const lines = useMemo(() => buildLines(body), [body])
 
   // Track which lines changed to flash them (debounced so typing doesn't perma-highlight)
@@ -76,14 +77,12 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
       }
     }
 
-    // Update stored fingerprints
     const next = new Map<string, string>()
     for (const line of lines) {
       next.set(line.key, line.fingerprint)
     }
     prevFingerprints.current = next
 
-    // Debounce: wait for typing to pause before flashing
     clearTimeout(debounceTimer.current)
     debounceTimer.current = setTimeout(() => {
       if (pendingChanges.current.size > 0) {
@@ -100,20 +99,37 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
     }
   }, [lines])
 
+  const methodColor = method === 'POST'
+    ? 'text-green-600 dark:text-green-500'
+    : 'text-amber-600 dark:text-amber-500'
+
   return (
-    <div className="flex flex-col gap-4 font-mono text-xs">
-      <div className="inline-flex self-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-[11px] dark:border-gray-800 dark:bg-gray-900/50">
-        <span className="font-semibold text-green-600 dark:text-green-500">POST</span>
-        <span className="ml-1.5 text-gray-500 dark:text-gray-600">{endpoint}</span>
+    <div className="flex flex-col font-mono text-[11px]">
+      {/* Request header */}
+      <div className="flex flex-col gap-1.5 border-b border-gray-200 pb-3 dark:border-gray-800">
+        <div className="flex items-center gap-2">
+          <span className={`font-semibold ${methodColor}`}>{method}</span>
+          <span className="text-gray-400 dark:text-gray-600">{path}</span>
+        </div>
+        <div className="flex flex-col gap-0.5 text-[10px] text-gray-400 dark:text-gray-600">
+          <span>Host: api.polar.sh</span>
+          <span>Content-Type: application/json</span>
+          <span>Authorization: Bearer polar_sk_Ymlyaw==</span>
+        </div>
       </div>
+
+      {/* Request body label */}
+      <div className="pb-2 pt-3 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-600">
+        Request Body
+      </div>
+
+      {/* JSON body with line numbers */}
       <div className="flex">
-        {/* Line numbers */}
-        <div className="mr-4 flex flex-col items-end select-none text-gray-300 dark:text-gray-700">
+        <div className="mr-3 flex flex-col items-end select-none text-gray-300 dark:text-gray-700">
           {lines.map((_, i) => (
             <span key={i} className="leading-relaxed">{i + 1}</span>
           ))}
         </div>
-        {/* Code */}
         <pre className="flex-1 leading-relaxed">
           {lines.map((line, i) => {
             const isFlashed = flashedKeys.has(line.key)
@@ -135,22 +151,38 @@ export function APIPreview({ step }: { step: 'personal' | 'business' | 'product'
         </pre>
       </div>
 
-      {/* API Response */}
+      {/* Response — shows 201 badge + response body */}
       {apiResponse && (
-        <div className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4 font-mono dark:border-gray-800">
-          <span className="text-[11px] font-semibold text-green-600 dark:text-green-500">
-            {apiResponse.status} {apiResponse.message}
-          </span>
-          <div className="h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-            <div className="h-full animate-pulse rounded-full bg-green-500" style={{ width: '100%' }} />
+        <div className="mt-3 flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              {apiResponse.status}
+            </span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-500">
+              {apiResponse.message}
+            </span>
           </div>
+
+          <div className="pb-2 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-600">
+            Response Body
+          </div>
+          <pre className="leading-relaxed text-gray-500 dark:text-gray-500">
+            {'{\n'}
+            {'  '}<span className="text-blue-600 dark:text-blue-400">{'"id"'}</span>
+            <span className="text-gray-400">: </span>
+            <span className="text-green-600 dark:text-green-400">{'"org_•••"'}</span>
+            {',\n'}
+            {'  '}<span className="text-blue-600 dark:text-blue-400">{'"created_at"'}</span>
+            <span className="text-gray-400">: </span>
+            <span className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</span>
+            {'\n}'}
+          </pre>
         </div>
       )}
     </div>
   )
 }
 
-/** Convert the object into an array of keyed lines with fingerprints for change detection. */
 function buildLines(obj: Record<string, unknown>): Line[] {
   const entries = Object.entries(obj)
   if (entries.length === 0) {
@@ -248,3 +280,4 @@ function JsonValue({ value }: { value: unknown }) {
   }
   return <span className="text-gray-400">null</span>
 }
+

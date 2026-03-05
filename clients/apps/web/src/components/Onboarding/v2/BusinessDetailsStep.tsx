@@ -54,7 +54,7 @@ export function BusinessDetailsStep() {
   const router = useRouter()
   const { currentUser, setUserOrganizations } = useAuth()
   const { trackStepCompleted } = useOnboardingTracking()
-  const { data, updateData } = useOnboardingData()
+  const { data, updateData, showApiResponse } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [editingSlug, setEditingSlug] = useState(false)
 
@@ -89,6 +89,9 @@ export function BusinessDetailsStep() {
   const defaultCurrency = watch('defaultCurrency')
   const terms = watch('terms')
   const ventureBacked = watch('ventureBacked')
+  const website = watch('website')
+  const supportEmail = watch('supportEmail')
+  const mainInvestor = watch('mainInvestor')
 
   useEffect(() => {
     if (!editingSlug && orgName) {
@@ -113,34 +116,15 @@ export function BusinessDetailsStep() {
       organizationType,
       businessCountry,
       teamSize,
+      website,
+      supportEmail,
+      ventureBacked,
+      mainInvestor,
     })
-  }, [orgName, orgSlug, defaultCurrency, organizationType, businessCountry, teamSize, updateData])
+  }, [orgName, orgSlug, defaultCurrency, organizationType, businessCountry, teamSize, website, supportEmail, ventureBacked, mainInvestor, updateData])
 
   const onSubmit = async (formData: FormSchema) => {
     if (!formData.terms) return
-
-    const orgParams: schemas['OrganizationCreate'] = {
-      name: formData.orgName,
-      slug: formData.orgSlug,
-      default_presentment_currency:
-        formData.defaultCurrency as schemas['PresentmentCurrency'],
-    }
-
-    const { data: organization, error } =
-      await createOrganization.mutateAsync(orgParams)
-
-    if (error) {
-      if (error.detail) {
-        setValidationErrors(error.detail, setError)
-      }
-      return
-    }
-
-    await revalidate(`organizations:${organization.slug}`, { expire: 0 })
-    await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
-    setUserOrganizations((orgs) => [...orgs, organization])
-
-    trackStepCompleted('business', organization.id)
 
     updateData({
       organizationType: formData.organizationType,
@@ -153,9 +137,9 @@ export function BusinessDetailsStep() {
       teamSize: formData.teamSize,
       ventureBacked: formData.ventureBacked,
       mainInvestor: formData.mainInvestor,
-      organizationId: organization.id,
     })
 
+    await showApiResponse(200, 'OK')
     router.push('/onboarding/product')
   }
 
@@ -182,7 +166,15 @@ export function BusinessDetailsStep() {
                       <button
                         key={type}
                         type="button"
-                        onClick={() => field.onChange(type)}
+                        onClick={() => {
+                          field.onChange(type)
+                          if (type === 'individual') {
+                            setValue('businessCountry', '')
+                            setValue('teamSize', '')
+                            setValue('ventureBacked', false)
+                            setValue('mainInvestor', '')
+                          }
+                        }}
                         className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                           field.value === type
                             ? 'border-blue-500 bg-blue-500 font-medium text-white'
@@ -484,7 +476,7 @@ export function BusinessDetailsStep() {
 
           <Button
             type="submit"
-            loading={createOrganization.isPending}
+            loading={false}
             disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
             fullWidth
           >

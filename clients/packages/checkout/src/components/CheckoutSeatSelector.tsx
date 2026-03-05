@@ -258,7 +258,10 @@ const CheckoutSeatSelector = ({
     <div className="flex flex-col gap-6">
       {/* Total Amount Display */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-light text-gray-900 dark:text-white">
+        <h1
+          className="text-3xl font-light text-gray-900 dark:text-white"
+          data-testid="headline-price"
+        >
           {formatCurrency('compact', locale)(netAmount, currency)}
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">

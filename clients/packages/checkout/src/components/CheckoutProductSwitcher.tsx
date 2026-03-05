@@ -22,6 +22,44 @@ import { capitalize, decapitalize } from '../utils/string'
 import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
+export interface CheckoutProductSwitcherItemPriceProps {
+  isSelected: boolean
+  product: ProductCheckoutPublic['product']
+  price: ProductPrice | LegacyRecurringProductPrice
+  checkout: ProductCheckoutPublic
+  locale?: AcceptedLocale
+}
+
+export const CheckoutProductSwitcherItemPrice = ({
+  isSelected,
+  product,
+  price,
+  checkout,
+  locale,
+}: CheckoutProductSwitcherItemPriceProps) => {
+  if (isSelected && price.amountType === 'seat_based') {
+    return (
+      <AmountLabel
+        amount={checkout.netAmount || 0}
+        currency={price.priceCurrency}
+        interval={product.recurringInterval}
+        intervalCount={product.recurringIntervalCount}
+        mode="standard"
+        locale={locale}
+      />
+    )
+  }
+
+  return (
+    <ProductPriceLabel
+      product={product}
+      price={price}
+      locale={locale}
+      mode="standard"
+    />
+  )
+}
+
 interface CheckoutProductSwitcherProps {
   checkout: ProductCheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
@@ -175,23 +213,13 @@ const CheckoutProductSwitcher = ({
             </span>
           </div>
           <span className="dark:text-polar-400 shrink-0 text-sm text-gray-500">
-            {item.isSelected && item.price.amountType === 'seat_based' ? (
-              <AmountLabel
-                amount={checkout.netAmount || 0}
-                currency={item.price.priceCurrency}
-                interval={item.product.recurringInterval}
-                intervalCount={item.product.recurringIntervalCount}
-                mode="standard"
-                locale={locale}
-              />
-            ) : (
-              <ProductPriceLabel
-                product={item.product}
-                price={item.price}
-                locale={locale}
-                mode="standard"
-              />
-            )}
+            <CheckoutProductSwitcherItemPrice
+              isSelected={item.isSelected}
+              product={item.product}
+              price={item.price}
+              checkout={checkout}
+              locale={locale}
+            />
           </span>
         </label>
       ))}

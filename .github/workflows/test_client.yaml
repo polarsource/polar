@@ -71,5 +71,8 @@ jobs:
       - name: "🧪 Test: @polar-sh/currency"
         run: pnpm --filter @polar-sh/currency test
 
+      - name: "🧪 Test: @polar-sh/checkout"
+        run: pnpm --filter @polar-sh/checkout test
+
       - name: 🛠️ Build
         run: pnpm build

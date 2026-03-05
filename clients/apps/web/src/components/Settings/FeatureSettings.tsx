@@ -1,6 +1,6 @@
 'use client'
 
-import { useUpdateOrganization } from '@/hooks/queries'
+import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -62,10 +62,11 @@ export default function FeatureSettings({
   const [showSeatBasedModal, setShowSeatBasedModal] = useState(false)
   const seatBasedFieldRef = useRef<{ onChange: (value: boolean) => void }>(null)
 
-  const memberModelEnabled =
-    !!organization.feature_settings?.member_model_enabled
-  const seatBasedAlreadyEnabled =
-    !!organization.feature_settings?.seat_based_pricing_enabled
+  const { data: liveOrg } = useOrganization(organization.id)
+  const featureSettings = liveOrg?.feature_settings ?? organization.feature_settings
+
+  const memberModelEnabled = !!featureSettings?.member_model_enabled
+  const seatBasedAlreadyEnabled = !!featureSettings?.seat_based_pricing_enabled
 
   const handleSeatBasedConfirm = useCallback(() => {
     seatBasedFieldRef.current?.onChange?.(true)

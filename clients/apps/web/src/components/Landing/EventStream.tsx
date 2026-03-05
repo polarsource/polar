@@ -75,7 +75,7 @@ export const EventStream = () => {
 
   return (
     <motion.div
-      className="relative flex h-fit flex-1 flex-col"
+      className="relative flex h-full flex-1 flex-col"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       transition={{ duration: 1.2, delay: 0.2 }}
@@ -103,7 +103,7 @@ export const EventStream = () => {
 
         {/* Event log */}
         <div
-          className="flex flex-col gap-y-2 overflow-auto p-2"
+          className="flex grow flex-col gap-y-2 overflow-auto p-2"
           style={{ perspective: 600, perspectiveOrigin: 'center top' }}
         >
           {events.map((e) => (

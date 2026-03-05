@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, or_, select
+from sqlalchemy import Select, String, and_, case, func, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -45,7 +45,7 @@ from polar.models import (
 from polar.kit.utils import utc_now
 from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_reminder import SubscriptionReminder, SubscriptionReminderType
+from polar.models.sent_email import SentEmail
 from polar.product.guard import is_metered_price
 
 from .sorting import SubscriptionSortProperty
@@ -225,13 +225,21 @@ class SubscriptionRepository(
             ),
         )
 
-        # Check no reminder already sent for this period
+        # Check no reminder already sent for this period via sent_emails table.
+        # The idempotency_key format is:
+        #   subscription_renewal_reminder:{sub_id}:{epoch_seconds}
         already_sent = (
-            select(SubscriptionReminder.id)
+            select(SentEmail.id)
             .where(
-                SubscriptionReminder.subscription_id == Subscription.id,
-                SubscriptionReminder.type == SubscriptionReminderType.renewal,
-                SubscriptionReminder.target_date == Subscription.current_period_end,
+                SentEmail.idempotency_key == func.concat(
+                    "subscription_renewal_reminder:",
+                    func.cast(Subscription.id, String),
+                    ":",
+                    func.cast(
+                        func.extract("epoch", Subscription.current_period_end),
+                        String,
+                    ),
+                ),
             )
             .exists()
         )
@@ -285,12 +293,20 @@ class SubscriptionRepository(
         one_day_end = now + timedelta(days=1) + timedelta(hours=window_hours)
 
         # Check no reminder already sent for this subscription's conversion date
+        # via sent_emails table. Key format:
+        #   subscription_trial_conversion_reminder:{sub_id}:{epoch_seconds}
         already_sent = (
-            select(SubscriptionReminder.id)
+            select(SentEmail.id)
             .where(
-                SubscriptionReminder.subscription_id == Subscription.id,
-                SubscriptionReminder.type == SubscriptionReminderType.trial_conversion,
-                SubscriptionReminder.target_date == conversion_date,
+                SentEmail.idempotency_key == func.concat(
+                    "subscription_trial_conversion_reminder:",
+                    func.cast(Subscription.id, String),
+                    ":",
+                    func.cast(
+                        func.extract("epoch", conversion_date),
+                        String,
+                    ),
+                ),
             )
             .exists()
         )

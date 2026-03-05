@@ -55,8 +55,9 @@ class EmailSender(ABC):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
-        pass
+    ) -> str | None:
+        """Send an email and return the processor ID if available."""
+        ...
 
 
 class LoggingEmailSender(EmailSender):
@@ -72,7 +73,7 @@ class LoggingEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         log.info(
             "Sending an email",
             to_email_addr=to_ascii_email(to_email_addr),
@@ -80,6 +81,7 @@ class LoggingEmailSender(EmailSender):
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
         )
+        return None
 
 
 class ResendEmailSender(EmailSender):
@@ -101,7 +103,7 @@ class ResendEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         to_email_addr_ascii = to_ascii_email(to_email_addr)
         payload: dict[str, Any] = {
             "from": f"{from_name} <{to_ascii_email(from_email_addr)}>",
@@ -137,12 +139,14 @@ class ResendEmailSender(EmailSender):
             )
             raise SendEmailError(str(e)) from e
 
+        processor_id: str = email["id"]
         log.info(
             "resend.send",
             to_email_addr=to_email_addr_ascii,
             subject=subject,
-            email_id=email["id"],
+            email_id=processor_id,
         )
+        return processor_id
 
 
 class EmailFromReply(TypedDict):
@@ -150,6 +154,17 @@ class EmailFromReply(TypedDict):
     from_email_addr: str
     reply_to_name: str
     reply_to_email_addr: str
+
+
+class EmailMetadata(TypedDict, total=False):
+    """Optional metadata for email tracking in the sent_emails table."""
+
+    email_type: str  # EmailTemplate value
+    organization_id: str  # UUID as string for serialization
+    customer_id: str  # UUID as string for serialization
+    user_id: str  # UUID as string for serialization
+    props: dict[str, Any]  # Template props
+    idempotency_key: str  # Dedup key
 
 
 def enqueue_email(
@@ -162,6 +177,7 @@ def enqueue_email(
     reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
     reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     attachments: Iterable[Attachment] | None = None,
+    metadata: EmailMetadata | None = None,
 ) -> None:
     enqueue_job(
         "email.send",
@@ -174,6 +190,7 @@ def enqueue_email(
         reply_to_name=reply_to_name,
         reply_to_email_addr=reply_to_email_addr,
         attachments=attachments,
+        metadata=metadata,
     )
 
 

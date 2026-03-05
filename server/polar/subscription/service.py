@@ -2316,12 +2316,16 @@ class SubscriptionService:
     ) -> None:
         assert subscription.current_period_end is not None
         renewal_date = subscription.current_period_end.strftime("%B %-d, %Y")
+        epoch = subscription.current_period_end.timestamp()
         return await self._send_customer_email(
             session,
             subscription,
             subject_template="Your {product.name} subscription renews soon",
             template_name="subscription_renewal_reminder",
             extra_context={"renewal_date": renewal_date},
+            extra_metadata={
+                "idempotency_key": f"subscription_renewal_reminder:{subscription.id}:{epoch}",
+            },
         )
 
     async def send_trial_conversion_reminder_email(
@@ -2330,12 +2334,16 @@ class SubscriptionService:
         conversion_date = subscription.trial_end or subscription.current_period_end
         assert conversion_date is not None
         conversion_date_str = conversion_date.strftime("%B %-d, %Y")
+        epoch = conversion_date.timestamp()
         return await self._send_customer_email(
             session,
             subscription,
             subject_template="Your {product.name} trial ends soon",
             template_name="subscription_trial_conversion_reminder",
             extra_context={"conversion_date": conversion_date_str},
+            extra_metadata={
+                "idempotency_key": f"subscription_trial_conversion_reminder:{subscription.id}:{epoch}",
+            },
         )
 
     async def _send_customer_email(
@@ -2354,6 +2362,7 @@ class SubscriptionService:
             "subscription_trial_conversion_reminder",
         ],
         extra_context: dict[str, Any] | None = None,
+        extra_metadata: dict[str, Any] | None = None,
     ) -> None:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
@@ -2415,6 +2424,12 @@ class SubscriptionService:
             to_email_addr=subscription.customer.email,
             subject=subject,
             html_content=body,
+            metadata={
+                "email_type": template_name,
+                "organization_id": str(organization.id),
+                "customer_id": str(customer.id),
+                **(extra_metadata or {}),
+            },
         )
 
     async def _get_outdated_grants(

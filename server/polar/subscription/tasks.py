@@ -8,13 +8,9 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
+from polar.models.subscription import SubscriptionStatus
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from sqlalchemy import select
-
-from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_reminder import SubscriptionReminder, SubscriptionReminderType
-from polar.subscription.reminder_repository import SubscriptionReminderRepository
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -155,30 +151,8 @@ async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
         ):
             return
 
-        assert subscription.current_period_end is not None
-
-        # Check not already sent (race condition guard)
-        reminder_repository = SubscriptionReminderRepository.from_session(session)
-        result = await session.execute(
-            select(SubscriptionReminder).where(
-                SubscriptionReminder.subscription_id == subscription_id,
-                SubscriptionReminder.type == SubscriptionReminderType.renewal,
-                SubscriptionReminder.target_date == subscription.current_period_end,
-            )
-        )
-        if result.scalar_one_or_none() is not None:
-            return
-
+        # Dedup is handled by the idempotency_key in the email_send actor
         await subscription_service.send_renewal_reminder_email(session, subscription)
-
-        await reminder_repository.create(
-            SubscriptionReminder(
-                subscription_id=subscription_id,
-                type=SubscriptionReminderType.renewal,
-                target_date=subscription.current_period_end,
-                sent_at=utc_now(),
-            )
-        )
 
 
 @actor(
@@ -216,30 +190,7 @@ async def send_trial_conversion_reminder(subscription_id: uuid.UUID) -> None:
         ):
             return
 
-        conversion_date = subscription.trial_end or subscription.current_period_end
-        assert conversion_date is not None
-
-        # Check not already sent (race condition guard)
-        reminder_repository = SubscriptionReminderRepository.from_session(session)
-        result = await session.execute(
-            select(SubscriptionReminder).where(
-                SubscriptionReminder.subscription_id == subscription_id,
-                SubscriptionReminder.type == SubscriptionReminderType.trial_conversion,
-                SubscriptionReminder.target_date == conversion_date,
-            )
-        )
-        if result.scalar_one_or_none() is not None:
-            return
-
+        # Dedup is handled by the idempotency_key in the email_send actor
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription
-        )
-
-        await reminder_repository.create(
-            SubscriptionReminder(
-                subscription_id=subscription_id,
-                type=SubscriptionReminderType.trial_conversion,
-                target_date=conversion_date,
-                sent_at=utc_now(),
-            )
         )

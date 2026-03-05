@@ -4472,3 +4472,116 @@ class TestVoidOrder:
             await order_service.void(session, order)
 
         assert exc_info.value.order.id == order.id
+
+
+@pytest.mark.asyncio
+class TestSetRefundsBlockedForOrganization:
+    async def test_block_refunds_for_all_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Test blocking refunds for all orders in an organization."""
+        # Given: Create customers for the organization
+        customer1 = await create_customer(
+            save_fixture, organization=organization, email="customer1@test.com"
+        )
+        customer2 = await create_customer(
+            save_fixture, organization=organization, email="customer2@test.com"
+        )
+
+        # Create orders for both customers
+        order1 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer1,
+            status=OrderStatus.paid,
+        )
+        order2 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer2,
+            status=OrderStatus.paid,
+        )
+        order3 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer1,
+            status=OrderStatus.pending,
+        )
+
+        # Verify orders are not blocked initially
+        assert not order1.refunds_blocked
+        assert not order2.refunds_blocked
+        assert not order3.refunds_blocked
+
+        # When: Block refunds for the organization
+        count = await order_service.set_refunds_blocked_for_organization(
+            session, organization, blocked=True
+        )
+
+        # Then: All orders should have refunds blocked
+        assert count == 3
+
+        await session.refresh(order1)
+        await session.refresh(order2)
+        await session.refresh(order3)
+
+        assert order1.refunds_blocked
+        assert order2.refunds_blocked
+        assert order3.refunds_blocked
+
+    async def test_unblock_refunds_for_all_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Test unblocking refunds for all orders in an organization."""
+        # Given: Create customer for the organization
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@test.com"
+        )
+
+        # Create an order
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+        
+        # Block refunds for the order first
+        await order_service.set_refunds_blocked(session, order, blocked=True)
+        await session.flush()
+        await session.refresh(order)
+        assert order.refunds_blocked
+
+        # When: Unblock refunds for the organization
+        count = await order_service.set_refunds_blocked_for_organization(
+            session, organization, blocked=False
+        )
+
+        # Then: Order should have refunds unblocked
+        assert count == 1
+
+        await session.flush()
+        await session.refresh(order)
+        assert not order.refunds_blocked
+
+    async def test_no_orders_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test blocking refunds when organization has no orders."""
+        # When: Try to block refunds for organization with no orders
+        count = await order_service.set_refunds_blocked_for_organization(
+            session, organization, blocked=True
+        )
+
+        # Then: Should return 0
+        assert count == 0

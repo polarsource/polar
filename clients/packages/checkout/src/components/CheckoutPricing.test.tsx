@@ -25,7 +25,7 @@ describe('CheckoutPricing', () => {
   })
 
   describe('fixed price, no discount, with tax', () => {
-    it('shows the catalog price (does NOT include tax — current behavior)', () => {
+    it('shows the total price including tax', () => {
       const checkout = createCheckout({
         amount: 999,
         net_amount: 999,
@@ -35,7 +35,7 @@ describe('CheckoutPricing', () => {
 
       render(<CheckoutPricing checkout={checkout} locale="en" />)
 
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('$9.99')
+      expect(screen.getByTestId('headline-price')).toHaveTextContent('$12.49')
     })
   })
 
@@ -66,7 +66,7 @@ describe('CheckoutPricing', () => {
   })
 
   describe('fixed price, with discount and tax', () => {
-    it('shows netAmount (does NOT include tax — current behavior)', () => {
+    it('shows total price including tax', () => {
       const checkout = createCheckout({
         amount: 1999,
         discount_amount: 400,
@@ -86,7 +86,7 @@ describe('CheckoutPricing', () => {
       render(<CheckoutPricing checkout={checkout} locale="en" />)
 
       expect(screen.getByTestId('headline-price').textContent).toContain(
-        '$15.99',
+        '$19.99',
       )
     })
   })
@@ -107,7 +107,7 @@ describe('CheckoutPricing', () => {
   })
 
   describe('free product', () => {
-    it('renders "Free"', () => {
+    it('renders "$0"', () => {
       const checkout = createCheckout({
         amount: 0,
         net_amount: 0,
@@ -118,7 +118,7 @@ describe('CheckoutPricing', () => {
 
       render(<CheckoutPricing checkout={checkout} locale="en" />)
 
-      expect(screen.getByTestId('headline-price')).toHaveTextContent('Free')
+      expect(screen.getByTestId('headline-price')).toHaveTextContent('$0')
     })
   })
 })

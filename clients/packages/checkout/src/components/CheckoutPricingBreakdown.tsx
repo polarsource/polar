@@ -28,6 +28,7 @@ const DetailRow = ({
 }>) => {
   return (
     <div
+      data-testid={`detail-row-${title}`}
       className={cn(
         'flex flex-row items-start justify-between gap-x-8',
         emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500',

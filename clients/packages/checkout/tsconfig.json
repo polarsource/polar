@@ -2,7 +2,7 @@
   "extends": "@polar-sh/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "types": ["@testing-library/jest-dom/vitest"]
   },
   "include": ["src", "../ui/src/hooks/theming.ts"],
   "exclude": ["node_modules", "dist"]

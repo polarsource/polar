@@ -12,11 +12,11 @@ import { hasMarkdown, markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
+  CheckoutHeroPrice,
   CheckoutPricingBreakdown,
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
   CheckoutSeatSelector,
-  ProductPriceLabel,
 } from '@polar-sh/checkout/components'
 import {
   hasProductCheckout,
@@ -24,7 +24,6 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { formatCurrency } from '@polar-sh/currency'
 import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
@@ -426,21 +425,7 @@ const Checkout = ({
                     </div>
                   </div>
                   <span className="text-3xl font-medium">
-                    {checkout.discount ||
-                    checkout.productPrice.amountType === 'seat_based' ? (
-                      formatCurrency('standard', locale)(
-                        checkout.totalAmount ?? checkout.netAmount ?? 0,
-                        checkout.currency ??
-                          checkout.productPrice.priceCurrency,
-                      )
-                    ) : (
-                      <ProductPriceLabel
-                        product={checkout.product}
-                        price={checkout.productPrice}
-                        locale={locale}
-                        mode="standard"
-                      />
-                    )}
+                    <CheckoutHeroPrice checkout={checkout} locale={locale} />
                   </span>
                 </div>
                 <CheckoutProductSwitcher

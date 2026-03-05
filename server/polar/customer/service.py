@@ -28,6 +28,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.tax_id import InvalidTaxID, validate_tax_id
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -157,13 +158,45 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
+        validated_tax_id = None
+        if customer_create.tax_id is not None:
+            if customer_create.billing_address is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "billing_address"),
+                            "msg": "Country is required to validate tax ID.",
+                            "input": None,
+                        }
+                    ]
+                )
+            try:
+                validated_tax_id = validate_tax_id(
+                    customer_create.tax_id,
+                    customer_create.billing_address.country,
+                )
+            except InvalidTaxID as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid",
+                            "loc": ("body", "tax_id"),
+                            "msg": "Invalid tax ID.",
+                            "input": customer_create.tax_id,
+                        }
+                    ]
+                ) from e
+
         try:
             async with repository.create_context(
                 Customer(
                     organization=organization,
                     **customer_create.model_dump(
-                        exclude={"organization_id", "owner"}, by_alias=True
+                        exclude={"organization_id", "owner", "tax_id"},
+                        by_alias=True,
                     ),
+                    tax_id=validated_tax_id,
                 )
             ) as customer:
                 owner_email = (
@@ -307,11 +340,47 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
+        # Validate tax_id
+        tax_id = customer_update.tax_id or (
+            customer.tax_id[0] if customer.tax_id else None
+        )
+        if tax_id is not None:
+            billing_address = (
+                customer_update.billing_address
+                if "billing_address" in customer_update.model_fields_set
+                and customer_update.billing_address is not None
+                else customer.billing_address
+            )
+            if billing_address is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "billing_address"),
+                            "msg": "Country is required to validate tax ID.",
+                            "input": None,
+                        }
+                    ]
+                )
+            try:
+                customer.tax_id = validate_tax_id(tax_id, billing_address.country)
+            except InvalidTaxID as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid",
+                            "loc": ("body", "tax_id"),
+                            "msg": "Invalid tax ID.",
+                            "input": customer_update.tax_id,
+                        }
+                    ]
+                ) from e
+
         try:
             return await repository.update(
                 customer,
                 update_dict=customer_update.model_dump(
-                    exclude={"email"}, exclude_unset=True, by_alias=True
+                    exclude={"email", "tax_id"}, exclude_unset=True, by_alias=True
                 ),
             )
         except IntegrityError as e:

@@ -21385,6 +21385,10 @@ export interface components {
       subscription_uncanceled: boolean
       /** Subscription Updated */
       subscription_updated: boolean
+      /** Subscription Renewal Reminder */
+      subscription_renewal_reminder: boolean
+      /** Subscription Trial Conversion Reminder */
+      subscription_trial_conversion_reminder: boolean
     }
     /** OrganizationCustomerPortalSettings */
     OrganizationCustomerPortalSettings: {

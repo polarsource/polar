@@ -1893,6 +1893,50 @@ export interface components {
       url: string
       order: components['schemas']['OrderEmail'] | null
     }
+    /** SubscriptionRenewalReminderEmail */
+    SubscriptionRenewalReminderEmail: {
+      /**
+       * Template
+       * @default subscription_renewal_reminder
+       * @constant
+       */
+      template: 'subscription_renewal_reminder'
+      props: components['schemas']['SubscriptionRenewalReminderProps']
+    }
+    /** SubscriptionRenewalReminderProps */
+    SubscriptionRenewalReminderProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /** Renewal Date */
+      renewal_date: string
+    }
+    /** SubscriptionTrialConversionReminderEmail */
+    SubscriptionTrialConversionReminderEmail: {
+      /**
+       * Template
+       * @default subscription_trial_conversion_reminder
+       * @constant
+       */
+      template: 'subscription_trial_conversion_reminder'
+      props: components['schemas']['SubscriptionTrialConversionReminderProps']
+    }
+    /** SubscriptionTrialConversionReminderProps */
+    SubscriptionTrialConversionReminderProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /** Conversion Date */
+      conversion_date: string
+    }
     /**
      * TrialInterval
      * @enum {string}

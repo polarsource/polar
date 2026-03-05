@@ -2292,6 +2292,33 @@ class SubscriptionService:
             },
         )
 
+    async def send_renewal_reminder_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        assert subscription.current_period_end is not None
+        renewal_date = subscription.current_period_end.strftime("%B %-d, %Y")
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription renews soon",
+            template_name="subscription_renewal_reminder",
+            extra_context={"renewal_date": renewal_date},
+        )
+
+    async def send_trial_conversion_reminder_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        conversion_date = subscription.trial_end or subscription.current_period_end
+        assert conversion_date is not None
+        conversion_date_str = conversion_date.strftime("%B %-d, %Y")
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} trial ends soon",
+            template_name="subscription_trial_conversion_reminder",
+            extra_context={"conversion_date": conversion_date_str},
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -2304,6 +2331,8 @@ class SubscriptionService:
             "subscription_revoked",
             "subscription_uncanceled",
             "subscription_updated",
+            "subscription_renewal_reminder",
+            "subscription_trial_conversion_reminder",
         ],
         extra_context: dict[str, Any] | None = None,
     ) -> None:

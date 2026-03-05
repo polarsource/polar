@@ -39,6 +39,8 @@ class EmailTemplate(StrEnum):
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
     subscription_updated = "subscription_updated"
+    subscription_renewal_reminder = "subscription_renewal_reminder"
+    subscription_trial_conversion_reminder = "subscription_trial_conversion_reminder"
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
@@ -304,6 +306,28 @@ class SubscriptionUpdatedEmail(BaseModel):
     props: SubscriptionUpdatedProps
 
 
+class SubscriptionRenewalReminderProps(SubscriptionPropsBase):
+    renewal_date: str
+
+
+class SubscriptionRenewalReminderEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_renewal_reminder] = (
+        EmailTemplate.subscription_renewal_reminder
+    )
+    props: SubscriptionRenewalReminderProps
+
+
+class SubscriptionTrialConversionReminderProps(SubscriptionPropsBase):
+    conversion_date: str
+
+
+class SubscriptionTrialConversionReminderEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_trial_conversion_reminder] = (
+        EmailTemplate.subscription_trial_conversion_reminder
+    )
+    props: SubscriptionTrialConversionReminderProps
+
+
 class WebhookEndpointDisabledProps(EmailProps):
     organization: Organization
     webhook_endpoint_url: str
@@ -379,6 +403,8 @@ Email = Annotated[
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail
+    | SubscriptionRenewalReminderEmail
+    | SubscriptionTrialConversionReminderEmail
     | WebhookEndpointDisabledEmail
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail

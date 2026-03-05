@@ -75,6 +75,7 @@ from .refund import Refund
 from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
+from .subscription_reminder import SubscriptionReminder, SubscriptionReminderType
 from .transaction import Transaction
 from .trial_redemption import TrialRedemption
 from .user import OAuthAccount, User
@@ -167,6 +168,8 @@ __all__ = [
     "Subscription",
     "SubscriptionMeter",
     "SubscriptionProductPrice",
+    "SubscriptionReminder",
+    "SubscriptionReminderType",
     "TimestampedModel",
     "Transaction",
     "TrialRedemption",

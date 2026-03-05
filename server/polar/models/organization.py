@@ -101,6 +101,8 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_revoked: bool
     subscription_uncanceled: bool
     subscription_updated: bool
+    subscription_renewal_reminder: bool
+    subscription_trial_conversion_reminder: bool
 
 
 _default_customer_email_settings: OrganizationCustomerEmailSettings = {
@@ -113,6 +115,8 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_revoked": True,
     "subscription_uncanceled": True,
     "subscription_updated": True,
+    "subscription_renewal_reminder": True,
+    "subscription_trial_conversion_reminder": True,
 }
 
 

@@ -1,15 +1,46 @@
 import { Column, Heading, Hr, Row, Section } from '@react-email/components'
 import type { schemas } from '../types'
 
+const ZERO_DECIMAL_CURRENCIES = new Set<string>([
+  'bif',
+  'clp',
+  'djf',
+  'gnf',
+  'jpy',
+  'kmf',
+  'krw',
+  'mga',
+  'pyg',
+  'rwf',
+  'ugx',
+  'vnd',
+  'vuv',
+  'xaf',
+  'xof',
+  'xpf',
+])
+
+const getCurrencyDecimalFactor = (currency: string): number => {
+  if (ZERO_DECIMAL_CURRENCIES.has(currency.toLowerCase())) {
+    return 1
+  }
+  return 100
+}
+
+const isDecimalCurrency = (currency: string): boolean =>
+  getCurrencyDecimalFactor(currency) === 100
+
 interface OrderSummaryProps {
   order: schemas['OrderEmail']
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
+  const decimalFactor = getCurrencyDecimalFactor(currency)
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency.toUpperCase(),
-  }).format(amount / 100) // Convert from cents
+    minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
+  }).format(amount / decimalFactor)
 }
 
 const OrderSummary = ({ order }: OrderSummaryProps) => {

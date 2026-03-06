@@ -4085,6 +4085,7 @@ class TestConfirm:
         stripe_service_mock.create_customer.assert_called_once()
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
+            "organization_id": str(checkout.organization_id),
             "checkout_id": str(checkout.id),
             "type": "product",
             "tax_amount": "0",
@@ -4151,6 +4152,7 @@ class TestConfirm:
         stripe_service_mock.create_customer.assert_called_once()
         stripe_service_mock.create_setup_intent.assert_called_once()
         assert stripe_service_mock.create_setup_intent.call_args[1]["metadata"] == {
+            "organization_id": str(checkout.organization_id),
             "checkout_id": str(checkout.id),
             "type": "product",
             "tax_amount": "0",
@@ -4265,6 +4267,7 @@ class TestConfirm:
         stripe_service_mock.create_customer.assert_called_once()
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
+            "organization_id": str(checkout.organization_id),
             "checkout_id": str(checkout.id),
             "type": "product",
             "tax_amount": "0",

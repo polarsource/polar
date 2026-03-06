@@ -1027,6 +1027,7 @@ class CheckoutService:
                     assert checkout_confirm.confirmation_token_id is not None
                     assert checkout.customer_billing_address is not None
                     intent_metadata: dict[str, str] = {
+                        "organization_id": str(checkout.organization_id),
                         "checkout_id": str(checkout.id),
                         "type": "product",
                         "tax_amount": str(checkout.tax_amount),

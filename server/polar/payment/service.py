@@ -100,6 +100,7 @@ class PaymentService:
         self,
         session: AsyncSession,
         charge: stripe_lib.Charge,
+        organization: Organization,
         checkout: Checkout | None,
         wallet: Wallet | None,
         order: Order | None,
@@ -142,15 +143,7 @@ class PaymentService:
         payment.checkout = checkout
         payment.order = order
         payment.wallet = wallet
-
-        if checkout is not None:
-            payment.organization = checkout.organization
-        elif wallet is not None:
-            payment.organization = wallet.organization
-        elif order is not None:
-            payment.organization = order.organization
-        else:
-            raise UnlinkedPaymentError(charge.id)
+        payment.organization = organization
 
         return await repository.update(payment)
 
@@ -158,6 +151,7 @@ class PaymentService:
         self,
         session: AsyncSession,
         payment_intent: stripe_lib.PaymentIntent,
+        organization: Organization,
         checkout: Checkout | None,
         order: Order | None,
     ) -> Payment:
@@ -199,13 +193,7 @@ class PaymentService:
 
         payment.checkout = checkout
         payment.order = order
-
-        if checkout is not None:
-            payment.organization = checkout.organization
-        elif order is not None:
-            payment.organization = order.organization
-        else:
-            raise UnlinkedPaymentError(payment_intent.id)
+        payment.organization = organization
 
         return await repository.update(payment)
 

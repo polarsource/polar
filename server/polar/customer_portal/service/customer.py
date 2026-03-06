@@ -178,6 +178,7 @@ class CustomerService:
             confirmation_token=payment_method_create.confirmation_token_id,
             customer=customer.stripe_customer_id,
             metadata={
+                "organization_id": str(customer.organization_id),
                 "customer_id": str(customer.id),
             },
             return_url=payment_method_create.return_url,

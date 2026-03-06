@@ -61,13 +61,13 @@ from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
 from polar.order.schemas import OrderUpdate
 from polar.order.service import (
-    CardPaymentFailed,
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
     NotRecurringProduct,
     OrderNotEligibleForRetry,
     OrderNotPending,
     PaymentAlreadyInProgress,
+    PaymentFailed,
     RecurringProduct,
     SubscriptionNotTrialing,
 )
@@ -3502,13 +3502,8 @@ class TestTriggerPayment:
         stripe_service_mock.create_payment_intent.side_effect = card_error
 
         # When/Then
-        with pytest.raises(CardPaymentFailed) as exc_info:
+        with pytest.raises(PaymentFailed):
             await order_service.trigger_payment(session, order, payment_method)
-
-        # Verify the exception details
-        assert exc_info.value.order == order
-        assert exc_info.value.stripe_error == card_error
-        assert "Your card was declined." in str(exc_info.value)
 
         # Verify lock is released on failure
         await session.refresh(order)

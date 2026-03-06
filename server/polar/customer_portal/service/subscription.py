@@ -72,7 +72,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             statement.join(Product, onclause=Subscription.product_id == Product.id)
             .join(Organization, onclause=Product.organization_id == Organization.id)
             .options(
-                joinedload(Subscription.customer),
+                joinedload(Subscription.customer).joinedload(Customer.organization),
                 contains_eager(Subscription.product).options(
                     selectinload(Product.product_medias),
                     contains_eager(Product.organization),

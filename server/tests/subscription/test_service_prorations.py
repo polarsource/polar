@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
 import freezegun
@@ -20,7 +20,6 @@ from polar.models import (
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection
-from polar.models.order import OrderBillingReasonInternal
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
@@ -57,11 +56,6 @@ from tests.fixtures.random_objects import (
 #
 # All of these tests are checked both with the organisation having
 # chosen to invoice immediately, or add prorations to the next invoice.
-
-
-@pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.subscription.service.enqueue_job")
 
 
 @pytest.fixture
@@ -292,8 +286,8 @@ class TestUpdateProductProrations:
     async def test_upgrade_base_cases(
         self,
         session: AsyncSession,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
-        enqueue_job_mock: MagicMock,
         enqueue_benefits_grants_mock: MagicMock,
         organization: Organization,
         customer: Customer,
@@ -304,6 +298,10 @@ class TestUpdateProductProrations:
         entry_0_amount: int,
         entry_1_amount: int,
     ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
         old_product = await create_product(
             save_fixture,
             organization=organization,
@@ -421,26 +419,15 @@ class TestUpdateProductProrations:
 
             enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
-            # `enqueue_job` gets called a couple of times, only one of which
-            # we care about. We do the following to extract only that "one" and
-            # assert that it's just called once or never in the two cases.
-            calls = [
-                args[0]
-                for args, kwargs in enqueue_job_mock.call_args_list
-                if args[0] == "order.create_subscription_order"
-            ]
             if (
                 old_product.recurring_interval != new_product.recurring_interval
                 or expected_proration == SubscriptionProrationBehavior.invoice
             ):
-                enqueue_job_mock.assert_any_call(
-                    "order.create_subscription_order",
-                    subscription.id,
-                    OrderBillingReasonInternal.subscription_update,
+                create_subscription_update_order_mock.assert_awaited_once_with(
+                    session, subscription
                 )
-                assert len(calls) == 1
             else:
-                assert len(calls) == 0
+                create_subscription_update_order_mock.assert_not_awaited()
 
     async def test_fixed_to_free_price(
         self,
@@ -657,9 +644,9 @@ class TestUpdateProductProrations:
     async def test_call_proration_overrides_org_proration(
         self,
         session: AsyncSession,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
-        enqueue_job_mock: MagicMock,
         customer: Customer,
         proration_behavior: tuple[
             SubscriptionProrationBehavior | None, SubscriptionProrationBehavior
@@ -668,6 +655,10 @@ class TestUpdateProductProrations:
         """Test that the `proration_behavior` passed as an arg to `update_product()`
         is used -- if it's `None` then we fall back to the organization setting.
         """
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
         cycle_start = datetime(2025, 6, 1, tzinfo=UTC)
         time_of_update = datetime(2025, 6, 16, tzinfo=UTC)
         old_product = await create_product(
@@ -707,35 +698,28 @@ class TestUpdateProductProrations:
                 proration_behavior=call_proration,
             )
 
-            # `enqueue_job` gets called a couple of times, only one of which
-            # we care about. We do the following to extract only that "one" and
-            # assert that it's just called once or never in the two cases.
-            calls = [
-                args[0]
-                for args, kwargs in enqueue_job_mock.call_args_list
-                if args[0] == "order.create_subscription_order"
-            ]
             if expected_proration == SubscriptionProrationBehavior.invoice:
-                enqueue_job_mock.assert_any_call(
-                    "order.create_subscription_order",
-                    subscription.id,
-                    OrderBillingReasonInternal.subscription_update,
+                create_subscription_update_order_mock.assert_awaited_once_with(
+                    session, subscription
                 )
-                assert len(calls) == 1
             else:
-                assert len(calls) == 0
+                create_subscription_update_order_mock.assert_not_awaited()
 
     async def test_customer_with_multiple_subscriptions(
         self,
         session: AsyncSession,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
-        enqueue_job_mock: MagicMock,
         customer: Customer,
     ) -> None:
         """Test that we can update 1 subscription on a customer that has 3
         subscriptions.
         """
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
         time_of_update = datetime(2025, 6, 17, tzinfo=UTC)
         products = [
             await create_product(
@@ -843,20 +827,9 @@ class TestUpdateProductProrations:
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
 
-            # `enqueue_job` gets called a couple of times, only one of which
-            # we care about. We do the following to extract only that "one" and
-            # assert that it's just called once or never in the two cases.
-            calls = [
-                args[0]
-                for args, kwargs in enqueue_job_mock.call_args_list
-                if args[0] == "order.create_subscription_order"
-            ]
-            enqueue_job_mock.assert_any_call(
-                "order.create_subscription_order",
-                subscriptions[1].id,
-                OrderBillingReasonInternal.subscription_update,
+            create_subscription_update_order_mock.assert_awaited_once_with(
+                session, subscriptions[1]
             )
-            assert len(calls) == 1
 
     async def test_multiple_switches_within_cycle(
         self,

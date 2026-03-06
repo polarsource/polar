@@ -82,10 +82,43 @@ class InvoiceService:
             else:
                 payout_fees_amount += transaction.amount
 
+        current_payout_fees_amount = -payout.fees_amount
+        cancelled_payout_fees_amount = payout_fees_amount - current_payout_fees_amount
+
         # Sanity check to make sure the amounts add up correctly
-        assert payout.fees_amount == abs(payout_fees_amount)
+        assert payout.fees_amount == abs(current_payout_fees_amount)
         assert payout.amount == gross_amount + payout_fees_amount + payment_fees_amount
         assert payout.paid_at is not None
+
+        items = [
+            InvoiceItem(
+                description=f"Digital services and products resold by Polar.sh\nFrom {earliest.strftime('%Y-%m-%d')} to {latest.strftime('%Y-%m-%d')}",
+                quantity=1,
+                unit_amount=gross_amount,
+                amount=gross_amount,
+            ),
+            InvoiceItem(
+                description="Polar revenue share",
+                quantity=1,
+                unit_amount=payment_fees_amount,
+                amount=payment_fees_amount,
+            ),
+            InvoiceItem(
+                description="Payout fees",
+                quantity=1,
+                unit_amount=current_payout_fees_amount,
+                amount=current_payout_fees_amount,
+            ),
+        ]
+        if cancelled_payout_fees_amount != 0:
+            items.append(
+                InvoiceItem(
+                    description="Cancelled payout fees",
+                    quantity=1,
+                    unit_amount=cancelled_payout_fees_amount,
+                    amount=cancelled_payout_fees_amount,
+                )
+            )
 
         invoice = Invoice(
             number=payout.invoice_number,
@@ -102,26 +135,7 @@ class InvoiceService:
             tax_amount=0,
             tax_rate=None,
             currency=payout.currency,
-            items=[
-                InvoiceItem(
-                    description=f"Digital services and products resold by Polar.sh\nFrom {earliest.strftime('%Y-%m-%d')} to {latest.strftime('%Y-%m-%d')}",
-                    quantity=1,
-                    unit_amount=gross_amount,
-                    amount=gross_amount,
-                ),
-                InvoiceItem(
-                    description="Polar revenue share",
-                    quantity=1,
-                    unit_amount=payment_fees_amount,
-                    amount=payment_fees_amount,
-                ),
-                InvoiceItem(
-                    description="Payout fees",
-                    quantity=1,
-                    unit_amount=payout_fees_amount,
-                    amount=payout_fees_amount,
-                ),
-            ],
+            items=items,
             notes=(f"{account.billing_notes}\n\n" if account.billing_notes else "")
             + (
                 "Polar Software, Inc. is the merchant of record reselling digital services.\n"

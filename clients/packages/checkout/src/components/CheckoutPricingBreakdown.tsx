@@ -293,7 +293,7 @@ const CheckoutPricingBreakdown = ({
               label={t('checkout.trial.summary.totalWhenTrialEnds')}
               dateLabel={
                 checkout.trial_end
-                  ? formatShortDate(checkout.trial_end, locale)
+                  ? formatShortDate(new Date(checkout.trial_end), locale)
                   : null
               }
             >
@@ -314,7 +314,7 @@ const CheckoutPricingBreakdown = ({
                   label={t('checkout.trial.summary.totalWhenDiscountExpires')}
                   dateLabel={formatShortDate(
                     getDiscountEndDate(
-                      checkout.trial_end,
+                      new Date(checkout.trial_end),
                       checkout.discount,
                       interval,
                       intervalCount,

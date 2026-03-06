@@ -19,7 +19,7 @@ const trialProduct = {
   description: null,
   is_archived: false,
   organization_id: 'org_1',
-  created_at: new Date(),
+  created_at: new Date().toISOString(),
   modified_at: null,
 }
 
@@ -32,7 +32,7 @@ function createTrialCheckout(
     total_amount: 9999,
     active_trial_interval: 'month',
     active_trial_interval_count: 1,
-    trial_end: new Date('2026-04-05T00:00:00Z'),
+    trial_end: '2026-04-05T00:00:00Z',
     product: trialProduct,
     ...overrides,
   })
@@ -52,7 +52,11 @@ describe('CheckoutTrialHeroPrice', () => {
       const checkout = createTrialCheckout({
         active_trial_interval: 'day',
         active_trial_interval_count: 7,
-        product: { ...trialProduct, trial_interval: 'day', trial_interval_count: 7 },
+        product: {
+          ...trialProduct,
+          trial_interval: 'day',
+          trial_interval_count: 7,
+        },
       })
 
       render(<CheckoutTrialHeroPrice checkout={checkout} locale="en" />)
@@ -64,7 +68,11 @@ describe('CheckoutTrialHeroPrice', () => {
       const checkout = createTrialCheckout({
         active_trial_interval: 'day',
         active_trial_interval_count: 1,
-        product: { ...trialProduct, trial_interval: 'day', trial_interval_count: 1 },
+        product: {
+          ...trialProduct,
+          trial_interval: 'day',
+          trial_interval_count: 1,
+        },
       })
 
       render(<CheckoutTrialHeroPrice checkout={checkout} locale="en" />)
@@ -159,7 +167,7 @@ describe('CheckoutTrialHeroPrice', () => {
 
     it('shows "starting" date when trial_end is set', () => {
       const checkout = createTrialCheckout({
-        trial_end: new Date('2026-04-05T00:00:00Z'),
+        trial_end: '2026-04-05T00:00:00Z',
       })
 
       const { container } = render(

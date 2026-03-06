@@ -2,7 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { differenceInDays } from 'date-fns'
+import { addMonths, addYears, differenceInDays } from 'date-fns'
 import {
   DEFAULT_LOCALE,
   useTranslations,
@@ -56,21 +56,19 @@ function getDiscountEndDate(
   interval: string | null,
   intervalCount: number | null,
 ): Date {
-  const date = new Date(trialEnd)
   if (discount.duration === 'once') {
     const count = intervalCount ?? 1
-    if (interval === 'year') {
-      date.setFullYear(date.getFullYear() + count)
-    } else {
-      date.setMonth(date.getMonth() + count)
-    }
-  } else if (
+    return interval === 'year'
+      ? addYears(trialEnd, count)
+      : addMonths(trialEnd, count)
+  }
+  if (
     'duration_in_months' in discount &&
     typeof discount.duration_in_months === 'number'
   ) {
-    date.setMonth(date.getMonth() + discount.duration_in_months)
+    return addMonths(trialEnd, discount.duration_in_months)
   }
-  return date
+  return trialEnd
 }
 
 const TrialSummaryRow = ({

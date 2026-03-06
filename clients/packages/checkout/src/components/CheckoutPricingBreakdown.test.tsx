@@ -366,7 +366,9 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText('Total when discount expires')).toBeInTheDocument()
+      expect(
+        screen.getByText('Total when discount expires'),
+      ).toBeInTheDocument()
       expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
       expect(screen.getByText('Total due today')).toBeInTheDocument()
     })

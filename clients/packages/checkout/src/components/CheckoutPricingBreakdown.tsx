@@ -1,7 +1,6 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import { addMonths, addYears, differenceInDays } from 'date-fns'
 import {
   DEFAULT_LOCALE,
   useTranslations,
@@ -9,6 +8,7 @@ import {
 } from '@polar-sh/i18n'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { cn } from '@polar-sh/ui/lib/utils'
+import { addMonths, addYears, differenceInDays } from 'date-fns'
 import { PropsWithChildren, useMemo } from 'react'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
@@ -41,11 +41,13 @@ const DetailRow = ({
   )
 }
 
-function formatRelativeDate(date: Date): string {
+function formatRelativeDate(
+  date: Date,
+  t: ReturnType<typeof useTranslations>,
+): string {
   const days = differenceInDays(date, new Date())
-  if (days <= 0) return 'Today'
-  if (days === 1) return 'In 1 day'
-  return `In ${days} days`
+  if (days <= 0) return t('checkout.trial.relativeDate.today')
+  return t('checkout.trial.relativeDate.inDays', { count: days })
 }
 
 function getDiscountEndDate(
@@ -71,20 +73,18 @@ function getDiscountEndDate(
 
 const TrialSummaryRow = ({
   label,
-  date,
-  locale,
+  relativeDate,
   children,
 }: PropsWithChildren<{
   label: string
-  date: Date | null
-  locale: AcceptedLocale
+  relativeDate: string | null
 }>) => (
   <div className="dark:text-polar-500 flex flex-row items-start justify-between gap-x-8 text-gray-500">
     <span className="min-w-0 truncate">
       {label}
-      {date && (
+      {relativeDate && (
         <span className="dark:text-polar-600 ml-1 text-gray-400">
-          ({formatRelativeDate(date)})
+          ({relativeDate})
         </span>
       )}
     </span>
@@ -289,9 +289,12 @@ const CheckoutPricingBreakdown = ({
         checkout.currency && (
           <div className="dark:border-polar-700 mt-3 flex flex-col gap-y-2 border-t border-gray-300 pt-4">
             <TrialSummaryRow
-              label="Total when trial ends"
-              date={checkout.trialEnd}
-              locale={locale}
+              label={t('checkout.trial.summary.totalWhenTrialEnds')}
+              relativeDate={
+                checkout.trialEnd
+                  ? formatRelativeDate(checkout.trialEnd, t)
+                  : null
+              }
             >
               <AmountLabel
                 amount={checkout.totalAmount}
@@ -307,14 +310,16 @@ const CheckoutPricingBreakdown = ({
               checkout.discountAmount > 0 &&
               checkout.trialEnd && (
                 <TrialSummaryRow
-                  label="Total when discount expires"
-                  date={getDiscountEndDate(
-                    checkout.trialEnd,
-                    checkout.discount,
-                    interval,
-                    intervalCount,
+                  label={t('checkout.trial.summary.totalWhenDiscountExpires')}
+                  relativeDate={formatRelativeDate(
+                    getDiscountEndDate(
+                      checkout.trialEnd,
+                      checkout.discount,
+                      interval,
+                      intervalCount,
+                    ),
+                    t,
                   )}
-                  locale={locale}
                 >
                   <AmountLabel
                     amount={
@@ -334,7 +339,10 @@ const CheckoutPricingBreakdown = ({
                   />
                 </TrialSummaryRow>
               )}
-            <DetailRow title="Total due today" emphasis>
+            <DetailRow
+              title={t('checkout.trial.summary.totalDueToday')}
+              emphasis
+            >
               {formatCurrency('standard', locale)(0, checkout.currency)}
             </DetailRow>
           </div>

@@ -52,7 +52,11 @@ describe('CheckoutTrialHeroPrice', () => {
       const checkout = createTrialCheckout({
         activeTrialInterval: 'day',
         activeTrialIntervalCount: 7,
-        product: { ...trialProduct, trialInterval: 'day', trialIntervalCount: 7 },
+        product: {
+          ...trialProduct,
+          trialInterval: 'day',
+          trialIntervalCount: 7,
+        },
       })
 
       render(<CheckoutTrialHeroPrice checkout={checkout} locale="en" />)
@@ -64,7 +68,11 @@ describe('CheckoutTrialHeroPrice', () => {
       const checkout = createTrialCheckout({
         activeTrialInterval: 'day',
         activeTrialIntervalCount: 1,
-        product: { ...trialProduct, trialInterval: 'day', trialIntervalCount: 1 },
+        product: {
+          ...trialProduct,
+          trialInterval: 'day',
+          trialIntervalCount: 1,
+        },
       })
 
       render(<CheckoutTrialHeroPrice checkout={checkout} locale="en" />)

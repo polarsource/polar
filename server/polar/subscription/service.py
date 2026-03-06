@@ -859,6 +859,9 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
+        allowed_visibilities: frozenset[ProductVisibility] = frozenset(
+            ProductVisibility
+        ),
     ) -> Subscription:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
@@ -902,13 +905,13 @@ class SubscriptionService:
                 ]
             )
 
-        if product.visibility != ProductVisibility.public:
+        if product.visibility not in allowed_visibilities:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": "Product is not available from the Customer Portal.",
+                        "msg": "Product visibility is not allowed.",
                         "input": product_id,
                     }
                 ]

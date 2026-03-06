@@ -37,7 +37,6 @@ const CheckoutTrialHeroPrice = ({
     ? productPrice.recurringInterval
     : product.recurringInterval
 
-  // Normalize weeks to days for clarity (e.g. "1 week" → "7 days")
   const trialUnit =
     checkout.activeTrialInterval === 'week'
       ? 'day'

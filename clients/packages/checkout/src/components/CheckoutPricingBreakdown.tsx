@@ -80,7 +80,7 @@ const TrialSummaryRow = ({
   relativeDate: string | null
 }>) => (
   <div className="dark:text-polar-500 flex flex-row items-start justify-between gap-x-8 text-gray-500">
-    <span className="min-w-0 truncate">
+    <span className="min-w-0">
       {label}
       {relativeDate && (
         <span className="dark:text-polar-600 ml-1 text-gray-400">
@@ -88,7 +88,7 @@ const TrialSummaryRow = ({
         </span>
       )}
     </span>
-    <span className="shrink-0">{children}</span>
+    <span className="ml-auto shrink-0">{children}</span>
   </div>
 )
 

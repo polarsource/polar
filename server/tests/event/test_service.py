@@ -285,6 +285,139 @@ class TestGet:
 
 
 @pytest.mark.asyncio
+class TestGetTinybirdCompare:
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_skipped_when_tinybird_disabled(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.event.service.settings.TINYBIRD_EVENTS_READ", False)
+        event = await create_event(save_fixture, organization=organization)
+
+        logfire_mock = mocker.patch("polar.event.service.logfire")
+
+        result = await event_service.get(session, auth_subject, event.id)
+
+        assert result is not None
+        logfire_mock.span.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_shadow_comparison_logged(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.event.service.settings.TINYBIRD_EVENTS_READ", True)
+        organization.feature_settings = {"tinybird_compare": True}
+        await save_fixture(organization)
+
+        event = await create_event(save_fixture, organization=organization)
+
+        logfire_mock = mocker.patch("polar.event.service.logfire")
+        mocker.patch(
+            "polar.integrations.tinybird.service.TinybirdEventsQuery.get_event_ids_and_count",
+            new_callable=AsyncMock,
+            return_value=([str(event.id)], 1),
+        )
+
+        result = await event_service.get(session, auth_subject, event.id)
+
+        assert result is not None
+        logfire_mock.span.assert_called_once()
+        call_kwargs = logfire_mock.span.call_args.kwargs
+        assert call_kwargs["db_found"] is True
+        assert call_kwargs["tinybird_found"] is True
+        assert call_kwargs["has_diff"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_shadow_comparison_with_diff(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.event.service.settings.TINYBIRD_EVENTS_READ", True)
+        organization.feature_settings = {"tinybird_compare": True}
+        await save_fixture(organization)
+
+        event = await create_event(save_fixture, organization=organization)
+
+        logfire_mock = mocker.patch("polar.event.service.logfire")
+        mocker.patch(
+            "polar.integrations.tinybird.service.TinybirdEventsQuery.get_event_ids_and_count",
+            new_callable=AsyncMock,
+            return_value=([], 0),
+        )
+
+        result = await event_service.get(session, auth_subject, event.id)
+
+        assert result is not None
+        logfire_mock.span.assert_called_once()
+        call_kwargs = logfire_mock.span.call_args.kwargs
+        assert call_kwargs["db_found"] is True
+        assert call_kwargs["tinybird_found"] is False
+        assert call_kwargs["has_diff"] is True
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_shadow_comparison_with_aggregate_fields(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.event.service.settings.TINYBIRD_EVENTS_READ", True)
+        organization.feature_settings = {"tinybird_compare": True}
+        await save_fixture(organization)
+
+        parent = await create_event(
+            save_fixture,
+            organization=organization,
+            metadata={"_cost": {"amount": 100}},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            parent_id=parent.id,
+            metadata={"_cost": {"amount": 50}},
+        )
+
+        logfire_mock = mocker.patch("polar.event.service.logfire")
+        mocker.patch(
+            "polar.integrations.tinybird.service.TinybirdEventsQuery.get_event_ids_and_count",
+            new_callable=AsyncMock,
+            return_value=([str(parent.id)], 1),
+        )
+        mocker.patch(
+            "polar.integrations.tinybird.service.TinybirdEventsQuery.get_descendant_aggregates",
+            new_callable=AsyncMock,
+            return_value=(1, {"_cost_amount": 50.0}),
+        )
+
+        result = await event_service.get(
+            session, auth_subject, parent.id, aggregate_fields=["_cost.amount"]
+        )
+
+        assert result is not None
+        logfire_mock.span.assert_called_once()
+        call_kwargs = logfire_mock.span.call_args.kwargs
+        assert "db_descendant_count" in call_kwargs
+        assert "tinybird_descendant_count" in call_kwargs
+        assert "db_sums" in call_kwargs
+        assert "tinybird_sums" in call_kwargs
+
+
+@pytest.mark.asyncio
 class TestListNames:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

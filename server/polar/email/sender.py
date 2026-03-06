@@ -6,8 +6,8 @@ import httpx
 import structlog
 from email_validator import validate_email
 
-from polar.config import EmailSender as EmailSenderType
 from polar.config import settings
+from polar.enums import EmailSender as EmailSenderType
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.worker import enqueue_job

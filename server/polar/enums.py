@@ -79,6 +79,11 @@ class TokenType(StrEnum):
     user_session_token = "polar_user_session_token"
 
 
+class EmailSender(StrEnum):
+    logger = "logger"
+    resend = "resend"
+
+
 class RateLimitGroup(StrEnum):
     web = "web"
     restricted = "restricted"

@@ -10,7 +10,7 @@ from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from polar.enums import TaxProcessor
+from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
@@ -21,11 +21,6 @@ class Environment(StrEnum):
     sandbox = "sandbox"
     production = "production"
     test = "test"  # Used for the test environment in Render
-
-
-class EmailSender(StrEnum):
-    logger = "logger"
-    resend = "resend"
 
 
 def _validate_email_renderer_binary_path(value: Path) -> Path:

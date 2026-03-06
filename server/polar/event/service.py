@@ -334,16 +334,26 @@ class EventService:
         repository = EventRepository.from_session(session)
 
         if aggregate_fields:
-            return await repository.get_with_aggregation(
+            result = await repository.get_with_aggregation(
                 auth_subject, id, aggregate_fields
             )
+        else:
+            statement = (
+                repository.get_readable_statement(auth_subject)
+                .where(Event.id == id)
+                .options(*repository.get_eager_options())
+            )
+            result = await repository.get_one_or_none(statement)
 
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .where(Event.id == id)
-            .options(*repository.get_eager_options())
+        await self._tinybird_compare_get(
+            session,
+            auth_subject,
+            event_id=id,
+            db_result=result,
+            aggregate_fields=aggregate_fields,
         )
-        return await repository.get_one_or_none(statement)
+
+        return result
 
     async def list_statistics_timeseries(
         self,
@@ -870,6 +880,86 @@ class EventService:
         except Exception as e:
             log.error(
                 "tinybird.events.list.failed",
+                organization_id=str(org.id),
+                error=str(e),
+            )
+
+    async def _tinybird_compare_get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        event_id: uuid.UUID,
+        db_result: Event | None,
+        aggregate_fields: Sequence[str] = (),
+    ) -> None:
+        organization_id = [db_result.organization_id] if db_result else None
+        org = await self._get_tinybird_enabled_org(
+            session, auth_subject, organization_id
+        )
+        if org is None:
+            return
+
+        try:
+            tb_query = TinybirdEventsQuery(org.id)
+            tb_query.filter_event_id(event_id)
+            tb_ids, tb_count = await tb_query.get_event_ids_and_count(1, 0, True)
+            tb_exists = tb_count > 0
+
+            has_diff = (db_result is not None) != tb_exists
+            db_descendant_count: int | None = None
+            tb_descendant_count: int | None = None
+            db_sums: dict[str, float] | None = None
+            tb_sums: dict[str, float] | None = None
+
+            if aggregate_fields and db_result is not None:
+                tb_desc_query = TinybirdEventsQuery(org.id)
+                tb_desc_query.filter_has_ancestor(event_id)
+                (
+                    tb_descendant_count,
+                    tb_sums,
+                ) = await tb_desc_query.get_descendant_aggregates(aggregate_fields)
+
+                db_descendant_count = getattr(db_result, "child_count", 0)
+                db_sums = {}
+                for field_path in aggregate_fields:
+                    parts = field_path.split(".")
+                    current: Any = db_result.user_metadata
+                    for part in parts:
+                        if isinstance(current, dict):
+                            current = current.get(part)
+                        else:
+                            current = None
+                            break
+                    db_sums[field_path.replace(".", "_")] = (
+                        float(current) if current is not None else 0.0
+                    )
+
+                has_diff = (
+                    has_diff
+                    or db_descendant_count != tb_descendant_count
+                    or any(
+                        abs(db_sums.get(k, 0) - tb_sums.get(k, 0)) > 0.01
+                        for k in db_sums
+                    )
+                )
+
+            with logfire.span(
+                "tinybird.shadow.events.get.comparison",
+                organization_id=str(org.id),
+                event_id=str(event_id),
+                db_found=db_result is not None,
+                tinybird_found=tb_exists,
+                has_diff=has_diff,
+                db_descendant_count=db_descendant_count,
+                tinybird_descendant_count=tb_descendant_count,
+                db_sums=db_sums,
+                tinybird_sums=tb_sums,
+            ):
+                pass
+        except Exception as e:
+            log.error(
+                "tinybird.events.get.failed",
                 organization_id=str(org.id),
                 error=str(e),
             )

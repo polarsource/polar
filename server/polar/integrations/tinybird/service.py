@@ -7,6 +7,7 @@ from typing import Any, Self
 from uuid import UUID
 
 import logfire
+import sqlalchemy
 import structlog
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
 from sqlalchemy import (
@@ -315,6 +316,16 @@ class TinybirdEventsQuery:
         self._filters: list[Any] = []
         self._order_by_clauses: list[Any] = []
 
+    def filter_event_id(self, event_id: UUID) -> Self:
+        self._filters.append(events_table.c.id == str(event_id))
+        return self
+
+    def filter_has_ancestor(self, ancestor_id: UUID) -> Self:
+        self._filters.append(
+            func.indexOf(events_table.c.ancestors, str(ancestor_id)) > 0
+        )
+        return self
+
     def filter_customer_id(self, customer_ids: Sequence[UUID]) -> Self:
         if customer_ids:
             self._filters.append(
@@ -605,6 +616,44 @@ class TinybirdEventsQuery:
         event_ids = [str(row["id"]) for row in id_rows]
 
         return event_ids, total
+
+    async def get_descendant_aggregates(
+        self, aggregate_fields: Sequence[str]
+    ) -> tuple[int, dict[str, float]]:
+        base_filter = events_table.c.organization_id == self._organization_id
+
+        columns: list[Any] = [func.count().label("total")]
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            col = DENORMALIZED_COLUMNS.get(field_path)
+            if col is not None:
+                columns.append(func.sum(col).label(label))
+            else:
+                parts = field_path.split(".")
+                columns.append(
+                    func.sum(
+                        func.JSONExtractFloat(events_table.c.user_metadata, *parts)
+                    ).label(label)
+                )
+
+        statement = (
+            sqlalchemy.select(*columns).select_from(events_table).where(base_filter)
+        )
+        for f in self._filters:
+            statement = statement.where(f)
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        if not rows:
+            return 0, {f.replace(".", "_"): 0.0 for f in aggregate_fields}
+
+        row = rows[0]
+        sums = {
+            f.replace(".", "_"): float(row.get(f.replace(".", "_"), 0) or 0)
+            for f in aggregate_fields
+        }
+        return row["total"], sums
 
 
 class TinybirdEventTypesQuery:

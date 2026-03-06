@@ -63,7 +63,8 @@ export default function FeatureSettings({
   const seatBasedFieldRef = useRef<{ onChange: (value: boolean) => void }>(null)
 
   const { data: liveOrg } = useOrganization(organization.id)
-  const featureSettings = liveOrg?.feature_settings ?? organization.feature_settings
+  const featureSettings =
+    liveOrg?.feature_settings ?? organization.feature_settings
 
   const memberModelEnabled = !!featureSettings?.member_model_enabled
   const seatBasedAlreadyEnabled = !!featureSettings?.seat_based_pricing_enabled

@@ -15,4 +15,22 @@ onlyBuiltDependencies:
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
+  - '@ai-sdk/gateway'
+  - '@posthog/types'
+  - '@types/node'
+  - '@ai-sdk/anthropic'
+  - '@ai-sdk/react'
+  - '@ai-sdk/mcp'
+  - ai
+  - posthog-js
+  - posthog-node
+  - '@posthog/ai'
+  - '@posthog/core'
+  - '@sentry/nextjs'
+  - '@modelcontextprotocol/sdk'
+  - openapi-fetch
+  - openapi-typescript
+  - openapi-typescript-helpers
+  - eslint-plugin-turbo
+  - '@ai-sdk/google'
   - '@polar-sh/sdk'

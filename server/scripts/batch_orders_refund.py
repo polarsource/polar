@@ -19,6 +19,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
 from polar.refund.schemas import RefundCreate
+from polar.refund.service import RefundDisputedPayment, RefundedAlready
 from polar.refund.service import refund as refund_service
 from polar.worker import JobQueueManager
 
@@ -92,21 +93,24 @@ async def batch_orders_refund(
 
                 orders = await order_repository.get_all(order_statement)
                 for order in orders:
-                    if not order.refunded and order.refundable_amount > 0:
-                        await refund_service.create(
-                            session,
-                            order,
-                            RefundCreate(
-                                order_id=order.id,
-                                reason=RefundReason.other,
-                                amount=order.refundable_amount,
-                                comment=None,
-                                revoke_benefits=False,
-                            ),
-                        )
-                        # Commit and flush now since Stripe refund is now processed
-                        await session.commit()
-                        await job_queue_manager.flush(dramatiq.get_broker(), redis)
+                    try:
+                        if not order.refunded and order.refundable_amount > 0:
+                            await refund_service.create(
+                                session,
+                                order,
+                                RefundCreate(
+                                    order_id=order.id,
+                                    reason=RefundReason.other,
+                                    amount=order.refundable_amount,
+                                    comment=None,
+                                    revoke_benefits=False,
+                                ),
+                            )
+                            # Commit and flush now since Stripe refund is now processed
+                            await session.commit()
+                            await job_queue_manager.flush(dramatiq.get_broker(), redis)
+                    except (RefundedAlready, RefundDisputedPayment):
+                        pass
                     progress.advance(task)
                 progress.remove_task(task)
 

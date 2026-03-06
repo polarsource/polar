@@ -587,6 +587,9 @@ importers:
 
   packages/checkout:
     dependencies:
+      '@polar-sh/client':
+        specifier: workspace:^
+        version: link:../client
       '@polar-sh/currency':
         specifier: workspace:^
         version: link:../currency

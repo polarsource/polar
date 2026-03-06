@@ -25,7 +25,11 @@ from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    PaymentMode,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.event.service import event as event_service
 from polar.event.system import (
     SubscriptionCanceledMetadata,
@@ -57,6 +61,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    Order,
     Organization,
     PaymentMethod,
     Product,
@@ -1024,12 +1029,8 @@ class SubscriptionService:
             proration_behavior == SubscriptionProrationBehavior.invoice
             or interval_changed
         ):
-            # Invoice immediately
-            enqueue_job(
-                "order.create_subscription_order",
-                subscription.id,
-                OrderBillingReasonInternal.subscription_update,
-            )
+            # Invoice and attempt to pay immediately
+            await self._create_subscription_update_order(session, subscription)
         elif proration_behavior == SubscriptionProrationBehavior.prorate:
             # Add prorations to next invoice
             pass
@@ -1286,11 +1287,8 @@ class SubscriptionService:
         )
 
         if proration_behavior == SubscriptionProrationBehavior.invoice:
-            enqueue_job(
-                "order.create_subscription_order",
-                subscription.id,
-                OrderBillingReasonInternal.subscription_update,
-            )
+            # Invoice and attempt to pay immediately
+            await self._create_subscription_update_order(session, subscription)
 
         return subscription
 
@@ -2191,6 +2189,18 @@ class SubscriptionService:
         subscription.payment_method = payment_method
         repository = SubscriptionRepository.from_session(session)
         return await repository.update(subscription)
+
+    async def _create_subscription_update_order(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Order:
+        from polar.order.service import order as order_service
+
+        return await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_update,
+            payment_mode=PaymentMode.sync,
+        )
 
 
 subscription = SubscriptionService()

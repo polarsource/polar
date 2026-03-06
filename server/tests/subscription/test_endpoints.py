@@ -13,6 +13,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.product import ProductVisibility
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -293,6 +294,36 @@ class TestSubscriptionProductUpdate:
             json=dict(product_id=str(product_organization_second.id)),
         )
         assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_non_public_product(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        private_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            visibility=ProductVisibility.private,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(product_id=str(private_product.id)),
+        )
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["product"]["id"] == str(private_product.id)
 
     @pytest.mark.auth
     async def test_valid(

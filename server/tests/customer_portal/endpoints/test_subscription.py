@@ -3,7 +3,9 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import Customer, Member, Organization, Product, Subscription
+from polar.models.product import ProductVisibility
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
@@ -71,6 +73,27 @@ class TestCustomerSubscriptionProductUpdate:
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
             json=dict(product_id=str(product_organization_second.id)),
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_non_public_product(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        private_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            visibility=ProductVisibility.private,
+        )
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json=dict(product_id=str(private_product.id)),
         )
         assert response.status_code == 422
 

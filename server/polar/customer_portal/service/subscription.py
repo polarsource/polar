@@ -18,6 +18,7 @@ from polar.models import (
     Subscription,
     SubscriptionMeter,
 )
+from polar.models.product import ProductVisibility
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
 
@@ -184,7 +185,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         product_id: uuid.UUID,
     ) -> Subscription:
         return await subscription_service.update_product(
-            session, subscription, product_id=product_id
+            session,
+            subscription,
+            product_id=product_id,
+            allowed_visibilities=frozenset({ProductVisibility.public}),
         )
 
     async def uncancel(

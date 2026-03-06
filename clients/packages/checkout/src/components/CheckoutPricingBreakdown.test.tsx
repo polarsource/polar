@@ -333,14 +333,14 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText('Total after trial')).toBeInTheDocument()
-      expect(screen.getByText('Due today')).toBeInTheDocument()
+      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
+      expect(screen.getByText('Total due today')).toBeInTheDocument()
       expect(
-        screen.getByTestId('detail-row-Due today').textContent,
+        screen.getByTestId('detail-row-Total due today').textContent,
       ).toContain('$0')
-      // Should NOT show "Total after discount" when there's no discount
+      // Should NOT show "Total when discount expires" when there's no discount
       expect(
-        screen.queryByText('Total after discount'),
+        screen.queryByText('Total when discount expires'),
       ).not.toBeInTheDocument()
     })
 
@@ -366,9 +366,9 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText('Total after discount')).toBeInTheDocument()
-      expect(screen.getByText('Total after trial')).toBeInTheDocument()
-      expect(screen.getByText('Due today')).toBeInTheDocument()
+      expect(screen.getByText('Total when discount expires')).toBeInTheDocument()
+      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
+      expect(screen.getByText('Total due today')).toBeInTheDocument()
     })
   })
 

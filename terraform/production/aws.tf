@@ -41,17 +41,6 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# IAM roles
-# -----------------------------------------------------------------------------
-
-module "cloudfront_admin" {
-  source = "../modules/iam_roles/cloudfront_admin"
-
-  lambda_artifacts_bucket_arn = aws_s3_bucket.lambda_artifacts.arn
-  lambda_function_arns        = [module.image_resizer.function_arn]
-}
-
-# -----------------------------------------------------------------------------
 # Permission Sets
 # -----------------------------------------------------------------------------
 
@@ -134,7 +123,7 @@ resource "aws_ssoadmin_managed_policy_attachment" "admin" {
 resource "aws_ssoadmin_permission_set" "cloudfront_admin" {
   provider         = aws.sso
   name             = "CloudFrontAdmin"
-  description      = "Assume the CloudfrontAdmin IAM role for managing CDN distributions"
+  description      = "Manage CloudFront distributions, Lambda@Edge functions, and Lambda artifact S3 bucket"
   instance_arn     = local.sso_instance_arn
   session_duration = "PT8H"
 }
@@ -143,16 +132,40 @@ resource "aws_ssoadmin_permission_set_inline_policy" "cloudfront_admin" {
   provider           = aws.sso
   instance_arn       = local.sso_instance_arn
   permission_set_arn = aws_ssoadmin_permission_set.cloudfront_admin.arn
-  inline_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = module.cloudfront_admin.role_arn
-      },
+  inline_policy      = data.aws_iam_policy_document.cloudfront_admin_sso.json
+}
+
+data "aws_iam_policy_document" "cloudfront_admin_sso" {
+  statement {
+    actions = [
+      "cloudfront:ListDistributions",
+      "cloudfront:GetDistribution",
+      "cloudfront:UpdateDistribution",
+      "cloudfront:CreateInvalidation",
     ]
-  })
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "lambda:GetFunction",
+      "lambda:UpdateFunctionCode",
+      "lambda:PublishVersion",
+    ]
+    resources = [module.image_resizer.function_arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      aws_s3_bucket.lambda_artifacts.arn,
+      "${aws_s3_bucket.lambda_artifacts.arn}/*",
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------

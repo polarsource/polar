@@ -2,6 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { differenceInDays } from 'date-fns'
 import {
   DEFAULT_LOCALE,
   useTranslations,
@@ -41,6 +42,59 @@ const DetailRow = ({
     </div>
   )
 }
+
+function formatRelativeDate(date: string | Date): string {
+  const days = differenceInDays(date, new Date())
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'In 1 day'
+  return `In ${days} days`
+}
+
+function getDiscountEndDate(
+  trialEnd: string,
+  discount: NonNullable<schemas['CheckoutPublic']['discount']>,
+  interval: string | null,
+  intervalCount: number | null,
+): Date {
+  const date = new Date(trialEnd)
+  if (discount.duration === 'once') {
+    const count = intervalCount ?? 1
+    if (interval === 'year') {
+      date.setFullYear(date.getFullYear() + count)
+    } else {
+      date.setMonth(date.getMonth() + count)
+    }
+  } else if (
+    'duration_in_months' in discount &&
+    typeof discount.duration_in_months === 'number'
+  ) {
+    date.setMonth(date.getMonth() + discount.duration_in_months)
+  }
+  return date
+}
+
+const TrialSummaryRow = ({
+  label,
+  date,
+  locale,
+  children,
+}: PropsWithChildren<{
+  label: string
+  date: string | Date | null
+  locale: AcceptedLocale
+}>) => (
+  <div className="dark:text-polar-500 flex flex-row items-start justify-between gap-x-8 text-gray-500">
+    <span className="min-w-0 truncate">
+      {label}
+      {date && (
+        <span className="dark:text-polar-600 ml-1 text-gray-400">
+          ({formatRelativeDate(date)})
+        </span>
+      )}
+    </span>
+    <span className="shrink-0">{children}</span>
+  </div>
+)
 
 export interface CheckoutPricingBreakdownProps {
   checkout: schemas['CheckoutPublic']
@@ -237,7 +291,11 @@ const CheckoutPricingBreakdown = ({
         checkout.active_trial_interval_count &&
         checkout.currency && (
           <div className="dark:border-polar-700 mt-3 flex flex-col gap-y-2 border-t border-gray-300 pt-4">
-            <DetailRow title="Total after trial" className="text-gray-600">
+            <TrialSummaryRow
+              label="Total when trial ends"
+              date={checkout.trial_end}
+              locale={locale}
+            >
               <AmountLabel
                 amount={checkout.total_amount}
                 currency={checkout.currency}
@@ -246,25 +304,40 @@ const CheckoutPricingBreakdown = ({
                 mode="standard"
                 locale={locale}
               />
-            </DetailRow>
+            </TrialSummaryRow>
             {checkout.discount &&
               checkout.discount.duration !== 'forever' &&
-              checkout.discount_amount > 0 && (
-                <DetailRow
-                  title="Total after discount"
-                  className="text-gray-600"
+              checkout.discount_amount > 0 &&
+              checkout.trial_end && (
+                <TrialSummaryRow
+                  label="Total when discount expires"
+                  date={getDiscountEndDate(
+                    checkout.trial_end,
+                    checkout.discount,
+                    interval,
+                    intervalCount,
+                  )}
+                  locale={locale}
                 >
                   <AmountLabel
-                    amount={checkout.amount}
+                    amount={
+                      checkout.tax_amount && checkout.net_amount > 0
+                        ? checkout.amount +
+                          Math.round(
+                            checkout.tax_amount *
+                              (checkout.amount / checkout.net_amount),
+                          )
+                        : checkout.amount
+                    }
                     currency={checkout.currency}
                     interval={interval}
                     intervalCount={intervalCount}
                     mode="standard"
                     locale={locale}
                   />
-                </DetailRow>
+                </TrialSummaryRow>
               )}
-            <DetailRow title="Due today" emphasis>
+            <DetailRow title="Total due today" emphasis>
               {formatCurrency('standard', locale)(0, checkout.currency)}
             </DetailRow>
           </div>

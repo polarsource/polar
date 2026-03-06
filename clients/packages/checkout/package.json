@@ -88,7 +88,9 @@
     "markdown-to-jsx": "^8.0.0",
     "react-hook-form": "~7.71.2"
   },
-  "dependencies": {},
+  "dependencies": {
+    "date-fns": "^4.1.0"
+  },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",
     "@stripe/stripe-js": "^7.1.0",

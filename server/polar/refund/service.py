@@ -73,6 +73,13 @@ class RefundedAlready(RefundError):
         super().__init__(message, 403)
 
 
+class RefundDisputedPayment(RefundError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Refund cannot be issued for order with disputed payment: {order.id}"
+        super().__init__(message, 403)
+
+
 class RefundPendingCreation(RefundError):
     def __init__(self, refund_id: UUID) -> None:
         self.refund_id = refund_id
@@ -242,6 +249,9 @@ class RefundService:
                 if e.code == "charge_already_refunded":
                     log.warning("refund.attempted_already_refunded", order_id=order.id)
                     raise RefundedAlready(order)
+                elif e.code == "charge_disputed":
+                    log.warning("refund.attempted_charge_disputed", order_id=order.id)
+                    raise RefundDisputedPayment(order)
                 else:
                     raise e
 

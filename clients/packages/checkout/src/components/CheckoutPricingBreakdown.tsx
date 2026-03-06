@@ -1,6 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
+import { differenceInDays } from 'date-fns'
 import {
   DEFAULT_LOCALE,
   useTranslations,
@@ -39,6 +40,59 @@ const DetailRow = ({
     </div>
   )
 }
+
+function formatRelativeDate(date: Date): string {
+  const days = differenceInDays(date, new Date())
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'In 1 day'
+  return `In ${days} days`
+}
+
+function getDiscountEndDate(
+  trialEnd: Date,
+  discount: NonNullable<CheckoutPublic['discount']>,
+  interval: string | null,
+  intervalCount: number | null,
+): Date {
+  const date = new Date(trialEnd)
+  if (discount.duration === 'once') {
+    const count = intervalCount ?? 1
+    if (interval === 'year') {
+      date.setFullYear(date.getFullYear() + count)
+    } else {
+      date.setMonth(date.getMonth() + count)
+    }
+  } else if (
+    'durationInMonths' in discount &&
+    typeof discount.durationInMonths === 'number'
+  ) {
+    date.setMonth(date.getMonth() + discount.durationInMonths)
+  }
+  return date
+}
+
+const TrialSummaryRow = ({
+  label,
+  date,
+  locale,
+  children,
+}: PropsWithChildren<{
+  label: string
+  date: Date | null
+  locale: AcceptedLocale
+}>) => (
+  <div className="dark:text-polar-500 flex flex-row items-start justify-between gap-x-8 text-gray-500">
+    <span className="min-w-0 truncate">
+      {label}
+      {date && (
+        <span className="dark:text-polar-600 ml-1 text-gray-400">
+          ({formatRelativeDate(date)})
+        </span>
+      )}
+    </span>
+    <span className="shrink-0">{children}</span>
+  </div>
+)
 
 export interface CheckoutPricingBreakdownProps {
   checkout: CheckoutPublic
@@ -188,8 +242,7 @@ const CheckoutPricingBreakdown = ({
           </DetailRow>
 
           {!(
-            checkout.activeTrialInterval &&
-            checkout.activeTrialIntervalCount
+            checkout.activeTrialInterval && checkout.activeTrialIntervalCount
           ) && (
             <DetailRow title={totalLabel} emphasis>
               <div className="flex flex-col items-end gap-y-1">
@@ -237,7 +290,11 @@ const CheckoutPricingBreakdown = ({
         checkout.activeTrialIntervalCount &&
         checkout.currency && (
           <div className="dark:border-polar-700 mt-3 flex flex-col gap-y-2 border-t border-gray-300 pt-4">
-            <DetailRow title="Total after trial" className="text-gray-600">
+            <TrialSummaryRow
+              label="Total when trial ends"
+              date={checkout.trialEnd}
+              locale={locale}
+            >
               <AmountLabel
                 amount={checkout.totalAmount}
                 currency={checkout.currency}
@@ -246,25 +303,40 @@ const CheckoutPricingBreakdown = ({
                 mode="standard"
                 locale={locale}
               />
-            </DetailRow>
+            </TrialSummaryRow>
             {checkout.discount &&
               checkout.discount.duration !== 'forever' &&
-              checkout.discountAmount > 0 && (
-                <DetailRow
-                  title="Total after discount"
-                  className="text-gray-600"
+              checkout.discountAmount > 0 &&
+              checkout.trialEnd && (
+                <TrialSummaryRow
+                  label="Total when discount expires"
+                  date={getDiscountEndDate(
+                    checkout.trialEnd,
+                    checkout.discount,
+                    interval,
+                    intervalCount,
+                  )}
+                  locale={locale}
                 >
                   <AmountLabel
-                    amount={checkout.amount}
+                    amount={
+                      checkout.taxAmount && checkout.netAmount > 0
+                        ? checkout.amount +
+                          Math.round(
+                            checkout.taxAmount *
+                              (checkout.amount / checkout.netAmount),
+                          )
+                        : checkout.amount
+                    }
                     currency={checkout.currency}
                     interval={interval}
                     intervalCount={intervalCount}
                     mode="standard"
                     locale={locale}
                   />
-                </DetailRow>
+                </TrialSummaryRow>
               )}
-            <DetailRow title="Due today" emphasis>
+            <DetailRow title="Total due today" emphasis>
               {formatCurrency('standard', locale)(0, checkout.currency)}
             </DetailRow>
           </div>

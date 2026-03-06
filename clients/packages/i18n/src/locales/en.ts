@@ -170,14 +170,6 @@ export default {
         totalWhenDiscountExpires: 'Total when discount expires',
         totalDueToday: 'Total due today',
       },
-      relativeDate: {
-        today: 'Today',
-        inDays: {
-          _mode: 'plural',
-          '=1': 'In # day',
-          other: 'In # days',
-        },
-      },
     },
     pwywForm: {
       label: 'Name a fair price',

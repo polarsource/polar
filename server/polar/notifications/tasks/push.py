@@ -93,7 +93,7 @@ async def notifications_push(notification_id: UUID) -> None:
                 continue
 
             notification_type = notifications.parse_payload(notif)
-            [subject, _] = notification_type.render()
+            subject = notification_type.subject()
 
             try:
                 send_push_message(

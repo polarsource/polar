@@ -161,6 +161,7 @@ async def charge_pending(event_id: uuid.UUID) -> None:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
             checkout = await payment.resolve_checkout(session, charge)
             try:
+                organization = await payment.resolve_organization(session, charge)
                 order = await payment.resolve_order(session, charge, checkout)
             except payment.OrderDoesNotExist as e:
                 # Retry because we may not have been able to handle the order yet
@@ -170,7 +171,7 @@ async def charge_pending(event_id: uuid.UUID) -> None:
                 else:
                     raise
             await payment_service.upsert_from_stripe_charge(
-                session, charge, checkout, None, order
+                session, charge, organization, checkout, None, order
             )
 
 

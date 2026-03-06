@@ -1,10 +1,9 @@
 import pytest
 
 from polar.enums import PaymentProcessor
-from polar.models import Customer, Product
+from polar.models import Customer, Organization, Product
 from polar.models.payment import PaymentStatus
 from polar.models.wallet import WalletType
-from polar.payment.service import UnlinkedPaymentError
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -20,6 +19,7 @@ class TestUpsertFromStripeCharge:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create a checkout
         checkout = await create_checkout(save_fixture, products=[product])
@@ -39,7 +39,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, None, None
+            session, charge, organization, checkout, None, None
         )
 
         # Verify payment was created correctly
@@ -52,7 +52,7 @@ class TestUpsertFromStripeCharge:
         assert payment.method_metadata == {"brand": "visa"}
         assert payment.customer_email == "test@example.com"
         assert payment.checkout == checkout
-        assert payment.organization == checkout.organization
+        assert payment.organization == organization
         assert payment.risk_level == "normal"
         assert payment.risk_score == 10
 
@@ -62,6 +62,7 @@ class TestUpsertFromStripeCharge:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create an order
         order = await create_order(
@@ -81,7 +82,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, None, None, order
+            session, charge, organization, None, None, order
         )
 
         # Verify payment was created correctly
@@ -94,7 +95,7 @@ class TestUpsertFromStripeCharge:
         assert payment.method_metadata == {"brand": "visa"}
         assert payment.customer_email == "test@example.com"
         assert payment.order == order
-        assert payment.organization == order.organization
+        assert payment.organization == organization
 
     async def test_new_payment_with_checkout_and_order(
         self,
@@ -102,6 +103,7 @@ class TestUpsertFromStripeCharge:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create a checkout
         checkout = await create_checkout(
@@ -128,7 +130,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, None, order
+            session, charge, organization, checkout, None, order
         )
 
         # Verify payment was created correctly
@@ -142,7 +144,7 @@ class TestUpsertFromStripeCharge:
         assert payment.customer_email == "test@example.com"
         assert payment.checkout == checkout
         assert payment.order == order
-        assert payment.organization == checkout.organization
+        assert payment.organization == organization
 
     async def test_new_payment_with_wallet(
         self,
@@ -150,6 +152,7 @@ class TestUpsertFromStripeCharge:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         wallet = await create_wallet(
             save_fixture, type=WalletType.usage, customer=customer
@@ -170,7 +173,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, None, wallet, None
+            session, charge, organization, None, wallet, None
         )
 
         # Verify payment was created correctly
@@ -183,12 +186,16 @@ class TestUpsertFromStripeCharge:
         assert payment.method_metadata == {"brand": "visa"}
         assert payment.customer_email == "test@example.com"
         assert payment.wallet == wallet
-        assert payment.organization == customer.organization
+        assert payment.organization == organization
         assert payment.risk_level == "normal"
         assert payment.risk_score == 10
 
     async def test_failed_payment(
-        self, session: AsyncSession, save_fixture: SaveFixture, product: Product
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
     ) -> None:
         # Create a checkout
         checkout = await create_checkout(
@@ -213,7 +220,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, None, None
+            session, charge, organization, checkout, None, None
         )
 
         # Verify payment was created correctly
@@ -226,7 +233,7 @@ class TestUpsertFromStripeCharge:
         assert payment.method_metadata == {"brand": "visa"}
         assert payment.customer_email == "test@example.com"
         assert payment.checkout == checkout
-        assert payment.organization == checkout.organization
+        assert payment.organization == organization
         assert payment.risk_level == "high"
         assert payment.risk_score == 90
         assert payment.decline_reason == "fraud"
@@ -234,21 +241,6 @@ class TestUpsertFromStripeCharge:
             payment.decline_message
             == "This payment was declined due to suspected fraud"
         )
-
-    async def test_unlinked_payment_error(self, session: AsyncSession) -> None:
-        # Create a charge without checkout_id or invoice
-        charge = build_stripe_charge(
-            amount=1000,
-            status="succeeded",
-            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
-            billing_details={"email": "test@example.com"},
-        )
-
-        # Test upsert_from_stripe_charge should raise UnlinkedPaymentError
-        with pytest.raises(UnlinkedPaymentError) as excinfo:
-            await payment_service.upsert_from_stripe_charge(
-                session, charge, None, None, None
-            )
 
 
 @pytest.mark.asyncio
@@ -259,6 +251,7 @@ class TestUpsertFromStripePaymentIntent:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create a checkout
         checkout = await create_checkout(save_fixture, products=[product])
@@ -284,7 +277,7 @@ class TestUpsertFromStripePaymentIntent:
 
         # Test upsert_from_stripe_payment_intent
         payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, payment_intent, checkout, None
+            session, payment_intent, organization, checkout, None
         )
 
         # Verify payment was created correctly
@@ -297,7 +290,7 @@ class TestUpsertFromStripePaymentIntent:
         assert payment.method_metadata == {"brand": "visa", "last4": "4242"}
         assert payment.customer_email == "test@example.com"
         assert payment.checkout == checkout
-        assert payment.organization == checkout.organization
+        assert payment.organization == organization
         assert payment.decline_reason == "card_declined"
         assert payment.decline_message == "Your card was declined"
 
@@ -307,6 +300,7 @@ class TestUpsertFromStripePaymentIntent:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create an order
         order = await create_order(
@@ -336,7 +330,7 @@ class TestUpsertFromStripePaymentIntent:
 
         # Test upsert_from_stripe_payment_intent
         payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, payment_intent, None, order
+            session, payment_intent, organization, None, order
         )
 
         # Verify payment was created correctly
@@ -349,7 +343,7 @@ class TestUpsertFromStripePaymentIntent:
         assert payment.method_metadata == {"brand": "visa", "last4": "4242"}
         assert payment.customer_email == "test@example.com"
         assert payment.order == order
-        assert payment.organization == order.organization
+        assert payment.organization == organization
         assert payment.decline_reason == "card_declined"
         assert payment.decline_message == "Your card was declined"
 
@@ -359,6 +353,7 @@ class TestUpsertFromStripePaymentIntent:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create an order
         order = await create_order(
@@ -388,7 +383,7 @@ class TestUpsertFromStripePaymentIntent:
 
         # First call - creates the payment
         payment_1 = await payment_service.upsert_from_stripe_payment_intent(
-            session, payment_intent_1, None, order
+            session, payment_intent_1, organization, None, order
         )
         await session.flush()
 
@@ -419,7 +414,7 @@ class TestUpsertFromStripePaymentIntent:
 
         # Second call - updates the existing payment
         payment_2 = await payment_service.upsert_from_stripe_payment_intent(
-            session, payment_intent_2, None, order
+            session, payment_intent_2, organization, None, order
         )
         await session.flush()
 
@@ -437,6 +432,7 @@ class TestUpsertFromStripePaymentIntent:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         # Create an order
         order = await create_order(
@@ -466,7 +462,7 @@ class TestUpsertFromStripePaymentIntent:
 
         # Test upsert_from_stripe_payment_intent
         payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, payment_intent, None, order
+            session, payment_intent, organization, None, order
         )
 
         # Verify payment was created correctly

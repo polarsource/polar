@@ -936,7 +936,10 @@ class OrderService:
 
         async with self.acquire_payment_lock(session, order, release_on_success=False):
             if payment_method.processor == PaymentProcessor.stripe:
-                metadata: dict[str, Any] = {"order_id": str(order.id)}
+                metadata: dict[str, Any] = {
+                    "organization_id": str(order.organization.id),
+                    "order_id": str(order.id),
+                }
 
                 if order.tax_rate is not None:
                     metadata["tax_amount"] = order.tax_amount
@@ -1071,6 +1074,7 @@ class OrderService:
                 )
 
         metadata: dict[str, Any] = {
+            "organization_id": str(order.organization.id),
             "order_id": str(order.id),
             "manual_retry": "true",  # Flag to skip dunning progression on failure
         }

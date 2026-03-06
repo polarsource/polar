@@ -6,24 +6,11 @@ import { useEffect, useRef, useState } from 'react'
 // ── Event definitions ──────────────────────────────────────────────────────────
 const EVENT_DEFS = [
   {
-    tag: 'SUBSCRIPTION',
-    color: 'text-amber-500 dark:text-amber-400',
-    pill: 'bg-amber-50 dark:bg-amber-950/60',
-    valueRange: [80, 420] as [number, number],
-    unit: 'ms',
-  },
-  {
-    tag: 'PURCHASE',
-    color: 'text-blue-500 dark:text-blue-400',
-    pill: 'bg-blue-50 dark:bg-blue-950/60',
-    valueRange: [80, 420] as [number, number],
-    unit: 'ms',
-  },
-  {
     tag: 'INFERENCE',
-    color: 'text-emerald-500 dark:text-emerald-400',
-    pill: 'bg-emerald-50 dark:bg-emerald-950/60',
+    color: 'text-violet-500 dark:text-violet-400',
+    pill: 'bg-violet-50 dark:bg-violet-950/60',
     valueRange: [512, 16384] as [number, number],
+    meter: 'openai-usage',
     unit: 'tokens',
   },
 ] as const
@@ -57,7 +44,7 @@ function initBars() {
 // ── Component ─────────────────────────────────────────────────────────────────
 export const EventStream = () => {
   const [events, setEvents] = useState(() =>
-    Array.from({ length: 5 }, nextEvent),
+    Array.from({ length: 8 }, nextEvent),
   )
   const [bars, setBars] = useState(initBars)
   const totalRef = useRef(38_471)
@@ -65,7 +52,7 @@ export const EventStream = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setEvents((prev) => [nextEvent(), ...prev.slice(0, 4)])
+      setEvents((prev) => [nextEvent(), ...prev.slice(0, 7)])
       setBars((prev) => [...prev.slice(1), Math.random() * 0.65 + 0.12])
       totalRef.current += rand(4, 18)
       setTotal(totalRef.current)
@@ -103,7 +90,7 @@ export const EventStream = () => {
 
         {/* Event log */}
         <div
-          className="flex grow flex-col gap-y-2 overflow-auto p-2"
+          className="flex grow flex-col gap-y-2 overflow-auto p-4"
           style={{ perspective: 600, perspectiveOrigin: 'center top' }}
         >
           {events.map((e) => (
@@ -117,20 +104,22 @@ export const EventStream = () => {
             >
               <div className="flex flex-row items-center gap-x-6">
                 {/* Tag */}
-                <div className="w-24">
-                  <span
-                    className={`text-xxs w-fit shrink-0 rounded px-1 py-1 font-mono font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
-                  >
-                    {e.def.tag}
-                  </span>
-                </div>
+                <span
+                  className={`text-xxs w-fit shrink-0 rounded px-2 py-1 font-mono font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
+                >
+                  {e.def.tag}
+                </span>
+                {/* Meter */}
+                <span className="flex flex-1 font-mono text-xs text-nowrap">
+                  {e.def.meter}
+                </span>
                 {/* Org */}
-                <span className="dark:text-polar-500 min-w-0 flex-1 truncate font-mono text-xs text-gray-500">
+                <span className="dark:text-polar-500 flex-1 font-mono text-xs text-gray-500">
                   {e.org}
                 </span>
               </div>
               {/* Value */}
-              <span className="dark:text-polar-500 text-xxs shrink-0 font-mono font-medium text-gray-600 tabular-nums">
+              <span className="dark:text-polar-500 shrink-0 font-mono text-xs font-medium text-gray-600 tabular-nums">
                 {e.value.toLocaleString()}{' '}
                 <span className="dark:text-polar-500 text-gray-500">
                   {e.def.unit}
@@ -138,24 +127,6 @@ export const EventStream = () => {
               </span>
             </motion.div>
           ))}
-        </div>
-
-        {/* Sparkline footer */}
-        <div className="dark:border-polar-800 border-t border-gray-100 px-4 pt-3 pb-4">
-          <span className="dark:text-polar-500 mb-2 block font-mono text-xs tracking-widest text-gray-500 uppercase">
-            Ingestion rate
-          </span>
-          <div className="flex h-10 items-end gap-x-2">
-            {bars.map((h, i) => (
-              <motion.div
-                key={i}
-                className="flex-1 bg-black dark:bg-white"
-                animate={{ scaleY: h }}
-                style={{ originY: 1, height: '100%' }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-              />
-            ))}
-          </div>
         </div>
       </div>
     </motion.div>

@@ -275,6 +275,9 @@ class OrganizationService:
             old_member_model = organization.feature_settings.get(
                 "member_model_enabled", False
             )
+            old_seat_based = organization.feature_settings.get(
+                "seat_based_pricing_enabled", False
+            )
 
             organization.feature_settings = {
                 **organization.feature_settings,
@@ -283,9 +286,45 @@ class OrganizationService:
                 ),
             }
 
+            new_seat_based = organization.feature_settings.get(
+                "seat_based_pricing_enabled", False
+            )
             new_member_model = organization.feature_settings.get(
                 "member_model_enabled", False
             )
+
+            if old_seat_based and not new_seat_based:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": (
+                                "body",
+                                "feature_settings",
+                                "seat_based_pricing_enabled",
+                            ),
+                            "msg": "Seat-based pricing cannot be disabled once enabled.",
+                            "type": "value_error",
+                            "input": False,
+                        }
+                    ]
+                )
+
+            if new_seat_based and not new_member_model:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": (
+                                "body",
+                                "feature_settings",
+                                "seat_based_pricing_enabled",
+                            ),
+                            "msg": "Member model must be enabled before enabling seat-based pricing.",
+                            "type": "value_error",
+                            "input": True,
+                        }
+                    ]
+                )
+
             if not old_member_model and new_member_model:
                 enqueue_job(
                     "organization.backfill_members",

@@ -87,10 +87,11 @@ jobs:
                   return { title: t.title, snippet };
                 })
               );
-              const tests = failed.map(t => '• ' + t.title).join('\\n') || 'Unknown failure';
-              const errors = failed.map(t => t.snippet).filter(Boolean).join('\\n---\\n') || '';
-              // JSON-escape for safe embedding in Slack payload (escape quotes, backslashes, newlines)
-              const safeErrors = errors.replace(/\\\\/g, '\\\\\\\\').replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n').replace(/\\t/g, '\\\\t');
+              const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
+              const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
+              // Use JSON.stringify to safely escape for embedding in JSON payload
+              // Strip outer quotes since the payload template already has them
+              const safeErrors = JSON.stringify(errors).slice(1, -1);
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\n' + tests + '\nEOF\n');
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n' + safeErrors + '\nEOF\n');
             } catch(e) {
@@ -115,7 +116,7 @@ jobs:
         run: |
           RUN_ID=${{ github.run_id }}
           S3_PATH="s3://polar-public-files/e2e-artifacts/${RUN_ID}"
-          echo "urls<<EOF" >> $GITHUB_OUTPUT
+          TRACE_URLS=""
 
           for trace in test-results/*/trace.zip; do
             if [ -f "$trace" ]; then
@@ -124,12 +125,14 @@ jobs:
               PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${DIR_NAME}/trace.zip"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
               TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
-              # Clean up name: remove prefix, convert dashes to spaces, strip browser/retry suffix
               LABEL=$(echo "$DIR_NAME" | sed 's/^checkout-//' | sed 's/-chromium.*$//' | tr '-' ' ')
-              echo "• <${TRACE_URL}|${LABEL}>" >> $GITHUB_OUTPUT
+              [ -n "$TRACE_URLS" ] && TRACE_URLS="${TRACE_URLS}\\n"
+              TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${LABEL}>"
             fi
           done
 
+          echo "urls<<EOF" >> $GITHUB_OUTPUT
+          echo "$TRACE_URLS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload Playwright report

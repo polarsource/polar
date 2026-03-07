@@ -9,6 +9,7 @@ resource "render_web_service" "tailscale_router" {
   runtime_source = {
     image = {
       image_url              = var.image_url
+      tag                    = var.image_tag
       registry_credential_id = var.registry_credential_id
     }
   }

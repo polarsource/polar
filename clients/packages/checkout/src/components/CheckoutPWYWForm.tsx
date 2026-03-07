@@ -15,7 +15,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
@@ -24,7 +23,6 @@ export interface CheckoutPWYWFormProps {
   update: (data: CheckoutUpdatePublic) => void
   checkout: CheckoutPublic
   productPrice: ProductPriceCustom
-  themePreset: ThemingPresetProps
   locale?: AcceptedLocale
 }
 
@@ -32,7 +30,6 @@ export const CheckoutPWYWForm = ({
   update,
   checkout,
   productPrice,
-  themePreset,
   locale = DEFAULT_LOCALE,
 }: CheckoutPWYWFormProps) => {
   const t = useTranslations(locale)

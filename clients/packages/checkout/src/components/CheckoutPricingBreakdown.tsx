@@ -9,6 +9,7 @@ import {
 import { formatDate } from '@polar-sh/i18n/formatters/date'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { cn } from '@polar-sh/ui/lib/utils'
+import { addMonths, addYears } from 'date-fns'
 import { PropsWithChildren, useMemo } from 'react'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
@@ -40,6 +41,57 @@ const DetailRow = ({
     </div>
   )
 }
+
+function formatShortDate(date: Date, locale: AcceptedLocale): string {
+  const isCurrentYear = date.getFullYear() === new Date().getFullYear()
+  return formatDate(date, locale, {
+    month: 'short',
+    day: 'numeric',
+    ...(isCurrentYear ? {} : { year: 'numeric' }),
+  })
+}
+
+function getDiscountEndDate(
+  trialEnd: Date,
+  discount: NonNullable<CheckoutPublic['discount']>,
+  interval: string | null,
+  intervalCount: number | null,
+): Date {
+  if (discount.duration === 'once') {
+    const count = intervalCount ?? 1
+    return interval === 'year'
+      ? addYears(trialEnd, count)
+      : addMonths(trialEnd, count)
+  }
+  if (
+    'durationInMonths' in discount &&
+    typeof discount.durationInMonths === 'number'
+  ) {
+    return addMonths(trialEnd, discount.durationInMonths)
+  }
+  return trialEnd
+}
+
+const TrialSummaryRow = ({
+  label,
+  dateLabel,
+  children,
+}: PropsWithChildren<{
+  label: string
+  dateLabel: string | null
+}>) => (
+  <div className="dark:text-polar-500 flex flex-row items-start justify-between gap-x-8 text-gray-500">
+    <span className="min-w-0">
+      {label}
+      {dateLabel && (
+        <span className="dark:text-polar-600 ml-1 text-gray-400">
+          ({dateLabel})
+        </span>
+      )}
+    </span>
+    <span className="ml-auto shrink-0">{children}</span>
+  </div>
+)
 
 export interface CheckoutPricingBreakdownProps {
   checkout: CheckoutPublic
@@ -188,28 +240,32 @@ const CheckoutPricingBreakdown = ({
               : '—'}
           </DetailRow>
 
-          <DetailRow title={totalLabel} emphasis>
-            <div className="flex flex-col items-end gap-y-1">
-              <AmountLabel
-                amount={checkout.totalAmount}
-                currency={checkout.currency}
-                interval={interval}
-                intervalCount={intervalCount}
-                mode="standard"
-                locale={locale}
-              />
-              {formattedDiscountDuration && (
-                <span
-                  className={cn(
-                    'text-xs font-normal text-gray-500',
-                    'text-gray-600',
-                  )}
-                >
-                  {formattedDiscountDuration}
-                </span>
-              )}
-            </div>
-          </DetailRow>
+          {!(
+            checkout.activeTrialInterval && checkout.activeTrialIntervalCount
+          ) && (
+            <DetailRow title={totalLabel} emphasis>
+              <div className="flex flex-col items-end gap-y-1">
+                <AmountLabel
+                  amount={checkout.totalAmount}
+                  currency={checkout.currency}
+                  interval={interval}
+                  intervalCount={intervalCount}
+                  mode="standard"
+                  locale={locale}
+                />
+                {formattedDiscountDuration && (
+                  <span
+                    className={cn(
+                      'text-xs font-normal text-gray-500',
+                      'text-gray-600',
+                    )}
+                  >
+                    {formattedDiscountDuration}
+                  </span>
+                )}
+              </div>
+            </DetailRow>
+          )}
           {meteredPrices.length > 0 && (
             <DetailRow
               title={t('checkout.pricing.additionalMeteredUsage')}
@@ -229,49 +285,69 @@ const CheckoutPricingBreakdown = ({
       ) : (
         <span>{t('checkout.pricing.free')}</span>
       )}
-      {(checkout.trialEnd ||
-        (checkout.activeTrialInterval &&
-          checkout.activeTrialIntervalCount)) && (
-        <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
-          {checkout.activeTrialInterval &&
-            checkout.activeTrialIntervalCount && (
-              <DetailRow
-                emphasis
-                title={
-                  checkout.activeTrialInterval === 'year'
-                    ? t('checkout.trial.duration.years', {
-                        count: checkout.activeTrialIntervalCount,
-                      })
-                    : checkout.activeTrialInterval === 'month'
-                      ? t('checkout.trial.duration.months', {
-                          count: checkout.activeTrialIntervalCount,
-                        })
-                      : checkout.activeTrialInterval === 'week'
-                        ? t('checkout.trial.duration.weeks', {
-                            count: checkout.activeTrialIntervalCount,
-                          })
-                        : t('checkout.trial.duration.days', {
-                            count: checkout.activeTrialIntervalCount,
-                          })
-                }
-              >
-                <span>{t('checkout.pricing.free')}</span>
-              </DetailRow>
-            )}
-          {checkout.trialEnd && (
-            <span
-              className={cn(
-                'dark:text-polar-500 text-sm text-gray-500',
-                'text-gray-600',
-              )}
+      {checkout.activeTrialInterval &&
+        checkout.activeTrialIntervalCount &&
+        checkout.currency && (
+          <div className="dark:border-polar-700 mt-3 flex flex-col gap-y-2 border-t border-gray-300 pt-4">
+            <TrialSummaryRow
+              label={t('checkout.trial.summary.totalWhenTrialEnds')}
+              dateLabel={
+                checkout.trialEnd
+                  ? formatShortDate(checkout.trialEnd, locale)
+                  : null
+              }
             >
-              {t('checkout.trial.ends', {
-                endDate: formatDate(checkout.trialEnd, locale),
-              })}
-            </span>
-          )}
-        </div>
-      )}
+              <AmountLabel
+                amount={checkout.totalAmount}
+                currency={checkout.currency}
+                interval={interval}
+                intervalCount={intervalCount}
+                mode="standard"
+                locale={locale}
+              />
+            </TrialSummaryRow>
+            {checkout.discount &&
+              checkout.discount.duration !== 'forever' &&
+              checkout.discountAmount > 0 &&
+              checkout.trialEnd && (
+                <TrialSummaryRow
+                  label={t('checkout.trial.summary.totalWhenDiscountExpires')}
+                  dateLabel={formatShortDate(
+                    getDiscountEndDate(
+                      checkout.trialEnd,
+                      checkout.discount,
+                      interval,
+                      intervalCount,
+                    ),
+                    locale,
+                  )}
+                >
+                  <AmountLabel
+                    amount={
+                      checkout.taxAmount && checkout.netAmount > 0
+                        ? checkout.amount +
+                          Math.round(
+                            checkout.taxAmount *
+                              (checkout.amount / checkout.netAmount),
+                          )
+                        : checkout.amount
+                    }
+                    currency={checkout.currency}
+                    interval={interval}
+                    intervalCount={intervalCount}
+                    mode="standard"
+                    locale={locale}
+                  />
+                </TrialSummaryRow>
+              )}
+            <DetailRow
+              title={t('checkout.trial.summary.totalDueToday')}
+              emphasis
+            >
+              {formatCurrency('standard', locale)(0, checkout.currency)}
+            </DetailRow>
+          </div>
+        )}
     </div>
   )
 }

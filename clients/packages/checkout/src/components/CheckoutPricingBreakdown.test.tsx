@@ -320,8 +320,7 @@ describe('CheckoutPricingBreakdown', () => {
   })
 
   describe('trial section', () => {
-    it('shows trial duration and end date', () => {
-      const trialEnd = new Date('2026-04-05T00:00:00Z')
+    it('shows "Total after trial" and "Due today" $0', () => {
       const checkout = createBaseCheckout({
         amount: 999,
         netAmount: 999,
@@ -329,14 +328,211 @@ describe('CheckoutPricingBreakdown', () => {
         totalAmount: 999,
         activeTrialInterval: 'month',
         activeTrialIntervalCount: 1,
-        trialEnd,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/1 month trial/i)).toBeInTheDocument()
-      expect(screen.getByText(/Free/)).toBeInTheDocument()
-      expect(screen.getByText(/Trial ends/i)).toBeInTheDocument()
+      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
+      expect(screen.getByText('Total due today')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('detail-row-Total due today').textContent,
+      ).toContain('$0')
+      expect(
+        screen.queryByText('Total when discount expires'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows "Total when discount expires" for once discount on monthly', () => {
+      const checkout = createBaseCheckout({
+        amount: 999,
+        discountAmount: 500,
+        netAmount: 499,
+        taxAmount: null,
+        totalAmount: 499,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        discount: {
+          id: 'disc_1',
+          name: '50% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basisPoints: 5000,
+        } as CheckoutPublic['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.getByText('Total when discount expires'),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
+      expect(screen.getByText('Total due today')).toBeInTheDocument()
+    })
+
+    it('shows "Total when discount expires" for once discount on yearly', () => {
+      const checkout = createCheckout({
+        amount: 9999,
+        discountAmount: 5000,
+        netAmount: 4999,
+        taxAmount: null,
+        totalAmount: 4999,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        product: {
+          ...createCheckout().product,
+          recurringInterval: 'year',
+          recurringIntervalCount: 1,
+          isRecurring: true,
+        },
+        discount: {
+          id: 'disc_1',
+          name: '50% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basisPoints: 5000,
+        } as CheckoutPublic['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.getByText('Total when discount expires'),
+      ).toBeInTheDocument()
+    })
+
+    it('shows "Total when discount expires" for repeating discount with durationInMonths', () => {
+      const checkout = createCheckout({
+        amount: 2000,
+        discountAmount: 400,
+        netAmount: 1600,
+        taxAmount: null,
+        totalAmount: 1600,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        product: {
+          ...createCheckout().product,
+          recurringInterval: 'month',
+          recurringIntervalCount: 1,
+          isRecurring: true,
+        },
+        discount: {
+          id: 'disc_1',
+          name: '20% off',
+          type: 'percentage',
+          duration: 'repeating',
+          durationInMonths: 3,
+          code: null,
+          basisPoints: 2000,
+        } as CheckoutPublic['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.getByText('Total when discount expires'),
+      ).toBeInTheDocument()
+    })
+
+    it('does not show "Total when discount expires" for forever discount', () => {
+      const checkout = createCheckout({
+        amount: 2000,
+        discountAmount: 400,
+        netAmount: 1600,
+        taxAmount: null,
+        totalAmount: 1600,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        product: {
+          ...createCheckout().product,
+          recurringInterval: 'month',
+          recurringIntervalCount: 1,
+          isRecurring: true,
+        },
+        discount: {
+          id: 'disc_1',
+          name: '20% off',
+          type: 'percentage',
+          duration: 'forever',
+          code: null,
+          basisPoints: 2000,
+        } as CheckoutPublic['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(
+        screen.queryByText('Total when discount expires'),
+      ).not.toBeInTheDocument()
+      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
+    })
+
+    it('shows date without year when trial ends in current year', () => {
+      const currentYear = new Date().getFullYear()
+      const checkout = createBaseCheckout({
+        amount: 999,
+        netAmount: 999,
+        taxAmount: null,
+        totalAmount: 999,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date(`${currentYear}-06-15T00:00:00Z`),
+      })
+
+      const { container } = render(
+        <CheckoutPricingBreakdown checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('Jun 15')
+      expect(container.textContent).not.toContain(`${currentYear}`)
+    })
+
+    it('shows date with year when trial ends in a different year', () => {
+      const checkout = createBaseCheckout({
+        amount: 999,
+        netAmount: 999,
+        taxAmount: null,
+        totalAmount: 999,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2028-01-10T00:00:00Z'),
+      })
+
+      const { container } = render(
+        <CheckoutPricingBreakdown checkout={checkout} locale="en" />,
+      )
+
+      expect(container.textContent).toContain('Jan 10')
+      expect(container.textContent).toContain('2028')
+    })
+
+    it('hides the regular total row when trial is active', () => {
+      const checkout = createCheckout({
+        amount: 999,
+        netAmount: 999,
+        taxAmount: null,
+        totalAmount: 999,
+        activeTrialInterval: 'month',
+        activeTrialIntervalCount: 1,
+        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        product: {
+          ...createCheckout().product,
+          recurringInterval: 'month',
+          recurringIntervalCount: 1,
+          isRecurring: true,
+        },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.queryByTestId('detail-row-Monthly')).not.toBeInTheDocument()
+      expect(screen.getByText('Total due today')).toBeInTheDocument()
     })
   })
 

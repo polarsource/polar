@@ -308,61 +308,60 @@ class SettingsSection:
                     text("Danger Zone")
 
                 with tag.div(classes="space-y-3"):
-                    # Block/Unblock all refunds
+                    # Block/Unblock Refunds
                     with tag.div(classes="flex items-center justify-between"):
                         with tag.div():
                             with tag.div(classes="font-semibold text-sm"):
-                                text("Block All Refunds")
+                                if self.org.refunds_blocked:
+                                    text("Unblock Refunds")
+                                else:
+                                    text("Block Refunds")
                             with tag.div(classes="text-xs text-base-content/60"):
-                                text(
-                                    "Block refunds for all orders in this organization"
-                                )
+                                if self.org.refunds_blocked:
+                                    text(
+                                        "Allow refunds for all orders in this organization"
+                                    )
+                                else:
+                                    text(
+                                        "Prevent refunds for all orders in this organization"
+                                    )
 
-                        with tag.form(
-                            method="POST",
-                            action=str(
-                                request.url_for(
-                                    "organizations:block_all_refunds",
-                                    organization_id=self.org.id,
-                                )
-                            ),
-                        ):
-                            with button(
-                                type="submit",
-                                variant="error",
-                                size="sm",
-                                outline=True,
+                        if self.org.refunds_blocked:
+                            with tag.form(
+                                method="POST",
+                                action=str(
+                                    request.url_for(
+                                        "organizations:unblock_refunds",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
                             ):
-                                text("Block All Refunds")
-
-                    # Unblock all refunds
-                    with tag.div(classes="flex items-center justify-between"):
-                        with tag.div():
-                            with tag.div(classes="font-semibold text-sm"):
-                                text("Unblock All Refunds")
-                            with tag.div(classes="text-xs text-base-content/60"):
-                                text(
-                                    "Unblock refunds for all orders in this organization"
-                                )
-
-                        with tag.form(
-                            method="POST",
-                            action=str(
-                                request.url_for(
-                                    "organizations:unblock_all_refunds",
-                                    organization_id=self.org.id,
-                                )
-                            ),
-                        ):
-                            with button(
-                                type="submit",
-                                variant="error",
-                                size="sm",
-                                outline=True,
+                                with button(
+                                    type="submit",
+                                    variant="error",
+                                    size="sm",
+                                    outline=True,
+                                ):
+                                    text("Unblock Refunds")
+                        else:
+                            with tag.form(
+                                method="POST",
+                                action=str(
+                                    request.url_for(
+                                        "organizations:block_refunds",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
                             ):
-                                text("Unblock All Refunds")
+                                with button(
+                                    type="submit",
+                                    variant="error",
+                                    size="sm",
+                                    outline=True,
+                                ):
+                                    text("Block Refunds")
 
-                    # Delete organization
+                    # Delete Organization
                     with tag.div(classes="flex items-center justify-between"):
                         with tag.div():
                             with tag.div(classes="font-semibold text-sm"):

@@ -57,7 +57,6 @@ from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_session import UserSession
-from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
@@ -3227,11 +3226,11 @@ async def add_payment_method_domain(
 
 
 @router.post(
-    "/{organization_id}/block-all-refunds",
-    name="organizations:block_all_refunds",
+    "/{organization_id}/block-refunds",
+    name="organizations:block_refunds",
     dependencies=[Depends(get_admin)],
 )
-async def block_all_refunds(
+async def block_refunds(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
@@ -3242,14 +3241,25 @@ async def block_all_refunds(
     if organization is None:
         raise HTTPException(status_code=404)
 
-    count = await order_service.set_refunds_blocked_for_organization(
-        session, organization, blocked=True
+    if organization.refunds_blocked:
+        await add_toast(
+            request, "Refunds are already blocked for this organization.", "error"
+        )
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            )
+            + "?section=settings",
+            303,
+        )
+
+    organization = await repository.update(
+        organization, update_dict={"refunds_blocked": True}
     )
 
     await add_toast(
-        request,
-        f"Refunds have been blocked for {count} order(s) in this organization.",
-        "success",
+        request, "Refunds have been blocked for this organization.", "success"
     )
     return HXRedirectResponse(
         request,
@@ -3260,11 +3270,11 @@ async def block_all_refunds(
 
 
 @router.post(
-    "/{organization_id}/unblock-all-refunds",
-    name="organizations:unblock_all_refunds",
+    "/{organization_id}/unblock-refunds",
+    name="organizations:unblock_refunds",
     dependencies=[Depends(get_admin)],
 )
-async def unblock_all_refunds(
+async def unblock_refunds(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
@@ -3275,14 +3285,25 @@ async def unblock_all_refunds(
     if organization is None:
         raise HTTPException(status_code=404)
 
-    count = await order_service.set_refunds_blocked_for_organization(
-        session, organization, blocked=False
+    if not organization.refunds_blocked:
+        await add_toast(
+            request, "Refunds are not blocked for this organization.", "error"
+        )
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            )
+            + "?section=settings",
+            303,
+        )
+
+    organization = await repository.update(
+        organization, update_dict={"refunds_blocked": False}
     )
 
     await add_toast(
-        request,
-        f"Refunds have been unblocked for {count} order(s) in this organization.",
-        "success",
+        request, "Refunds have been unblocked for this organization.", "success"
     )
     return HXRedirectResponse(
         request,

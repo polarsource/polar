@@ -12,6 +12,7 @@
     "lint": "pnpm format:check && pnpm lint:only",
     "lint:changed": "eslint $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(js|jsx|ts|tsx)$')",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
@@ -95,6 +96,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/big.js": "^6.2.2",

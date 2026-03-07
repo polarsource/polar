@@ -326,39 +326,25 @@ class SettingsSection:
                                         "Prevent refunds for all orders in this organization"
                                     )
 
-                        if self.org.refunds_blocked:
-                            with tag.form(
-                                method="POST",
-                                action=str(
-                                    request.url_for(
-                                        "organizations:unblock_refunds",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
+                        with tag.form(
+                            method="POST",
+                            action=str(
+                                request.url_for(
+                                    "organizations:set_refunds_blocked",
+                                    organization_id=self.org.id,
+                                )
+                            )
+                            + f"?blocked={'false' if self.org.refunds_blocked else 'true'}",
+                        ):
+                            with button(
+                                type="submit",
+                                variant="error",
+                                size="sm",
+                                outline=True,
                             ):
-                                with button(
-                                    type="submit",
-                                    variant="error",
-                                    size="sm",
-                                    outline=True,
-                                ):
+                                if self.org.refunds_blocked:
                                     text("Unblock Refunds")
-                        else:
-                            with tag.form(
-                                method="POST",
-                                action=str(
-                                    request.url_for(
-                                        "organizations:block_refunds",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                            ):
-                                with button(
-                                    type="submit",
-                                    variant="error",
-                                    size="sm",
-                                    outline=True,
-                                ):
+                                else:
                                     text("Block Refunds")
 
                     # Delete Organization

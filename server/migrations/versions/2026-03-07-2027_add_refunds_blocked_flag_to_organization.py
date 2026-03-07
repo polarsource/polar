@@ -19,13 +19,19 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Add refunds_blocked column to organizations table
+    # Step 1: Add refunds_blocked column as nullable
     op.add_column(
         "organizations",
-        sa.Column(
-            "refunds_blocked", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("refunds_blocked", sa.Boolean(), nullable=True),
     )
+
+    # Step 2: Set default value for existing rows
+    op.execute(
+        "UPDATE organizations SET refunds_blocked = false WHERE refunds_blocked IS NULL"
+    )
+
+    # Step 3: Make the column non-nullable
+    op.alter_column("organizations", "refunds_blocked", nullable=False)
 
 
 def downgrade() -> None:

@@ -59,6 +59,7 @@ module "cloudfront_sandbox_assets" {
   s3_bucket_id                   = module.s3_buckets.public_files_bucket_id
   s3_bucket_regional_domain_name = module.s3_buckets.public_files_bucket_regional_domain_name
   s3_bucket_arn                  = module.s3_buckets.public_files_bucket_arn
+  cors_allowed_origins           = ["https://sandbox.polar.sh"]
 
   lambda_function_associations = [
     {
@@ -85,4 +86,5 @@ module "cloudfront_sandbox_cdn" {
   s3_bucket_id                   = module.s3_buckets.public_assets_bucket_id
   s3_bucket_regional_domain_name = module.s3_buckets.public_assets_bucket_regional_domain_name
   s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
+  cors_allowed_origins           = ["https://sandbox.polar.sh"]
 }

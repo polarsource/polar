@@ -1,0 +1,141 @@
+name: Preview Environment
+
+on:
+  workflow_call:
+    inputs:
+      action:
+        required: true
+        type: string
+      preview_id:
+        required: false
+        type: string
+        default: ""
+      pr_number:
+        required: false
+        type: string
+        default: ""
+      branch:
+        required: false
+        type: string
+        default: ""
+      sha:
+        required: false
+        type: string
+        default: ""
+      changed_backend:
+        required: false
+        type: boolean
+        default: false
+      changed_frontend:
+        required: false
+        type: boolean
+        default: false
+      changed_migrations:
+        required: false
+        type: boolean
+        default: false
+      changed_tinybird:
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      PREVIEW_POSTGRES_ADMIN_DSN:
+        required: false
+    outputs:
+      preview_id:
+        value: ${{ jobs.apply.outputs.preview_id }}
+      preview_url:
+        value: ${{ jobs.apply.outputs.preview_url }}
+      preview_status:
+        value: ${{ jobs.apply.outputs.preview_status }}
+      result_json:
+        value: ${{ jobs.apply.outputs.result_json }}
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: "Preview: ${{ inputs.action }}"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    concurrency:
+      group: preview-${{ inputs.preview_id != '' && inputs.preview_id || inputs.pr_number != '' && format('pr-{0}', inputs.pr_number) || inputs.branch }}
+      cancel-in-progress: false
+    outputs:
+      preview_id: ${{ steps.preview.outputs.preview_id }}
+      preview_url: ${{ steps.preview.outputs.preview_url }}
+      preview_status: ${{ steps.preview.outputs.preview_status }}
+      result_json: ${{ steps.preview.outputs.result_json }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: uv sync --dev
+
+      - name: Run preview control plane
+        id: preview
+        working-directory: ./server
+        env:
+          PREVIEW_BASE_DOMAIN: ${{ vars.PREVIEW_BASE_DOMAIN }}
+          PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.PREVIEW_POSTGRES_ADMIN_DSN }}
+          PREVIEW_POSTGRES_APP_HOST: ${{ vars.PREVIEW_POSTGRES_APP_HOST }}
+          PREVIEW_POSTGRES_APP_PORT: ${{ vars.PREVIEW_POSTGRES_APP_PORT }}
+          PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+          PREVIEWS_DRY_RUN: ${{ vars.PREVIEWS_DRY_RUN }}
+        run: |
+          set -euo pipefail
+
+          command=(
+            uv run python -m scripts.preview "${{ inputs.action }}"
+            --github-output "$GITHUB_OUTPUT"
+          )
+
+          if [[ -n "${{ inputs.preview_id }}" ]]; then
+            command+=(--preview-id "${{ inputs.preview_id }}")
+          fi
+
+          if [[ -n "${{ inputs.pr_number }}" ]]; then
+            command+=(--pr-number "${{ inputs.pr_number }}")
+          fi
+
+          if [[ -n "${{ inputs.branch }}" ]]; then
+            command+=(--branch "${{ inputs.branch }}")
+          fi
+
+          if [[ -n "${{ inputs.sha }}" ]]; then
+            command+=(--sha "${{ inputs.sha }}")
+          fi
+
+          if [[ "${{ inputs.action }}" == "create-or-update" ]]; then
+            if [[ "${{ inputs.changed_backend }}" == "true" ]]; then
+              command+=(--changed-backend)
+            fi
+            if [[ "${{ inputs.changed_frontend }}" == "true" ]]; then
+              command+=(--changed-frontend)
+            fi
+            if [[ "${{ inputs.changed_migrations }}" == "true" ]]; then
+              command+=(--changed-migrations)
+            fi
+            if [[ "${{ inputs.changed_tinybird }}" == "true" ]]; then
+              command+=(--changed-tinybird)
+            fi
+          fi
+
+          if [[ "$PREVIEWS_DRY_RUN" == "true" ]]; then
+            command+=(--dry-run)
+          fi
+
+          printf 'Running: %q ' "${command[@]}"
+          echo
+          "${command[@]}"

@@ -1,0 +1,171 @@
+name: Preview Environments
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Preview action
+        required: true
+        type: choice
+        options:
+          - create-or-update
+          - reset-data
+          - destroy
+        default: create-or-update
+      preview_id:
+        description: Override preview identifier
+        required: false
+        type: string
+      pr_number:
+        description: Pull request number for preview naming
+        required: false
+        type: string
+      branch:
+        description: Branch or ref to deploy
+        required: false
+        type: string
+      sha:
+        description: Exact git SHA to deploy
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  changes:
+    name: "Preview: Detect Changes"
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend || steps.defaults.outputs.backend || 'false' }}
+      frontend: ${{ steps.filter.outputs.frontend || steps.defaults.outputs.frontend || 'false' }}
+      migrations: ${{ steps.filter.outputs.migrations || steps.defaults.outputs.migrations || 'false' }}
+      tinybird: ${{ steps.filter.outputs.tinybird || steps.defaults.outputs.tinybird || 'false' }}
+    steps:
+      - name: Set default change flags
+        id: defaults
+        if: github.event_name != 'pull_request' || github.event.action == 'closed'
+        run: |
+          echo "backend=false" >> "$GITHUB_OUTPUT"
+          echo "frontend=false" >> "$GITHUB_OUTPUT"
+          echo "migrations=false" >> "$GITHUB_OUTPUT"
+          echo "tinybird=false" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+              - '.github/workflows/preview.yml'
+              - '.github/workflows/preview-environment.yml'
+            frontend:
+              - 'clients/**'
+              - '.github/workflows/preview.yml'
+              - '.github/workflows/preview-environment.yml'
+            migrations:
+              - 'server/migrations/**'
+            tinybird:
+              - 'server/tinybird/**'
+
+  preview_upsert:
+    name: "Preview: Create or Update"
+    needs: changes
+    if: |
+      (
+        github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'destroy' ||
+        github.event_name == 'pull_request' &&
+        github.event.action != 'closed'
+      )
+    uses: ./.github/workflows/preview-environment.yml
+    with:
+      action: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action || 'create-or-update' }}
+      preview_id: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.preview_id || '' }}
+      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
+      branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.inputs.branch || github.ref_name }}
+      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs.sha || github.sha }}
+      changed_backend: ${{ needs.changes.outputs.backend == 'true' }}
+      changed_frontend: ${{ needs.changes.outputs.frontend == 'true' }}
+      changed_migrations: ${{ needs.changes.outputs.migrations == 'true' }}
+      changed_tinybird: ${{ needs.changes.outputs.tinybird == 'true' }}
+    secrets:
+      PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+
+  preview_comment:
+    name: "Preview: Comment"
+    needs: preview_upsert
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.preview_upsert.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find existing preview comment
+        uses: peter-evans/find-comment@v4
+        id: comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- __PREVIEW_ENV__ -->"
+
+      - name: Create or update preview comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- __PREVIEW_ENV__ -->
+            Preview: ${{ needs.preview_upsert.outputs.preview_url }}
+            Status: ${{ needs.preview_upsert.outputs.preview_status }}
+            SHA: ${{ github.event.pull_request.head.sha }}
+
+  preview_destroy:
+    name: "Preview: Destroy"
+    if: |
+      (
+        github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy' ||
+        github.event_name == 'pull_request' &&
+        github.event.action == 'closed'
+      )
+    uses: ./.github/workflows/preview-environment.yml
+    with:
+      action: destroy
+      preview_id: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.preview_id || '' }}
+      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
+      branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.inputs.branch || github.ref_name }}
+      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs.sha || github.sha }}
+    secrets:
+      PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+
+  preview_delete_comment:
+    name: "Preview: Delete Comment"
+    needs: preview_destroy
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      needs.preview_destroy.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find existing preview comment
+        uses: peter-evans/find-comment@v4
+        id: comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- __PREVIEW_ENV__ -->"
+
+      - name: Delete preview comment
+        if: steps.comment.outputs.comment-id != ''
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.comment.outputs.comment-id }}
+            })

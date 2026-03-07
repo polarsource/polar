@@ -11,9 +11,8 @@ from httpx_oauth.oauth2 import GetAccessTokenError
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
-from polar.exceptions import NotPermitted
 from polar.integrations.loops.service import loops as loops_service
-from polar.kit.http import ReturnTo
+from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
     OAuthCallbackError,
     clear_login_cookie,
@@ -46,7 +45,7 @@ async def apple_authorize(
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
-        raise NotPermitted()
+        return RedirectResponse(get_safe_return_url(return_to), 303)
 
     state: dict[str, Any] = {"return_to": return_to}
     if signup_attribution:
@@ -80,9 +79,6 @@ async def apple_callback(
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
-    if is_user(auth_subject):
-        raise NotPermitted()
-
     if code is None or error is not None:
         raise OAuth2AuthorizeCallbackError(
             status_code=400,
@@ -107,6 +103,9 @@ async def apple_callback(
     )
 
     return_to = state_data.get("return_to", None)
+
+    if is_user(auth_subject):
+        return RedirectResponse(get_safe_return_url(return_to), 303)
 
     state_signup_attribution = state_data.get("signup_attribution")
     if state_signup_attribution:

@@ -1,14 +1,13 @@
 'use client'
 
-import type { schemas } from '@polar-sh/client'
-import type { PolarCore } from '@polar-sh/sdk/core'
+import type { Client, schemas } from '@polar-sh/client'
 import { useCallback, useState } from 'react'
 
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutFulfillmentListener = (
-  client: PolarCore,
+  client: Client,
   checkout: schemas['CheckoutPublic'],
   maxWaitingTimeMs: number = 15000,
 ): [() => Promise<void>, string | null] => {
@@ -16,9 +15,7 @@ export const useCheckoutFulfillmentListener = (
 
   const fulfillmentListener = useCallback(async () => {
     return await new Promise<void>((resolve, reject) => {
-      // @ts-ignore
-      const baseURL = client._baseURL
-      const url = `${baseURL}v1/checkouts/client/${checkout.client_secret}/stream`
+      const url = `${client.baseUrl}v1/checkouts/client/${checkout.client_secret}/stream`
       const [checkoutEvents, listen] = createSSEListener(url)
       const controller = listen()
 

@@ -2,6 +2,10 @@ import { expect, test } from '@playwright/test'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'
 
+test('TEMP: force failure to test Slack notification', async () => {
+  expect(true).toBe(false)
+})
+
 test('checkout subscription with discount', async ({ page }) => {
   const checkoutLink = process.env.E2E_CHECKOUT_LINK_SUBSCRIPTION
 

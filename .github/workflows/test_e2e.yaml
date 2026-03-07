@@ -61,24 +61,70 @@ jobs:
         run: pnpm exec playwright install chromium
 
       - name: Run E2E tests
-        run: pnpm test:e2e
+        id: e2e
+        continue-on-error: true
+        run: pnpm exec playwright test --reporter=json > test-results.json 2>&1 || true && cat test-results.json
+
+      - name: Parse test failures
+        id: failures
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          FAILED=$(node -e "
+            const r = require('./test-results.json');
+            const failed = (r.suites || []).flatMap(s =>
+              (s.specs || []).filter(t => t.ok === false).map(t => t.title)
+            );
+            console.log(failed.length ? failed.map(t => '• ' + t).join('\n') : 'Unknown failure');
+          " 2>/dev/null || echo "Could not parse test results")
+          echo "tests<<EOF" >> $GITHUB_OUTPUT
+          echo "$FAILED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: clients/apps/web/playwright-report/
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: clients/apps/web/test-results/
+          retention-days: 14
 
       - name: Notify Slack on failure
-        if: failure() && github.event_name == 'schedule'
+        if: steps.e2e.outcome == 'failure' # TEMP: removed schedule-only condition to test Slack
         uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "🚨 E2E tests failed against production",
+              "text": "🚨 E2E tests failed",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 *E2E tests failed against production*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                    "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
                   }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:* ${{ github.head_ref || github.ref_name }} | *Trigger:* ${{ github.event_name }} | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|Download report>"
+                    }
+                  ]
                 }
               ]
             }
+
+      - name: Fail if tests failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1

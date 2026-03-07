@@ -24,10 +24,10 @@ variable "github_repo" {
   type        = string
 }
 
-variable "github_branch" {
-  description = "GitHub branch allowed to assume the role"
-  type        = string
-  default     = "main"
+variable "github_subjects" {
+  description = "List of allowed OIDC sub claims (e.g. ref:refs/heads/main, pull_request)"
+  type        = list(string)
+  default     = ["ref:refs/heads/main"]
 }
 
 variable "policy_arns" {
@@ -57,7 +57,10 @@ resource "aws_iam_role" "github_actions" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/${var.github_branch}"
+            "token.actions.githubusercontent.com:sub" = [
+              for subject in var.github_subjects :
+              "repo:${var.github_org}/${var.github_repo}:${subject}"
+            ]
           }
         }
       }

@@ -106,7 +106,7 @@ jobs:
             if [ -f "$trace" ]; then
               TEST_NAME=$(basename $(dirname "$trace"))
               aws s3 cp "$trace" "${S3_PATH}/${TEST_NAME}/trace.zip" --no-progress
-              PUBLIC_URL="https://polar-public-files.s3.amazonaws.com/e2e-artifacts/${RUN_ID}/${TEST_NAME}/trace.zip"
+              PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${TEST_NAME}/trace.zip"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
               TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
               TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${TEST_NAME}>\n"

@@ -94,18 +94,18 @@ export default async function Page(props: {
   }
 
   if (checkout.status === 'succeeded') {
-    redirect(checkout.successUrl)
+    redirect(checkout.success_url)
   }
 
   if (checkout.status !== 'open') {
-    redirect(`/checkout/${checkout.clientSecret}/confirmation`)
+    redirect(`/checkout/${checkout.client_secret}/confirmation`)
   }
 
   const locale = await resolveLocale(_locale, checkout.locale)
 
   return (
     <CheckoutProvider
-      clientSecret={checkout.clientSecret}
+      clientSecret={checkout.client_secret}
       serverURL={getPublicServerURL()}
     >
       <CheckoutFormProvider locale={locale}>

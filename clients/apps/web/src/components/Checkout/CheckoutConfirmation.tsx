@@ -37,14 +37,14 @@ const StripeRequiresAction = ({
   locale = DEFAULT_LOCALE,
 }: {
   stripe: Stripe | null
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale)
   const [pendingHandling, setPendingHandling] = useState(false)
   const [success, setSuccess] = useState(false)
   const { intent_status, intent_client_secret } =
-    checkout.paymentProcessorMetadata
+    checkout.payment_processor_metadata
   const handleNextAction = useCallback(
     async (stripe: Stripe): Promise<void> => {
       if (success || pendingHandling) {
@@ -100,7 +100,7 @@ const StripeRequiresAction = ({
 }
 
 export interface CheckoutConfirmationProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   embed: boolean
   theme?: 'light' | 'dark'
   locale?: AcceptedLocale
@@ -134,7 +134,7 @@ export const CheckoutConfirmation = ({
   }, [client, checkout])
   const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(embed, theme)
 
-  const checkoutEvents = useCheckoutClientSSE(checkout.clientSecret)
+  const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)
   useEffect(() => {
     if (disabled) {
       return
@@ -180,7 +180,7 @@ export const CheckoutConfirmation = ({
         <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
           <Avatar
             className="h-16 w-16"
-            avatar_url={organization.avatarUrl}
+            avatar_url={organization.avatar_url}
             name={organization.name}
           />
           <h1 className="text-2xl font-medium">
@@ -205,7 +205,7 @@ export const CheckoutConfirmation = ({
           </p>
           {status === 'confirmed' && (
             <div className="flex items-center justify-center">
-              {checkout.paymentProcessor === 'stripe' ? (
+              {checkout.payment_processor === 'stripe' ? (
                 <Elements stripe={stripePromise}>
                   <ElementsConsumer>
                     {({ stripe }) => (
@@ -226,7 +226,7 @@ export const CheckoutConfirmation = ({
             <>
               <CheckoutSeatInvitations checkout={checkout} />
               {hasProductCheckout(checkout) &&
-                checkout.productPrice.amountType !== 'seat_based' && (
+                checkout.product_price.amount_type !== 'seat_based' && (
                   <CheckoutBenefits
                     checkout={checkout}
                     locale={locale}

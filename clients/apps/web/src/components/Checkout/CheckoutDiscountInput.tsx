@@ -59,22 +59,22 @@ export const CheckoutDiscountInput = ({
 
   const hasDiscount = !!checkout.discount
 
-  const discountCode = watch('discountCode')
+  const discountCode = watch('discount_code')
 
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return
-    clearErrors('discountCode')
-    await update({ discountCode })
+    clearErrors('discount_code')
+    await update({ discount_code: discountCode })
   }, [update, discountCode, clearErrors])
 
   const removeDiscountCode = useCallback(async () => {
-    clearErrors('discountCode')
-    setValue('discountCode', null)
-    await update({ discountCode: null })
+    clearErrors('discount_code')
+    setValue('discount_code', null)
+    await update({ discount_code: null })
     setExpanded(false)
   }, [update, clearErrors, setValue])
 
-  if (!checkout.allowDiscountCodes || !checkout.isDiscountApplicable) {
+  if (!checkout.allow_discount_codes || !checkout.is_discount_applicable) {
     return null
   }
 
@@ -106,7 +106,7 @@ export const CheckoutDiscountInput = ({
         )}
         <FormField
           control={control}
-          name="discountCode"
+          name="discount_code"
           render={({ field }) => (
             <FormItem>
               <FormControl>

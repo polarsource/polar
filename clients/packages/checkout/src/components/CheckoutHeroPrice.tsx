@@ -11,18 +11,18 @@ export interface CheckoutHeroPriceProps {
 }
 
 const CheckoutHeroPrice = ({ checkout, locale }: CheckoutHeroPriceProps) => {
-  const { product, productPrice } = checkout
+  const { product, product_price } = checkout
 
   return (
     <AmountLabel
-      amount={checkout.totalAmount ?? checkout.netAmount ?? 0}
-      currency={checkout.currency ?? productPrice.priceCurrency}
+      amount={checkout.total_amount ?? checkout.net_amount ?? 0}
+      currency={checkout.currency ?? product_price.price_currency}
       interval={
-        isLegacyRecurringPrice(productPrice)
-          ? productPrice.recurringInterval
-          : product.recurringInterval
+        isLegacyRecurringPrice(product_price)
+          ? product_price.recurring_interval
+          : product.recurring_interval
       }
-      intervalCount={product.recurringIntervalCount}
+      intervalCount={product.recurring_interval_count}
       mode="standard"
       locale={locale}
     />

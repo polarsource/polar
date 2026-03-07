@@ -94,8 +94,8 @@ const BaseCheckoutForm = ({
   beforeSubmit,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
-    ? isLegacyRecurringProductPrice(checkout.productPrice)
-      ? checkout.productPrice.recurring_interval
+    ? isLegacyRecurringProductPrice(checkout.product_price)
+      ? checkout.product_price.recurring_interval
       : checkout.product.recurring_interval
     : null
   const {
@@ -684,8 +684,8 @@ const BaseCheckoutForm = ({
         </Form>
         <div>
           <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-            {checkout.isPaymentFormRequired
-              ? checkout.activeTrialInterval
+            {checkout.is_payment_form_required
+              ? checkout.active_trial_interval
                 ? t('checkout.footer.mandateSubscriptionTrial', {
                     buttonLabel: checkoutLabel,
                   })

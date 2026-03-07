@@ -3,6 +3,7 @@
 import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
+import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror.js'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useEffect, useState } from 'react'

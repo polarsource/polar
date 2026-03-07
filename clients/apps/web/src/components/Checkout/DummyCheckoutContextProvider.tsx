@@ -19,16 +19,17 @@ const DummyCheckoutContextProvider = ({
   theme: _theme,
   children,
 }: React.PropsWithChildren<{
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   embed?: boolean
   theme?: 'light' | 'dark'
 }>) => {
-  const form = useForm<CheckoutUpdatePublic>({
+  const form = useForm<schemas['CheckoutUpdatePublic']>({
     defaultValues: {
       ...checkout,
-      customerBillingAddress:
-        checkout.customerBillingAddress as AddressInput | null,
-      allowTrial: undefined,
+      customer_billing_address: checkout.customer_billing_address as
+        | schemas['AddressInput']
+        | null,
+      allow_trial: undefined,
     },
   })
 
@@ -69,7 +70,7 @@ const DummyCheckoutContextProvider = ({
           client: {},
           form,
           update: async () => checkout,
-          confirm: async () => checkout as CheckoutPublicConfirmed,
+          confirm: async () => checkout as schemas['CheckoutPublicConfirmed'],
           loading: false,
           embed: embed === true,
           theme,

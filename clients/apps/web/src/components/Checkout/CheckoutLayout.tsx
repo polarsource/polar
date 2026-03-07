@@ -1,16 +1,17 @@
 import { PolarThemeProvider } from '@/app/providers'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { schemas } from '@polar-sh/client'
 import CheckoutEmbedLayout from './Embed/CheckoutEmbedLayout'
 
-interface CheckoutLayoutProps {
-  checkout: CheckoutPublic
+const CheckoutLayout = ({
+  children,
+  checkout,
+  embed,
+  theme,
+}: React.PropsWithChildren<{
+  checkout: schemas['CheckoutPublic']
   embed: boolean
   theme?: 'light' | 'dark'
-}
-
-const CheckoutLayout: React.FC<
-  React.PropsWithChildren<CheckoutLayoutProps>
-> = ({ children, checkout, embed, theme }) => {
+}>) => {
   if (embed) {
     return (
       <CheckoutEmbedLayout checkout={checkout} theme={theme}>

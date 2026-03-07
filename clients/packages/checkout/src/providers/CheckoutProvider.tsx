@@ -108,43 +108,75 @@ export const CheckoutProvider = ({
   server,
   children,
 }: React.PropsWithChildren<CheckoutProviderProps>) => {
-  const client = useMemo(
-    () => new PolarCore({ server, serverURL }),
-    [server, serverURL],
-  )
+  const client = useMemo(() => {
+    const baseUrl = (() => {
+      if (serverURL) {
+        return serverURL
+      }
+
+      switch (server) {
+        case 'sandbox': {
+          return 'https://sandbox-api.polar.sh/v1/'
+        }
+
+        case 'production':
+        case undefined: {
+          return 'https://api.polar.sh/v1/'
+        }
+
+        default:
+          throw new Error(`Unknown server: '${server}'`)
+      }
+    })()
+
+    return createClient(baseUrl)
+  }, [server, serverURL])
+
   const [checkout, setCheckout] = useState<schemas['CheckoutPublic'] | null>(
     null,
   )
 
   useEffect(() => {
-    checkoutsClientGet(client, { clientSecret }).then(
-      ({ ok, value, error }) => {
-        if (ok) {
-          setCheckout(value)
+    checkoutsClientGet(client, {
+      client_secret: clientSecret,
+    })
+      .then((result) => {
+        if (result.ok) {
+          setCheckout(result.value)
         } else {
-          throw error
         }
-      },
-    )
+      })
+      .catch((error) => {
+        throw error
+      })
   }, [client, clientSecret])
 
   const refresh = useCallback(async () => {
-    const result = await checkoutsClientGet(client, { clientSecret })
+    const result = await checkoutsClientGet(client, {
+      client_secret: clientSecret,
+    })
+
     if (result.ok) {
       setCheckout(result.value)
     }
+
     return result
   }, [client, clientSecret])
 
   const update = useCallback(
     async (data: schemas['CheckoutUpdatePublic']) => {
-      const result = await checkoutsClientUpdate(client, {
-        clientSecret: clientSecret,
-        checkoutUpdatePublic: data,
-      })
+      const result = await checkoutsClientUpdate(
+        client,
+        {
+          client_secret: clientSecret,
+        },
+        data,
+      )
+
       if (result.ok) {
         setCheckout(result.value)
       }
+
       return result
     },
     [client, clientSecret],
@@ -152,17 +184,16 @@ export const CheckoutProvider = ({
 
   const confirm = useCallback(
     async (data: schemas['CheckoutConfirmStripe']) => {
-      const result = await checkoutsClientConfirm(client, {
-        clientSecret: clientSecret,
-        checkoutConfirmStripe: data,
-      })
+      const result = await checkoutsClientConfirm(
+        client,
+        { client_secret: clientSecret },
+        data,
+      )
+
       if (result.ok) {
-        setCheckout(
-          result.value satisfies schemas['CheckoutPublicConfirmed'] & {
-            status: 'confirmed'
-          },
-        )
+        setCheckout(result.value)
       }
+
       return result
     },
     [client, clientSecret],

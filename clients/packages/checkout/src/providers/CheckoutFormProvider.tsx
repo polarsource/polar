@@ -63,8 +63,8 @@ export const CheckoutFormProvider = ({
   const form = useForm<schemas['CheckoutUpdatePublic']>({
     defaultValues: {
       ...checkout,
-      customer_billing_address: checkout.customer_billing_address satisfies
-        | schemas['AddressInput']
+      customer_billing_address: checkout.customer_billing_address as
+        | schemas['AddressInput'] // We need to typecast here for some reason (it tries to match all_countries to supported_countries)
         | null,
       discount_code: checkout.discount ? checkout.discount.code : undefined,
       allow_trial: undefined,

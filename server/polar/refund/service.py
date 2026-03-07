@@ -206,7 +206,9 @@ class RefundService:
     ) -> Refund:
         repository = RefundRepository.from_session(session)
 
-        if order.refunds_blocked:
+        # Check if refunds are blocked at order level or organization level
+        # Note: order.organization is eagerly loaded via OrderRepository.get_eager_options()
+        if order.refunds_blocked or order.organization.refunds_blocked:
             raise RefundsBlocked(order)
 
         if order.refunded:

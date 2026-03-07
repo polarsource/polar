@@ -879,3 +879,91 @@ class TestOrderUpdatedWebhook(StripeRefund):
 
         # Verify order.updated webhook was sent
         assert_order_updated_webhook_called(send_webhook_mock)
+
+
+@pytest.mark.asyncio
+class TestOrganizationRefundsBlocked:
+    async def test_create_refund_blocked_by_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that refunds are blocked when organization.refunds_blocked is True."""
+        # Set organization refunds_blocked flag
+        from polar.organization.repository import OrganizationRepository
+
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.update(
+            organization, update_dict={"refunds_blocked": True}
+        )
+
+        # Create an order
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Try to create a refund
+        create_schema = RefundCreate(
+            order_id=order.id,
+            amount=100,
+            reason=RefundReason.customer_request,
+        )
+
+        from polar.refund.service import RefundsBlocked
+
+        # Should raise RefundsBlocked exception
+        with pytest.raises(RefundsBlocked) as exc_info:
+            await refund_service.create(session, order, create_schema)
+
+        assert exc_info.value.order.id == order.id
+
+    async def test_create_refund_allowed_when_organization_not_blocked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that refunds work normally when organization.refunds_blocked is False."""
+        # Create an order with payment
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=100,
+            tax_amount=0,
+        )
+
+        # Update order to paid status
+        from polar.order.repository import OrderRepository
+
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.update(
+            order, update_dict={"status": OrderStatus.paid}
+        )
+
+        # Mock Stripe refund creation
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=100,
+            charge_id=payment.processor_id,
+        )
+
+        # Create a refund (should succeed)
+        create_schema = RefundCreate(
+            order_id=order.id,
+            amount=100,
+            reason=RefundReason.customer_request,
+        )
+
+        refund = await refund_service.create(session, order, create_schema)
+
+        # Verify refund was created
+        assert refund is not None
+        assert refund.order_id == order.id

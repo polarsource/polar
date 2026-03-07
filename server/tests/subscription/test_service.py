@@ -57,6 +57,7 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
+from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
@@ -3073,15 +3074,20 @@ class TestUpdateSeats:
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.update_seats(session, subscription, seats=10)
 
-    async def test_proration_invoice_behavior(
+    async def test_proration_invoice_behavior_success(
         self,
         session: AsyncSession,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         frozen_time: datetime,
         enqueue_job_mock: MagicMock,
         customer: Customer,
         organization: Organization,
     ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
         # Given: Subscription with 5 seats
         product = await create_product(
             save_fixture,
@@ -3105,12 +3111,57 @@ class TestUpdateSeats:
         )
         await session.flush()
 
-        # Then: Order creation job enqueued
-        enqueue_job_mock.assert_any_call(
-            "order.create_subscription_order",
-            subscription.id,
-            OrderBillingReasonInternal.subscription_update,
+        # Then: Order created and paid immediately
+        create_subscription_update_order_mock.assert_awaited_once_with(
+            session, subscription
         )
+
+    async def test_proration_invoice_behavior_failure(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            side_effect=PaymentFailed(PaymentFailedReason.card_error),
+        )
+
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        nested = await session.begin_nested()
+
+        # When: Update with invoice behavior
+        with pytest.raises(PaymentFailed):
+            await subscription_service.update_seats(
+                session,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
+
+        # Then: subscription is untouched
+        await nested.rollback()
+        await session.refresh(subscription)
+        assert subscription.seats == 5
+        assert subscription.amount == 5000
 
     async def test_proration_prorate_behavior(
         self,

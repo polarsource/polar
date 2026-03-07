@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
+from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
 
@@ -23,7 +24,7 @@ from polar.customer_portal.schemas.order import (
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email_template
-from polar.enums import PaymentProcessor, TaxProcessor
+from polar.enums import PaymentMode, PaymentProcessor, TaxProcessor
 from polar.event.service import event as event_service
 from polar.event.system import (
     BalanceCreditOrderMetadata,
@@ -204,17 +205,17 @@ class PaymentAlreadyInProgress(OrderError):
         super().__init__(message, 409)
 
 
-class CardPaymentFailed(OrderError):
-    """Exception for card-related payment failures that should not be retried."""
+class PaymentFailedReason(StrEnum):
+    missing_payment_method = "missing_payment_method"
+    card_error = "card_error"
 
-    def __init__(
-        self,
-        order: Order,
-        stripe_error: stripe_lib.CardError | stripe_lib.InvalidRequestError,
-    ) -> None:
-        self.order = order
-        self.stripe_error = stripe_error
-        message = f"Card payment failed for order {order.id}: {stripe_error.user_message or stripe_error.code}"
+
+class PaymentFailed(OrderError):
+    """Exception for payment failures."""
+
+    def __init__(self, reason: PaymentFailedReason) -> None:
+        self.reason = reason
+        message = f"Payment failed with reason: {reason}."
         super().__init__(message, 402)
 
 
@@ -604,7 +605,26 @@ class OrderService:
         session: AsyncSession,
         subscription: Subscription,
         billing_reason: OrderBillingReasonInternal,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
     ) -> Order:
+        """
+        Create an order for a subscription based on its pending billing entries.
+
+        Args:
+            session: Database session to use for the operation.
+            subscription: The subscription for which to create the order.
+            billing_reason: The reason for billing the subscription.
+            payment_mode: The mode of payment, either "sync" or "background".
+                In "background" mode, the order will be created with pending status
+                and payment will be triggered asynchronously.
+                In "sync" mode, the order will be created and payment
+                will be attempted immediately.
+                If payment fails, an exception will be raised and the order will not be created.
+
+        Returns:
+            The created Order object.
+        """
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
         ) as items:
@@ -729,14 +749,30 @@ class OrderService:
                 await self._emit_balance_credit_order_event(
                     session, order, subscription.organization
                 )
-            elif subscription.payment_method_id is None:
-                order = await self.handle_payment_failure(session, order)
-            else:
-                enqueue_job(
-                    "order.trigger_payment",
-                    order_id=order.id,
-                    payment_method_id=subscription.payment_method_id,
+            # Sync mode, attempt payment immediately and raise if it fails
+            elif payment_mode == PaymentMode.sync:
+                if subscription.payment_method_id is None:
+                    raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+                payment_method_repository = PaymentMethodRepository.from_session(
+                    session
                 )
+                payment_method = await payment_method_repository.get_by_id(
+                    subscription.payment_method_id
+                )
+                assert payment_method is not None
+                await self.trigger_payment(
+                    session, order, payment_method, payment_mode=payment_mode
+                )
+            # Async mode, allow payment to fail and be retried later
+            else:
+                if subscription.payment_method_id is None:
+                    order = await self.handle_payment_failure(session, order)
+                else:
+                    enqueue_job(
+                        "order.trigger_payment",
+                        order_id=order.id,
+                        payment_method_id=subscription.payment_method_id,
+                    )
 
             await self._on_order_created(session, order)
 
@@ -886,7 +922,12 @@ class OrderService:
         return order
 
     async def trigger_payment(
-        self, session: AsyncSession, order: Order, payment_method: PaymentMethod
+        self,
+        session: AsyncSession,
+        order: Order,
+        payment_method: PaymentMethod,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
     ) -> None:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
@@ -939,6 +980,7 @@ class OrderService:
                 metadata: dict[str, Any] = {
                     "organization_id": str(order.organization.id),
                     "order_id": str(order.id),
+                    "payment_mode": payment_mode,
                 }
 
                 if order.tax_rate is not None:
@@ -970,7 +1012,7 @@ class OrderService:
                         error_code=e.code,
                         error_message=e.user_message,
                     )
-                    raise CardPaymentFailed(order, e) from e
+                    raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:
                     error = e.error
                     if error is not None and error.message:
@@ -995,7 +1037,7 @@ class OrderService:
                             # Mark the payment as failed to trigger dunning
                             await self.handle_payment_failure(session, order)
 
-                            raise CardPaymentFailed(order, e) from e
+                            raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
 

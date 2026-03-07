@@ -122,7 +122,7 @@ class SubscriptionRepository(
         if product_load is None:
             product_load = joinedload(Subscription.product)
         return (
-            joinedload(Subscription.customer),
+            joinedload(Subscription.customer).joinedload(Customer.organization),
             product_load.options(
                 joinedload(Product.organization),
                 selectinload(Product.product_medias),

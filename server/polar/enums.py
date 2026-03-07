@@ -89,3 +89,23 @@ class RateLimitGroup(StrEnum):
     restricted = "restricted"
     default = "default"
     elevated = "elevated"
+
+
+class PaymentMode(StrEnum):
+    """
+    Internal flag to distinguish payment processing behaviour.
+    """
+
+    sync = "sync"
+    """
+    The payment is processed synchronously, and fails the operation if the payment fails.
+
+    Typical mode for subscription updates that require immediate payment.
+    """
+
+    background = "background"
+    """
+    The payment is processed asynchronously in the background, and doesn't affect the operation's result.
+
+    Typical mode for subscription cycle orders that can be retried.
+    """

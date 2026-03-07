@@ -9,7 +9,11 @@ Proration is the adjustment of charges based on the unused portion of the curren
 
 ## Types of Proration
 
-For both `prorate` and `invoice` proration types, the **subscription plan always changes immediately**, whether the change is an upgrade or a downgrade. The only difference between the two proration types is **when the price difference is charged or credited**.
+For both `prorate` and `invoice` proration types, the **subscription plan changes immediately upon successful payment**, whether the change is an upgrade or a downgrade. The only difference between the two proration types is **when the price difference is charged or credited**.
+
+<Warning>
+The subscription update is only applied if the payment succeeds. If the payment fails, an error is returned and the subscription remains unchanged.
+</Warning>
 
 ### Invoice Immediately (`invoice`)
 
@@ -17,7 +21,7 @@ The prorated price difference is charged or credited immediately when the subscr
 
 ### Next Invoice (`prorate`)
 
-The prorated price difference is charged or credited on the next invoice on updgrading or downgrading a subscription.
+The prorated price difference is charged or credited on the next invoice on upgrading or downgrading a subscription.
 
 ## How to change the default proration setting using dashboard
 

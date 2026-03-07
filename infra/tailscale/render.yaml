@@ -1,0 +1,16 @@
+services:
+  - type: worker
+    name: polar-subnet-router
+    env: docker
+    autoDeploy: false
+    envVars:
+      - key: TAILSCALE_AUTHKEY
+        sync: false
+      - key: TAILSCALE_VERSION
+        value: 1.64.0
+      - key: ADVERTISE_ROUTES
+        value: 10.0.0.0/8
+    disk:
+      name: tailscale-state
+      mountPath: /var/lib/tailscale
+      sizeGB: 1

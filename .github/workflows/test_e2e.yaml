@@ -3,6 +3,9 @@ name: "E2E Tests"
 on:
   pull_request:
     types: [opened, synchronize]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
 
 defaults:
   run:
@@ -14,6 +17,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
+    if: github.event_name == 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       clients: ${{ steps.filter.outputs.clients }}
@@ -30,15 +34,18 @@ jobs:
   e2e:
     name: "E2E Tests 🎭"
     needs: changes
-    if: needs.changes.outputs.clients == 'true'
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
 
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      NEXT_PUBLIC_API_URL: ${{ vars.E2E_API_URL }}
-      E2E_CHECKOUT_LINK_SUBSCRIPTION: ${{ secrets.E2E_CHECKOUT_LINK_SUBSCRIPTION }}
+      NEXT_PUBLIC_API_URL: ${{ github.event_name == 'schedule' && vars.E2E_PRODUCTION_API_URL || vars.E2E_API_URL }}
+      E2E_CHECKOUT_LINK_SUBSCRIPTION: ${{ github.event_name == 'schedule' && secrets.E2E_PRODUCTION_CHECKOUT_LINK_SUBSCRIPTION || secrets.E2E_CHECKOUT_LINK_SUBSCRIPTION }}
 
     steps:
       - name: Check out code
@@ -76,3 +83,23 @@ jobs:
 
       - name: Run E2E tests
         run: pnpm test:e2e
+
+      - name: Notify Slack on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🚨 E2E tests failed against production",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *E2E tests failed against production*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                  }
+                }
+              ]
+            }

@@ -2,7 +2,6 @@ import { defineConfig } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-// Load .env.local for POLAR_ACCESS_TOKEN etc.
 const envFile = resolve(__dirname, '.env.local')
 try {
   const content = readFileSync(envFile, 'utf-8')

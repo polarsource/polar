@@ -58,6 +58,7 @@ export default [
       'out/**',
       'build/**',
       'next-env.d.ts',
+      'e2e/**',
     ],
   },
 ]

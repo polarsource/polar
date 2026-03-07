@@ -87,12 +87,12 @@ jobs:
                   return { title: t.title, snippet };
                 })
               );
-              const tests = failed.map(t => '• ' + t.title).join('\\n') || 'Unknown failure';
-              const errors = failed.map(t => t.snippet).filter(Boolean).join('\\n---\\n') || '';
-              // Use JSON.stringify to safely escape for embedding in JSON payload
-              // Strip outer quotes since the payload template already has them
+              const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
+              const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
+              // JSON.stringify escapes quotes, newlines, etc. for safe embedding in JSON payload
+              const safeTests = JSON.stringify(tests).slice(1, -1);
               const safeErrors = JSON.stringify(errors).slice(1, -1);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\n' + tests + '\nEOF\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\n' + safeTests + '\nEOF\n');
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n' + safeErrors + '\nEOF\n');
             } catch(e) {
               const fs = require('fs');
@@ -169,13 +169,6 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "```${{ steps.failures.outputs.errors }}```"
                   }
                 },
                 {

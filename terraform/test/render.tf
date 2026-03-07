@@ -26,6 +26,7 @@ data "tfe_outputs" "production" {
 
 locals {
   environment_id = data.tfe_outputs.production.values.test_environment_id
+  test_enabled   = false
 }
 
 # =============================================================================
@@ -58,6 +59,7 @@ resource "render_postgres" "db" {
 }
 
 resource "render_redis" "redis" {
+  count             = local.test_enabled ? 1 : 0
   environment_id    = local.environment_id
   name              = "redis-test"
   plan              = "standard"
@@ -89,7 +91,7 @@ locals {
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
 
   # Redis connection info
-  redis_host = render_redis.redis.id
+  redis_host = local.test_enabled ? render_redis.redis[0].id : ""
   redis_port = "6379"
 }
 
@@ -115,15 +117,17 @@ locals {
 }
 
 data "render_web_service" "test_api" {
-  id = local.test_service_ids["api"]
+  count = local.test_enabled ? 1 : 0
+  id    = local.test_service_ids["api"]
 }
 
 data "render_web_service" "test_worker" {
-  for_each = { for k, v in local.test_service_ids : k => v if k != "api" }
+  for_each = local.test_enabled ? { for k, v in local.test_service_ids : k => v if k != "api" } : {}
   id       = each.value
 }
 
 module "test" {
+  count  = local.test_enabled ? 1 : 0
   source = "../modules/render_service"
 
   environment            = "test"
@@ -150,8 +154,8 @@ module "test" {
     allowed_hosts          = "[\"test.polar.sh\"]"
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
-    image_url              = data.render_web_service.test_api.runtime_source.image.image_url
-    image_digest           = data.render_web_service.test_api.runtime_source.image.digest
+    image_url              = data.render_web_service.test_api[0].runtime_source.image.image_url
+    image_digest           = data.render_web_service.test_api[0].runtime_source.image.digest
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"
@@ -282,10 +286,11 @@ module "test" {
 # =============================================================================
 
 resource "cloudflare_dns_record" "test_api" {
+  count   = local.test_enabled ? 1 : 0
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
   name    = "test-api.polar.sh"
   type    = "CNAME"
-  content = replace(module.test.api_service_url, "https://", "")
+  content = replace(module.test[0].api_service_url, "https://", "")
   proxied = true
   ttl     = 1
 }

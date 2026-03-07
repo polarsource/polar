@@ -34,7 +34,7 @@ from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
-from polar.models.discount import DiscountDuration
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationDetails, OrganizationStatus
@@ -843,6 +843,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 discount_create=DiscountPercentageOnceForeverDurationCreate(
                     name="Free",
                     code="free",
+                    type=DiscountType.percentage,
                     basis_points=10000,
                     duration=DiscountDuration.once,
                     organization_id=organization.id,

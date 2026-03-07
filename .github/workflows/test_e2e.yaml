@@ -63,7 +63,9 @@ jobs:
       - name: Run E2E tests
         id: e2e
         continue-on-error: true
-        run: pnpm exec playwright test --reporter=list --reporter=json:test-results.json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
+        run: pnpm exec playwright test --reporter=list --reporter=json
 
       - name: Parse test failures
         id: failures

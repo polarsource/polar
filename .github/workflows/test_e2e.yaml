@@ -87,8 +87,8 @@ jobs:
                   return { title: t.title, snippet };
                 })
               );
-              const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
-              const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
+              const tests = failed.map(t => '• ' + t.title).join('\\n') || 'Unknown failure';
+              const errors = failed.map(t => t.snippet).filter(Boolean).join('\\n---\\n') || '';
               // Use JSON.stringify to safely escape for embedding in JSON payload
               // Strip outer quotes since the payload template already has them
               const safeErrors = JSON.stringify(errors).slice(1, -1);
@@ -125,7 +125,10 @@ jobs:
               PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${DIR_NAME}/trace.zip"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
               TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
-              LABEL=$(echo "$DIR_NAME" | sed 's/^checkout-//' | sed 's/-chromium.*$//' | tr '-' ' ')
+              # Extract test name and retry suffix
+              BASE=$(echo "$DIR_NAME" | sed 's/^checkout-//' | sed 's/-chromium.*//' | tr '-' ' ')
+              RETRY=$(echo "$DIR_NAME" | grep -o 'retry[0-9]*' || true)
+              LABEL="${BASE}${RETRY:+ ($RETRY)}"
               [ -n "$TRACE_URLS" ] && TRACE_URLS="${TRACE_URLS}\\n"
               TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${LABEL}>"
             fi

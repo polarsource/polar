@@ -9,10 +9,10 @@ test('TEMP: force failure to test Slack notification', async () => {
 test('checkout subscription with discount', async ({ page }) => {
   const checkoutLink = process.env.E2E_CHECKOUT_LINK_SUBSCRIPTION
 
-  if (!checkoutLink) {
-    test.skip()
-    return
-  }
+  // if (!checkoutLink) {
+  //   test.skip()
+  //   return
+  // }
 
   await page.goto(`${API_BASE}/v1/checkout-links/${checkoutLink}/redirect`)
 

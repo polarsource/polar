@@ -87,10 +87,12 @@ jobs:
                   return { title: t.title, snippet };
                 })
               );
-              const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
-              const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
+              const tests = failed.map(t => '• ' + t.title).join('\\n') || 'Unknown failure';
+              const errors = failed.map(t => t.snippet).filter(Boolean).join('\\n---\\n') || '';
+              // JSON-escape for safe embedding in Slack payload (escape quotes, backslashes, newlines)
+              const safeErrors = errors.replace(/\\\\/g, '\\\\\\\\').replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n').replace(/\\t/g, '\\\\t');
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\n' + tests + '\nEOF\n');
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n' + errors + '\nEOF\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n' + safeErrors + '\nEOF\n');
             } catch(e) {
               const fs = require('fs');
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\nCould not parse test results\nEOF\n');

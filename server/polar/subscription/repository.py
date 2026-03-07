@@ -169,19 +169,20 @@ class SubscriptionRepository(
         self, auth_subject: AuthSubject[AuthCustomer | Member]
     ) -> Select[tuple[Subscription]]:
         """Get subscriptions where the customer has a claimed seat."""
-        if is_member(auth_subject):
-            customer_id = auth_subject.subject.customer_id
-        else:
-            customer_id = auth_subject.subject.id
+        statement = self.get_base_statement().join(
+            CustomerSeat, CustomerSeat.subscription_id == Subscription.id
+        )
 
-        statement = (
-            self.get_base_statement()
-            .join(CustomerSeat, CustomerSeat.subscription_id == Subscription.id)
-            .where(
-                CustomerSeat.customer_id == customer_id,
+        if is_member(auth_subject):
+            statement = statement.where(
+                CustomerSeat.member_id == auth_subject.subject.id,
                 CustomerSeat.status == SeatStatus.claimed,
             )
-        )
+        else:
+            statement = statement.where(
+                CustomerSeat.customer_id == auth_subject.subject.id,
+                CustomerSeat.status == SeatStatus.claimed,
+            )
 
         return statement
 

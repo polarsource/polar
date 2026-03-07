@@ -10,7 +10,6 @@ from polar.auth.models import AuthSubject, Customer, Member
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
-from polar.customer_portal.utils import get_customer_id
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -306,6 +305,7 @@ class LicenseKeyService:
         benefit: Benefit,
         license_key_id: UUID | None = None,
         key: str | None = None,
+        member_id: UUID | None = None,
     ) -> LicenseKey:
         props = cast(BenefitLicenseKeysProperties, benefit.properties)
         if key is not None:
@@ -340,11 +340,13 @@ class LicenseKeyService:
                 session,
                 create_schema=create_schema,
                 license_key_id=license_key_id,
+                member_id=member_id,
             )
 
         return await self.customer_create_grant(
             session,
             create_schema=create_schema,
+            member_id=member_id,
         )
 
     async def customer_update_grant(
@@ -353,6 +355,7 @@ class LicenseKeyService:
         *,
         license_key_id: UUID,
         create_schema: LicenseKeyCreate,
+        member_id: UUID | None = None,
     ) -> LicenseKey:
         key = await self.get_by_grant_or_raise(
             session,
@@ -361,6 +364,9 @@ class LicenseKeyService:
             customer_id=create_schema.customer_id,
             benefit_id=create_schema.benefit_id,
         )
+
+        if member_id is not None and key.member_id is None:
+            key.member_id = member_id
 
         update_attrs = [
             "status",
@@ -391,8 +397,10 @@ class LicenseKeyService:
         session: AsyncSession,
         *,
         create_schema: LicenseKeyCreate,
+        member_id: UUID | None = None,
     ) -> LicenseKey:
         key = LicenseKey(**create_schema.model_dump())
+        key.member_id = member_id
         session.add(key)
         await session.flush()
         assert key.id is not None
@@ -440,7 +448,7 @@ class LicenseKeyService:
         benefit_id: UUID | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         query = (
-            self._get_select_customer_base(auth_subject)
+            self._get_select_customer_base(session, auth_subject)
             .order_by(LicenseKey.created_at.asc())
             .options(
                 joinedload(LicenseKey.benefit),
@@ -459,7 +467,7 @@ class LicenseKeyService:
         license_key_id: UUID,
     ) -> LicenseKey | None:
         query = (
-            self._get_select_customer_base(auth_subject)
+            self._get_select_customer_base(session, auth_subject)
             .where(LicenseKey.id == license_key_id)
             .options(joinedload(LicenseKey.activations), joinedload(LicenseKey.benefit))
         )
@@ -467,15 +475,13 @@ class LicenseKeyService:
         return result.unique().scalar_one_or_none()
 
     def _get_select_customer_base(
-        self, auth_subject: AuthSubject[Customer | Member]
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Customer | Member],
     ) -> Select[tuple[LicenseKey]]:
-        return (
-            select(LicenseKey)
-            .options(joinedload(LicenseKey.customer))
-            .where(
-                LicenseKey.is_deleted.is_(False),
-                LicenseKey.customer_id == get_customer_id(auth_subject),
-            )
+        repository = LicenseKeyRepository.from_session(session)
+        return repository.get_customer_statement(auth_subject).options(
+            joinedload(LicenseKey.customer)
         )
 
 

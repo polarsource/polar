@@ -162,7 +162,11 @@ class MemberService:
         Returns:
             Created/existing Member if feature flag enabled, None if flag disabled
         """
-        if not organization.feature_settings.get("member_model_enabled", False):
+        member_model = organization.feature_settings.get("member_model_enabled", False)
+        seat_based = organization.feature_settings.get(
+            "seat_based_pricing_enabled", False
+        )
+        if not member_model and not seat_based:
             log.debug(
                 "member.create_owner_member.skipped",
                 reason="feature_flag_disabled",
@@ -255,7 +259,11 @@ class MemberService:
         Returns:
             Created/existing Member if feature flag enabled, None if flag disabled
         """
-        if not organization.feature_settings.get("member_model_enabled", False):
+        member_model = organization.feature_settings.get("member_model_enabled", False)
+        seat_based = organization.feature_settings.get(
+            "seat_based_pricing_enabled", False
+        )
+        if not member_model and not seat_based:
             return None
 
         repository = MemberRepository.from_session(session)
@@ -409,9 +417,13 @@ class MemberService:
         if customer is None:
             raise ResourceNotFound("Customer not found")
 
-        if not customer.organization.feature_settings.get(
+        member_model = customer.organization.feature_settings.get(
             "member_model_enabled", False
-        ):
+        )
+        seat_based = customer.organization.feature_settings.get(
+            "seat_based_pricing_enabled", False
+        )
+        if not member_model and not seat_based:
             raise NotPermitted("Member management is not enabled for this organization")
 
         repository = MemberRepository.from_session(session)

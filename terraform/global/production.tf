@@ -374,3 +374,11 @@ resource "tfe_variable" "tinybird_read_token_production" {
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "tailscale_authkey_production" {
+  key             = "tailscale_authkey"
+  category        = "terraform"
+  description     = "Tailscale auth key for the subnet router"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}

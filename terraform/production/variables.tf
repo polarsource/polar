@@ -362,3 +362,10 @@ variable "tinybird_read_token" {
   type        = string
   sensitive   = true
 }
+
+# Tailscale
+variable "tailscale_authkey" {
+  description = "Tailscale auth key for the subnet router"
+  type        = string
+  sensitive   = true
+}

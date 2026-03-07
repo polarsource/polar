@@ -201,3 +201,11 @@ resource "tfe_variable" "logfire_token" {
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
+
+resource "tfe_variable" "tailscale_authkey" {
+  key             = "tailscale_authkey"
+  category        = "terraform"
+  description     = "Tailscale auth key for the subnet router"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}

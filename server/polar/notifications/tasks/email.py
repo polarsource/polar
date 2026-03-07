@@ -2,7 +2,7 @@ from uuid import UUID
 
 import structlog
 
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.notifications.service import notifications
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
@@ -18,8 +18,9 @@ async def notifications_send(notification_id: UUID) -> None:
             return
 
         notification_type = notifications.parse_payload(notif)
-        (subject, body) = notification_type.render()
 
-        enqueue_email(
-            to_email_addr=notif.user.email, subject=subject, html_content=body
+        enqueue_email_template(
+            notification_type.to_email(),
+            to_email_addr=notif.user.email,
+            subject=notification_type.subject(),
         )

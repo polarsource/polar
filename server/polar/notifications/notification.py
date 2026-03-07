@@ -1,16 +1,18 @@
 from abc import abstractmethod
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 import pycountry
 from pydantic import UUID4, BaseModel, Discriminator, computed_field
 
 from polar.config import settings
-from polar.email.react import render_email_template
 from polar.kit.currency import format_currency
 from polar.kit.schemas import Schema
 from polar.models.order import OrderBillingReasonInternal
+
+if TYPE_CHECKING:
+    from polar.email.schemas import Email
 
 
 class NotificationType(StrEnum):
@@ -30,16 +32,14 @@ class NotificationPayloadBase(BaseModel):
     def template_name(cls) -> str:
         pass
 
-    def render(self) -> tuple[str, str]:
+    def to_email(self) -> Email:
         from polar.email.schemas import EmailAdapter
 
-        return self.subject(), render_email_template(
-            EmailAdapter.validate_python(
-                {
-                    "template": self.template_name(),
-                    "props": self,
-                }
-            )
+        return EmailAdapter.validate_python(
+            {
+                "template": self.template_name(),
+                "props": self,
+            }
         )
 
 

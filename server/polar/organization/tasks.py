@@ -6,12 +6,11 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
 from polar.customer.repository import CustomerRepository
-from polar.email.react import render_email_template
 from polar.email.schemas import (
     OrganizationReviewedEmail,
     OrganizationReviewedProps,
 )
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
@@ -144,10 +143,10 @@ async def organization_reviewed(
                         {"email": admin_user.email, "organization": organization}
                     )
                 )
-                enqueue_email(
+                enqueue_email_template(
+                    email,
                     to_email_addr=admin_user.email,
                     subject="Your organization review is complete",
-                    html_content=render_email_template(email),
                 )
 
 

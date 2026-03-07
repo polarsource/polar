@@ -3,6 +3,7 @@ import os
 
 import pytest
 
+from polar.email.react import render_email_template
 from polar.models.order import OrderBillingReasonInternal
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
@@ -13,8 +14,9 @@ from polar.notifications.notification import (
 )
 
 
-async def check_diff(email: tuple[str, str]) -> None:
-    (subject, body) = email
+async def check_diff(notification: NotificationPayloadBase) -> None:
+    subject = notification.subject()
+    body = render_email_template(notification.to_email())
     expected = f"{subject}\n<hr>\n{body}"
 
     # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
@@ -45,7 +47,7 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
         subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     )
 
-    await check_diff(n.render())
+    await check_diff(n)
 
 
 @pytest.mark.asyncio
@@ -66,7 +68,7 @@ async def test_MaintainerNewProductSaleNotification() -> None:
         billing_reason=OrderBillingReasonInternal.purchase,
     )
 
-    await check_diff(n.render())
+    await check_diff(n)
 
 
 @pytest.mark.asyncio
@@ -76,7 +78,7 @@ async def test_MaintainerCreateAccountNotificationPayload() -> None:
         url="https://example.com/url",
     )
 
-    await check_diff(n.render())
+    await check_diff(n)
 
 
 @pytest.mark.asyncio
@@ -86,7 +88,7 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
         amount=5000,
     )
 
-    await check_diff(n.render())
+    await check_diff(n)
 
 
 @pytest.mark.asyncio
@@ -124,7 +126,8 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
     ],
 )
 async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
-    subject, body = payload.render()
+    subject = payload.subject()
+    body = render_email_template(payload.to_email())
     assert str(123456 * 9) not in subject
     assert str(123456 * 9) not in body
 
@@ -151,6 +154,7 @@ async def test_MaintainerNewProductSaleNotification_backwards_compatibility() ->
     assert n.order_date is None
     assert n.billing_reason is None
 
-    subject, body = n.render()
+    subject = n.subject()
+    body = render_email_template(n.to_email())
     assert "Old Product" in body
     assert "$10.00" in subject

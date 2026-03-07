@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.email.schemas import OrganizationReviewedEmail
 from polar.held_balance.service import HeldBalanceService
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
@@ -19,8 +20,10 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture(autouse=True)
-def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.organization.tasks.enqueue_email", autospec=True)
+def enqueue_email_template_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.organization.tasks.enqueue_email_template", autospec=True
+    )
 
 
 @pytest.mark.asyncio
@@ -111,7 +114,7 @@ class TestOrganizationReviewed:
     async def test_existing_organization(
         self,
         mocker: MockerFixture,
-        enqueue_email_mock: MagicMock,
+        enqueue_email_template_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -136,13 +139,15 @@ class TestOrganizationReviewed:
 
         await organization_reviewed(organization.id, initial_review=True)
 
-        enqueue_email_mock.assert_called_once()
+        enqueue_email_template_mock.assert_called_once()
+        email_arg = enqueue_email_template_mock.call_args[0][0]
+        assert isinstance(email_arg, OrganizationReviewedEmail)
         get_admin_user_mock.assert_called_once()
 
     async def test_existing_organization_with_account(
         self,
         mocker: MockerFixture,
-        enqueue_email_mock: MagicMock,
+        enqueue_email_template_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -170,5 +175,7 @@ class TestOrganizationReviewed:
         await organization_reviewed(organization.id, initial_review=True)
 
         release_account_mock.assert_called_once()
-        enqueue_email_mock.assert_called_once()
+        enqueue_email_template_mock.assert_called_once()
+        email_arg = enqueue_email_template_mock.call_args[0][0]
+        assert isinstance(email_arg, OrganizationReviewedEmail)
         get_admin_user_mock.assert_called_once()

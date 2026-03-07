@@ -295,6 +295,7 @@ module "cloudfront_cdn" {
   s3_bucket_id                   = module.s3_buckets.public_assets_bucket_id
   s3_bucket_regional_domain_name = module.s3_buckets.public_assets_bucket_regional_domain_name
   s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
+  cors_allowed_origins           = ["https://polar.sh"]
 }
 
 # =============================================================================

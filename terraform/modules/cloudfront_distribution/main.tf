@@ -80,7 +80,8 @@ resource "aws_cloudfront_cache_policy" "this" {
 }
 
 resource "aws_cloudfront_response_headers_policy" "cors" {
-  name = "${var.name}-cors"
+  count = length(var.cors_allowed_origins) > 0 ? 1 : 0
+  name  = "${var.name}-cors"
 
   cors_config {
     access_control_allow_origins {
@@ -113,7 +114,7 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods             = ["GET", "HEAD"]
     target_origin_id           = var.s3_bucket_id
     cache_policy_id            = aws_cloudfront_cache_policy.this.id
-    response_headers_policy_id = length(var.cors_allowed_origins) > 0 ? aws_cloudfront_response_headers_policy.cors.id : null
+    response_headers_policy_id = length(var.cors_allowed_origins) > 0 ? aws_cloudfront_response_headers_policy.cors[0].id : null
     viewer_protocol_policy     = "redirect-to-https"
     compress                   = true
 

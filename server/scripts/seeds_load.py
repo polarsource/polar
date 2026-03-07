@@ -831,13 +831,26 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 label=f"{org_data['name']} store",
                 allow_discount_codes=True,
             )
-            checkout_link = await checkout_link_service.create(
+            await checkout_link_service.create(
                 session=session,
                 checkout_link_create=checkout_link_create,
                 auth_subject=auth_subject,
             )
-            checkout_link.client_secret = "polar_cl_e2e_seed_checkout_link_subscription"
-            session.add(checkout_link)
+
+            e2e_checkout_link = await checkout_link_service.create(
+                session=session,
+                checkout_link_create=CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product.id for product in org_products],
+                    label="E2E test checkout",
+                    allow_discount_codes=True,
+                ),
+                auth_subject=auth_subject,
+            )
+            e2e_checkout_link.client_secret = (
+                "polar_cl_e2e_seed_checkout_link_subscription"
+            )
+            session.add(e2e_checkout_link)
             await session.flush()
 
         if org_products:

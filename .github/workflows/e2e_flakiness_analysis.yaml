@@ -22,12 +22,11 @@ permissions:
 jobs:
   analyze:
     name: "Analyze E2E Failures"
-    # Only run on cron-triggered failures (not PR failures)
+    # TODO: Restrict to schedule-only once validated: github.event.workflow_run.event == 'schedule'
     if: >-
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'failure' &&
-       github.event.workflow_run.event == 'schedule')
+       github.event.workflow_run.conclusion == 'failure')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
 

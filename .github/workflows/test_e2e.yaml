@@ -13,6 +13,7 @@ defaults:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   e2e:
@@ -84,6 +85,38 @@ jobs:
           echo "$FAILED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Configure AWS credentials
+        if: steps.e2e.outcome == 'failure'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: e2e-traces
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload traces to S3
+        id: traces
+        if: steps.e2e.outcome == 'failure'
+        working-directory: ./clients/apps/web
+        run: |
+          RUN_ID=${{ github.run_id }}
+          S3_PATH="s3://polar-public-files/e2e-reports/${RUN_ID}"
+          TRACE_URLS=""
+
+          for trace in test-results/*/trace.zip; do
+            if [ -f "$trace" ]; then
+              TEST_NAME=$(basename $(dirname "$trace"))
+              aws s3 cp "$trace" "${S3_PATH}/${TEST_NAME}/trace.zip" --no-progress
+              PUBLIC_URL="https://polar-public-files.s3.amazonaws.com/e2e-reports/${RUN_ID}/${TEST_NAME}/trace.zip"
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
+              TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
+              TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${TEST_NAME}>\n"
+            fi
+          done
+
+          echo "urls<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$TRACE_URLS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -115,6 +148,13 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Traces:*\n${{ steps.traces.outputs.urls }}"
                   }
                 },
                 {

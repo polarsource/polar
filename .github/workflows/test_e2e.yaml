@@ -63,19 +63,21 @@ jobs:
       - name: Run E2E tests
         id: e2e
         continue-on-error: true
-        run: pnpm exec playwright test --reporter=json > test-results.json 2>&1 || true && cat test-results.json
+        run: pnpm exec playwright test --reporter=list --reporter=json:test-results.json
 
       - name: Parse test failures
         id: failures
         if: steps.e2e.outcome == 'failure'
         run: |
           FAILED=$(node -e "
-            const r = require('./test-results.json');
-            const failed = (r.suites || []).flatMap(s =>
-              (s.specs || []).filter(t => t.ok === false).map(t => t.title)
-            );
-            console.log(failed.length ? failed.map(t => '• ' + t).join('\n') : 'Unknown failure');
-          " 2>/dev/null || echo "Could not parse test results")
+            try {
+              const r = JSON.parse(require('fs').readFileSync('test-results.json', 'utf8'));
+              const failed = (r.suites || []).flatMap(s =>
+                (s.specs || []).filter(t => t.ok === false).map(t => t.title)
+              );
+              console.log(failed.length ? failed.map(t => '• ' + t).join('\n') : 'Unknown failure');
+            } catch { console.log('Could not parse test results'); }
+          ")
           echo "tests<<EOF" >> $GITHUB_OUTPUT
           echo "$FAILED" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT

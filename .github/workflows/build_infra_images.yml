@@ -1,0 +1,82 @@
+name: Build Infrastructure Images
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "infra/**"
+      - ".github/workflows/build_infra_images.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: "Detect Changes 🔍"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      images: ${{ steps.find.outputs.images }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - id: find
+        name: Find changed infra images
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            images=$(find infra -name Dockerfile -printf '%h\n' | xargs -I{} basename {} | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            changed_dirs=$(git diff --name-only HEAD~1 HEAD -- infra/ | cut -d/ -f2 | sort -u)
+            images="[]"
+            for dir in $changed_dirs; do
+              if [ -f "infra/$dir/Dockerfile" ]; then
+                images=$(echo "$images" | jq -c ". + [\"$dir\"]")
+              fi
+            done
+          fi
+          echo "images=$images" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: "Build ${{ matrix.image }} 🐳"
+    needs: detect
+    if: needs.detect.outputs.images != '[]'
+    strategy:
+      matrix:
+        image: ${{ fromJson(needs.detect.outputs.images) }}
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: useblacksmith/setup-docker-builder@v1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/polarsource/polar-${{ matrix.image }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: useblacksmith/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          context: ./infra/${{ matrix.image }}
+          platforms: linux/amd64

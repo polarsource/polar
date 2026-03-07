@@ -80,17 +80,19 @@ jobs:
             try {
               const fs = require('fs');
               const r = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
-              const failed = (r.suites || []).flatMap(s =>
-                (s.specs || []).filter(t => t.ok === false).map(t => {
-                  const lastResult = (t.tests || []).flatMap(tt => tt.results || []).pop();
-                  const error = lastResult?.error?.message || lastResult?.error?.snippet || '';
-                  // Clean ANSI codes and trim
-                  const clean = error.replace(/\x1b\[[0-9;]*m/g, '').trim();
-                  // Take first 5 lines to keep Slack message manageable
-                  const snippet = clean.split('\n').slice(0, 5).join('\n');
-                  return { title: t.title, snippet };
-                })
-              );
+              // Recursively collect specs from nested suites
+              const collectSpecs = (suites) =>
+                (suites || []).flatMap(s => [
+                  ...(s.specs || []),
+                  ...collectSpecs(s.suites),
+                ]);
+              const failed = collectSpecs(r.suites).filter(t => t.ok === false).map(t => {
+                const lastResult = (t.tests || []).flatMap(tt => tt.results || []).pop();
+                const error = lastResult?.error?.message || lastResult?.error?.snippet || '';
+                const clean = error.replace(/\x1b\[[0-9;]*m/g, '').trim();
+                const snippet = clean.split('\n').slice(0, 5).join('\n');
+                return { title: t.title, snippet };
+              });
               const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
               const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
               // JSON.stringify escapes quotes, newlines, etc. for safe embedding in JSON payload

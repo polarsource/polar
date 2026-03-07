@@ -1362,6 +1362,82 @@ class OrderService:
                 ),
             )
 
+    async def send_paid_receipt(self, session: AsyncSession, order: Order) -> None:
+        """Generate and send a paid receipt to the customer after order payment.
+
+        This fires from the *order.paid* event (``_on_order_paid``) so it
+        captures both immediate credit-card payments and async payment methods
+        (e.g. bank transfer) that are confirmed after order creation.
+
+        Missing billing information is handled gracefully: a warning is logged
+        and no email is sent (mirrors the behaviour in
+        ``send_confirmation_email``).
+        """
+        if order.billing_name is None or order.billing_address is None:
+            log.warning(
+                "Cannot generate paid receipt, missing billing info",
+                order_id=order.id,
+            )
+            return
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_customer(order.customer_id)
+
+        customer = order.customer
+        product = order.product
+
+        receipt_path, receipt_filename = await invoice_service.create_order_receipt(
+            order
+        )
+        receipt_url, _ = await invoice_service.get_order_receipt_url(
+            receipt_path, receipt_filename
+        )
+        attachments: list[Attachment] = [
+            {"remote_url": receipt_url, "filename": receipt_filename}
+        ]
+
+        subject = f"Your paid receipt for {order.description}"
+        token, _ = await customer_session_service.create_customer_session(
+            session, customer
+        )
+        params = urlencode(
+            {
+                "customer_session_token": token,
+                "id": str(order.id),
+                "email": customer.email,
+            }
+        )
+        url = settings.generate_frontend_url(
+            f"/{organization.slug}/portal?{params}"
+        )
+        email = EmailAdapter.validate_python(
+            {
+                "template": "order_confirmation",
+                "props": {
+                    "email": customer.email,
+                    "organization": organization,
+                    "product": product,
+                    "order": order,
+                    "url": url,
+                },
+            }
+        )
+        enqueue_email_template(
+            email,
+            **organization.email_from_reply,
+            to_email_addr=customer.email,
+            subject=subject,
+            attachments=attachments,
+        )
+
+        log.info(
+            "order.paid_receipt_sent",
+            order_id=order.id,
+            customer_id=customer.id,
+            receipt_filename=receipt_filename,
+        )
+
+    async def send_confirmation_email(
     async def send_confirmation_email(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -1758,6 +1834,7 @@ class OrderService:
         assert order.paid
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
+        enqueue_job("order.paid_receipt", order.id)
 
         metadata = OrderPaidMetadata(
             order_id=str(order.id),

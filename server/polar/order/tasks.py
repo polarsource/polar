@@ -212,6 +212,21 @@ async def order_invoice(order_id: uuid.UUID) -> None:
         await order_service.generate_invoice(session, order)
 
 
+
+@actor(actor_name="order.paid_receipt", priority=TaskPriority.LOW)
+async def order_paid_receipt(order_id: uuid.UUID) -> None:
+    """Generate and send a PAID receipt to the customer after an order is paid."""
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.send_paid_receipt(session, order)
+
+
 @actor(
     actor_name="order.process_dunning",
     cron_trigger=CronTrigger.from_crontab("0 * * * *"),

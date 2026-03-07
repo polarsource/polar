@@ -1,0 +1,217 @@
+name: "E2E Flakiness Analysis"
+
+on:
+  workflow_run:
+    workflows: ["E2E Tests"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run ID of the failed E2E workflow"
+        required: true
+
+concurrency:
+  group: e2e-flakiness-analysis
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  analyze:
+    name: "Analyze E2E Failures"
+    # TODO: Restrict to schedule-only once validated: github.event.workflow_run.event == 'schedule'
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'failure')
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Determine run ID
+        id: run-id
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
+          else
+            echo "id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download failure context artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: failure-context
+          path: failure-context
+          run-id: ${{ steps.run-id.outputs.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read failure context
+        id: context
+        run: |
+          CONTEXT="failure-context/failure-context.json"
+
+          {
+            echo "failed_tests<<GHEOF"
+            jq -r '.tests' "$CONTEXT"
+            echo "GHEOF"
+            echo "error_snippets<<GHEOF"
+            jq -r '.errors' "$CONTEXT"
+            echo "GHEOF"
+          } >> $GITHUB_OUTPUT
+
+          echo "environment_url=$(jq -r '.environment_url' "$CONTEXT")" >> $GITHUB_OUTPUT
+          echo "branch=$(jq -r '.branch' "$CONTEXT")" >> $GITHUB_OUTPUT
+          echo "trigger=$(jq -r '.trigger' "$CONTEXT")" >> $GITHUB_OUTPUT
+          echo "run_url=$(jq -r '.run_url' "$CONTEXT")" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack - investigating
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Investigating E2E failure",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🔍 *Investigating E2E failure...*\n\n*Failed tests:*\n${{ steps.context.outputs.failed_tests }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View analysis>"
+                    }
+                  ]
+                }
+              ]
+            }
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+
+      - name: Build analysis prompt
+        id: prompt
+        env:
+          FAILED_TESTS: ${{ steps.context.outputs.failed_tests }}
+          ERROR_SNIPPETS: ${{ steps.context.outputs.error_snippets }}
+          ENVIRONMENT_URL: ${{ steps.context.outputs.environment_url }}
+          BRANCH_NAME: ${{ steps.context.outputs.branch }}
+          TRIGGER_EVENT: ${{ steps.context.outputs.trigger }}
+          RUN_URL: ${{ steps.context.outputs.run_url }}
+        run: |
+          envsubst '${FAILED_TESTS} ${ERROR_SNIPPETS} ${ENVIRONMENT_URL} ${BRANCH_NAME} ${TRIGGER_EVENT} ${RUN_URL}' \
+            < .github/prompts/e2e-flakiness-analysis.md > /tmp/analysis-prompt.md
+
+      - name: Run Claude analysis
+        run: |
+          claude -p "$(cat /tmp/analysis-prompt.md)" \
+            --model claude-sonnet-4-6 \
+            --max-turns 30 \
+            --mcp-config .github/mcp/chrome-devtools-ci.json \
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh:*),mcp__chrome-devtools__navigate_page,mcp__chrome-devtools__click,mcp__chrome-devtools__fill,mcp__chrome-devtools__wait_for,mcp__chrome-devtools__take_snapshot,mcp__chrome-devtools__take_screenshot,mcp__chrome-devtools__select_page,mcp__chrome-devtools__list_pages,mcp__chrome-devtools__new_page,mcp__chrome-devtools__hover,mcp__chrome-devtools__press_key,mcp__chrome-devtools__type_text"
+
+      - name: Validate changes are scoped to e2e directory
+        run: |
+          CHANGED_FILES=$(git diff --name-only)
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+
+            INVALID_FILES=$(echo "$CHANGED_FILES" | grep -v '^clients/apps/web/e2e/' || true)
+            if [ -n "$INVALID_FILES" ]; then
+              echo "::error::Changes detected outside of clients/apps/web/e2e/ directory:"
+              echo "$INVALID_FILES"
+              echo "Reverting unauthorized changes..."
+              echo "$INVALID_FILES" | xargs git checkout --
+            fi
+          fi
+
+      - name: Read analysis result
+        id: result
+        if: always()
+        run: |
+          # Check if Claude created a PR (flaky fix)
+          PR_URL=$(gh pr list --head "fix/e2e-flaky-" --json url --jq '.[0].url' 2>/dev/null || true)
+
+          if [ -f analysis-result.json ]; then
+            CLASSIFICATION=$(jq -r '.classification' analysis-result.json)
+            SUMMARY=$(jq -r '.summary' analysis-result.json)
+            echo "classification=$CLASSIFICATION" >> $GITHUB_OUTPUT
+            {
+              echo "summary<<GHEOF"
+              echo "$SUMMARY"
+              echo "GHEOF"
+            } >> $GITHUB_OUTPUT
+          elif [ -n "$PR_URL" ]; then
+            echo "classification=flaky" >> $GITHUB_OUTPUT
+            echo "summary=Created fix PR" >> $GITHUB_OUTPUT
+            echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          else
+            echo "classification=unknown" >> $GITHUB_OUTPUT
+            echo "summary=Analysis completed without a clear result" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Slack - result
+        if: always()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "E2E analysis complete: ${{ steps.result.outputs.classification }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.result.outputs.classification == 'flaky' && '🔧 *Flaky test detected — creating fix PR*' || steps.result.outputs.classification == 'regression' && '🚨 *Real regression detected — manual fix needed*' || steps.result.outputs.classification == 'environment' && '🌐 *Environment issue — no code changes needed*' || '❓ *Analysis completed*' }}\n\n${{ steps.result.outputs.summary }}${{ steps.result.outputs.pr_url && format('\n\n*Fix PR:* <{0}|View PR>', steps.result.outputs.pr_url) || '' }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View analysis>"
+                    }
+                  ]
+                }
+              ]
+            }
+
+      - name: Upload analysis result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flakiness-analysis
+          path: analysis-result.json
+          retention-days: 14
+          if-no-files-found: ignore

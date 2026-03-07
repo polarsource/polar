@@ -13,31 +13,11 @@ defaults:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
-  changes:
-    name: "Detect changes"
-    if: github.event_name == 'pull_request'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    outputs:
-      clients: ${{ steps.filter.outputs.clients }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            clients:
-              - 'clients/**'
-              - '.github/workflows/test_e2e.yaml'
-
   e2e:
     name: "E2E Tests 🎭"
-    needs: changes
-    if: |
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
 
@@ -81,25 +61,168 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install chromium
 
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
       - name: Run E2E tests
-        run: pnpm test:e2e
+        id: e2e
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results.json
+        run: pnpm exec playwright test --reporter=list --reporter=json
+
+      - name: Parse test failures
+        id: failures
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          node -e "
+            try {
+              const fs = require('fs');
+              const r = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+              // Recursively collect specs from nested suites
+              const collectSpecs = (suites) =>
+                (suites || []).flatMap(s => [
+                  ...(s.specs || []),
+                  ...collectSpecs(s.suites),
+                ]);
+              const failed = collectSpecs(r.suites).filter(t => t.ok === false).map(t => {
+                const lastResult = (t.tests || []).flatMap(tt => tt.results || []).pop();
+                const error = lastResult?.error?.message || lastResult?.error?.snippet || '';
+                const clean = error.replace(/\x1b\[[0-9;]*m/g, '').trim();
+                const snippet = clean.split('\n').slice(0, 5).join('\n');
+                return { title: t.title, snippet };
+              });
+              const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
+              const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
+              // JSON.stringify escapes quotes, newlines, etc. for safe embedding in JSON payload
+              const safeTests = JSON.stringify(tests).slice(1, -1);
+              const safeErrors = JSON.stringify(errors).slice(1, -1);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\n' + safeTests + '\nEOF\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n' + safeErrors + '\nEOF\n');
+            } catch(e) {
+              const fs = require('fs');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\nCould not parse test results\nEOF\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n\nEOF\n');
+            }
+          "
+
+      - name: Create failure context artifact
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const context = {
+              tests: process.env.FAILED_TESTS,
+              errors: process.env.FAILED_ERRORS,
+              environment_url: process.env.NEXT_PUBLIC_API_URL,
+              branch: '${{ github.head_ref || github.ref_name }}',
+              trigger: '${{ github.event_name }}',
+              run_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            };
+            fs.writeFileSync('failure-context.json', JSON.stringify(context, null, 2));
+          "
+        env:
+          FAILED_TESTS: ${{ steps.failures.outputs.tests }}
+          FAILED_ERRORS: ${{ steps.failures.outputs.errors }}
+
+      - name: Upload failure context
+        if: steps.e2e.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-context
+          path: clients/apps/web/failure-context.json
+          retention-days: 7
+
+      - name: Configure AWS credentials
+        if: steps.e2e.outcome == 'failure'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: e2e-traces
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload traces to S3
+        id: traces
+        if: steps.e2e.outcome == 'failure'
+        working-directory: ./clients/apps/web
+        run: |
+          RUN_ID=${{ github.run_id }}
+          S3_PATH="s3://polar-public-files/e2e-artifacts/${RUN_ID}"
+          TRACE_URLS=""
+
+          for trace in test-results/*/trace.zip; do
+            if [ -f "$trace" ]; then
+              DIR_NAME=$(basename $(dirname "$trace"))
+              aws s3 cp "$trace" "${S3_PATH}/${DIR_NAME}/trace.zip" --no-progress
+              PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${DIR_NAME}/trace.zip"
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
+              TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
+              # Extract test name and retry suffix
+              BASE=$(echo "$DIR_NAME" | sed 's/^checkout-//' | sed 's/-chromium.*//' | tr '-' ' ')
+              RETRY=$(echo "$DIR_NAME" | grep -o 'retry[0-9]*' || true)
+              LABEL="${BASE}${RETRY:+ ($RETRY)}"
+              [ -n "$TRACE_URLS" ] && TRACE_URLS="${TRACE_URLS}\\n"
+              TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${LABEL}>"
+            fi
+          done
+
+          echo "urls<<EOF" >> $GITHUB_OUTPUT
+          echo "$TRACE_URLS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: clients/apps/web/playwright-report/
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: clients/apps/web/test-results/
+          retention-days: 14
 
       - name: Notify Slack on failure
-        if: failure() && github.event_name == 'schedule'
+        if: steps.e2e.outcome == 'failure' # TEMP: removed schedule-only condition to test Slack
         uses: slackapi/slack-github-action@v2
         with:
           webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "🚨 E2E tests failed against production",
+              "text": "🚨 E2E tests failed",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 *E2E tests failed against production*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                    "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Traces:*\n${{ steps.traces.outputs.urls }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:* ${{ github.head_ref || github.ref_name }} | *Trigger:* ${{ github.event_name }} | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|Download report>"
+                    }
+                  ]
                 }
               ]
             }
+
+      - name: Fail if tests failed
+        if: steps.e2e.outcome == 'failure'
+        run: exit 1

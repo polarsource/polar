@@ -20,6 +20,8 @@ from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
+from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
+from polar.discount.service import discount as discount_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
 from polar.kit.currency import PresentmentCurrency
@@ -32,6 +34,7 @@ from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationDetails, OrganizationStatus
@@ -831,6 +834,36 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             await checkout_link_service.create(
                 session=session,
                 checkout_link_create=checkout_link_create,
+                auth_subject=auth_subject,
+            )
+
+            e2e_checkout_link = await checkout_link_service.create(
+                session=session,
+                checkout_link_create=CheckoutLinkCreateProducts(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product.id for product in org_products],
+                    label="E2E test checkout",
+                    allow_discount_codes=True,
+                ),
+                auth_subject=auth_subject,
+            )
+            e2e_checkout_link.client_secret = (
+                "polar_cl_e2e_seed_checkout_link_subscription"
+            )
+            session.add(e2e_checkout_link)
+            await session.flush()
+
+        if org_products:
+            await discount_service.create(
+                session=session,
+                discount_create=DiscountPercentageOnceForeverDurationCreate(
+                    name="Free",
+                    code="free",
+                    type=DiscountType.percentage,
+                    basis_points=10000,
+                    duration=DiscountDuration.once,
+                    organization_id=organization.id,
+                ),
                 auth_subject=auth_subject,
             )
 

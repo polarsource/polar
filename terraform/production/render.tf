@@ -335,6 +335,21 @@ module "production" {
 }
 
 # =============================================================================
+# Tailscale Subnet Router
+# =============================================================================
+
+module "tailscale_router" {
+  source = "../modules/tailscale_router"
+
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+  tailscale_authkey      = var.tailscale_authkey
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar]
+}
+
+# =============================================================================
 # Cloudflare DNS
 # =============================================================================
 

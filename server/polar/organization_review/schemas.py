@@ -346,7 +346,7 @@ class ReviewAgentReport(Schema):
         description="Overall review verdict: APPROVE or DENY"
     )
     summary: str = Field(
-        description="2-3 sentence summary of the review findings for internal reviewers",
+        description="1-2 sentence summary of the review findings for internal reviewers",
     )
     merchant_summary: str = Field(
         default="",

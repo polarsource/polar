@@ -58,7 +58,9 @@ No payment history is neutral (new org), not negative.
 
 The following thresholds need human review:
 {thresholds_for_prompt()}
-- any dispute created
+
+If thare are any monthly products above $1000 USD, mark this as a high risk if the organization
+is new and has no prior payment history.
 
 ### 5. Prior History
 Check if the user has other organizations on Polar, especially denied or blocked ones. \
@@ -70,8 +72,7 @@ for automatic denial.
 - **APPROVE**: All dimensions are LOW risk, no policy violations, \
 legitimate products. Most organizations should be approved.
 - **DENY**: Clear policy violations, prior denials with re-creation, confirmed fraud \
-signals, sanctioned country, or edgy payment metrics. Be confident before denying. When you deny, a human \
-reviewer will review the decision.
+signals, sanctioned country, or edgy payment metrics. Be confident before denying.
 
 You MUST return only APPROVE or DENY. Never return any other verdict.
 
@@ -149,6 +150,16 @@ After assessing each dimension, provide an overall_risk_level:
 - LOW: All dimensions are low risk
 - MEDIUM: Some concerns but no clear violations
 - HIGH: Serious risk signals or clear violations
+
+
+## Response
+Keep responses concise and to the point. For example:
+
+### Example: Approve of digital framing business
+- verdict: APPROVE
+- summary: sells digital framing products, payment metrics looks healthy, and website appears legimitate for what they have been selling.
+- recommended_action: none
+
 
 ## Important Notes
 
@@ -246,7 +257,7 @@ This is a THRESHOLD review triggered when a payment threshold is hit. \
 Perform a comprehensive analysis across ALL five dimensions. \
 If website content is not available, flag this as a red flag.
 
-Setup & integration signals to check:
+Important information to check:
 - **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
 the API when creating checkouts programmatically) should point to domains matching the \
 organization's website. Mismatched or suspicious domains are yellow flags.

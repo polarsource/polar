@@ -42,7 +42,7 @@ class MetricThreshold:
         """Human-readable threshold description for AI prompts."""
         op = ">" if self.higher_is_worse else "<"
         u = self.unit
-        return f"{self.label}: {op} {self.warn}{u} warn, {op} {self.crit}{u} crit"
+        return f"{self.label}: {op}, {op} {self.crit}{u} critical"
 
 
 # -- Threshold definitions (single source of truth) --

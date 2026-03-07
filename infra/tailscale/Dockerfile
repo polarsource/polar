@@ -19,9 +19,9 @@ RUN apt-get -qq update \
     /var/tmp/*
 
 RUN echo "+search +short" > /root/.digrc
-COPY run-tailscale.sh /render/
+COPY --chmod=755 run-tailscale.sh /render/
 
-COPY install-tailscale.sh /tmp
+COPY --chmod=755 install-tailscale.sh /tmp/
 RUN /tmp/install-tailscale.sh && rm -r /tmp/*
 
 CMD ./run-tailscale.sh

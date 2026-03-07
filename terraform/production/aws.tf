@@ -318,6 +318,27 @@ resource "aws_iam_policy" "lambda_artifacts_upload" {
   })
 }
 
+resource "aws_iam_policy" "e2e_reports_upload" {
+  name = "e2e-reports-upload"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = [
+          "${module.s3_buckets.public_files_bucket_arn}/e2e-artifacts",
+          "${module.s3_buckets.public_files_bucket_arn}/e2e-artifacts/*"
+        ]
+      }
+    ]
+  })
+}
+
 module "github_oidc_backup" {
   source = "../modules/github_oidc"
 
@@ -327,6 +348,7 @@ module "github_oidc_backup" {
   policy_arns = {
     backups          = aws_iam_policy.polar_sh_backups.arn
     lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
+    e2e_reports      = aws_iam_policy.e2e_reports_upload.arn
   }
 }
 

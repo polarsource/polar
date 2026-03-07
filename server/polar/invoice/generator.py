@@ -241,11 +241,22 @@ class InvoiceGenerator(FPDF):
     totals_table_row_height: ClassVar[int] = 6
     """Height of each row in the totals table in points."""
 
+    # PAID stamp colours (green)
+    paid_stamp_color: ClassVar[tuple[int, int, int]] = (0, 148, 85)
+    """RGB colour for the PAID watermark stamp."""
+
+    paid_stamp_font_size: ClassVar[int] = 80
+    """Font size for the PAID stamp text."""
+
+    paid_stamp_alpha: ClassVar[float] = 0.18
+    """Opacity for the PAID stamp (0 = fully transparent, 1 = opaque)."""
+
     def __init__(
         self,
         data: Invoice,
         heading_title: str = "Invoice",
         add_sandbox_warning: bool = settings.ENV == Environment.sandbox,
+        paid_stamp: bool = False,
     ) -> None:
         super().__init__()
 
@@ -257,6 +268,7 @@ class InvoiceGenerator(FPDF):
         self.data = data
         self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
+        self.paid_stamp = paid_stamp
 
     def cell_height(self, font_size: float | None = None) -> float:
         font_size = font_size or self.base_font_size
@@ -283,6 +295,27 @@ class InvoiceGenerator(FPDF):
         self.cell(self.epw / 2, 10, f"{self.data.number}", align=Align.L)
         # Page number on the right
         self.cell(self.epw / 2, 10, f"Page {self.page_no()} of {{nb}}", align=Align.R)
+
+    def _draw_paid_stamp(self) -> None:
+        """Draw a semi-transparent diagonal 'PAID' watermark on the current page."""
+        self.set_alpha(self.paid_stamp_alpha)
+        self.set_font(self.font_name, style="B", size=self.paid_stamp_font_size)
+        self.set_text_color(*self.paid_stamp_color)
+
+        # Centre of the printable area
+        x = self.w / 2
+        y = self.h / 2
+
+        with self.rotation(angle=35, x=x, y=y):
+            text_w = self.get_string_width("PAID")
+            text_h = self.paid_stamp_font_size * 0.35 * 1.2
+            self.set_xy(x - text_w / 2, y - text_h / 2)
+            self.cell(w=text_w, h=text_h, text="PAID", align=Align.C)
+
+        # Restore defaults
+        self.set_alpha(1.0)
+        self.set_text_color(0, 0, 0)
+        self.set_font(self.font_name, size=self.base_font_size)
 
     def generate(self) -> None:
         self.set_metadata()
@@ -434,6 +467,10 @@ class InvoiceGenerator(FPDF):
                 text=self.data.notes,
                 markdown=True,
             )
+
+        # Draw PAID watermark on top of all content if requested
+        if self.paid_stamp:
+            self._draw_paid_stamp()
 
     def set_metadata(self) -> None:
         """Set metadata for the PDF document."""

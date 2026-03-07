@@ -2548,7 +2548,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.update(id=\"<value>\", request_body={\n        \"type\": \"meter_credit\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.update(id=\"<value>\", request_body={\n        \"type\": \"feature_flag\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -12945,7 +12945,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.benefit_grants.update(security=polar_sdk.CustomerPortalBenefitGrantsUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_benefit_grant_update={\n        \"benefit_type\": \"license_keys\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.benefit_grants.update(security=polar_sdk.CustomerPortalBenefitGrantsUpdateSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_benefit_grant_update={\n        \"benefit_type\": \"github_repository\",\n        \"properties\": {\n            \"account_id\": \"<id>\",\n        },\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",

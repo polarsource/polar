@@ -79,6 +79,24 @@ resource "aws_cloudfront_cache_policy" "this" {
   }
 }
 
+resource "aws_cloudfront_response_headers_policy" "cors" {
+  name = "${var.name}-cors"
+
+  cors_config {
+    access_control_allow_origins {
+      items = var.cors_allowed_origins
+    }
+    access_control_allow_methods {
+      items = ["GET", "HEAD", "OPTIONS"]
+    }
+    access_control_allow_headers {
+      items = ["*"]
+    }
+    access_control_allow_credentials = false
+    origin_override                  = true
+  }
+}
+
 resource "aws_cloudfront_distribution" "this" {
   enabled         = true
   is_ipv6_enabled = true
@@ -91,12 +109,13 @@ resource "aws_cloudfront_distribution" "this" {
   }
 
   default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = var.s3_bucket_id
-    cache_policy_id        = aws_cloudfront_cache_policy.this.id
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = var.s3_bucket_id
+    cache_policy_id            = aws_cloudfront_cache_policy.this.id
+    response_headers_policy_id = length(var.cors_allowed_origins) > 0 ? aws_cloudfront_response_headers_policy.cors.id : null
+    viewer_protocol_policy     = "redirect-to-https"
+    compress                   = true
 
     dynamic "lambda_function_association" {
       for_each = var.lambda_function_associations

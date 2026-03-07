@@ -107,6 +107,33 @@ jobs:
             }
           "
 
+      - name: Create failure context artifact
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const context = {
+              tests: process.env.FAILED_TESTS,
+              errors: process.env.FAILED_ERRORS,
+              environment_url: process.env.NEXT_PUBLIC_API_URL,
+              branch: '${{ github.head_ref || github.ref_name }}',
+              trigger: '${{ github.event_name }}',
+              run_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            };
+            fs.writeFileSync('failure-context.json', JSON.stringify(context, null, 2));
+          "
+        env:
+          FAILED_TESTS: ${{ steps.failures.outputs.tests }}
+          FAILED_ERRORS: ${{ steps.failures.outputs.errors }}
+
+      - name: Upload failure context
+        if: steps.e2e.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-context
+          path: clients/apps/web/failure-context.json
+          retention-days: 7
+
       - name: Configure AWS credentials
         if: steps.e2e.outcome == 'failure'
         uses: aws-actions/configure-aws-credentials@v6

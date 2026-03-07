@@ -1,10 +1,7 @@
 name: Server
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    types: [opened, synchronize, edited]
+  workflow_dispatch:
 
 permissions:
   contents: read

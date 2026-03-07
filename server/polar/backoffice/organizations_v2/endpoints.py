@@ -3226,13 +3226,14 @@ async def add_payment_method_domain(
 
 
 @router.post(
-    "/{organization_id}/block-refunds",
-    name="organizations:block_refunds",
+    "/{organization_id}/refunds-blocked",
+    name="organizations:set_refunds_blocked",
     dependencies=[Depends(get_admin)],
 )
-async def block_refunds(
+async def set_refunds_blocked(
     request: Request,
     organization_id: UUID4,
+    blocked: bool,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
@@ -3241,9 +3242,12 @@ async def block_refunds(
     if organization is None:
         raise HTTPException(status_code=404)
 
-    if organization.refunds_blocked:
+    if organization.refunds_blocked == blocked:
+        status = "blocked" if blocked else "not blocked"
         await add_toast(
-            request, "Refunds are already blocked for this organization.", "error"
+            request,
+            f"Refunds are already {status} for this organization.",
+            "error",
         )
         return HXRedirectResponse(
             request,
@@ -3255,55 +3259,12 @@ async def block_refunds(
         )
 
     organization = await repository.update(
-        organization, update_dict={"refunds_blocked": True}
+        organization, update_dict={"refunds_blocked": blocked}
     )
 
+    action = "blocked" if blocked else "unblocked"
     await add_toast(
-        request, "Refunds have been blocked for this organization.", "success"
-    )
-    return HXRedirectResponse(
-        request,
-        str(request.url_for("organizations:detail", organization_id=organization_id))
-        + "?section=settings",
-        303,
-    )
-
-
-@router.post(
-    "/{organization_id}/unblock-refunds",
-    name="organizations:unblock_refunds",
-    dependencies=[Depends(get_admin)],
-)
-async def unblock_refunds(
-    request: Request,
-    organization_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    repository = OrganizationRepository.from_session(session)
-    organization = await repository.get_by_id(organization_id)
-
-    if organization is None:
-        raise HTTPException(status_code=404)
-
-    if not organization.refunds_blocked:
-        await add_toast(
-            request, "Refunds are not blocked for this organization.", "error"
-        )
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            )
-            + "?section=settings",
-            303,
-        )
-
-    organization = await repository.update(
-        organization, update_dict={"refunds_blocked": False}
-    )
-
-    await add_toast(
-        request, "Refunds have been unblocked for this organization.", "success"
+        request, f"Refunds have been {action} for this organization.", "success"
     )
     return HXRedirectResponse(
         request,

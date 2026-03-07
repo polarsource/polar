@@ -1,13 +1,10 @@
 'use client'
 
+import type { schemas } from '@polar-sh/client'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientConfirm } from '@polar-sh/sdk/funcs/checkoutsClientConfirm'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { checkoutsClientUpdate } from '@polar-sh/sdk/funcs/checkoutsClientUpdate'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import type { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror'
 import type { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import type {
@@ -38,10 +35,10 @@ const stub = (): never => {
 }
 
 export interface CheckoutContextProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   refresh: () => Promise<
     Result<
-      CheckoutPublic,
+      schemas['CheckoutPublic'],
       | ResourceNotFound
       | ExpiredCheckoutError
       | HTTPValidationError
@@ -55,10 +52,10 @@ export interface CheckoutContextProps {
     >
   >
   update: (
-    data: CheckoutUpdatePublic,
+    data: schemas['CheckoutUpdatePublic'],
   ) => Promise<
     Result<
-      CheckoutPublic,
+      schemas['CheckoutPublic'],
       | AlreadyActiveSubscriptionError
       | NotOpenCheckout
       | ExpiredCheckoutError
@@ -74,10 +71,10 @@ export interface CheckoutContextProps {
     >
   >
   confirm: (
-    data: CheckoutConfirmStripe,
+    data: schemas['CheckoutConfirmStripe'],
   ) => Promise<
     Result<
-      CheckoutPublicConfirmed,
+      schemas['CheckoutPublicConfirmed'],
       | AlreadyActiveSubscriptionError
       | NotOpenCheckout
       | ExpiredCheckoutError
@@ -115,7 +112,9 @@ export const CheckoutProvider = ({
     () => new PolarCore({ server, serverURL }),
     [server, serverURL],
   )
-  const [checkout, setCheckout] = useState<CheckoutPublic | null>(null)
+  const [checkout, setCheckout] = useState<schemas['CheckoutPublic'] | null>(
+    null,
+  )
 
   useEffect(() => {
     checkoutsClientGet(client, { clientSecret }).then(
@@ -138,7 +137,7 @@ export const CheckoutProvider = ({
   }, [client, clientSecret])
 
   const update = useCallback(
-    async (data: CheckoutUpdatePublic) => {
+    async (data: schemas['CheckoutUpdatePublic']) => {
       const result = await checkoutsClientUpdate(client, {
         clientSecret: clientSecret,
         checkoutUpdatePublic: data,
@@ -152,14 +151,16 @@ export const CheckoutProvider = ({
   )
 
   const confirm = useCallback(
-    async (data: CheckoutConfirmStripe) => {
+    async (data: schemas['CheckoutConfirmStripe']) => {
       const result = await checkoutsClientConfirm(client, {
         clientSecret: clientSecret,
         checkoutConfirmStripe: data,
       })
       if (result.ok) {
         setCheckout(
-          result.value as CheckoutPublicConfirmed & { status: 'confirmed' },
+          result.value satisfies schemas['CheckoutPublicConfirmed'] & {
+            status: 'confirmed'
+          },
         )
       }
       return result

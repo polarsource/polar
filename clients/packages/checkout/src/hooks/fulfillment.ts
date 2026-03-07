@@ -1,8 +1,7 @@
 'use client'
 
+import type { schemas } from '@polar-sh/client'
 import type { PolarCore } from '@polar-sh/sdk/core'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutStatus } from '@polar-sh/sdk/models/components/checkoutstatus'
 import { useCallback, useState } from 'react'
 
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
@@ -10,7 +9,7 @@ import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutFulfillmentListener = (
   client: PolarCore,
-  checkout: CheckoutPublic,
+  checkout: schemas['CheckoutPublic'],
   maxWaitingTimeMs: number = 15000,
 ): [() => Promise<void>, string | null] => {
   const [fulfillmentLabel, setFulfillmentLabel] = useState<string | null>(null)
@@ -19,7 +18,7 @@ export const useCheckoutFulfillmentListener = (
     return await new Promise<void>((resolve, reject) => {
       // @ts-ignore
       const baseURL = client._baseURL
-      const url = `${baseURL}v1/checkouts/client/${checkout.clientSecret}/stream`
+      const url = `${baseURL}v1/checkouts/client/${checkout.client_secret}/stream`
       const [checkoutEvents, listen] = createSSEListener(url)
       const controller = listen()
 
@@ -27,7 +26,7 @@ export const useCheckoutFulfillmentListener = (
       let orderCreated = false
       let subscriptionCreated =
         !hasProductCheckout(checkout) ||
-        !isLegacyRecurringProductPrice(checkout.productPrice)
+        !isLegacyRecurringProductPrice(checkout.product_price)
       let webhookEventDelivered = false
 
       const checkResolution = () => {
@@ -47,7 +46,9 @@ export const useCheckoutFulfillmentListener = (
         }
       }
 
-      const checkoutUpdatedListener = (data: { status: CheckoutStatus }) => {
+      const checkoutUpdatedListener = (data: {
+        status: schemas['CheckoutStatus']
+      }) => {
         if (data.status === 'succeeded') {
           checkoutSuccessful = true
           setFulfillmentLabel('Payment successful! Processing order...')
@@ -80,7 +81,7 @@ export const useCheckoutFulfillmentListener = (
       }
 
       const webhookEventDeliveredListener = (data: {
-        status: CheckoutStatus
+        status: schemas['CheckoutStatus']
       }) => {
         if (data.status === 'succeeded') {
           webhookEventDelivered = true

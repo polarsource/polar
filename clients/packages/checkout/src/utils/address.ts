@@ -1,13 +1,13 @@
-import type { BillingAddressFieldMode } from '@polar-sh/sdk/models/components/billingaddressfieldmode'
+import type { schemas } from '@polar-sh/client'
 
 export const isDisplayedField = (
-  mode: BillingAddressFieldMode,
+  mode: schemas['BillingAddressFieldMode'],
 ): mode is 'required' | 'optional' => {
   return mode === 'required' || mode === 'optional'
 }
 
 export const isRequiredField = (
-  mode: BillingAddressFieldMode,
+  mode: schemas['BillingAddressFieldMode'],
 ): mode is 'required' => {
   return mode === 'required'
 }

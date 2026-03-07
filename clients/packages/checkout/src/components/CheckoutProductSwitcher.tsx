@@ -1,13 +1,11 @@
 'use client'
 
+import type { schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
 import {
   RadioGroup,
   RadioGroupItem,
@@ -25,7 +23,7 @@ import ProductPriceLabel from './ProductPriceLabel'
 export interface CheckoutProductSwitcherItemPriceProps {
   isSelected: boolean
   product: ProductCheckoutPublic['product']
-  price: ProductPrice | LegacyRecurringProductPrice
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice']
   checkout: ProductCheckoutPublic
   locale?: AcceptedLocale
 }
@@ -37,13 +35,13 @@ export const CheckoutProductSwitcherItemPrice = ({
   checkout,
   locale,
 }: CheckoutProductSwitcherItemPriceProps) => {
-  if (isSelected && price.amountType === 'seat_based') {
+  if (isSelected && price.amount_type === 'seat_based') {
     return (
       <AmountLabel
-        amount={checkout.netAmount || 0}
-        currency={price.priceCurrency}
-        interval={product.recurringInterval}
-        intervalCount={product.recurringIntervalCount}
+        amount={checkout.net_amount || 0}
+        currency={price.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
         mode="standard"
         locale={locale}
       />
@@ -62,7 +60,9 @@ export const CheckoutProductSwitcherItemPrice = ({
 
 interface CheckoutProductSwitcherProps {
   checkout: ProductCheckoutPublic
-  update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
+  update?: (
+    data: schemas['CheckoutUpdatePublic'],
+  ) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
@@ -77,7 +77,7 @@ const CheckoutProductSwitcher = ({
 
   const {
     product: selectedProduct,
-    productPrice: selectedPrice,
+    product_price: selectedPrice,
     products,
     prices: allPrices,
     currency,
@@ -90,7 +90,7 @@ const CheckoutProductSwitcher = ({
     const filtered: typeof allPrices = {}
     for (const [productId, productPrices] of Object.entries(allPrices)) {
       const currencyPrices = productPrices.filter(
-        (p) => p.priceCurrency === currency,
+        (p) => p.price_currency === currency,
       )
       filtered[productId] =
         currencyPrices.length > 0 ? currencyPrices : productPrices
@@ -105,11 +105,11 @@ const CheckoutProductSwitcher = ({
       if (product) {
         if (hasLegacyRecurringPrices(prices[product.id])) {
           update?.({
-            productId: product.id,
-            productPriceId: priceId,
+            product_id: product.id,
+            product_price_id: priceId,
           })
         } else {
-          update?.({ productId: product.id })
+          update?.({ product_id: product.id })
         }
       }
     },
@@ -125,18 +125,14 @@ const CheckoutProductSwitcher = ({
 
   const getDescription = (
     product: ProductCheckoutPublic['product'],
-    price: ProductPrice | LegacyRecurringProductPrice,
+    price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
   ) => {
     const interval = isLegacyRecurringProductPrice(price)
-      ? price.recurringInterval
-      : product.recurringInterval
-    const count = product.recurringIntervalCount ?? 1
+      ? price.recurring_interval
+      : product.recurring_interval
+    const count = product.recurring_interval_count ?? 1
 
     if (interval) {
-      if (!['day', 'week', 'month', 'year'].includes(interval)) {
-        throw new Error(`Unsupported interval: ${interval}`)
-      }
-
       const frequency = decapitalize(
         t(
           `checkout.pricing.everyInterval.${interval as 'day' | 'week' | 'month' | 'year'}`,
@@ -161,7 +157,7 @@ const CheckoutProductSwitcher = ({
     value: string
     productName: string
     product: ProductCheckoutPublic['product']
-    price: ProductPrice | LegacyRecurringProductPrice
+    price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice']
     isSelected: boolean
   }[] = []
   for (const product of products) {

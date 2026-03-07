@@ -1,9 +1,5 @@
-import type { CustomField } from '@polar-sh/sdk/models/components/customfield'
-import type { CustomFieldCheckbox } from '@polar-sh/sdk/models/components/customfieldcheckbox'
-import type { CustomFieldDate } from '@polar-sh/sdk/models/components/customfielddate'
-import type { CustomFieldNumber } from '@polar-sh/sdk/models/components/customfieldnumber'
-import type { CustomFieldSelect } from '@polar-sh/sdk/models/components/customfieldselect'
-import type { CustomFieldText } from '@polar-sh/sdk/models/components/customfieldtext'
+import type { schemas } from '@polar-sh/client'
+
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -25,6 +21,7 @@ import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import type { MarkdownToJSX } from 'markdown-to-jsx'
 import Markdown from 'markdown-to-jsx'
 import type { ControllerRenderProps } from 'react-hook-form'
+import { unreachable } from '../utils/unreachable'
 
 const markdownOptions: MarkdownToJSX.Options = {
   disableParsingRawHTML: true,
@@ -51,12 +48,16 @@ const markdownOptions: MarkdownToJSX.Options = {
   },
 }
 
-const FieldLabel = ({ customField }: { customField: CustomField }) => {
+const FieldLabel = ({
+  customField,
+}: {
+  customField: schemas['CustomField']
+}) => {
   return (
     <FormLabel>
-      {customField.properties.formLabel ? (
+      {customField.properties.form_label ? (
         <Markdown options={markdownOptions}>
-          {customField.properties.formLabel}
+          {customField.properties.form_label}
         </Markdown>
       ) : (
         customField.name
@@ -65,18 +66,22 @@ const FieldLabel = ({ customField }: { customField: CustomField }) => {
   )
 }
 
-const FieldHelpText = ({ customField }: { customField: CustomField }) => {
-  return customField.properties.formHelpText ? (
+const FieldHelpText = ({
+  customField,
+}: {
+  customField: schemas['CustomField']
+}) => {
+  return customField.properties.form_help_text ? (
     <FormDescription>
       <Markdown options={markdownOptions}>
-        {customField.properties.formHelpText}
+        {customField.properties.form_help_text}
       </Markdown>
     </FormDescription>
   ) : null
 }
 
 interface CustomFieldTextInputProps {
-  customField: CustomFieldText
+  customField: schemas['CustomFieldText']
   required: boolean
   field: ControllerRenderProps
   themePreset: ThemingPresetProps
@@ -92,10 +97,10 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
     return (
       <TextArea
         {...field}
-        placeholder={customField.properties.formPlaceholder}
+        placeholder={customField.properties.form_placeholder}
         required={required}
-        minLength={customField.properties.minLength}
-        maxLength={customField.properties.maxLength}
+        minLength={customField.properties.min_length}
+        maxLength={customField.properties.max_length}
       />
     )
   }
@@ -105,16 +110,16 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
       {...field}
       className="bg-white shadow-xs"
       type="text"
-      placeholder={customField.properties.formPlaceholder}
+      placeholder={customField.properties.form_placeholder}
       required={required}
-      minLength={customField.properties.minLength}
-      maxLength={customField.properties.maxLength}
+      minLength={customField.properties.min_length}
+      maxLength={customField.properties.max_length}
     />
   )
 }
 
 interface CustomFieldNumberInputProps {
-  customField: CustomFieldNumber
+  customField: schemas['CustomFieldNumber']
   required: boolean
   field: ControllerRenderProps
   themePreset: ThemingPresetProps
@@ -131,7 +136,7 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
       {...field}
       type="number"
       className="bg-white shadow-xs"
-      placeholder={customField.properties.formPlaceholder}
+      placeholder={customField.properties.form_placeholder}
       required={required}
       min={customField.properties.ge}
       max={customField.properties.le}
@@ -140,7 +145,7 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
 }
 
 interface CustomFieldDateInputProps {
-  customField: CustomFieldDate
+  customField: schemas['CustomFieldDate']
   required: boolean
   field: ControllerRenderProps
   themePreset: ThemingPresetProps
@@ -161,7 +166,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
       {...field}
       type={'date'}
       className="bg-white shadow-xs"
-      placeholder={customField.properties.formPlaceholder}
+      placeholder={customField.properties.form_placeholder}
       required={required}
       min={min}
       max={max}
@@ -170,7 +175,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
 }
 
 interface CustomFieldCheckboxInputProps {
-  customField: CustomFieldCheckbox
+  customField: schemas['CustomFieldCheckbox']
   required: boolean
   field: ControllerRenderProps
   themePreset: ThemingPresetProps
@@ -203,7 +208,7 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
 }
 
 interface CustomFieldSelectInputProps {
-  customField: CustomFieldSelect
+  customField: schemas['CustomFieldSelect']
   required: boolean
   field: ControllerRenderProps
 }
@@ -220,7 +225,7 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
       required={required}
     >
       <SelectTrigger>
-        <SelectValue placeholder={customField.properties.formPlaceholder} />
+        <SelectValue placeholder={customField.properties.form_placeholder} />
       </SelectTrigger>
       <SelectContent>
         {customField.properties.options.map(({ label, value }) => (
@@ -233,7 +238,7 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   )
 }
 
-const getInputComponent = (customField: CustomField) => {
+const getInputComponent = (customField: schemas['CustomField']) => {
   switch (customField.type) {
     case 'text':
       return CustomFieldTextInput
@@ -245,11 +250,13 @@ const getInputComponent = (customField: CustomField) => {
       return CustomFieldCheckboxInput
     case 'select':
       return CustomFieldSelectInput
+    default:
+      unreachable(customField)
   }
 }
 
 interface CustomFieldInputProps {
-  customField: CustomField
+  customField: schemas['CustomField']
   required: boolean
   field: ControllerRenderProps
   themePreset: ThemingPresetProps

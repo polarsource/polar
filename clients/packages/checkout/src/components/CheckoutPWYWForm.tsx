@@ -1,12 +1,10 @@
+import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
-import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Form,
@@ -21,9 +19,9 @@ import { useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
 
 export interface CheckoutPWYWFormProps {
-  update: (data: CheckoutUpdatePublic) => void
-  checkout: CheckoutPublic
-  productPrice: ProductPriceCustom
+  update: (data: schemas['CheckoutUpdatePublic']) => void
+  checkout: schemas['CheckoutPublic']
+  productPrice: schemas['ProductPriceCustom']
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
 }
@@ -43,7 +41,7 @@ export const CheckoutPWYWForm = ({
   })
   const { control, trigger, reset, watch } = form
 
-  const minimumAmount = productPrice.minimumAmount ?? 50 // should be set, but fallback to 50 for type safety
+  const minimumAmount = productPrice.minimum_amount ?? 50 // should be set, but fallback to 50 for type safety
 
   const validateAmount = useCallback(
     (value: number): string | true => {

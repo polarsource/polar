@@ -1,18 +1,16 @@
+import type { schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
-import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
 interface ProductPriceLabelProps {
-  product: CheckoutProduct
-  price: ProductPrice | LegacyRecurringProductPrice
+  product: schemas['CheckoutProduct']
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice']
   locale?: AcceptedLocale
   mode?: 'compact' | 'standard'
 }
@@ -25,46 +23,46 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
 }) => {
   const t = useTranslations(locale)
 
-  if (price.amountType === 'fixed') {
+  if (price.amount_type === 'fixed') {
     return (
       <AmountLabel
-        amount={price.priceAmount}
-        currency={price.priceCurrency}
+        amount={price.price_amount}
+        currency={price.price_currency}
         interval={
           isLegacyRecurringPrice(price)
-            ? price.recurringInterval
-            : product.recurringInterval
+            ? price.recurring_interval
+            : product.recurring_interval
         }
-        intervalCount={product.recurringIntervalCount}
+        intervalCount={product.recurring_interval_count}
         mode={mode}
         locale={locale}
       />
     )
-  } else if (price.amountType === 'custom') {
+  } else if (price.amount_type === 'custom') {
     return (
       <div className="text-[min(1em,24px)]">
         {t('checkout.pricing.payWhatYouWant')}
       </div>
     )
-  } else if (price.amountType === 'free') {
+  } else if (price.amount_type === 'free') {
     return (
       <div className="text-[min(1em,24px)]">{t('checkout.pricing.free')}</div>
     )
-  } else if (price.amountType === 'seat_based') {
-    const tiers = price.seatTiers?.tiers ?? []
-    const sortedTiers = [...tiers].sort((a, b) => a.minSeats - b.minSeats)
-    const basePricePerSeat = sortedTiers[0]?.pricePerSeat ?? 0
+  } else if (price.amount_type === 'seat_based') {
+    const tiers = price.seat_tiers?.tiers ?? []
+    const sortedTiers = [...tiers].sort((a, b) => a.min_seats - b.min_seats)
+    const basePricePerSeat = sortedTiers[0]?.price_per_seat ?? 0
     return (
       <AmountLabel
         amount={basePricePerSeat}
-        currency={price.priceCurrency}
-        interval={product.recurringInterval}
-        intervalCount={product.recurringIntervalCount}
+        currency={price.price_currency}
+        interval={product.recurring_interval}
+        intervalCount={product.recurring_interval_count}
         mode={mode}
         locale={locale}
       />
     )
-  } else if (price.amountType === 'metered_unit') {
+  } else if (price.amount_type === 'metered_unit') {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">
         {price.meter.name}

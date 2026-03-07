@@ -1,4 +1,4 @@
-import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
+import type { schemas } from '@polar-sh/client'
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -12,23 +12,23 @@ import ProductPriceLabel from './ProductPriceLabel'
 
 const now = new Date()
 
-const baseProduct: CheckoutProduct = {
+const baseProduct: schemas['CheckoutProduct'] = {
   id: 'prod_1',
   name: 'Test Product',
-  recurringInterval: null,
-  recurringIntervalCount: null,
-  isRecurring: false,
-  trialInterval: null,
-  trialIntervalCount: null,
+  recurring_interval: null,
+  recurring_interval_count: null,
+  is_recurring: false,
+  trial_interval: null,
+  trial_interval_count: null,
   visibility: 'public',
   prices: [],
   benefits: [],
   medias: [],
   description: null,
-  isArchived: false,
-  organizationId: 'org_1',
-  createdAt: now,
-  modifiedAt: null,
+  is_archived: false,
+  organization_id: 'org_1',
+  created_at: now.toISOString(),
+  modified_at: null,
 }
 
 function getText(container: HTMLElement): string {

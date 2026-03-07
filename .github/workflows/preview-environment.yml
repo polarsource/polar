@@ -1,0 +1,181 @@
+name: Preview Environment
+
+on:
+  workflow_call:
+    inputs:
+      action:
+        required: true
+        type: string
+      preview_id:
+        required: false
+        type: string
+        default: ""
+      pr_number:
+        required: false
+        type: string
+        default: ""
+      branch:
+        required: false
+        type: string
+        default: ""
+      sha:
+        required: false
+        type: string
+        default: ""
+      changed_backend:
+        required: false
+        type: boolean
+        default: false
+      changed_frontend:
+        required: false
+        type: boolean
+        default: false
+      changed_migrations:
+        required: false
+        type: boolean
+        default: false
+      changed_tinybird:
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      PREVIEW_POSTGRES_ADMIN_DSN:
+        required: false
+      PREVIEW_TINYBIRD_ADMIN_TOKEN:
+        required: false
+      TAILSCALE_OAUTH_CLIENT_ID:
+        required: true
+      TAILSCALE_OAUTH_SECRET:
+        required: true
+    outputs:
+      preview_id:
+        value: ${{ jobs.apply.outputs.preview_id }}
+      preview_url:
+        value: ${{ jobs.apply.outputs.preview_url }}
+      preview_status:
+        value: ${{ jobs.apply.outputs.preview_status }}
+      result_json:
+        value: ${{ jobs.apply.outputs.result_json }}
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: "Preview: ${{ inputs.action }}"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    concurrency:
+      group: preview-${{ inputs.preview_id != '' && inputs.preview_id || inputs.pr_number != '' && format('pr-{0}', inputs.pr_number) || inputs.branch }}
+      cancel-in-progress: false
+    outputs:
+      preview_id: ${{ steps.preview.outputs.preview_id }}
+      preview_url: ${{ steps.preview.outputs.preview_url }}
+      preview_status: ${{ steps.preview.outputs.preview_status }}
+      result_json: ${{ steps.preview.outputs.result_json }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: uv sync --dev
+
+      - name: Install Tinybird CLI
+        run: curl https://tinybird.co | sh
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
+
+      - name: Run preview control plane
+        id: preview
+        working-directory: ./server
+        env:
+          PREVIEW_BASE_DOMAIN: ${{ vars.PREVIEW_BASE_DOMAIN }}
+          PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.PREVIEW_POSTGRES_ADMIN_DSN }}
+          PREVIEW_POSTGRES_APP_HOST: ${{ vars.PREVIEW_POSTGRES_APP_HOST }}
+          PREVIEW_POSTGRES_APP_PORT: ${{ vars.PREVIEW_POSTGRES_APP_PORT }}
+          PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+          PREVIEW_TINYBIRD_API_URL: ${{ vars.PREVIEW_TINYBIRD_API_URL }}
+          PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+          PREVIEW_TINYBIRD_WORKSPACE: ${{ vars.PREVIEW_TINYBIRD_WORKSPACE }}
+          PREVIEW_TINYBIRD_LAST_PARTITION: ${{ vars.PREVIEW_TINYBIRD_LAST_PARTITION || 'false' }}
+          PREVIEWS_DRY_RUN: ${{ vars.PREVIEWS_DRY_RUN }}
+        run: |
+          set -euo pipefail
+
+          command=(
+            uv run python -m scripts.preview "${{ inputs.action }}"
+            --github-output "$GITHUB_OUTPUT"
+          )
+
+          if [[ -n "${{ inputs.preview_id }}" ]]; then
+            command+=(--preview-id "${{ inputs.preview_id }}")
+          fi
+
+          if [[ -n "${{ inputs.pr_number }}" ]]; then
+            command+=(--pr-number "${{ inputs.pr_number }}")
+          fi
+
+          if [[ -n "${{ inputs.branch }}" ]]; then
+            command+=(--branch "${{ inputs.branch }}")
+          fi
+
+          if [[ -n "${{ inputs.sha }}" ]]; then
+            command+=(--sha "${{ inputs.sha }}")
+          fi
+
+          if [[ "${{ inputs.action }}" == "create-or-update" ]]; then
+            if [[ "${{ inputs.changed_backend }}" == "true" ]]; then
+              command+=(--changed-backend)
+            fi
+            if [[ "${{ inputs.changed_frontend }}" == "true" ]]; then
+              command+=(--changed-frontend)
+            fi
+            if [[ "${{ inputs.changed_migrations }}" == "true" ]]; then
+              command+=(--changed-migrations)
+            fi
+            if [[ "${{ inputs.changed_tinybird }}" == "true" ]]; then
+              command+=(--changed-tinybird)
+            fi
+          fi
+
+          if [[ "$PREVIEWS_DRY_RUN" == "true" ]]; then
+            command+=(--dry-run)
+          fi
+
+          printf 'Running: %q ' "${command[@]}"
+          echo
+          "${command[@]}"
+
+      - name: Report preview resources
+        if: steps.preview.outcome == 'success'
+        run: |
+          echo "Preview status: ${{ steps.preview.outputs.preview_status }}"
+          echo "Preview URL: ${{ steps.preview.outputs.preview_url }}"
+          if [[ -n "${{ steps.preview.outputs.preview_postgres_database }}" ]]; then
+            echo "Preview Postgres database: ${{ steps.preview.outputs.preview_postgres_database }}"
+          fi
+          if [[ -n "${{ steps.preview.outputs.preview_postgres_user }}" ]]; then
+            echo "Preview Postgres user: ${{ steps.preview.outputs.preview_postgres_user }}"
+          fi
+          if [[ -z "${{ steps.preview.outputs.preview_tinybird_branch }}" ]]; then
+            echo "Tinybird branch: <missing>"
+            exit 1
+          fi
+          echo "Tinybird branch: ${{ steps.preview.outputs.preview_tinybird_branch }}"
+          if [[ -n "${{ steps.preview.outputs.preview_tinybird_workspace }}" ]]; then
+            echo "Tinybird workspace: ${{ steps.preview.outputs.preview_tinybird_workspace }}"
+          fi

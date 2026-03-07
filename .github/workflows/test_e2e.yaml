@@ -72,18 +72,31 @@ jobs:
         id: failures
         if: steps.e2e.outcome == 'failure'
         run: |
-          FAILED=$(node -e "
+          node -e "
             try {
-              const r = JSON.parse(require('fs').readFileSync('test-results.json', 'utf8'));
+              const fs = require('fs');
+              const r = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
               const failed = (r.suites || []).flatMap(s =>
-                (s.specs || []).filter(t => t.ok === false).map(t => t.title)
+                (s.specs || []).filter(t => t.ok === false).map(t => {
+                  const lastResult = (t.tests || []).flatMap(tt => tt.results || []).pop();
+                  const error = lastResult?.error?.message || lastResult?.error?.snippet || '';
+                  // Clean ANSI codes and trim
+                  const clean = error.replace(/\x1b\[[0-9;]*m/g, '').trim();
+                  // Take first 5 lines to keep Slack message manageable
+                  const snippet = clean.split('\n').slice(0, 5).join('\n');
+                  return { title: t.title, snippet };
+                })
               );
-              console.log(failed.length ? failed.map(t => '• ' + t).join('\n') : 'Unknown failure');
-            } catch { console.log('Could not parse test results'); }
-          ")
-          echo "tests<<EOF" >> $GITHUB_OUTPUT
-          echo "$FAILED" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+              const tests = failed.map(t => '• ' + t.title).join('\n') || 'Unknown failure';
+              const errors = failed.map(t => t.snippet).filter(Boolean).join('\n---\n') || '';
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\n' + tests + '\nEOF\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n' + errors + '\nEOF\n');
+            } catch(e) {
+              const fs = require('fs');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tests<<EOF\nCould not parse test results\nEOF\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'errors<<EOF\n\nEOF\n');
+            }
+          "
 
       - name: Configure AWS credentials
         if: steps.e2e.outcome == 'failure'
@@ -100,21 +113,21 @@ jobs:
         run: |
           RUN_ID=${{ github.run_id }}
           S3_PATH="s3://polar-public-files/e2e-artifacts/${RUN_ID}"
-          TRACE_URLS=""
+          echo "urls<<EOF" >> $GITHUB_OUTPUT
 
           for trace in test-results/*/trace.zip; do
             if [ -f "$trace" ]; then
-              TEST_NAME=$(basename $(dirname "$trace"))
-              aws s3 cp "$trace" "${S3_PATH}/${TEST_NAME}/trace.zip" --no-progress
-              PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${TEST_NAME}/trace.zip"
+              DIR_NAME=$(basename $(dirname "$trace"))
+              aws s3 cp "$trace" "${S3_PATH}/${DIR_NAME}/trace.zip" --no-progress
+              PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${DIR_NAME}/trace.zip"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
               TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
-              TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${TEST_NAME}>\n"
+              # Clean up name: remove prefix, convert dashes to spaces, strip browser/retry suffix
+              LABEL=$(echo "$DIR_NAME" | sed 's/^checkout-//' | sed 's/-chromium.*$//' | tr '-' ' ')
+              echo "• <${TRACE_URL}|${LABEL}>" >> $GITHUB_OUTPUT
             fi
           done
 
-          echo "urls<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$TRACE_URLS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload Playwright report
@@ -148,6 +161,13 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "```${{ steps.failures.outputs.errors }}```"
                   }
                 },
                 {

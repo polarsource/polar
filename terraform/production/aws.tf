@@ -345,6 +345,10 @@ module "github_oidc_backup" {
   role_name   = "github-actions-backup"
   github_org  = "polarsource"
   github_repo = "polar"
+  github_subjects = [
+    "ref:refs/heads/main",
+    "pull_request",
+  ]
   policy_arns = {
     backups          = aws_iam_policy.polar_sh_backups.arn
     lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn

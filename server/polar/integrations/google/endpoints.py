@@ -9,7 +9,6 @@ from httpx_oauth.oauth2 import OAuth2Token
 from polar.auth.dependencies import WebUserOrAnonymous, WebUserWrite
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
-from polar.exceptions import NotPermitted
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
@@ -74,7 +73,7 @@ async def login_authorize(
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
-        raise NotPermitted()
+        return RedirectResponse(get_safe_return_url(return_to), 303)
 
     state: dict[str, Any] = {"return_to": return_to}
     if signup_attribution:
@@ -96,7 +95,7 @@ async def login_callback(
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
-        raise NotPermitted()
+        return RedirectResponse(get_safe_return_url(None), 303)
 
     token_data, state = access_token_state
     state_data = await validate_callback(

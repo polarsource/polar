@@ -83,7 +83,7 @@ async def login_authorize(
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
-        raise NotPermitted()
+        return RedirectResponse(get_safe_return_url(return_to), 303)
 
     state: dict[str, Any] = {"return_to": return_to}
     if payment_intent_id:
@@ -107,7 +107,7 @@ async def login_callback(
     redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
-        raise NotPermitted()
+        return RedirectResponse(get_safe_return_url(None), 303)
 
     token_data, state = access_token_state
     state_data = await validate_callback(

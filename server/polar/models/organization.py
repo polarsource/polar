@@ -262,6 +262,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=None,
     )
 
+    # Flag to block refunds for all orders in this organization
+    refunds_blocked: Mapped[bool] = mapped_column(
+        nullable=False,
+        default=False,
+    )
+
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )

@@ -19,7 +19,7 @@ jobs:
   e2e:
     name: "E2E Tests 🎭"
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -99,14 +99,14 @@ jobs:
         working-directory: ./clients/apps/web
         run: |
           RUN_ID=${{ github.run_id }}
-          S3_PATH="s3://polar-public-files/e2e-reports/${RUN_ID}"
+          S3_PATH="s3://polar-public-files/e2e-artifacts/${RUN_ID}"
           TRACE_URLS=""
 
           for trace in test-results/*/trace.zip; do
             if [ -f "$trace" ]; then
               TEST_NAME=$(basename $(dirname "$trace"))
               aws s3 cp "$trace" "${S3_PATH}/${TEST_NAME}/trace.zip" --no-progress
-              PUBLIC_URL="https://polar-public-files.s3.amazonaws.com/e2e-reports/${RUN_ID}/${TEST_NAME}/trace.zip"
+              PUBLIC_URL="https://polar-public-files.s3.amazonaws.com/e2e-artifacts/${RUN_ID}/${TEST_NAME}/trace.zip"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
               TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
               TRACE_URLS="${TRACE_URLS}• <${TRACE_URL}|${TEST_NAME}>\n"

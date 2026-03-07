@@ -1,10 +1,9 @@
-resource "render_web_service" "tailscale_router" {
-  environment_id    = var.render_environment_id
-  name              = "tailscale-router-${var.environment}"
-  plan              = var.plan
-  region            = "ohio"
-  health_check_path = "/"
-  num_instances     = 1
+resource "render_background_worker" "tailscale_router" {
+  environment_id = var.render_environment_id
+  name           = "tailscale-router-${var.environment}"
+  plan           = var.plan
+  region         = "ohio"
+  num_instances  = 1
 
   runtime_source = {
     image = {
@@ -22,5 +21,4 @@ resource "render_web_service" "tailscale_router" {
   }
 
   # TODO: add a persistent disk for Tailscale state to avoid re-auth on deploys
-  # Render TF provider may support this via a render_disk resource
 }

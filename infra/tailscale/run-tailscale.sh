@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Health check responder for Render
-(while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | nc -l 10000 2>/dev/null; done) &
-
 /render/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &
 PID=$!
 

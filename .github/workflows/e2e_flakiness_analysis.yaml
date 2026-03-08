@@ -209,6 +209,16 @@ jobs:
               echo "$SUMMARY"
               echo "GHEOF"
             } >> $GITHUB_OUTPUT
+
+            # Extract suspicious PRs if present
+            SUSPICIOUS=$(jq -r '.suspicious_prs // empty | map("• <\(.url)|\(.title)> — \(.reason)") | join("\n")' analysis-result.json 2>/dev/null || true)
+            if [ -n "$SUSPICIOUS" ]; then
+              {
+                echo "suspicious_prs<<GHEOF"
+                echo "$SUSPICIOUS"
+                echo "GHEOF"
+              } >> $GITHUB_OUTPUT
+            fi
           elif [ -n "$PR_URL" ]; then
             echo "classification=flaky" >> $GITHUB_OUTPUT
             echo "summary=Created fix PR" >> $GITHUB_OUTPUT
@@ -247,6 +257,28 @@ jobs:
                       "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View analysis>"
                     }
                   ]
+                }
+              ]
+            }
+
+      - name: Post suspicious PRs to Slack thread
+        if: always() && steps.result.outputs.suspicious_prs
+        uses: slackapi/slack-github-action@v2
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",
+              "thread_ts": "${{ steps.context.outputs.slack_thread_ts }}",
+              "text": "Suspicious PRs",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":mag: *Suspicious recently merged PRs:*\n${{ steps.result.outputs.suspicious_prs }}"
+                  }
                 }
               ]
             }

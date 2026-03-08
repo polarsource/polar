@@ -108,6 +108,30 @@ Output a JSON summary to `analysis-result.json` and do NOT create a PR:
 
 Write this file using: `Write` tool to `analysis-result.json`
 
+### Step 5: Check for suspicious recent PRs
+
+If you classified the failure as **regression**, check recently merged PRs that may have caused it:
+
+```bash
+gh pr list --state merged --limit 10 --json number,title,mergedAt,url,files --jq '.[] | {number, title, mergedAt, url, files: [.files[].path]}'
+```
+
+Look for PRs that modified files related to:
+- The checkout flow (checkout components, API endpoints, Stripe integration)
+- Shared UI components used by the checkout page
+- API client or SDK changes that affect the frontend
+
+If you find suspicious PRs, include them in the `analysis-result.json` under a `suspicious_prs` field:
+```json
+{
+  "suspicious_prs": [
+    {"number": 123, "title": "...", "url": "...", "reason": "Modified checkout component X"}
+  ]
+}
+```
+
+Only include PRs that are genuinely relevant. If nothing looks suspicious, omit this field entirely.
+
 ## Scope Restrictions
 
 - You may ONLY modify files within `clients/apps/web/e2e/`

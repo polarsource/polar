@@ -87,11 +87,11 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                 </TooltipContent>
               </Tooltip>
               <div className="flex flex-col text-left">
-                <span className="dark:text-polar-500 text-sm text-gray-500 lg:text-base">
+                <span className="text-sm">
                   {format(period.timestamp, 'MMMM')}
                 </span>
                 <div className="flex flex-row items-center justify-between gap-x-2">
-                  <span className="text-sm">
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
                     {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}
                   </span>
                   {!isTrendFlat ? (

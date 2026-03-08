@@ -107,35 +107,6 @@ jobs:
             }
           "
 
-      - name: Create failure context artifact
-        if: steps.e2e.outcome == 'failure'
-        run: |
-          node -e "
-            const fs = require('fs');
-            const context = {
-              tests: process.env.FAILED_TESTS,
-              errors: process.env.FAILED_ERRORS,
-              environment_url: process.env.NEXT_PUBLIC_API_URL,
-              checkout_link: process.env.E2E_CHECKOUT_LINK,
-              branch: '${{ github.head_ref || github.ref_name }}',
-              trigger: '${{ github.event_name }}',
-              run_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            };
-            fs.writeFileSync('failure-context.json', JSON.stringify(context, null, 2));
-          "
-        env:
-          FAILED_TESTS: ${{ steps.failures.outputs.tests }}
-          FAILED_ERRORS: ${{ steps.failures.outputs.errors }}
-          E2E_CHECKOUT_LINK: ${{ env.E2E_CHECKOUT_LINK_SUBSCRIPTION }}
-
-      - name: Upload failure context
-        if: steps.e2e.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: failure-context
-          path: clients/apps/web/failure-context.json
-          retention-days: 7
-
       - name: Configure AWS credentials
         if: steps.e2e.outcome == 'failure'
         uses: aws-actions/configure-aws-credentials@v6
@@ -191,14 +162,16 @@ jobs:
           retention-days: 14
 
       - name: Notify Slack on failure
+        id: slack-failure
         if: steps.e2e.outcome == 'failure' # TEMP: removed schedule-only condition to test Slack
         uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
           payload: |
             {
-              "text": "🚨 E2E tests failed",
+              "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",
+              "text": "E2E tests failed",
               "blocks": [
                 {
                   "type": "section",
@@ -226,14 +199,16 @@ jobs:
               ]
             }
 
-      - name: Notify Slack - starting investigation
+      - name: Notify Slack - starting investigation (threaded)
         if: steps.e2e.outcome == 'failure'
         uses: slackapi/slack-github-action@v2
         with:
-          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
           payload: |
             {
+              "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",
+              "thread_ts": "${{ steps.slack-failure.outputs.ts }}",
               "text": "Starting automated investigation",
               "blocks": [
                 {
@@ -245,6 +220,37 @@ jobs:
                 }
               ]
             }
+
+      - name: Create failure context artifact
+        if: steps.e2e.outcome == 'failure'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const context = {
+              tests: process.env.FAILED_TESTS,
+              errors: process.env.FAILED_ERRORS,
+              environment_url: process.env.NEXT_PUBLIC_API_URL,
+              checkout_link: process.env.E2E_CHECKOUT_LINK,
+              slack_thread_ts: process.env.SLACK_THREAD_TS,
+              branch: '${{ github.head_ref || github.ref_name }}',
+              trigger: '${{ github.event_name }}',
+              run_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            };
+            fs.writeFileSync('failure-context.json', JSON.stringify(context, null, 2));
+          "
+        env:
+          FAILED_TESTS: ${{ steps.failures.outputs.tests }}
+          FAILED_ERRORS: ${{ steps.failures.outputs.errors }}
+          E2E_CHECKOUT_LINK: ${{ env.E2E_CHECKOUT_LINK_SUBSCRIPTION }}
+          SLACK_THREAD_TS: ${{ steps.slack-failure.outputs.ts }}
+
+      - name: Upload failure context
+        if: steps.e2e.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-context
+          path: clients/apps/web/failure-context.json
+          retention-days: 7
 
       - name: Fail if tests failed
         if: steps.e2e.outcome == 'failure'

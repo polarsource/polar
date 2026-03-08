@@ -1,17 +1,19 @@
-import { expect, test } from '@playwright/test'
+import { test } from '@playwright/test'
+import { CheckoutPage } from './pages/checkout.page'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'
+test.describe('Checkout', () => {
+  const checkoutLink = process.env.E2E_CHECKOUT_LINK_SUBSCRIPTION ?? ''
 
-test('checkout page loads and shows subscribe button', async ({ page }) => {
-  const checkoutLink = process.env.E2E_CHECKOUT_LINK_SUBSCRIPTION
+  test('Subscription with discount', async ({ page }) => {
+    // if (!checkoutLink) {
+    //   test.skip()
+    //   return
+    // }
 
-  if (!checkoutLink) {
-    test.skip()
-    return
-  }
-
-  await page.goto(`${API_BASE}/v1/checkout-links/${checkoutLink}/redirect`)
-
-  const button = page.getByRole('button', { name: /subscribe now|pay now/i })
-  await expect(button).toBeVisible({ timeout: 15_000 })
+    const checkout = new CheckoutPage(page)
+    await checkout.goto(checkoutLink)
+    await checkout.selectCountry('Sweden')
+    await checkout.applyDiscountCode('Free')
+    await checkout.subscribe()
+  })
 })

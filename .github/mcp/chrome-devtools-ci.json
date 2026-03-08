@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--headless",
+        "--isolated",
+        "--launch-args=--no-sandbox --disable-gpu --disable-dev-shm-usage"
+      ]
+    }
+  }
+}

@@ -2,6 +2,8 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+import structlog
+
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -20,6 +22,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.customer import CustomerType
@@ -40,6 +43,9 @@ from .schemas.customer import (
 )
 from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
+
+
+log = structlog.get_logger()
 
 
 class CustomerService:
@@ -252,6 +258,9 @@ class CustomerService:
     ) -> Customer:
         repository = CustomerRepository.from_session(session)
 
+        old_email = customer.email
+        email_changed = False
+
         errors: list[ValidationError] = []
         if (
             customer_update.email is not None
@@ -272,6 +281,7 @@ class CustomerService:
 
             customer.email = customer_update.email
             customer.email_verified = False
+            email_changed = True
 
         # Prevent setting billing address to null
         if (
@@ -377,7 +387,7 @@ class CustomerService:
                 ) from e
 
         try:
-            return await repository.update(
+            updated_customer = await repository.update(
                 customer,
                 update_dict=customer_update.model_dump(
                     exclude={"email", "tax_id"}, exclude_unset=True, by_alias=True
@@ -399,6 +409,29 @@ class CustomerService:
                     ]
                 ) from e
             raise
+
+        # Sync member emails when the customer email changes.
+        # Members whose email matched the old customer email are updated to the new one.
+        # Members with custom emails (e.g. individual team member emails) are left untouched.
+        if email_changed:
+            member_repository = MemberRepository.from_session(session)
+            members = await member_repository.list_by_customer(
+                session, updated_customer.id
+            )
+            for member in members:
+                if member.email.lower() == old_email.lower():
+                    await member_repository.update(
+                        member, update_dict={"email": updated_customer.email}
+                    )
+                    log.info(
+                        "customer.update.synced_member_email",
+                        customer_id=updated_customer.id,
+                        member_id=member.id,
+                        old_email=old_email,
+                        new_email=updated_customer.email,
+                    )
+
+        return updated_customer
 
     async def delete(
         self,

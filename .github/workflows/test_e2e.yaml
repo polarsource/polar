@@ -204,7 +204,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
+                    "text": ":bufo-what-have-i-done: *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
                   }
                 },
                 {
@@ -222,6 +222,26 @@ jobs:
                       "text": "*Branch:* ${{ github.head_ref || github.ref_name }} | *Trigger:* ${{ github.event_name }} | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|Download report>"
                     }
                   ]
+                }
+              ]
+            }
+
+      - name: Notify Slack - starting investigation
+        if: steps.e2e.outcome == 'failure'
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Starting automated investigation",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":bufo-why-must-it-be-this-way: *Starting automated investigation...*"
+                  }
                 }
               ]
             }

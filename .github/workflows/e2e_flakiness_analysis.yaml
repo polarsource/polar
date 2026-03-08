@@ -18,6 +18,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
+  id-token: write
 
 jobs:
   analyze:

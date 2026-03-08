@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+// import { CheckoutPage } from './pages/checkout.page'
 
 test.describe('Checkout', () => {
   const checkoutLink = process.env.E2E_CHECKOUT_LINK_SUBSCRIPTION ?? ''

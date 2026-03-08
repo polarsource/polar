@@ -8,6 +8,7 @@ RUN apt-get -qq update \
   && apt-get -qq install --upgrade -y --no-install-recommends \
     apt-transport-https \
     ca-certificates \
+    dnsmasq \
     wget \
     dnsutils \
   > /dev/null \

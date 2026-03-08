@@ -18,6 +18,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
+  id-token: write
 
 jobs:
   analyze:
@@ -72,6 +73,7 @@ jobs:
           echo "branch=$(jq -r '.branch' "$CONTEXT")" >> $GITHUB_OUTPUT
           echo "trigger=$(jq -r '.trigger' "$CONTEXT")" >> $GITHUB_OUTPUT
           echo "run_url=$(jq -r '.run_url' "$CONTEXT")" >> $GITHUB_OUTPUT
+          echo "checkout_link=$(jq -r '.checkout_link' "$CONTEXT")" >> $GITHUB_OUTPUT
 
       - name: Notify Slack - investigating
         uses: slackapi/slack-github-action@v2
@@ -86,7 +88,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🔍 *Investigating E2E failure...*\n\n*Failed tests:*\n${{ steps.context.outputs.failed_tests }}"
+                    "text": ":bufo-detective: *Investigating E2E failure...*\n\n*Failed tests:*\n${{ steps.context.outputs.failed_tests }}"
                   }
                 },
                 {
@@ -123,9 +125,10 @@ jobs:
           BRANCH_NAME: ${{ steps.context.outputs.branch }}
           TRIGGER_EVENT: ${{ steps.context.outputs.trigger }}
           RUN_URL: ${{ steps.context.outputs.run_url }}
+          CHECKOUT_LINK: ${{ steps.context.outputs.checkout_link }}
         run: |
-          envsubst '${FAILED_TESTS} ${ERROR_SNIPPETS} ${ENVIRONMENT_URL} ${BRANCH_NAME} ${TRIGGER_EVENT} ${RUN_URL}' \
-            < .github/prompts/e2e-flakiness-analysis.md > /tmp/analysis-prompt.md
+          envsubst '${FAILED_TESTS} ${ERROR_SNIPPETS} ${ENVIRONMENT_URL} ${BRANCH_NAME} ${TRIGGER_EVENT} ${RUN_URL} ${CHECKOUT_LINK}' \
+            < clients/apps/web/e2e/healing/prompts/e2e-checkout-healing.md > /tmp/analysis-prompt.md
 
       - name: Run Claude analysis
         run: |
@@ -150,6 +153,42 @@ jobs:
               echo "$INVALID_FILES" | xargs git checkout --
             fi
           fi
+
+      - name: Configure AWS credentials
+        if: always()
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: e2e-healing
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload healing screenshots to S3
+        id: screenshots
+        if: always()
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          RUN_ID=${{ github.run_id }}
+          S3_PATH="s3://polar-public-files/e2e-artifacts/${DATE}-${RUN_ID}/healing-screenshots"
+          PUBLIC_BASE="https://uploads.polar.sh/e2e-artifacts/${DATE}-${RUN_ID}/healing-screenshots"
+          SCREENSHOT_URLS=""
+
+          if [ -d healing-screenshots ]; then
+            for img in healing-screenshots/*.png; do
+              if [ -f "$img" ]; then
+                FILENAME=$(basename "$img")
+                aws s3 cp "$img" "${S3_PATH}/${FILENAME}" --no-progress
+                LABEL=$(echo "$FILENAME" | sed 's/\.png$//' | sed 's/^[0-9]*-//')
+                [ -n "$SCREENSHOT_URLS" ] && SCREENSHOT_URLS="${SCREENSHOT_URLS}\n"
+                SCREENSHOT_URLS="${SCREENSHOT_URLS}• <${PUBLIC_BASE}/${FILENAME}|${LABEL}>"
+              fi
+            done
+          fi
+
+          {
+            echo "urls<<GHEOF"
+            echo -e "$SCREENSHOT_URLS"
+            echo "GHEOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Read analysis result
         id: result
@@ -192,7 +231,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.result.outputs.classification == 'flaky' && '🔧 *Flaky test detected — creating fix PR*' || steps.result.outputs.classification == 'regression' && '🚨 *Real regression detected — manual fix needed*' || steps.result.outputs.classification == 'environment' && '🌐 *Environment issue — no code changes needed*' || '❓ *Analysis completed*' }}\n\n${{ steps.result.outputs.summary }}${{ steps.result.outputs.pr_url && format('\n\n*Fix PR:* <{0}|View PR>', steps.result.outputs.pr_url) || '' }}"
+                    "text": "${{ steps.result.outputs.classification == 'flaky' && ':teamwork-makes-the-bufo-work: *Flaky test detected — creating fix PR*' || steps.result.outputs.classification == 'regression' && ':bufo-oh-no: *Real regression detected — manual fix needed*' || steps.result.outputs.classification == 'environment' && ':bufo-facepalm: *Environment issue — no code changes needed*' || ':bufo-shakes-up-your-etch-a-sketch: *Analysis completed*' }}\n\n${{ steps.result.outputs.summary }}${{ steps.result.outputs.pr_url && format('\n\n*Fix PR:* <{0}|View PR>', steps.result.outputs.pr_url) || '' }}${{ steps.screenshots.outputs.urls && format('\n\n*Screenshots:*\n{0}', steps.screenshots.outputs.urls) || '' }}"
                   }
                 },
                 {
@@ -213,5 +252,14 @@ jobs:
         with:
           name: flakiness-analysis
           path: analysis-result.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload healing screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: healing-screenshots
+          path: healing-screenshots/
           retention-days: 14
           if-no-files-found: ignore

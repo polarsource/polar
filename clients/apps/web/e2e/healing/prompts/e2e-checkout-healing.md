@@ -10,6 +10,7 @@ You are analyzing a failed E2E test to determine if it's a flaky test, a real re
 - **Branch:** ${BRANCH_NAME}
 - **Trigger:** ${TRIGGER_EVENT}
 - **Run URL:** ${RUN_URL}
+- **Checkout link ID:** ${CHECKOUT_LINK}
 
 ## Instructions
 
@@ -19,18 +20,11 @@ Use the `Read` tool to read the failing test spec file(s) in `clients/apps/web/e
 
 ### Step 2: Reproduce the test manually
 
-Using Chrome DevTools MCP, reproduce the test steps **at least 2 times** to determine consistency:
+Using Chrome DevTools MCP, follow the exact same steps as the E2E test **at least 2 times** to determine consistency. The checkout URL is `${ENVIRONMENT_URL}/v1/checkout-links/${CHECKOUT_LINK}/redirect`. Read the test spec and page object model from Step 1 and replicate each action (navigation, clicks, fills, assertions) using the corresponding MCP tools (`navigate_page`, `click`, `fill`, `wait_for`, `take_snapshot`, `take_screenshot`, etc.).
 
-1. Use `navigate_page` to go to the environment URL with the same path the test uses
-2. Use `wait_for` to wait for key elements to appear
-3. Use `take_snapshot` to capture the DOM state at each step
-4. Use `click`, `fill`, and other interaction tools to follow the test steps
-5. Use `take_screenshot` to capture visual state when something unexpected happens
+After **every** action (navigation, click, fill, etc.), call `take_screenshot` and save the result to `healing-screenshots/` with a sequential filename like `01-navigate.png`, `02-select-country.png`, etc. This creates a visual log of the entire reproduction. Also use `take_snapshot` to verify the DOM state.
 
-**Important notes on Stripe iframes:**
-- Stripe payment elements are loaded in cross-origin iframes that you cannot interact with
-- Focus your reproduction on pre-Stripe steps (navigation, country selection, discount codes)
-- Treat Stripe Elements as opaque - if the test fails inside a Stripe iframe, note this but don't try to interact with the iframe
+**Note:** Cross-origin iframes (e.g. Stripe Elements) cannot be interacted with via Chrome DevTools MCP. If the test fails inside an iframe, note this but don't try to interact with the iframe content.
 
 ### Step 3: Classify the failure
 

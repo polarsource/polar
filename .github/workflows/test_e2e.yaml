@@ -116,6 +116,7 @@ jobs:
               tests: process.env.FAILED_TESTS,
               errors: process.env.FAILED_ERRORS,
               environment_url: process.env.NEXT_PUBLIC_API_URL,
+              checkout_link: process.env.E2E_CHECKOUT_LINK,
               branch: '${{ github.head_ref || github.ref_name }}',
               trigger: '${{ github.event_name }}',
               run_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
@@ -125,6 +126,7 @@ jobs:
         env:
           FAILED_TESTS: ${{ steps.failures.outputs.tests }}
           FAILED_ERRORS: ${{ steps.failures.outputs.errors }}
+          E2E_CHECKOUT_LINK: ${{ env.E2E_CHECKOUT_LINK_SUBSCRIPTION }}
 
       - name: Upload failure context
         if: steps.e2e.outcome == 'failure'
@@ -147,15 +149,16 @@ jobs:
         if: steps.e2e.outcome == 'failure'
         working-directory: ./clients/apps/web
         run: |
+          DATE=$(date -u +%Y-%m-%d)
           RUN_ID=${{ github.run_id }}
-          S3_PATH="s3://polar-public-files/e2e-artifacts/${RUN_ID}"
+          S3_PATH="s3://polar-public-files/e2e-artifacts/${DATE}-${RUN_ID}"
           TRACE_URLS=""
 
           for trace in test-results/*/trace.zip; do
             if [ -f "$trace" ]; then
               DIR_NAME=$(basename $(dirname "$trace"))
               aws s3 cp "$trace" "${S3_PATH}/${DIR_NAME}/trace.zip" --no-progress
-              PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${RUN_ID}/${DIR_NAME}/trace.zip"
+              PUBLIC_URL="https://uploads.polar.sh/e2e-artifacts/${DATE}-${RUN_ID}/${DIR_NAME}/trace.zip"
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${PUBLIC_URL}', safe=''))")
               TRACE_URL="https://trace.playwright.dev/?trace=${ENCODED_URL}"
               # Extract test name and retry suffix
@@ -201,7 +204,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
+                    "text": ":bufo-what-have-i-done: *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
                   }
                 },
                 {
@@ -219,6 +222,26 @@ jobs:
                       "text": "*Branch:* ${{ github.head_ref || github.ref_name }} | *Trigger:* ${{ github.event_name }} | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|Download report>"
                     }
                   ]
+                }
+              ]
+            }
+
+      - name: Notify Slack - starting investigation
+        if: steps.e2e.outcome == 'failure'
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.E2E_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Starting automated investigation",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":bufo-why-must-it-be-this-way: *Starting automated investigation...*"
+                  }
                 }
               ]
             }

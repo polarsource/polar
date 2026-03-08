@@ -22,7 +22,12 @@ Use the `Read` tool to read the failing test spec file(s) in `clients/apps/web/e
 
 Using Chrome DevTools MCP, follow the exact same steps as the E2E test **at least 2 times** to determine consistency. The checkout URL is `${ENVIRONMENT_URL}/v1/checkout-links/${CHECKOUT_LINK}/redirect`. Read the test spec and page object model from Step 1 and replicate each action (navigation, clicks, fills, assertions) using the corresponding MCP tools (`navigate_page`, `click`, `fill`, `wait_for`, `take_snapshot`, `take_screenshot`, etc.).
 
-After **every** action (navigation, click, fill, etc.), call `take_screenshot` and save the result to `healing-screenshots/` with a sequential filename like `01-navigate.png`, `02-select-country.png`, etc. This creates a visual log of the entire reproduction. Also use `take_snapshot` to verify the DOM state.
+Before starting, create the screenshot directory:
+```bash
+mkdir -p healing-screenshots
+```
+
+After **every** action (navigation, click, fill, etc.), call `take_screenshot` to visually inspect the page. Also use `take_snapshot` to verify the DOM state.
 
 **Note:** Cross-origin iframes (e.g. Stripe Elements) cannot be interacted with via Chrome DevTools MCP. If the test fails inside an iframe, note this but don't try to interact with the iframe content.
 

@@ -136,7 +136,7 @@ jobs:
             --model claude-sonnet-4-6 \
             --max-turns 30 \
             --mcp-config .github/mcp/chrome-devtools-ci.json \
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh:*),mcp__chrome-devtools__navigate_page,mcp__chrome-devtools__click,mcp__chrome-devtools__fill,mcp__chrome-devtools__wait_for,mcp__chrome-devtools__take_snapshot,mcp__chrome-devtools__take_screenshot,mcp__chrome-devtools__select_page,mcp__chrome-devtools__list_pages,mcp__chrome-devtools__new_page,mcp__chrome-devtools__hover,mcp__chrome-devtools__press_key,mcp__chrome-devtools__type_text"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash,mcp__chrome-devtools__navigate_page,mcp__chrome-devtools__click,mcp__chrome-devtools__fill,mcp__chrome-devtools__wait_for,mcp__chrome-devtools__take_snapshot,mcp__chrome-devtools__take_screenshot,mcp__chrome-devtools__select_page,mcp__chrome-devtools__list_pages,mcp__chrome-devtools__new_page,mcp__chrome-devtools__hover,mcp__chrome-devtools__press_key,mcp__chrome-devtools__type_text"
 
       - name: Validate changes are scoped to e2e directory
         run: |

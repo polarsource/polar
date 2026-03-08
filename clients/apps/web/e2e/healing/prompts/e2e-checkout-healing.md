@@ -24,26 +24,13 @@ Using Chrome DevTools MCP, follow the exact same steps as the E2E test **at leas
 
 Use `take_snapshot` after each step to verify the DOM state. Use `take_screenshot` to visually inspect the page as needed.
 
-**When something fails or looks wrong**, take a screenshot and save it to disk so we can see exactly what the page looked like at the point of failure. Use `take_screenshot` to see the page, then save it:
+**When something fails or looks wrong**, save a screenshot to disk using the `take_screenshot` tool's `filePath` parameter:
 
-```bash
-mkdir -p healing-screenshots
-# Save the screenshot using the page's CDP connection
-node -e "
-const CDP = require('chrome-remote-interface');
-(async () => {
-  const targets = await CDP.List();
-  const target = targets.find(t => t.type === 'page');
-  const client = await CDP({ target });
-  const { Page } = client;
-  const { data } = await Page.captureScreenshot({ format: 'png' });
-  require('fs').writeFileSync('healing-screenshots/failure.png', Buffer.from(data, 'base64'));
-  await client.close();
-})().catch(e => console.error(e));
-"
+```
+take_screenshot(filePath: "healing-screenshots/failure-description.png")
 ```
 
-Name the file descriptively, e.g. `failure-button-not-found.png` or `failure-page-load-error.png`. Only save screenshots at the point of failure — not after every step.
+First create the directory with `mkdir -p healing-screenshots`, then use `take_screenshot` with `filePath` set to save each screenshot. Name files descriptively, e.g. `failure-button-not-found.png` or `failure-page-load-error.png`. Only save screenshots at the point of failure — not after every step.
 
 **Note:** Cross-origin iframes (e.g. Stripe Elements) cannot be interacted with via Chrome DevTools MCP. If the test fails inside an iframe, note this but don't try to interact with the iframe content.
 

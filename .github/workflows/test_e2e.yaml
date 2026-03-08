@@ -178,7 +178,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":bufo-what-have-i-done: *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
+                    "text": ":bufo-has-activated: *E2E tests failed*\n\n*Failed tests:*\n${{ steps.failures.outputs.tests }}"
                   }
                 },
                 {

@@ -17,7 +17,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from sqlalchemy.dialects.postgresql import CITEXT
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import (
     Mapped,
@@ -162,11 +162,17 @@ class Discount(MetadataMixin, RecordModel):
     }
 
 
+type CurrencyAmountMap = dict[str, int]
+
+
 class DiscountFixed(Discount):
     type: Mapped[Literal[DiscountType.fixed]] = mapped_column(use_existing_column=True)
     amount: Mapped[int] = mapped_column(Integer, nullable=True)
     currency: Mapped[str] = mapped_column(
         String(3), nullable=True, use_existing_column=True
+    )
+    amounts: Mapped[CurrencyAmountMap] = mapped_column(
+        JSONB, nullable=True, default=dict
     )
 
     def is_applicable(self, product: "Product", currency: str) -> bool:

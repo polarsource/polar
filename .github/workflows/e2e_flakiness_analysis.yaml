@@ -76,7 +76,7 @@ jobs:
           echo "checkout_link=$(jq -r '.checkout_link' "$CONTEXT")" >> $GITHUB_OUTPUT
           echo "slack_thread_ts=$(jq -r '.slack_thread_ts' "$CONTEXT")" >> $GITHUB_OUTPUT
 
-      - name: Notify Slack - investigating (threaded)
+      - name: Notify Slack - investigating
         uses: slackapi/slack-github-action@v2
         with:
           method: chat.postMessage
@@ -92,7 +92,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":bufo-detective: *Investigating E2E failure...*"
+                    "text": ":bufo-thinking: *LLM investigation started...*"
                   }
                 },
                 {
@@ -231,7 +231,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Notify Slack - result (threaded)
+      - name: Notify Slack - result
         if: always()
         uses: slackapi/slack-github-action@v2
         with:
@@ -263,7 +263,7 @@ jobs:
               ]
             }
 
-      - name: Post suspicious PRs to Slack thread
+      - name: Post suspicious PRs to Slack
         if: always() && steps.result.outputs.suspicious_prs
         uses: slackapi/slack-github-action@v2
         with:
@@ -286,7 +286,7 @@ jobs:
               ]
             }
 
-      - name: Post screenshots to Slack thread
+      - name: Post screenshots to Slack
         if: always() && steps.context.outputs.slack_thread_ts
         run: |
           DATE=$(date -u +%Y-%m-%d)

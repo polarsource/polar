@@ -22,12 +22,28 @@ Use the `Read` tool to read the failing test spec file(s) in `clients/apps/web/e
 
 Using Chrome DevTools MCP, follow the exact same steps as the E2E test **at least 2 times** to determine consistency. The checkout URL is `${ENVIRONMENT_URL}/v1/checkout-links/${CHECKOUT_LINK}/redirect`. Read the test spec and page object model from Step 1 and replicate each action (navigation, clicks, fills, assertions) using the corresponding MCP tools (`navigate_page`, `click`, `fill`, `wait_for`, `take_snapshot`, `take_screenshot`, etc.).
 
-Before starting, create the screenshot directory:
+Use `take_snapshot` after each step to verify the DOM state. Use `take_screenshot` to visually inspect the page as needed.
+
+**When something fails or looks wrong**, take a screenshot and save it to disk so we can see exactly what the page looked like at the point of failure. Use `take_screenshot` to see the page, then save it:
+
 ```bash
 mkdir -p healing-screenshots
+# Save the screenshot using the page's CDP connection
+node -e "
+const CDP = require('chrome-remote-interface');
+(async () => {
+  const targets = await CDP.List();
+  const target = targets.find(t => t.type === 'page');
+  const client = await CDP({ target });
+  const { Page } = client;
+  const { data } = await Page.captureScreenshot({ format: 'png' });
+  require('fs').writeFileSync('healing-screenshots/failure.png', Buffer.from(data, 'base64'));
+  await client.close();
+})().catch(e => console.error(e));
+"
 ```
 
-After **every** action (navigation, click, fill, etc.), call `take_screenshot` to visually inspect the page. Also use `take_snapshot` to verify the DOM state.
+Name the file descriptively, e.g. `failure-button-not-found.png` or `failure-page-load-error.png`. Only save screenshots at the point of failure — not after every step.
 
 **Note:** Cross-origin iframes (e.g. Stripe Elements) cannot be interacted with via Chrome DevTools MCP. If the test fails inside an iframe, note this but don't try to interact with the iframe content.
 

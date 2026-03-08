@@ -74,9 +74,9 @@ jobs:
           echo "trigger=$(jq -r '.trigger' "$CONTEXT")" >> $GITHUB_OUTPUT
           echo "run_url=$(jq -r '.run_url' "$CONTEXT")" >> $GITHUB_OUTPUT
           echo "checkout_link=$(jq -r '.checkout_link' "$CONTEXT")" >> $GITHUB_OUTPUT
+          echo "slack_thread_ts=$(jq -r '.slack_thread_ts' "$CONTEXT")" >> $GITHUB_OUTPUT
 
-      - name: Notify Slack - investigating
-        id: slack-thread
+      - name: Notify Slack - investigating (threaded)
         uses: slackapi/slack-github-action@v2
         with:
           method: chat.postMessage
@@ -84,13 +84,14 @@ jobs:
           payload: |
             {
               "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",
+              "thread_ts": "${{ steps.context.outputs.slack_thread_ts }}",
               "text": "Investigating E2E failure",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":bufo-detective: *Investigating E2E failure...*\n\n*Failed tests:*\n${{ steps.context.outputs.failed_tests }}"
+                    "text": ":bufo-detective: *Investigating E2E failure...*"
                   }
                 },
                 {
@@ -228,7 +229,7 @@ jobs:
           payload: |
             {
               "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",
-              "thread_ts": "${{ steps.slack-thread.outputs.ts }}",
+              "thread_ts": "${{ steps.context.outputs.slack_thread_ts }}",
               "text": "E2E analysis complete: ${{ steps.result.outputs.classification }}",
               "blocks": [
                 {
@@ -251,12 +252,12 @@ jobs:
             }
 
       - name: Post screenshots to Slack thread
-        if: always() && steps.slack-thread.outputs.ts
+        if: always() && steps.context.outputs.slack_thread_ts
         run: |
           DATE=$(date -u +%Y-%m-%d)
           RUN_ID=${{ github.run_id }}
           PUBLIC_BASE="https://uploads.polar.sh/e2e-artifacts/${DATE}-${RUN_ID}/healing-screenshots"
-          THREAD_TS="${{ steps.slack-thread.outputs.ts }}"
+          THREAD_TS="${{ steps.context.outputs.slack_thread_ts }}"
 
           if [ -d healing-screenshots ]; then
             for img in healing-screenshots/*.png; do

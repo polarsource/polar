@@ -168,6 +168,7 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
           payload: |
             {
               "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",
@@ -205,6 +206,7 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
           payload: |
             {
               "channel": "${{ secrets.E2E_SLACK_CHANNEL_ID }}",

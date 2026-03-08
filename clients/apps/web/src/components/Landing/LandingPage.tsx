@@ -11,6 +11,7 @@ import { BillingDiagram } from './BillingDiagram'
 import Features from './Features'
 import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
+import { Products } from './Products'
 import { Section } from './Section'
 import { Upsell } from './Upsell'
 import { Usage } from './Usage'
@@ -55,6 +56,9 @@ export const PageContent = () => {
         <Usage />
         <BillingDiagram />
         <Adapters />
+      </Section>
+      <Section className="flex flex-col gap-y-32" border>
+        <Products />
       </Section>
       <Section className="flex flex-col gap-y-24">
         <MerchantOfRecord />

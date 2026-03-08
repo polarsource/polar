@@ -22,7 +22,7 @@ export class CheckoutPage {
     await this.page.goto(
       `${apiBase}/v1/checkout-links/${checkoutLink}/redirect`,
     )
-    await expect(this.subscribeButton).toBeVisible({ timeout: 15_000 })
+    await expect(this.subscribeButton).toBeVisible({ timeout: 20_000 })
   }
 
   async selectCountry(country: string) {

@@ -11,8 +11,8 @@ on:
         required: true
 
 concurrency:
-  group: e2e-flakiness-analysis
-  cancel-in-progress: true
+  group: e2e-flakiness-analysis-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
 
 permissions:
   contents: write

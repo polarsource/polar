@@ -136,6 +136,7 @@ jobs:
 
       - name: Run Claude analysis
         run: |
+          mkdir -p healing-screenshots
           claude -p "$(cat /tmp/analysis-prompt.md)" \
             --model claude-sonnet-4-6 \
             --max-turns 30 \

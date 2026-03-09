@@ -6,7 +6,7 @@ import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import DiscountForm from './DiscountForm'
+import DiscountForm, { DiscountFormValues } from './DiscountForm'
 
 interface CreateDiscountModalContentProps {
   organization: schemas['Organization']
@@ -21,11 +21,14 @@ const CreateDiscountModalContent = ({
 }: CreateDiscountModalContentProps) => {
   const createDiscount = useCreateDiscount(organization.id)
 
-  const form = useForm<schemas['DiscountCreate']>({
+  const form = useForm<DiscountFormValues>({
     defaultValues: {
       organization_id: organization.id,
       type: 'percentage',
       duration: 'once',
+      amountsByCurrency: [
+        { currency: organization.default_presentment_currency, amount: 0 },
+      ],
     },
   })
 
@@ -35,10 +38,17 @@ const CreateDiscountModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit: SubmitHandler<schemas['DiscountCreate']> = useCallback(
-    async (discountCreate) => {
-      const { data: discount, error } =
-        await createDiscount.mutateAsync(discountCreate)
+  const onSubmit: SubmitHandler<DiscountFormValues> = useCallback(
+    async ({ amountsByCurrency, ...discountCreate }) => {
+      const amounts = Object.fromEntries(
+        amountsByCurrency.map(({ currency, amount }) => [currency, amount]),
+      )
+
+      const { data: discount, error } = await createDiscount.mutateAsync({
+        ...discountCreate,
+        amounts,
+      } as schemas['DiscountCreate'])
+
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError, 1, [
@@ -50,6 +60,7 @@ const CreateDiscountModalContent = ({
         }
         return
       }
+
       toast({
         title: 'Discount Created',
         description: `Discount ${discount.name} was created successfully`,
@@ -88,6 +99,7 @@ const CreateDiscountModalContent = ({
               <Button
                 variant="ghost"
                 className="self-start"
+                type="button"
                 onClick={hideModal}
               >
                 Cancel

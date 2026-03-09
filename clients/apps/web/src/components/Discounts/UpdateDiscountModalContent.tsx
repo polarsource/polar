@@ -7,13 +7,40 @@ import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import DiscountForm from './DiscountForm'
+import DiscountForm, { DiscountFormValues } from './DiscountForm'
 
 interface UpdateDiscountModalContentProps {
   organization: schemas['Organization']
   discount: schemas['Discount']
   onDiscountUpdated: (discount: schemas['Discount']) => void
   hideModal: () => void
+}
+
+type DiscountFixed =
+  | schemas['DiscountFixedOnceForeverDuration']
+  | schemas['DiscountFixedRepeatDuration']
+
+const getInitialAmountsByCurrency = (
+  discount: schemas['Discount'],
+  defaultCurrency: string,
+): { currency: string; amount: number }[] => {
+  if (!isDiscountFixed(discount)) {
+    return []
+  }
+
+  const fixed = discount as unknown as DiscountFixed
+
+  // Prefer the new amounts map if present and non-empty
+  if (fixed.amounts && Object.keys(fixed.amounts).length > 0) {
+    return Object.entries(fixed.amounts as Record<string, number>).map(
+      ([currency, amount]) => ({ currency, amount }),
+    )
+  }
+
+  // Fall back to legacy single currency/amount fields
+  const currency = fixed.currency ?? defaultCurrency
+  const amount = fixed.amount ?? 0
+  return [{ currency, amount }]
 }
 
 const UpdateDiscountModalContent = ({
@@ -24,13 +51,14 @@ const UpdateDiscountModalContent = ({
 }: UpdateDiscountModalContentProps) => {
   const updateDiscount = useUpdateDiscount(discount.id)
 
-  const form = useForm<schemas['DiscountUpdate']>({
+  const form = useForm<DiscountFormValues>({
     defaultValues: {
-      ...discount,
-      currency: isDiscountFixed(discount)
-        ? (discount.currency as schemas['PresentmentCurrency'])
-        : undefined,
+      ...(discount as unknown as DiscountFormValues),
       products: discount.products.map((product) => product.id),
+      amountsByCurrency: getInitialAmountsByCurrency(
+        discount,
+        organization.default_presentment_currency,
+      ),
     },
   })
 
@@ -41,9 +69,22 @@ const UpdateDiscountModalContent = ({
   } = form
 
   const onSubmit = useCallback(
-    async (discountUpdate: schemas['DiscountUpdate']) => {
-      const { data: discount, error } =
-        await updateDiscount.mutateAsync(discountUpdate)
+    async ({ amountsByCurrency, ...discountUpdate }: DiscountFormValues) => {
+      const amounts = Object.fromEntries(
+        amountsByCurrency.map(({ currency, amount }) => [currency, amount]),
+      )
+
+      const safeUpdate = { ...discountUpdate } as Record<string, unknown>
+      delete safeUpdate['amount']
+      delete safeUpdate['currency']
+
+      const { data: updatedDiscount, error } = await updateDiscount.mutateAsync(
+        {
+          ...safeUpdate,
+          amounts,
+        } as schemas['DiscountUpdate'],
+      )
+
       if (error) {
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError, 1, [
@@ -55,11 +96,12 @@ const UpdateDiscountModalContent = ({
         }
         return
       }
+
       toast({
         title: 'Discount Updated',
-        description: `Discount ${discount.name} was updated successfully`,
+        description: `Discount ${updatedDiscount.name} was updated successfully`,
       })
-      onDiscountUpdated(discount)
+      onDiscountUpdated(updatedDiscount)
     },
     [updateDiscount, onDiscountUpdated, setError],
   )

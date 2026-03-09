@@ -7,12 +7,7 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror.js'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
-import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
-import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
-import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
-import { TrialAlreadyRedeemed } from '@polar-sh/sdk/models/errors/trialalreadyredeemed'
+import { isValidationError } from '@polar-sh/client'
 import type {
   ConfirmationToken,
   Stripe,
@@ -86,15 +81,22 @@ export const CheckoutFormProvider = ({
       if (ok) {
         return value
       } else {
-        if (error instanceof HTTPValidationError) {
-          setValidationErrors(error.detail || [], setError)
-        } else if (
-          error instanceof AlreadyActiveSubscriptionError ||
-          error instanceof NotOpenCheckout ||
-          error instanceof PaymentError ||
-          error instanceof PaymentNotReady
-        ) {
-          setError('root', { message: error.detail })
+        if (error) {
+          if (isValidationError(error.detail)) {
+            setValidationErrors(error.detail, setError)
+          } else {
+            switch (error.error) {
+              case 'PaymentError':
+              case 'AlreadyActiveSubscriptionError':
+              case 'NotOpenCheckout':
+              case 'PaymentNotReady':
+                setError('root', { message: error.detail })
+                break
+              case 'ResourceNotFound':
+              case 'ExpiredCheckoutError':
+                break
+            }
+          }
         }
         throw error
       }
@@ -110,18 +112,25 @@ export const CheckoutFormProvider = ({
       if (ok) {
         return value
       }
-      if (error instanceof HTTPValidationError) {
-        setValidationErrors(error.detail || [], setError)
-      } else if (
-        error instanceof AlreadyActiveSubscriptionError ||
-        error instanceof NotOpenCheckout ||
-        error instanceof PaymentError ||
-        error instanceof PaymentNotReady ||
-        error instanceof TrialAlreadyRedeemed
-      ) {
-        setError('root', { message: error.detail })
-        if (error instanceof TrialAlreadyRedeemed) {
-          await update({ allow_trial: false })
+      if (error) {
+        if (isValidationError(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        } else {
+          switch (error.error) {
+            case 'PaymentError':
+            case 'AlreadyActiveSubscriptionError':
+            case 'NotOpenCheckout':
+            case 'PaymentNotReady':
+              setError('root', { message: error.detail })
+              break
+            case 'TrialAlreadyRedeemed':
+              setError('root', { message: error.detail })
+              await update({ allow_trial: false })
+              break
+            case 'ResourceNotFound':
+            case 'ExpiredCheckoutError':
+              break
+          }
         }
       }
       throw error

@@ -1,15 +1,13 @@
 'use client'
 
-import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import type { schemas } from '@polar-sh/client'
 import React from 'react'
 import { useForm } from 'react-hook-form'
 
 import {
   CheckoutContext,
   CheckoutFormContext,
+  type Result,
 } from '@polar-sh/checkout/providers'
 import { useTheme } from 'next-themes'
 
@@ -42,21 +40,15 @@ const DummyCheckoutContextProvider = ({
     <CheckoutContext.Provider
       value={{
         checkout,
-        refresh: async () => ({
-          ok: true,
-          value: checkout,
-          error: undefined,
-        }),
-        update: async () => ({
-          ok: true,
-          value: checkout,
-          error: undefined,
-        }),
-        confirm: async () => ({
-          ok: true,
-          value: checkout as CheckoutPublicConfirmed,
-          error: undefined,
-        }),
+        refresh: async () =>
+          ({ ok: true, value: checkout }) as Result<schemas['CheckoutPublic']>,
+        update: async () =>
+          ({ ok: true, value: checkout }) as Result<schemas['CheckoutPublic']>,
+        confirm: async () =>
+          ({
+            ok: true,
+            value: checkout as schemas['CheckoutPublicConfirmed'],
+          }) as Result<schemas['CheckoutPublicConfirmed']>,
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         client: {},

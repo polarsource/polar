@@ -4,14 +4,12 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
+import { createClient, unwrap, type schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -120,16 +118,20 @@ export const CheckoutConfirmation = ({
 }: CheckoutConfirmationProps) => {
   const t = useTranslations(locale)
   const router = useRouter()
-  const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
+  const client = useMemo(() => createClient(getServerURL()), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { status, organization } = checkout
 
   const updateCheckout = useCallback(async () => {
-    const { ok, value } = await checkoutsClientGet(client, {
-      clientSecret: checkout.clientSecret,
-    })
-    if (ok) {
+    try {
+      const value = await unwrap(
+        client.GET('/v1/checkouts/client/{client_secret}', {
+          params: { path: { client_secret: checkout.client_secret } },
+        }),
+      )
       setCheckout(value)
+    } catch {
+      // Silently ignore - will retry on next interval/event
     }
   }, [client, checkout])
   const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(embed, theme)

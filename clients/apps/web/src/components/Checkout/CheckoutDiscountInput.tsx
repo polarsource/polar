@@ -1,13 +1,12 @@
 'use client'
 
 import { useCheckoutForm } from '@polar-sh/checkout/providers'
+import type { schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -40,8 +39,10 @@ const XIcon = ({ className }: { className?: string }) => {
 }
 
 interface CheckoutDiscountInputProps {
-  checkout: CheckoutPublic
-  update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  checkout: schemas['CheckoutPublic']
+  update: (
+    data: schemas['CheckoutUpdatePublic'],
+  ) => Promise<schemas['CheckoutPublic']>
   locale?: AcceptedLocale
   collapsible?: boolean
 }

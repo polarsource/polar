@@ -24,12 +24,8 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
+import { ClientResponseError, type schemas } from '@polar-sh/client'
 import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
-import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -226,11 +222,14 @@ const Checkout = ({
   )
 
   const update = useCallback(
-    async (data: CheckoutUpdatePublic) => {
+    async (data: schemas['CheckoutUpdatePublic']) => {
       try {
         return await _update(data)
       } catch (error) {
-        if (error instanceof ExpiredCheckoutError) {
+        if (
+          error instanceof ClientResponseError &&
+          error.response.status === 410
+        ) {
           window.location.reload()
         }
         throw error
@@ -241,16 +240,19 @@ const Checkout = ({
 
   const confirm = useCallback(
     async (
-      data: CheckoutConfirmStripe,
+      data: schemas['CheckoutConfirmStripe'],
       stripe: Stripe | null,
       elements: StripeElements | null,
     ) => {
       setFullLoading(true)
-      let confirmedCheckout: CheckoutPublicConfirmed
+      let confirmedCheckout: schemas['CheckoutPublicConfirmed']
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
-        if (error instanceof ExpiredCheckoutError) {
+        if (
+          error instanceof ClientResponseError &&
+          error.response.status === 410
+        ) {
           window.location.reload()
         }
         setFullLoading(false)

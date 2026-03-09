@@ -9869,14 +9869,27 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
+       * @deprecated
        * @example 1000
        */
       amount: number
       /**
        * Currency
+       * @deprecated
        * @example usd
        */
       currency: string
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total.
+       * @example {
+       *       "eur": 900,
+       *       "usd": 1000
+       *     }
+       */
+      amounts: {
+        [key: string]: number
+      }
       /**
        * Id
        * Format: uuid4
@@ -9900,14 +9913,27 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
+       * @deprecated
        * @example 1000
        */
       amount: number
       /**
        * Currency
+       * @deprecated
        * @example usd
        */
       currency: string
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total.
+       * @example {
+       *       "eur": 900,
+       *       "usd": 1000
+       *     }
+       */
+      amounts: {
+        [key: string]: number
+      }
       /**
        * Id
        * Format: uuid4
@@ -16064,14 +16090,27 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
+       * @deprecated
        * @example 1000
        */
       amount: number
       /**
        * Currency
+       * @deprecated
        * @example usd
        */
       currency: string
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total.
+       * @example {
+       *       "eur": 900,
+       *       "usd": 1000
+       *     }
+       */
+      amounts: {
+        [key: string]: number
+      }
       /**
        * Created At
        * Format: date-time
@@ -16136,14 +16175,27 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
+       * @deprecated
        * @example 1000
        */
       amount: number
       /**
        * Currency
+       * @deprecated
        * @example usd
        */
       currency: string
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total.
+       * @example {
+       *       "eur": 900,
+       *       "usd": 1000
+       *     }
+       */
+      amounts: {
+        [key: string]: number
+      }
       /**
        * Created At
        * Format: date-time
@@ -16210,14 +16262,21 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
-       * @description Fixed amount to discount from the invoice total.
+       * @deprecated
        */
-      amount: number
+      amount?: number | null
       /**
-       * @description The currency of the fixed amount discount.
+       * @deprecated
        * @default usd
        */
-      currency: components['schemas']['PresentmentCurrency']
+      currency: components['schemas']['PresentmentCurrency'] | null
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
+       */
+      amounts?: {
+        [key: string]: number
+      } | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -16280,14 +16339,27 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
+       * @deprecated
        * @example 1000
        */
       amount: number
       /**
        * Currency
+       * @deprecated
        * @example usd
        */
       currency: string
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total.
+       * @example {
+       *       "eur": 900,
+       *       "usd": 1000
+       *     }
+       */
+      amounts: {
+        [key: string]: number
+      }
       /**
        * Created At
        * Format: date-time
@@ -16354,14 +16426,27 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
+       * @deprecated
        * @example 1000
        */
       amount: number
       /**
        * Currency
+       * @deprecated
        * @example usd
        */
       currency: string
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total.
+       * @example {
+       *       "eur": 900,
+       *       "usd": 1000
+       *     }
+       */
+      amounts: {
+        [key: string]: number
+      }
       /**
        * Created At
        * Format: date-time
@@ -16437,14 +16522,21 @@ export interface components {
       type: components['schemas']['DiscountType']
       /**
        * Amount
-       * @description Fixed amount to discount from the invoice total.
+       * @deprecated
        */
-      amount: number
+      amount?: number | null
       /**
-       * @description The currency of the fixed amount discount.
+       * @deprecated
        * @default usd
        */
-      currency: components['schemas']['PresentmentCurrency']
+      currency: components['schemas']['PresentmentCurrency'] | null
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
+       */
+      amounts?: {
+        [key: string]: number
+      } | null
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -16996,6 +17088,8 @@ export interface components {
       | '-code'
       | 'redemptions_count'
       | '-redemptions_count'
+      | 'ends_at'
+      | '-ends_at'
     /**
      * DiscountType
      * @enum {string}
@@ -17049,9 +17143,20 @@ export interface components {
       /** Duration In Months */
       duration_in_months?: number | null
       type?: components['schemas']['DiscountType'] | null
-      /** Amount */
+      /**
+       * Amount
+       * @deprecated
+       */
       amount?: number | null
+      /** @deprecated */
       currency?: components['schemas']['PresentmentCurrency'] | null
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
+       */
+      amounts?: {
+        [key: string]: number
+      } | null
       /** Basis Points */
       basis_points?: number | null
       /** Products */
@@ -25182,11 +25287,11 @@ export interface components {
       /** Expires In */
       expires_in: number
       /** Refresh Token */
-      refresh_token: string | null
+      refresh_token?: string | null
       /** Scope */
       scope: string
       /** Id Token */
-      id_token: string
+      id_token?: string | null
     }
     /** Transaction */
     Transaction: {
@@ -43285,6 +43390,8 @@ export const discountSortPropertyValues: ReadonlyArray<
   '-code',
   'redemptions_count',
   '-redemptions_count',
+  'ends_at',
+  '-ends_at',
 ]
 export const discountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountType']

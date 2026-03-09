@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: clients/apps/web/playwright-report/
@@ -155,7 +155,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: clients/apps/web/test-results/
@@ -248,7 +248,7 @@ jobs:
 
       - name: Upload failure context
         if: steps.e2e.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: failure-context
           path: clients/apps/web/failure-context.json

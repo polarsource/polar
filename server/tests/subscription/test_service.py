@@ -871,8 +871,7 @@ class TestCycle:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             duration_in_months=3,
             organization=organization,
@@ -1204,8 +1203,7 @@ class TestCycle:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             duration_in_months=3,
             organization=organization,
@@ -3273,8 +3271,7 @@ class TestUpdateSeats:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,  # $10 discount
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             organization=organization,
             products=[product],
@@ -3408,8 +3405,7 @@ class TestUpdateSeats:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,  # $10 discount
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             organization=organization,
             products=[product],

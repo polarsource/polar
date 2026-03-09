@@ -387,7 +387,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     ) -> None:
         amount = sum(price.amount for price in prices)
         if discount is not None:
-            amount -= discount.get_discount_amount(amount)
+            amount -= discount.get_discount_amount(amount, self.currency)
         self.amount = amount
 
     def update_meters(self, prices: Sequence["SubscriptionProductPrice"]) -> None:

@@ -52,7 +52,9 @@ def _generate_product_credit_proration_billing_entries(
         base_amount = initial_price.price_amount
         discount_amount = 0
         if subscription.discount:
-            discount_amount = subscription.discount.get_discount_amount(base_amount)
+            discount_amount = subscription.discount.get_discount_amount(
+                base_amount, subscription.currency
+            )
 
         # Prorations have discounts applied to the `BillingEntry.amount`
         # immediately.
@@ -106,7 +108,9 @@ def _generate_product_debit_proration_billing_entries(
         if subscription.discount and subscription.discount.is_applicable(
             new_price.product, subscription.currency
         ):
-            discount_amount = subscription.discount.get_discount_amount(base_amount)
+            discount_amount = subscription.discount.get_discount_amount(
+                base_amount, subscription.currency
+            )
 
         entry_remaining_time = BillingEntry(
             type=BillingEntryType.proration,
@@ -199,7 +203,7 @@ def _generate_seats_subscription_update(
         subscription.product, subscription.currency
     ):
         discount_amount = subscription.discount.get_discount_amount(
-            abs(base_amount_delta)
+            abs(base_amount_delta), subscription.currency
         )
 
     # Calculate the net amount delta after discount

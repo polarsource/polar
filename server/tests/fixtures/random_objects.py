@@ -683,8 +683,7 @@ async def create_discount(
     save_fixture: SaveFixture,
     *,
     type: typing.Literal[DiscountType.fixed],
-    amount: int,
-    currency: str,
+    amounts: dict[str, int],
     duration: DiscountDuration,
     organization: Organization,
     name: str = "Discount",
@@ -715,8 +714,7 @@ async def create_discount(
     save_fixture: SaveFixture,
     *,
     type: DiscountType,
-    amount: int | None = None,
-    currency: str | None = None,
+    amounts: dict[str, int] | None = None,
     basis_points: int | None = None,
     duration: DiscountDuration,
     organization: Organization,
@@ -743,10 +741,8 @@ async def create_discount(
         redemptions_count=0,
     )
     if isinstance(custom_field, DiscountFixed):
-        assert amount is not None
-        assert currency is not None
-        custom_field.amount = amount
-        custom_field.currency = currency
+        assert amounts is not None
+        custom_field.amounts = amounts
     elif isinstance(custom_field, DiscountPercentage):
         assert basis_points is not None
         custom_field.basis_points = basis_points
@@ -766,8 +762,7 @@ async def discount_fixed_once(
     return await create_discount(
         save_fixture,
         type=DiscountType.fixed,
-        amount=1000,
-        currency="usd",
+        amounts={"usd": 1000},
         duration=DiscountDuration.once,
         organization=organization,
         code="DISCOUNTFIXEDONCE",

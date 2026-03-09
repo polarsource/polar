@@ -1182,7 +1182,9 @@ class TestCreate:
         assert (
             checkout.net_amount
             == price.price_amount
-            - discount_fixed_once.get_discount_amount(price.price_amount)
+            - discount_fixed_once.get_discount_amount(
+                price.price_amount, checkout.currency
+            )
         )
 
     @pytest.mark.auth
@@ -2722,8 +2724,7 @@ class TestUpdate:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.forever,
             organization=product.organization,
         )
@@ -2766,8 +2767,7 @@ class TestUpdate:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.forever,
             organization=product.organization,
             products=[product],
@@ -3123,7 +3123,9 @@ class TestUpdate:
         assert (
             checkout.net_amount
             == price.price_amount
-            - discount_fixed_once.get_discount_amount(price.price_amount)
+            - discount_fixed_once.get_discount_amount(
+                price.price_amount, checkout.currency
+            )
         )
 
     async def test_valid_discount_code(
@@ -3148,7 +3150,9 @@ class TestUpdate:
         assert (
             checkout.net_amount
             == price.price_amount
-            - discount_fixed_once.get_discount_amount(price.price_amount)
+            - discount_fixed_once.get_discount_amount(
+                price.price_amount, checkout.currency
+            )
         )
 
     async def test_full_discount_resets_is_business_customer(

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 
@@ -123,25 +123,25 @@ class TestUpdate:
         ("field", "value"),
         [
             ("amount", 1000),
+            ("amounts", {"usd": 1000}),
             ("basis_points", 1000),
         ],
     )
     async def test_update_forbidden_field_with_redemptions(
         self,
-        field: Literal["amount", "basis_points"],
-        value: int,
+        field: Literal["amount", "amounts", "basis_points"],
+        value: Any,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         product: Product,
     ) -> None:
         discount: Discount
-        if field == "amount":
+        if field in {"amount", "amounts"}:
             discount = await create_discount(
                 save_fixture,
                 type=DiscountType.fixed,
-                amount=5000,
-                currency="usd",
+                amounts={"usd": 5000},
                 duration=DiscountDuration.once,
                 organization=organization,
             )
@@ -157,7 +157,7 @@ class TestUpdate:
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=checkout
         )
-        await session.refresh(discount)
+        await session.refresh(discount, ["organization", "redemptions_count"])
 
         with pytest.raises(PolarRequestValidationError):
             await discount_service.update(
@@ -218,8 +218,7 @@ class TestUpdate:
             discount = await create_discount(
                 save_fixture,
                 type=DiscountType.fixed,
-                amount=1000,
-                currency="usd",
+                amounts={"usd": 1000},
                 duration=DiscountDuration.once,
                 organization=organization,
             )
@@ -233,8 +232,7 @@ class TestUpdate:
         if isinstance(updated_discount, DiscountPercentage):
             assert updated_discount.basis_points == 2000
         elif isinstance(updated_discount, DiscountFixed):
-            assert updated_discount.amount == 2000
-            assert updated_discount.currency == "usd"
+            assert updated_discount.amounts == {"usd": 2000}
 
         assert updated_discount.ends_at == updated_ends_at
 

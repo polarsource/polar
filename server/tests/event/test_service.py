@@ -1823,8 +1823,7 @@ class TestSystemEvents:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.once,
             organization=organization,
         )

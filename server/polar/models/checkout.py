@@ -295,7 +295,11 @@ class Checkout(
 
     @property
     def discount_amount(self) -> int:
-        return self.discount.get_discount_amount(self.amount) if self.discount else 0
+        return (
+            self.discount.get_discount_amount(self.amount, self.currency)
+            if self.discount
+            else 0
+        )
 
     @property
     def net_amount(self) -> int:

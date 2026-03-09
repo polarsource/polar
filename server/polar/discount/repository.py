@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import select, update
+from sqlalchemy.orm import raiseload
 
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import Discount, DiscountRedemption
@@ -17,6 +18,7 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
             select(Discount)
             .where(Discount.id == discount_id, Discount.is_deleted.is_(False))
             .with_for_update(nowait=nowait)
+            .options(raiseload(Discount.organization))
         )
         return await self.get_one_or_none(statement)
 

@@ -645,7 +645,9 @@ class OrderService:
                 discountable_amount = sum(
                     item.amount for item in items if item.discountable
                 )
-                discount_amount = discount.get_discount_amount(discountable_amount)
+                discount_amount = discount.get_discount_amount(
+                    discountable_amount, subscription.currency
+                )
 
             billing_address = customer.billing_address
             tax_id = customer.tax_id

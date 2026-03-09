@@ -658,7 +658,7 @@ class SubscriptionService:
                     discount_amount = 0
                     if subscription.discount:
                         discount_amount = subscription.discount.get_discount_amount(
-                            subscription_product_price.amount
+                            subscription_product_price.amount, subscription.currency
                         )
 
                     await billing_entry_repository.create(
@@ -1558,7 +1558,9 @@ class SubscriptionService:
                 applicable_discount = subscription.discount
 
         if applicable_discount is not None:
-            discount_amount = applicable_discount.get_discount_amount(subtotal_amount)
+            discount_amount = applicable_discount.get_discount_amount(
+                subtotal_amount, subscription.currency
+            )
 
         taxable_amount = subtotal_amount - discount_amount
 

@@ -847,8 +847,7 @@ class DiscountFixture(BaseModel):
     basis_points: int | None = None
     duration_in_months: int | None = None
     applies_to: list[str] | None = None
-    amount: int | None = None
-    currency: str | None = None
+    amounts: dict[str, int] | None = None
 
 
 class ProrationFixture(BaseModel):
@@ -1327,8 +1326,7 @@ class TestCreateSubscriptionOrder:
                 ProrationFixture(
                     discount=DiscountFixture(
                         type=DiscountType.fixed,
-                        amount=1000,
-                        currency="usd",
+                        amounts={"usd": 1000},
                         duration=DiscountDuration.repeating,
                         duration_in_months=3,
                         applies_to=["p-basic"],
@@ -1476,8 +1474,7 @@ class TestCreateSubscriptionOrder:
             discount = await create_discount(
                 save_fixture,
                 type=setup.discount.type,
-                amount=setup.discount.amount,
-                currency=setup.discount.currency,
+                amounts=setup.discount.amounts,
                 basis_points=setup.discount.basis_points,
                 duration=setup.discount.duration,
                 duration_in_months=setup.discount.duration_in_months,

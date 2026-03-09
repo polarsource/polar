@@ -103,7 +103,7 @@ class Discount(MetadataMixin, RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise")
+        return relationship("Organization", lazy="joined")
 
     discount_redemptions: Mapped[list["DiscountRedemption"]] = relationship(
         "DiscountRedemption", back_populates="discount", lazy="raise"
@@ -121,7 +121,7 @@ class Discount(MetadataMixin, RecordModel):
         "discount_products", "product"
     )
 
-    def get_discount_amount(self, amount: int) -> int:
+    def get_discount_amount(self, amount: int, currency: str) -> int:
         raise NotImplementedError()
 
     def is_applicable(self, product: "Product", currency: str) -> bool:
@@ -167,16 +167,12 @@ type CurrencyAmountMap = dict[str, int]
 
 class DiscountFixed(Discount):
     type: Mapped[Literal[DiscountType.fixed]] = mapped_column(use_existing_column=True)
-    amount: Mapped[int] = mapped_column(Integer, nullable=True)
-    currency: Mapped[str] = mapped_column(
-        String(3), nullable=True, use_existing_column=True
-    )
     amounts: Mapped[CurrencyAmountMap] = mapped_column(
         JSONB, nullable=True, default=dict
     )
 
     def is_applicable(self, product: "Product", currency: str) -> bool:
-        if self.currency != currency:
+        if currency not in self.amounts:
             return False
 
         if len(self.products) == 0:
@@ -184,8 +180,26 @@ class DiscountFixed(Discount):
 
         return product in self.products
 
-    def get_discount_amount(self, amount: int) -> int:
-        return min(self.amount, amount)
+    def get_discount_amount(self, amount: int, currency: str) -> int:
+        return min(self.amounts[currency], amount)
+
+    @property
+    def amount(self) -> int:
+        """Backward compatibility for the amount field."""
+        default_currency = self.organization.default_presentment_currency
+        return self.amounts.get(
+            default_currency, self.amounts[next(iter(self.amounts))]
+        )
+
+    @property
+    def currency(self) -> str:
+        """Backward compatibility for the currency field."""
+        default_currency = self.organization.default_presentment_currency
+        return (
+            default_currency
+            if default_currency in self.amounts
+            else next(iter(self.amounts))
+        )
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.fixed,
@@ -199,7 +213,7 @@ class DiscountPercentage(Discount):
     )
     basis_points: Mapped[int] = mapped_column(Integer, nullable=True)
 
-    def get_discount_amount(self, amount: int) -> int:
+    def get_discount_amount(self, amount: int, currency: str) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
         return polar_round(discount_amount_float)
 

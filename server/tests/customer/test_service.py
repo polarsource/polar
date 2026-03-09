@@ -13,7 +13,8 @@ from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
-from polar.models.member import MemberRole
+from polar.models.member import Member, MemberRole
+from polar.models.customer import CustomerType
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -590,7 +591,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that customer type can be upgraded from individual to team."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -617,7 +617,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that customer type cannot be downgraded from team to individual."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -644,7 +643,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that updating to the same type is allowed."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -756,7 +754,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """When customer email changes, active members with the old email are synced."""
-        from polar.models.member import Member, MemberRole
 
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
@@ -790,7 +787,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Members with custom (non-customer) emails are NOT synced on customer email change."""
-        from polar.models.member import Member, MemberRole
 
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
@@ -826,7 +822,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """When the email does not change, no member sync occurs."""
-        from polar.models.member import Member, MemberRole
 
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
@@ -1041,7 +1036,6 @@ class TestAnonymize:
         organization: Organization,
     ) -> None:
         """Billing address should be cleared (invoices retain original)."""
-        from polar.kit.address import Address
 
         customer = await create_customer(
             save_fixture,

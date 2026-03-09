@@ -14,8 +14,11 @@ from polar.customer_portal.service.customer_session import (
 )
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.kit.utils import utc_now
-from polar.models import CustomerSession, Member, MemberSession, Organization
+from polar.models import CustomerSession, CustomerSessionCode, Member, MemberSession, Organization
 from polar.models.member import MemberRole
+from sqlalchemy import select
+from polar.customer.schemas.customer import CustomerUpdate
+from polar.customer.service import customer as customer_service
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -405,7 +408,6 @@ class TestRequestMemberEnabledOrg:
         organization: Organization,
     ) -> None:
         """Test that soft-deleted members trigger auto-creation of a new owner member."""
-        from polar.kit.utils import utc_now
 
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
@@ -493,7 +495,6 @@ class TestRequestMemberEnabledOrgGracefulFallback:
 
         assert customer_session_code is not None
         # Verify an owner member was created
-        from sqlalchemy import select
 
         stmt = select(Member).where(
             Member.customer_id == customer.id,
@@ -675,7 +676,6 @@ class TestAuthenticate:
         organization: Organization,
     ) -> None:
         """Test that authenticate raises error when member not found by email."""
-        from polar.models import CustomerSessionCode
 
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
@@ -770,10 +770,6 @@ class TestAuthenticate:
         the polar_mst_* authenticate flow fails because the member lookup by (customer_id, email)
         returns no rows.
         """
-        from polar.customer.schemas.customer import CustomerUpdate
-        from polar.customer.service import customer as customer_service
-        from polar.models.member import Member, MemberRole
-        from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
@@ -807,7 +803,6 @@ class TestAuthenticate:
         token, session_obj = await customer_session_service.authenticate(session, code)
 
         assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
-        from polar.models import MemberSession
         assert isinstance(session_obj, MemberSession)
         # Must resolve to the correct (now email-synced) member
         assert session_obj.member_id == member.id

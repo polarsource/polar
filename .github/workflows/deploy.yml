@@ -69,7 +69,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ghcr.io/polarsource/polar
@@ -97,7 +97,7 @@ jobs:
 
       - name: Docker meta (Playwright)
         id: meta-playwright
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/polarsource/polar-playwright
           tags: |

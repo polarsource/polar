@@ -324,7 +324,7 @@ jobs:
 
       - name: Upload analysis result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: flakiness-analysis
           path: analysis-result.json
@@ -333,7 +333,7 @@ jobs:
 
       - name: Upload healing screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: healing-screenshots
           path: healing-screenshots/

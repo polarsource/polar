@@ -1,7 +1,7 @@
 """Add refunds_blocked flag to Organization
 
 Revision ID: df00cf8b34e1
-Revises: 22e0e20d2455
+Revises: a1fd4341cf14
 Create Date: 2026-03-07 20:27:50.611316
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "df00cf8b34e1"
-down_revision = "22e0e20d2455"
+down_revision = "a1fd4341cf14"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -443,7 +443,7 @@ const FeatureCard = ({
       visible: { opacity: 1, transition: { duration: 1.5 } },
     }}
     className={twMerge(
-      'flex flex-col py-6 first:pr-12 last:pl-12 md:py-0 [&:nth-child(n+2):nth-last-child(n+2)]:px-12',
+      'flex flex-col py-6 md:py-0 md:first:pr-12 md:last:pl-12 md:[&:nth-child(n+2):nth-last-child(n+2)]:px-12',
       className,
     )}
   >
@@ -475,7 +475,7 @@ const Features = ({ className }: { className?: string }) => (
       <FeatureCard
         header="— 01"
         title="Payments, Usage & Billing"
-        description="Sell digital products and SaaS billing with flexible pricing models & seamless payment processing."
+        description="Sell SaaS with flexible pricing models or bill users for usage like AI token consumption."
         illustration={<PaymentIllustration />}
       />
       <FeatureCard
@@ -487,7 +487,7 @@ const Features = ({ className }: { className?: string }) => (
       <FeatureCard
         header="— 03"
         title="Global Merchant of Record"
-        description="Focus on your passion while we handle all headaches & tax compliance."
+        description="Sit back, relax, while we handle all headaches & tax compliance. No sales tax to worry about."
         illustration={<MerchantIllustration />}
       />
     </motion.div>

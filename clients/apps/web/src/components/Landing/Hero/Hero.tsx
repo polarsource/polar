@@ -23,6 +23,7 @@ export type HeroProps = PropsWithChildren<{
   className?: string
   title: string
   description: string
+  size?: 'default' | 'large'
 }>
 
 export const Hero = ({
@@ -30,6 +31,7 @@ export const Hero = ({
   title,
   description,
   children,
+  size = 'default',
 }: HeroProps) => {
   return (
     <motion.div
@@ -43,7 +45,10 @@ export const Hero = ({
       viewport={{ once: true }}
     >
       <motion.h1
-        className="leading-tighter! text-5xl tracking-tight text-balance md:px-0 md:text-9xl"
+        className={twMerge(
+          'leading-tighter! tracking-tight text-balance md:px-0',
+          size === 'default' ? 'text-3xl md:text-7xl' : 'text-5xl md:text-9xl',
+        )}
         variants={itemVariants}
       >
         {title}

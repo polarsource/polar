@@ -158,20 +158,20 @@ export const ProductGrantsFeed = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={user + plan.id}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
               className="flex items-center gap-x-3 rounded-xl py-2.5"
             >
-              <div className="dark:bg-polar-700 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200">
+              <div className="dark:bg-polar-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-200">
                 <span className="font-mono text-[9px] text-gray-500 dark:text-gray-400">
                   {user.slice(-2)}
                 </span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
-                <span className="font-mono text-xs">{user}</span>
-                <span className="dark:text-polar-500 font-mono text-[10px] text-gray-400">
+                <span className="font-mono text-sm">{user}</span>
+                <span className="dark:text-polar-500 font-mono text-sm text-gray-400">
                   Subscribed
                 </span>
               </div>

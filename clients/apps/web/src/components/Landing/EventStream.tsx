@@ -1,5 +1,3 @@
-'use client'
-
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -16,14 +14,7 @@ const EVENT_DEFS = [
   },
 ] as const
 
-const ORG_IDS = [
-  'user_7f2a9b',
-  'user_3c1e8d',
-  'user_a4b5c6',
-  'user_9d0e1f',
-  'user_2b3c4d',
-  'user_e5f6a7',
-]
+const ORG_IDS = ['user_7f2a9b']
 
 let _uid = 1000
 

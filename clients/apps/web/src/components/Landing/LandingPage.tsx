@@ -1,8 +1,9 @@
 'use client'
 
 import { Hero } from '@/components/Landing/Hero/Hero'
-import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
+import useIsMobile from '@/utils/mobile'
+import { Stream } from '@cloudflare/stream-react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
@@ -25,12 +26,14 @@ export default function Page() {
 }
 
 export const PageContent = () => {
+  const { isMobile } = useIsMobile()
   return (
     <>
       <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
         <Hero
           title="Turn Usage Into Revenue"
           description="A billing platform built for AI companies"
+          size="large"
         >
           <GetStartedButton size="lg" text="Get Started" />
           <Link
@@ -55,19 +58,31 @@ export const PageContent = () => {
       <Section className="flex flex-col gap-y-32">
         <BillingDiagram />
         <Usage />
+      </Section>
+      {isMobile ? null : (
+        <Section className="flex max-w-[1620px]! flex-col gap-y-32">
+          <div className="dark:border-polar-700 relative flex aspect-video w-full flex-col items-center overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
+            <Stream
+              src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
+              letterboxColor="black"
+              autoplay
+              muted
+              loop
+            />
+          </div>
+        </Section>
+      )}
+      <Section className="flex flex-col gap-y-32" border>
         <Adapters />
       </Section>
       <Section className="flex flex-col gap-y-32" border>
         <Products />
       </Section>
       <Section className="flex flex-col gap-y-24">
-        <MerchantOfRecord />
         <Testimonials />
       </Section>
-      <Section className="flex flex-col gap-y-24" border>
-        <Pricing />
-      </Section>
       <Section className="flex flex-col gap-y-24">
+        <Pricing />
         <Upsell />
       </Section>
     </>

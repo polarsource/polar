@@ -85,7 +85,7 @@ const itemVariants = {
 
 export const Adapters = () => {
   const tabsTriggerClassName = useMemo(() => {
-    return 'rounded-full! px-4 py-2 data-[state=active]:bg-white hidden md:flex'
+    return 'rounded-full! px-4 py-2 data-[state=active]:bg-gray-100 hidden md:flex'
   }, [])
 
   return (
@@ -113,7 +113,10 @@ export const Adapters = () => {
                 href="https://polar.sh/docs/integrate/sdk/adapters/nextjs"
                 target="_blank"
               >
-                <Button className="rounded-full" variant="ghost">
+                <Button
+                  className="rounded-full hover:bg-gray-100"
+                  variant="ghost"
+                >
                   <span>All 13 Adapters</span>
                   <ArrowOutwardOutlined className="ml-2" />
                 </Button>

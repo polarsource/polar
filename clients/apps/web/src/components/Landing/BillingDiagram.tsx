@@ -346,9 +346,9 @@ export const BillingDiagram = () => {
     const prev = prevLayerRef.current
     const H = 0.015 // hysteresis — each boundary shifts toward the side we're coming from
 
-    const b1 = 0.375 + (prev === 3 ? H : prev === 2 ? -H : 0)
-    const b2 = 0.5 + (prev === 2 ? H : prev === 1 ? -H : 0)
-    const b3 = 0.625 + (prev === 1 ? H : prev === 0 ? -H : 0)
+    const b1 = 0.275 + (prev === 3 ? H : prev === 2 ? -H : 0)
+    const b2 = 0.4 + (prev === 2 ? H : prev === 1 ? -H : 0)
+    const b3 = 0.6 + (prev === 1 ? H : prev === 0 ? -H : 0)
 
     let next: number | null
     if (v < b1) next = 3

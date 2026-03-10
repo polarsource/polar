@@ -1,6 +1,5 @@
 'use client'
 
-import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -13,10 +12,8 @@ import {
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useMemo } from 'react'
-import {
-  SyntaxHighlighterClient,
-  SyntaxHighlighterProvider,
-} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { Terminal } from './Terminal'
 
 const adapters = [
   {
@@ -100,7 +97,7 @@ export const Adapters = () => {
               Framework Adapters
             </span>
             <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
-              Integrate in under a minute
+              Integrate payment capabilities in under a minute
             </h1>
             <TabsList>
               {adapters.map((adapter) => (
@@ -126,13 +123,13 @@ export const Adapters = () => {
           {adapters.map((adapter) => (
             <TabsContent value={adapter.name} key={adapter.name}>
               <motion.div
-                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row md:rounded-4xl`}
+                className={`flex w-full flex-col overflow-hidden md:flex-row`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
+                <div className="flex flex-col justify-center gap-y-8 md:w-1/2">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
                       className="text-2xl leading-normal! md:text-4xl"
@@ -203,22 +200,17 @@ export const Adapters = () => {
                   </div>
                 </div>
 
-                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
-                  <StaticImage
-                    className="absolute inset-0 h-full w-full object-cover"
-                    src="/assets/landing/abstract.jpg"
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
-                    loading="lazy"
-                    alt=""
-                  />
-                  <div className="dark:bg-polar-900 z-1 rounded-lg bg-white p-4">
-                    <SyntaxHighlighterClient
-                      lang="typescript"
-                      code={adapter.code}
-                    />
-                  </div>
-                </div>
+                <Terminal
+                  className="md:w-1/2"
+                  title="terminal"
+                  subtitle="api/checkout/route.ts"
+                  content={adapter.code}
+                  footer={[
+                    { command: '~ % pnpm dev', type: 'input' },
+                    { command: '✓ Starting...', type: 'output' },
+                    { command: '✓ Compiled in 135ms', type: 'output' },
+                  ]}
+                />
               </motion.div>
             </TabsContent>
           ))}

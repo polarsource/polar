@@ -1,4 +1,4 @@
-import { Box } from '@/design-system'
+import { Box } from '@/design-system/components/Box'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -36,19 +36,19 @@ export default function Page() {
       <Box
         as="section"
         padding="xl"
-        borderRadius="md"
+        borderRadius="sm"
         display="flex"
         flexDirection="column"
         alignItems="center"
         gap="s"
-        borderColor="destructive"
+        borderColor="border-primary"
         borderWidth={2}
         opacity={0.99}
         position="relative"
         top={2}
         backgroundColor={{
-          sm: 'secondary',
-          md: 'primary',
+          sm: 'background-secondary',
+          md: 'background-primary',
         }}
       >
         <p className="text-sm font-medium text-gray-900">Design System Box</p>

@@ -1,56 +1,24 @@
 @layer base {
   :root {
-    --ds-primary: var(--color-blue-500);
-    --ds-primary-hover: var(--color-blue-600);
-    --ds-secondary: var(--color-gray-100);
-    --ds-secondary-hover: var(--color-gray-200);
-    --ds-surface: white;
-    --ds-page: var(--color-gray-50);
-    --ds-card: white;
-    --ds-elevated: white;
-    --ds-sidebar: var(--color-gray-100);
-    --ds-destructive: var(--color-red-500);
-    --ds-ghost-hover: var(--color-gray-200);
+    --ds-background-primary: oklch(0.623 0.214 259.815);
+    --ds-background-secondary: oklch(0.967 0.003 264.542);
 
-    --ds-text-primary: var(--color-gray-900);
-    --ds-text-secondary: var(--color-gray-500);
-    --ds-text-muted: var(--color-gray-400);
-    --ds-text-inverted: white;
-    --ds-text-destructive: var(--color-red-500);
-    --ds-text-link: var(--color-blue-500);
+    --ds-text-primary: oklch(0.21 0.034 264.665);
+    --ds-text-secondary: oklch(0.551 0.027 264.364);
 
-    --ds-border-default: var(--color-gray-200);
-    --ds-border-subtle: var(--color-gray-100);
-    --ds-border-strong: var(--color-gray-300);
-    --ds-border-primary: var(--color-blue-500);
-    --ds-border-destructive: var(--color-red-500);
+    --ds-border-primary: oklch(0.928 0.006 264.531);
+    --ds-border-secondary: oklch(0.967 0.003 264.542);
   }
 
   :root.dark,
   .dark {
-    --ds-primary: var(--color-blue-500);
-    --ds-primary-hover: var(--color-blue-600);
-    --ds-secondary: var(--color-polar-700);
-    --ds-secondary-hover: var(--color-polar-600);
-    --ds-surface: var(--color-polar-900);
-    --ds-page: var(--color-polar-800);
-    --ds-card: var(--color-polar-800);
-    --ds-elevated: var(--color-polar-700);
-    --ds-sidebar: var(--color-polar-950);
-    --ds-destructive: var(--color-red-600);
-    --ds-ghost-hover: var(--color-polar-700);
+    --ds-background-primary: oklch(0.623 0.214 259.815);
+    --ds-background-secondary: hsl(233, 6%, 12%);
 
-    --ds-text-primary: white;
-    --ds-text-secondary: var(--color-polar-400);
-    --ds-text-muted: var(--color-polar-500);
-    --ds-text-inverted: var(--color-gray-900);
-    --ds-text-destructive: var(--color-red-400);
-    --ds-text-link: var(--color-blue-500);
+    --ds-text-primary: #ffffff;
+    --ds-text-secondary: hsl(233, 6%, 52%);
 
-    --ds-border-default: var(--color-polar-700);
-    --ds-border-subtle: var(--color-polar-800);
-    --ds-border-strong: var(--color-polar-600);
-    --ds-border-primary: var(--color-blue-500);
-    --ds-border-destructive: var(--color-red-500);
+    --ds-border-primary: hsl(233, 6%, 12%);
+    --ds-border-secondary: hsl(233, 6%, 9.5%);
   }
 }

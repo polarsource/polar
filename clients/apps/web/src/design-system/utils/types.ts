@@ -1,10 +1,10 @@
 import type {
-  BreakpointKey,
   BorderRadiusToken,
+  BreakpointKey,
   ColorToken,
   ShadowToken,
   SpacingToken,
-} from './theme'
+} from '../tokens.stylex'
 
 export type ResponsiveValue<T> = T | Partial<Record<'base' | BreakpointKey, T>>
 
@@ -71,7 +71,14 @@ export interface ShadowProps {
 
 export interface LayoutProps {
   display?: ResponsiveValue<
-    'flex' | 'grid' | 'block' | 'inline' | 'inline-flex' | 'inline-block' | 'none' | 'contents'
+    | 'flex'
+    | 'grid'
+    | 'block'
+    | 'inline'
+    | 'inline-flex'
+    | 'inline-block'
+    | 'none'
+    | 'contents'
   >
   overflow?: ResponsiveValue<'hidden' | 'auto' | 'scroll' | 'visible'>
   overflowX?: ResponsiveValue<'hidden' | 'auto' | 'scroll' | 'visible'>
@@ -87,13 +94,19 @@ export interface LayoutProps {
 
 export interface FlexProps {
   flex?: ResponsiveValue<number | string>
-  flexDirection?: ResponsiveValue<'row' | 'column' | 'row-reverse' | 'column-reverse'>
+  flexDirection?: ResponsiveValue<
+    'row' | 'column' | 'row-reverse' | 'column-reverse'
+  >
   flexWrap?: ResponsiveValue<'wrap' | 'nowrap' | 'wrap-reverse'>
   flexGrow?: ResponsiveValue<number>
   flexShrink?: ResponsiveValue<number>
   flexBasis?: ResponsiveValue<string | number>
-  alignItems?: ResponsiveValue<'start' | 'end' | 'center' | 'baseline' | 'stretch'>
-  alignSelf?: ResponsiveValue<'start' | 'end' | 'center' | 'baseline' | 'stretch' | 'auto'>
+  alignItems?: ResponsiveValue<
+    'start' | 'end' | 'center' | 'baseline' | 'stretch'
+  >
+  alignSelf?: ResponsiveValue<
+    'start' | 'end' | 'center' | 'baseline' | 'stretch' | 'auto'
+  >
   justifyContent?: ResponsiveValue<
     'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'
   >
@@ -107,13 +120,17 @@ export interface GridProps {
   gridTemplateRows?: ResponsiveValue<string>
   gridColumn?: ResponsiveValue<string>
   gridRow?: ResponsiveValue<string>
-  gridAutoFlow?: ResponsiveValue<'row' | 'column' | 'dense' | 'row-dense' | 'column-dense'>
+  gridAutoFlow?: ResponsiveValue<
+    'row' | 'column' | 'dense' | 'row-dense' | 'column-dense'
+  >
   gridAutoColumns?: ResponsiveValue<string>
   gridAutoRows?: ResponsiveValue<string>
 }
 
 export interface PositionProps {
-  position?: ResponsiveValue<'relative' | 'absolute' | 'fixed' | 'sticky' | 'static'>
+  position?: ResponsiveValue<
+    'relative' | 'absolute' | 'fixed' | 'sticky' | 'static'
+  >
   top?: ResponsiveValue<string | number>
   right?: ResponsiveValue<string | number>
   bottom?: ResponsiveValue<string | number>
@@ -124,7 +141,16 @@ export interface PositionProps {
 
 export interface VisualProps {
   opacity?: ResponsiveValue<number>
-  cursor?: ResponsiveValue<'pointer' | 'default' | 'not-allowed' | 'grab' | 'grabbing' | 'text' | 'move' | 'wait'>
+  cursor?: ResponsiveValue<
+    | 'pointer'
+    | 'default'
+    | 'not-allowed'
+    | 'grab'
+    | 'grabbing'
+    | 'text'
+    | 'move'
+    | 'wait'
+  >
   pointerEvents?: ResponsiveValue<'none' | 'auto'>
   visibility?: ResponsiveValue<'visible' | 'hidden'>
   userSelect?: ResponsiveValue<'none' | 'text' | 'all' | 'auto'>

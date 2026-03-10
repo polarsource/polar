@@ -2,6 +2,8 @@
 @import 'tw-animate-css';
 @import '../design-system/tokens.css';
 
+@stylex;
+
 @source '../../../../packages/ui/src';
 @source '../../../../packages/checkout/src';
 @source '../../../../packages/orbit/src';

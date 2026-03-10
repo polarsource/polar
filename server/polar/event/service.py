@@ -329,29 +329,50 @@ class EventService:
         id: uuid.UUID,
         aggregate_fields: Sequence[str] = (),
     ) -> Event | None:
+        organization_ids = await self._get_readable_organization_ids(
+            session, auth_subject, organization_id=None
+        )
+        if not organization_ids:
+            return None
+
+        tinybird_repository = TinybirdEventRepository()
+        if not await tinybird_repository.event_exists(organization_ids, id):
+            return None
+
         repository = EventRepository.from_session(session)
+        event = await repository.get_by_id_with_eager(id)
+        if event is None:
+            return None
 
         if aggregate_fields:
-            result = await repository.get_with_aggregation(
-                auth_subject, id, aggregate_fields
+            child_count, sums = await tinybird_repository.get_descendant_aggregates(
+                organization_ids, id, aggregate_fields
             )
+            event.child_count = child_count  # type: ignore[attr-defined]
+            metadata = event.user_metadata or {}
+            for field_path in aggregate_fields:
+                key = field_path.replace(".", "_")
+                value = sums.get(key, 0.0)
+                parts = field_path.split(".")
+                target = metadata
+                for part in parts[:-1]:
+                    if part not in target or not isinstance(target[part], dict):
+                        target[part] = {}
+                    target = target[part]
+                target[parts[-1]] = value
+            event.user_metadata = metadata
+
+            if "_cost" in event.user_metadata:
+                cost_obj = event.user_metadata.get("_cost")
+                if cost_obj is None or cost_obj.get("amount") is None:
+                    del event.user_metadata["_cost"]
+                elif "currency" not in cost_obj:
+                    cost_obj["currency"] = "usd"
         else:
-            statement = (
-                repository.get_readable_statement(auth_subject)
-                .where(Event.id == id)
-                .options(*repository.get_eager_options())
-            )
-            result = await repository.get_one_or_none(statement)
+            event.child_count = 0  # type: ignore[attr-defined]
 
-        await self._tinybird_compare_get(
-            session,
-            auth_subject,
-            event_id=id,
-            db_result=result,
-            aggregate_fields=aggregate_fields,
-        )
-
-        return result
+        session.expunge(event)
+        return event
 
     async def list_statistics_timeseries(
         self,
@@ -702,84 +723,6 @@ class EventService:
         except Exception as e:
             log.error(
                 "tinybird.events.list.failed",
-                organization_id=str(org.id),
-                error=str(e),
-            )
-
-    async def _tinybird_compare_get(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        event_id: uuid.UUID,
-        db_result: Event | None,
-        aggregate_fields: Sequence[str] = (),
-    ) -> None:
-        organization_id = [db_result.organization_id] if db_result else None
-        org = await self._get_tinybird_enabled_org(
-            session, auth_subject, organization_id
-        )
-        if org is None:
-            return
-
-        try:
-            tinybird_repository = TinybirdEventRepository()
-            tb_exists = await tinybird_repository.event_exists(org.id, event_id)
-
-            has_diff = (db_result is not None) != tb_exists
-            db_descendant_count: int | None = None
-            tb_descendant_count: int | None = None
-            db_sums: dict[str, float] | None = None
-            tb_sums: dict[str, float] | None = None
-
-            if aggregate_fields and db_result is not None:
-                (
-                    tb_descendant_count,
-                    tb_sums,
-                ) = await tinybird_repository.get_descendant_aggregates(
-                    org.id, event_id, aggregate_fields
-                )
-
-                db_descendant_count = getattr(db_result, "child_count", 0)
-                db_sums = {}
-                for field_path in aggregate_fields:
-                    parts = field_path.split(".")
-                    current: Any = db_result.user_metadata
-                    for part in parts:
-                        if isinstance(current, dict):
-                            current = current.get(part)
-                        else:
-                            current = None
-                            break
-                    db_sums[field_path.replace(".", "_")] = (
-                        float(current) if current is not None else 0.0
-                    )
-
-                has_diff = (
-                    has_diff
-                    or db_descendant_count != tb_descendant_count
-                    or any(
-                        abs(db_sums.get(k, 0) - tb_sums.get(k, 0)) > 0.01
-                        for k in db_sums
-                    )
-                )
-
-            with logfire.span(
-                "tinybird.shadow.events.get.comparison",
-                organization_id=str(org.id),
-                event_id=str(event_id),
-                db_found=db_result is not None,
-                tinybird_found=tb_exists,
-                has_diff=has_diff,
-                db_descendant_count=db_descendant_count,
-                tinybird_descendant_count=tb_descendant_count,
-                db_sums=db_sums,
-                tinybird_sums=tb_sums,
-            ):
-                pass
-        except Exception as e:
-            log.error(
-                "tinybird.events.get.failed",
                 organization_id=str(org.id),
                 error=str(e),
             )

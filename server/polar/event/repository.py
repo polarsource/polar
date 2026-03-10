@@ -450,20 +450,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         return events, total_count
 
-    async def get_with_aggregation(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        id: UUID,
-        aggregate_fields: Sequence[str],
-    ) -> Event | None:
-        """Get a single event with aggregated metadata from descendants."""
-        statement = self.get_readable_statement(auth_subject).where(Event.id == id)
-
-        events, _ = await self.list_with_closure_table(
-            statement, limit=1, page=1, aggregate_fields=aggregate_fields
+    async def get_by_id_with_eager(self, id: UUID) -> Event | None:
+        statement = (
+            self.get_base_statement()
+            .where(Event.id == id)
+            .options(*self.get_eager_options())
         )
-
-        return events[0] if events else None
+        return await self.get_one_or_none(statement)
 
     async def get_hierarchy_stats(
         self,

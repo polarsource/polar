@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
     "postinstall": "pnpm --filter @polar-sh/client build && patch-package",
-    "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 npx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean"
+    "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 npx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean",
+    "eas-build-pre-install": "test -f ../../pnpm-workspace.yaml || printf 'packages:\\n  - apps/*\\n  - packages/*\\n  - examples/*\\n' > ../../pnpm-workspace.yaml"
   },
   "jest": {
     "preset": "jest-expo"

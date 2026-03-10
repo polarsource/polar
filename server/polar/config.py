@@ -254,6 +254,7 @@ class Settings(BaseSettings):
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None
     TINYBIRD_WORKSPACE: str | None = None
+    TINYBIRD_BRANCH: str | None = None
     TINYBIRD_EVENTS_WRITE: bool = False
     TINYBIRD_EVENTS_READ: bool = False
 

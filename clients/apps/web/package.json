@@ -67,6 +67,7 @@
     "eventemitter3": "^5.0.4",
     "framer-motion": "^12.34.0",
     "geist": "^1.7.0",
+    "gsap": "^3.14.2",
     "hash-wasm": "^4.12.0",
     "import-in-the-middle": "^2.0.5",
     "lucide-react": "^0.564.0",

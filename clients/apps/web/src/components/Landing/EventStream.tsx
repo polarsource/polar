@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 // ── Event definitions ──────────────────────────────────────────────────────────
 const EVENT_DEFS = [
@@ -99,7 +100,12 @@ export const EventStream = () => {
               <div className="flex flex-row items-center gap-x-6">
                 {/* Tag */}
                 <span
-                  className={`text-xxs w-fit shrink-0 rounded px-2 py-1 font-mono font-medium tracking-wider ${e.def.color} ${e.def.pill}`}
+                  className={twMerge(
+                    'w-fit shrink-0 rounded px-2 py-1 font-mono font-medium tracking-wider',
+                    e.def.color,
+                    e.def.pill,
+                    'text-xxs',
+                  )}
                 >
                   {e.def.tag}
                 </span>

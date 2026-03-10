@@ -76,7 +76,7 @@ const OrganizationCurrencySettings: React.FC<
       >
         <SettingsGroup>
           <SettingsGroupItem
-            title="Default Payment Currency"
+            title="Default payment currency"
             description="The default currency for products and checkout. Used as fallback if the customer's local currency is not available or defined on a product."
           >
             <FormField

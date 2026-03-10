@@ -2,12 +2,12 @@
 
 import type { schemas } from '@polar-sh/client'
 
+import { isValidationError } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { isValidationError } from '@polar-sh/client'
 import type {
   ConfirmationToken,
   Stripe,
@@ -86,7 +86,6 @@ export const CheckoutFormProvider = ({
             setValidationErrors(error.detail, setError)
           } else {
             switch (error.error) {
-              case 'PaymentError':
               case 'AlreadyActiveSubscriptionError':
               case 'NotOpenCheckout':
               case 'PaymentNotReady':

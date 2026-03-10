@@ -2386,14 +2386,15 @@ async def impersonate_user(
 
     response = HXRedirectResponse(request, redirect_url, 303)
 
-    # Get current admin session token
-    current_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+    admin_token = request.cookies.get(
+        settings.IMPERSONATION_COOKIE_KEY
+    ) or request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
 
     # Preserve admin session in impersonation cookie
-    if current_token:
+    if admin_token:
         response.set_cookie(
             settings.IMPERSONATION_COOKIE_KEY,
-            value=current_token,
+            value=admin_token,
             expires=impersonation_session.expires_at,
             path="/",
             domain=settings.USER_SESSION_COOKIE_DOMAIN,

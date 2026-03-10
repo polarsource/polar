@@ -1,105 +1,115 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
-// ── Feature flag grant definitions ─────────────────────────────────────────
-const GRANT_DEFS = [
+// ── Plan definitions ────────────────────────────────────────────────────────
+const PLANS = [
   {
-    key: 'advanced_analytics',
-    flag: 'advanced_analytics',
-    plan: 'PRO',
-    planColor: 'text-blue-600 dark:text-blue-400',
-    planPill: 'bg-blue-50 dark:bg-blue-950/60',
+    id: 'pro',
+    name: 'Pro',
+    price: '$29 / mo',
+    color: 'text-blue-600 dark:text-blue-400',
+    pill: 'bg-blue-50 dark:bg-blue-950/60',
+    flags: [
+      { key: 'advanced_analytics', label: 'advanced_analytics' },
+      { key: 'priority_support', label: 'priority_support' },
+      { key: 'api_rate_10k', label: 'api.rate_limit_10k' },
+    ],
   },
   {
-    key: 'api_unlimited',
-    flag: 'api.unlimited',
-    plan: 'BUSINESS',
-    planColor: 'text-violet-600 dark:text-violet-400',
-    planPill: 'bg-violet-50 dark:bg-violet-950/60',
+    id: 'business',
+    name: 'Business',
+    price: '$99 / mo',
+    color: 'text-violet-600 dark:text-violet-400',
+    pill: 'bg-violet-50 dark:bg-violet-950/60',
+    flags: [
+      { key: 'advanced_analytics', label: 'advanced_analytics' },
+      { key: 'priority_support', label: 'priority_support' },
+      { key: 'api_rate_100k', label: 'api.rate_limit_100k' },
+      { key: 'custom_branding', label: 'custom_branding' },
+      { key: 'audit_logs', label: 'audit_logs' },
+    ],
   },
   {
-    key: 'priority_support',
-    flag: 'priority_support',
-    plan: 'PRO',
-    planColor: 'text-blue-600 dark:text-blue-400',
-    planPill: 'bg-blue-50 dark:bg-blue-950/60',
-  },
-  {
-    key: 'custom_branding',
-    flag: 'custom_branding',
-    plan: 'BUSINESS',
-    planColor: 'text-violet-600 dark:text-violet-400',
-    planPill: 'bg-violet-50 dark:bg-violet-950/60',
-  },
-  {
-    key: 'audit_logs',
-    flag: 'audit_logs',
-    plan: 'ENTERPRISE',
-    planColor: 'text-emerald-600 dark:text-emerald-400',
-    planPill: 'bg-emerald-50 dark:bg-emerald-950/60',
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Custom',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    pill: 'bg-emerald-50 dark:bg-emerald-950/60',
+    flags: [
+      { key: 'advanced_analytics', label: 'advanced_analytics' },
+      { key: 'priority_support', label: 'priority_support' },
+      { key: 'api_unlimited', label: 'api.unlimited' },
+      { key: 'custom_branding', label: 'custom_branding' },
+      { key: 'audit_logs', label: 'audit_logs' },
+      { key: 'sso', label: 'sso.saml' },
+    ],
   },
 ] as const
 
-type FlagKey = (typeof GRANT_DEFS)[number]['key']
-
-const USER_IDS = [
+const USERS = [
   'user_7f2a9b',
   'user_3c1e8d',
   'user_a4b5c6',
   'user_9d0e1f',
   'user_2b3c4d',
   'user_e5f6a7',
-  'user_8g9h0i',
-  'user_1j2k3l',
 ]
 
-let _gid = 1000
+let _planIdx = 0
+let _userIdx = 0
 
-function rand<T>(arr: readonly T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+function nextSubscription() {
+  const plan = PLANS[_planIdx % PLANS.length]
+  const user = USERS[_userIdx % USERS.length]
+  _planIdx++
+  _userIdx++
+  return { plan, user }
 }
 
-type Grant = {
-  id: number
-  key: FlagKey
-  flag: string
-  plan: string
-  planColor: string
-  planPill: string
-  userId: string
-}
-
-function nextGrant(): Grant {
-  const def = rand(GRANT_DEFS)
-  return {
-    id: _gid++,
-    key: def.key,
-    flag: def.flag,
-    plan: def.plan,
-    planColor: def.planColor,
-    planPill: def.planPill,
-    userId: rand(USER_IDS),
-  }
-}
+// ── Toggle switch ────────────────────────────────────────────────────────────
+const Toggle = ({ on }: { on: boolean }) => <Switch checked={on} />
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export const ProductGrantsFeed = () => {
-  const [grants, setGrants] = useState<Grant[]>(() =>
-    Array.from({ length: 10 }, nextGrant),
-  )
-  const totalRef = useRef(4_831)
-  const [total, setTotal] = useState(4_831)
+  const [sub, setSub] = useState(() => nextSubscription())
+  const [grantedKeys, setGrantedKeys] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    // Start granting flags one by one shortly after mount / plan change
+    let timeout: ReturnType<typeof setTimeout>
+
+    const grantFlags = (flags: readonly { key: string; label: string }[]) => {
+      setGrantedKeys(new Set())
+      flags.forEach((flag, i) => {
+        timeout = setTimeout(
+          () => {
+            setGrantedKeys((prev) => {
+              const next = new Set(prev)
+              next.add(flag.key)
+              return next
+            })
+          },
+          300 + i * 220,
+        )
+      })
+    }
+
+    grantFlags(sub.plan.flags)
+
+    return () => clearTimeout(timeout)
+  }, [sub])
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setGrants((prev) => [nextGrant(), ...prev.slice(0, 11)])
-      totalRef.current += Math.floor(Math.random() * 3) + 1
-      setTotal(totalRef.current)
-    }, 700)
+      setSub(nextSubscription())
+    }, 3500)
     return () => clearInterval(interval)
   }, [])
+
+  const { plan, user } = sub
 
   return (
     <motion.div
@@ -112,53 +122,90 @@ export const ProductGrantsFeed = () => {
       <div className="dark:border-polar-700 flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200">
         {/* Header */}
         <div className="dark:border-polar-800 flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <div className="flex items-center gap-x-3">
-            <motion.div
-              className="h-1.5 w-1.5 rounded-full bg-emerald-500"
-              animate={{ opacity: [1, 0.25, 1] }}
-              transition={{
-                duration: 1.8,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-            <span className="font-mono text-sm">Feature Grants</span>
+          <div className="flex items-center gap-x-4">
+            <span className="font-mono text-sm">Benefits Engine</span>
           </div>
-          <span className="dark:text-polar-500 font-mono text-xs text-gray-500 tabular-nums">
-            {total.toLocaleString()} granted
-          </span>
         </div>
 
-        {/* Grant feed */}
-        <div
-          className="flex grow flex-col gap-y-2 overflow-auto p-4"
-          style={{ perspective: 600, perspectiveOrigin: 'center top' }}
-        >
-          {grants.map((g) => (
+        {/* Body */}
+        <div className="flex grow flex-col gap-y-5 p-5">
+          {/* Subscription event */}
+          <AnimatePresence mode="wait">
             <motion.div
-              key={g.id}
-              layout="position"
-              initial={{ opacity: 0, scale: 0.9, z: -40 }}
-              animate={{ opacity: 1, scale: 1, z: 0 }}
-              transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              className="flex flex-row items-center gap-x-4 rounded-lg px-2 py-0.5"
+              key={user + plan.id}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="dark:bg-polar-800/60 flex items-center gap-x-3 rounded-xl bg-gray-50 px-3 py-2.5"
             >
-              {/* Plan tag */}
+              {/* Avatar placeholder */}
+              <div className="dark:bg-polar-700 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-200">
+                <span className="font-mono text-[9px] text-gray-500 dark:text-gray-400">
+                  {user.slice(-2)}
+                </span>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
+                <span className="font-mono text-xs">{user}</span>
+                <span className="dark:text-polar-500 font-mono text-[10px] text-gray-400">
+                  subscribed
+                </span>
+              </div>
               <span
-                className={`text-xxs w-fit shrink-0 rounded-md px-2 py-1 font-mono font-medium tracking-wider ${g.planColor} ${g.planPill}`}
+                className={`text-xxs shrink-0 rounded-md px-2 py-1 font-mono font-medium tracking-wider ${plan.color} ${plan.pill}`}
               >
-                {g.plan}
-              </span>
-              {/* User */}
-              <span className="dark:text-polar-500 flex-1 font-mono text-xs text-gray-500">
-                {g.userId}
-              </span>
-              {/* Flag name */}
-              <span className="dark:text-polar-400 shrink-0 font-mono text-xs text-gray-600">
-                {g.flag}
+                {plan.name.toUpperCase()}
               </span>
             </motion.div>
-          ))}
+          </AnimatePresence>
+
+          {/* Section label */}
+          <div className="flex items-center gap-x-2">
+            <span className="dark:text-polar-500 text-xxs font-mono tracking-widest text-gray-500 uppercase">
+              Granted automatically
+            </span>
+            <div className="dark:bg-polar-700 h-px flex-1 bg-gray-100" />
+          </div>
+
+          {/* Feature flag list */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={plan.id}
+              className="flex flex-col"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+            >
+              {plan.flags.map((flag) => {
+                const isGranted = grantedKeys.has(flag.key)
+                return (
+                  <motion.div
+                    key={flag.key}
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: {
+                        opacity: 1,
+                        transition: { duration: 0.3 },
+                      },
+                    }}
+                    className="flex items-center justify-between gap-x-4 rounded-lg px-3 py-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-x-3">
+                      <motion.div
+                        animate={isGranted ? { scale: [1, 1.25, 1] } : {}}
+                        transition={{ duration: 0.25 }}
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-300 ${isGranted ? 'bg-emerald-500' : 'dark:bg-polar-600 bg-gray-200'}`}
+                      />
+                      <span className="truncate font-mono text-xs">
+                        {flag.label}
+                      </span>
+                    </div>
+                    <Toggle on={isGranted} />
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>

@@ -3003,8 +3003,16 @@ class TestUpdateSeats:
         with pytest.raises(NotASeatBasedSubscription):
             await subscription_service.update_seats(session, subscription, seats=10)
 
+    @pytest.mark.parametrize(
+        "proration_behavior",
+        [
+            SubscriptionProrationBehavior.prorate,
+            SubscriptionProrationBehavior.invoice,
+        ],
+    )
     async def test_trialing_subscription(
         self,
+        proration_behavior: SubscriptionProrationBehavior,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -3030,7 +3038,7 @@ class TestUpdateSeats:
 
         # When: Update seats during trial
         updated = await subscription_service.update_seats(
-            session, subscription, seats=10
+            session, subscription, seats=10, proration_behavior=proration_behavior
         )
         await session.flush()
 

@@ -47,10 +47,14 @@ from .system import SystemEvent
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     model = Event
 
+    # Note: this method is deprecated. Typically when you get_all you want to use
+    # Tinybird instead of postgres.
     async def get_all_by_name(self, name: str) -> Sequence[Event]:
         statement = self.get_base_statement().where(Event.name == name)
         return await self.get_all(statement)
 
+    # Note: this method is deprecated. Typically when you get_all you want to use
+    # Tinybird instead of postgres.
     async def get_all_by_organization(self, organization_id: UUID) -> Sequence[Event]:
         statement = self.get_base_statement().where(
             Event.organization_id == organization_id

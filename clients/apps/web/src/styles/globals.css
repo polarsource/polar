@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '../design-system/tokens.css';
 
 @source '../../../../packages/ui/src';
 @source '../../../../packages/checkout/src';

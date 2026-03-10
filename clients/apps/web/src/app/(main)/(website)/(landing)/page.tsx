@@ -1,5 +1,5 @@
+import { Box } from '@/design-system'
 import { Metadata } from 'next'
-import LandingPage from '../../../../components/Landing/LandingPage'
 
 export const metadata: Metadata = {
   title: 'Polar — Monetize your software with ease',
@@ -31,5 +31,29 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return <LandingPage />
+  return (
+    <>
+      <Box
+        as="section"
+        padding="xl"
+        borderRadius="md"
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        gap="s"
+        borderColor="destructive"
+        borderWidth={2}
+        opacity={0.99}
+        position="relative"
+        top={2}
+        backgroundColor={{
+          sm: 'secondary',
+          md: 'primary',
+        }}
+      >
+        <p className="text-sm font-medium text-gray-900">Design System Box</p>
+        <p className="text-sm font-medium text-gray-900">wow</p>
+      </Box>
+    </>
+  )
 }

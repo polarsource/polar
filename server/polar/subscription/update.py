@@ -256,11 +256,13 @@ def generate_subscription_update(
     *,
     product: Product | None = None,
     seats: int | None = None,
+    applies_at: datetime | None = None,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:
-    applies_at = utc_now()
+    applies_at = applies_at or utc_now()
     subscription_update = SubscriptionUpdate(
         applies_at=applies_at,
         subscription=subscription,
+        subscription_id=subscription.id,
         product=product,
         seats=seats,
     )

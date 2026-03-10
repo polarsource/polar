@@ -39,6 +39,7 @@ from polar.models import (
     Subscription,
     SubscriptionMeter,
     SubscriptionProductPrice,
+    SubscriptionUpdate,
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
@@ -372,3 +373,39 @@ class SubscriptionProductPriceRepository(
             ):
                 return spp
         return None
+
+
+class SubscriptionUpdateRepository(
+    RepositorySoftDeletionIDMixin[Subscription, UUID],
+    RepositorySoftDeletionMixin[SubscriptionUpdate],
+    RepositoryBase[SubscriptionUpdate],
+):
+    model = SubscriptionUpdate
+
+    async def upsert(
+        self, object: SubscriptionUpdate, *, flush: bool = False
+    ) -> SubscriptionUpdate:
+        existing = await self.get_unapplied_by_subscription_id(object.subscription_id)
+        if existing is None:
+            return await self.create(object, flush=flush)
+
+        existing.applies_at = object.applies_at
+        existing.product = object.product
+        existing.new_cycle_start = object.new_cycle_start
+        existing.new_cycle_end = object.new_cycle_end
+        existing.seats = object.seats
+        return await self.update(existing, flush=flush)
+
+    async def get_unapplied_by_subscription_id(
+        self, subscription_id: UUID
+    ) -> SubscriptionUpdate | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                SubscriptionUpdate.subscription_id == subscription_id,
+                SubscriptionUpdate.applied_at.is_(None),
+                SubscriptionUpdate.is_deleted.is_(False),
+            )
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)

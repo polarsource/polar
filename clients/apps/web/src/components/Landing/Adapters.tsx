@@ -126,7 +126,7 @@ export const Adapters = () => {
           {adapters.map((adapter) => (
             <TabsContent value={adapter.name} key={adapter.name}>
               <motion.div
-                className={`flex w-full flex-col overflow-hidden md:flex-row`}
+                className={`flex w-full flex-col gap-8 overflow-hidden md:flex-row`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"

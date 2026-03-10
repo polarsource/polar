@@ -209,11 +209,11 @@ class MetricsService:
                 period_dict[meta_metric.slug] = meta_metric.compute_from_period(period)
 
             if metrics is not None:
-                requested = set(metrics)
+                all_resolved = pg_slugs | tb_slugs | meta_slugs
                 period_dict = {
                     k: v
                     for k, v in period_dict.items()
-                    if k == "timestamp" or k in requested
+                    if k == "timestamp" or k in all_resolved
                 }
 
             periods.append(MetricsPeriod.model_validate(period_dict))
@@ -221,6 +221,19 @@ class MetricsService:
         totals: dict[str, int | float] = {}
         for metric in filtered_all_metrics:
             totals[metric.slug] = metric.get_cumulative(periods)
+
+        if metrics is not None:
+            requested = set(metrics)
+            periods = [
+                MetricsPeriod.model_validate(
+                    {
+                        k: v
+                        for k, v in p.model_dump().items()
+                        if k == "timestamp" or k in requested
+                    }
+                )
+                for p in periods
+            ]
 
         return MetricsResponse.model_validate(
             {

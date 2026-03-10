@@ -9,13 +9,11 @@ if TYPE_CHECKING:
 
 from sqlalchemy import (
     ColumnElement,
-    Float,
     Integer,
     SQLColumnExpression,
     case,
     func,
     or_,
-    type_coerce,
 )
 
 from polar.enums import SubscriptionRecurringInterval
@@ -280,26 +278,17 @@ class SucceededCheckoutsMetric(SQLMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class CheckoutsConversionMetric(SQLMetric):
+class CheckoutsConversionMetric(MetaMetric):
     slug = "checkouts_conversion"
     display_name = "Checkouts Conversion Rate"
     type = MetricType.percentage
-    query = MetricQuery.checkouts
+    dependencies: ClassVar[list[str]] = ["checkouts", "succeeded_checkouts"]
 
     @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[float]:
-        return type_coerce(
-            case(
-                (func.count(Checkout.id) == 0, 0),
-                else_=func.count(Checkout.id).filter(
-                    Checkout.status == CheckoutStatus.succeeded
-                )
-                / func.count(Checkout.id),
-            ),
-            Float,
-        )
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        checkouts = period.checkouts or 0
+        succeeded = period.succeeded_checkouts or 0
+        return succeeded / checkouts if checkouts > 0 else 0.0
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
@@ -860,11 +849,11 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     AverageRevenuePerUserMetric,
     CheckoutsMetric,
     SucceededCheckoutsMetric,
-    CheckoutsConversionMetric,
     ChurnedSubscriptionsMetric,
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
+    CheckoutsConversionMetric,
     ChurnRateMetric,
     LTVMetric,
     GrossMarginMetric,

@@ -73,7 +73,11 @@ export const Logotypes = () => {
           transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
         >
           {marqueeItems.map((item, i) => (
-            <Logotype key={`${item.link}-${i}`} icon={item.icon} link={item.link} />
+            <Logotype
+              key={`${item.link}-${i}`}
+              icon={item.icon}
+              link={item.link}
+            />
           ))}
         </motion.div>
       </div>

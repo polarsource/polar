@@ -200,7 +200,7 @@ class TinybirdClient:
             return result.get("data", [])
 
     async def ingest(
-        self, datasource: str, events: list[TinybirdEvent], *, wait: bool = False
+        self, datasource: str, events: list[TinybirdEvent], *, wait: bool = True
     ) -> None:
         if not events:
             return

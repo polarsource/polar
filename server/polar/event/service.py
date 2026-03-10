@@ -18,7 +18,6 @@ from sqlalchemy import (
     func,
     or_,
     select,
-    text,
 )
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
@@ -34,7 +33,7 @@ from polar.integrations.tinybird.service import (
     ingest_events,
 )
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.kit.utils import utc_now
@@ -525,133 +524,13 @@ class EventService:
             (EventNamesSortProperty.last_seen, True)
         ],
     ) -> tuple[Sequence[EventName], int]:
-        db_results, db_count = await self._list_names_from_db(
-            session,
-            auth_subject,
-            organization_id=organization_id,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
-            source=source,
-            query=query,
-            pagination=pagination,
-            sorting=sorting,
-        )
-
-        org = await self._get_tinybird_enabled_org(
+        organization_ids = await self._get_readable_organization_ids(
             session, auth_subject, organization_id
         )
-        if org is None:
-            return db_results, db_count
+        if not organization_ids:
+            return [], 0
 
-        tinybird_shadow = org.feature_settings.get("tinybird_compare", True)
-        tinybird_read = org.feature_settings.get("tinybird_read", False)
-
-        try:
-            tinybird_results, tinybird_count = await self._list_names_from_tinybird(
-                org,
-                customer_id=customer_id,
-                external_customer_id=external_customer_id,
-                source=source,
-                query=query,
-                pagination=pagination,
-                sorting=sorting,
-            )
-        except Exception as e:
-            log.error(
-                "tinybird.event_names.query.failed",
-                organization_id=str(org.id),
-                error=str(e),
-            )
-            return db_results, db_count
-
-        if tinybird_shadow:
-            self._log_names_comparison(
-                org.id, db_results, db_count, tinybird_results, tinybird_count
-            )
-            return db_results, db_count
-
-        if tinybird_read:
-            return tinybird_results, tinybird_count
-
-        return db_results, db_count
-
-    async def _list_names_from_db(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        organization_id: Sequence[uuid.UUID] | None = None,
-        customer_id: Sequence[uuid.UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
-        source: Sequence[EventSource] | None = None,
-        query: str | None = None,
-        pagination: PaginationParams,
-        sorting: Sequence[Sorting[EventNamesSortProperty]],
-    ) -> tuple[Sequence[EventName], int]:
-        repository = EventRepository.from_session(session)
-        statement = repository.get_event_names_statement(auth_subject)
-
-        if organization_id is not None:
-            statement = statement.where(Event.organization_id.in_(organization_id))
-
-        if customer_id is not None:
-            statement = statement.where(
-                repository.get_customer_id_filter_clause(customer_id)
-            )
-
-        if external_customer_id is not None:
-            statement = statement.where(
-                repository.get_external_customer_id_filter_clause(external_customer_id)
-            )
-
-        if source is not None:
-            statement = statement.where(Event.source.in_(source))
-
-        if query is not None:
-            statement = statement.where(Event.name.ilike(f"%{query}%"))
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == EventNamesSortProperty.event_name:
-                order_by_clauses.append(clause_function(Event.name))
-            elif criterion == EventNamesSortProperty.first_seen:
-                order_by_clauses.append(clause_function(text("first_seen")))
-            elif criterion == EventNamesSortProperty.last_seen:
-                order_by_clauses.append(clause_function(text("last_seen")))
-            elif criterion == EventNamesSortProperty.occurrences:
-                order_by_clauses.append(clause_function(text("occurrences")))
-        statement = statement.order_by(*order_by_clauses)
-
-        results, count = await paginate(session, statement, pagination=pagination)
-
-        event_names: list[EventName] = []
-        for result in results:
-            event_name, event_source, occurrences, first_seen, last_seen = result
-            event_names.append(
-                EventName(
-                    name=event_name,
-                    source=event_source,
-                    occurrences=occurrences,
-                    first_seen=first_seen,
-                    last_seen=last_seen,
-                )
-            )
-
-        return event_names, count
-
-    async def _list_names_from_tinybird(
-        self,
-        organization: Organization,
-        *,
-        customer_id: Sequence[uuid.UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
-        source: Sequence[EventSource] | None = None,
-        query: str | None = None,
-        pagination: PaginationParams,
-        sorting: Sequence[Sorting[EventNamesSortProperty]],
-    ) -> tuple[Sequence[EventName], int]:
-        tinybird_repository = TinybirdEventRepository(organization.id)
+        tinybird_repository = TinybirdEventRepository()
 
         tinybird_sorting: list[tuple[str, bool]] = []
         for criterion, is_desc in sorting:
@@ -665,6 +544,7 @@ class EventService:
                 tinybird_sorting.append(("occurrences", is_desc))
 
         tinybird_stats = await tinybird_repository.get_name_stats(
+            organization_id=organization_ids,
             customer_id=customer_id,
             external_customer_id=external_customer_id,
             source=source,
@@ -689,64 +569,6 @@ class EventService:
         ]
 
         return event_names, total_count
-
-    def _log_names_comparison(
-        self,
-        organization_id: uuid.UUID,
-        db_results: Sequence[EventName],
-        db_count: int,
-        tinybird_results: Sequence[EventName],
-        tinybird_count: int,
-    ) -> None:
-        db_by_key = {
-            (r.name, r.source): r for r in db_results if r.source != EventSource.system
-        }
-        tinybird_by_key = {
-            (r.name, r.source): r
-            for r in tinybird_results
-            if r.source != EventSource.system
-        }
-
-        missing_in_tinybird: list[str] = []
-        missing_in_db: list[str] = []
-        occurrences_mismatch: list[dict[str, Any]] = []
-
-        for key, db_r in db_by_key.items():
-            tb_r = tinybird_by_key.get(key)
-            if tb_r is None:
-                missing_in_tinybird.append(f"{key[0]}:{key[1]}")
-            elif db_r.occurrences != tb_r.occurrences:
-                occurrences_mismatch.append(
-                    {
-                        "name": key[0],
-                        "source": str(key[1]),
-                        "db": db_r.occurrences,
-                        "tinybird": tb_r.occurrences,
-                    }
-                )
-
-        for key in tinybird_by_key:
-            if key not in db_by_key:
-                missing_in_db.append(f"{key[0]}:{key[1]}")
-
-        has_diff = (
-            len(db_by_key) != len(tinybird_by_key)
-            or missing_in_tinybird
-            or missing_in_db
-            or occurrences_mismatch
-        )
-
-        with logfire.span(
-            "tinybird.shadow.event_names.comparison",
-            organization_id=str(organization_id),
-            db_count=len(db_by_key),
-            tinybird_count=len(tinybird_by_key),
-            has_diff=has_diff,
-            missing_in_tinybird=missing_in_tinybird,
-            missing_in_db=missing_in_db,
-            occurrences_mismatch=occurrences_mismatch,
-        ):
-            pass
 
     async def _tinybird_compare_list(
         self,
@@ -779,7 +601,7 @@ class EventService:
             return
 
         try:
-            tinybird_repository = TinybirdEventRepository(org.id)
+            tinybird_repository = TinybirdEventRepository()
             query_filters: list[Filter] = []
             if filter is not None:
                 query_filters.append(filter)
@@ -843,6 +665,7 @@ class EventService:
             descending = sorting[0][1] if sorting else True
             offset = (pagination.page - 1) * pagination.limit
             tb_ids, tb_count = await tinybird_repository.get_event_ids_and_count(
+                organization_id=org.id,
                 limit=pagination.limit,
                 offset=offset,
                 descending=descending,
@@ -900,8 +723,8 @@ class EventService:
             return
 
         try:
-            tinybird_repository = TinybirdEventRepository(org.id)
-            tb_exists = await tinybird_repository.event_exists(event_id)
+            tinybird_repository = TinybirdEventRepository()
+            tb_exists = await tinybird_repository.event_exists(org.id, event_id)
 
             has_diff = (db_result is not None) != tb_exists
             db_descendant_count: int | None = None
@@ -914,7 +737,7 @@ class EventService:
                     tb_descendant_count,
                     tb_sums,
                 ) = await tinybird_repository.get_descendant_aggregates(
-                    event_id, aggregate_fields
+                    org.id, event_id, aggregate_fields
                 )
 
                 db_descendant_count = getattr(db_result, "child_count", 0)
@@ -985,8 +808,9 @@ class EventService:
             return
 
         try:
-            tinybird_repository = TinybirdEventRepository(org.id)
+            tinybird_repository = TinybirdEventRepository()
             tb_buckets = await tinybird_repository.get_timeseries_occurrences(
+                organization_id=org.id,
                 start_timestamp=start_timestamp,
                 end_timestamp=end_timestamp,
                 interval=interval.value,
@@ -1648,6 +1472,32 @@ class EventService:
                 }
             ]
         )
+
+    async def _get_readable_organization_ids(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[uuid.UUID] | None,
+    ) -> Sequence[uuid.UUID]:
+        if is_organization(auth_subject):
+            if (
+                organization_id is not None
+                and auth_subject.subject.id not in organization_id
+            ):
+                return []
+            return [auth_subject.subject.id]
+
+        statement = select(UserOrganization.organization_id).where(
+            UserOrganization.user_id == auth_subject.subject.id,
+            UserOrganization.is_deleted.is_(False),
+        )
+        if organization_id is not None:
+            statement = statement.where(
+                UserOrganization.organization_id.in_(organization_id)
+            )
+
+        result = await session.execute(statement)
+        return list(dict.fromkeys(result.scalars().all()))
 
 
 event = EventService()

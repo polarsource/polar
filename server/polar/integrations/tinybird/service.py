@@ -314,10 +314,26 @@ class TinybirdEventsQuery:
     parent_id, root_events, and source.
     """
 
-    def __init__(self, organization_id: UUID) -> None:
-        self._organization_id = str(organization_id)
+    def __init__(self, organization_id: UUID | Sequence[UUID]) -> None:
+        self._organization_ids = self._normalize_organization_ids(organization_id)
         self._filters: list[Any] = []
         self._order_by_clauses: list[Any] = []
+
+    @staticmethod
+    def _normalize_organization_ids(
+        organization_id: UUID | Sequence[UUID],
+    ) -> list[str]:
+        organization_ids = (
+            [organization_id]
+            if isinstance(organization_id, UUID)
+            else list(dict.fromkeys(organization_id))
+        )
+        return [str(org_id) for org_id in organization_ids]
+
+    def _get_organization_filter(self) -> Any:
+        if not self._organization_ids:
+            return false()
+        return events_table.c.organization_id.in_(self._organization_ids)
 
     def filter_event_id(self, event_id: UUID) -> Self:
         self._filters.append(events_table.c.id == str(event_id))
@@ -552,6 +568,7 @@ class TinybirdEventsQuery:
         return self
 
     async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
+        base_filter = self._get_organization_filter()
         statement = (
             select(
                 events_table.c.name,
@@ -560,7 +577,7 @@ class TinybirdEventsQuery:
                 func.min(events_table.c.timestamp).label("first_seen"),
                 func.max(events_table.c.timestamp).label("last_seen"),
             )
-            .where(events_table.c.organization_id == self._organization_id)
+            .where(base_filter)
             .group_by(events_table.c.name, events_table.c.source)
         )
 
@@ -584,7 +601,7 @@ class TinybirdEventsQuery:
     async def get_event_ids_and_count(
         self, limit: int, offset: int, descending: bool = True
     ) -> tuple[list[str], int]:
-        base_filter = events_table.c.organization_id == self._organization_id
+        base_filter = self._get_organization_filter()
 
         count_statement = (
             select(func.count().label("total"))
@@ -623,7 +640,7 @@ class TinybirdEventsQuery:
     async def get_descendant_aggregates(
         self, aggregate_fields: Sequence[str]
     ) -> tuple[int, dict[str, float]]:
-        base_filter = events_table.c.organization_id == self._organization_id
+        base_filter = self._get_organization_filter()
 
         columns: list[Any] = [func.count().label("total")]
         for field_path in aggregate_fields:

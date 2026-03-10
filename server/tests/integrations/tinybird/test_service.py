@@ -285,6 +285,38 @@ class TestTinybirdEventsQuery:
         assert stats[0].name == "org1.event"
         assert stats[0].occurrences == 2
 
+    async def test_multiple_organizations(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_1 = uuid.uuid4()
+        org_2 = uuid.uuid4()
+
+        events = [
+            create_test_event(
+                organization_id=org_1, name="shared.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_1, name="shared.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_2, name="shared.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_2, name="org2.only", source=EventSource.user
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        query = TinybirdEventsQuery([org_1, org_2])
+        stats = await query.get_event_type_stats()
+
+        stats_by_name = {(s.name, s.source): s for s in stats}
+        assert len(stats) == 2
+        assert stats_by_name[("shared.event", EventSource.system)].occurrences == 3
+        assert stats_by_name[("org2.only", EventSource.user)].occurrences == 1
+
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 @pytest.mark.asyncio

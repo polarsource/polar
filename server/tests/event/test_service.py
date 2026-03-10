@@ -20,6 +20,7 @@ from polar.event.sorting import EventNamesSortProperty
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarRequestValidationError
+from polar.integrations.tinybird.service import TinybirdEventTypeStats
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
@@ -425,21 +426,32 @@ class TestListNames:
     )
     async def test_basic(
         self,
-        save_fixture: SaveFixture,
+        mocker: MockerFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-        organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        for i in range(5):
-            await create_event(save_fixture, organization=organization, name="event_1")
-        for i in range(3):
-            await create_event(
-                save_fixture,
-                organization=organization,
-                name="event_2",
-                source=EventSource.system,
-            )
+        now = utc_now()
+        query_mock = mocker.patch(
+            "polar.event.tinybird_repository.TinybirdEventsQuery.get_event_type_stats",
+            new_callable=AsyncMock,
+            return_value=[
+                TinybirdEventTypeStats(
+                    name="event_1",
+                    source=EventSource.user,
+                    occurrences=5,
+                    first_seen=now - timedelta(days=2),
+                    last_seen=now - timedelta(hours=1),
+                ),
+                TinybirdEventTypeStats(
+                    name="event_2",
+                    source=EventSource.system,
+                    occurrences=3,
+                    first_seen=now - timedelta(days=1),
+                    last_seen=now,
+                ),
+            ],
+        )
 
         event_names, count = await event_service.list_names(
             session,
@@ -460,6 +472,7 @@ class TestListNames:
         assert event_2_name.source == EventSource.system
 
         assert count == 2
+        query_mock.assert_awaited_once()
 
 
 @pytest.mark.asyncio

@@ -138,6 +138,16 @@ Amount = Annotated[
 Currency = Annotated[
     PresentmentCurrency, Field(description="The currency of the fixed amount discount.")
 ]
+Amounts = Annotated[
+    dict[PresentmentCurrency, Amount],
+    Field(
+        min_length=1,
+        description=(
+            "Map of currency to fixed amount to discount from the total. "
+            "This allows specifying different discount amounts for different currencies."
+        ),
+    ),
+]
 BasisPoints = Annotated[
     int,
     Field(
@@ -205,13 +215,7 @@ class DiscountFixedCreateBase(Schema):
         default=PresentmentCurrency.usd,
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
-    amounts: dict[PresentmentCurrency, Amount] | None = Field(
-        default=None,
-        description=(
-            "Map of currency to fixed amount to discount from the total. "
-            "This allows specifying different discount amounts for different currencies."
-        ),
-    )
+    amounts: Amounts | None = None
 
     @model_validator(mode="after")
     def validate_either_amount_or_amounts(self) -> Self:
@@ -283,13 +287,7 @@ class DiscountUpdate(MetadataInputMixin, Schema):
         default=None,
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
-    amounts: dict[PresentmentCurrency, Amount] | None = Field(
-        default=None,
-        description=(
-            "Map of currency to fixed amount to discount from the total. "
-            "This allows specifying different discount amounts for different currencies."
-        ),
-    )
+    amounts: Amounts | None = None
     basis_points: BasisPoints | None = None
 
     products: ProductsList | None = None

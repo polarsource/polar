@@ -135,6 +135,27 @@ class TestCreateDiscount:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    async def test_empty_amounts(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "fixed",
+                "code": "DISCOUNT",
+                "amounts": {},
+                "duration": "once",
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
     async def test_valid(
         self,
         client: AsyncClient,

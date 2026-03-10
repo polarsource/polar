@@ -91,7 +91,7 @@ export const MESH_GLSL = `
     if (i == 0) return vec3(0.60, 0.32, 4.19);  // indigo
     if (i == 1) return vec3(0.55, 0.34, 5.50);  // violet
     if (i == 2) return vec3(0.72, 0.30, 2.80);  // sky-cyan
-    if (i == 3) return vec3(0.65, 0.31, 1.75);  // emerald
+    if (i == 3) return vec3(0.78, 0.32, 1.65);  // emerald
     if (i == 4) return vec3(0.52, 0.36, 5.00);  // electric-purple
     if (i == 5) return vec3(0.75, 0.30, 0.35);  // coral
     if (i == 6) return vec3(0.58, 0.32, 3.50);  // deep-teal

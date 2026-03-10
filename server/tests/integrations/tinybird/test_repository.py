@@ -15,7 +15,8 @@ class TestTinybirdEventRepository:
     async def test_get_event_type_stats_uses_materialized_view(
         self, mocker: MockerFixture
     ) -> None:
-        repository = TinybirdEventRepository(uuid4())
+        repository = TinybirdEventRepository()
+        organization_id = uuid4()
         now = datetime.now(UTC)
         expected = [
             TinybirdEventTypeStats(
@@ -38,6 +39,7 @@ class TestTinybirdEventRepository:
         )
 
         result = await repository.get_event_type_stats(
+            organization_id=organization_id,
             source=EventSource.system,
             sorting=[("last_seen", True)],
         )
@@ -49,7 +51,8 @@ class TestTinybirdEventRepository:
     async def test_get_event_type_stats_uses_raw_table_when_needed(
         self, mocker: MockerFixture
     ) -> None:
-        repository = TinybirdEventRepository(uuid4())
+        repository = TinybirdEventRepository()
+        organization_id = uuid4()
         now = datetime.now(UTC)
         expected = [
             TinybirdEventTypeStats(
@@ -72,6 +75,7 @@ class TestTinybirdEventRepository:
         )
 
         result = await repository.get_event_type_stats(
+            organization_id=organization_id,
             customer_id=[uuid4()],
             sorting=[("occurrences", True)],
         )
@@ -83,14 +87,14 @@ class TestTinybirdEventRepository:
     async def test_event_exists_checks_for_matching_event(
         self, mocker: MockerFixture
     ) -> None:
-        repository = TinybirdEventRepository(uuid4())
+        repository = TinybirdEventRepository()
         query_mock = mocker.patch(
             "polar.event.tinybird_repository.TinybirdEventsQuery.get_event_ids_and_count",
             new_callable=AsyncMock,
             return_value=(["event-id"], 1),
         )
 
-        exists = await repository.event_exists(uuid4())
+        exists = await repository.event_exists(uuid4(), uuid4())
 
         assert exists is True
         query_mock.assert_awaited_once()
@@ -99,7 +103,7 @@ class TestTinybirdEventRepository:
         self, mocker: MockerFixture
     ) -> None:
         organization_id = uuid4()
-        repository = TinybirdEventRepository(organization_id)
+        repository = TinybirdEventRepository()
         now = datetime.now(UTC)
         helper_mock = mocker.patch(
             "polar.event.tinybird_repository.get_timeseries_occurrences",
@@ -108,6 +112,7 @@ class TestTinybirdEventRepository:
         )
 
         result = await repository.get_timeseries_occurrences(
+            organization_id=organization_id,
             start_timestamp=now,
             end_timestamp=now,
             interval="day",

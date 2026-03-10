@@ -13,21 +13,25 @@ from polar.kit.metadata import MetadataQuery
 from polar.meter.filter import Filter
 from polar.models.event import EventSource
 
+type EventNameStats = tuple[str, EventSource, int, datetime, datetime]
+
 
 class TinybirdEventRepository:
-    def __init__(self, organization_id: UUID) -> None:
-        self.organization_id = organization_id
-
     async def get_name_stats(
         self,
         *,
+        organization_id: Sequence[UUID] | None = None,
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
         query: str | None = None,
         sorting: Sequence[tuple[str, bool]] = (),
-    ) -> list[tuple[str, EventSource, int, datetime, datetime]]:
-        tinybird_query = TinybirdEventsQuery(self.organization_id)
+    ) -> list[EventNameStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+
+        tinybird_query = TinybirdEventsQuery(organization_ids)
 
         if customer_id is not None:
             tinybird_query.filter_customer_id(customer_id)
@@ -49,6 +53,7 @@ class TinybirdEventRepository:
     async def get_event_type_stats(
         self,
         *,
+        organization_id: UUID | Sequence[UUID],
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         root_events: bool = False,
@@ -56,8 +61,13 @@ class TinybirdEventRepository:
         source: EventSource | None = None,
         sorting: Sequence[tuple[str, bool]] = (),
     ) -> list[TinybirdEventTypeStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+
         requires_raw_table = (
-            customer_id is not None
+            len(organization_ids) > 1
+            or customer_id is not None
             or external_customer_id is not None
             or root_events
             or parent_id is not None
@@ -65,7 +75,7 @@ class TinybirdEventRepository:
 
         tinybird_query: TinybirdEventsQuery | TinybirdEventTypesQuery
         if requires_raw_table:
-            tinybird_query = TinybirdEventsQuery(self.organization_id)
+            tinybird_query = TinybirdEventsQuery(organization_ids)
             if customer_id is not None:
                 tinybird_query.filter_customer_id(customer_id)
             if external_customer_id is not None:
@@ -77,7 +87,7 @@ class TinybirdEventRepository:
             if source is not None:
                 tinybird_query.filter_source(source)
         else:
-            tinybird_query = TinybirdEventTypesQuery(self.organization_id)
+            tinybird_query = TinybirdEventTypesQuery(organization_ids[0])
             if source is not None:
                 tinybird_query.filter_source(source)
 
@@ -88,6 +98,7 @@ class TinybirdEventRepository:
     async def get_event_ids_and_count(
         self,
         *,
+        organization_id: UUID | Sequence[UUID],
         limit: int,
         offset: int,
         descending: bool = True,
@@ -110,7 +121,11 @@ class TinybirdEventRepository:
         depth: int | None = None,
         parent_id: UUID | None = None,
     ) -> tuple[list[str], int]:
-        tinybird_query = TinybirdEventsQuery(self.organization_id)
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return [], 0
+
+        tinybird_query = TinybirdEventsQuery(organization_ids)
 
         if event_id is not None:
             tinybird_query.filter_event_id(event_id)
@@ -147,22 +162,36 @@ class TinybirdEventRepository:
 
         return await tinybird_query.get_event_ids_and_count(limit, offset, descending)
 
-    async def event_exists(self, event_id: UUID) -> bool:
+    async def event_exists(
+        self, organization_id: UUID | Sequence[UUID], event_id: UUID
+    ) -> bool:
         _, count = await self.get_event_ids_and_count(
-            limit=1, offset=0, descending=True, event_id=event_id
+            organization_id=organization_id,
+            limit=1,
+            offset=0,
+            descending=True,
+            event_id=event_id,
         )
         return count > 0
 
     async def get_descendant_aggregates(
-        self, ancestor_id: UUID, aggregate_fields: Sequence[str]
+        self,
+        organization_id: UUID | Sequence[UUID],
+        ancestor_id: UUID,
+        aggregate_fields: Sequence[str],
     ) -> tuple[int, dict[str, float]]:
-        tinybird_query = TinybirdEventsQuery(self.organization_id)
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return 0, {field.replace(".", "_"): 0.0 for field in aggregate_fields}
+
+        tinybird_query = TinybirdEventsQuery(organization_ids)
         tinybird_query.filter_has_ancestor(ancestor_id)
         return await tinybird_query.get_descendant_aggregates(aggregate_fields)
 
     async def get_timeseries_occurrences(
         self,
         *,
+        organization_id: UUID,
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: str,
@@ -174,7 +203,7 @@ class TinybirdEventRepository:
         event_type_id: UUID | None = None,
     ) -> list[TinybirdTimeseriesBucket]:
         return await get_timeseries_occurrences(
-            self.organization_id,
+            organization_id,
             start_timestamp,
             end_timestamp,
             interval,
@@ -193,3 +222,15 @@ class TinybirdEventRepository:
     ) -> None:
         for column, descending in sorting:
             tinybird_query.order_by(column, descending)
+
+    @staticmethod
+    def _normalize_organization_ids(
+        organization_id: UUID | Sequence[UUID] | None,
+    ) -> tuple[UUID, ...]:
+        if not organization_id:
+            return ()
+
+        if isinstance(organization_id, UUID):
+            return (organization_id,)
+
+        return tuple(dict.fromkeys(organization_id))

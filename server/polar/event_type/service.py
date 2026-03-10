@@ -236,7 +236,7 @@ class EventTypeService:
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventTypesSortProperty]],
     ) -> tuple[Sequence[EventTypeWithStats], int]:
-        tinybird_repository = TinybirdEventRepository(organization.id)
+        tinybird_repository = TinybirdEventRepository()
         tinybird_sorting: list[tuple[str, bool]] = []
         for criterion, is_desc in sorting:
             if criterion == EventTypesSortProperty.event_type_name:
@@ -249,6 +249,7 @@ class EventTypeService:
                 tinybird_sorting.append(("occurrences", is_desc))
 
         tinybird_stats = await tinybird_repository.get_event_type_stats(
+            organization_id=organization.id,
             customer_id=customer_id,
             external_customer_id=external_customer_id,
             root_events=root_events,

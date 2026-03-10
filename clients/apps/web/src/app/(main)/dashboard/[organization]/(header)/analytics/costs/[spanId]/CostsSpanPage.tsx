@@ -261,7 +261,7 @@ export default function SpanDetailPage({
                         Total
                       </dt>
                       <dd className="tabular-nums">
-                        {formatCurrency('subcent')(
+                        {formatCurrency('accounting')(
                           costMetrics.totalCost,
                           'usd',
                         )}
@@ -272,7 +272,7 @@ export default function SpanDetailPage({
                         Average
                       </dt>
                       <dd className="tabular-nums">
-                        {formatCurrency('subcent')(
+                        {formatCurrency('accounting')(
                           costMetrics.averageCost,
                           'usd',
                         )}

@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CostDeviationBar } from './CostDeviationBar'
+import { formatEventId } from './utils'
 
 type EventTreeNode = schemas['Event'] & { childEvents: EventTreeNode[] }
 
@@ -320,11 +321,11 @@ export function EventRow({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm font-medium"
+            className="w-full truncate text-left text-sm font-medium break-all"
           >
             {event.label === eventType.label ? (
               <span className="dark:text-polar-200 truncate font-mono font-normal text-gray-600">
-                {event.id}
+                {formatEventId(event.id)}
               </span>
             ) : (
               event.label

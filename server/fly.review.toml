@@ -1,0 +1,26 @@
+[build]
+  dockerfile = "Dockerfile"
+  target = "fly-preview"
+
+[deploy]
+  release_command = "uv run task pre_deploy"
+
+[env]
+  POLAR_CURRENT_JWK_KID = "polar_preview"
+  POLAR_ENV = "test"
+  POLAR_REDIS_HOST = "127.0.0.1"
+  POLAR_REDIS_PORT = "6379"
+
+[http_service]
+  internal_port = 10000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "15s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "5s"

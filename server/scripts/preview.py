@@ -16,6 +16,7 @@ import typer
 DEFAULT_PREVIEW_BASE_DOMAIN = "preview.polar.sh"
 MAX_PREVIEW_ID_LENGTH = 63
 MAX_POSTGRES_IDENTIFIER_LENGTH = 63
+MAX_FLY_APP_NAME_LENGTH = 63
 DEFAULT_POSTGRES_PORT = 5432
 PREVIEW_POSTGRES_DROP_RETRIES = 5
 PREVIEW_POSTGRES_DROP_RETRY_DELAY_SECONDS = 1.0
@@ -182,11 +183,36 @@ def resolve_preview_id(
 
 
 def get_preview_base_domain() -> str:
-    return (os.getenv("PREVIEW_BASE_DOMAIN") or DEFAULT_PREVIEW_BASE_DOMAIN).strip()
+    return (
+        os.getenv("POLAR_PREVIEW_BASE_DOMAIN") or DEFAULT_PREVIEW_BASE_DOMAIN
+    ).strip()
 
 
 def build_preview_url(preview_id: str) -> str:
     return f"https://{preview_id}.{get_preview_base_domain()}"
+
+
+def build_fly_app_name(preview_id: str) -> str:
+    normalized_preview_id = sanitize_preview_label(preview_id)
+    app_name = f"polar-api-{normalized_preview_id}"
+
+    if len(app_name) <= MAX_FLY_APP_NAME_LENGTH:
+        return app_name
+
+    hash_suffix = hashlib.sha1(normalized_preview_id.encode("utf-8")).hexdigest()[:8]
+    max_preview_component_length = (
+        MAX_FLY_APP_NAME_LENGTH - len("polar-api-") - len(hash_suffix) - 1
+    )
+    if max_preview_component_length <= 0:
+        return f"polar-api-{hash_suffix}"
+
+    truncated_preview_id = normalized_preview_id[:max_preview_component_length].rstrip(
+        "-"
+    )
+    if not truncated_preview_id:
+        return f"polar-api-{hash_suffix}"
+
+    return f"polar-api-{truncated_preview_id}-{hash_suffix}"
 
 
 def plan_create_or_update(changed_surfaces: ChangedSurfaces) -> list[str]:
@@ -338,33 +364,35 @@ def validate_safe_postgres_identifier(value: str, *, env_name: str) -> str:
 
 
 def load_preview_postgres_admin_config() -> PreviewPostgresAdminConfig:
-    admin_dsn = os.getenv("PREVIEW_POSTGRES_ADMIN_DSN")
+    admin_dsn = os.getenv("POLAR_PREVIEW_POSTGRES_ADMIN_DSN")
     if not admin_dsn:
-        raise RuntimeError("PREVIEW_POSTGRES_ADMIN_DSN is required")
+        raise RuntimeError("POLAR_PREVIEW_POSTGRES_ADMIN_DSN is required")
 
     parsed_admin_dsn = urlparse(admin_dsn)
     if not parsed_admin_dsn.scheme or parsed_admin_dsn.hostname is None:
-        raise RuntimeError("PREVIEW_POSTGRES_ADMIN_DSN must be a valid Postgres DSN")
+        raise RuntimeError(
+            "POLAR_PREVIEW_POSTGRES_ADMIN_DSN must be a valid Postgres DSN"
+        )
 
-    app_host_override = os.getenv("PREVIEW_POSTGRES_APP_HOST")
+    app_host_override = os.getenv("POLAR_PREVIEW_POSTGRES_APP_HOST")
     app_host = (app_host_override or parsed_admin_dsn.hostname or "").strip()
     if not app_host:
         raise RuntimeError("Could not resolve the preview Postgres host")
 
-    app_port_raw = (os.getenv("PREVIEW_POSTGRES_APP_PORT") or "").strip()
+    app_port_raw = (os.getenv("POLAR_PREVIEW_POSTGRES_APP_PORT") or "").strip()
     if not app_port_raw:
         app_port = parsed_admin_dsn.port or DEFAULT_POSTGRES_PORT
     else:
         app_port = int(app_port_raw)
 
     template_database_raw = (
-        os.getenv("PREVIEW_POSTGRES_TEMPLATE_DATABASE") or ""
+        os.getenv("POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE") or ""
     ).strip()
     template_database: str | None
     if template_database_raw:
         template_database = validate_safe_postgres_identifier(
             template_database_raw,
-            env_name="PREVIEW_POSTGRES_TEMPLATE_DATABASE",
+            env_name="POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE",
         )
     else:
         template_database = None
@@ -390,23 +418,25 @@ def parse_env_bool(value: str | None) -> bool:
 
 
 def load_preview_tinybird_admin_config() -> PreviewTinybirdAdminConfig:
-    api_url = (os.getenv("PREVIEW_TINYBIRD_API_URL") or "").strip()
+    api_url = (os.getenv("POLAR_PREVIEW_TINYBIRD_API_URL") or "").strip()
     if not api_url:
-        raise RuntimeError("PREVIEW_TINYBIRD_API_URL is required")
+        raise RuntimeError("POLAR_PREVIEW_TINYBIRD_API_URL is required")
 
-    admin_token = (os.getenv("PREVIEW_TINYBIRD_ADMIN_TOKEN") or "").strip()
+    admin_token = (os.getenv("POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN") or "").strip()
     if not admin_token:
-        raise RuntimeError("PREVIEW_TINYBIRD_ADMIN_TOKEN is required")
+        raise RuntimeError("POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN is required")
 
-    workspace_name = (os.getenv("PREVIEW_TINYBIRD_WORKSPACE") or "").strip()
+    workspace_name = (os.getenv("POLAR_PREVIEW_TINYBIRD_WORKSPACE") or "").strip()
     if not workspace_name:
-        raise RuntimeError("PREVIEW_TINYBIRD_WORKSPACE is required")
+        raise RuntimeError("POLAR_PREVIEW_TINYBIRD_WORKSPACE is required")
 
     config = PreviewTinybirdAdminConfig(
         api_url=api_url,
         admin_token=admin_token,
         workspace_name=workspace_name,
-        last_partition=parse_env_bool(os.getenv("PREVIEW_TINYBIRD_LAST_PARTITION")),
+        last_partition=parse_env_bool(
+            os.getenv("POLAR_PREVIEW_TINYBIRD_LAST_PARTITION")
+        ),
     )
     log_preview(
         "Loaded preview Tinybird config "

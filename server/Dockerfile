@@ -94,3 +94,21 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10
 FROM production AS playwright
 
 RUN uv run playwright install --with-deps chromium
+
+# Stage 6: Fly preview image (combined API + worker + Redis)
+FROM playwright AS fly-preview
+
+COPY --from=tailscale/tailscale:stable /usr/local/bin/tailscaled /usr/local/bin/tailscaled
+COPY --from=tailscale/tailscale:stable /usr/local/bin/tailscale /usr/local/bin/tailscale
+
+RUN apt-get update \
+  && apt-get install -y \
+  iptables \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN uv run python -m polar.kit.jwk polar_preview > /app/server/.jwks.json \
+  && chmod +x /app/server/docker/scripts/entrypoint-fly-preview.sh \
+  && chmod +x /app/server/docker/scripts/startup-fly-preview.sh
+
+ENTRYPOINT ["/app/server/docker/scripts/entrypoint-fly-preview.sh"]
+CMD ["/app/server/docker/scripts/startup-fly-preview.sh"]

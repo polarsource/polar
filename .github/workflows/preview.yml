@@ -33,6 +33,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
   pull-requests: write
 
 jobs:
@@ -96,10 +97,12 @@ jobs:
       changed_migrations: ${{ needs.changes.outputs.migrations == 'true' }}
       changed_tinybird: ${{ needs.changes.outputs.tinybird == 'true' }}
     secrets:
-      PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
-      PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
-      TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
-      TAILSCALE_OAUTH_SECRET: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+      POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+      POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+      POLAR_TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+      POLAR_TAILSCALE_OAUTH_SECRET: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+      POLAR_PREVIEW_FLY_API_TOKEN: ${{ secrets.POLAR_PREVIEW_FLY_API_TOKEN }}
+      IPINFO_ACCESS_TOKEN: ${{ secrets.IPINFO_ACCESS_TOKEN }}
 
   preview_comment:
     name: "Preview: Comment"
@@ -144,10 +147,12 @@ jobs:
       branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.inputs.branch || github.ref_name }}
       sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs.sha || github.sha }}
     secrets:
-      PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
-      PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
-      TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
-      TAILSCALE_OAUTH_SECRET: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+      POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+      POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+      POLAR_TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+      POLAR_TAILSCALE_OAUTH_SECRET: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+      POLAR_PREVIEW_FLY_API_TOKEN: ${{ secrets.POLAR_PREVIEW_FLY_API_TOKEN }}
+      IPINFO_ACCESS_TOKEN: ${{ secrets.IPINFO_ACCESS_TOKEN }}
 
   preview_delete_comment:
     name: "Preview: Delete Comment"

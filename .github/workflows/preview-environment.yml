@@ -4,74 +4,92 @@ on:
   workflow_call:
     inputs:
       action:
+        description: Preview action
         required: true
         type: string
       preview_id:
+        description: Override preview identifier
         required: false
         type: string
         default: ""
       pr_number:
+        description: Pull request number for preview naming
         required: false
         type: string
         default: ""
       branch:
+        description: Branch or ref to deploy
         required: false
         type: string
         default: ""
       sha:
+        description: Exact git SHA to deploy
         required: false
         type: string
         default: ""
       changed_backend:
+        description: Whether backend files changed
         required: false
         type: boolean
         default: false
       changed_frontend:
+        description: Whether frontend files changed
         required: false
         type: boolean
         default: false
       changed_migrations:
+        description: Whether migration files changed
         required: false
         type: boolean
         default: false
       changed_tinybird:
+        description: Whether Tinybird files changed
         required: false
         type: boolean
         default: false
     secrets:
-      PREVIEW_POSTGRES_ADMIN_DSN:
+      POLAR_PREVIEW_POSTGRES_ADMIN_DSN:
         required: false
-      PREVIEW_TINYBIRD_ADMIN_TOKEN:
+      POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN:
         required: false
-      TAILSCALE_OAUTH_CLIENT_ID:
+      POLAR_TAILSCALE_OAUTH_CLIENT_ID:
         required: true
-      TAILSCALE_OAUTH_SECRET:
+      POLAR_TAILSCALE_OAUTH_SECRET:
+        required: true
+      POLAR_PREVIEW_FLY_API_TOKEN:
+        required: true
+      IPINFO_ACCESS_TOKEN:
         required: true
     outputs:
       preview_id:
-        value: ${{ jobs.apply.outputs.preview_id }}
+        description: Resolved preview identifier
+        value: ${{ jobs.preview.outputs.preview_id }}
       preview_url:
-        value: ${{ jobs.apply.outputs.preview_url }}
+        description: Preview URL
+        value: ${{ jobs.preview.outputs.preview_url }}
       preview_status:
-        value: ${{ jobs.apply.outputs.preview_status }}
+        description: Preview status
+        value: ${{ jobs.preview.outputs.preview_status }}
       result_json:
-        value: ${{ jobs.apply.outputs.result_json }}
+        description: Preview control-plane result JSON
+        value: ${{ jobs.preview.outputs.result_json }}
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
-  apply:
+  preview:
     name: "Preview: ${{ inputs.action }}"
     runs-on: blacksmith-4vcpu-ubuntu-2404
     concurrency:
       group: preview-${{ inputs.preview_id != '' && inputs.preview_id || inputs.pr_number != '' && format('pr-{0}', inputs.pr_number) || inputs.branch }}
       cancel-in-progress: false
     outputs:
-      preview_id: ${{ steps.preview.outputs.preview_id }}
-      preview_url: ${{ steps.preview.outputs.preview_url }}
-      preview_status: ${{ steps.preview.outputs.preview_status }}
-      result_json: ${{ steps.preview.outputs.result_json }}
+      preview_id: ${{ steps.finalize.outputs.preview_id }}
+      preview_url: ${{ steps.finalize.outputs.preview_url }}
+      preview_status: ${{ steps.finalize.outputs.preview_status }}
+      result_json: ${{ steps.finalize.outputs.result_json }}
     steps:
       - uses: actions/checkout@v6
 
@@ -95,31 +113,101 @@ jobs:
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
-          tags: ${{ vars.PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
+          oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
 
-      - name: Run preview control plane
-        id: preview
+      - name: Resolve preview metadata
+        id: meta
         working-directory: ./server
         env:
-          PREVIEW_BASE_DOMAIN: ${{ vars.PREVIEW_BASE_DOMAIN }}
-          PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.PREVIEW_POSTGRES_ADMIN_DSN }}
-          PREVIEW_POSTGRES_APP_HOST: ${{ vars.PREVIEW_POSTGRES_APP_HOST }}
-          PREVIEW_POSTGRES_APP_PORT: ${{ vars.PREVIEW_POSTGRES_APP_PORT }}
-          PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
-          PREVIEW_TINYBIRD_API_URL: ${{ vars.PREVIEW_TINYBIRD_API_URL }}
-          PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.PREVIEW_TINYBIRD_ADMIN_TOKEN }}
-          PREVIEW_TINYBIRD_WORKSPACE: ${{ vars.PREVIEW_TINYBIRD_WORKSPACE }}
-          PREVIEW_TINYBIRD_LAST_PARTITION: ${{ vars.PREVIEW_TINYBIRD_LAST_PARTITION || 'false' }}
-          PREVIEWS_DRY_RUN: ${{ vars.PREVIEWS_DRY_RUN }}
+          GHCR_IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/polar-fly-preview
+          INPUT_BRANCH: ${{ inputs.branch }}
+          INPUT_PREVIEW_ID: ${{ inputs.preview_id }}
+          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          uv run python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+
+          from scripts.preview import build_fly_app_name, resolve_preview_id
+
+          pr_number_raw = os.getenv("INPUT_PR_NUMBER", "").strip()
+          pr_number = int(pr_number_raw) if pr_number_raw else None
+          preview_id = resolve_preview_id(
+              os.getenv("INPUT_PREVIEW_ID", "").strip() or None,
+              pr_number,
+              os.getenv("INPUT_BRANCH", "").strip() or None,
+          )
+          fly_app_name = build_fly_app_name(preview_id)
+          fly_hostname = f"{fly_app_name}.fly.dev"
+          image_repository = os.environ["GHCR_IMAGE_REPOSITORY"]
+          sha = os.getenv("INPUT_SHA", "").strip()
+          image_tag = f"{preview_id}-{sha[:12]}" if sha else preview_id
+
+          print(f"preview_id={preview_id}")
+          print(f"fly_app_name={fly_app_name}")
+          print(f"fly_hostname={fly_hostname}")
+          print(f"fly_preview_url=https://{fly_hostname}")
+          print(f"image_repository={image_repository}")
+          print(f"image_ref={image_repository}:{image_tag}")
+          PY
+
+      - name: Validate Fly preview configuration
+        if: inputs.action != 'destroy'
+        env:
+          POLAR_PREVIEW_FLY_ORG: ${{ vars.POLAR_PREVIEW_FLY_ORG }}
+        run: |
+          if [ -z "$POLAR_PREVIEW_FLY_ORG" ]; then
+            echo "::error::POLAR_PREVIEW_FLY_ORG must be set as a repository or organization variable"
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        if: inputs.action != 'destroy'
+        uses: useblacksmith/setup-docker-builder@v1
+
+      - name: Log in to the Container registry
+        if: inputs.action != 'destroy'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Fly preview image
+        if: inputs.action != 'destroy'
+        id: image
+        uses: useblacksmith/build-push-action@v2
+        with:
+          push: true
+          context: ./server
+          target: fly-preview
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.image_ref }}
+          build-args: |
+            RELEASE_VERSION=${{ inputs.sha }}
+          secrets: |
+            IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
+
+      - name: Provision preview resources
+        if: inputs.action == 'create-or-update' || inputs.action == 'reset-data'
+        id: preview_resources
+        working-directory: ./server
+        env:
+          POLAR_PREVIEW_BASE_DOMAIN: ${{ vars.POLAR_PREVIEW_BASE_DOMAIN }}
+          POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+          POLAR_PREVIEW_POSTGRES_APP_HOST: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_HOST }}
+          POLAR_PREVIEW_POSTGRES_APP_PORT: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_PORT }}
+          POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+          POLAR_PREVIEW_TINYBIRD_API_URL: ${{ vars.POLAR_PREVIEW_TINYBIRD_API_URL }}
+          POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+          POLAR_PREVIEW_TINYBIRD_WORKSPACE: ${{ vars.POLAR_PREVIEW_TINYBIRD_WORKSPACE }}
+          POLAR_PREVIEW_TINYBIRD_LAST_PARTITION: ${{ vars.POLAR_PREVIEW_TINYBIRD_LAST_PARTITION || 'false' }}
         run: |
           set -euo pipefail
 
-          command=(
-            uv run python -m scripts.preview "${{ inputs.action }}"
-            --github-output "$GITHUB_OUTPUT"
-          )
+          command=(uv run python -m scripts.preview "${{ inputs.action }}")
 
           if [[ -n "${{ inputs.preview_id }}" ]]; then
             command+=(--preview-id "${{ inputs.preview_id }}")
@@ -152,30 +240,152 @@ jobs:
             fi
           fi
 
-          if [[ "$PREVIEWS_DRY_RUN" == "true" ]]; then
-            command+=(--dry-run)
-          fi
+          command+=(--github-output "$GITHUB_OUTPUT")
 
           printf 'Running: %q ' "${command[@]}"
           echo
           "${command[@]}"
 
       - name: Report preview resources
-        if: steps.preview.outcome == 'success'
+        if: steps.preview_resources.outcome == 'success'
         run: |
-          echo "Preview status: ${{ steps.preview.outputs.preview_status }}"
-          echo "Preview URL: ${{ steps.preview.outputs.preview_url }}"
-          if [[ -n "${{ steps.preview.outputs.preview_postgres_database }}" ]]; then
-            echo "Preview Postgres database: ${{ steps.preview.outputs.preview_postgres_database }}"
+          echo "Preview status: ${{ steps.preview_resources.outputs.preview_status }}"
+          echo "Preview URL: ${{ steps.meta.outputs.fly_preview_url }}"
+          if [[ -n "${{ steps.preview_resources.outputs.preview_postgres_database }}" ]]; then
+            echo "Preview Postgres database: ${{ steps.preview_resources.outputs.preview_postgres_database }}"
           fi
-          if [[ -n "${{ steps.preview.outputs.preview_postgres_user }}" ]]; then
-            echo "Preview Postgres user: ${{ steps.preview.outputs.preview_postgres_user }}"
+          if [[ -n "${{ steps.preview_resources.outputs.preview_postgres_user }}" ]]; then
+            echo "Preview Postgres user: ${{ steps.preview_resources.outputs.preview_postgres_user }}"
           fi
-          if [[ -z "${{ steps.preview.outputs.preview_tinybird_branch }}" ]]; then
+          if [[ -z "${{ steps.preview_resources.outputs.preview_tinybird_branch }}" ]]; then
             echo "Tinybird branch: <missing>"
             exit 1
           fi
-          echo "Tinybird branch: ${{ steps.preview.outputs.preview_tinybird_branch }}"
-          if [[ -n "${{ steps.preview.outputs.preview_tinybird_workspace }}" ]]; then
-            echo "Tinybird workspace: ${{ steps.preview.outputs.preview_tinybird_workspace }}"
+          echo "Tinybird branch: ${{ steps.preview_resources.outputs.preview_tinybird_branch }}"
+          if [[ -n "${{ steps.preview_resources.outputs.preview_tinybird_workspace }}" ]]; then
+            echo "Tinybird workspace: ${{ steps.preview_resources.outputs.preview_tinybird_workspace }}"
+          fi
+
+      - name: Set up Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Push image to Fly registry
+        if: inputs.action != 'destroy'
+        env:
+          FLY_API_TOKEN: ${{ secrets.POLAR_PREVIEW_FLY_API_TOKEN }}
+          FLY_APP: ${{ steps.meta.outputs.fly_app_name }}
+          FLY_ORG: ${{ vars.POLAR_PREVIEW_FLY_ORG }}
+          GHCR_IMAGE: ${{ steps.meta.outputs.image_repository }}@${{ steps.image.outputs.digest }}
+        run: |
+          set -euo pipefail
+
+          # Ensure the Fly app exists so we can push to its registry
+          if ! flyctl status -a "$FLY_APP" >/dev/null 2>&1; then
+            flyctl apps create "$FLY_APP" --org "$FLY_ORG"
+          fi
+
+          # Pull from GHCR (runner is already authenticated) and push to
+          # Fly's registry to avoid GHCR auth issues from Fly's side
+          FLY_IMAGE="registry.fly.io/${FLY_APP}:${GITHUB_SHA:0:12}"
+          flyctl auth docker
+          docker pull "$GHCR_IMAGE"
+          docker tag "$GHCR_IMAGE" "$FLY_IMAGE"
+          docker push "$FLY_IMAGE"
+          echo "fly_image=$FLY_IMAGE" >> "$GITHUB_OUTPUT"
+        id: fly_image
+
+      - name: Deploy Fly preview backend
+        if: inputs.action != 'destroy'
+        uses: superfly/fly-pr-review-apps@1.6.0
+        with:
+          config: server/fly.review.toml
+          ha: false
+          image: ${{ steps.fly_image.outputs.fly_image }}
+          name: ${{ steps.meta.outputs.fly_app_name }}
+          org: ${{ vars.POLAR_PREVIEW_FLY_ORG }}
+          secrets: |
+            POLAR_ALLOWED_HOSTS=["${{ steps.meta.outputs.fly_hostname }}"]
+            POLAR_BASE_URL=${{ steps.meta.outputs.fly_preview_url }}
+            POLAR_CHECKOUT_BASE_URL=${{ steps.meta.outputs.fly_preview_url }}/v1/checkout-links/{client_secret}/redirect
+            POLAR_FRONTEND_BASE_URL=${{ steps.meta.outputs.fly_preview_url }}
+            POLAR_POSTGRES_DATABASE=${{ steps.preview_resources.outputs.preview_postgres_database }}
+            POLAR_POSTGRES_HOST=${{ fromJson(steps.preview_resources.outputs.preview_postgres_env_json).POLAR_POSTGRES_HOST }}
+            POLAR_POSTGRES_PORT=${{ fromJson(steps.preview_resources.outputs.preview_postgres_env_json).POLAR_POSTGRES_PORT }}
+            POLAR_POSTGRES_PWD=${{ steps.preview_resources.outputs.preview_postgres_password }}
+            POLAR_POSTGRES_USER=${{ steps.preview_resources.outputs.preview_postgres_user }}
+            POLAR_USER_SESSION_COOKIE_DOMAIN=${{ steps.meta.outputs.fly_hostname }}
+            TAILSCALE_ADVERTISE_TAGS=${{ vars.POLAR_PREVIEW_TAILSCALE_ADVERTISE_TAGS || 'tag:preview' }}
+            TAILSCALE_HOSTNAME_PREFIX=${{ steps.meta.outputs.fly_app_name }}
+            TAILSCALE_OAUTH_SECRET=${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+            TINYBIRD_API_TOKEN=${{ steps.preview_resources.outputs.preview_tinybird_token }}
+            TINYBIRD_API_URL=${{ fromJson(steps.preview_resources.outputs.preview_tinybird_env_json).TINYBIRD_API_URL }}
+            TINYBIRD_BRANCH=${{ steps.preview_resources.outputs.preview_tinybird_branch }}
+            TINYBIRD_READ_TOKEN=${{ steps.preview_resources.outputs.preview_tinybird_token }}
+            TINYBIRD_WORKSPACE=${{ steps.preview_resources.outputs.preview_tinybird_workspace }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.POLAR_PREVIEW_FLY_API_TOKEN }}
+
+      - name: Destroy Fly preview app
+        if: inputs.action == 'destroy'
+        env:
+          FLY_API_TOKEN: ${{ secrets.POLAR_PREVIEW_FLY_API_TOKEN }}
+        run: |
+          if flyctl status -a "${{ steps.meta.outputs.fly_app_name }}" >/dev/null 2>&1; then
+            flyctl apps destroy "${{ steps.meta.outputs.fly_app_name }}" --yes
+          else
+            echo "Fly preview app ${{ steps.meta.outputs.fly_app_name }} does not exist; skipping destroy"
+          fi
+
+      - name: Teardown preview resources
+        if: inputs.action == 'destroy'
+        id: preview_resources_destroy
+        working-directory: ./server
+        env:
+          POLAR_PREVIEW_BASE_DOMAIN: ${{ vars.POLAR_PREVIEW_BASE_DOMAIN }}
+          POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+          POLAR_PREVIEW_POSTGRES_APP_HOST: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_HOST }}
+          POLAR_PREVIEW_POSTGRES_APP_PORT: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_PORT }}
+          POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+          POLAR_PREVIEW_TINYBIRD_API_URL: ${{ vars.POLAR_PREVIEW_TINYBIRD_API_URL }}
+          POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+          POLAR_PREVIEW_TINYBIRD_WORKSPACE: ${{ vars.POLAR_PREVIEW_TINYBIRD_WORKSPACE }}
+          POLAR_PREVIEW_TINYBIRD_LAST_PARTITION: ${{ vars.POLAR_PREVIEW_TINYBIRD_LAST_PARTITION || 'false' }}
+        run: |
+          set -euo pipefail
+
+          command=(uv run python -m scripts.preview destroy)
+
+          if [[ -n "${{ inputs.preview_id }}" ]]; then
+            command+=(--preview-id "${{ inputs.preview_id }}")
+          fi
+
+          if [[ -n "${{ inputs.pr_number }}" ]]; then
+            command+=(--pr-number "${{ inputs.pr_number }}")
+          fi
+
+          if [[ -n "${{ inputs.branch }}" ]]; then
+            command+=(--branch "${{ inputs.branch }}")
+          fi
+
+          if [[ -n "${{ inputs.sha }}" ]]; then
+            command+=(--sha "${{ inputs.sha }}")
+          fi
+
+          command+=(--github-output "$GITHUB_OUTPUT")
+
+          printf 'Running: %q ' "${command[@]}"
+          echo
+          "${command[@]}"
+
+      - name: Set preview outputs
+        id: finalize
+        run: |
+          echo "preview_id=${{ steps.meta.outputs.preview_id }}" >> "$GITHUB_OUTPUT"
+          echo "preview_url=${{ steps.meta.outputs.fly_preview_url }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.action }}" = "destroy" ]; then
+            echo "preview_status=backend-destroyed" >> "$GITHUB_OUTPUT"
+            echo "result_json=${{ steps.preview_resources_destroy.outputs.result_json }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "preview_status=backend-ready" >> "$GITHUB_OUTPUT"
+            echo "result_json=${{ steps.preview_resources.outputs.result_json }}" >> "$GITHUB_OUTPUT"
           fi

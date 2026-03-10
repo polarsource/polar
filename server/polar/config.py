@@ -254,7 +254,7 @@ class Settings(BaseSettings):
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None
     TINYBIRD_WORKSPACE: str | None = None
-
+    TINYBIRD_BRANCH: str | None = None
     # Logo.dev (for company logo avatars)
     LOGO_DEV_PUBLISHABLE_KEY: str | None = None
     PERSONAL_EMAIL_DOMAINS: set[str] = {

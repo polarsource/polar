@@ -10,12 +10,11 @@ from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.event.system import SYSTEM_EVENT_LABELS
+from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.event_type.schemas import EventTypeWithStats
 from polar.event_type.sorting import EventTypesSortProperty
 from polar.integrations.tinybird.service import (
-    TinybirdEventsQuery,
-    TinybirdEventTypesQuery,
     TinybirdEventTypeStats,
 )
 from polar.kit.pagination import PaginationParams, paginate
@@ -237,42 +236,26 @@ class EventTypeService:
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventTypesSortProperty]],
     ) -> tuple[Sequence[EventTypeWithStats], int]:
-        requires_raw_table = (
-            customer_id is not None
-            or external_customer_id is not None
-            or root_events
-            or parent_id is not None
-        )
-
-        tinybird_query: TinybirdEventsQuery | TinybirdEventTypesQuery
-        if requires_raw_table:
-            tinybird_query = TinybirdEventsQuery(organization.id)
-            if customer_id is not None:
-                tinybird_query.filter_customer_id(customer_id)
-            if external_customer_id is not None:
-                tinybird_query.filter_external_customer_id(external_customer_id)
-            if root_events:
-                tinybird_query.filter_root_events()
-            if parent_id is not None:
-                tinybird_query.filter_parent_id(parent_id)
-            if source is not None:
-                tinybird_query.filter_source(source)
-        else:
-            tinybird_query = TinybirdEventTypesQuery(organization.id)
-            if source is not None:
-                tinybird_query.filter_source(source)
-
+        tinybird_repository = TinybirdEventRepository(organization.id)
+        tinybird_sorting: list[tuple[str, bool]] = []
         for criterion, is_desc in sorting:
             if criterion == EventTypesSortProperty.event_type_name:
-                tinybird_query.order_by("name", is_desc)
+                tinybird_sorting.append(("name", is_desc))
             elif criterion == EventTypesSortProperty.first_seen:
-                tinybird_query.order_by("first_seen", is_desc)
+                tinybird_sorting.append(("first_seen", is_desc))
             elif criterion == EventTypesSortProperty.last_seen:
-                tinybird_query.order_by("last_seen", is_desc)
+                tinybird_sorting.append(("last_seen", is_desc))
             elif criterion == EventTypesSortProperty.occurrences:
-                tinybird_query.order_by("occurrences", is_desc)
+                tinybird_sorting.append(("occurrences", is_desc))
 
-        tinybird_stats = await tinybird_query.get_event_type_stats()
+        tinybird_stats = await tinybird_repository.get_event_type_stats(
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            root_events=root_events,
+            parent_id=parent_id,
+            source=source,
+            sorting=tinybird_sorting,
+        )
 
         names = [s.name for s in tinybird_stats]
         event_type_repository = EventTypeRepository.from_session(session)

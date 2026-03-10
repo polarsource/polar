@@ -61,10 +61,9 @@ export const PageContent = () => {
       </Section>
       {isMobile ? null : (
         <Section className="flex max-w-[1620px]! flex-col gap-y-32">
-          <div className="dark:border-polar-700 relative flex aspect-video w-full flex-col items-center overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
+          <div className="dark:border-polar-700 relative aspect-video w-full flex-col items-center overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
             <Stream
               src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-              letterboxColor="black"
               autoplay
               muted
               loop

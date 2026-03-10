@@ -14,7 +14,7 @@ const EVENT_DEFS = [
   },
 ] as const
 
-const ORG_IDS = ['user_7f2a9b']
+const ORG_IDS = ['user_123']
 
 let _uid = 1000
 

@@ -16,6 +16,8 @@ import { OrganizationUnderReview } from './organization_under_review'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { SeatInvitation } from './seat_invitation'
 import { SubscriptionCancellation } from './subscription_cancellation'
+import { SubscriptionRenewalReminder } from './subscription_renewal_reminder'
+import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
 import { SubscriptionConfirmation } from './subscription_confirmation'
 import { SubscriptionCycled } from './subscription_cycled'
 import { SubscriptionCycledAfterTrial } from './subscription_cycled_after_trial'
@@ -41,6 +43,8 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   seat_invitation: SeatInvitation,
   subscription_cancellation: SubscriptionCancellation,
   subscription_confirmation: SubscriptionConfirmation,
+  subscription_renewal_reminder: SubscriptionRenewalReminder,
+  subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,
   subscription_cycled: SubscriptionCycled,
   subscription_cycled_after_trial: SubscriptionCycledAfterTrial,
   subscription_past_due: SubscriptionPastDue,

@@ -10,7 +10,14 @@ from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    enqueue_job,
+)
 
 from .service import subscription as subscription_service
 
@@ -110,3 +117,84 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)
+
+
+@actor(
+    actor_name="subscription.scan_renewal_reminders",
+    cron_trigger=CronTrigger.from_crontab("30 * * * *"),
+    priority=TaskPriority.LOW,
+)
+async def scan_renewal_reminders() -> None:
+    """Hourly scan for subscriptions needing renewal reminders."""
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscriptions = await repository.get_subscriptions_needing_renewal_reminder(
+            utc_now()
+        )
+
+    for sub in subscriptions:
+        enqueue_job("subscription.send_renewal_reminder", sub.id)
+
+
+@actor(actor_name="subscription.send_renewal_reminder", priority=TaskPriority.LOW)
+async def send_renewal_reminder(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id, options=repository.get_eager_options()
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        if subscription.status != "active" or subscription.cancel_at_period_end:
+            log.info(
+                "Subscription no longer eligible for renewal reminder",
+                subscription_id=subscription_id,
+            )
+            return
+
+        await subscription_service.send_renewal_reminder_email(session, subscription)
+
+
+@actor(
+    actor_name="subscription.scan_trial_conversion_reminders",
+    cron_trigger=CronTrigger.from_crontab("30 * * * *"),
+    priority=TaskPriority.LOW,
+)
+async def scan_trial_conversion_reminders() -> None:
+    """Hourly scan for subscriptions needing trial conversion reminders."""
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscriptions = (
+            await repository.get_subscriptions_needing_trial_conversion_reminder(
+                utc_now()
+            )
+        )
+
+    for sub in subscriptions:
+        enqueue_job("subscription.send_trial_conversion_reminder", sub.id)
+
+
+@actor(
+    actor_name="subscription.send_trial_conversion_reminder",
+    priority=TaskPriority.LOW,
+)
+async def send_trial_conversion_reminder(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id, options=repository.get_eager_options()
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        if subscription.status != "trialing":
+            log.info(
+                "Subscription no longer trialing",
+                subscription_id=subscription_id,
+            )
+            return
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )

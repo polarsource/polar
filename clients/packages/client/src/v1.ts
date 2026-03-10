@@ -21359,8 +21359,12 @@ export interface components {
       subscription_cycled_after_trial: boolean
       /** Subscription Past Due */
       subscription_past_due: boolean
+      /** Subscription Renewal Reminder */
+      subscription_renewal_reminder: boolean
       /** Subscription Revoked */
       subscription_revoked: boolean
+      /** Subscription Trial Conversion Reminder */
+      subscription_trial_conversion_reminder: boolean
       /** Subscription Uncanceled */
       subscription_uncanceled: boolean
       /** Subscription Updated */

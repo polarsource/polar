@@ -98,7 +98,9 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_cycled: bool
     subscription_cycled_after_trial: bool
     subscription_past_due: bool
+    subscription_renewal_reminder: bool
     subscription_revoked: bool
+    subscription_trial_conversion_reminder: bool
     subscription_uncanceled: bool
     subscription_updated: bool
 
@@ -110,7 +112,9 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_cycled": True,
     "subscription_cycled_after_trial": True,
     "subscription_past_due": True,
+    "subscription_renewal_reminder": True,
     "subscription_revoked": True,
+    "subscription_trial_conversion_reminder": True,
     "subscription_uncanceled": True,
     "subscription_updated": True,
 }

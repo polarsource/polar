@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, case, select
+from sqlalchemy import Select, String, and_, case, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -42,6 +43,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.product.guard import is_metered_price
 
@@ -243,6 +245,125 @@ class SubscriptionRepository(
                 return Product.name
             case SubscriptionSortProperty.discount:
                 return Discount.name
+
+
+    async def get_subscriptions_needing_renewal_reminder(
+        self,
+        now: datetime,
+        *,
+        options: Options = (),
+    ) -> Sequence[Subscription]:
+        """Find active subscriptions with long billing cycles (>45 days)
+        whose current_period_end is within the next 7 days, and where
+        no renewal reminder email has been logged yet for this period."""
+        seven_days_from_now = now + timedelta(days=7)
+
+        # Billing cycle > 45 days filter
+        long_cycle_filter = or_(
+            Subscription.recurring_interval == SubscriptionRecurringInterval.year,
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.month,
+                Subscription.recurring_interval_count >= 2,
+            ),
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.week,
+                Subscription.recurring_interval_count >= 7,
+            ),
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.day,
+                Subscription.recurring_interval_count >= 45,
+            ),
+        )
+
+        # Dedup: no email_log row for this template + subscription + period
+        already_sent = (
+            select(EmailLog.id)
+            .where(
+                EmailLog.email_template == "subscription_renewal_reminder",
+                EmailLog.status == EmailLogStatus.sent,
+                EmailLog.email_props["subscription"]["id"]
+                .astext.cast(String)
+                == Subscription.id.cast(String),
+                EmailLog.email_props["renewal_date"].astext.is_not(None),
+            )
+            .correlate(Subscription)
+            .exists()
+        )
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.active,
+                Subscription.cancel_at_period_end.is_(False),
+                Subscription.current_period_end > now,
+                Subscription.current_period_end <= seven_days_from_now,
+                long_cycle_filter,
+                ~already_sent,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_subscriptions_needing_trial_conversion_reminder(
+        self,
+        now: datetime,
+        *,
+        options: Options = (),
+    ) -> Sequence[Subscription]:
+        """Find trialing subscriptions whose trial ends soon, and where
+        no trial conversion reminder email has been logged yet."""
+        one_day_from_now = now + timedelta(days=1)
+        three_days_from_now = now + timedelta(days=3)
+
+        # Two branches:
+        # 1. Trials >= 3 days long: remind 3 days before end
+        # 2. Trials >= 1 day but < 3 days: remind 1 day before end
+        trial_window_filter = or_(
+            # Long trials (>= 3 days): trial_end within next 3 days
+            and_(
+                Subscription.trial_end - Subscription.trial_start
+                >= timedelta(days=3),
+                Subscription.trial_end > now,
+                Subscription.trial_end <= three_days_from_now,
+            ),
+            # Short trials (>= 1 day, < 3 days): trial_end within next 1 day
+            and_(
+                Subscription.trial_end - Subscription.trial_start
+                >= timedelta(days=1),
+                Subscription.trial_end - Subscription.trial_start
+                < timedelta(days=3),
+                Subscription.trial_end > now,
+                Subscription.trial_end <= one_day_from_now,
+            ),
+        )
+
+        # Dedup: no email_log row for this template + subscription
+        already_sent = (
+            select(EmailLog.id)
+            .where(
+                EmailLog.email_template == "subscription_trial_conversion_reminder",
+                EmailLog.status == EmailLogStatus.sent,
+                EmailLog.email_props["subscription"]["id"]
+                .astext.cast(String)
+                == Subscription.id.cast(String),
+                EmailLog.email_props["conversion_date"].astext.is_not(None),
+            )
+            .correlate(Subscription)
+            .exists()
+        )
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.trialing,
+                Subscription.trial_end.is_not(None),
+                Subscription.trial_start.is_not(None),
+                trial_window_filter,
+                ~already_sent,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
 
 
 class SubscriptionProductPriceRepository(

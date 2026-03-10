@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
 
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.address import AddressDict
 from polar.models import Customer, Event, Organization
 from polar.models.benefit import BenefitType
@@ -18,6 +19,7 @@ class SystemEvent(StrEnum):
     benefit_updated = "benefit.updated"
     benefit_revoked = "benefit.revoked"
     subscription_created = "subscription.created"
+    subscription_updated = "subscription.updated"
     subscription_canceled = "subscription.canceled"
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
@@ -46,6 +48,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "benefit.updated": "Benefit Updated",
     "benefit.revoked": "Benefit Revoked",
     "subscription.created": "Subscription Created",
+    "subscription.updated": "Subscription Updated",
     "subscription.canceled": "Subscription Canceled",
     "subscription.cycled": "Subscription Cycled",
     "subscription.revoked": "Subscription Revoked",
@@ -193,6 +196,49 @@ class SubscriptionCreatedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_created]]
         user_metadata: Mapped[SubscriptionCreatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionUpdatedProductMetadata(TypedDict):
+    subscription_id: str
+    product_id: str
+    proration_behavior: SubscriptionProrationBehavior
+
+
+class SubscriptionUpdatedDiscountMetadata(TypedDict):
+    subscription_id: str
+    discount_id: str | None
+
+
+class SubscriptionUpdatedTrialMetadata(TypedDict):
+    subscription_id: str
+    trial_end: str
+
+
+class SubscriptionUpdatedSeatsMetadata(TypedDict):
+    subscription_id: str
+    seats: int
+    proration_behavior: SubscriptionProrationBehavior
+
+
+class SubscriptionUpdatedBillingPeriodMetadata(TypedDict):
+    subscription_id: str
+    billing_period_end: str
+
+
+SubscriptionUpdatedMetadata = (
+    SubscriptionUpdatedProductMetadata
+    | SubscriptionUpdatedDiscountMetadata
+    | SubscriptionUpdatedTrialMetadata
+    | SubscriptionUpdatedSeatsMetadata
+    | SubscriptionUpdatedBillingPeriodMetadata
+)
+
+
+class SubscriptionUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_updated]]
+        user_metadata: Mapped[SubscriptionUpdatedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionCanceledMetadata(TypedDict):
@@ -562,6 +608,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionCreatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionUpdatedMetadata,
 ) -> Event: ...
 
 

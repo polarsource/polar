@@ -51,15 +51,12 @@ class SubscriptionRecurringInterval(StrEnum):
 
 
 class SubscriptionProrationBehavior(StrEnum):
-    invoice = "invoice"  # Invoice immediately
-    prorate = "prorate"  # Add prorations to next invoice
-
-    def to_stripe(self) -> Literal["always_invoice", "create_prorations"]:
-        if self == SubscriptionProrationBehavior.invoice:
-            return "always_invoice"
-        if self == SubscriptionProrationBehavior.prorate:
-            return "create_prorations"
-        raise ValueError(f"Invalid proration behavior: {self}")
+    invoice = "invoice"
+    """Invoice immediately, and add prorations to the invoice."""
+    prorate = "prorate"
+    """Don't invoice immediately, but add prorations to the next invoice."""
+    next_period = "next_period"
+    """Don't invoice immediately, and don't add prorations. The new price will be applied at the start of the next period."""
 
 
 class InvoiceNumbering(StrEnum):

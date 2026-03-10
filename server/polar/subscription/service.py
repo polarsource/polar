@@ -1050,6 +1050,20 @@ class SubscriptionService:
             previous_is_canceled=previous_is_canceled,
         )
 
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "product_id": str(product.id),
+                    "proration_behavior": proration_behavior,
+                },
+            ),
+        )
+
         return subscription
 
     async def update_discount(
@@ -1101,6 +1115,18 @@ class SubscriptionService:
             discount: Discount | None,
         ) -> Subscription:
             repository = SubscriptionRepository.from_session(session)
+            await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.subscription_updated,
+                    customer=subscription.customer,
+                    organization=subscription.organization,
+                    metadata={
+                        "subscription_id": str(subscription.id),
+                        "discount_id": str(discount.id) if discount else None,
+                    },
+                ),
+            )
             return await repository.update(
                 subscription, update_dict={"discount": discount}, flush=True
             )
@@ -1175,6 +1201,20 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
+
+        assert subscription.trial_end is not None
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "trial_end": subscription.trial_end.isoformat(),
+                },
+            ),
+        )
 
         await self._after_subscription_updated(
             session,
@@ -1293,6 +1333,20 @@ class SubscriptionService:
             # Invoice and attempt to pay immediately
             await self._create_subscription_update_order(session, subscription)
 
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "seats": seats,
+                    "proration_behavior": proration_behavior,
+                },
+            ),
+        )
+
         return subscription
 
     async def update_currrent_billing_period_end(
@@ -1351,6 +1405,19 @@ class SubscriptionService:
             subscription,
             previous_status=previous_status,
             previous_is_canceled=previous_is_canceled,
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "billing_period_end": new_period_end.isoformat(),
+                },
+            ),
         )
 
         return subscription

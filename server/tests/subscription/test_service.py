@@ -2116,6 +2116,21 @@ class TestUpdateProduct:
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
 
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.prorate
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
     async def test_seat_based_to_fixed_not_allowed(
         self,
         session: AsyncSession,
@@ -2249,6 +2264,17 @@ class TestUpdateDiscount:
 
         assert subscription.discount is None
 
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["discount_id"] is None
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
     async def test_valid_added(
         self,
         save_fixture: SaveFixture,
@@ -2266,6 +2292,17 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount == discount_percentage_50
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["discount_id"] == str(discount_percentage_50.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
     async def test_valid_modified(
         self,
@@ -2288,6 +2325,17 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount == discount_percentage_100
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["discount_id"] == str(discount_percentage_100.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
 
 @pytest.mark.asyncio
@@ -2348,6 +2396,17 @@ class TestUpdateTrial:
         # Verify that the webhook was triggered
         assert_hooks_called_once(subscription_hooks, {"updated"})
 
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["trial_end"] == new_trial_end.isoformat()
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
     async def test_active_subscription_ending_now_validation_error(
         self,
         session: AsyncSession,
@@ -2397,6 +2456,17 @@ class TestUpdateTrial:
         assert updated_subscription.trial_end == trial_end
         assert updated_subscription.current_period_end == trial_end
         assert updated_subscription.trialing
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["trial_end"] == trial_end.isoformat()
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
     async def test_active_subscription_adding_trial_before_current_period_end(
         self,
@@ -3193,7 +3263,7 @@ class TestUpdateSeats:
         )
 
         # When: Update with prorate behavior
-        await subscription_service.update_seats(
+        updated = await subscription_service.update_seats(
             session,
             subscription,
             seats=10,
@@ -3205,6 +3275,73 @@ class TestUpdateSeats:
         # (prorate means add to next invoice, not create immediately)
         for call_args in enqueue_job_mock.call_args_list:
             assert call_args[0][0] != "order.create_subscription_order"
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["seats"] == 10
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.prorate
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+    async def test_proration_invoice_behavior_emits_event(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Update with invoice behavior
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+        await session.flush()
+
+        # Then: subscription.updated event emitted with invoice proration behavior
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["seats"] == 10
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.invoice
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
     async def test_no_proration_at_period_end(
         self,
@@ -3626,6 +3763,97 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             subscription_id=subscription.id,
             delay=None,
         )
+
+
+@pytest.mark.asyncio
+class TestUpdateBillingPeriod:
+    async def test_emits_event(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        assert subscription.current_period_end is not None
+        new_period_end = subscription.current_period_end + timedelta(days=7)
+
+        updated_subscription = (
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=new_period_end,
+            )
+        )
+
+        assert updated_subscription.current_period_end == new_period_end
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["billing_period_end"] == new_period_end.isoformat()
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+    async def test_period_end_in_past_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        assert subscription.current_period_end is not None
+        past_period_end = subscription.current_period_end - timedelta(days=1)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=past_period_end,
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "current_billing_period_end")
+        assert "earlier than the current period end" in errors[0]["msg"]
+
+    async def test_canceled_subscription_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_period_end = utc_now() + timedelta(days=30)
+
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=new_period_end,
+            )
 
 
 @pytest.mark.asyncio

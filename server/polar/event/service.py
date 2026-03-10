@@ -26,12 +26,11 @@ from sqlalchemy.orm import contains_eager
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import (
-    TinybirdEventsQuery,
     TinybirdTimeseriesBucket,
-    get_timeseries_occurrences,
     ingest_events,
 )
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -652,28 +651,26 @@ class EventService:
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventNamesSortProperty]],
     ) -> tuple[Sequence[EventName], int]:
-        tinybird_query = TinybirdEventsQuery(organization.id)
+        tinybird_repository = TinybirdEventRepository(organization.id)
 
-        if customer_id is not None:
-            tinybird_query.filter_customer_id(customer_id)
-        if external_customer_id is not None:
-            tinybird_query.filter_external_customer_id(external_customer_id)
-        if source is not None:
-            tinybird_query.filter_sources(source)
-        if query is not None:
-            tinybird_query.filter_name_query(query)
-
+        tinybird_sorting: list[tuple[str, bool]] = []
         for criterion, is_desc in sorting:
             if criterion == EventNamesSortProperty.event_name:
-                tinybird_query.order_by("name", is_desc)
+                tinybird_sorting.append(("name", is_desc))
             elif criterion == EventNamesSortProperty.first_seen:
-                tinybird_query.order_by("first_seen", is_desc)
+                tinybird_sorting.append(("first_seen", is_desc))
             elif criterion == EventNamesSortProperty.last_seen:
-                tinybird_query.order_by("last_seen", is_desc)
+                tinybird_sorting.append(("last_seen", is_desc))
             elif criterion == EventNamesSortProperty.occurrences:
-                tinybird_query.order_by("occurrences", is_desc)
+                tinybird_sorting.append(("occurrences", is_desc))
 
-        tinybird_stats = await tinybird_query.get_event_type_stats()
+        tinybird_stats = await tinybird_repository.get_name_stats(
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            source=source,
+            query=query,
+            sorting=tinybird_sorting,
+        )
 
         total_count = len(tinybird_stats)
         start = (pagination.page - 1) * pagination.limit
@@ -682,13 +679,13 @@ class EventService:
 
         event_names = [
             EventName(
-                name=s.name,
-                source=s.source,
-                occurrences=s.occurrences,
-                first_seen=s.first_seen,
-                last_seen=s.last_seen,
+                name=name,
+                source=event_source,
+                occurrences=occurrences,
+                first_seen=first_seen,
+                last_seen=last_seen,
             )
-            for s in paginated_stats
+            for name, event_source, occurrences, first_seen, last_seen in paginated_stats
         ]
 
         return event_names, total_count
@@ -782,10 +779,12 @@ class EventService:
             return
 
         try:
-            tb_query = TinybirdEventsQuery(org.id)
-            if start_timestamp is not None or end_timestamp is not None:
-                tb_query.filter_timestamp_range(start_timestamp, end_timestamp)
+            tinybird_repository = TinybirdEventRepository(org.id)
+            query_filters: list[Filter] = []
+            if filter is not None:
+                query_filters.append(filter)
 
+            cross_external_ids: list[str] = []
             if customer_id is not None:
                 cross_ref = await session.execute(
                     select(Customer.external_id).where(
@@ -794,10 +793,8 @@ class EventService:
                     )
                 )
                 cross_external_ids = [r[0] for r in cross_ref.all()]
-                tb_query.filter_customer_id_with_cross_ref(
-                    customer_id, cross_external_ids
-                )
 
+            cross_customer_ids: list[uuid.UUID] = []
             if external_customer_id is not None:
                 cross_ref = await session.execute(
                     select(Customer.id).where(
@@ -805,21 +802,9 @@ class EventService:
                     )
                 )
                 cross_customer_ids = [r[0] for r in cross_ref.all()]
-                tb_query.filter_external_customer_id_with_cross_ref(
-                    external_customer_id, cross_customer_ids
-                )
 
-            if name is not None:
-                tb_query.filter_names(name)
-            if source is not None:
-                tb_query.filter_sources(source)
-            if event_type_id is not None:
-                tb_query.filter_event_type_id(event_type_id)
-            if filter is not None:
-                tb_query.filter_by_filter(filter)
-            if metadata is not None:
-                tb_query.filter_by_metadata(metadata)
-
+            matching_cust_ids: list[uuid.UUID] | None = None
+            matching_ext_ids: list[str] | None = None
             if query is not None:
                 cust_results = await session.execute(
                     select(Customer.id, Customer.external_id).where(
@@ -837,15 +822,15 @@ class EventService:
                 matching_ext_ids = [
                     r.external_id for r in matching_rows if r.external_id is not None
                 ]
-                tb_query.filter_by_query(query, matching_cust_ids, matching_ext_ids)
 
+            numeric_metadata_property: str | None = None
             if meter_id is not None:
                 meter_repository = MeterRepository.from_session(session)
                 meter = await meter_repository.get_readable_by_id(
                     meter_id, auth_subject
                 )
                 if meter is not None:
-                    tb_query.filter_by_filter(meter.filter)
+                    query_filters.append(meter.filter)
                     if isinstance(meter.aggregation, PropertyAggregation):
                         prop = meter.aggregation.property
                         if prop in Event._filterable_fields:
@@ -853,17 +838,31 @@ class EventService:
                             if allowed_type is not int:
                                 return
                         else:
-                            tb_query.filter_numeric_metadata_property(prop)
-
-            if depth is not None:
-                tb_query.filter_by_depth(depth, parent_id)
-            elif parent_id is not None:
-                tb_query.filter_parent_id(parent_id)
+                            numeric_metadata_property = prop
 
             descending = sorting[0][1] if sorting else True
             offset = (pagination.page - 1) * pagination.limit
-            tb_ids, tb_count = await tb_query.get_event_ids_and_count(
-                pagination.limit, offset, descending
+            tb_ids, tb_count = await tinybird_repository.get_event_ids_and_count(
+                limit=pagination.limit,
+                offset=offset,
+                descending=descending,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                customer_id=customer_id,
+                cross_external_customer_ids=cross_external_ids,
+                external_customer_id=external_customer_id,
+                cross_customer_ids=cross_customer_ids,
+                name=name,
+                source=source,
+                event_type_id=event_type_id,
+                filters=query_filters,
+                metadata=metadata,
+                query=query,
+                matching_customer_ids=matching_cust_ids,
+                matching_external_customer_ids=matching_ext_ids,
+                numeric_metadata_property=numeric_metadata_property,
+                depth=depth,
+                parent_id=parent_id,
             )
 
             db_ids = [str(e.id) for e in db_results]
@@ -901,10 +900,8 @@ class EventService:
             return
 
         try:
-            tb_query = TinybirdEventsQuery(org.id)
-            tb_query.filter_event_id(event_id)
-            tb_ids, tb_count = await tb_query.get_event_ids_and_count(1, 0, True)
-            tb_exists = tb_count > 0
+            tinybird_repository = TinybirdEventRepository(org.id)
+            tb_exists = await tinybird_repository.event_exists(event_id)
 
             has_diff = (db_result is not None) != tb_exists
             db_descendant_count: int | None = None
@@ -913,12 +910,12 @@ class EventService:
             tb_sums: dict[str, float] | None = None
 
             if aggregate_fields and db_result is not None:
-                tb_desc_query = TinybirdEventsQuery(org.id)
-                tb_desc_query.filter_has_ancestor(event_id)
                 (
                     tb_descendant_count,
                     tb_sums,
-                ) = await tb_desc_query.get_descendant_aggregates(aggregate_fields)
+                ) = await tinybird_repository.get_descendant_aggregates(
+                    event_id, aggregate_fields
+                )
 
                 db_descendant_count = getattr(db_result, "child_count", 0)
                 db_sums = {}
@@ -988,12 +985,12 @@ class EventService:
             return
 
         try:
-            tb_buckets = await get_timeseries_occurrences(
-                org.id,
-                start_timestamp,
-                end_timestamp,
-                interval.value,
-                timezone,
+            tinybird_repository = TinybirdEventRepository(org.id)
+            tb_buckets = await tinybird_repository.get_timeseries_occurrences(
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                interval=interval.value,
+                timezone=timezone,
                 aggregate_field=aggregate_field,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,

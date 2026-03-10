@@ -44,8 +44,8 @@ from polar.models import (
     SubscriptionUpdate,
     UserOrganization,
 )
-from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.customer_seat import SeatStatus
+from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.product.guard import is_metered_price
 
@@ -232,9 +232,7 @@ class SubscriptionRepository(
                 EmailLog.email_props["subscription"]["id"].as_string()
                 == cast(Subscription.id, sa.String),
                 EmailLog.email_props["renewal_date"].as_string()
-                == sa.func.to_char(
-                    Subscription.current_period_end, "MM/DD/YYYY"
-                ),
+                == sa.func.to_char(Subscription.current_period_end, "MM/DD/YYYY"),
             )
             .correlate(Subscription)
             .exists()

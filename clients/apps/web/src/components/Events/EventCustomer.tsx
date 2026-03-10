@@ -42,17 +42,15 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
 
     return (
       <Popover>
-        <PopoverTrigger className="group block">
-          <div className="flex flex-row items-center gap-x-2 font-sans">
+        <PopoverTrigger className="group block w-full overflow-hidden">
+          <div className="flex w-full flex-row items-center gap-x-2 overflow-hidden text-left font-sans">
             <AnonymousCustomerAvatar
               externalId={event.external_customer_id}
               className="size-6 shrink-0"
             />
-            <div className="flex flex-row items-baseline gap-x-2">
-              <span className="dark:text-polar-500 dark:group-data-[state=open]:text-polar-300 text-sm text-gray-500 group-data-[state=open]:text-gray-600">
-                {name}
-              </span>
-            </div>
+            <span className="dark:text-polar-500 dark:group-data-[state=open]:text-polar-300 w-full truncate text-sm text-gray-500 group-data-[state=open]:text-gray-600">
+              {name}
+            </span>
           </div>
         </PopoverTrigger>
         <PopoverContent

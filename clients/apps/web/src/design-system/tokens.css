@@ -13,12 +13,12 @@
   :root.dark,
   .dark {
     --ds-background-primary: oklch(0.623 0.214 259.815);
-    --ds-background-secondary: hsl(233, 6%, 12%);
+    --ds-background-secondary: oklch(0.232 0.006 279.9);
 
-    --ds-text-primary: #ffffff;
-    --ds-text-secondary: hsl(233, 6%, 52%);
+    --ds-text-primary: oklch(1.000 0.000 263.3);
+    --ds-text-secondary: oklch(0.599 0.020 279.8);
 
-    --ds-border-primary: hsl(233, 6%, 12%);
-    --ds-border-secondary: hsl(233, 6%, 9.5%);
+    --ds-border-primary: oklch(0.232 0.006 279.9);
+    --ds-border-secondary: oklch(0.206 0.005 279.9);
   }
 }

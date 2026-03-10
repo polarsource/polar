@@ -61,7 +61,10 @@ export const breakpoints = stylex.defineConsts({
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type StyleXTokenKeys<T> = Exclude<keyof T, '__opaqueId' | '__tokens' | symbol>
+type StyleXTokenKeys<T> = Exclude<
+  keyof T,
+  '__opaqueId' | '__tokens' | symbol | 'toString' | 'valueOf' | 'description'
+>
 
 export type SpacingToken = StyleXTokenKeys<typeof spacing>
 export type ColorToken = StyleXTokenKeys<typeof colors>

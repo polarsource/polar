@@ -38,7 +38,6 @@ export default function Page() {
         padding="xl"
         borderRadius="sm"
         display="flex"
-        flexDirection="column"
         alignItems="center"
         gap="s"
         borderColor="border-primary"
@@ -50,9 +49,13 @@ export default function Page() {
           sm: 'background-secondary',
           md: 'background-primary',
         }}
+        flexDirection={{
+          sm: 'column',
+          md: 'row',
+        }}
       >
-        <p className="text-sm font-medium text-gray-900">Design System Box</p>
-        <p className="text-sm font-medium text-gray-900">wow</p>
+        <p>Design System</p>
+        <p>Box</p>
       </Box>
     </>
   )

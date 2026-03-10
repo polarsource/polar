@@ -99,7 +99,7 @@ from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
-from .repository import SubscriptionRepository
+from .repository import SubscriptionRepository, SubscriptionUpdateRepository
 from .schemas import (
     SubscriptionCancel,
     SubscriptionChargePreview,
@@ -1009,46 +1009,58 @@ class SubscriptionService:
         assert is_recurring_product(product)
         assert is_recurring_product(previous_product)
 
-        subscription_update, billing_entries = generate_subscription_update(
-            subscription, product=product
-        )
-        for entry in billing_entries:
-            entry.event = event
-            session.add(entry)
-
-        interval_changed = subscription_update.is_interval_changed()
-
-        subscription = subscription_update.apply_update()
-        session.add(subscription)
-        await session.flush()
-
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
 
-        if (
-            proration_behavior == SubscriptionProrationBehavior.invoice
-            or interval_changed
-        ):
-            # Invoice and attempt to pay immediately
-            await self._create_subscription_update_order(session, subscription)
-        elif proration_behavior == SubscriptionProrationBehavior.prorate:
-            # Add prorations to next invoice
-            pass
+        if proration_behavior == SubscriptionProrationBehavior.next_period:
+            subscription_update, _ = generate_subscription_update(
+                subscription,
+                product=product,
+                applies_at=subscription.current_period_end,
+            )
+            subscription_update_repository = SubscriptionUpdateRepository.from_session(
+                session
+            )
+            subscription_update = await subscription_update_repository.upsert(
+                subscription_update
+            )
+        else:
+            subscription_update, billing_entries = generate_subscription_update(
+                subscription, product=product
+            )
+            for entry in billing_entries:
+                entry.event = event
+                session.add(entry)
 
-        await self.enqueue_benefits_grants(session, subscription)
+            interval_changed = subscription_update.is_interval_changed()
+            subscription = subscription_update.apply_update()
+            session.add(subscription)
+            await session.flush()
 
-        # Send product change email notification
-        await self.send_subscription_updated_email(
-            session, subscription, product, proration_behavior
-        )
+            if (
+                proration_behavior == SubscriptionProrationBehavior.invoice
+                or interval_changed
+            ):
+                # Invoice and attempt to pay immediately
+                await self._create_subscription_update_order(session, subscription)
+            elif proration_behavior == SubscriptionProrationBehavior.prorate:
+                # Add prorations to next invoice
+                pass
 
-        # Trigger subscription updated events and re-evaluate benefits
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
-        )
+            await self.enqueue_benefits_grants(session, subscription)
+
+            # Send product change email notification
+            await self.send_subscription_updated_email(
+                session, subscription, product, proration_behavior
+            )
+
+            # Trigger subscription updated events and re-evaluate benefits
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=previous_status,
+                previous_is_canceled=previous_is_canceled,
+            )
 
         await event_service.create_event(
             session,
@@ -1296,42 +1308,56 @@ class SubscriptionService:
             subscription, seats=seats
         )
 
-        # Skip proration for trialing subscriptions - no billing during trial
-        if not subscription.trialing:
-            for entry in billing_entries:
-                entry.event = event
-                session.add(entry)
+        if proration_behavior == SubscriptionProrationBehavior.next_period:
+            subscription_update, _ = generate_subscription_update(
+                subscription, seats=seats, applies_at=subscription.current_period_end
+            )
+            subscription_update_repository = SubscriptionUpdateRepository.from_session(
+                session
+            )
+            subscription_update = await subscription_update_repository.upsert(
+                subscription_update
+            )
+        else:
+            subscription_update, billing_entries = generate_subscription_update(
+                subscription, seats=seats
+            )
+            # Skip proration for trialing subscriptions - no billing during trial
+            if not subscription.trialing:
+                for entry in billing_entries:
+                    entry.event = event
+                    session.add(entry)
 
-        subscription = subscription_update.apply_update()
-        session.add(subscription)
-        await session.flush()
+            subscription = subscription_update.apply_update()
+            session.add(subscription)
+            await session.flush()
 
-        log.info(
-            "subscription.seats_updated",
-            subscription_id=subscription.id,
-            old_seats=old_seats,
-            new_seats=seats,
-            old_amount=old_amount,
-            new_amount=subscription.amount,
-        )
+            log.info(
+                "subscription.seats_updated",
+                subscription_id=subscription.id,
+                old_seats=old_seats,
+                new_seats=seats,
+                old_amount=old_amount,
+                new_amount=subscription.amount,
+            )
 
-        # Send webhooks and notifications
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
+            # Send webhooks and notifications
+            previous_status = subscription.status
+            previous_is_canceled = subscription.canceled
 
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
-        )
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=previous_status,
+                previous_is_canceled=previous_is_canceled,
+            )
 
-        if (
-            proration_behavior == SubscriptionProrationBehavior.invoice
-            and not subscription.trialing
-        ):
-            # Invoice and attempt to pay immediately
-            await self._create_subscription_update_order(session, subscription)
+            if (
+                proration_behavior == SubscriptionProrationBehavior.invoice
+                and not subscription.trialing
+            ):
+                # Invoice and attempt to pay immediately
+                await self._create_subscription_update_order(session, subscription)
 
         await event_service.create_event(
             session,

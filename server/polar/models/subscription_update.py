@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Integer
 
@@ -29,6 +29,14 @@ class SubscriptionUpdate(RecordModel):
     """
 
     __tablename__ = "subscription_updates"
+    __table_args__ = (
+        Index(
+            "ix_subscription_updates_subscription_id_pending",
+            "subscription_id",
+            unique=True,
+            postgresql_where="applied_at IS NULL",
+        ),
+    )
 
     applies_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False

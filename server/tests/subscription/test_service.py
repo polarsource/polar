@@ -66,6 +66,7 @@ from polar.product.guard import (
     is_metered_price,
 )
 from polar.product.price_set import PriceSet
+from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
@@ -82,6 +83,7 @@ from polar.subscription.service import (
     TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
+from polar.subscription.update import generate_subscription_update
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -2198,6 +2200,121 @@ class TestUpdateProduct:
                 product_id=seat_product.id,
             )
 
+    async def test_next_period_behavior_new_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+
+        assert updated_subscription.product == product_recurring_multiple_currencies
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.next_period
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is not None
+        assert subscription_update.product_id == product.id
+        assert subscription_update.applied_at is None
+        assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_next_period_behavior_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        product_second: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        subscription_update, _ = generate_subscription_update(
+            subscription, product=product
+        )
+        await save_fixture(subscription_update)
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_second.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+
+        assert updated_subscription.product == product_recurring_multiple_currencies
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product_second.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.next_period
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.id == subscription_update.id
+        assert updated_subscription_update.applied_at is None
+        assert updated_subscription_update.product_id == product_second.id
+        assert subscription_update.applies_at == subscription.current_period_end
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:
@@ -3390,6 +3507,108 @@ class TestUpdateSeats:
             ]
         ]
         assert len(proration_entries) == 0
+
+    async def test_next_period_behavior_new_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription at end of period
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        # Set period end to past
+        subscription.current_period_end = utc_now() - timedelta(hours=1)
+        await save_fixture(subscription)
+
+        # When: Update seats
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        # Then: seats not updated
+        assert updated.seats == 5
+
+        # But SubscriptionUpdate created
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is not None
+        assert subscription_update.seats == 10
+        assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_next_period_behavior_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with existing future SubscriptionUpdate
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        future_time = utc_now() + timedelta(days=15)
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription, seats=8
+        )
+        await save_fixture(subscription_update)
+
+        # When: Update seats with next_period behavior
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        # Then: seats not updated
+        assert updated.seats == 5
+
+        # Then: Existing SubscriptionUpdate updated to new seat count
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.id == subscription_update.id
+        assert updated_subscription_update.seats == 10
+        assert subscription_update.applies_at == subscription.current_period_end
 
     async def test_seat_increase_with_fixed_discount(
         self,

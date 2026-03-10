@@ -96,8 +96,8 @@ export const Adapters = () => {
             <span className="dark:text-polar-500 text-lg text-gray-400">
               Framework Adapters
             </span>
-            <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
-              Integrate payment capabilities in under a minute
+            <h1 className="w-fit max-w-2xl text-center text-3xl text-balance md:text-5xl md:leading-normal">
+              Integrate robust & secure payments in under a minute
             </h1>
             <TabsList>
               {adapters.map((adapter) => (

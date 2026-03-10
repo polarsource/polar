@@ -34,7 +34,7 @@ export const Hero = ({
   return (
     <motion.div
       className={twMerge(
-        'relative flex flex-col items-center justify-center gap-4 px-4 pt-8 text-center md:pt-12',
+        'relative flex flex-col items-center justify-center gap-8 px-4 pt-8 text-center md:pt-12',
         className,
       )}
       variants={containerVariants}

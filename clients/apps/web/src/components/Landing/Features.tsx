@@ -442,15 +442,18 @@ const FeatureCard = ({
       hidden: { opacity: 0 },
       visible: { opacity: 1, transition: { duration: 1.5 } },
     }}
-    className={twMerge('flex flex-col px-0 py-6 md:px-6 md:py-0', className)}
+    className={twMerge(
+      'flex flex-col py-6 first:pr-12 last:pl-12 md:py-0 [&:nth-child(n+2):nth-last-child(n+2)]:px-12',
+      className,
+    )}
   >
-    <div className="relative flex items-center justify-center p-6">
-      <span className="dark:text-polar-500 absolute top-5 left-6 font-mono text-[10px] tracking-widest text-gray-500 uppercase">
+    <div className="relative flex items-center justify-center">
+      <span className="dark:text-polar-500 text-xxs absolute top-5 left-0 font-mono tracking-widest text-gray-500 uppercase">
         {header}
       </span>
     </div>
     <div className="flex h-64 items-center justify-center">{illustration}</div>
-    <div className="flex flex-col gap-y-2 px-6">
+    <div className="flex flex-col gap-y-2">
       <h3 className="text-lg font-semibold">{title}</h3>
       <p className="dark:text-polar-500 leading-relaxed text-gray-500">
         {description}
@@ -472,13 +475,13 @@ const Features = ({ className }: { className?: string }) => (
       <FeatureCard
         header="— 01"
         title="Payments, Usage & Billing"
-        description="Create digital products and SaaS billing with flexible pricing models and seamless payment processing."
+        description="Sell digital products and SaaS billing with flexible pricing models & seamless payment processing."
         illustration={<PaymentIllustration />}
       />
       <FeatureCard
         header="— 02"
         title="Customer Management"
-        description="Streamlined customer lifecycle management with detailed profiles and analytics."
+        description="Advanced customer lifecycle management with detailed profiles & analytics."
         illustration={<CustomerIllustration />}
       />
       <FeatureCard

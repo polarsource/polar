@@ -61,13 +61,7 @@ export const EventStream = () => {
   }, [])
 
   return (
-    <motion.div
-      className="relative flex h-full flex-1 flex-col"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ duration: 1.2, delay: 0.2 }}
-      viewport={{ once: true }}
-    >
+    <div className="relative flex h-full flex-1 flex-col">
       <div className="dark:border-polar-700 flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200">
         {/* Header */}
         <div className="dark:border-polar-800 flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -97,8 +91,8 @@ export const EventStream = () => {
             <motion.div
               key={e.id}
               layout="position"
-              initial={{ opacity: 0, scale: 0.9, z: -40 }}
-              animate={{ opacity: 1, scale: 1, z: 0 }}
+              initial={{ opacity: 0, z: -20 }}
+              animate={{ opacity: 1, z: 0 }}
               transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
               className="flex flex-row items-center justify-between gap-x-4"
             >
@@ -129,6 +123,6 @@ export const EventStream = () => {
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

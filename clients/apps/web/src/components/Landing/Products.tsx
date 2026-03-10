@@ -41,8 +41,13 @@ export const Products = () => {
   return (
     <div className="flex w-full flex-col gap-y-12 md:flex-row md:items-start md:gap-x-16">
       {/* Left — feature flag list */}
-      <div className="flex flex-1 flex-col gap-y-12">
-        <span className="dark:text-polar-500 font-mono text-[11px] tracking-[0.2em] text-gray-400 uppercase">
+      <div className="flex min-h-[420px] flex-1 flex-col">
+        <ProductGrantsFeed />
+      </div>
+
+      {/* Right — animated grant feed */}
+      <div className="flex flex-1 flex-col gap-y-8">
+        <span className="dark:text-polar-500 text-xxs font-mono tracking-[0.2em] text-gray-400 uppercase">
           Benefits Engine
         </span>
         <h2 className="font-display text-3xl leading-tight! text-pretty md:text-5xl">
@@ -55,11 +60,6 @@ export const Products = () => {
           tiers. Polar automatically enables and revokes them as customers
           subscribe and churn.
         </p>
-      </div>
-
-      {/* Right — animated grant feed */}
-      <div className="flex flex-1 flex-col" style={{ minHeight: 480 }}>
-        <ProductGrantsFeed />
       </div>
     </div>
   )

@@ -2,7 +2,7 @@
 
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 
 // ── Plan definitions ────────────────────────────────────────────────────────
 const PLANS = [
@@ -74,10 +74,28 @@ function nextSubscription() {
   return { plan, user }
 }
 
+// ── Memoized flag row ─────────────────────────────────────────────────────────
+const FlagRow = memo(
+  ({ label, isGranted }: { label: string; isGranted: boolean }) => (
+    <div className="flex items-center justify-between gap-x-4 rounded-lg px-3 py-2">
+      <div className="flex min-w-0 items-center gap-x-3">
+        <motion.div
+          animate={isGranted ? { scale: [1, 1.3, 1] } : {}}
+          transition={{ duration: 0.2 }}
+          className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-300 ${isGranted ? 'bg-emerald-500' : 'dark:bg-polar-600 bg-gray-200'}`}
+        />
+        <span className="truncate font-mono text-xs">{label}</span>
+      </div>
+      <Switch checked={isGranted} />
+    </div>
+  ),
+)
+FlagRow.displayName = 'FlagRow'
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export const ProductGrantsFeed = () => {
   const [sub, setSub] = useState(() => nextSubscription())
-  const [grantedKeys, setGrantedKeys] = useState<Set<string>>(new Set())
+  const [grantedKeys, setGrantedKeys] = useState<Record<string, boolean>>({})
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
@@ -89,11 +107,7 @@ export const ProductGrantsFeed = () => {
     sub.plan.flagKeys.forEach((key, i) => {
       const t = setTimeout(
         () => {
-          setGrantedKeys((prev) => {
-            const next = new Set(prev)
-            next.add(key)
-            return next
-          })
+          setGrantedKeys((prev) => ({ ...prev, [key]: true }))
         },
         300 + i * 220,
       )
@@ -103,7 +117,7 @@ export const ProductGrantsFeed = () => {
     // Reset all granted keys with a short delay so the toggle reset doesn't
     // happen on the same frame as the subscription event change
     const revoke = setTimeout(() => {
-      setGrantedKeys(new Set())
+      setGrantedKeys({})
     }, 150)
     timeoutsRef.current.push(revoke)
 
@@ -121,7 +135,6 @@ export const ProductGrantsFeed = () => {
   }, [])
 
   const { plan, user } = sub
-  const planFlagSet = new Set<string>(sub.plan.flagKeys)
 
   return (
     <motion.div
@@ -149,9 +162,9 @@ export const ProductGrantsFeed = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="dark:bg-polar-800/60 flex items-center gap-x-3 rounded-xl bg-gray-50 px-3 py-2.5"
+              className="flex items-center gap-x-3 rounded-xl py-2.5"
             >
-              <div className="dark:bg-polar-700 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-200">
+              <div className="dark:bg-polar-700 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200">
                 <span className="font-mono text-[9px] text-gray-500 dark:text-gray-400">
                   {user.slice(-2)}
                 </span>
@@ -159,7 +172,7 @@ export const ProductGrantsFeed = () => {
               <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
                 <span className="font-mono text-xs">{user}</span>
                 <span className="dark:text-polar-500 font-mono text-[10px] text-gray-400">
-                  subscribed
+                  Subscribed
                 </span>
               </div>
               <span
@@ -181,33 +194,23 @@ export const ProductGrantsFeed = () => {
           {/* Feature flag list — no container re-key, each row animates independently */}
           <div className="flex flex-col">
             <AnimatePresence initial={false}>
-              {ALL_FLAGS.filter((f) => planFlagSet.has(f.key)).map((flag) => {
-                const isGranted = grantedKeys.has(flag.key)
-                return (
-                  <motion.div
-                    key={flag.key}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25, ease: 'easeInOut' }}
-                    className="overflow-hidden"
-                  >
-                    <div className="flex items-center justify-between gap-x-4 rounded-lg px-3 py-2">
-                      <div className="flex min-w-0 items-center gap-x-3">
-                        <motion.div
-                          animate={isGranted ? { scale: [1, 1.3, 1] } : {}}
-                          transition={{ duration: 0.2 }}
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-300 ${isGranted ? 'bg-emerald-500' : 'dark:bg-polar-600 bg-gray-200'}`}
-                        />
-                        <span className="truncate font-mono text-xs">
-                          {flag.label}
-                        </span>
-                      </div>
-                      <Switch key={flag.key} checked={isGranted} />
-                    </div>
-                  </motion.div>
-                )
-              })}
+              {ALL_FLAGS.filter((f) =>
+                (sub.plan.flagKeys as readonly string[]).includes(f.key),
+              ).map((flag) => (
+                <motion.div
+                  key={flag.key}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className="overflow-hidden"
+                >
+                  <FlagRow
+                    label={flag.label}
+                    isGranted={!!grantedKeys[flag.key]}
+                  />
+                </motion.div>
+              ))}
             </AnimatePresence>
           </div>
         </div>

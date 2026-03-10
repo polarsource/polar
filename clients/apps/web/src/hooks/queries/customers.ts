@@ -61,7 +61,7 @@ export const useCreateCustomer = (organizationId: string) =>
   useMutation({
     mutationFn: (body: schemas['CustomerCreate']) =>
       api.POST('/v1/customers/', { body }),
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })
@@ -75,7 +75,7 @@ export const useUpdateCustomer = (customerId: string, organizationId: string) =>
         params: { path: { id: customerId } },
         body,
       }),
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })
@@ -88,7 +88,7 @@ export const useDeleteCustomer = (customerId: string, organizationId: string) =>
       api.DELETE('/v1/customers/{id}', {
         params: { path: { id: customerId } },
       }),
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })

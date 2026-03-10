@@ -133,7 +133,7 @@ export const useUpdateBenefit = (orgId?: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -147,7 +147,7 @@ export const useCreateBenefit = (orgId?: string) =>
     mutationFn: (body: schemas['BenefitCreate']) => {
       return api.POST('/v1/benefits/', { body })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -167,7 +167,7 @@ export const useDeleteBenefit = (orgId?: string) =>
         },
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       if (result.error) {
         return
       }

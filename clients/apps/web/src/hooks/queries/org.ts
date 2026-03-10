@@ -23,7 +23,7 @@ export const useInviteOrganizationMember = (id: string) =>
         body: { email },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizationMembers', id],
       })
@@ -37,7 +37,7 @@ export const useLeaveOrganization = (id: string) =>
         params: { path: { id } },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
@@ -51,7 +51,7 @@ export const useRemoveOrganizationMember = (organizationId: string) =>
         params: { path: { id: organizationId, user_id: userId } },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizationMembers', organizationId],
       })
@@ -75,7 +75,7 @@ export const useCreateOrganization = () =>
     mutationFn: (body: schemas['OrganizationCreate']) => {
       return api.POST('/v1/organizations/', { body })
     },
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -186,7 +186,7 @@ export const useCreateOrganizationAccessToken = (organization_id: string) =>
         },
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { error } = result
       if (error) {
         return
@@ -205,7 +205,7 @@ export const useUpdateOrganizationAccessToken = (id: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -226,7 +226,7 @@ export const useDeleteOrganizationAccessToken = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       const { error } = result
       if (error) {
         return
@@ -298,7 +298,7 @@ export const useDeleteOrganization = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })

@@ -54,7 +54,7 @@ export const useRedeliverWebhookEvent = () =>
           },
         },
       }),
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }
@@ -81,7 +81,7 @@ export const useCreateWebhookEndpoint = () =>
   useMutation({
     mutationFn: (body: schemas['WebhookEndpointCreate']) =>
       api.POST('/v1/webhooks/endpoints', { body }),
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }
@@ -105,7 +105,7 @@ export const useEditWebhookEndpoint = () =>
         },
         body: variables.body,
       }),
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       if (result.error) {
         return
       }
@@ -130,7 +130,7 @@ export const useResetSecretWebhookEndpoint = () =>
           },
         },
       }),
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: (_result, _variables) => {
       const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],
@@ -156,7 +156,7 @@ export const useDeleteWebhookEndpoint = () =>
           },
         },
       }),
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: (_result, _variables) => {
       const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],

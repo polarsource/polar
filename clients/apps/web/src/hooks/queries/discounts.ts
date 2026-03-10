@@ -69,7 +69,7 @@ export const useCreateDiscount = (organizationId: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -90,7 +90,7 @@ export const useUpdateDiscount = (id: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -113,7 +113,7 @@ export const useDeleteDiscount = () =>
         },
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       if (result.error) {
         return
       }

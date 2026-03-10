@@ -1,9 +1,9 @@
 import React, { useCallback, useRef, useState } from 'react'
 
-export const useDebouncedCallback = <T extends (...args: any[]) => any>(
+export const useDebouncedCallback = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number,
-  dependencies?: any[],
+  dependencies?: unknown[],
 ) => {
   const timeout = React.useRef<NodeJS.Timeout>(undefined)
 
@@ -22,7 +22,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   )
 }
 
-export const useInViewport = <T extends HTMLElement = any>() => {
+export const useInViewport = <T extends HTMLElement = HTMLElement>() => {
   const observer = useRef<IntersectionObserver | null>(null)
   const [inViewport, setInViewport] = useState(false)
 

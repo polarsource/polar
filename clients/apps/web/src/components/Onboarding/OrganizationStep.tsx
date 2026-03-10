@@ -24,7 +24,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/logos/LogoIcon'
@@ -112,9 +112,9 @@ export const OrganizationStep = ({
     }
   }, [validationErrors, error, setError, clearErrors])
 
-  const name = watch('name')
-  const slug = watch('slug')
-  const terms = watch('terms')
+  const { name, slug, terms } = useWatch({
+    control,
+  })
 
   useEffect(() => {
     if (!editedSlug && name) {

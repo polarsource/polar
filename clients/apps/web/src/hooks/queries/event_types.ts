@@ -34,7 +34,7 @@ export const useUpdateEventType = (id: string) =>
         params: { path: { id } },
         body,
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       const { data, error } = result
       if (error) {
         return

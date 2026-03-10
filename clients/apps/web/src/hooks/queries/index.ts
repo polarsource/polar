@@ -27,17 +27,6 @@ export * from './user'
 export * from './wallets'
 export * from './webhooks'
 
-export const useAccount = (id?: string | null) =>
-  useQuery({
-    queryKey: ['accounts', id],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/accounts/{id}', { params: { path: { id: id ?? '' } } }),
-      ),
-    enabled: !!id,
-    retry: defaultRetry,
-  })
-
 export const useNotifications = () =>
   useQuery({
     queryKey: ['notifications'],
@@ -54,7 +43,7 @@ export const useNotificationsMarkRead = () =>
         },
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }

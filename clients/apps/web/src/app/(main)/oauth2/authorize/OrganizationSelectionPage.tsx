@@ -24,7 +24,7 @@ import { Label } from '@polar-sh/ui/components/ui/label'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import SharedLayout from './components/SharedLayout'
 
@@ -59,15 +59,14 @@ const OrganizationSelectionPage = ({
   const {
     control,
     handleSubmit,
-    watch,
     setError,
     setValue,
     formState: { errors },
   } = form
 
-  const name = watch('name')
-  const slug = watch('slug')
-  const terms = watch('terms')
+  const { name, slug, terms } = useWatch({
+    control,
+  })
 
   useEffect(() => {
     if (!editedSlug && name) {

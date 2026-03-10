@@ -138,7 +138,7 @@ export const useCreateMeter = (organizationId: string) =>
       api.POST('/v1/meters/', {
         body: { ...data, organization_id: organizationId },
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -159,7 +159,7 @@ export const useUpdateMeter = (id: string) =>
         params: { path: { id } },
         body,
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       const { data, error } = result
       if (error) {
         return

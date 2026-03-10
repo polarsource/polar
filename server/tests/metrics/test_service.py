@@ -22,6 +22,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
@@ -2868,8 +2869,6 @@ class TestCheckoutMetrics:
         If 2 checkouts are opened and 1 succeeds, conversion should be 50%,
         NOT based on total created checkouts.
         """
-        from polar.models.checkout import CheckoutStatus
-
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -2927,6 +2926,62 @@ class TestCheckoutMetrics:
 
         # Conversion should be 50% (1/2), not ~20% (1/5)
         assert metrics.totals.checkouts_conversion == 0.5
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_checkouts_conversion_cumulative_without_sibling_metrics(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """
+        Test that requesting only checkouts_conversion (without checkouts
+        or succeeded_checkouts) still computes a correct cumulative total.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        for _ in range(2):
+            await create_checkout(
+                save_fixture,
+                products=[product],
+                created_at=datetime(2024, 1, 15, 9, 0, tzinfo=UTC),
+                analytics_metadata={},
+            )
+
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.succeeded,
+            created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC),
+            analytics_metadata={},
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=["checkouts_conversion"],
+        )
+
+        assert metrics.totals.checkouts_conversion is not None
+        assert metrics.totals.checkouts_conversion > 0
+        assert abs(metrics.totals.checkouts_conversion - 1 / 3) < 0.01
+
+        jan = metrics.periods[0]
+        assert jan.checkouts is None
+        assert jan.succeeded_checkouts is None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")

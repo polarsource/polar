@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { SegmentedBar } from '../SegmentedBar'
 
 const BASE_PLAN_CENTS = 49_00
 const TIER1_END = 1_000_000
@@ -47,7 +48,6 @@ export const CustomerCard = () => {
     1,
     (tokens - TIER1_END) / (TIER2_END - TIER1_END),
   )
-  const remainingM = Math.max(0, TIER2_END - tokens) / 1_000_000
   const inTier3 = tokens > TIER2_END
 
   return (
@@ -87,11 +87,6 @@ export const CustomerCard = () => {
             <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
               {inTier3 ? '$0.001' : '$0.002'} / 1k tokens
             </span>
-            {!inTier3 && (
-              <span className="dark:text-polar-500 font-mono text-xs text-gray-500 tabular-nums">
-                {remainingM.toFixed(1)}M to Tier 3
-              </span>
-            )}
           </div>
         </div>
 
@@ -103,23 +98,6 @@ export const CustomerCard = () => {
           <LineItem label="Total this period" value={fmt(totalCents)} bold />
         </div>
       </div>
-    </div>
-  )
-}
-
-const SEGMENTS = 64
-
-const SegmentedBar = ({ progress }: { progress: number }) => {
-  const filled = Math.round(progress * SEGMENTS)
-
-  return (
-    <div className="flex gap-x-2">
-      {Array.from({ length: SEGMENTS }, (_, i) => (
-        <div
-          key={i}
-          className={`h-2 flex-1 transition-colors duration-500 ${i < filled ? 'bg-black dark:bg-white' : 'dark:bg-polar-700 bg-gray-200'}`}
-        />
-      ))}
     </div>
   )
 }

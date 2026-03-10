@@ -47,9 +47,6 @@ export const Products = () => {
 
       {/* Right — animated grant feed */}
       <div className="flex flex-1 flex-col gap-y-8">
-        <span className="dark:text-polar-500 text-xxs font-mono tracking-[0.2em] text-gray-400 uppercase">
-          Benefits Engine
-        </span>
         <h2 className="font-display text-3xl leading-tight! text-pretty md:text-5xl">
           Define tiers.
           <br />

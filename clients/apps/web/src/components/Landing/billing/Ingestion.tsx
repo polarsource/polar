@@ -34,7 +34,7 @@ export const Ingestion = () => {
       content={CODE}
       footer={[
         {
-          command: 'curl -X POST https://api.example.com/endpoint \\',
+          command: 'curl -X POST https://example.com/api/ai \\',
           type: 'input',
         },
         {
@@ -42,7 +42,7 @@ export const Ingestion = () => {
           type: 'output',
         },
         {
-          command: `-d '{"prompt": "Do your magic"}'`,
+          command: `-d '{"prompt": "Tell me a joke"}'`,
           type: 'output',
         },
       ]}

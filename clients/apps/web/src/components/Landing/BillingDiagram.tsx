@@ -82,7 +82,7 @@ const LAYERS: LayerDef[] = [
     z: 3 * ZSTEP,
     index: '04',
     label: 'CHECKOUT',
-    description: 'Hosted payment, customer portal & subscription management',
+    description: 'Secure & robust checkouts that converts users to customers',
     highlight: false,
     rows: [210, 165],
     highlightRow: -1,
@@ -381,8 +381,8 @@ export const BillingDiagram = () => {
           End-to-end.
         </h2>
         <p className="dark:text-polar-500 text-lg leading-relaxed text-pretty text-gray-500">
-          Every API call and token flows through a complete billing pipeline —
-          from raw usage events to itemized invoices and hosted checkout.
+          Polar makes it incredibly easy to monetize your software. Usage
+          billing using event ingestion, SaaS tiers or one-off purchases.
         </p>
         <ul
           className="grid grid-cols-1 md:grid-cols-2"

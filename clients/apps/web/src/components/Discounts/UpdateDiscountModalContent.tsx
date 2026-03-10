@@ -81,7 +81,7 @@ const UpdateDiscountModalContent = ({
       const { data: updatedDiscount, error } = await updateDiscount.mutateAsync(
         {
           ...safeUpdate,
-          amounts,
+          amounts: isDiscountFixed(discount) ? amounts : null,
         } as schemas['DiscountUpdate'],
       )
 
@@ -103,7 +103,7 @@ const UpdateDiscountModalContent = ({
       })
       onDiscountUpdated(updatedDiscount)
     },
-    [updateDiscount, onDiscountUpdated, setError],
+    [discount, updateDiscount, onDiscountUpdated, setError],
   )
 
   return (

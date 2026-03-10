@@ -31,12 +31,12 @@ const baseCSP = `
 `
 const nonEmbeddedCSP = `
   ${baseCSP}
-  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
   frame-ancestors 'none';
 `
 const embeddedCSP = `
   ${baseCSP}
-  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
   frame-ancestors *;
 `
 // Don't add form-action to the OAuth2 authorize page, as it blocks the OAuth2 redirection

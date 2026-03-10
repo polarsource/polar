@@ -59,7 +59,7 @@ export const CustomerCard = () => {
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 font-mono text-[10px] font-medium text-white">
               U
             </div>
-            <span className="font-mono text-sm">user_7f2a9b</span>
+            <span className="font-mono text-sm">user_123</span>
           </div>
           <span className="rounded-full bg-blue-50 px-2 py-0.5 font-mono text-xs font-medium text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
             Pro

@@ -347,6 +347,42 @@ class SettingsSection:
                                 else:
                                     text("Block Refunds")
 
+                    # Block/Clear Past Order Refunds
+                    with tag.div(classes="flex items-center justify-between"):
+                        with tag.div():
+                            with tag.div(classes="font-semibold text-sm"):
+                                text("Block Past Order Refunds")
+                            with tag.div(classes="text-xs text-base-content/60"):
+                                if self.org.refunds_blocked_until is not None:
+                                    text(
+                                        f"Refunds blocked for orders created before {self.org.refunds_blocked_until.strftime('%Y-%m-%d %H:%M UTC')}"
+                                    )
+                                else:
+                                    text(
+                                        "Prevent refunds for all orders created before this moment"
+                                    )
+
+                        with tag.form(
+                            method="POST",
+                            action=str(
+                                request.url_for(
+                                    "organizations:set_refunds_blocked_until",
+                                    organization_id=self.org.id,
+                                )
+                            )
+                            + f"?blocked={'false' if self.org.refunds_blocked_until is not None else 'true'}",
+                        ):
+                            with button(
+                                type="submit",
+                                variant="error",
+                                size="sm",
+                                outline=True,
+                            ):
+                                if self.org.refunds_blocked_until is not None:
+                                    text("Clear Past Refund Block")
+                                else:
+                                    text("Block Past Refunds")
+
                     # Delete Organization
                     with tag.div(classes="flex items-center justify-between"):
                         with tag.div():

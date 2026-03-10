@@ -268,6 +268,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=False,
     )
 
+    # Timestamp cutoff: block refunds for orders created at or before this time
+    refunds_blocked_until: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+    )
+
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )

@@ -210,6 +210,12 @@ class RefundService:
         if order.refunds_blocked or order.organization.refunds_blocked:
             raise RefundsBlocked(order)
 
+        if (
+            order.organization.refunds_blocked_until is not None
+            and order.created_at <= order.organization.refunds_blocked_until
+        ):
+            raise RefundsBlocked(order)
+
         if order.refunded:
             raise RefundedAlready(order)
 

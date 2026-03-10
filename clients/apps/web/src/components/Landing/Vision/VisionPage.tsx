@@ -15,7 +15,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-
 const orbEffect = rawEffect()
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -24,45 +23,44 @@ const PHILOSOPHY = [
   {
     id: 'p1',
     eyebrow: null,
-    headline: 'Monetization wasn\u2019t built for developers.',
-    body: 'It was built for finance departments, sales teams, and spreadsheets. Every payment gateway adds friction. Every jurisdiction adds risk.',
+    headline: 'AI changes how software is sold.',
+    body: 'Usage-based. Metered. Token by token, API call by API call. The revenue model is new — but the billing infrastructure is still stuck in the past.',
   },
   {
     id: 'p2',
     eyebrow: null,
-    headline: 'Every layer between code and customer\u2014a tax.',
-    body: 'Tax compliance, chargebacks, invoicing, payouts. Complexity that compounds. Time that should go to building, lost to plumbing.',
+    headline: 'Every API call is a transaction. Most platforms weren\u2019t built for that.',
+    body: 'Legacy billing was designed for seat-based SaaS. AI products are different — dynamic pricing, usage meters, global customers from day one. The tools haven\u2019t kept up.',
   },
   {
     id: 'p3',
     eyebrow: 'Our answer',
-    headline: 'The last billing platform you\u2019ll ever need.',
-    body: 'Open source. Developer-first. One flat rate. Global tax compliance built in. No monthly fees, no setup costs, no surprises.',
+    headline: 'We built the billing layer AI startups actually need.',
+    body: 'Usage-based, seat-based, one-time — any model, any combination. Global tax compliance included. One flat rate. No monthly fees. Built for the velocity of AI.',
   },
   {
     id: 'p4',
     eyebrow: 'Our belief',
-    headline:
-      'Your software is the product. The infrastructure should disappear.',
-    body: 'The best tools are the ones you never think about. We obsess over the plumbing so you don\u2019t have to.',
+    headline: 'The best infrastructure is the kind you forget exists.',
+    body: 'We measure success by how little you notice us. When it\u2019s working, you\u2019re shipping. That\u2019s the point.',
   },
 ]
 
 const PILLARS = [
   {
     index: '01',
-    title: 'Open',
-    body: 'Everything we build is open source. No lock-in. Fork it, self-host, or let us run it.',
+    title: 'Usage-based',
+    body: 'Meter any dimension — tokens, API calls, seats, compute. Mix models freely. Bill exactly what your product delivers.',
   },
   {
     index: '02',
     title: 'Global',
-    body: 'Tax compliance in 130+ countries. Every currency, every regulation, handled for you.',
+    body: 'Tax compliance in 130+ countries, built in. Ship to the world from day one without touching a single tax form.',
   },
   {
     index: '03',
-    title: 'Simple',
-    body: '4% + 40¢. One rate, all-in. No monthly fees, no setup costs, no surprises.',
+    title: 'Open',
+    body: '4% + 40¢, all-in. Open source, no lock-in. Fork it, self-host, or let us run it. Your infrastructure, your rules.',
   },
 ]
 
@@ -109,7 +107,7 @@ function VisionSection({
 
 function Eyebrow({ children }: PropsWithChildren) {
   return (
-    <p className="font-mono text-xs tracking-widest text-gray-400 uppercase dark:text-white/30">
+    <p className="font-louize dark:text-polar-500 text-2xl text-gray-500">
       {children}
     </p>
   )
@@ -138,7 +136,7 @@ function Body({
   return (
     <p
       className={twMerge(
-        'text-lg leading-relaxed text-balance text-gray-500 dark:text-white/40',
+        'dark:text-polar-500 text-xl leading-relaxed text-balance text-gray-500',
         className,
       )}
     >
@@ -159,7 +157,9 @@ export function VisionPage() {
     const observers: IntersectionObserver[] = []
 
     const sections = Array.from(
-      container.querySelectorAll<HTMLElement>('.vision-section:not(:first-child)'),
+      container.querySelectorAll<HTMLElement>(
+        '.vision-section:not(:first-child)',
+      ),
     )
 
     sections.forEach((section) => {
@@ -175,13 +175,13 @@ export function VisionPage() {
             gsap.fromTo(
               content,
               { opacity: 0, y: fromBottom ? 40 : -40 },
-              { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' },
+              { opacity: 1, y: 0, duration: 2.4, ease: 'power3.out' },
             )
           } else {
             gsap.to(content, {
               opacity: 0,
               y: fromBottom ? 40 : -40,
-              duration: 0.6,
+              duration: 1.2,
               ease: 'power2.in',
             })
           }
@@ -198,9 +198,9 @@ export function VisionPage() {
 
   return (
     <div>
-      <nav className="fixed top-0 left-0 z-50 flex w-full items-center px-8 py-6">
+      <nav className="fixed top-0 right-0 left-0 z-50 flex h-48 w-full flex-col items-center justify-center px-8 py-6">
         <Link href="/">
-          <PolarLogotype />
+          <PolarLogotype size={60} />
         </Link>
       </nav>
 
@@ -248,11 +248,11 @@ function HeroSection() {
         className="relative z-10 flex flex-col items-center gap-6"
       >
         <h1 className="font-display leading-tighter max-w-4xl text-5xl font-medium text-balance opacity-0 md:text-7xl">
-          Infrastructure that disappears.
+          Build the product. We&apos;ll handle the rest.
         </h1>
         <Body className="max-w-md opacity-0">
-          We believe the layer between great software and sustainable businesses
-          should be invisible.
+          Polar is the billing layer for AI — so nothing stands between your
+          idea and the world.
         </Body>
       </div>
       <ScrollCue />
@@ -313,7 +313,7 @@ function PillarsSection() {
 function CtaSection() {
   return (
     <VisionSection className="text-center" contentClassName="gap-10">
-      <div className="h-36 w-36 overflow-hidden rounded-full shadow-2xl">
+      <div className="h-32 w-32 overflow-hidden rounded-full shadow-2xl">
         <ShaderCanvas
           geometry={MESH_GLSL}
           effect={orbEffect}
@@ -321,11 +321,11 @@ function CtaSection() {
         />
       </div>
       <Headline className="max-w-2xl text-4xl md:text-6xl">
-        Join us in building a better way.
+        Start monetizing your AI product today.
       </Headline>
       <Body className="max-w-sm text-base">
-        Thousands of developers already use Polar. Ship your first product
-        today.
+        Join thousands of AI builders who ship faster because they never think
+        about billing.
       </Body>
     </VisionSection>
   )

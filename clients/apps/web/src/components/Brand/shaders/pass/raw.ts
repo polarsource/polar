@@ -20,7 +20,6 @@ function buildRawShader(geometryGlsl: string): string {
       uv.y = 1.0 - uv.y;
       float aspect = u_resolution.x / u_resolution.y;
       vec3 color = computeColor(uv, aspect, u_time);
-      color += filmGrain(gl_FragCoord.xy, u_time) * 0.8;
       gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
     }
   `

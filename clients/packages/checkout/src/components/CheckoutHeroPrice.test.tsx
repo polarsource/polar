@@ -44,7 +44,7 @@ describe('CheckoutHeroPrice', () => {
     it('renders total_amount (discounted price)', () => {
       const checkout = createCheckout({
         amount: 1999,
-        discountAmount: 400,
+        discount_amount: 400,
         net_amount: 1599,
         tax_amount: null,
         total_amount: 1599,
@@ -54,7 +54,7 @@ describe('CheckoutHeroPrice', () => {
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
+          basis_points: 2000,
         } as ProductCheckoutPublic['discount'],
       })
 
@@ -68,7 +68,7 @@ describe('CheckoutHeroPrice', () => {
     it('renders total_amount (includes tax)', () => {
       const checkout = createCheckout({
         amount: 1999,
-        discountAmount: 400,
+        discount_amount: 400,
         net_amount: 1599,
         tax_amount: 400,
         total_amount: 1999,
@@ -78,7 +78,7 @@ describe('CheckoutHeroPrice', () => {
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
+          basis_points: 2000,
         } as ProductCheckoutPublic['discount'],
       })
 
@@ -94,7 +94,7 @@ describe('CheckoutHeroPrice', () => {
         amount: 1550,
         net_amount: 1550,
         total_amount: 1550,
-        productPrice: createCustomPrice({ presetAmount: 1550 }),
+        product_price: createCustomPrice({ preset_amount: 1550 }),
       })
 
       render(<CheckoutHeroPrice checkout={checkout} locale="en" />)

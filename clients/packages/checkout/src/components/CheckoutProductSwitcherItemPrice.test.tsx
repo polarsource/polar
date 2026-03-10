@@ -19,7 +19,7 @@ describe('CheckoutProductSwitcherItemPrice', () => {
         <CheckoutProductSwitcherItemPrice
           isSelected={true}
           product={checkout.product}
-          price={checkout.productPrice}
+          price={checkout.product_price}
           checkout={checkout}
           locale="en"
         />,
@@ -34,7 +34,7 @@ describe('CheckoutProductSwitcherItemPrice', () => {
         <CheckoutProductSwitcherItemPrice
           isSelected={false}
           product={checkout.product}
-          price={checkout.productPrice}
+          price={checkout.product_price}
           checkout={checkout}
           locale="en"
         />,
@@ -49,9 +49,9 @@ describe('CheckoutProductSwitcherItemPrice', () => {
 
     it('shows netAmount when selected (current behavior, no tax)', () => {
       const checkout = createCheckout({
-        netAmount: 3000,
-        totalAmount: 3000,
-        productPrice: seatPrice,
+        net_amount: 3000,
+        total_amount: 3000,
+        product_price: seatPrice,
       })
 
       const { container } = render(
@@ -69,10 +69,10 @@ describe('CheckoutProductSwitcherItemPrice', () => {
 
     it('shows netAmount not totalAmount when tax present (current behavior)', () => {
       const checkout = createCheckout({
-        netAmount: 3000,
-        taxAmount: 750,
-        totalAmount: 3750,
-        productPrice: seatPrice,
+        net_amount: 3000,
+        tax_amount: 750,
+        total_amount: 3750,
+        product_price: seatPrice,
       })
 
       const { container } = render(
@@ -90,9 +90,9 @@ describe('CheckoutProductSwitcherItemPrice', () => {
 
     it('shows catalog per-seat price when not selected', () => {
       const checkout = createCheckout({
-        netAmount: 3000,
-        totalAmount: 3000,
-        productPrice: seatPrice,
+        net_amount: 3000,
+        total_amount: 3000,
+        product_price: seatPrice,
       })
 
       const { container } = render(
@@ -114,10 +114,10 @@ describe('CheckoutProductSwitcherItemPrice', () => {
       const freePrice = createFreePrice({ id: 'price_free' })
       const checkout = createCheckout({
         amount: 0,
-        netAmount: 0,
-        totalAmount: 0,
-        isFreeProductPrice: true,
-        productPrice: freePrice,
+        net_amount: 0,
+        total_amount: 0,
+        is_free_product_price: true,
+        product_price: freePrice,
       })
 
       const { container } = render(

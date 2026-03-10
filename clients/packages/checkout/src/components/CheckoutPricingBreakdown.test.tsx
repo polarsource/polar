@@ -125,7 +125,7 @@ describe('CheckoutPricingBreakdown', () => {
         amount: 0,
         net_amount: 0,
         total_amount: 0,
-        isFreeProductPrice: true,
+        is_free_product_price: true,
       })
 
       const { container } = render(
@@ -247,7 +247,7 @@ describe('CheckoutPricingBreakdown', () => {
           name: '20% off',
           type: 'percentage',
           duration: 'repeating',
-          durationInMonths: 3,
+          duration_in_months: 3,
           code: null,
           basis_points: 2000,
         } satisfies schemas['CheckoutPublic']['discount'],
@@ -327,9 +327,9 @@ describe('CheckoutPricingBreakdown', () => {
         net_amount: 999,
         tax_amount: null,
         total_amount: 999,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: trialEnd.toISOString(),
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -352,7 +352,7 @@ describe('CheckoutPricingBreakdown', () => {
         tax_amount: null,
         total_amount: 999,
         prices: {
-          prod_1: [createCheckout().productPrice, meteredPrice],
+          prod_1: [createCheckout().product_price, meteredPrice],
         },
       })
 

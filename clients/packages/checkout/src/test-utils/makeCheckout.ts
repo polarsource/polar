@@ -35,43 +35,43 @@ export function createFreePrice(
 }
 
 export function createCustomPrice(
-  overrides: Partial<ProductPriceCustom> = {},
-): ProductPriceCustom {
+  overrides: Partial<schemas['ProductPriceCustom']> = {},
+): schemas['ProductPriceCustom'] {
   return {
     ...priceDefaults,
-    amountType: 'custom',
-    minimumAmount: 500,
-    maximumAmount: null,
-    presetAmount: 1500,
+    amount_type: 'custom',
+    minimum_amount: 500,
+    maximum_amount: null,
+    preset_amount: 1500,
     ...overrides,
   }
 }
 
 export function createSeatBasedPrice(
-  overrides: Partial<ProductPriceSeatBased> = {},
-): ProductPriceSeatBased {
+  overrides: Partial<schemas['ProductPriceSeatBased']> = {},
+): schemas['ProductPriceSeatBased'] {
   return {
     ...priceDefaults,
-    amountType: 'seat_based',
-    seatTiers: {
-      tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1000 }],
-      minimumSeats: 1,
-      maximumSeats: null,
+    amount_type: 'seat_based',
+    seat_tiers: {
+      tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
+      minimum_seats: 1,
+      maximum_seats: null,
     },
     ...overrides,
   }
 }
 
 export function createMeteredPrice(
-  overrides: Partial<ProductPriceMeteredUnit> = {},
-): ProductPriceMeteredUnit {
+  overrides: Partial<schemas['ProductPriceMeteredUnit']> = {},
+): schemas['ProductPriceMeteredUnit'] {
   return {
     ...priceDefaults,
     id: 'price_metered_1',
-    amountType: 'metered_unit',
-    unitAmount: '0.05',
-    capAmount: null,
-    meterId: 'meter_1',
+    amount_type: 'metered_unit',
+    unit_amount: '0.05',
+    cap_amount: null,
+    meter_id: 'meter_1',
     meter: { id: 'meter_1', name: 'API Calls' },
     ...overrides,
   }

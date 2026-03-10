@@ -38,7 +38,7 @@ function getText(container: HTMLElement): string {
 describe('ProductPriceLabel', () => {
   describe('fixed price, one-time', () => {
     it('shows the price amount', () => {
-      const price = createFixedPrice({ priceAmount: 2499 })
+      const price = createFixedPrice({ price_amount: 2499 })
       const { container } = render(
         <ProductPriceLabel product={baseProduct} price={price} locale="en" />,
       )
@@ -48,8 +48,11 @@ describe('ProductPriceLabel', () => {
 
   describe('fixed price, monthly recurring', () => {
     it('shows price with monthly interval suffix', () => {
-      const price = createFixedPrice({ priceAmount: 999 })
-      const product = { ...baseProduct, recurringInterval: 'month' as const }
+      const price = createFixedPrice({ price_amount: 999 })
+      const product = {
+        ...baseProduct,
+        recurring_interval: 'month' as const,
+      }
       const { container } = render(
         <ProductPriceLabel product={product} price={price} locale="en" />,
       )
@@ -60,8 +63,11 @@ describe('ProductPriceLabel', () => {
 
   describe('fixed price, yearly recurring', () => {
     it('shows price with yearly interval suffix', () => {
-      const price = createFixedPrice({ priceAmount: 9950 })
-      const product = { ...baseProduct, recurringInterval: 'year' as const }
+      const price = createFixedPrice({ price_amount: 9950 })
+      const product = {
+        ...baseProduct,
+        recurring_interval: 'year' as const,
+      }
       const { container } = render(
         <ProductPriceLabel product={product} price={price} locale="en" />,
       )
@@ -93,13 +99,13 @@ describe('ProductPriceLabel', () => {
   describe('seat-based price', () => {
     it('shows base tier price per seat', () => {
       const price = createSeatBasedPrice({
-        seatTiers: {
+        seat_tiers: {
           tiers: [
-            { minSeats: 1, maxSeats: 10, pricePerSeat: 549 },
-            { minSeats: 11, maxSeats: null, pricePerSeat: 449 },
+            { min_seats: 1, max_seats: 10, price_per_seat: 549 },
+            { min_seats: 11, max_seats: null, price_per_seat: 449 },
           ],
-          minimumSeats: 1,
-          maximumSeats: null,
+          minimum_seats: 1,
+          maximum_seats: null,
         },
       })
       const { container } = render(
@@ -112,7 +118,7 @@ describe('ProductPriceLabel', () => {
   describe('metered unit price', () => {
     it('shows meter name and per-unit price', () => {
       const price = createMeteredPrice({
-        unitAmount: '0.05',
+        unit_amount: '0.05',
         meter: { id: 'meter_1', name: 'API Calls' },
       })
       const { container } = render(

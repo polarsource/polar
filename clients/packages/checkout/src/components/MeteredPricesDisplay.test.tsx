@@ -40,12 +40,12 @@ describe('MeteredPricesDisplay', () => {
     it('shows metered price with meter name and per-unit cost', () => {
       const fixedPrice = createFixedPrice({ id: 'price_fixed' })
       const meteredPrice = createMeteredPrice({
-        unitAmount: '0.05',
+        unit_amount: '0.05',
         meter: { id: 'meter_1', name: 'API Calls' },
       })
 
       const checkout = createCheckout({
-        productPrice: fixedPrice,
+        product_price: fixedPrice,
         prices: {
           prod_1: [fixedPrice, meteredPrice],
         },
@@ -63,7 +63,7 @@ describe('MeteredPricesDisplay', () => {
       const meteredPrice = createMeteredPrice({ id: 'price_metered_only' })
 
       const checkout = createCheckout({
-        productPrice: meteredPrice,
+        product_price: meteredPrice,
         prices: {
           prod_1: [meteredPrice],
         },
@@ -84,13 +84,13 @@ describe('MeteredPricesDisplay', () => {
       })
       const meteredPrice2 = createMeteredPrice({
         id: 'price_metered_2',
-        unitAmount: '0.02',
-        meterId: 'meter_2',
+        unit_amount: '0.02',
+        meter_id: 'meter_2',
         meter: { id: 'meter_2', name: 'Storage (GB)' },
       })
 
       const checkout = createCheckout({
-        productPrice: fixedPrice,
+        product_price: fixedPrice,
         prices: {
           prod_1: [fixedPrice, meteredPrice1, meteredPrice2],
         },

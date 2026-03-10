@@ -65,13 +65,21 @@ export const CheckoutDiscountInput = ({
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return
     clearErrors('discount_code')
-    await update({ discount_code: discountCode })
+    try {
+      await update({ discount_code: discountCode })
+    } catch {
+      // Error already handled by update() via setValidationErrors
+    }
   }, [update, discountCode, clearErrors])
 
   const removeDiscountCode = useCallback(async () => {
     clearErrors('discount_code')
     setValue('discount_code', null)
-    await update({ discount_code: null })
+    try {
+      await update({ discount_code: null })
+    } catch {
+      // Error already handled by update()
+    }
     setExpanded(false)
   }, [update, clearErrors, setValue])
 

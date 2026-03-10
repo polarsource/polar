@@ -1,0 +1,102 @@
+---
+title: "Tinybird"
+description: "How we use Tinybird for event ingestion, materialized views, and analytics in Polar."
+---
+
+Tinybird is our real-time analytics backend. All usage events flow through a single ingestion point and are materialized into purpose-specific views for querying.
+
+## Datasources
+
+### Primary source
+
+**`events_by_ingested_at`** is the single ingestion point. All events are written here from Python via `ingest_events()` in `server/polar/integrations/tinybird/service.py`.
+
+### Materialized views
+
+All datasources (materialized views and regular tables) live in `tinybird/datasources`. The materialization pipes in `tinybird/pipes` define how the views are built.
+
+### Lineage
+
+```
+Python (service.py -> ingest_events())
+    |
+events_by_ingested_at
+    |-- events_by_timestamp
+    |-- system_events_by_org
+    |-- user_events_costs
+    |-- user_events_by_hour
+    |-- user_events_by_quarter_hour
+    |-- event_types
+    |-- event_types_by_customer_id
+    |-- event_types_by_external_customer_id
+    |-- subscription_state
+    |-- order_facts_state
+    |-- orders_updates_by_order_id
+    |-- credit_order_fx_state
+    |-- cancellations_by_quarter_hour
+    +-- orders_base_state_by_quarter_hour
+```
+
+Visual lineage: [Tinybird Production Lineage](https://cloud.tinybird.co/aws/us-east-1/polar_production_dedicated/lineage)
+
+## Adding a column
+
+1. Add the column to `datasources/events_by_ingested_at.datasource`
+2. Map the field in `TinybirdEvent` in `server/polar/integrations/tinybird/service.py` (the `_event_to_tinybird` function) — fields are extracted from `user_metadata` via `.pop()` so they're denormalized into columns
+3. Add it to any materialized view datasources that need it (e.g. `events_by_timestamp.datasource`, `system_events_by_org.datasource`)
+4. Update the corresponding materialization pipes to SELECT the new column
+
+## Local development
+
+```bash
+# Validate schema
+tb build
+
+# Check formatting
+tb fmt --diff path/to/file
+tb fmt --yes path/to/file
+
+# Run tests
+tb test run
+
+# Check what would be deployed
+tb deploy --check
+```
+
+CI runs `tb fmt --diff`, `tb build`, and `tb test run` on any changes to `server/tinybird/**`.
+
+## Deploying changes
+
+```bash
+tb login --cloud
+tb build
+tb deploy --check
+tb deploy
+```
+
+Same process with production credentials. Switch workspaces using `tb --cloud workspace ls` and `tb --cloud workspace use <name>`.
+
+Tinybird performs a migration of historical data on deploy. If a column change requires backfilling, add a [Forward Query](https://www.tinybird.co/docs/forward/test-and-deploy/evolve-data-source#forward-query).
+
+Deploys with backfills can take >45 minutes depending on data volume.
+
+## Ingestion errors and reconciliation
+
+If events have failed to ingest, use the reconcile script to find and re-ingest missing events:
+
+```bash
+# Dry run — report missing events without re-ingesting
+uv run python -m scripts.reconcile_tinybird_events --dry-run <start_iso8601> <end_iso8601>
+
+# Re-ingest missing events
+uv run python -m scripts.reconcile_tinybird_events <start_iso8601> <end_iso8601>
+```
+
+The script compares event IDs between PostgreSQL and the `events_by_ingested_at` datasource in the given time range, then re-ingests any missing events.
+
+Tinybird has a slight latency from PostgreSQL, so if your end timestamp is close to the current time, it will always report a mismatch. Running it with those events will generate duplicates.
+
+### Other scripts
+
+- **Full backfill**: `uv run python -m scripts.backfill_tinybird_events --batch-size 5000 --start-date <iso8601> --cutoff-date <iso8601>`
+- **Cleanup/reingest specific events**: `uv run python -m scripts.tinybird_events_cleanup events.json --delete --reingest`

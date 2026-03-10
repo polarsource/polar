@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Protocol, Self
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql.base import ExecutableOption
@@ -106,18 +106,17 @@ class RepositoryBase[M]:
         self, statement: Select[tuple[M]], *, limit: int, page: int
     ) -> tuple[list[M], int]:
         offset = (page - 1) * limit
-        paginated_statement: Select[tuple[M, int]] = (
-            statement.add_columns(over(func.count())).limit(limit).offset(offset)
+
+        count_statement = select(func.count()).select_from(
+            statement.order_by(None).subquery()
         )
+        count_result = await self.session.execute(count_statement)
+        count = count_result.scalar_one()
+
+        paginated_statement = statement.limit(limit).offset(offset)
         # Streaming can't be applied here, since we need to call ORM's unique()
         results = await self.session.execute(paginated_statement)
-
-        items: list[M] = []
-        count = 0
-        for result in results.unique().all():
-            item, count = result._tuple()
-            items.append(item)
-
+        items = list(results.unique().scalars().all())
         return items, count
 
     def get_base_statement(self) -> Select[tuple[M]]:

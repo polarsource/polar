@@ -56,7 +56,7 @@ export const CustomerCard = () => {
         {/* Header */}
         <div className="dark:border-polar-800 flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <div className="flex items-center gap-x-2.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 font-mono text-[10px] font-medium text-white">
+            <div className="dark:bg-polar-800 flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 font-mono text-[10px] font-medium text-white">
               U
             </div>
             <span className="font-mono text-sm">user_123</span>

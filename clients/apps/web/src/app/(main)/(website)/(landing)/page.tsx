@@ -45,16 +45,13 @@ export default function Page() {
         opacity={0.99}
         position="relative"
         top={2}
-        backgroundColor={{
-          sm: 'background-secondary',
-          md: 'background-primary',
-        }}
+        backgroundColor="background-primary"
         flexDirection={{
-          sm: 'column',
-          md: 'row',
+          base: 'row',
+          md: 'column',
         }}
       >
-        <p>Design System</p>
+        <p>Design System!</p>
         <p>Box</p>
       </Box>
     </>

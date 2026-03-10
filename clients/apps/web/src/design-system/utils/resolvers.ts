@@ -1,5 +1,19 @@
 import * as stylex from '@stylexjs/stylex'
 import type React from 'react'
+import type {
+  BorderRadiusToken,
+  BreakpointKey,
+  ColorToken,
+  ShadowToken,
+  SpacingToken,
+} from '../tokens.stylex'
+import {
+  borderRadii,
+  breakpoints,
+  colors,
+  shadows,
+  spacing,
+} from '../tokens.stylex'
 import {
   alignContentStyles,
   alignItemsStyles,
@@ -45,20 +59,6 @@ import {
   userSelectStyles,
   visibilityStyles,
 } from './box-styles'
-import type {
-  BorderRadiusToken,
-  BreakpointKey,
-  ColorToken,
-  ShadowToken,
-  SpacingToken,
-} from '../tokens.stylex'
-import {
-  borderRadii,
-  breakpoints,
-  colors,
-  shadows,
-  spacing,
-} from '../tokens.stylex'
 import type { BoxStyleProps, ResponsiveValue } from './types'
 
 // --- Helpers ---
@@ -494,7 +494,9 @@ export function resolveBoxStyles(
         const entries = Object.entries(breakpointStyles[bp])
           .map(([k, v]) => `${toKebab(k)}: ${v}`)
           .join('; ')
-        return `@media (min-width: ${bp}px) { .${scopeClass} { ${entries} } }`
+        // StyleX uses :not(#\#) x3 for specificity (3,1,0). We use x4 to ensure
+        // responsive overrides always win over the base StyleX atomic classes.
+        return `@media (min-width: ${bp}px) { .${scopeClass}:not(#\\#):not(#\\#):not(#\\#):not(#\\#) { ${entries} } }`
       })
       .join(' ')
   }

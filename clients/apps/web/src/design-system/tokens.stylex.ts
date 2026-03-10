@@ -12,21 +12,41 @@ export const spacing = stylex.defineVars({
 })
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
-// Values reference CSS custom properties from tokens.css for light/dark mode.
+// Light values are the default. Dark values are applied via prefers-color-scheme.
 // ──────────────────────────────────────────────────────────────────────────────
+
+const DARK = '@media (prefers-color-scheme: dark)'
 
 export const colors = stylex.defineVars({
   // Backgrounds
-  'background-primary': 'var(--ds-background-primary)',
-  'background-secondary': 'var(--ds-background-secondary)',
+  'background-primary': {
+    default: 'red',
+    [DARK]: 'blue',
+  },
+  'background-secondary': {
+    default: 'oklch(0.967 0.003 264.542)',
+    [DARK]: 'oklch(0.232 0.006 279.9)',
+  },
 
-  // Colors
-  'text-primary': 'var(--ds-text-primary)',
-  'text-secondary': 'var(--ds-text-secondary)',
+  // Text
+  'text-primary': {
+    default: 'oklch(0.21 0.034 264.665)',
+    [DARK]: 'oklch(1.000 0.000 263.3)',
+  },
+  'text-secondary': {
+    default: 'oklch(0.551 0.027 264.364)',
+    [DARK]: 'oklch(0.599 0.020 279.8)',
+  },
 
   // Borders
-  'border-primary': 'var(--ds-border-primary)',
-  'border-secondary': 'var(--ds-border-secondary)',
+  'border-primary': {
+    default: 'oklch(0.928 0.006 264.531)',
+    [DARK]: 'oklch(0.232 0.006 279.9)',
+  },
+  'border-secondary': {
+    default: 'oklch(0.967 0.003 264.542)',
+    [DARK]: 'oklch(0.206 0.005 279.9)',
+  },
 })
 
 // ─── Border Radius ────────────────────────────────────────────────────────────

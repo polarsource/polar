@@ -111,7 +111,7 @@ generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", 
 seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test data into the database" }
 enable_payments = { cmd = "python -m scripts.enable_payments", help = "enable payments for an organization by slug" }
 loadtest_setup = { cmd = "python -m scripts.loadtest_setup", help = "setup load test data for event ingestion" }
-pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
+pre_deploy = { cmd = "task db_migrate && task tb_deploy", help = "Pre-deploy command run by Render" }
 
 [tool.pytest.ini_options]
 markers = ["auth"]

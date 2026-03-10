@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 
 const BASE_PLAN_CENTS = 49_00
@@ -52,13 +51,7 @@ export const CustomerCard = () => {
   const inTier3 = tokens > TIER2_END
 
   return (
-    <motion.div
-      className="relative flex flex-1 flex-col"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ duration: 1.2, delay: 0.4 }}
-      viewport={{ once: true }}
-    >
+    <div className="relative flex flex-1 flex-col">
       <div className="dark:border-polar-700 flex h-full flex-col rounded-2xl border border-gray-200">
         {/* Header */}
         <div className="dark:border-polar-800 flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -79,18 +72,12 @@ export const CustomerCard = () => {
             <span className="font-mono text-xs">
               {inTier3 ? 'Tier 3 · Token Usage' : 'Tier 2 · Token Usage'}
             </span>
-            <motion.span
-              key={Math.floor(tokens / 100_000)}
-              className="font-mono text-xs tabular-nums"
-              initial={{ opacity: 0.5 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
+            <span className="font-mono text-xs tabular-nums">
               {(tokens / 1_000_000).toFixed(1)}M{' '}
               <span className="dark:text-polar-500 text-gray-500">
                 / {inTier3 ? '∞' : '10M'}
               </span>
-            </motion.span>
+            </span>
           </div>
 
           {/* Segmented progress */}
@@ -101,15 +88,9 @@ export const CustomerCard = () => {
               {inTier3 ? '$0.001' : '$0.002'} / 1k tokens
             </span>
             {!inTier3 && (
-              <motion.span
-                key={Math.floor(remainingM * 10)}
-                className="dark:text-polar-500 font-mono text-xs text-gray-500 tabular-nums"
-                initial={{ opacity: 0.5 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
+              <span className="dark:text-polar-500 font-mono text-xs text-gray-500 tabular-nums">
                 {remainingM.toFixed(1)}M to Tier 3
-              </motion.span>
+              </span>
             )}
           </div>
         </div>
@@ -117,21 +98,12 @@ export const CustomerCard = () => {
         {/* Line items */}
         <div className="flex flex-col px-4 py-3">
           <LineItem label="Pro Subscription" value={fmt(BASE_PLAN_CENTS)} />
-          <LineItem
-            label="Token Overages"
-            value={fmt(overageCents)}
-            animKey={overageCents}
-          />
+          <LineItem label="Token Overages" value={fmt(overageCents)} />
           <div className="dark:border-polar-700 my-2 border-t border-dashed border-gray-100" />
-          <LineItem
-            label="Total this period"
-            value={fmt(totalCents)}
-            animKey={totalCents}
-            bold
-          />
+          <LineItem label="Total this period" value={fmt(totalCents)} bold />
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -155,12 +127,10 @@ const SegmentedBar = ({ progress }: { progress: number }) => {
 const LineItem = ({
   label,
   value,
-  animKey,
   bold,
 }: {
   label: string
   value: string
-  animKey?: number
   bold?: boolean
 }) => {
   const labelCls = bold
@@ -173,19 +143,7 @@ const LineItem = ({
   return (
     <div className="flex items-center justify-between py-1">
       <span className={labelCls}>{label}</span>
-      {animKey !== undefined ? (
-        <motion.span
-          key={animKey}
-          className={valueCls}
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {value}
-        </motion.span>
-      ) : (
-        <span className={valueCls}>{value}</span>
-      )}
+      <span className={valueCls}>{value}</span>
     </div>
   )
 }

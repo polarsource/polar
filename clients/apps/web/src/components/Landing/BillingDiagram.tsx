@@ -372,11 +372,11 @@ export const BillingDiagram = () => {
     >
       {/* Left — pipeline description */}
       <div className="flex flex-col gap-y-12 md:w-2/5">
-        <span className="dark:text-polar-500 font-mono text-[11px] tracking-[0.2em] text-gray-400 uppercase">
+        <span className="dark:text-polar-500 text-xxs font-mono tracking-widest text-gray-400 uppercase">
           Billing Pipeline
         </span>
         <h2 className="font-display text-3xl leading-tight! text-pretty md:text-5xl">
-          Event to invoice.
+          Event to revenue.
           <br />
           End-to-end.
         </h2>
@@ -402,7 +402,7 @@ export const BillingDiagram = () => {
                   onMouseEnter={() => setHoveredIndex(i)}
                 >
                   <span
-                    className={`font-mono text-xs font-medium tracking-[0.15em] uppercase transition-colors ${
+                    className={`font-mono text-xs font-medium tracking-widest uppercase transition-colors ${
                       active
                         ? 'text-black dark:text-white'
                         : 'dark:text-polar-200 text-gray-700'

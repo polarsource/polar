@@ -53,8 +53,8 @@ export const PageContent = () => {
         <Features />
       </Section>
       <Section className="flex flex-col gap-y-32">
-        <Usage />
         <BillingDiagram />
+        <Usage />
         <Adapters />
       </Section>
       <Section className="flex flex-col gap-y-32" border>

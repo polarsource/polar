@@ -177,6 +177,9 @@ class ProductPrice(RecordModel):
     def legacy_recurring_interval(self) -> SubscriptionRecurringInterval | None:
         return self.product.recurring_interval
 
+    def is_free(self) -> bool:
+        return False
+
     __mapper_args__ = {
         "polymorphic_on": case(
             (type.is_(None), amount_type),
@@ -281,6 +284,9 @@ class _ProductPriceFree(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.free
     )
+
+    def is_free(self) -> bool:
+        return True
 
     __mapper_args__ = {
         "polymorphic_abstract": True,

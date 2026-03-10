@@ -87,7 +87,6 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.product.guard import (
     is_custom_price,
-    is_effectively_free_price,
     is_recurring_product,
     is_seat_price,
     is_static_price,
@@ -366,7 +365,7 @@ class SubscriptionService:
             default_price := PriceSet.from_product(
                 product, product.organization.default_presentment_currency
             ).get_default_price()
-        ) and not is_effectively_free_price(default_price):
+        ) and not default_price.is_free():
             errors.append(
                 {
                     "type": "value_error",

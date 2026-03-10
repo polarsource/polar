@@ -89,7 +89,6 @@ from polar.posthog import posthog
 from polar.product.guard import (
     is_custom_price,
     is_discount_applicable,
-    is_effectively_free_price,
     is_fixed_price,
     is_seat_price,
 )
@@ -1716,7 +1715,7 @@ class CheckoutService:
             )
 
         for price in subscription.prices:
-            if not is_effectively_free_price(price):
+            if not price.is_free():
                 raise PolarRequestValidationError(
                     [
                         {

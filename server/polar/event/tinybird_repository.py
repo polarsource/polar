@@ -6,8 +6,7 @@ from polar.integrations.tinybird.service import (
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     TinybirdEventTypeStats,
-    TinybirdTimeseriesBucket,
-    get_timeseries_occurrences,
+    TinybirdTimeseriesStats,
 )
 from polar.kit.metadata import MetadataQuery
 from polar.meter.filter import Filter
@@ -185,32 +184,135 @@ class TinybirdEventRepository:
         tinybird_query.filter_has_ancestor(ancestor_id)
         return await tinybird_query.get_descendant_aggregates(aggregate_fields)
 
-    async def get_timeseries_occurrences(
+    async def get_filtered_timeseries(
         self,
         *,
-        organization_id: UUID,
+        organization_id: UUID | Sequence[UUID],
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: str,
         timezone: str,
-        aggregate_field: str = "_cost.amount",
-        customer_id: Sequence[UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
         name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
         event_type_id: UUID | None = None,
-    ) -> list[TinybirdTimeseriesBucket]:
-        return await get_timeseries_occurrences(
-            organization_id,
-            start_timestamp,
-            end_timestamp,
-            interval,
-            timezone,
-            aggregate_field=aggregate_field,
+        filters: Sequence[Filter] = (),
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+        matching_customer_ids: Sequence[UUID] | None = None,
+        matching_external_customer_ids: Sequence[str] | None = None,
+        numeric_metadata_property: str | None = None,
+    ) -> list[TinybirdTimeseriesStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+
+        tinybird_query = self._build_filtered_query(
+            organization_ids,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
             customer_id=customer_id,
             external_customer_id=external_customer_id,
             name=name,
+            source=source,
             event_type_id=event_type_id,
+            filters=filters,
+            metadata=metadata,
+            query=query,
+            matching_customer_ids=matching_customer_ids,
+            matching_external_customer_ids=matching_external_customer_ids,
+            numeric_metadata_property=numeric_metadata_property,
         )
+        return await tinybird_query.get_timeseries_stats(
+            interval, timezone, aggregate_fields
+        )
+
+    async def get_filtered_totals(
+        self,
+        *,
+        organization_id: UUID | Sequence[UUID],
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        event_type_id: UUID | None = None,
+        filters: Sequence[Filter] = (),
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+        matching_customer_ids: Sequence[UUID] | None = None,
+        matching_external_customer_ids: Sequence[str] | None = None,
+        numeric_metadata_property: str | None = None,
+    ) -> list[TinybirdTimeseriesStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+
+        tinybird_query = self._build_filtered_query(
+            organization_ids,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            name=name,
+            source=source,
+            event_type_id=event_type_id,
+            filters=filters,
+            metadata=metadata,
+            query=query,
+            matching_customer_ids=matching_customer_ids,
+            matching_external_customer_ids=matching_external_customer_ids,
+            numeric_metadata_property=numeric_metadata_property,
+        )
+        return await tinybird_query.get_totals_stats(aggregate_fields)
+
+    @staticmethod
+    def _build_filtered_query(
+        organization_ids: tuple[UUID, ...],
+        *,
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        event_type_id: UUID | None = None,
+        filters: Sequence[Filter] = (),
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+        matching_customer_ids: Sequence[UUID] | None = None,
+        matching_external_customer_ids: Sequence[str] | None = None,
+        numeric_metadata_property: str | None = None,
+    ) -> TinybirdEventsQuery:
+        tinybird_query = TinybirdEventsQuery(organization_ids)
+        if start_timestamp is not None or end_timestamp is not None:
+            tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        if customer_id or external_customer_id:
+            tinybird_query.filter_customer(
+                customer_ids=customer_id,
+                external_customer_ids=external_customer_id,
+            )
+        if name is not None:
+            tinybird_query.filter_names(name)
+        if source is not None:
+            tinybird_query.filter_sources(source)
+        if event_type_id is not None:
+            tinybird_query.filter_event_type_id(event_type_id)
+        for f in filters:
+            tinybird_query.filter_by_filter(f)
+        if metadata is not None:
+            tinybird_query.filter_by_metadata(metadata)
+        if query is not None:
+            tinybird_query.filter_by_query(
+                query, matching_customer_ids, matching_external_customer_ids
+            )
+        if numeric_metadata_property is not None:
+            tinybird_query.filter_numeric_metadata_property(numeric_metadata_property)
+        return tinybird_query
 
     @staticmethod
     def _apply_ordering(

@@ -20,11 +20,13 @@ from sqlalchemy import (
     and_,
     false,
     func,
+    literal_column,
     or_,
     select,
     true,
 )
 from sqlalchemy.sql import Select
+from sqlalchemy.sql.util import ClauseAdapter
 
 from polar.config import settings
 from polar.event.repository import EventRepository
@@ -43,7 +45,7 @@ clickhouse_dialect = ClickHouseDialect()
 metadata = MetaData()
 
 events_table = Table(
-    "events_by_ingested_at",
+    "events_by_timestamp",
     metadata,
     Column("id", String),
     Column("name", String),
@@ -85,6 +87,20 @@ class TinybirdEventTypeStats:
 
 
 DATASOURCE_EVENTS = "events_by_ingested_at"
+
+
+@dataclass
+class TinybirdTimeseriesStats:
+    organization_id: str
+    name: str
+    bucket: datetime
+    occurrences: int
+    customers: int
+    totals: dict[str, float]
+    averages: dict[str, float]
+    p10: dict[str, float]
+    p90: dict[str, float]
+    p99: dict[str, float]
 
 
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
@@ -304,6 +320,10 @@ def _parse_event_type_stats(rows: list[dict[str, Any]]) -> list[TinybirdEventTyp
         )
         for row in rows
     ]
+
+
+def _adapt_filter_to_alias(clause: Any, alias: Any) -> Any:
+    return ClauseAdapter(alias).traverse(clause)
 
 
 class TinybirdEventsQuery:
@@ -604,6 +624,218 @@ class TinybirdEventsQuery:
 
         return event_ids, total
 
+    @staticmethod
+    def _get_agg_col_for_table(table: Any, field_path: str) -> Any:
+        col_name = DENORMALIZED_COLUMNS.get(field_path)
+        if col_name is not None:
+            return table.c[col_name.name]
+        parts = field_path.split(".")
+        return func.JSONExtractFloat(table.c.user_metadata, *parts)
+
+    def _build_per_root_subquery(self, aggregate_fields: Sequence[str]) -> Any:
+        base_filter = self._get_organization_filter()
+        re = events_table.alias("re")
+        ae = events_table.alias("ae")
+
+        agg_columns = []
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            ae_col = self._get_agg_col_for_table(ae, field_path)
+            agg_columns.append(
+                func.coalesce(func.sum(ae_col), 0).label(f"{label}_total")
+            )
+
+        org_filter_values = self._organization_ids
+        ae_org_filter = (
+            ae.c.organization_id.in_(org_filter_values)
+            if len(org_filter_values) > 1
+            else ae.c.organization_id == org_filter_values[0]
+        )
+
+        statement = (
+            sqlalchemy.select(
+                re.c.id.label("root_id"),
+                re.c.organization_id.label("organization_id"),
+                re.c.name.label("root_name"),
+                re.c.timestamp.label("root_timestamp"),
+                re.c.customer_id.label("customer_id"),
+                re.c.external_customer_id.label("external_customer_id"),
+                *agg_columns,
+            )
+            .select_from(
+                re.join(
+                    ae,
+                    and_(ae.c.root_id == re.c.id, ae_org_filter),
+                    isouter=True,
+                )
+            )
+            .where(
+                re.c.organization_id.in_(org_filter_values),
+                re.c.parent_id.is_(None),
+                re.c.source == EventSource.user.value,
+            )
+            .group_by(
+                re.c.id,
+                re.c.organization_id,
+                re.c.name,
+                re.c.timestamp,
+                re.c.customer_id,
+                re.c.external_customer_id,
+            )
+        )
+
+        for f in self._filters:
+            adapted = _adapt_filter_to_alias(f, re)
+            statement = statement.where(adapted)
+
+        return statement.subquery("per_root")
+
+    @staticmethod
+    def _build_outer_agg_columns(
+        subquery: Any, aggregate_fields: Sequence[str]
+    ) -> list[Any]:
+        columns: list[Any] = []
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            total_col = subquery.c[f"{label}_total"]
+            total_col_sql = f"per_root.{label}_total"
+            columns.extend(
+                [
+                    func.sum(total_col).label(f"{label}_sum"),
+                    func.avg(total_col).label(f"{label}_avg"),
+                    literal_column(f"quantile(0.10)({total_col_sql})").label(
+                        f"{label}_p10"
+                    ),
+                    literal_column(f"quantile(0.90)({total_col_sql})").label(
+                        f"{label}_p90"
+                    ),
+                    literal_column(f"quantile(0.99)({total_col_sql})").label(
+                        f"{label}_p99"
+                    ),
+                ]
+            )
+        return columns
+
+    @staticmethod
+    def _parse_agg_row(
+        row: dict[str, Any], aggregate_fields: Sequence[str]
+    ) -> tuple[
+        dict[str, float],
+        dict[str, float],
+        dict[str, float],
+        dict[str, float],
+        dict[str, float],
+    ]:
+        totals: dict[str, float] = {}
+        averages: dict[str, float] = {}
+        p10: dict[str, float] = {}
+        p90: dict[str, float] = {}
+        p99: dict[str, float] = {}
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            totals[label] = float(row.get(f"{label}_sum", 0) or 0)
+            averages[label] = float(row.get(f"{label}_avg", 0) or 0)
+            p10[label] = float(row.get(f"{label}_p10", 0) or 0)
+            p90[label] = float(row.get(f"{label}_p90", 0) or 0)
+            p99[label] = float(row.get(f"{label}_p99", 0) or 0)
+        return totals, averages, p10, p90, p99
+
+    async def get_timeseries_stats(
+        self,
+        interval: str,
+        timezone: str,
+        aggregate_fields: Sequence[str],
+    ) -> list[TinybirdTimeseriesStats]:
+        per_root = self._build_per_root_subquery(aggregate_fields)
+
+        bucket = func.date_trunc(interval, per_root.c.root_timestamp, timezone).label(
+            "bucket"
+        )
+
+        statement = (
+            sqlalchemy.select(
+                per_root.c.organization_id.label("organization_id"),
+                per_root.c.root_name.label("name"),
+                bucket,
+                func.count().label("occurrences"),
+                literal_column(
+                    "uniqExact(if(per_root.customer_id IS NOT NULL,"
+                    " toString(per_root.customer_id),"
+                    " per_root.external_customer_id))"
+                ).label("customers"),
+                *self._build_outer_agg_columns(per_root, aggregate_fields),
+            )
+            .select_from(per_root)
+            .group_by(per_root.c.organization_id, per_root.c.root_name, bucket)
+            .order_by(bucket, per_root.c.organization_id, per_root.c.root_name)
+        )
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        results = []
+        for row in rows:
+            totals, averages, p10, p90, p99 = self._parse_agg_row(row, aggregate_fields)
+            results.append(
+                TinybirdTimeseriesStats(
+                    organization_id=row["organization_id"],
+                    name=row["name"],
+                    bucket=_parse_datetime(row["bucket"]),
+                    occurrences=row["occurrences"],
+                    customers=row["customers"],
+                    totals=totals,
+                    averages=averages,
+                    p10=p10,
+                    p90=p90,
+                    p99=p99,
+                )
+            )
+        return results
+
+    async def get_totals_stats(
+        self,
+        aggregate_fields: Sequence[str],
+    ) -> list[TinybirdTimeseriesStats]:
+        per_root = self._build_per_root_subquery(aggregate_fields)
+
+        statement = (
+            sqlalchemy.select(
+                per_root.c.organization_id.label("organization_id"),
+                per_root.c.root_name.label("name"),
+                func.count().label("occurrences"),
+                literal_column(
+                    "uniqExact(if(per_root.customer_id IS NOT NULL,"
+                    " toString(per_root.customer_id),"
+                    " per_root.external_customer_id))"
+                ).label("customers"),
+                *self._build_outer_agg_columns(per_root, aggregate_fields),
+            )
+            .select_from(per_root)
+            .group_by(per_root.c.organization_id, per_root.c.root_name)
+        )
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        results = []
+        for row in rows:
+            totals, averages, p10, p90, p99 = self._parse_agg_row(row, aggregate_fields)
+            results.append(
+                TinybirdTimeseriesStats(
+                    organization_id=row["organization_id"],
+                    name=row["name"],
+                    bucket=datetime.min,
+                    occurrences=row["occurrences"],
+                    customers=row["customers"],
+                    totals=totals,
+                    averages=averages,
+                    p10=p10,
+                    p90=p90,
+                    p99=p99,
+                )
+            )
+        return results
+
     async def get_descendant_aggregates(
         self, aggregate_fields: Sequence[str]
     ) -> tuple[int, dict[str, float]]:
@@ -685,83 +917,3 @@ class TinybirdEventTypesQuery:
         except Exception as e:
             log.error("tinybird.get_event_type_stats_from_mv.failed", error=str(e))
             raise
-
-
-DENORMALIZED_AGG_FIELDS = {
-    "_cost.amount",
-    "_cost.currency",
-    "_llm.input_tokens",
-    "_llm.output_tokens",
-}
-
-
-@dataclass
-class TinybirdTimeseriesBucket:
-    name: str
-    bucket: datetime
-    occurrences: int
-    customers: int
-    field_sum: float
-    field_avg: float
-    field_p10: float
-    field_p90: float
-    field_p99: float
-
-
-def _build_agg_field_params(field_path: str) -> dict[str, str]:
-    if field_path in DENORMALIZED_AGG_FIELDS:
-        return {"agg_field": field_path}
-    parts = field_path.split(".")
-    params: dict[str, str] = {"agg_depth": str(len(parts))}
-    for i, part in enumerate(parts, 1):
-        params[f"agg_key_{i}"] = part
-    return params
-
-
-async def get_timeseries_occurrences(
-    organization_id: UUID,
-    start_timestamp: datetime,
-    end_timestamp: datetime,
-    interval: str,
-    timezone: str,
-    *,
-    aggregate_field: str = "_cost.amount",
-    customer_id: Sequence[UUID] | None = None,
-    external_customer_id: Sequence[str] | None = None,
-    name: Sequence[str] | None = None,
-    event_type_id: UUID | None = None,
-) -> list[TinybirdTimeseriesBucket]:
-    params: dict[str, Any] = {
-        "organization_id": str(organization_id),
-        "start_dt": start_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        "end_dt": end_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        "interval": interval,
-        "tz": timezone,
-        **_build_agg_field_params(aggregate_field),
-    }
-
-    if customer_id:
-        params["customer_ids"] = ",".join(str(c) for c in customer_id)
-    if external_customer_id:
-        params["external_customer_ids"] = ",".join(external_customer_id)
-    if name:
-        params["names"] = ",".join(name)
-    if event_type_id:
-        params["event_type_id"] = str(event_type_id)
-
-    rows = await client.endpoint("event_timeseries_endpoint", params)
-
-    return [
-        TinybirdTimeseriesBucket(
-            name=row["name"],
-            bucket=_parse_datetime(row["bucket"]),
-            occurrences=row["occurrences"],
-            customers=row["customers"],
-            field_sum=float(row.get("field_sum", 0) or 0),
-            field_avg=float(row.get("field_avg", 0) or 0),
-            field_p10=float(row.get("field_p10", 0) or 0),
-            field_p90=float(row.get("field_p90", 0) or 0),
-            field_p99=float(row.get("field_p99", 0) or 0),
-        )
-        for row in rows
-    ]

@@ -616,6 +616,24 @@ class SubscriptionService:
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
         else:
+            # Apply any pending subscription update (product change, seats change)
+            # scheduled for the beginning of this new cycle
+            pending_update = subscription.pending_update
+            if pending_update is not None:
+                pending_update.subscription = subscription
+                if pending_update.product_id is not None:
+                    product_repository = ProductRepository.from_session(session)
+                    pending_update.product = await product_repository.get_by_id(
+                        pending_update.product_id,
+                        options=product_repository.get_eager_options(),
+                    )
+                pending_update.apply_update()
+                subscription_update_repository = (
+                    SubscriptionUpdateRepository.from_session(session)
+                )
+                await subscription_update_repository.update(pending_update)
+                subscription.pending_update = None
+
             if update_cycle_dates:
                 current_period_end = subscription.current_period_end
                 subscription.current_period_start = current_period_end

@@ -377,7 +377,7 @@ class SubscriptionProductPriceRepository(
 
 
 class SubscriptionUpdateRepository(
-    RepositorySoftDeletionIDMixin[Subscription, UUID],
+    RepositorySoftDeletionIDMixin[SubscriptionUpdate, UUID],
     RepositorySoftDeletionMixin[SubscriptionUpdate],
     RepositoryBase[SubscriptionUpdate],
 ):
@@ -405,7 +405,7 @@ class SubscriptionUpdateRepository(
             await self.soft_delete(existing)
 
     async def get_unapplied_by_subscription_id(
-        self, subscription_id: UUID
+        self, subscription_id: UUID, *, options: Options = ()
     ) -> SubscriptionUpdate | None:
         statement = (
             self.get_base_statement()
@@ -415,5 +415,6 @@ class SubscriptionUpdateRepository(
                 SubscriptionUpdate.is_deleted.is_(False),
             )
             .limit(1)
+            .options(*options)
         )
         return await self.get_one_or_none(statement)

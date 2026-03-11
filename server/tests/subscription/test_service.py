@@ -1275,6 +1275,122 @@ class TestCycle:
         # Fourth entry should have no discount
         assert cycle_entries[3].discount is None
 
+    async def test_pending_update_product(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        assert updated_subscription.product == product_second
+
+        price = product_second.prices[0]
+        assert is_fixed_price(price)
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert (
+            billing_entry.start_timestamp == updated_subscription.current_period_start
+        )
+        assert billing_entry.end_timestamp == updated_subscription.current_period_end
+        assert billing_entry.direction == BillingEntryDirection.debit
+        assert billing_entry.product_price_id == price.id
+
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert updated_subscription.pending_update is None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = await subscription_update_repository.get_by_id(
+            subscription_update.id
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.applied_at is not None
+
+    async def test_pending_update_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        subscription_update, _ = generate_subscription_update(subscription, seats=10)
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        assert updated_subscription.seats == 10
+        assert updated_subscription.pending_update is None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = await subscription_update_repository.get_by_id(
+            subscription_update.id
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.applied_at is not None
+
 
 @pytest.mark.asyncio
 class TestRevoke:

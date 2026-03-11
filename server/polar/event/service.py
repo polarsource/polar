@@ -360,7 +360,7 @@ class EventService:
                     if part not in target or not isinstance(target[part], dict):
                         target[part] = {}
                     target = target[part]
-                target[parts[-1]] = value
+                target[parts[-1]] = round(value, 12)
             event.user_metadata = metadata
 
             if "_cost" in event.user_metadata:

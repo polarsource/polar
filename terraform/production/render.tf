@@ -211,6 +211,13 @@ module "production" {
     }
   }
 
+  cron_jobs = {
+    "bulk-appeal-review" = {
+      schedule      = "0 8 * * *" # 8:00 UTC = 9:00 CET
+      start_command = "uv run python -m scripts.bulk_appeal_review --execute --limit 0"
+    }
+  }
+
   google_secrets = {
     client_id     = var.google_client_id_production
     client_secret = var.google_client_secret_production

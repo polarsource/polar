@@ -240,6 +240,19 @@ variable "slo_report_config" {
   sensitive = true
 }
 
+variable "cron_jobs" {
+  description = "Map of cron job configurations. image_url and image_digest default to the API service image."
+  type = map(object({
+    schedule           = string
+    start_command      = string
+    image_url          = optional(string)
+    image_digest       = optional(string)
+    plan               = optional(string, "starter")
+    database_pool_size = optional(string, "5")
+  }))
+  default = {}
+}
+
 variable "tinybird_config" {
   description = "Tinybird configuration (optional)"
   type = object({

@@ -219,6 +219,35 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_readable_external_ids_by_ids(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        customer_ids: Sequence[UUID],
+    ) -> list[str]:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .with_only_columns(Customer.external_id)
+            .where(
+                Customer.id.in_(customer_ids),
+                Customer.external_id.isnot(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [r for r in result.scalars().all() if r is not None]
+
+    async def get_readable_ids_by_external_ids(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        external_ids: Sequence[str],
+    ) -> list[UUID]:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .with_only_columns(Customer.id)
+            .where(Customer.external_id.in_(external_ids))
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Customer]]:

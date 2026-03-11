@@ -345,20 +345,6 @@ class TinybirdEventsQuery:
         )
         return self
 
-    def filter_customer_id(self, customer_ids: Sequence[UUID]) -> Self:
-        if customer_ids:
-            self._filters.append(
-                events_table.c.customer_id.in_([str(c) for c in customer_ids])
-            )
-        return self
-
-    def filter_external_customer_id(self, external_ids: Sequence[str]) -> Self:
-        if external_ids:
-            self._filters.append(
-                events_table.c.external_customer_id.in_(list(external_ids))
-            )
-        return self
-
     def filter_root_events(self) -> Self:
         self._filters.append(events_table.c.parent_id.is_(None))
         return self
@@ -454,30 +440,22 @@ class TinybirdEventsQuery:
         self._filters.append(or_(*conditions))
         return self
 
-    def filter_customer_id_with_cross_ref(
-        self, customer_ids: Sequence[UUID], cross_external_ids: Sequence[str]
+    def filter_customer(
+        self,
+        customer_ids: Sequence[UUID] = (),
+        external_customer_ids: Sequence[str] = (),
     ) -> Self:
-        conditions: list[Any] = [
-            events_table.c.customer_id.in_([str(c) for c in customer_ids])
-        ]
-        if cross_external_ids:
+        conditions: list[Any] = []
+        if customer_ids:
             conditions.append(
-                events_table.c.external_customer_id.in_(list(cross_external_ids))
+                events_table.c.customer_id.in_([str(c) for c in customer_ids])
             )
-        self._filters.append(or_(*conditions))
-        return self
-
-    def filter_external_customer_id_with_cross_ref(
-        self, external_ids: Sequence[str], cross_customer_ids: Sequence[UUID]
-    ) -> Self:
-        conditions: list[Any] = [
-            events_table.c.external_customer_id.in_(list(external_ids))
-        ]
-        if cross_customer_ids:
+        if external_customer_ids:
             conditions.append(
-                events_table.c.customer_id.in_([str(c) for c in cross_customer_ids])
+                events_table.c.external_customer_id.in_(list(external_customer_ids))
             )
-        self._filters.append(or_(*conditions))
+        if conditions:
+            self._filters.append(or_(*conditions))
         return self
 
     def filter_numeric_metadata_property(self, property: str) -> Self:

@@ -21,8 +21,8 @@ class TinybirdEventRepository:
         self,
         *,
         organization_id: Sequence[UUID] | None = None,
-        customer_id: Sequence[UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
         source: Sequence[EventSource] | None = None,
         query: str | None = None,
         sorting: Sequence[tuple[str, bool]] = (),
@@ -33,10 +33,11 @@ class TinybirdEventRepository:
 
         tinybird_query = TinybirdEventsQuery(organization_ids)
 
-        if customer_id is not None:
-            tinybird_query.filter_customer_id(customer_id)
-        if external_customer_id is not None:
-            tinybird_query.filter_external_customer_id(external_customer_id)
+        if customer_id or external_customer_id:
+            tinybird_query.filter_customer(
+                customer_ids=customer_id,
+                external_customer_ids=external_customer_id,
+            )
         if source is not None:
             tinybird_query.filter_sources(source)
         if query is not None:
@@ -76,10 +77,11 @@ class TinybirdEventRepository:
         tinybird_query: TinybirdEventsQuery | TinybirdEventTypesQuery
         if requires_raw_table:
             tinybird_query = TinybirdEventsQuery(organization_ids)
-            if customer_id is not None:
-                tinybird_query.filter_customer_id(customer_id)
-            if external_customer_id is not None:
-                tinybird_query.filter_external_customer_id(external_customer_id)
+            if customer_id is not None or external_customer_id is not None:
+                tinybird_query.filter_customer(
+                    customer_ids=customer_id or (),
+                    external_customer_ids=external_customer_id or (),
+                )
             if root_events:
                 tinybird_query.filter_root_events()
             if parent_id is not None:
@@ -105,10 +107,8 @@ class TinybirdEventRepository:
         event_id: UUID | None = None,
         start_timestamp: datetime | None = None,
         end_timestamp: datetime | None = None,
-        customer_id: Sequence[UUID] | None = None,
-        cross_external_customer_ids: Sequence[str] = (),
-        external_customer_id: Sequence[str] | None = None,
-        cross_customer_ids: Sequence[UUID] = (),
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
         event_type_id: UUID | None = None,
@@ -131,13 +131,10 @@ class TinybirdEventRepository:
             tinybird_query.filter_event_id(event_id)
         if start_timestamp is not None or end_timestamp is not None:
             tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
-        if customer_id is not None:
-            tinybird_query.filter_customer_id_with_cross_ref(
-                customer_id, cross_external_customer_ids
-            )
-        if external_customer_id is not None:
-            tinybird_query.filter_external_customer_id_with_cross_ref(
-                external_customer_id, cross_customer_ids
+        if customer_id or external_customer_id:
+            tinybird_query.filter_customer(
+                customer_ids=customer_id,
+                external_customer_ids=external_customer_id,
             )
         if name is not None:
             tinybird_query.filter_names(name)

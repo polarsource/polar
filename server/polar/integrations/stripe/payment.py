@@ -201,10 +201,14 @@ async def handle_success(
             ):
                 raise OutdatedCheckoutIntent(checkout.id, object.id)
 
-            # Canceled intent happens when the confirmation was denied because of trial abuse detection
+            # Metadata marker is set when confirmation was denied because of trial abuse detection
             if checkout.status == CheckoutStatus.open:
                 updated_object = await stripe_service.get_setup_intent(object.id)
-                if updated_object.status == "canceled":
+                if (
+                    updated_object.metadata
+                    and updated_object.metadata.get("polar_trial_abuse_detected")
+                    == "true"
+                ):
                     raise OutdatedCheckoutIntent(checkout.id, object.id)
 
         payment_method: PaymentMethod | None = None

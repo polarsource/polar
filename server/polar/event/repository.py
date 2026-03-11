@@ -27,7 +27,7 @@ from polar.auth.models import AuthSubject, Organization, User, is_organization, 
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.sorting import Sorting
-from polar.kit.time_queries import TimeInterval
+from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.kit.utils import generate_uuid
 from polar.models import (
     BillingEntry,
@@ -784,3 +784,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             result_list.append(row_dict)
 
         return result_list
+
+    async def get_timestamp_series(
+        self,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        interval: TimeInterval,
+    ) -> list[datetime]:
+        cte = get_timestamp_series_cte(start_timestamp, end_timestamp, interval)
+        result = await self.session.execute(select(cte.c.timestamp))
+        return [row[0] for row in result.all()]

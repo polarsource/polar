@@ -266,13 +266,15 @@ class EventTypeService:
 
         if query is not None:
             query_lower = query.lower()
+            org_id = organization.id
             tinybird_stats = [
                 s
                 for s in tinybird_stats
                 if query_lower in s.name.lower()
                 or (
-                    s.name in event_types_by_name
-                    and query_lower in (event_types_by_name[s.name].label or "").lower()
+                    (org_id, s.name) in event_types_by_name
+                    and query_lower
+                    in (event_types_by_name[(org_id, s.name)].label or "").lower()
                 )
             ]
 
@@ -321,12 +323,12 @@ class EventTypeService:
     def _build_event_types_from_tinybird(
         self,
         stats: list[TinybirdEventTypeStats],
-        event_types_by_name: dict[str, EventType],
+        event_types_by_name: dict[tuple[UUID, str], EventType],
         organization_id: UUID,
     ) -> list[EventTypeWithStats]:
         results: list[EventTypeWithStats] = []
         for s in stats:
-            event_type = event_types_by_name.get(s.name)
+            event_type = event_types_by_name.get((organization_id, s.name))
             if event_type is None:
                 continue
 

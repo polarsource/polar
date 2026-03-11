@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
@@ -74,17 +75,22 @@ class EventTypeRepository(
         return result.scalar_one_or_none()
 
     async def get_by_names_and_organization(
-        self, names: list[str], organization_id: UUID
-    ) -> dict[str, EventType]:
+        self, names: list[str], organization_id: UUID | Sequence[UUID]
+    ) -> dict[tuple[UUID, str], EventType]:
         if not names:
             return {}
+        org_filter = (
+            EventType.organization_id.in_(organization_id)
+            if isinstance(organization_id, Sequence)
+            else EventType.organization_id == organization_id
+        )
         statement = select(EventType).where(
             EventType.name.in_(names),
-            EventType.organization_id == organization_id,
+            org_filter,
             EventType.is_deleted.is_(False),
         )
         result = await self.session.execute(statement)
-        return {et.name: et for et in result.scalars().all()}
+        return {(et.organization_id, et.name): et for et in result.scalars().all()}
 
     async def get_or_create(self, name: str, organization_id: UUID) -> EventType:
         existing = await self.get_by_name_and_organization(name, organization_id)

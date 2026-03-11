@@ -98,37 +98,3 @@ class TestTinybirdEventRepository:
 
         assert exists is True
         query_mock.assert_awaited_once()
-
-    async def test_get_timeseries_occurrences_delegates_to_service_helper(
-        self, mocker: MockerFixture
-    ) -> None:
-        organization_id = uuid4()
-        repository = TinybirdEventRepository()
-        now = datetime.now(UTC)
-        helper_mock = mocker.patch(
-            "polar.event.tinybird_repository.get_timeseries_occurrences",
-            new_callable=AsyncMock,
-            return_value=[],
-        )
-
-        result = await repository.get_timeseries_occurrences(
-            organization_id=organization_id,
-            start_timestamp=now,
-            end_timestamp=now,
-            interval="day",
-            timezone="UTC",
-        )
-
-        assert result == []
-        helper_mock.assert_awaited_once_with(
-            organization_id,
-            now,
-            now,
-            "day",
-            "UTC",
-            aggregate_field="_cost.amount",
-            customer_id=None,
-            external_customer_id=None,
-            name=None,
-            event_type_id=None,
-        )

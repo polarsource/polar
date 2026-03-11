@@ -1,3 +1,8 @@
+// ─── Design System Tokens ───────────────────────────────────────────────────────────────────
+// NOTE: Updating these require a cache removal (rm -rf clients/apps/web/.next) and
+// restarting the dev server.
+// ──────────────────────────────────────────────────────────────────────────────
+
 import * as stylex from '@stylexjs/stylex'
 
 // ─── Spacing ──────────────────────────────────────────────────────────────────

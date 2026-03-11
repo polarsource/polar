@@ -1,6 +1,5 @@
-import { Box } from '@/design-system/components/Box'
 import { Metadata } from 'next'
-
+import LandingPage from '../../../../components/Landing/LandingPage'
 export const metadata: Metadata = {
   title: 'Polar — Monetize your software with ease',
   description: 'Monetize your software with ease',
@@ -31,29 +30,5 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return (
-    <>
-      <Box
-        as="section"
-        padding="xl"
-        borderRadius="sm"
-        display="flex"
-        alignItems="center"
-        gap="s"
-        borderColor="border-primary"
-        borderWidth={2}
-        opacity={0.99}
-        position="relative"
-        top={2}
-        backgroundColor="background-primary"
-        flexDirection={{
-          base: 'row',
-          md: 'column',
-        }}
-      >
-        <p>Design System!</p>
-        <p>Box</p>
-      </Box>
-    </>
-  )
+  return <LandingPage />
 }

@@ -1,4 +1,4 @@
-export const MESH_GLSL = `
+const MESH_MATH_GLSL = `
   // ── Simplex noise ─────────────────────────────────────────────────────────
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec2 mod289v2(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -44,6 +44,7 @@ export const MESH_GLSL = `
     return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
   }
   float linearToSrgb(float c) {
+    c = max(0.0, c);
     return c <= 0.0031308 ? c * 12.92 : 1.055 * pow(c, 1.0 / 2.4) - 0.055;
   }
   vec3 srgb2linear(vec3 c) {
@@ -85,20 +86,9 @@ export const MESH_GLSL = `
     vec2 d = p - center;
     return exp(-dot(d, d) / (2.0 * spread * spread));
   }
+`
 
-  // ── OKLCH palette: vec3(L, C, H_radians) ─────────────────────────────────
-  vec3 pal(int i) {
-    if (i == 0) return vec3(0.60, 0.32, 4.19);  // indigo
-    if (i == 1) return vec3(0.55, 0.34, 5.50);  // violet
-    if (i == 2) return vec3(0.65, 0.34, 0.15);  // crimson-red
-    if (i == 3) return vec3(0.72, 0.36, 0.42);  // warm-red
-    if (i == 4) return vec3(0.52, 0.36, 5.00);  // electric-purple
-    if (i == 5) return vec3(0.58, 0.32, 3.50);  // deep-teal
-    if (i == 6) return vec3(0.72, 0.30, 2.80);  // sky-cyan
-    if (i == 7) return vec3(0.58, 0.34, 4.71);  // deep-blue
-    return vec3(0.75, 0.0, 0.0);
-  }
-
+const MESH_BLOBS_GLSL = `
   vec3 computeColor(vec2 uv, float aspect, float time) {
     float t = time * 0.22 + 120.0;
     vec2  p = (uv - 0.5) * vec2(aspect, 1.0);
@@ -138,6 +128,25 @@ export const MESH_GLSL = `
     float wT = w0+w1+w2+w3+w4+w5+w6+w7 + 0.001;
 
     float isDark = step(0.5, 1.0 - dot(u_colorA, vec3(0.333)));
+`
+
+export const MESH_GLSL = `
+  ${MESH_MATH_GLSL}
+
+  // ── OKLCH palette: vec3(L, C, H_radians) ─────────────────────────────────
+  vec3 pal(int i) {
+    if (i == 0) return vec3(0.60, 0.32, 4.19);  // indigo
+    if (i == 1) return vec3(0.55, 0.34, 5.50);  // violet
+    if (i == 2) return vec3(0.65, 0.34, 0.15);  // crimson-red
+    if (i == 3) return vec3(0.72, 0.36, 0.42);  // warm-red
+    if (i == 4) return vec3(0.52, 0.36, 5.00);  // electric-purple
+    if (i == 5) return vec3(0.58, 0.32, 3.50);  // deep-teal
+    if (i == 6) return vec3(0.72, 0.30, 2.80);  // sky-cyan
+    if (i == 7) return vec3(0.58, 0.34, 4.71);  // deep-blue
+    return vec3(0.75, 0.0, 0.0);
+  }
+
+  ${MESH_BLOBS_GLSL}
 
     vec3 c0=pal(0); vec3 c1=pal(1); vec3 c2=pal(2); vec3 c3=pal(3);
     vec3 c4=pal(4); vec3 c5=pal(5); vec3 c6=pal(6); vec3 c7=pal(7);
@@ -156,5 +165,32 @@ export const MESH_GLSL = `
     L = max(L, Lfloor);
     float chromaScale = mix(1.32, 0.96, isDark) * (1.0 - lift * 3.0);
     return clamp(oklch2srgb(vec3(L, max(C * chromaScale, 0.12), H)), 0.0, 1.0);
+  }
+`
+
+export const MESH_GRAY_GLSL = `
+  ${MESH_MATH_GLSL}
+
+  // ── Gray palette: vec3(L, 0, 0) — high contrast darks and lights ─────────
+  vec3 pal(int i) {
+    if (i == 0) return vec3(0.10, 0.0, 0.0);
+    if (i == 1) return vec3(0.88, 0.0, 0.0);
+    if (i == 2) return vec3(0.18, 0.0, 0.0);
+    if (i == 3) return vec3(0.82, 0.0, 0.0);
+    if (i == 4) return vec3(0.14, 0.0, 0.0);
+    if (i == 5) return vec3(0.78, 0.0, 0.0);
+    if (i == 6) return vec3(0.50, 0.0, 0.0);
+    if (i == 7) return vec3(0.92, 0.0, 0.0);
+    return vec3(0.50, 0.0, 0.0);
+  }
+
+  ${MESH_BLOBS_GLSL}
+
+    vec3 c0=pal(0); vec3 c1=pal(1); vec3 c2=pal(2); vec3 c3=pal(3);
+    vec3 c4=pal(4); vec3 c5=pal(5); vec3 c6=pal(6); vec3 c7=pal(7);
+
+    float L = (c0.x*w0+c1.x*w1+c2.x*w2+c3.x*w3+c4.x*w4+c5.x*w5+c6.x*w6+c7.x*w7) / wT;
+
+    return clamp(oklch2srgb(vec3(L, 0.0, 0.0)), 0.0, 1.0);
   }
 `

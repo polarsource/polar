@@ -1,68 +1,40 @@
 'use client'
 
-import { PhyllotaxisSunflower } from '@/components/Brand/PhyllotaxisSunflower'
 import { ShaderCanvas } from '@/components/Brand/ShaderCanvas'
-import { MESH_GLSL } from '@/components/Brand/shaders/geometry/mesh'
-import { rawEffect } from '@/components/Brand/shaders/pass/raw'
+import { MESH_GRAY_GLSL } from '@/components/Brand/shaders/geometry/mesh'
+import { sliceEffect } from '@/components/Brand/shaders/pass/slice'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
+
 import gsap from 'gsap'
 import Link from 'next/link'
-import {
-  PropsWithChildren,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
+import { PropsWithChildren, useEffect, useLayoutEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const orbEffect = rawEffect()
+const orbEffect = sliceEffect({ slices: 8, offset: 0.1 })
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 const PHILOSOPHY = [
   {
     id: 'p1',
-    eyebrow: null,
     headline: 'AI changes how software is sold.',
     body: 'Usage-based. Metered. Token by token, API call by API call. The revenue model is new — but the billing infrastructure is still stuck in the past.',
   },
   {
     id: 'p2',
-    eyebrow: null,
     headline:
       'Every API call is a transaction. Most platforms weren\u2019t built for that.',
     body: 'Legacy billing was designed for seat-based SaaS. AI products are different — dynamic pricing, usage meters, global customers from day one. The tools haven\u2019t kept up.',
   },
   {
     id: 'p3',
-    eyebrow: 'Our answer',
     headline: 'We built the billing layer AI startups actually need.',
     body: 'Usage-based, seat-based, one-time — any model, any combination. Global tax compliance included. One flat rate. No monthly fees. Built for the velocity of AI.',
   },
   {
     id: 'p4',
-    eyebrow: 'Our belief',
     headline: 'The best infrastructure is the kind you forget exists.',
     body: 'We measure success by how little you notice us. When it\u2019s working, you\u2019re shipping. That\u2019s the point.',
-  },
-]
-
-const PILLARS = [
-  {
-    index: '01',
-    title: 'Usage-based',
-    body: 'Meter any dimension — tokens, API calls, seats, compute. Mix models freely. Bill exactly what your product delivers.',
-  },
-  {
-    index: '02',
-    title: 'Global',
-    body: 'Tax compliance in 130+ countries, built in. Ship to the world from day one without touching a single tax form.',
-  },
-  {
-    index: '03',
-    title: 'Open',
-    body: '4% + 40¢, all-in. Open source, no lock-in. Fork it, self-host, or let us run it. Your infrastructure, your rules.',
   },
 ]
 
@@ -202,26 +174,12 @@ export function VisionPage() {
         style={{ scrollSnapType: 'y mandatory', scrollbarWidth: 'none' }}
       >
         <HeroSection />
-        <SunflowerSection />
         {PHILOSOPHY.map((item) => (
           <PhilosophySection key={item.id} {...item} />
         ))}
-        <PillarsSection />
         <CtaSection />
       </div>
     </div>
-  )
-}
-
-// ── Sunflower ─────────────────────────────────────────────────────────────────
-
-function SunflowerSection() {
-  return (
-    <VisionSection hero className="relative overflow-hidden">
-      <div className="absolute inset-0">
-        <PhyllotaxisSunflower />
-      </div>
-    </VisionSection>
   )
 }
 
@@ -260,7 +218,6 @@ function HeroSection() {
           idea and the world.
         </Body>
       </div>
-      <ScrollCue />
     </VisionSection>
   )
 }
@@ -268,7 +225,6 @@ function HeroSection() {
 // ── Philosophy ────────────────────────────────────────────────────────────────
 
 interface PhilosophySectionProps {
-  eyebrow: string | null
   headline: string
   body: string
 }
@@ -282,39 +238,14 @@ function PhilosophySection({ headline, body }: PhilosophySectionProps) {
   )
 }
 
-// ── Pillars ───────────────────────────────────────────────────────────────────
-
-function PillarsSection() {
-  return (
-    <VisionSection contentClassName="w-full max-w-5xl gap-16">
-      <div className="dark:border-polar-800 dark:bg-polar-800 grid w-full grid-cols-1 gap-px border border-gray-100 bg-gray-100 md:grid-cols-3">
-        {PILLARS.map(({ index, title, body }) => (
-          <div
-            key={title}
-            className="dark:bg-polar-950 flex flex-col gap-5 bg-white p-10"
-          >
-            <span className="font-mono text-xs text-gray-300 dark:text-white/20">
-              {index}
-            </span>
-            <h3 className="font-display text-2xl font-medium">{title}</h3>
-            <p className="text-sm leading-relaxed text-gray-500 dark:text-white/40">
-              {body}
-            </p>
-          </div>
-        ))}
-      </div>
-    </VisionSection>
-  )
-}
-
 // ── CTA ───────────────────────────────────────────────────────────────────────
 
 function CtaSection() {
   return (
     <VisionSection className="text-center" contentClassName="gap-10">
-      <div className="h-24 w-24 overflow-hidden rounded-full">
+      <div className="h-32 w-32 overflow-hidden rounded-full">
         <ShaderCanvas
-          geometry={MESH_GLSL}
+          geometry={MESH_GRAY_GLSL}
           effect={orbEffect}
           className="h-full w-full"
         />
@@ -327,27 +258,5 @@ function CtaSection() {
         about billing.
       </Body>
     </VisionSection>
-  )
-}
-
-// ── Scroll cue ────────────────────────────────────────────────────────────────
-
-function ScrollCue() {
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 2000)
-    return () => clearTimeout(t)
-  }, [])
-
-  return (
-    <div
-      className="absolute bottom-10 flex flex-col items-center gap-2 transition-opacity duration-1000"
-      style={{ opacity: visible ? 0.4 : 0 }}
-    >
-      <span className="font-mono text-xs tracking-widest text-gray-400 uppercase dark:text-white">
-        Scroll
-      </span>
-      <div className="h-10 w-px animate-pulse bg-gray-300 dark:bg-white/60" />
-    </div>
   )
 }

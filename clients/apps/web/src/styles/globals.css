@@ -294,3 +294,9 @@ pre.shiki {
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
 }
+
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

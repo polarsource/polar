@@ -4573,6 +4573,7 @@ class TestConfirm:
             payment_method=SimpleNamespace(
                 card=SimpleNamespace(fingerprint=fingerprint)
             ),
+            metadata={},
         )
 
         with pytest.raises(TrialAlreadyRedeemed):

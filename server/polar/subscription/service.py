@@ -1661,6 +1661,18 @@ class SubscriptionService:
         Returns:
             SubscriptionChargePreview with breakdown of charges
         """
+        # Apply any pending subscription update (product change, seats change)
+        pending_update = subscription.pending_update
+        if pending_update is not None:
+            pending_update.subscription = subscription
+            if pending_update.product_id is not None:
+                product_repository = ProductRepository.from_session(session)
+                pending_update.product = await product_repository.get_by_id(
+                    pending_update.product_id,
+                    options=product_repository.get_eager_options(),
+                )
+            pending_update.apply_update()
+
         # If subscription is set to cancel at period end, there's no base charge
         # Only metered charges accumulated during the period will be billed
         if subscription.cancel_at_period_end or subscription.ends_at:
@@ -1726,6 +1738,9 @@ class SubscriptionService:
                 tax_amount = tax["amount"]
 
         total = taxable_amount + tax_amount
+
+        # Make sure nothing is saved to DB
+        await session.rollback()
 
         return SubscriptionChargePreview(
             base_amount=base_price,

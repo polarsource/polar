@@ -59,6 +59,7 @@ export default [
       'build/**',
       'next-env.d.ts',
       'e2e/**',
+      'babel.config.js',
     ],
   },
 ]

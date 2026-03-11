@@ -32,6 +32,10 @@ Usage:
         uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 1000
         uv run python -m scripts.migrate_organizations_members repair --no-dry-run --limit 1000 --offset 2000
 
+    Detect only orgs with missing backfill:
+        uv run python -m scripts.migrate_organizations_members repair --only-missing
+        uv run python -m scripts.migrate_organizations_members repair --only-missing --slug my-org
+
     Prepare seat-based orgs for member model (Phase 0B, non-destructive):
         uv run python -m scripts.migrate_organizations_members prepare
         uv run python -m scripts.migrate_organizations_members prepare --slug my-org --no-dry-run
@@ -39,6 +43,7 @@ Usage:
 """
 
 import asyncio
+import dataclasses
 import logging.config
 import uuid
 from functools import wraps
@@ -52,10 +57,17 @@ from sqlalchemy.orm import joinedload
 from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.member.repository import MemberRepository
-from polar.models import Customer, CustomerSeat, Organization
+from polar.models import (
+    Customer,
+    CustomerSeat,
+    Order,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
-from polar.models.member import Member
+from polar.models.member import Member, MemberRole
 from polar.organization.repository import OrganizationRepository
 from polar.organization.tasks import (
     _backfill_benefit_grants,
@@ -88,6 +100,227 @@ def typer_async(f):  # type: ignore
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper
+
+
+@dataclasses.dataclass(slots=True)
+class RepairCandidate:
+    organization: Organization
+    missing_owner_members: int = 0
+    seats_missing_member: int = 0
+    grants_missing_member: int = 0
+
+    @property
+    def has_missing(self) -> bool:
+        return (
+            self.missing_owner_members > 0
+            or self.seats_missing_member > 0
+            or self.grants_missing_member > 0
+        )
+
+
+def _build_repair_organization_statement(
+    *,
+    slug: str | None = None,
+) -> Any:
+    statement = (
+        select(Organization)
+        .where(
+            Organization.deleted_at.is_(None),
+            Organization.blocked_at.is_(None),
+            Organization.feature_settings["member_model_enabled"]
+            .as_boolean()
+            .is_(True),
+            or_(
+                Organization.feature_settings["seat_based_pricing_enabled"].is_(None),
+                Organization.feature_settings["seat_based_pricing_enabled"]
+                .as_boolean()
+                .is_(False),
+            ),
+        )
+        .order_by(
+            Organization.next_review_threshold.asc(),
+            Organization.id.asc(),
+        )
+    )
+
+    if slug is not None:
+        statement = statement.where(Organization.slug == slug)
+
+    return statement
+
+
+def _build_repair_organization_ids_statement(
+    *,
+    slug: str | None = None,
+) -> Any:
+    statement = (
+        select(Organization.id)
+        .where(
+            Organization.deleted_at.is_(None),
+            Organization.blocked_at.is_(None),
+            Organization.feature_settings["member_model_enabled"]
+            .as_boolean()
+            .is_(True),
+            or_(
+                Organization.feature_settings["seat_based_pricing_enabled"].is_(None),
+                Organization.feature_settings["seat_based_pricing_enabled"]
+                .as_boolean()
+                .is_(False),
+            ),
+        )
+    )
+
+    if slug is not None:
+        statement = statement.where(Organization.slug == slug)
+
+    return statement
+
+
+async def _get_missing_owner_member_counts(
+    session: AsyncSession,
+    *,
+    eligible_org_ids_statement: Any,
+) -> dict[uuid.UUID, int]:
+    statement = (
+        select(Customer.organization_id, func.count(Customer.id))
+        .outerjoin(
+            Member,
+            (Customer.id == Member.customer_id)
+            & (Member.role == MemberRole.owner)
+            & (Member.is_deleted.is_(False)),
+        )
+        .where(
+            Customer.organization_id.in_(eligible_org_ids_statement),
+            Customer.is_deleted.is_(False),
+            Member.id.is_(None),
+        )
+        .group_by(Customer.organization_id)
+    )
+    result = await session.execute(statement)
+    return {organization_id: count for organization_id, count in result.all()}
+
+
+async def _get_missing_seat_member_counts(
+    session: AsyncSession,
+    *,
+    eligible_org_ids_statement: Any,
+) -> dict[uuid.UUID, int]:
+    subscription_statement = (
+        select(Product.organization_id, func.count(CustomerSeat.id))
+        .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .join(Product, Subscription.product_id == Product.id)
+        .where(
+            Product.organization_id.in_(eligible_org_ids_statement),
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.subscription_id.is_not(None),
+            CustomerSeat.member_id.is_(None),
+        )
+        .group_by(Product.organization_id)
+    )
+    order_statement = (
+        select(Product.organization_id, func.count(CustomerSeat.id))
+        .join(Order, CustomerSeat.order_id == Order.id)
+        .join(Product, Order.product_id == Product.id)
+        .where(
+            Product.organization_id.in_(eligible_org_ids_statement),
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.order_id.is_not(None),
+            CustomerSeat.member_id.is_(None),
+        )
+        .group_by(Product.organization_id)
+    )
+
+    counts: dict[uuid.UUID, int] = {}
+    for statement in (subscription_statement, order_statement):
+        result = await session.execute(statement)
+        for organization_id, count in result.all():
+            counts[organization_id] = counts.get(organization_id, 0) + count
+
+    return counts
+
+
+async def _get_missing_grant_member_counts(
+    session: AsyncSession,
+    *,
+    eligible_org_ids_statement: Any,
+) -> dict[uuid.UUID, int]:
+    statement = (
+        select(Customer.organization_id, func.count(BenefitGrant.id))
+        .join(Customer, BenefitGrant.customer_id == Customer.id)
+        .where(
+            Customer.organization_id.in_(eligible_org_ids_statement),
+            Customer.is_deleted.is_(False),
+            BenefitGrant.member_id.is_(None),
+            BenefitGrant.is_deleted.is_(False),
+        )
+        .group_by(Customer.organization_id)
+    )
+    result = await session.execute(statement)
+    return {organization_id: count for organization_id, count in result.all()}
+
+
+async def get_repair_candidates(
+    session: AsyncSession,
+    *,
+    slug: str | None = None,
+    limit: int | None = None,
+    offset: int = 0,
+    only_missing: bool = False,
+) -> tuple[list[RepairCandidate], int]:
+    base_statement = _build_repair_organization_statement(slug=slug)
+    eligible_org_ids_statement = _build_repair_organization_ids_statement(slug=slug)
+
+    if only_missing:
+        result = await session.execute(base_statement)
+        organizations = list(result.scalars().all())
+        if not organizations:
+            return [], 0
+
+        owner_counts = await _get_missing_owner_member_counts(
+            session, eligible_org_ids_statement=eligible_org_ids_statement
+        )
+        seat_counts = await _get_missing_seat_member_counts(
+            session, eligible_org_ids_statement=eligible_org_ids_statement
+        )
+        grant_counts = await _get_missing_grant_member_counts(
+            session, eligible_org_ids_statement=eligible_org_ids_statement
+        )
+
+        candidates = [
+            RepairCandidate(
+                organization=organization,
+                missing_owner_members=owner_counts.get(organization.id, 0),
+                seats_missing_member=seat_counts.get(organization.id, 0),
+                grants_missing_member=grant_counts.get(organization.id, 0),
+            )
+            for organization in organizations
+        ]
+        candidates = [candidate for candidate in candidates if candidate.has_missing]
+        total_count = len(candidates)
+
+        if offset > 0:
+            candidates = candidates[offset:]
+
+        if limit is not None:
+            candidates = candidates[:limit]
+
+        return candidates, total_count
+
+    paginated_statement = base_statement
+    if offset > 0:
+        paginated_statement = paginated_statement.offset(offset)
+    if limit is not None:
+        paginated_statement = paginated_statement.limit(limit)
+
+    result = await session.execute(paginated_statement)
+    organizations = list(result.scalars().all())
+    total_count = await session.scalar(
+        select(func.count()).select_from(eligible_org_ids_statement.subquery())
+    )
+
+    return [RepairCandidate(organization=organization) for organization in organizations], (
+        total_count or 0
+    )
 
 
 @cli.command()
@@ -281,6 +514,13 @@ async def repair(
     offset: int = typer.Option(
         0, help="Number of organizations to skip (for batch pagination)"
     ),
+    only_missing: bool = typer.Option(
+        False,
+        help=(
+            "Only include orgs where owner members, seats, or grants are still "
+            "missing according to backfill invariants"
+        ),
+    ),
 ) -> None:
     """Re-run backfill for orgs that already have member_model_enabled.
 
@@ -291,86 +531,60 @@ async def repair(
     sessionmaker = create_async_sessionmaker(engine)
 
     async with sessionmaker() as session:
-        statement = (
-            select(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
-                Organization.feature_settings["member_model_enabled"]
-                .as_boolean()
-                .is_(True),
-                or_(
-                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
-                        None
-                    ),
-                    Organization.feature_settings["seat_based_pricing_enabled"]
-                    .as_boolean()
-                    .is_(False),
-                ),
-            )
-            .order_by(
-                Organization.next_review_threshold.asc(),
-                Organization.id.asc(),
-            )
+        candidates, total_count = await get_repair_candidates(
+            session,
+            slug=slug,
+            limit=limit,
+            offset=offset,
+            only_missing=only_missing,
         )
 
-        if slug is not None:
-            statement = statement.where(Organization.slug == slug)
-
-        if offset > 0:
-            statement = statement.offset(offset)
-
-        if limit is not None:
-            statement = statement.limit(limit)
-
-        result = await session.execute(statement)
-        organizations = list(result.scalars().all())
-
-        # Get total count (without limit/offset) for progress display
-        count_statement = (
-            select(func.count())
-            .select_from(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
-                Organization.feature_settings["member_model_enabled"]
-                .as_boolean()
-                .is_(True),
-                or_(
-                    Organization.feature_settings["seat_based_pricing_enabled"].is_(
-                        None
-                    ),
-                    Organization.feature_settings["seat_based_pricing_enabled"]
-                    .as_boolean()
-                    .is_(False),
-                ),
-            )
+    if not candidates:
+        message = (
+            "No missing organizations found."
+            if only_missing
+            else "No eligible organizations found."
         )
-        total_count = await session.scalar(count_statement)
-
-    if not organizations:
-        typer.echo("No eligible organizations found.")
+        typer.echo(message)
         return
 
     typer.echo(
-        f"Found {len(organizations)} organization(s) to repair"
+        f"Found {len(candidates)} organization(s) to repair"
         f" (offset={offset}, total={total_count})"
     )
     typer.echo()
 
+    if only_missing:
+        typer.echo("Organizations with detected missing backfill:")
+        typer.echo(
+            f"{'Slug':<40} {'Owners':>8} {'Seats':>8} {'Grants':>8} {'ID'}"
+        )
+        typer.echo("-" * 110)
+        for candidate in candidates:
+            organization = candidate.organization
+            typer.echo(
+                f"{organization.slug:<40} "
+                f"{candidate.missing_owner_members:>8} "
+                f"{candidate.seats_missing_member:>8} "
+                f"{candidate.grants_missing_member:>8} "
+                f"{organization.id}"
+            )
+        typer.echo()
+
     if dry_run:
         typer.echo("DRY RUN - No changes will be made.")
-        typer.echo(f"Would repair {len(organizations)} organization(s).")
+        typer.echo(f"Would repair {len(candidates)} organization(s).")
         return
 
-    typer.echo(f"Repairing {len(organizations)} organization(s)...")
+    typer.echo(f"Repairing {len(candidates)} organization(s)...")
     typer.echo()
 
     repaired_count = 0
     failed_count = 0
     skipped_count = 0
 
-    for org in organizations:
+    for candidate in candidates:
+        org = candidate.organization
         try:
             # Step A: Create owner members for all customers without one
             async with sessionmaker() as session:

@@ -29,6 +29,7 @@ import os
 import re
 import sys
 from collections import Counter
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 # Write JWKS file before importing polar.config (which validates the JWKS path
@@ -86,10 +87,18 @@ query ThreadTimeline($threadId: ID!) {
 """
 
 
+MIN_THREAD_AGE = timedelta(hours=4)
+
+
 async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
-    """Paginate all Plain threads with the appeal label."""
+    """Paginate all Plain threads with the appeal label.
+
+    Only returns threads older than MIN_THREAD_AGE to give the organization
+    time to respond before an automatic review is created.
+    """
     threads: list[dict[str, str]] = []
     cursor: str | None = None
+    cutoff = datetime.now(UTC) - MIN_THREAD_AGE
 
     while True:
         kwargs: dict[str, Any] = dict(
@@ -114,8 +123,21 @@ async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
                     title=thread.title,
                 )
                 continue
-            if thread.id:
-                threads.append({"thread_id": thread.id, "slug": match.group(1)})
+            if not thread.id:
+                continue
+
+            # Skip threads that are too recent
+            created_at = datetime.fromisoformat(thread.created_at.iso_8601)
+            if created_at > cutoff:
+                log.debug(
+                    "Skipping thread (younger than 4h)",
+                    thread_id=thread.id,
+                    slug=match.group(1),
+                    created_at=thread.created_at.iso_8601,
+                )
+                continue
+
+            threads.append({"thread_id": thread.id, "slug": match.group(1)})
 
         if not result.page_info.has_next_page:
             break

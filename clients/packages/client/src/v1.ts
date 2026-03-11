@@ -15582,6 +15582,8 @@ export interface components {
        * @description List of meters associated with the subscription.
        */
       meters: components['schemas']['CustomerSubscriptionMeter'][]
+      /** @description Pending subscription update that will be applied at the beginning of the next period. If `null`, there is no pending update. */
+      pending_update: components['schemas']['PendingSubscriptionUpdate'] | null
     }
     /** CustomerSubscriptionCancel */
     CustomerSubscriptionCancel: {
@@ -16270,10 +16272,7 @@ export interface components {
        * @default usd
        */
       currency: components['schemas']['PresentmentCurrency'] | null
-      /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
-       */
+      /** Amounts */
       amounts?: {
         [key: string]: number
       } | null
@@ -16530,10 +16529,7 @@ export interface components {
        * @default usd
        */
       currency: components['schemas']['PresentmentCurrency'] | null
-      /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
-       */
+      /** Amounts */
       amounts?: {
         [key: string]: number
       } | null
@@ -17150,10 +17146,7 @@ export interface components {
       amount?: number | null
       /** @deprecated */
       currency?: components['schemas']['PresentmentCurrency'] | null
-      /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
-       */
+      /** Amounts */
       amounts?: {
         [key: string]: number
       } | null
@@ -19648,8 +19641,6 @@ export interface components {
       checkouts?: number | null
       /** Succeeded Checkouts */
       succeeded_checkouts?: number | null
-      /** Checkouts Conversion */
-      checkouts_conversion?: number | null
       /** Churned Subscriptions */
       churned_subscriptions?: number | null
       /** Orders */
@@ -19710,6 +19701,8 @@ export interface components {
       canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other?: number | null
+      /** Checkouts Conversion */
+      checkouts_conversion?: number | null
       /** Churn Rate */
       churn_rate?: number | null
       /** Ltv */
@@ -19737,7 +19730,6 @@ export interface components {
       average_revenue_per_user?: components['schemas']['Metric'] | null
       checkouts?: components['schemas']['Metric'] | null
       succeeded_checkouts?: components['schemas']['Metric'] | null
-      checkouts_conversion?: components['schemas']['Metric'] | null
       churned_subscriptions?: components['schemas']['Metric'] | null
       orders?: components['schemas']['Metric'] | null
       revenue?: components['schemas']['Metric'] | null
@@ -19780,6 +19772,7 @@ export interface components {
         | null
       canceled_subscriptions_unused?: components['schemas']['Metric'] | null
       canceled_subscriptions_other?: components['schemas']['Metric'] | null
+      checkouts_conversion?: components['schemas']['Metric'] | null
       churn_rate?: components['schemas']['Metric'] | null
       ltv?: components['schemas']['Metric'] | null
       gross_margin?: components['schemas']['Metric'] | null
@@ -19863,8 +19856,6 @@ export interface components {
       checkouts?: number | null
       /** Succeeded Checkouts */
       succeeded_checkouts?: number | null
-      /** Checkouts Conversion */
-      checkouts_conversion?: number | null
       /** Churned Subscriptions */
       churned_subscriptions?: number | null
       /** Orders */
@@ -19925,6 +19916,8 @@ export interface components {
       canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other?: number | null
+      /** Checkouts Conversion */
+      checkouts_conversion?: number | null
       /** Churn Rate */
       churn_rate?: number | null
       /** Ltv */
@@ -22049,6 +22042,45 @@ export interface components {
      * @enum {string}
      */
     PayoutStatus: 'pending' | 'in_transit' | 'succeeded' | 'failed' | 'canceled'
+    /**
+     * PendingSubscriptionUpdate
+     * @description Pending update to be applied to a subscription at the beginning of the next period.
+     */
+    PendingSubscriptionUpdate: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Applies At
+       * Format: date-time
+       * @description The date and time when the subscription update will be applied.
+       */
+      applies_at: string
+      /**
+       * Product Id
+       * @description ID of the new product to apply to the subscription. If `null`, the product won't be changed.
+       */
+      product_id: string | null
+      /**
+       * Seats
+       * @description Number of seats to apply to the subscription. If `null`, the number of seats won't be changed.
+       */
+      seats: number | null
+    }
     /** PersonalAccessToken */
     PersonalAccessToken: {
       /**
@@ -23990,6 +24022,8 @@ export interface components {
        * @description List of meters associated with the subscription.
        */
       meters: components['schemas']['SubscriptionMeter'][]
+      /** @description Pending subscription update that will be applied at the beginning of the next period. If `null`, there is no pending update. */
+      pending_update: components['schemas']['PendingSubscriptionUpdate'] | null
     }
     /**
      * SubscriptionBillingPeriodUpdatedEvent
@@ -24732,7 +24766,7 @@ export interface components {
      * SubscriptionProrationBehavior
      * @enum {string}
      */
-    SubscriptionProrationBehavior: 'invoice' | 'prorate'
+    SubscriptionProrationBehavior: 'invoice' | 'prorate' | 'next_period'
     /**
      * SubscriptionRecurringInterval
      * @enum {string}
@@ -25144,6 +25178,124 @@ export interface components {
        */
       trial_end: string | 'now'
     }
+    /** SubscriptionUpdatedBillingPeriodMetadata */
+    SubscriptionUpdatedBillingPeriodMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Billing Period End */
+      billing_period_end: string
+    }
+    /** SubscriptionUpdatedDiscountMetadata */
+    SubscriptionUpdatedDiscountMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Discount Id */
+      discount_id: string | null
+    }
+    /**
+     * SubscriptionUpdatedEvent
+     * @description An event created by Polar when a subscription is updated.
+     */
+    SubscriptionUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.updated'
+      /** Metadata */
+      metadata:
+        | components['schemas']['SubscriptionUpdatedProductMetadata']
+        | components['schemas']['SubscriptionUpdatedDiscountMetadata']
+        | components['schemas']['SubscriptionUpdatedTrialMetadata']
+        | components['schemas']['SubscriptionUpdatedSeatsMetadata']
+        | components['schemas']['SubscriptionUpdatedBillingPeriodMetadata']
+    }
+    /** SubscriptionUpdatedProductMetadata */
+    SubscriptionUpdatedProductMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id: string
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+    }
+    /** SubscriptionUpdatedSeatsMetadata */
+    SubscriptionUpdatedSeatsMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Seats */
+      seats: number
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+    }
+    /** SubscriptionUpdatedTrialMetadata */
+    SubscriptionUpdatedTrialMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Trial End */
+      trial_end: string
+    }
     /** SubscriptionUser */
     SubscriptionUser: {
       /**
@@ -25168,6 +25320,7 @@ export interface components {
       | components['schemas']['BenefitUpdatedEvent']
       | components['schemas']['BenefitRevokedEvent']
       | components['schemas']['SubscriptionCreatedEvent']
+      | components['schemas']['SubscriptionUpdatedEvent']
       | components['schemas']['SubscriptionCycledEvent']
       | components['schemas']['SubscriptionCanceledEvent']
       | components['schemas']['SubscriptionRevokedEvent']
@@ -44037,7 +44190,7 @@ export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
 > = ['subscription.product_updated']
 export const subscriptionProrationBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProrationBehavior']
-> = ['invoice', 'prorate']
+> = ['invoice', 'prorate', 'next_period']
 export const subscriptionRecurringIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRecurringInterval']
 > = ['day', 'week', 'month', 'year']
@@ -44083,6 +44236,9 @@ export const subscriptionStatusValues: ReadonlyArray<
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
 > = ['subscription.uncanceled']
+export const subscriptionUpdatedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
+> = ['subscription.updated']
 export const taxIDFormatValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxIDFormat']
 > = [

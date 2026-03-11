@@ -24,20 +24,20 @@ export interface SpacingProps {
   px?: ResponsiveValue<SpacingToken>
   py?: ResponsiveValue<SpacingToken>
 
-  margin?: ResponsiveValue<SpacingToken>
-  marginTop?: ResponsiveValue<SpacingToken>
-  marginRight?: ResponsiveValue<SpacingToken>
-  marginBottom?: ResponsiveValue<SpacingToken>
-  marginLeft?: ResponsiveValue<SpacingToken>
-  marginHorizontal?: ResponsiveValue<SpacingToken>
-  marginVertical?: ResponsiveValue<SpacingToken>
-  m?: ResponsiveValue<SpacingToken>
-  mt?: ResponsiveValue<SpacingToken>
-  mr?: ResponsiveValue<SpacingToken>
-  mb?: ResponsiveValue<SpacingToken>
-  ml?: ResponsiveValue<SpacingToken>
-  mx?: ResponsiveValue<SpacingToken>
-  my?: ResponsiveValue<SpacingToken>
+  margin?: ResponsiveValue<SpacingToken | 'auto'>
+  marginTop?: ResponsiveValue<SpacingToken | 'auto'>
+  marginRight?: ResponsiveValue<SpacingToken | 'auto'>
+  marginBottom?: ResponsiveValue<SpacingToken | 'auto'>
+  marginLeft?: ResponsiveValue<SpacingToken | 'auto'>
+  marginHorizontal?: ResponsiveValue<SpacingToken | 'auto'>
+  marginVertical?: ResponsiveValue<SpacingToken | 'auto'>
+  m?: ResponsiveValue<SpacingToken | 'auto'>
+  mt?: ResponsiveValue<SpacingToken | 'auto'>
+  mr?: ResponsiveValue<SpacingToken | 'auto'>
+  mb?: ResponsiveValue<SpacingToken | 'auto'>
+  ml?: ResponsiveValue<SpacingToken | 'auto'>
+  mx?: ResponsiveValue<SpacingToken | 'auto'>
+  my?: ResponsiveValue<SpacingToken | 'auto'>
 
   gap?: ResponsiveValue<SpacingToken>
   rowGap?: ResponsiveValue<SpacingToken>
@@ -154,6 +154,7 @@ export interface VisualProps {
   pointerEvents?: ResponsiveValue<'none' | 'auto'>
   visibility?: ResponsiveValue<'visible' | 'hidden'>
   userSelect?: ResponsiveValue<'none' | 'text' | 'all' | 'auto'>
+  textAlign?: ResponsiveValue<'left' | 'center' | 'right' | 'justify'>
 }
 
 export type BoxStyleProps = SpacingProps &

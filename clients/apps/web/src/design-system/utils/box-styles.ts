@@ -16,6 +16,9 @@ export const paddingStyles = stylex.create({
   m: { padding: spacing.m },
   l: { padding: spacing.l },
   xl: { padding: spacing.xl },
+  '2xl': { padding: spacing['2xl'] },
+  '3xl': { padding: spacing['3xl'] },
+  '4xl': { padding: spacing['4xl'] },
 })
 
 export const paddingTopStyles = stylex.create({
@@ -25,6 +28,9 @@ export const paddingTopStyles = stylex.create({
   m: { paddingTop: spacing.m },
   l: { paddingTop: spacing.l },
   xl: { paddingTop: spacing.xl },
+  '2xl': { paddingTop: spacing['2xl'] },
+  '3xl': { paddingTop: spacing['3xl'] },
+  '4xl': { paddingTop: spacing['4xl'] },
 })
 
 export const paddingRightStyles = stylex.create({
@@ -34,6 +40,9 @@ export const paddingRightStyles = stylex.create({
   m: { paddingRight: spacing.m },
   l: { paddingRight: spacing.l },
   xl: { paddingRight: spacing.xl },
+  '2xl': { paddingRight: spacing['2xl'] },
+  '3xl': { paddingRight: spacing['3xl'] },
+  '4xl': { paddingRight: spacing['4xl'] },
 })
 
 export const paddingBottomStyles = stylex.create({
@@ -43,6 +52,9 @@ export const paddingBottomStyles = stylex.create({
   m: { paddingBottom: spacing.m },
   l: { paddingBottom: spacing.l },
   xl: { paddingBottom: spacing.xl },
+  '2xl': { paddingBottom: spacing['2xl'] },
+  '3xl': { paddingBottom: spacing['3xl'] },
+  '4xl': { paddingBottom: spacing['4xl'] },
 })
 
 export const paddingLeftStyles = stylex.create({
@@ -52,6 +64,9 @@ export const paddingLeftStyles = stylex.create({
   m: { paddingLeft: spacing.m },
   l: { paddingLeft: spacing.l },
   xl: { paddingLeft: spacing.xl },
+  '2xl': { paddingLeft: spacing['2xl'] },
+  '3xl': { paddingLeft: spacing['3xl'] },
+  '4xl': { paddingLeft: spacing['4xl'] },
 })
 
 export const paddingInlineStyles = stylex.create({
@@ -61,6 +76,9 @@ export const paddingInlineStyles = stylex.create({
   m: { paddingInline: spacing.m },
   l: { paddingInline: spacing.l },
   xl: { paddingInline: spacing.xl },
+  '2xl': { paddingInline: spacing['2xl'] },
+  '3xl': { paddingInline: spacing['3xl'] },
+  '4xl': { paddingInline: spacing['4xl'] },
 })
 
 export const paddingBlockStyles = stylex.create({
@@ -70,6 +88,9 @@ export const paddingBlockStyles = stylex.create({
   m: { paddingBlock: spacing.m },
   l: { paddingBlock: spacing.l },
   xl: { paddingBlock: spacing.xl },
+  '2xl': { paddingBlock: spacing['2xl'] },
+  '3xl': { paddingBlock: spacing['3xl'] },
+  '4xl': { paddingBlock: spacing['4xl'] },
 })
 
 export const marginStyles = stylex.create({
@@ -79,6 +100,10 @@ export const marginStyles = stylex.create({
   m: { margin: spacing.m },
   l: { margin: spacing.l },
   xl: { margin: spacing.xl },
+  '2xl': { margin: spacing['2xl'] },
+  '3xl': { margin: spacing['3xl'] },
+  '4xl': { margin: spacing['4xl'] },
+  auto: { margin: 'auto' },
 })
 
 export const marginTopStyles = stylex.create({
@@ -88,6 +113,10 @@ export const marginTopStyles = stylex.create({
   m: { marginTop: spacing.m },
   l: { marginTop: spacing.l },
   xl: { marginTop: spacing.xl },
+  '2xl': { marginTop: spacing['2xl'] },
+  '3xl': { marginTop: spacing['3xl'] },
+  '4xl': { marginTop: spacing['4xl'] },
+  auto: { marginTop: 'auto' },
 })
 
 export const marginRightStyles = stylex.create({
@@ -97,6 +126,10 @@ export const marginRightStyles = stylex.create({
   m: { marginRight: spacing.m },
   l: { marginRight: spacing.l },
   xl: { marginRight: spacing.xl },
+  '2xl': { marginRight: spacing['2xl'] },
+  '3xl': { marginRight: spacing['3xl'] },
+  '4xl': { marginRight: spacing['4xl'] },
+  auto: { marginRight: 'auto' },
 })
 
 export const marginBottomStyles = stylex.create({
@@ -106,6 +139,10 @@ export const marginBottomStyles = stylex.create({
   m: { marginBottom: spacing.m },
   l: { marginBottom: spacing.l },
   xl: { marginBottom: spacing.xl },
+  '2xl': { marginBottom: spacing['2xl'] },
+  '3xl': { marginBottom: spacing['3xl'] },
+  '4xl': { marginBottom: spacing['4xl'] },
+  auto: { marginBottom: 'auto' },
 })
 
 export const marginLeftStyles = stylex.create({
@@ -115,6 +152,10 @@ export const marginLeftStyles = stylex.create({
   m: { marginLeft: spacing.m },
   l: { marginLeft: spacing.l },
   xl: { marginLeft: spacing.xl },
+  '2xl': { marginLeft: spacing['2xl'] },
+  '3xl': { marginLeft: spacing['3xl'] },
+  '4xl': { marginLeft: spacing['4xl'] },
+  auto: { marginLeft: 'auto' },
 })
 
 export const marginInlineStyles = stylex.create({
@@ -124,6 +165,10 @@ export const marginInlineStyles = stylex.create({
   m: { marginInline: spacing.m },
   l: { marginInline: spacing.l },
   xl: { marginInline: spacing.xl },
+  '2xl': { marginInline: spacing['2xl'] },
+  '3xl': { marginInline: spacing['3xl'] },
+  '4xl': { marginInline: spacing['4xl'] },
+  auto: { marginInline: 'auto' },
 })
 
 export const marginBlockStyles = stylex.create({
@@ -133,6 +178,10 @@ export const marginBlockStyles = stylex.create({
   m: { marginBlock: spacing.m },
   l: { marginBlock: spacing.l },
   xl: { marginBlock: spacing.xl },
+  '2xl': { marginBlock: spacing['2xl'] },
+  '3xl': { marginBlock: spacing['3xl'] },
+  '4xl': { marginBlock: spacing['4xl'] },
+  auto: { marginBlock: 'auto' },
 })
 
 export const gapStyles = stylex.create({
@@ -142,6 +191,9 @@ export const gapStyles = stylex.create({
   m: { gap: spacing.m },
   l: { gap: spacing.l },
   xl: { gap: spacing.xl },
+  '2xl': { gap: spacing['2xl'] },
+  '3xl': { gap: spacing['3xl'] },
+  '4xl': { gap: spacing['4xl'] },
 })
 
 export const rowGapStyles = stylex.create({
@@ -151,6 +203,9 @@ export const rowGapStyles = stylex.create({
   m: { rowGap: spacing.m },
   l: { rowGap: spacing.l },
   xl: { rowGap: spacing.xl },
+  '2xl': { rowGap: spacing['2xl'] },
+  '3xl': { rowGap: spacing['3xl'] },
+  '4xl': { rowGap: spacing['4xl'] },
 })
 
 export const columnGapStyles = stylex.create({
@@ -160,6 +215,9 @@ export const columnGapStyles = stylex.create({
   m: { columnGap: spacing.m },
   l: { columnGap: spacing.l },
   xl: { columnGap: spacing.xl },
+  '2xl': { columnGap: spacing['2xl'] },
+  '3xl': { columnGap: spacing['3xl'] },
+  '4xl': { columnGap: spacing['4xl'] },
 })
 
 // ── Colors ───────────────────────────────────────────────────────────────────
@@ -392,4 +450,13 @@ export const userSelectStyles = stylex.create({
   text: { userSelect: 'text' },
   all: { userSelect: 'all' },
   auto: { userSelect: 'auto' },
+})
+
+// ── Text Align ──────────────────────────────────────────────────────────────
+
+export const textAlignStyles = stylex.create({
+  left: { textAlign: 'left' },
+  center: { textAlign: 'center' },
+  right: { textAlign: 'right' },
+  justify: { textAlign: 'justify' },
 })

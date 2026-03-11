@@ -302,10 +302,48 @@ resource "render_web_service" "worker" {
   }
 }
 
+resource "render_cron_job" "cron" {
+  for_each = var.cron_jobs
+
+  environment_id = var.render_environment_id
+  name           = each.key
+  plan           = each.value.plan
+  region         = "ohio"
+  schedule       = each.value.schedule
+  start_command  = each.value.start_command
+
+  runtime_source = {
+    image = {
+      image_url              = split("@", coalesce(each.value.image_url, var.api_service_config.image_url))[0]
+      registry_credential_id = var.registry_credential_id
+      digest                 = coalesce(each.value.image_digest, var.api_service_config.image_digest)
+    }
+  }
+
+  env_vars = {
+    SERVICE_NAME                 = { value = each.key }
+    POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
+    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
+    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
+    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
+    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
+    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
+    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
+    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
+    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
+    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
+    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
+    POLAR_REDIS_HOST             = { value = var.redis_config.host }
+    POLAR_REDIS_PORT             = { value = var.redis_config.port }
+    POLAR_REDIS_DB               = { value = var.api_service_config.redis_db }
+  }
+}
+
 locals {
   env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
-  all_service_ids = concat([render_web_service.api.id], local.worker_ids)
+  cron_job_ids    = [for c in render_cron_job.cron : c.id]
+  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids)
 }
 
 # Env group links

@@ -8,7 +8,7 @@ import {
 } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { Client } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DropdownMenu,
@@ -57,6 +57,7 @@ type SeatBasedOrder = { orderId: string }
 interface SeatManagementTableProps {
   api: Client
   identifier: SeatBasedSubscription | SeatBasedOrder
+  prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
 }
 
 function isSeatBasedSubscription(
@@ -68,6 +69,7 @@ function isSeatBasedSubscription(
 export const SeatManagementTable = ({
   api,
   identifier,
+  prorationBehavior,
 }: SeatManagementTableProps) => {
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
@@ -189,6 +191,7 @@ export const SeatManagementTable = ({
           subscriptionId={identifier.subscriptionId}
           totalSeats={totalSeats}
           availableSeats={availableSeats}
+          prorationBehavior={prorationBehavior}
         />
       )}
 

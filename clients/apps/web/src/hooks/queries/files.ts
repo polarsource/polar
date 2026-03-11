@@ -43,6 +43,7 @@ export const useFiles = (
         }
       }),
     retry: defaultRetry,
+    enabled: fileIds.length > 0,
   })
 
 export const usePatchFile = (

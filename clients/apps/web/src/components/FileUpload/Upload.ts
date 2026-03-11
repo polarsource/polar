@@ -17,6 +17,7 @@ interface UploadProperties {
   onFileCreate: (tempId: string, response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
+  onFileUploadError: (fileId: string, error: Error) => void
 }
 
 export class Upload {
@@ -28,6 +29,7 @@ export class Upload {
   onFileCreate: (tempId: string, response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
+  onFileUploadError: (fileId: string, error: Error) => void
 
   constructor({
     organization,
@@ -37,6 +39,7 @@ export class Upload {
     onFileCreate,
     onFileUploadProgress,
     onFileUploaded,
+    onFileUploadError,
   }: UploadProperties) {
     this.organization = organization
     this.service = service
@@ -46,6 +49,7 @@ export class Upload {
     this.onFileCreate = onFileCreate
     this.onFileUploadProgress = onFileUploadProgress
     this.onFileUploaded = onFileUploaded
+    this.onFileUploadError = onFileUploadError
   }
 
   async getSha256Base64(buffer: ArrayBuffer) {
@@ -206,7 +210,7 @@ export class Upload {
     })
 
     if (error) {
-      return
+      throw new Error('Failed to complete file upload')
     }
 
     this.onFileUploaded(data)
@@ -215,21 +219,27 @@ export class Upload {
   async run() {
     this.onFileProcessing(this.tempId, this.file)
 
-    const { data: createFileResponse, error } = await this.create()
-    if (error) {
-      return
+    let fileId = this.tempId
+    try {
+      const { data: createFileResponse, error } = await this.create()
+      if (error) {
+        throw new Error('Failed to create file upload')
+      }
+
+      fileId = createFileResponse.id
+      this.onFileCreate(this.tempId, createFileResponse)
+
+      const uploadedParts = await this.uploadMultiparts({
+        parts: createFileResponse.upload.parts,
+        onProgress: (uploaded: number) => {
+          this.onFileUploadProgress(createFileResponse, uploaded)
+        },
+      })
+
+      await this.complete(createFileResponse, uploadedParts)
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error('Upload failed')
+      this.onFileUploadError(fileId, error)
     }
-    const upload = createFileResponse.upload
-
-    this.onFileCreate(this.tempId, createFileResponse)
-
-    const uploadedParts = await this.uploadMultiparts({
-      parts: upload.parts,
-      onProgress: (uploaded: number) => {
-        this.onFileUploadProgress(createFileResponse, uploaded)
-      },
-    })
-
-    await this.complete(createFileResponse, uploadedParts)
   }
 }

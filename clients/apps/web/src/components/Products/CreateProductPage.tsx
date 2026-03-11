@@ -35,6 +35,7 @@ const reuploadMedia = async (
       onFileUploadProgress: () => {},
       onFileUploaded: (response) =>
         resolve(response as schemas['ProductMediaFileRead']),
+      onFileUploadError: (_fileId, error) => reject(error),
     })
     upload.run().catch(reject)
   })

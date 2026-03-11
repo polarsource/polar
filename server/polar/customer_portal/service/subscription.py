@@ -79,6 +79,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     contains_eager(Product.organization),
                 ),
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.pending_update),
             )
         )
 
@@ -127,6 +128,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     joinedload(Product.organization),
                 ),
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.pending_update),
             )
         )
 

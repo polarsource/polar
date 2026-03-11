@@ -15,7 +15,11 @@ from polar.product.schemas import (
     ProductPrice,
     ProductPriceList,
 )
-from polar.subscription.schemas import SubscriptionBase, SubscriptionMeterBase
+from polar.subscription.schemas import (
+    PendingSubscriptionUpdate,
+    SubscriptionBase,
+    SubscriptionMeterBase,
+)
 
 from .organization import CustomerOrganization
 
@@ -62,6 +66,12 @@ class CustomerSubscription(SubscriptionBase):
     )
     meters: list[CustomerSubscriptionMeter] = Field(
         description="List of meters associated with the subscription."
+    )
+    pending_update: PendingSubscriptionUpdate | None = Field(
+        description=(
+            "Pending subscription update that will be applied at the beginning of the next period. "
+            "If `null`, there is no pending update."
+        )
     )
 
 

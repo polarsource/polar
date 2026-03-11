@@ -258,6 +258,7 @@ async def list_claimed_subscriptions(
             selectinload(Product.product_medias),
             joinedload(Product.organization),
         ),
+        joinedload(Subscription.pending_update),
     )
 
     results, count = await subscription_repository.paginate(

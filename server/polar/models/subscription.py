@@ -281,7 +281,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
 
     @declared_attr
-    def subscription_update(cls) -> Mapped["SubscriptionUpdate | None"]:
+    def pending_update(cls) -> Mapped["SubscriptionUpdate | None"]:
         return relationship(
             "SubscriptionUpdate",
             lazy="raise",

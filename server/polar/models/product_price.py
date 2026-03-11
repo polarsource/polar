@@ -177,6 +177,7 @@ class ProductPrice(RecordModel):
     def legacy_recurring_interval(self) -> SubscriptionRecurringInterval | None:
         return self.product.recurring_interval
 
+    @property
     def is_free(self) -> bool:
         return False
 
@@ -285,6 +286,7 @@ class _ProductPriceFree(ProductPrice):
         use_existing_column=True, default=ProductPriceAmountType.free
     )
 
+    @property
     def is_free(self) -> bool:
         return True
 
@@ -394,6 +396,7 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
         sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
         return sorted_tiers[-1].get("max_seats")
 
+    @property
     def is_free(self) -> bool:
         """Check if ALL tiers have price_per_seat == 0.
 

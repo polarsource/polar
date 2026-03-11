@@ -25,10 +25,20 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import re
 import sys
 from collections import Counter
 from typing import Any
+
+# Write JWKS file before importing polar.config (which validates the JWKS path
+# on import). Render cron jobs don't support secret_files, so JWKS content is
+# passed via POLAR_JWKS_CONTENT env var instead.
+_jwks_content = os.environ.get("POLAR_JWKS_CONTENT")
+if _jwks_content:
+    _jwks_path = os.environ.get("POLAR_JWKS", "/tmp/jwks.json")
+    with open(_jwks_path, "w") as _f:
+        _f.write(_jwks_content)
 
 import httpx
 import structlog

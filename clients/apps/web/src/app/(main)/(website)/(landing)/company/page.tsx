@@ -1,4 +1,3 @@
-import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Link from 'next/link'
 import { investors } from './investors'
@@ -57,7 +56,7 @@ export default function CompanyPage() {
   return (
     <div className="dark:bg-polar-950 min-h-screen bg-white text-gray-900 dark:text-white">
       {/* Hero */}
-      <section className="flex flex-col items-center gap-6 px-6 py-24 text-center">
+      <section className="flex flex-col items-center gap-6 py-24 text-center md:px-4">
         <h1 className="font-display leading-tighter max-w-2xl text-5xl font-medium text-balance md:text-7xl">
           Small team, big ambitions.
         </h1>
@@ -67,7 +66,7 @@ export default function CompanyPage() {
         </p>
         <a
           href="#open-roles"
-          className="mt-2 inline-flex items-center rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-gray-900"
+          className="mt-2 inline-flex items-center rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-gray-900"
         >
           Join Us
         </a>
@@ -76,7 +75,7 @@ export default function CompanyPage() {
       <TeamCarouselWrapper />
 
       {/* About */}
-      <section className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-24">
+      <section className="mx-auto flex w-full max-w-xl flex-col gap-8 py-24 md:px-6">
         <h2 className="font-display text-2xl font-medium md:text-4xl">
           We believe the next unicorns will be created by individual developers.
         </h2>
@@ -110,18 +109,9 @@ export default function CompanyPage() {
         </div>
       </section>
 
-      <section className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-8">
-        <StaticImage
-          src="/assets/landing/company/polar.jpg"
-          height={640}
-          width={840}
-          alt="Polar"
-        />
-      </section>
-
       {/* Open roles */}
       <section id="open-roles">
-        <div className="mx-auto max-w-3xl px-6 py-16">
+        <div className="mx-auto max-w-xl py-16 md:px-6">
           <h2 className="font-display mb-16 text-3xl font-medium">
             Open Roles
           </h2>
@@ -161,7 +151,7 @@ export default function CompanyPage() {
 
       {/* Investors */}
       <section>
-        <div className="mx-auto max-w-3xl px-6 py-16">
+        <div className="mx-auto max-w-xl py-16 md:px-6">
           <div className="mb-12 flex flex-col gap-3">
             <h2 className="font-display text-3xl font-medium">
               Investors, Angels & Advisors
@@ -171,11 +161,11 @@ export default function CompanyPage() {
               through thick and thin — supporting us from Day 1.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-6">
             {investors.map((investor) => (
               <div key={investor.name} className="flex flex-col gap-0.5">
                 <span className="font-medium">{investor.name}</span>
-                <span className="dark:text-polar-500 text-gray-400">
+                <span className="dark:text-polar-500 text-gray-500">
                   {investor.company}
                 </span>
               </div>

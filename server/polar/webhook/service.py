@@ -299,6 +299,8 @@ class WebhookService:
         if event.type == WebhookEventType.checkout_updated:
             checkout_repository = CheckoutRepository.from_session(session)
             payload = json.loads(event.payload)
+            if "data" not in payload:
+                return
             checkout = await checkout_repository.get_by_id(UUID(payload["data"]["id"]))
             assert checkout is not None
             await publish_checkout_event(

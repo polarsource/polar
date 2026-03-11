@@ -241,12 +241,11 @@ variable "slo_report_config" {
 }
 
 variable "cron_jobs" {
-  description = "Map of cron job configurations. image_url and image_digest default to the API service image."
+  description = "Map of cron job configurations. image_url defaults to the API service image. Uses 'latest' tag so Render pulls the newest image before each run."
   type = map(object({
     schedule           = string
     start_command      = string
     image_url          = optional(string)
-    image_digest       = optional(string)
     plan               = optional(string, "starter")
     database_pool_size = optional(string, "5")
   }))

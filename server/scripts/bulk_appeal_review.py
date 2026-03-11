@@ -48,7 +48,10 @@ from plain_client import (  # noqa: E402
     ReplyToThreadInput,
     SnoozeStatusDetail,
     SnoozeThreadInput,
+    SortDirection,
     ThreadsFilter,
+    ThreadsSort,
+    ThreadsSortField,
     ThreadStatus,
 )
 
@@ -105,6 +108,9 @@ async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
             filters=ThreadsFilter(
                 label_type_ids=[APPEAL_LABEL_TYPE_ID],
                 statuses=[ThreadStatus.TODO],
+            ),
+            sort_by=ThreadsSort(
+                field=ThreadsSortField.CREATED_AT, direction=SortDirection.ASC
             ),
             first=50,
         )

@@ -1,9 +1,11 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, case, select
+import sqlalchemy as sa
+from sqlalchemy import Select, and_, case, cast, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -43,6 +45,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.product.guard import is_metered_price
 
@@ -186,6 +189,139 @@ class SubscriptionRepository(
         )
 
         return statement
+
+    async def get_subscriptions_needing_renewal_reminder(
+        self,
+        now: datetime,
+        reminder_window_end: datetime,
+        *,
+        options: Options = (),
+    ) -> Sequence[Subscription]:
+        """
+        Find active subscriptions with long billing cycles (> 45 days)
+        whose current_period_end is within the next 7 days,
+        and where no matching EmailLog row exists for dedup.
+        """
+        # Long billing cycle conditions:
+        # - year (any count)
+        # - month with count >= 2
+        # - week with count >= 7
+        # - day with count >= 45
+        long_cycle_condition = or_(
+            Subscription.recurring_interval == SubscriptionRecurringInterval.year,
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.month,
+                Subscription.recurring_interval_count >= 2,
+            ),
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.week,
+                Subscription.recurring_interval_count >= 7,
+            ),
+            and_(
+                Subscription.recurring_interval == SubscriptionRecurringInterval.day,
+                Subscription.recurring_interval_count >= 45,
+            ),
+        )
+
+        # Dedup: NOT EXISTS in email_logs for this subscription + template
+        dedup_subquery = (
+            select(EmailLog.id)
+            .where(
+                EmailLog.email_template == "subscription_renewal_reminder",
+                EmailLog.status == EmailLogStatus.sent,
+                EmailLog.email_props["subscription"]["id"].as_string()
+                == cast(Subscription.id, sa.String),
+                EmailLog.email_props["renewal_date"].as_string()
+                == sa.func.to_char(Subscription.current_period_end, "MM/DD/YYYY"),
+            )
+            .correlate(Subscription)
+            .exists()
+        )
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.active,
+                Subscription.cancel_at_period_end.is_(False),
+                Subscription.current_period_end.isnot(None),
+                Subscription.current_period_end > now,
+                Subscription.current_period_end <= reminder_window_end,
+                long_cycle_condition,
+                ~dedup_subquery,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_subscriptions_needing_trial_conversion_reminder(
+        self,
+        now: datetime,
+        *,
+        options: Options = (),
+    ) -> Sequence[Subscription]:
+        """
+        Find trialing subscriptions whose trial ends within the appropriate
+        window, and where no matching EmailLog row exists for dedup.
+
+        - Trials >= 3 days: send reminder 3 days before trial ends
+        - Trials >= 1 day but < 3 days: send reminder 1 day before trial ends
+        - Trials < 1 day: skip entirely
+        """
+        one_day_from_now = now + timedelta(days=1)
+        three_days_from_now = now + timedelta(days=3)
+
+        # Dedup: NOT EXISTS in email_logs for this subscription + template
+        dedup_subquery = (
+            select(EmailLog.id)
+            .where(
+                EmailLog.email_template == "subscription_trial_conversion_reminder",
+                EmailLog.status == EmailLogStatus.sent,
+                EmailLog.email_props["subscription"]["id"].as_string()
+                == cast(Subscription.id, sa.String),
+                EmailLog.email_props["conversion_date"].as_string()
+                == sa.func.to_char(Subscription.trial_end, "MM/DD/YYYY"),
+            )
+            .correlate(Subscription)
+            .exists()
+        )
+
+        # Trial duration condition:
+        # If trial >= 3 days: trial_end within next 3 days
+        # If trial >= 1 day but < 3 days: trial_end within next 1 day
+        trial_duration = sa.func.extract(
+            "epoch", Subscription.trial_end - Subscription.trial_start
+        )
+        three_days_seconds = 3 * 24 * 60 * 60
+        one_day_seconds = 1 * 24 * 60 * 60
+
+        trial_window_condition = or_(
+            # Long trials (>= 3 days): remind 3 days before
+            and_(
+                trial_duration >= three_days_seconds,
+                Subscription.trial_end > now,
+                Subscription.trial_end <= three_days_from_now,
+            ),
+            # Short trials (>= 1 day, < 3 days): remind 1 day before
+            and_(
+                trial_duration >= one_day_seconds,
+                trial_duration < three_days_seconds,
+                Subscription.trial_end > now,
+                Subscription.trial_end <= one_day_from_now,
+            ),
+        )
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.trialing,
+                Subscription.trial_start.isnot(None),
+                Subscription.trial_end.isnot(None),
+                trial_window_condition,
+                ~dedup_subquery,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
 
     def get_sorting_clause(self, property: SubscriptionSortProperty) -> SortingClause:
         match property:

@@ -2178,6 +2178,34 @@ class SubscriptionService:
             },
         )
 
+    async def send_renewal_reminder_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        if subscription.current_period_end is None:
+            return
+        renewal_date = subscription.current_period_end.strftime("%m/%d/%Y")
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription renews soon",
+            template_name="subscription_renewal_reminder",
+            extra_context={"renewal_date": renewal_date},
+        )
+
+    async def send_trial_conversion_reminder_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        if subscription.trial_end is None:
+            return
+        conversion_date = subscription.trial_end.strftime("%m/%d/%Y")
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} trial is ending soon",
+            template_name="subscription_trial_conversion_reminder",
+            extra_context={"conversion_date": conversion_date},
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -2187,7 +2215,9 @@ class SubscriptionService:
         template_name: Literal[
             "subscription_cancellation",
             "subscription_past_due",
+            "subscription_renewal_reminder",
             "subscription_revoked",
+            "subscription_trial_conversion_reminder",
             "subscription_uncanceled",
             "subscription_updated",
         ],

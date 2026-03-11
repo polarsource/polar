@@ -21765,6 +21765,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** PaymentFailed */
+    PaymentFailed: {
+      /**
+       * Error
+       * @example PaymentFailed
+       * @constant
+       */
+      error: 'PaymentFailed'
+      /** Detail */
+      detail: string
+    }
     /** PaymentIntentFailedError */
     PaymentIntentFailedError: {
       /**
@@ -29273,6 +29284,15 @@ export interface operations {
           'application/json': components['schemas']['Subscription']
         }
       }
+      /** @description Payment required to apply the subscription update. */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PaymentFailed']
+        }
+      }
       /** @description Subscription is already canceled or will be at the end of the period. */
       403: {
         headers: {
@@ -36068,6 +36088,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerSubscription']
+        }
+      }
+      /** @description Payment required to apply the subscription update. */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PaymentFailed']
         }
       }
       /** @description Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions. */

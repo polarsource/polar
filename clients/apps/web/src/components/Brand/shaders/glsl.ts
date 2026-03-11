@@ -45,3 +45,25 @@ export const FILM_GRAIN_GLSL = `
     return (hash(fragCoord + fract(time * 0.7)) * 2.0 - 1.0) * 0.18;
   }
 `
+
+/**
+ * Wraps any geometry GLSL so that computeColor returns a monochrome output
+ * with linear contrast. Works with any geometry shader.
+ */
+export function withMonochrome(geometryGlsl: string): string {
+  const wrapped = geometryGlsl.replace(
+    /vec3\s+computeColor\s*\(/g,
+    'vec3 _computeColorRaw(',
+  )
+  return `
+    ${wrapped}
+
+    vec3 computeColor(vec2 uv, float aspect, float time) {
+      vec3 color = _computeColorRaw(uv, aspect, time);
+      float luma = dot(color, vec3(0.299, 0.587, 0.114));
+      luma = smoothstep(0.2, 0.8, luma);
+      luma = mix(0.04, 0.92, luma);
+      return vec3(luma);
+    }
+  `
+}

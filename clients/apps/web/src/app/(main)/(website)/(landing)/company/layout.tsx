@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Company — Polar',
+  title: 'Company',
   description:
     'Small team, big ambitions. Learn about Polar, our open roles, and the investors who back us.',
 }

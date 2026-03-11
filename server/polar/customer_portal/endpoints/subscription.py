@@ -11,6 +11,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.openapi import APITag
+from polar.order.service import PaymentFailed
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
@@ -139,6 +140,10 @@ async def get_charge_preview(
     response_model=CustomerSubscription,
     responses={
         200: {"description": "Customer subscription updated."},
+        402: {
+            "description": "Payment required to apply the subscription update.",
+            "model": PaymentFailed.schema(),
+        },
         403: {
             "description": (
                 "Customer subscription is already canceled "

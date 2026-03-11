@@ -2,10 +2,11 @@
 
 import { FileObject, useFileUpload } from '@/components/FileUpload'
 import { FileRead } from '@/components/FileUpload/Upload'
+import { toast } from '@/components/Toast/use-toast'
 import { useFiles } from '@/hooks/queries/files'
 import FileUploadIcon from '@mui/icons-material/FileUploadOutlined'
 import { schemas } from '@polar-sh/client'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import { ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
@@ -108,6 +109,13 @@ const DownloadablesForm = ({
     })
   }
 
+  const onFileUploadError = useCallback((fileName: string, error: Error) => {
+    toast({
+      title: 'Upload Failed',
+      description: `Failed to upload ${fileName}. Please try again.`,
+    })
+  }, [])
+
   const {
     files,
     setFiles,
@@ -120,6 +128,7 @@ const DownloadablesForm = ({
     organization,
     service: 'downloadable',
     onFilesUpdated,
+    onFileUploadError,
     initialFiles,
   })
 

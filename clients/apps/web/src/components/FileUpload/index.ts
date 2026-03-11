@@ -39,6 +39,7 @@ interface FileUploadProps<T extends FileRead | schemas['FileUpload']> {
   initialFiles: FileRead[]
   onFilesUpdated: (files: FileObject<T>[]) => void
   onFilesRejected?: (rejections: FileRejection[]) => void
+  onFileUploadError?: (fileName: string, error: Error) => void
 }
 
 export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
@@ -48,6 +49,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   organization,
   onFilesUpdated,
   onFilesRejected,
+  onFileUploadError,
   initialFiles = [],
 }: FileUploadProps<T>) => {
   const [files, setFilesState] = useState<FileObject<T>[]>(
@@ -131,6 +133,14 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     })
   }
 
+  const onFileError = (fileId: string, error: Error) => {
+    removeFile(fileId)
+    if (onFileUploadError) {
+      const file = files.find((f) => f.id === fileId)
+      onFileUploadError(file?.name ?? 'Unknown file', error)
+    }
+  }
+
   const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
     for (const file of acceptedFiles) {
       const upload = new Upload({
@@ -141,6 +151,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
         onFileCreate,
         onFileUploadProgress,
         onFileUploaded,
+        onFileUploadError: onFileError,
       })
       upload.run()
     }

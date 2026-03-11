@@ -627,6 +627,8 @@ class SubscriptionService:
                         pending_update.product_id,
                         options=product_repository.get_eager_options(),
                     )
+                else:
+                    pending_update.product = None
                 pending_update.apply_update()
                 subscription_update_repository = (
                     SubscriptionUpdateRepository.from_session(session)
@@ -1671,6 +1673,8 @@ class SubscriptionService:
                     pending_update.product_id,
                     options=product_repository.get_eager_options(),
                 )
+            else:
+                pending_update.product = None
             pending_update.apply_update()
 
         # If subscription is set to cancel at period end, there's no base charge

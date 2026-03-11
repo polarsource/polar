@@ -162,7 +162,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id)
+        query = TinybirdEventsQuery([org_id])
         stats = await query.get_event_type_stats()
 
         stats_by_name = {(s.name, s.source): s for s in stats}
@@ -191,7 +191,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id).filter_source(EventSource.user)
+        query = TinybirdEventsQuery([org_id]).filter_source(EventSource.user)
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1
@@ -221,7 +221,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id).filter_customer(customer_ids=[customer_1])
+        query = TinybirdEventsQuery([org_id]).filter_customer(customer_ids=[customer_1])
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1
@@ -278,7 +278,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_1)
+        query = TinybirdEventsQuery([org_1])
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1
@@ -338,7 +338,7 @@ class TestTinybirdDelete:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id)
+        query = TinybirdEventsQuery([org_id])
         stats_before = await query.get_event_type_stats()
         stats_by_name = {s.name: s for s in stats_before}
         assert stats_by_name["delete.test"].occurrences == 2
@@ -380,7 +380,7 @@ class TestTinybirdDelete:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id)
+        query = TinybirdEventsQuery([org_id])
         stats_before = await query.get_event_type_stats()
         stats_by_name = {s.name: s for s in stats_before}
         assert stats_by_name["batch.delete"].occurrences == 2

@@ -85,7 +85,7 @@
     "event-source-plus": "^0.1.15",
     "eventemitter3": "^5.0.4",
     "markdown-to-jsx": "^8.0.0",
-    "react-hook-form": "~7.71.1"
+    "react-hook-form": "~7.71.2"
   },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",

@@ -23,6 +23,16 @@ The prorated price difference is charged or credited immediately when the subscr
 
 The prorated price difference is charged or credited on the next invoice on upgrading or downgrading a subscription.
 
+### Apply on Next Period (`next_period`)
+
+The subscription change is **not applied immediately**. Instead, it is scheduled as a pending update and applied at the beginning of the next billing period. No proration charges or credits are issued — the new plan simply takes effect on renewal.
+
+When a `next_period` update is pending, the subscription object includes a `pending_update` field with details about the scheduled change. If `pending_update` is `null`, there is no scheduled change.
+
+<Note>
+A new update always overrides any previous pending update that has not yet been applied. For example, if a `next_period` update was previously scheduled and a new update is then made with `invoice` or `prorate` proration, the pending update is discarded and the new update is applied immediately instead.
+</Note>
+
 ## How to change the default proration setting using dashboard
 
 <Steps>
@@ -34,7 +44,7 @@ The prorated price difference is charged or credited on the next invoice on upgr
         <img height="200" src="/assets/guides/proration/settings.png" />
     </Step>
     <Step title = "Choose the Proration type">
-        Choose the default proration behavior: **Invoice Immediately** or **Next invoice**.
+        Choose the default proration behavior: **Invoice Immediately**, **Next invoice**, or **Apply on Next Period**.
         <img height="200" src="/assets/guides/proration/proration.png" />
         The default proration setting is changed successfully. 
     </Step>
@@ -82,7 +92,8 @@ You can change the default proration behavior using the [Update Organization API
 
             - **type_of_proration** with the desired proration type:  
                         - `invoice`: to charge/credit the prorated price difference immediately  
-                        - `prorate`: to charge/credit the prorated price difference on next invoice 
+                        - `prorate`: to charge/credit the prorated price difference on next invoice  
+                        - `next_period`: to schedule the change for the beginning of the next billing period (no proration)
 <CodeGroup>
 
 ```bash cURL

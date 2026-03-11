@@ -56,6 +56,7 @@ import {
   pointerEventsStyles,
   positionStyles,
   rowGapStyles,
+  textAlignStyles,
   userSelectStyles,
   visibilityStyles,
 } from './box-styles'
@@ -84,6 +85,10 @@ function sizeValue(v: string | number): string {
 // Token transforms — at runtime, defineVars values are CSS variable references (e.g. "var(--xhash)")
 // which are valid CSS values for use in scoped responsive <style> tags.
 function spacingCss(token: SpacingToken): string {
+  return spacing[token] as string
+}
+function marginCss(token: SpacingToken | 'auto'): string {
+  if (token === 'auto') return 'auto'
   return spacing[token] as string
 }
 function colorCss(token: ColorToken): string {
@@ -188,6 +193,7 @@ const BOX_STYLE_PROP_MAP: Record<keyof BoxStyleProps, true> = {
   pointerEvents: true,
   visibility: true,
   userSelect: true,
+  textAlign: true,
 }
 
 export const BOX_STYLE_PROP_KEYS = new Set<string>(
@@ -253,7 +259,11 @@ export function resolveBoxStyles(
         if (v === undefined) continue
         const cssValue = transform(v as T)
         if (bp === 'base') {
-          inlineStyle[cssProp] = cssValue
+          // Use scoped <style> tag (breakpoint 0) instead of inline style so that
+          // media-query overrides at higher breakpoints can cascade over it.
+          // Inline styles have infinite specificity and would block any override.
+          if (!breakpointStyles[0]) breakpointStyles[0] = {}
+          breakpointStyles[0][cssProp] = cssValue
         } else {
           const bpPx = breakpoints[bp as BreakpointKey]
           if (bpPx !== undefined) {
@@ -306,42 +316,42 @@ export function resolveBoxStyles(
     spacingCss,
   )
 
-  addTokenProp(marginStyles, 'margin', props.margin ?? props.m, spacingCss)
+  addTokenProp(marginStyles, 'margin', props.margin ?? props.m, marginCss)
   addTokenProp(
     marginTopStyles,
     'margin-top',
     props.marginTop ?? props.mt,
-    spacingCss,
+    marginCss,
   )
   addTokenProp(
     marginRightStyles,
     'margin-right',
     props.marginRight ?? props.mr,
-    spacingCss,
+    marginCss,
   )
   addTokenProp(
     marginBottomStyles,
     'margin-bottom',
     props.marginBottom ?? props.mb,
-    spacingCss,
+    marginCss,
   )
   addTokenProp(
     marginLeftStyles,
     'margin-left',
     props.marginLeft ?? props.ml,
-    spacingCss,
+    marginCss,
   )
   addTokenProp(
     marginInlineStyles,
     'margin-inline',
     props.marginHorizontal ?? props.mx,
-    spacingCss,
+    marginCss,
   )
   addTokenProp(
     marginBlockStyles,
     'margin-block',
     props.marginVertical ?? props.my,
-    spacingCss,
+    marginCss,
   )
 
   addTokenProp(gapStyles, 'gap', props.gap ?? props.g, spacingCss)
@@ -481,6 +491,7 @@ export function resolveBoxStyles(
   )
   addTokenProp(visibilityStyles, 'visibility', props.visibility, (v) => v)
   addTokenProp(userSelectStyles, 'user-select', props.userSelect, (v) => v)
+  addTokenProp(textAlignStyles, 'text-align', props.textAlign, (v) => v)
 
   // --- Build responsive CSS for breakpoint values ---
   const bpKeys = Object.keys(breakpointStyles)
@@ -489,14 +500,20 @@ export function resolveBoxStyles(
   let responsiveCSS: string | null = null
 
   if (bpKeys.length > 0) {
+    const selector = `.${scopeClass}:not(#\\#):not(#\\#):not(#\\#):not(#\\#)`
     responsiveCSS = bpKeys
       .map((bp) => {
         const entries = Object.entries(breakpointStyles[bp])
           .map(([k, v]) => `${toKebab(k)}: ${v}`)
           .join('; ')
+        // Breakpoint 0 = base styles for responsive arbitrary props (no media query).
+        // Higher breakpoints are wrapped in @media so they cascade over the base.
         // StyleX uses :not(#\#) x3 for specificity (3,1,0). We use x4 to ensure
         // responsive overrides always win over the base StyleX atomic classes.
-        return `@media (min-width: ${bp}px) { .${scopeClass}:not(#\\#):not(#\\#):not(#\\#):not(#\\#) { ${entries} } }`
+        if (bp === 0) {
+          return `${selector} { ${entries} }`
+        }
+        return `@media (min-width: ${bp}px) { ${selector} { ${entries} } }`
       })
       .join(' ')
   }

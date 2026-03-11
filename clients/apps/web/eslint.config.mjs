@@ -36,6 +36,18 @@ export default [
           message:
             'Use <UploadImage /> from @/components/Image/Image or <StaticImage /> from @/components/Image/StaticImage instead of <img>.',
         },
+        {
+          selector:
+            'JSXOpeningElement[name.name="Box"] > JSXAttribute[name.name="className"]',
+          message:
+            'Do not use className on <Box />. Use design system props instead.',
+        },
+        {
+          selector:
+            'JSXOpeningElement[name.name="Box"] > JSXAttribute[name.name="style"]',
+          message:
+            'Do not use style on <Box />. Use design system props instead.',
+        },
       ],
       'no-restricted-imports': [
         'error',

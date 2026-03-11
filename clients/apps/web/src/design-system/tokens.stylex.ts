@@ -14,6 +14,9 @@ export const spacing = stylex.defineVars({
   m: '16px',
   l: '24px',
   xl: '32px',
+  '2xl': '48px',
+  '3xl': '64px',
+  '4xl': '96px',
 })
 
 // ─── Colors ───────────────────────────────────────────────────────────────────

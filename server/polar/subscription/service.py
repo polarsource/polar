@@ -441,6 +441,7 @@ class SubscriptionService:
             subscription_product_prices=subscription_product_prices,
             currency=currency,
             user_metadata=subscription_create.metadata,
+            subscription_update=None,
         )
 
         repository = SubscriptionRepository.from_session(session)
@@ -523,6 +524,7 @@ class SubscriptionService:
                 started_at=current_period_start,
                 cancel_at_period_end=False,
                 customer=customer,
+                subscription_update=None,
             )
             created = True
 
@@ -1012,19 +1014,27 @@ class SubscriptionService:
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
 
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+
         if proration_behavior == SubscriptionProrationBehavior.next_period:
             subscription_update, _ = generate_subscription_update(
                 subscription,
                 product=product,
                 applies_at=subscription.current_period_end,
             )
-            subscription_update_repository = SubscriptionUpdateRepository.from_session(
-                session
-            )
-            subscription_update = await subscription_update_repository.upsert(
-                subscription_update
+            subscription.subscription_update = (
+                await subscription_update_repository.upsert(subscription_update)
             )
         else:
+            await (
+                subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+                    subscription.id
+                )
+            )
+            subscription.subscription_update = None
+
             subscription_update, billing_entries = generate_subscription_update(
                 subscription, product=product
             )
@@ -1308,17 +1318,24 @@ class SubscriptionService:
             subscription, seats=seats
         )
 
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
         if proration_behavior == SubscriptionProrationBehavior.next_period:
             subscription_update, _ = generate_subscription_update(
                 subscription, seats=seats, applies_at=subscription.current_period_end
             )
-            subscription_update_repository = SubscriptionUpdateRepository.from_session(
-                session
-            )
-            subscription_update = await subscription_update_repository.upsert(
-                subscription_update
+            subscription.subscription_update = (
+                await subscription_update_repository.upsert(subscription_update)
             )
         else:
+            await (
+                subscription_update_repository.soft_delete_unapplied_by_subscription_id(
+                    subscription.id
+                )
+            )
+            subscription.subscription_update = None
+
             subscription_update, billing_entries = generate_subscription_update(
                 subscription, seats=seats
             )

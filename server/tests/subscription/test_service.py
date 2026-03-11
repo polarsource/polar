@@ -2315,6 +2315,48 @@ class TestUpdateProduct:
         assert updated_subscription_update.product_id == product_second.id
         assert subscription_update.applies_at == subscription.current_period_end
 
+    async def test_proration_behavior_deletes_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        product_second: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        subscription_update, _ = generate_subscription_update(
+            subscription, product=product
+        )
+        await save_fixture(subscription_update)
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_second.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert updated_subscription.product == product_second
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is None
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:
@@ -3609,6 +3651,55 @@ class TestUpdateSeats:
         assert updated_subscription_update.id == subscription_update.id
         assert updated_subscription_update.seats == 10
         assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_proration_behavior_deletes_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with existing future SubscriptionUpdate
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription, seats=8
+        )
+        await save_fixture(subscription_update)
+
+        # When: Update seats with a proration behavior
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: seats are updated
+        assert updated.seats == 10
+
+        # Then: Existing SubscriptionUpdate is deleted
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is None
 
     async def test_seat_increase_with_fixed_discount(
         self,

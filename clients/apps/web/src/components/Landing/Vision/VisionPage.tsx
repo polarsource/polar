@@ -1,5 +1,6 @@
 'use client'
 
+import { PhyllotaxisSunflower } from '@/components/Brand/PhyllotaxisSunflower'
 import { ShaderCanvas } from '@/components/Brand/ShaderCanvas'
 import { MESH_GLSL } from '@/components/Brand/shaders/geometry/mesh'
 import { rawEffect } from '@/components/Brand/shaders/pass/raw'
@@ -29,7 +30,8 @@ const PHILOSOPHY = [
   {
     id: 'p2',
     eyebrow: null,
-    headline: 'Every API call is a transaction. Most platforms weren\u2019t built for that.',
+    headline:
+      'Every API call is a transaction. Most platforms weren\u2019t built for that.',
     body: 'Legacy billing was designed for seat-based SaaS. AI products are different — dynamic pricing, usage meters, global customers from day one. The tools haven\u2019t kept up.',
   },
   {
@@ -103,16 +105,6 @@ function VisionSection({
   )
 }
 
-// ── Eyebrow / Headline / Body primitives ──────────────────────────────────────
-
-function Eyebrow({ children }: PropsWithChildren) {
-  return (
-    <p className="font-louize dark:text-polar-500 text-2xl text-gray-500">
-      {children}
-    </p>
-  )
-}
-
 function Headline({
   children,
   className,
@@ -120,7 +112,7 @@ function Headline({
   return (
     <h2
       className={twMerge(
-        'font-display leading-snug font-medium text-balance',
+        'font-display leading-tight font-medium text-balance',
         className,
       )}
     >
@@ -210,6 +202,7 @@ export function VisionPage() {
         style={{ scrollSnapType: 'y mandatory', scrollbarWidth: 'none' }}
       >
         <HeroSection />
+        <SunflowerSection />
         {PHILOSOPHY.map((item) => (
           <PhilosophySection key={item.id} {...item} />
         ))}
@@ -217,6 +210,18 @@ export function VisionPage() {
         <CtaSection />
       </div>
     </div>
+  )
+}
+
+// ── Sunflower ─────────────────────────────────────────────────────────────────
+
+function SunflowerSection() {
+  return (
+    <VisionSection hero className="relative overflow-hidden">
+      <div className="absolute inset-0">
+        <PhyllotaxisSunflower />
+      </div>
+    </VisionSection>
   )
 }
 
@@ -247,8 +252,8 @@ function HeroSection() {
         ref={contentRef}
         className="relative z-10 flex flex-col items-center gap-6"
       >
-        <h1 className="font-display leading-tighter max-w-4xl text-5xl font-medium text-balance opacity-0 md:text-7xl">
-          Build the product. We&apos;ll handle the rest.
+        <h1 className="font-display max-w-4xl text-5xl leading-tight font-medium text-balance opacity-0 md:text-7xl">
+          Build the product. We handle the rest.
         </h1>
         <Body className="max-w-md opacity-0">
           Polar is the billing layer for AI — so nothing stands between your
@@ -268,14 +273,9 @@ interface PhilosophySectionProps {
   body: string
 }
 
-function PhilosophySection({
-  eyebrow,
-  headline,
-  body,
-}: PhilosophySectionProps) {
+function PhilosophySection({ headline, body }: PhilosophySectionProps) {
   return (
     <VisionSection className="text-center" contentClassName="max-w-3xl">
-      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <Headline className="text-4xl md:text-6xl">{headline}</Headline>
       <Body className="max-w-xl">{body}</Body>
     </VisionSection>
@@ -287,7 +287,6 @@ function PhilosophySection({
 function PillarsSection() {
   return (
     <VisionSection contentClassName="w-full max-w-5xl gap-16">
-      <Eyebrow>What we stand for</Eyebrow>
       <div className="dark:border-polar-800 dark:bg-polar-800 grid w-full grid-cols-1 gap-px border border-gray-100 bg-gray-100 md:grid-cols-3">
         {PILLARS.map(({ index, title, body }) => (
           <div
@@ -313,7 +312,7 @@ function PillarsSection() {
 function CtaSection() {
   return (
     <VisionSection className="text-center" contentClassName="gap-10">
-      <div className="h-32 w-32 overflow-hidden rounded-full shadow-2xl">
+      <div className="h-24 w-24 overflow-hidden rounded-full shadow-2xl">
         <ShaderCanvas
           geometry={MESH_GLSL}
           effect={orbEffect}

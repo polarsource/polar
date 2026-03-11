@@ -130,6 +130,7 @@ class SubscriptionRepository(
                 selectinload(Product.attached_custom_fields),
             ),
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+            joinedload(Subscription.subscription_update),
         )
 
     def get_readable_statement(
@@ -395,6 +396,13 @@ class SubscriptionUpdateRepository(
         existing.new_cycle_end = object.new_cycle_end
         existing.seats = object.seats
         return await self.update(existing, flush=flush)
+
+    async def soft_delete_unapplied_by_subscription_id(
+        self, subscription_id: UUID
+    ) -> None:
+        existing = await self.get_unapplied_by_subscription_id(subscription_id)
+        if existing is not None:
+            await self.soft_delete(existing)
 
     async def get_unapplied_by_subscription_id(
         self, subscription_id: UUID

@@ -47,6 +47,7 @@ if TYPE_CHECKING:
         Product,
         ProductPrice,
         SubscriptionProductPrice,
+        SubscriptionUpdate,
     )
 
 PP = TypeVar("PP", bound="ProductPrice")
@@ -277,6 +278,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             lazy="raise",
             back_populates="subscription",
             cascade="all, delete-orphan",
+        )
+
+    @declared_attr
+    def subscription_update(cls) -> Mapped["SubscriptionUpdate | None"]:
+        return relationship(
+            "SubscriptionUpdate",
+            lazy="raise",
+            uselist=False,
+            viewonly=True,
+            primaryjoin="and_(Subscription.id == SubscriptionUpdate.subscription_id, SubscriptionUpdate.applied_at == None, SubscriptionUpdate.deleted_at == None)",
         )
 
     def is_incomplete(self) -> bool:

@@ -7,6 +7,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
 from polar.enums import PaymentMode
 from polar.exceptions import PolarError
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -199,6 +200,12 @@ async def handle_success(
                 and object.client_secret != checkout_intent_client_secret
             ):
                 raise OutdatedCheckoutIntent(checkout.id, object.id)
+
+            # Canceled intent happens when the confirmation was denied because of trial abuse detection
+            if checkout.status == CheckoutStatus.open:
+                updated_object = await stripe_service.get_setup_intent(object.id)
+                if updated_object.status == "canceled":
+                    raise OutdatedCheckoutIntent(checkout.id, object.id)
 
         payment_method: PaymentMethod | None = None
         if checkout.should_save_payment_method:

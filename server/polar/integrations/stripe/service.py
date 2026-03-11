@@ -358,6 +358,14 @@ class StripeService:
         )
         return await stripe_lib.SetupIntent.create_async(**params)
 
+    async def cancel_setup_intent(self, id: str) -> stripe_lib.SetupIntent:
+        log.info("stripe.setup_intent.cancel", setup_intent_id=id)
+        return await stripe_lib.SetupIntent.cancel_async(id)
+
+    async def cancel_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
+        log.info("stripe.payment_intent.cancel", payment_intent_id=id)
+        return await stripe_lib.PaymentIntent.cancel_async(id)
+
     async def get_setup_intent(
         self, id: str, **params: Unpack[SetupIntentRetrieveParams]
     ) -> stripe_lib.SetupIntent:

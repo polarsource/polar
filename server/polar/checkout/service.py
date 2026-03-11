@@ -1126,6 +1126,12 @@ class CheckoutService:
                         )
                     )
                     if trial_already_redeemed:
+                        # Cancel the intent so we can discard the webhook event associated
+                        if intent is not None:
+                            if isinstance(intent, stripe_lib.SetupIntent):
+                                await stripe_service.cancel_setup_intent(intent.id)
+                            elif isinstance(intent, stripe_lib.PaymentIntent):
+                                await stripe_service.cancel_payment_intent(intent.id)
                         raise TrialAlreadyRedeemed(checkout)
         else:
             raise NotImplementedError()

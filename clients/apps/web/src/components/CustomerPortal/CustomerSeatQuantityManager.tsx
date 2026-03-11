@@ -51,9 +51,9 @@ export const CustomerSeatQuantityManager = ({
       case 'invoice':
         return "I'll be charged immediately with a proration for the current month."
       case 'prorate':
-        return 'Your next invoice will include the new plan plus the proration for the current month.'
+        return 'Your next invoice will include the updated seats plus the proration for the current month.'
       case 'next_period':
-        return 'The new plan will be applied on your next billing cycle.'
+        return 'The seat update will be applied on your next billing cycle.'
     }
   }, [prorationBehavior])
 

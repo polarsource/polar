@@ -28,7 +28,7 @@ export const Pricing = () => {
       {/* Right — visual fee breakdown */}
       <div className="flex flex-col gap-y-4 md:w-1/2 md:flex-1">
         {/* Fee display */}
-        <div className="dark:border-polar-700 dark:bg-polar-900 flex flex-col gap-y-8 rounded-2xl border border-gray-200 bg-gray-50 px-8 py-7">
+        <div className="dark:bg-polar-900 flex flex-col gap-y-8 rounded-2xl bg-gray-50 px-8 py-7">
           <div className="flex flex-col gap-y-4">
             <div className="flex items-baseline gap-x-3">
               <span className="text-5xl font-light tracking-tight">4%</span>

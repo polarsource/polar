@@ -123,9 +123,15 @@ const DownloadablesForm = ({
     initialFiles,
   })
 
+  const isUploading = files.some((file) => !file.is_uploaded)
+
   useEffect(() => {
-    trigger('properties.files')
-  }, [files, trigger])
+    // Only re-validate when uploads complete, not during upload progress
+    // This prevents the error message from bouncing in/out while uploading
+    if (!isUploading) {
+      trigger('properties.files')
+    }
+  }, [isUploading, trigger])
 
   return (
     <>
@@ -142,11 +148,9 @@ const DownloadablesForm = ({
         archivedFiles={archivedFiles}
         setArchivedFile={setArchivedFile}
       />
-      {errors.properties?.files && (
-        <p className="text-destructive-foreground text-sm">
-          {errors.properties.files.message}
-        </p>
-      )}
+      <p className="text-destructive-foreground min-h-[20px] text-sm">
+        {errors.properties?.files?.message}
+      </p>
     </>
   )
 }

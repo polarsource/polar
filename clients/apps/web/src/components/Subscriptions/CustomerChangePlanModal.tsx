@@ -190,12 +190,23 @@ const CustomerChangePlanModal = ({
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
     if (!selectedProduct) return
-    const { data } = await updateSubscription.mutateAsync({
+    const { data, error } = await updateSubscription.mutateAsync({
       id: subscription.id,
       body: {
         product_id: selectedProduct.id,
       },
     })
+    if (error) {
+      const errorMessage =
+        typeof error.detail === 'string'
+          ? error.detail
+          : 'Failed to update subscription'
+      toast({
+        title: 'Error updating subscription',
+        description: errorMessage,
+        variant: 'error',
+      })
+    }
     if (data) {
       toast({
         title: 'Subscription Updated',

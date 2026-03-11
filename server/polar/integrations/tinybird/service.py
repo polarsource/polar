@@ -314,21 +314,10 @@ class TinybirdEventsQuery:
     parent_id, root_events, and source.
     """
 
-    def __init__(self, organization_id: UUID | Sequence[UUID]) -> None:
-        self._organization_ids = self._normalize_organization_ids(organization_id)
+    def __init__(self, organization_ids: Sequence[UUID]) -> None:
+        self._organization_ids = [str(org_id) for org_id in organization_ids]
         self._filters: list[Any] = []
         self._order_by_clauses: list[Any] = []
-
-    @staticmethod
-    def _normalize_organization_ids(
-        organization_id: UUID | Sequence[UUID],
-    ) -> list[str]:
-        organization_ids = (
-            [organization_id]
-            if isinstance(organization_id, UUID)
-            else list(dict.fromkeys(organization_id))
-        )
-        return [str(org_id) for org_id in organization_ids]
 
     def _get_organization_filter(self) -> Any:
         if not self._organization_ids:

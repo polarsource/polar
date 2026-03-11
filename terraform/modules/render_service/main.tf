@@ -320,9 +320,12 @@ resource "render_cron_job" "cron" {
     }
   }
 
+  # Cron jobs don't support Render secret_files, so we pass JWKS as an env var
+  # and write it to a temp file in the start command.
   env_vars = {
     SERVICE_NAME                 = { value = each.key }
     POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
+    POLAR_JWKS_CONTENT           = { value = var.backend_secrets.jwks }
     POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
     POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
     POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }

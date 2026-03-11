@@ -1,12 +1,15 @@
 'use client'
 
+import { useCustomerSSE } from '@/hooks/sse'
 import { createClient, type Client } from '@polar-sh/client'
+import type EventEmitter from 'eventemitter3'
 import React, { createContext, useContext, useMemo } from 'react'
 
 export interface CustomerPortalContextValue {
   client: Client
   organizationId: string
   organizationSlug: string
+  customerSSE: EventEmitter
 }
 
 const CustomerPortalContext = createContext<CustomerPortalContextValue | null>(
@@ -42,14 +45,16 @@ export function CustomerPortalProvider({
     () => createClient(baseUrl || 'https://api.polar.sh', token),
     [token, baseUrl],
   )
+  const customerSSE = useCustomerSSE(token)
 
   const value: CustomerPortalContextValue = useMemo(
     () => ({
       client,
       organizationId,
       organizationSlug,
+      customerSSE,
     }),
-    [client, organizationId, organizationSlug],
+    [client, organizationId, organizationSlug, customerSSE],
   )
 
   return (

@@ -221,7 +221,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id).filter_customer_id([customer_1])
+        query = TinybirdEventsQuery(org_id).filter_customer(customer_ids=[customer_1])
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1

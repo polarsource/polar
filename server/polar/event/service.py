@@ -24,6 +24,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
@@ -551,6 +552,22 @@ class EventService:
         if not organization_ids:
             return [], 0
 
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    auth_subject, external_customer_id
+                )
+            )
+
         tinybird_repository = TinybirdEventRepository()
 
         tinybird_sorting: list[tuple[str, bool]] = []
@@ -566,8 +583,8 @@ class EventService:
 
         tinybird_stats = await tinybird_repository.get_name_stats(
             organization_id=organization_ids,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
             source=source,
             query=query,
             sorting=tinybird_sorting,
@@ -685,6 +702,9 @@ class EventService:
 
             descending = sorting[0][1] if sorting else True
             offset = (pagination.page - 1) * pagination.limit
+            all_customer_ids = [*(customer_id or []), *cross_customer_ids]
+            all_external_ids = [*cross_external_ids, *(external_customer_id or [])]
+
             tb_ids, tb_count = await tinybird_repository.get_event_ids_and_count(
                 organization_id=org.id,
                 limit=pagination.limit,
@@ -692,10 +712,8 @@ class EventService:
                 descending=descending,
                 start_timestamp=start_timestamp,
                 end_timestamp=end_timestamp,
-                customer_id=customer_id,
-                cross_external_customer_ids=cross_external_ids,
-                external_customer_id=external_customer_id,
-                cross_customer_ids=cross_customer_ids,
+                customer_id=all_customer_ids,
+                external_customer_id=all_external_ids,
                 name=name,
                 source=source,
                 event_type_id=event_type_id,

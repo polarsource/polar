@@ -2,10 +2,10 @@
 
 import { useCustomerUpdateSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Client, isValidationError } from '@polar-sh/client'
+import { Client, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { MinusIcon, PlusIcon } from 'lucide-react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
@@ -14,6 +14,7 @@ interface CustomerSeatQuantityManagerProps {
   subscriptionId: string
   totalSeats: number
   availableSeats: number
+  prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
   onUpdate?: () => void
 }
 
@@ -22,6 +23,7 @@ export const CustomerSeatQuantityManager = ({
   subscriptionId,
   totalSeats,
   availableSeats,
+  prorationBehavior,
   onUpdate,
 }: CustomerSeatQuantityManagerProps) => {
   const updateSubscription = useCustomerUpdateSubscription(api)
@@ -42,6 +44,18 @@ export const CustomerSeatQuantityManager = ({
 
   const unusedSeats =
     seats !== undefined ? seats - assignedSeats : availableSeats
+
+  const invoicingMessage = useMemo(() => {
+    if (!prorationBehavior) return null
+    switch (prorationBehavior) {
+      case 'invoice':
+        return "I'll be charged immediately with a proration for the current month."
+      case 'prorate':
+        return 'Your next invoice will include the new plan plus the proration for the current month.'
+      case 'next_period':
+        return 'The new plan will be applied on your next billing cycle.'
+    }
+  }, [prorationBehavior])
 
   const onSubmit = useCallback(
     async (data: { seats: number }) => {
@@ -137,14 +151,21 @@ export const CustomerSeatQuantityManager = ({
       </div>
 
       {hasChanges && (
-        <div className="mt-4 flex flex-row-reverse gap-3">
-          <Button
-            loading={updateSubscription.isPending}
-            onClick={handleSubmit(onSubmit)}
-            className="w-full"
-          >
-            Update seats
-          </Button>
+        <div className="mt-4 flex flex-col gap-3">
+          {invoicingMessage && (
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              {invoicingMessage}
+            </span>
+          )}
+          <div className="flex flex-row-reverse gap-3">
+            <Button
+              loading={updateSubscription.isPending}
+              onClick={handleSubmit(onSubmit)}
+              className="w-full"
+            >
+              Update seats
+            </Button>
+          </div>
         </div>
       )}
 

@@ -146,6 +146,7 @@ const CustomerPortalSubscription = ({
         <SeatManagementTable
           api={api}
           identifier={{ subscriptionId: subscription.id }}
+          prorationBehavior={subscription.product.organization.proration_behavior}
         />
       )}
 

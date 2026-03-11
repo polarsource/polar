@@ -3,8 +3,8 @@
 import { SectionLayout } from './SectionLayout'
 import { ShaderCanvas } from './ShaderCanvas'
 import { MESH_GLSL } from './shaders/geometry/mesh'
-import { rawEffect } from './shaders/pass/raw'
 import { pixelEffect } from './shaders/pass/pixel'
+import { rawEffect } from './shaders/pass/raw'
 
 const meshPixel = pixelEffect({
   pixelSize: 126,

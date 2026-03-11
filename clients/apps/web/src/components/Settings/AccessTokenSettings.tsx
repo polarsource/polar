@@ -51,13 +51,23 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
             <h3 className="text-md">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.expires_at ? (
-                <>
-                  Expires on{' '}
-                  <FormattedDateTime
-                    datetime={props.expires_at}
-                    dateStyle="long"
-                  />
-                </>
+                new Date(props.expires_at) < new Date() ? (
+                  <span className="text-red-500 dark:text-red-400">
+                    Expired on{' '}
+                    <FormattedDateTime
+                      datetime={props.expires_at}
+                      dateStyle="long"
+                    />
+                  </span>
+                ) : (
+                  <>
+                    Expires on{' '}
+                    <FormattedDateTime
+                      datetime={props.expires_at}
+                      dateStyle="long"
+                    />
+                  </>
+                )
               ) : (
                 <span className="text-red-500 dark:text-red-400">
                   Never expires

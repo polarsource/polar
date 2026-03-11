@@ -360,13 +360,23 @@ const AccessTokenItem = ({
             {!minimal && (
               <p className="dark:text-polar-400 text-sm text-gray-500">
                 {token.expires_at ? (
-                  <>
-                    Expires on{' '}
-                    <FormattedDateTime
-                      datetime={token.expires_at}
-                      dateStyle="long"
-                    />
-                  </>
+                  new Date(token.expires_at) < new Date() ? (
+                    <span className="text-red-500 dark:text-red-400">
+                      Expired on{' '}
+                      <FormattedDateTime
+                        datetime={token.expires_at}
+                        dateStyle="long"
+                      />
+                    </span>
+                  ) : (
+                    <>
+                      Expires on{' '}
+                      <FormattedDateTime
+                        datetime={token.expires_at}
+                        dateStyle="long"
+                      />
+                    </>
+                  )
                 ) : (
                   <span className="text-red-500 dark:text-red-400">
                     Never expires

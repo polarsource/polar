@@ -1,3 +1,4 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Link from 'next/link'
 import { investors } from './investors'
@@ -107,6 +108,15 @@ export default function CompanyPage() {
             Join the conversation →
           </Link>
         </div>
+      </section>
+
+      <section className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-8">
+        <StaticImage
+          src="/assets/landing/company/polar.jpg"
+          height={640}
+          width={840}
+          alt="Polar"
+        />
       </section>
 
       {/* Open roles */}

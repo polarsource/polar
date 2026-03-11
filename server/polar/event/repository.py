@@ -458,6 +458,20 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_ids_with_eager(
+        self, ids: Sequence[UUID], organization_ids: Sequence[UUID]
+    ) -> list[Event]:
+        if not ids:
+            return []
+        statement = (
+            self.get_base_statement()
+            .where(Event.id.in_(ids), Event.organization_id.in_(organization_ids))
+            .options(*self.get_eager_options())
+        )
+        results = await self.get_all(statement)
+        order = {id: i for i, id in enumerate(ids)}
+        return sorted(results, key=lambda e: order.get(e.id, 0))
+
     async def get_hierarchy_stats(
         self,
         statement: Select[tuple[Event]],

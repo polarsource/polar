@@ -277,11 +277,11 @@ export const GenericChart = <T extends Record<string, unknown>>({
     ) : undefined
 
     const tooltip = (
-      <ChartTooltip<number, string>
+      <ChartTooltip
         cursor={true}
         content={(props) => (
           <ChartTooltipContent
-            {...props}
+            {...(props as any)}
             className="text-black dark:text-white"
             indicator="dot"
             labelKey={primarySeries?.key}

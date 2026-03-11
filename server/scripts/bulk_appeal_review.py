@@ -40,9 +40,9 @@ if _jwks_content:
     with open(_jwks_path, "w") as _f:
         _f.write(_jwks_content)
 
-import httpx
-import structlog
-from plain_client import (
+import httpx  # noqa: E402
+import structlog  # noqa: E402
+from plain_client import (  # noqa: E402
     Plain,
     ReplyToThreadInput,
     SnoozeStatusDetail,
@@ -51,13 +51,13 @@ from plain_client import (
     ThreadStatus,
 )
 
-from polar.config import settings
-from polar.kit.db.postgres import create_async_sessionmaker
-from polar.organization.repository import OrganizationRepository
-from polar.organization.service import organization as organization_service
-from polar.postgres import create_async_engine
+from polar.config import settings  # noqa: E402
+from polar.kit.db.postgres import create_async_sessionmaker  # noqa: E402
+from polar.organization.repository import OrganizationRepository  # noqa: E402
+from polar.organization.service import organization as organization_service  # noqa: E402
+from polar.postgres import create_async_engine  # noqa: E402
 
-from .appeal_review import AppealAction, run_appeal_review_with_deps
+from .appeal_review import AppealAction, run_appeal_review_with_deps  # noqa: E402
 
 log = structlog.get_logger(__name__)
 

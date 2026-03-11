@@ -45,6 +45,17 @@ const customerEmails: {
     description: 'Sent when a trial ends and the subscription becomes paid',
   },
   {
+    key: 'subscription_renewal_reminder',
+    title: 'Renewal reminder',
+    description:
+      'Sent 7 days before a subscription with a long billing cycle renews',
+  },
+  {
+    key: 'subscription_trial_conversion_reminder',
+    title: 'Trial conversion reminder',
+    description: 'Sent before a trial ends and converts to a paid subscription',
+  },
+  {
     key: 'subscription_updated',
     title: 'Subscription updated',
     description:

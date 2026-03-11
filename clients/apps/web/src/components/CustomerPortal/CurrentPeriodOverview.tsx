@@ -1,6 +1,8 @@
+import { useProduct } from '@/hooks/queries'
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 
 interface CurrentPeriodOverviewProps {
@@ -16,6 +18,13 @@ export const CurrentPeriodOverview = ({
     api,
     subscription.id,
   )
+  const productId = useMemo(() => {
+    if (subscription.pending_update && subscription.pending_update.product_id) {
+      return subscription.pending_update.product_id
+    }
+    return subscription.product_id
+  }, [subscription])
+  const { data: product } = useProduct(productId)
 
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
@@ -78,23 +87,27 @@ export const CurrentPeriodOverview = ({
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="dark:text-polar-400 text-gray-600">
-            {subscription.product.name}
-          </span>
-          <span
-            className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
-          >
-            {isCancelingAtPeriodEnd ? (
-              'Canceled'
-            ) : (
-              <ProductPriceLabel
-                product={subscription.product}
-                currency={subscription.currency}
-              />
-            )}
-          </span>
-        </div>
+        {product && subscriptionPreview && (
+          <div className="flex items-center justify-between">
+            <span className="dark:text-polar-400 text-gray-600">
+              {product.name}
+            </span>
+            <span
+              className={
+                isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'
+              }
+            >
+              {isCancelingAtPeriodEnd ? (
+                'Canceled'
+              ) : (
+                <ProductPriceLabel
+                  product={product}
+                  currency={subscription.currency}
+                />
+              )}
+            </span>
+          </div>
+        )}
 
         {hasMeters && (
           <>

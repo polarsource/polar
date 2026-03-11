@@ -111,8 +111,9 @@ const CustomerChangePlanModal = ({
     if (!selectedProduct) return [false, null]
 
     const willTrigger =
+      prorationBehavior !== 'next_period' &&
       selectedProduct.recurring_interval !==
-      subscription.product.recurring_interval
+        subscription.product.recurring_interval
 
     if (!willTrigger) return [false, null]
 
@@ -145,10 +146,13 @@ const CustomerChangePlanModal = ({
       }
     }
 
-    if (prorationBehavior === 'invoice') {
-      return "I'll be charged immediately with a proration for the current month."
-    } else {
-      return 'Your next invoice will include the new plan plus the proration for the current month.'
+    switch (prorationBehavior) {
+      case 'invoice':
+        return "I'll be charged immediately with a proration for the current month."
+      case 'prorate':
+        return 'Your next invoice will include the new plan plus the proration for the current month.'
+      case 'next_period':
+        return 'The new plan will be applied on your next billing cycle.'
     }
   }, [
     selectedProduct,

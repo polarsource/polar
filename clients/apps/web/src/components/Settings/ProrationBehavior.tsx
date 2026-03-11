@@ -14,6 +14,7 @@ const PRORATION_BEHAVIOR_LABELS: Record<
 > = {
   invoice: 'Invoice Immediately',
   prorate: 'Next Invoice',
+  next_period: 'Apply on Next Period',
 }
 
 export interface ProrationBehaviorProps {

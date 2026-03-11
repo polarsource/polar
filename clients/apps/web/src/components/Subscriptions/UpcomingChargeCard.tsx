@@ -1,10 +1,12 @@
 'use client'
 
 import { DetailRow } from '@/components/Shared/DetailRow'
+import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { useMemo } from 'react'
 
 const UpcomingChargeCard = ({
   subscription,
@@ -14,6 +16,13 @@ const UpcomingChargeCard = ({
   const { data: chargePreview, isFetching } = useSubscriptionChargePreview(
     subscription.id,
   )
+  const productId = useMemo(() => {
+    if (subscription.pending_update && subscription.pending_update.product_id) {
+      return subscription.pending_update.product_id
+    }
+    return subscription.product_id
+  }, [subscription])
+  const { data: product } = useProduct(productId)
 
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
@@ -71,19 +80,21 @@ const UpcomingChargeCard = ({
         </div>
 
         <div className="flex flex-col gap-2">
-          <DetailRow
-            label={subscription.product.name}
-            value={
-              isCancelingAtPeriodEnd ? (
-                <span className="text-gray-500">Canceled</span>
-              ) : (
-                formatCurrency('compact')(
-                  subscription.amount,
-                  subscription.currency,
+          {product && chargePreview && (
+            <DetailRow
+              label={product?.name || ''}
+              value={
+                isCancelingAtPeriodEnd ? (
+                  <span className="text-gray-500">Canceled</span>
+                ) : (
+                  formatCurrency('compact')(
+                    chargePreview.base_amount,
+                    subscription.currency,
+                  )
                 )
-              )
-            }
-          />
+              }
+            />
+          )}
 
           {hasMeters && (
             <>

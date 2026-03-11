@@ -101,8 +101,8 @@ Output a JSON summary to `analysis-result.json` and do NOT create a PR:
   "tests": "<test names>",
   "summary": "<what you observed>",
   "reproduction_results": [
-    {"attempt": 1, "result": "fail", "notes": "<details>"},
-    {"attempt": 2, "result": "fail", "notes": "<details>"}
+    { "attempt": 1, "result": "fail", "notes": "<details>" },
+    { "attempt": 2, "result": "fail", "notes": "<details>" }
   ],
   "recommendation": "<what should be done>",
   "run_url": "${RUN_URL}"
@@ -120,15 +120,22 @@ gh pr list --state merged --limit 10 --json number,title,mergedAt,url,files --jq
 ```
 
 Look for PRs that modified files related to:
+
 - The checkout flow (checkout components, API endpoints, Stripe integration)
 - Shared UI components used by the checkout page
 - API client or SDK changes that affect the frontend
 
 If you find suspicious PRs, include them in the `analysis-result.json` under a `suspicious_prs` field:
+
 ```json
 {
   "suspicious_prs": [
-    {"number": 123, "title": "...", "url": "...", "reason": "Modified checkout component X"}
+    {
+      "number": 123,
+      "title": "...",
+      "url": "...",
+      "reason": "Modified checkout component X"
+    }
   ]
 }
 ```

@@ -184,6 +184,21 @@ class TinybirdEventRepository:
         tinybird_query.filter_has_ancestor(ancestor_id)
         return await tinybird_query.get_descendant_aggregates(aggregate_fields)
 
+    async def get_batch_descendant_aggregates(
+        self,
+        organization_id: UUID | Sequence[UUID],
+        ancestor_ids: Sequence[UUID],
+        aggregate_fields: Sequence[str],
+    ) -> dict[str, tuple[int, dict[str, float]]]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids or not ancestor_ids:
+            return {}
+
+        tinybird_query = TinybirdEventsQuery(organization_ids)
+        return await tinybird_query.get_batch_descendant_aggregates(
+            ancestor_ids, aggregate_fields
+        )
+
     async def get_filtered_timeseries(
         self,
         *,

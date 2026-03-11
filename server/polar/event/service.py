@@ -10,13 +10,6 @@ import logfire
 import structlog
 from opentelemetry import trace
 from sqlalchemy import (
-    Select,
-    String,
-    UnaryExpression,
-    asc,
-    cast,
-    desc,
-    func,
     or_,
     select,
 )
@@ -24,7 +17,6 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
@@ -34,7 +26,7 @@ from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
     ingest_events,
 )
-from polar.kit.metadata import MetadataQuery, apply_metadata_clause
+from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval
@@ -135,113 +127,6 @@ def _topological_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any
 
 
 class EventService:
-    async def _build_filtered_statement(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        repository: EventRepository,
-        *,
-        filter: Filter | None = None,
-        start_timestamp: datetime | None = None,
-        end_timestamp: datetime | None = None,
-        organization_id: Sequence[uuid.UUID] | None = None,
-        customer_id: Sequence[uuid.UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
-        meter_id: uuid.UUID | None = None,
-        name: Sequence[str] | None = None,
-        source: Sequence[EventSource] | None = None,
-        event_type_id: uuid.UUID | None = None,
-        metadata: MetadataQuery | None = None,
-        sorting: Sequence[Sorting[EventSortProperty]] = (
-            (EventSortProperty.timestamp, True),
-        ),
-        query: str | None = None,
-    ) -> Select[tuple[Event]]:
-        statement = repository.get_readable_statement(auth_subject).options(
-            *repository.get_eager_options()
-        )
-
-        if filter is not None:
-            statement = statement.where(filter.get_sql_clause(Event))
-
-        if start_timestamp is not None:
-            statement = statement.where(Event.timestamp > start_timestamp)
-
-        if end_timestamp is not None:
-            statement = statement.where(Event.timestamp < end_timestamp)
-
-        if organization_id is not None:
-            statement = statement.where(Event.organization_id.in_(organization_id))
-
-        if customer_id is not None:
-            statement = statement.where(
-                repository.get_customer_id_filter_clause(customer_id)
-            )
-
-        if external_customer_id is not None:
-            statement = statement.where(
-                repository.get_external_customer_id_filter_clause(external_customer_id)
-            )
-
-        if meter_id is not None:
-            meter_repository = MeterRepository.from_session(session)
-            meter = await meter_repository.get_readable_by_id(meter_id, auth_subject)
-            if meter is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "meter_id",
-                            "msg": "Meter not found.",
-                            "loc": ("query", "meter_id"),
-                            "input": meter_id,
-                        }
-                    ]
-                )
-            statement = statement.where(repository.get_meter_clause(meter))
-
-        if name is not None:
-            statement = statement.where(Event.name.in_(name))
-
-        if source is not None:
-            statement = statement.where(Event.source.in_(source))
-
-        if event_type_id is not None:
-            statement = statement.where(Event.event_type_id == event_type_id)
-
-        if query is not None:
-            statement = statement.where(
-                or_(
-                    Event.name.ilike(f"%{query}%"),
-                    Event.source.ilike(f"%{query}%"),
-                    # Load customers and match against their name/email
-                    Event.customer_id.in_(
-                        select(Customer.id).where(
-                            or_(
-                                cast(Customer.id, String).ilike(f"%{query}%"),
-                                Customer.external_id.ilike(f"%{query}%"),
-                                Customer.name.ilike(f"%{query}%"),
-                                Customer.email.ilike(f"%{query}%"),
-                            )
-                        )
-                    ),
-                    func.to_tsvector("simple", cast(Event.user_metadata, String)).op(
-                        "@@"
-                    )(func.plainto_tsquery(query)),
-                )
-            )
-
-        if metadata is not None:
-            statement = apply_metadata_clause(Event, statement, metadata)
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == EventSortProperty.timestamp:
-                order_by_clauses.append(clause_function(Event.timestamp))
-        statement = statement.order_by(*order_by_clauses)
-
-        return statement
-
     async def list(
         self,
         session: AsyncSession,
@@ -268,61 +153,126 @@ class EventService:
         aggregate_fields: Sequence[str] = (),
         cursor_pagination: bool = False,
     ) -> tuple[Sequence[Event], int]:
-        repository = EventRepository.from_session(session)
-        statement = await self._build_filtered_statement(
+        organization_ids = await self._get_readable_organization_ids(
+            session, auth_subject, organization_id
+        )
+        if not organization_ids:
+            return [], 0
+
+        (
+            query_filters,
+            matching_cust_ids,
+            matching_ext_ids,
+            numeric_metadata_property,
+        ) = await self._resolve_tinybird_filters(
             session,
             auth_subject,
-            repository,
+            organization_ids,
             filter=filter,
-            start_timestamp=start_timestamp,
-            end_timestamp=end_timestamp,
-            organization_id=organization_id,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
             meter_id=meter_id,
-            name=name,
-            source=source,
-            event_type_id=event_type_id,
-            metadata=metadata,
-            sorting=sorting,
             query=query,
         )
 
-        results, count = await repository.list_with_closure_table(
-            statement,
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    auth_subject, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    auth_subject, external_customer_id
+                )
+            )
+
+        tinybird_repository = TinybirdEventRepository()
+        descending = sorting[0][1] if sorting else True
+        offset = (pagination.page - 1) * pagination.limit
+
+        tb_ids, tb_count = await tinybird_repository.get_event_ids_and_count(
+            organization_id=organization_ids,
             limit=pagination.limit,
-            page=pagination.page,
-            aggregate_fields=aggregate_fields,
-            depth=depth,
-            parent_id=parent_id,
-            cursor_pagination=cursor_pagination,
-            sorting=sorting,
-        )
-
-        await self._tinybird_compare_list(
-            session,
-            auth_subject,
-            organization_id=organization_id,
-            db_results=results,
-            db_count=count,
+            offset=offset,
+            descending=descending,
             start_timestamp=start_timestamp,
             end_timestamp=end_timestamp,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
             name=name,
             source=source,
             event_type_id=event_type_id,
-            depth=depth,
-            parent_id=parent_id,
-            meter_id=meter_id,
-            filter=filter,
+            filters=query_filters,
             metadata=metadata,
             query=query,
-            pagination=pagination,
-            sorting=sorting,
+            matching_customer_ids=matching_cust_ids,
+            matching_external_customer_ids=matching_ext_ids,
+            numeric_metadata_property=numeric_metadata_property,
+            depth=depth,
+            parent_id=parent_id,
         )
 
-        return results, count
+        if not tb_ids:
+            return [], 0
+
+        event_uuids = [uuid.UUID(id_str) for id_str in tb_ids]
+        repository = EventRepository.from_session(session)
+        events = await repository.get_by_ids_with_eager(event_uuids, organization_ids)
+
+        all_aggregates = await tinybird_repository.get_batch_descendant_aggregates(
+            organization_ids, [e.id for e in events], aggregate_fields
+        )
+        empty_sums = {f.replace(".", "_"): 0.0 for f in aggregate_fields}
+
+        for event in events:
+            child_count, sums = all_aggregates.get(str(event.id), (0, empty_sums))
+            event.child_count = child_count  # type: ignore[attr-defined]
+            if aggregate_fields:
+                event_metadata = event.user_metadata or {}
+                for field_path in aggregate_fields:
+                    key = field_path.replace(".", "_")
+                    descendant_value = sums.get(key, 0.0)
+                    parts = field_path.split(".")
+                    own_target = event_metadata
+                    for part in parts[:-1]:
+                        own_target = (
+                            own_target.get(part, {})
+                            if isinstance(own_target, dict)
+                            else {}
+                        )
+                    own_value = (
+                        own_target.get(parts[-1], 0)
+                        if isinstance(own_target, dict)
+                        else 0
+                    )
+                    try:
+                        own_value = float(own_value)
+                    except (TypeError, ValueError):
+                        own_value = 0.0
+                    total_value = descendant_value + own_value
+                    target = event_metadata
+                    for part in parts[:-1]:
+                        if part not in target or not isinstance(target[part], dict):
+                            target[part] = {}
+                        target = target[part]
+                    target[parts[-1]] = round(total_value, 12)
+                event.user_metadata = event_metadata
+                if "_cost" in event.user_metadata:
+                    cost_obj = event.user_metadata.get("_cost")
+                    if cost_obj is None or cost_obj.get("amount") is None:
+                        del event.user_metadata["_cost"]
+                    elif "currency" not in cost_obj:
+                        cost_obj["currency"] = "usd"
+            session.expunge(event)
+
+        if cursor_pagination:
+            has_next_page = 1 if (offset + len(events)) < tb_count else 0
+            return events, has_next_page
+
+        return events, tb_count
 
     async def get(
         self,
@@ -640,143 +590,6 @@ class EventService:
 
         return event_names, total_count
 
-    async def _tinybird_compare_list(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        organization_id: Sequence[uuid.UUID] | None,
-        db_results: Sequence[Event],
-        db_count: int,
-        start_timestamp: datetime | None,
-        end_timestamp: datetime | None,
-        customer_id: Sequence[uuid.UUID] | None,
-        external_customer_id: Sequence[str] | None,
-        name: Sequence[str] | None,
-        source: Sequence[EventSource] | None,
-        event_type_id: uuid.UUID | None,
-        depth: int | None,
-        parent_id: uuid.UUID | None,
-        meter_id: uuid.UUID | None,
-        filter: Filter | None,
-        metadata: MetadataQuery | None,
-        query: str | None,
-        pagination: PaginationParams,
-        sorting: Sequence[Sorting[EventSortProperty]],
-    ) -> None:
-        org = await self._get_tinybird_enabled_org(
-            session, auth_subject, organization_id
-        )
-        if org is None:
-            return
-
-        try:
-            tinybird_repository = TinybirdEventRepository()
-            query_filters: list[Filter] = []
-            if filter is not None:
-                query_filters.append(filter)
-
-            cross_external_ids: list[str] = []
-            if customer_id is not None:
-                cross_ref = await session.execute(
-                    select(Customer.external_id).where(
-                        Customer.id.in_(customer_id),
-                        Customer.external_id.isnot(None),
-                    )
-                )
-                cross_external_ids = [r[0] for r in cross_ref.all()]
-
-            cross_customer_ids: list[uuid.UUID] = []
-            if external_customer_id is not None:
-                cross_ref = await session.execute(
-                    select(Customer.id).where(
-                        Customer.external_id.in_(external_customer_id)
-                    )
-                )
-                cross_customer_ids = [r[0] for r in cross_ref.all()]
-
-            matching_cust_ids: list[uuid.UUID] | None = None
-            matching_ext_ids: list[str] | None = None
-            if query is not None:
-                cust_results = await session.execute(
-                    select(Customer.id, Customer.external_id).where(
-                        Customer.organization_id == org.id,
-                        or_(
-                            cast(Customer.id, String).ilike(f"%{query}%"),
-                            Customer.external_id.ilike(f"%{query}%"),
-                            Customer.name.ilike(f"%{query}%"),
-                            Customer.email.ilike(f"%{query}%"),
-                        ),
-                    )
-                )
-                matching_rows = cust_results.all()
-                matching_cust_ids = [r.id for r in matching_rows]
-                matching_ext_ids = [
-                    r.external_id for r in matching_rows if r.external_id is not None
-                ]
-
-            numeric_metadata_property: str | None = None
-            if meter_id is not None:
-                meter_repository = MeterRepository.from_session(session)
-                meter = await meter_repository.get_readable_by_id(
-                    meter_id, auth_subject
-                )
-                if meter is not None:
-                    query_filters.append(meter.filter)
-                    if isinstance(meter.aggregation, PropertyAggregation):
-                        prop = meter.aggregation.property
-                        if prop in Event._filterable_fields:
-                            allowed_type, _ = Event._filterable_fields[prop]
-                            if allowed_type is not int:
-                                return
-                        else:
-                            numeric_metadata_property = prop
-
-            descending = sorting[0][1] if sorting else True
-            offset = (pagination.page - 1) * pagination.limit
-            all_customer_ids = [*(customer_id or []), *cross_customer_ids]
-            all_external_ids = [*cross_external_ids, *(external_customer_id or [])]
-
-            tb_ids, tb_count = await tinybird_repository.get_event_ids_and_count(
-                organization_id=org.id,
-                limit=pagination.limit,
-                offset=offset,
-                descending=descending,
-                start_timestamp=start_timestamp,
-                end_timestamp=end_timestamp,
-                customer_id=all_customer_ids,
-                external_customer_id=all_external_ids,
-                name=name,
-                source=source,
-                event_type_id=event_type_id,
-                filters=query_filters,
-                metadata=metadata,
-                query=query,
-                matching_customer_ids=matching_cust_ids,
-                matching_external_customer_ids=matching_ext_ids,
-                numeric_metadata_property=numeric_metadata_property,
-                depth=depth,
-                parent_id=parent_id,
-            )
-
-            db_ids = [str(e.id) for e in db_results]
-            with logfire.span(
-                "tinybird.shadow.events.list.comparison",
-                organization_id=str(org.id),
-                db_count=db_count,
-                tinybird_count=tb_count,
-                db_ids=db_ids,
-                tinybird_ids=tb_ids,
-                has_diff=db_ids != tb_ids,
-            ):
-                pass
-        except Exception as e:
-            log.error(
-                "tinybird.events.list.failed",
-                organization_id=str(org.id),
-                error=str(e),
-            )
-
     @staticmethod
     def _get_stats_sort_key(
         criterion: str, aggregate_fields: Sequence[str]
@@ -853,39 +666,6 @@ class EventService:
             matching_ext_ids,
             numeric_metadata_property,
         )
-
-    async def _get_tinybird_enabled_org(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization_id: Sequence[uuid.UUID] | None,
-    ) -> Organization | None:
-        if not settings.TINYBIRD_EVENTS_READ:
-            return None
-
-        org: Organization | None
-        if is_organization(auth_subject):
-            org = auth_subject.subject
-        elif is_user(auth_subject):
-            if not organization_id:
-                return None
-            organization_repository = OrganizationRepository.from_session(session)
-            statement = organization_repository.get_readable_statement(
-                auth_subject
-            ).where(Organization.id == organization_id[0])
-            org = await organization_repository.get_one_or_none(statement)
-        else:
-            return None
-
-        if org is None:
-            return None
-
-        if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
-            "tinybird_compare", True
-        ):
-            return org
-
-        return None
 
     async def ingest(
         self,

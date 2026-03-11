@@ -12,6 +12,7 @@ import structlog
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
 from sqlalchemy import (
     Column,
+    ColumnClause,
     DateTime,
     Float,
     MetaData,
@@ -873,6 +874,60 @@ class TinybirdEventsQuery:
             for f in aggregate_fields
         }
         return row["total"], sums
+
+    async def get_batch_descendant_aggregates(
+        self, ancestor_ids: Sequence[UUID], aggregate_fields: Sequence[str]
+    ) -> dict[str, tuple[int, dict[str, float]]]:
+        if not ancestor_ids:
+            return {}
+
+        base_filter = self._get_organization_filter()
+
+        ids_str = ", ".join(f"'{str(aid)}'" for aid in ancestor_ids)
+        ids_array: ColumnClause[str] = literal_column(f"[{ids_str}]")
+
+        matched_ancestor = func.arrayJoin(
+            func.arrayIntersect(events_table.c.ancestors, ids_array)
+        ).label("matched_ancestor")
+
+        columns: list[Any] = [matched_ancestor, func.count().label("total")]
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            col = DENORMALIZED_COLUMNS.get(field_path)
+            if col is not None:
+                columns.append(func.sum(col).label(label))
+            else:
+                parts = field_path.split(".")
+                columns.append(
+                    func.sum(
+                        func.JSONExtractFloat(events_table.c.user_metadata, *parts)
+                    ).label(label)
+                )
+
+        statement = (
+            sqlalchemy.select(*columns)
+            .select_from(events_table)
+            .where(base_filter)
+            .where(func.hasAny(events_table.c.ancestors, ids_array))
+        )
+        for f in self._filters:
+            statement = statement.where(f)
+        statement = statement.group_by(literal_column("matched_ancestor"))
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        result: dict[str, tuple[int, dict[str, float]]] = {}
+        for row in rows:
+            aid = row["matched_ancestor"]
+            total = row["total"]
+            sums = {
+                f.replace(".", "_"): float(row.get(f.replace(".", "_"), 0) or 0)
+                for f in aggregate_fields
+            }
+            result[aid] = (total, sums)
+
+        return result
 
 
 class TinybirdEventTypesQuery:

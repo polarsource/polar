@@ -214,7 +214,7 @@ module "production" {
   cron_jobs = {
     "bulk-appeal-review" = {
       schedule      = "0 8 * * *" # 8:00 UTC = 9:00 CET
-      start_command = "echo \"$POLAR_JWKS_CONTENT\" > /tmp/jwks.json && uv run python -m scripts.bulk_appeal_review --execute --limit 0"
+      start_command = "uv run python -m scripts.bulk_appeal_review --execute --limit 0"
     }
   }
 

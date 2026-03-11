@@ -25,14 +25,24 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import re
 import sys
 from collections import Counter
 from typing import Any
 
-import httpx
-import structlog
-from plain_client import (
+# Write JWKS file before importing polar.config (which validates the JWKS path
+# on import). Render cron jobs don't support secret_files, so JWKS content is
+# passed via POLAR_JWKS_CONTENT env var instead.
+_jwks_content = os.environ.get("POLAR_JWKS_CONTENT")
+if _jwks_content:
+    _jwks_path = os.environ.get("POLAR_JWKS", "/tmp/jwks.json")
+    with open(_jwks_path, "w") as _f:
+        _f.write(_jwks_content)
+
+import httpx  # noqa: E402
+import structlog  # noqa: E402
+from plain_client import (  # noqa: E402
     Plain,
     ReplyToThreadInput,
     SnoozeStatusDetail,
@@ -41,13 +51,15 @@ from plain_client import (
     ThreadStatus,
 )
 
-from polar.config import settings
-from polar.kit.db.postgres import create_async_sessionmaker
-from polar.organization.repository import OrganizationRepository
-from polar.organization.service import organization as organization_service
-from polar.postgres import create_async_engine
+from polar.config import settings  # noqa: E402
+from polar.kit.db.postgres import create_async_sessionmaker  # noqa: E402
+from polar.organization.repository import OrganizationRepository  # noqa: E402
+from polar.organization.service import (  # noqa: E402
+    organization as organization_service,
+)
+from polar.postgres import create_async_engine  # noqa: E402
 
-from .appeal_review import AppealAction, run_appeal_review_with_deps
+from .appeal_review import AppealAction, run_appeal_review_with_deps  # noqa: E402
 
 log = structlog.get_logger(__name__)
 

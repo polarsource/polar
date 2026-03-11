@@ -54,7 +54,9 @@ from plain_client import (  # noqa: E402
 from polar.config import settings  # noqa: E402
 from polar.kit.db.postgres import create_async_sessionmaker  # noqa: E402
 from polar.organization.repository import OrganizationRepository  # noqa: E402
-from polar.organization.service import organization as organization_service  # noqa: E402
+from polar.organization.service import (  # noqa: E402
+    organization as organization_service,
+)
 from polar.postgres import create_async_engine  # noqa: E402
 
 from .appeal_review import AppealAction, run_appeal_review_with_deps  # noqa: E402

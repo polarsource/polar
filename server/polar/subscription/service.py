@@ -365,7 +365,7 @@ class SubscriptionService:
             default_price := PriceSet.from_product(
                 product, product.organization.default_presentment_currency
             ).get_default_price()
-        ) and not default_price.is_free():
+        ) and not default_price.is_free:
             errors.append(
                 {
                     "type": "value_error",

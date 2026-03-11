@@ -319,9 +319,7 @@ class Checkout(
     def is_free_product_price(self) -> bool:
         if self.product_prices is None:
             return False
-        return all(
-            (is_free_price(price) or price.is_free) for price in self.product_prices
-        )
+        return all(is_free_price(price) for price in self.product_prices)
 
     @property
     def has_metered_prices(self) -> bool:

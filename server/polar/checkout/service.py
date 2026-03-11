@@ -1715,7 +1715,7 @@ class CheckoutService:
             )
 
         for price in subscription.prices:
-            if not price.is_free():
+            if not price.is_free:
                 raise PolarRequestValidationError(
                     [
                         {

@@ -130,7 +130,7 @@ class SubscriptionRepository(
                 selectinload(Product.attached_custom_fields),
             ),
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
-            joinedload(Subscription.subscription_update),
+            joinedload(Subscription.pending_update),
         )
 
     def get_readable_statement(

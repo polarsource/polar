@@ -1080,7 +1080,7 @@ async def create_subscription(
         scheduler_locked_at=scheduler_locked_at,
         seats=seats,
         past_due_at=past_due_at,
-        subscription_update=None,
+        pending_update=None,
     )
 
     # For non-trial subscriptions with a discount, set discount_applied_at to simulate

@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 
 import structlog
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
@@ -296,6 +296,7 @@ class SubscriptionService:
             contains_eager(Subscription.discount),
             contains_eager(Subscription.customer),
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+            joinedload(Subscription.pending_update),
         )
 
         return await repository.paginate(
@@ -441,7 +442,7 @@ class SubscriptionService:
             subscription_product_prices=subscription_product_prices,
             currency=currency,
             user_metadata=subscription_create.metadata,
-            subscription_update=None,
+            pending_update=None,
         )
 
         repository = SubscriptionRepository.from_session(session)
@@ -524,7 +525,7 @@ class SubscriptionService:
                 started_at=current_period_start,
                 cancel_at_period_end=False,
                 customer=customer,
-                subscription_update=None,
+                pending_update=None,
             )
             created = True
 
@@ -1024,8 +1025,8 @@ class SubscriptionService:
                 product=product,
                 applies_at=subscription.current_period_end,
             )
-            subscription.subscription_update = (
-                await subscription_update_repository.upsert(subscription_update)
+            subscription.pending_update = await subscription_update_repository.upsert(
+                subscription_update
             )
         else:
             await (
@@ -1033,7 +1034,7 @@ class SubscriptionService:
                     subscription.id
                 )
             )
-            subscription.subscription_update = None
+            subscription.pending_update = None
 
             subscription_update, billing_entries = generate_subscription_update(
                 subscription, product=product
@@ -1064,14 +1065,6 @@ class SubscriptionService:
                 session, subscription, product, proration_behavior
             )
 
-            # Trigger subscription updated events and re-evaluate benefits
-            await self._after_subscription_updated(
-                session,
-                subscription,
-                previous_status=previous_status,
-                previous_is_canceled=previous_is_canceled,
-            )
-
         await event_service.create_event(
             session,
             build_system_event(
@@ -1084,6 +1077,14 @@ class SubscriptionService:
                     "proration_behavior": proration_behavior,
                 },
             ),
+        )
+
+        # Trigger subscription updated events and re-evaluate benefits
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
         )
 
         return subscription
@@ -1318,6 +1319,9 @@ class SubscriptionService:
             subscription, seats=seats
         )
 
+        previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
+
         subscription_update_repository = SubscriptionUpdateRepository.from_session(
             session
         )
@@ -1325,8 +1329,8 @@ class SubscriptionService:
             subscription_update, _ = generate_subscription_update(
                 subscription, seats=seats, applies_at=subscription.current_period_end
             )
-            subscription.subscription_update = (
-                await subscription_update_repository.upsert(subscription_update)
+            subscription.pending_update = await subscription_update_repository.upsert(
+                subscription_update
             )
         else:
             await (
@@ -1334,7 +1338,7 @@ class SubscriptionService:
                     subscription.id
                 )
             )
-            subscription.subscription_update = None
+            subscription.pending_update = None
 
             subscription_update, billing_entries = generate_subscription_update(
                 subscription, seats=seats
@@ -1358,17 +1362,6 @@ class SubscriptionService:
                 new_amount=subscription.amount,
             )
 
-            # Send webhooks and notifications
-            previous_status = subscription.status
-            previous_is_canceled = subscription.canceled
-
-            await self._after_subscription_updated(
-                session,
-                subscription,
-                previous_status=previous_status,
-                previous_is_canceled=previous_is_canceled,
-            )
-
             if (
                 proration_behavior == SubscriptionProrationBehavior.invoice
                 and not subscription.trialing
@@ -1388,6 +1381,14 @@ class SubscriptionService:
                     "proration_behavior": proration_behavior,
                 },
             ),
+        )
+
+        # Send webhooks and notifications
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
         )
 
         return subscription

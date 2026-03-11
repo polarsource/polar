@@ -312,11 +312,13 @@ resource "render_cron_job" "cron" {
   schedule       = each.value.schedule
   start_command  = each.value.start_command
 
+  # Cron jobs use tag "latest" instead of a pinned digest so Render
+  # automatically pulls the newest image before each run.
   runtime_source = {
     image = {
       image_url              = split("@", coalesce(each.value.image_url, var.api_service_config.image_url))[0]
       registry_credential_id = var.registry_credential_id
-      digest                 = coalesce(each.value.image_digest, var.api_service_config.image_digest)
+      tag                    = "latest"
     }
   }
 

@@ -100,7 +100,9 @@ async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
                 label_type_ids=[APPEAL_LABEL_TYPE_ID],
                 statuses=[ThreadStatus.TODO],
             ),
-            sort_by=ThreadsSort(field=ThreadsSortField.CREATED_AT, direction=SortDirection.ASC),
+            sort_by=ThreadsSort(
+                field=ThreadsSortField.CREATED_AT, direction=SortDirection.ASC
+            ),
             first=50,
         )
         if cursor is not None:

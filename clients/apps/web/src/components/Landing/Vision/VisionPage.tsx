@@ -312,7 +312,7 @@ function PillarsSection() {
 function CtaSection() {
   return (
     <VisionSection className="text-center" contentClassName="gap-10">
-      <div className="h-24 w-24 overflow-hidden rounded-full shadow-2xl">
+      <div className="h-24 w-24 overflow-hidden rounded-full">
         <ShaderCanvas
           geometry={MESH_GLSL}
           effect={orbEffect}

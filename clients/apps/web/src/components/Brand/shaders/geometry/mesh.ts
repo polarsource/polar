@@ -90,11 +90,11 @@ export const MESH_GLSL = `
   vec3 pal(int i) {
     if (i == 0) return vec3(0.60, 0.32, 4.19);  // indigo
     if (i == 1) return vec3(0.55, 0.34, 5.50);  // violet
-    if (i == 2) return vec3(0.72, 0.30, 2.80);  // sky-cyan
-    if (i == 3) return vec3(0.78, 0.32, 1.65);  // emerald
+    if (i == 2) return vec3(0.65, 0.34, 0.15);  // crimson-red
+    if (i == 3) return vec3(0.72, 0.36, 0.42);  // warm-red
     if (i == 4) return vec3(0.52, 0.36, 5.00);  // electric-purple
-    if (i == 5) return vec3(0.75, 0.30, 0.35);  // coral
-    if (i == 6) return vec3(0.58, 0.32, 3.50);  // deep-teal
+    if (i == 5) return vec3(0.58, 0.32, 3.50);  // deep-teal
+    if (i == 6) return vec3(0.72, 0.30, 2.80);  // sky-cyan
     if (i == 7) return vec3(0.58, 0.34, 4.71);  // deep-blue
     return vec3(0.75, 0.0, 0.0);
   }
@@ -150,7 +150,11 @@ export const MESH_GLSL = `
                 sin(c4.z)*w4+sin(c5.z)*w5+sin(c6.z)*w6+sin(c7.z)*w7) / wT;
     float H = atan(hy, hx);
 
-    float chromaScale = mix(1.10, 0.80, isDark);
-    return clamp(oklch2srgb(vec3(L, C * chromaScale, H)), 0.0, 1.0);
+    // Lift dark regions to a light base — fade chroma to white as L approaches the floor
+    float Lfloor = 0.82;
+    float lift = max(0.0, Lfloor - L);
+    L = max(L, Lfloor);
+    float chromaScale = mix(1.32, 0.96, isDark) * (1.0 - lift * 3.0);
+    return clamp(oklch2srgb(vec3(L, max(C * chromaScale, 0.12), H)), 0.0, 1.0);
   }
 `

@@ -56,11 +56,11 @@ export default function CompanyPage() {
   return (
     <div className="dark:bg-polar-950 min-h-screen bg-white text-gray-900 dark:text-white">
       {/* Hero */}
-      <section className="flex flex-col items-center gap-6 py-24 text-center md:px-4">
+      <section className="flex flex-col items-center gap-8 py-24 text-center md:px-4">
         <h1 className="font-display leading-tighter max-w-2xl text-5xl font-medium text-balance md:text-7xl">
           Small team, big ambitions.
         </h1>
-        <p className="dark:text-polar-500 max-w-xl text-lg text-balance text-gray-500">
+        <p className="max-w-xl text-lg text-balance">
           We&apos;re building the billing layer for the next generation of AI
           products. Come build it with us.
         </p>
@@ -90,22 +90,6 @@ export default function CompanyPage() {
             ownership and autonomy. We&apos;re proud to be open source and built
             for transparency to shape the future with our community.
           </p>
-        </div>
-        <div className="flex flex-col gap-1 text-lg">
-          <Link
-            href="https://github.com/polarsource"
-            target="_blank"
-            className="hover:text-gray-900 dark:hover:text-white"
-          >
-            Polar on GitHub →
-          </Link>
-          <Link
-            href="https://x.com/polar_sh"
-            target="_blank"
-            className="hover:text-gray-900 dark:hover:text-white"
-          >
-            Join the conversation →
-          </Link>
         </div>
       </section>
 

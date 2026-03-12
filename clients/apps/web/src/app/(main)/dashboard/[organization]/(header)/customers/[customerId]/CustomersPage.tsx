@@ -65,8 +65,24 @@ const CustomerHeader = ({
 
   const safeCopy = useSafeCopy(toast)
   const createCustomerSession = useCallback(async () => {
+    let memberId: string | undefined
+    if (customer.type === 'team') {
+      const { data: membersData } = await api.GET('/v1/members/', {
+        params: { query: { customer_id: customer.id } },
+      })
+      const ownerMember = membersData?.items?.find((m) => m.role === 'owner')
+      if (!ownerMember) {
+        toast({
+          title: 'Error',
+          description: 'No owner member found for this team customer.',
+        })
+        return
+      }
+      memberId = ownerMember.id
+    }
+
     const { data: session, error } = await api.POST('/v1/customer-sessions/', {
-      body: { customer_id: customer.id },
+      body: { customer_id: customer.id, ...(memberId ? { member_id: memberId } : {}) },
     })
 
     if (error) {

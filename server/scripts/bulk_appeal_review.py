@@ -202,7 +202,7 @@ async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
     return False
 
 
-async def handle_deleted_org(
+async def handle_org(
     plain: Plain,
     thread_id: str,
     customer_id: str,
@@ -216,24 +216,18 @@ async def handle_deleted_org(
     """
     async with session_maker() as session:
         org_repo = OrganizationRepository.from_session(session)
-        # Check if org exists (non-deleted)
-        org = await org_repo.get_by_slug(slug)
-        if org is not None:
-            return False
-
-        # Org not found via normal lookup — check if it's soft-deleted
         stmt = org_repo.get_base_statement(include_deleted=True).where(
             OrganizationRepository.model.slug == slug
         )
-        deleted_org = await org_repo.get_one_or_none(stmt)
-        if deleted_org is None or deleted_org.deleted_at is None:
-            # Org doesn't exist at all (not even deleted) — skip
+        org = await org_repo.get_one_or_none(stmt)
+        if org is None or org.deleted_at is None:
+            # Org doesn't exist or is not deleted — skip
             return False
 
         log.info(
             "Organization is deleted, closing appeal",
             slug=slug,
-            deleted_at=str(deleted_org.deleted_at),
+            deleted_at=str(org.deleted_at),
         )
 
         if dry_run:
@@ -246,7 +240,7 @@ async def handle_deleted_org(
 
         # Deny appeal in DB
         try:
-            await organization_service.deny_appeal(session, deleted_org)
+            await organization_service.deny_appeal(session, org)
             await session.commit()
             log.info("Denied appeal for deleted org in DB", slug=slug)
         except ValueError as e:
@@ -357,7 +351,7 @@ async def process_appeals(
 
                 try:
                     # Handle deleted orgs: deny, leave note, close thread
-                    was_deleted = await handle_deleted_org(
+                    was_deleted = await handle_org(
                         plain,
                         thread_id,
                         customer_id,
@@ -458,7 +452,7 @@ async def process_appeals(
                 approve=counts.get(AppealAction.APPROVE, 0),
                 deny=counts.get(AppealAction.DENY, 0),
                 follow_up=counts.get(AppealAction.FOLLOW_UP, 0),
-                deleted_orgs=deleted_count,
+                orgs=deleted_count,
                 errors=errors,
                 dry_run=dry_run,
             )

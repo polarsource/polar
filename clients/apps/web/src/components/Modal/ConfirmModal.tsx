@@ -83,7 +83,10 @@ export const ConfirmModal = ({
               <Form {...form}>
                 <form
                   className="flex w-full flex-col gap-y-2"
-                  onSubmit={handleSubmit(onSubmit)}
+                  onSubmit={(e) => {
+                    e.stopPropagation()
+                    handleSubmit(onSubmit)(e)
+                  }}
                 >
                   {confirmPrompt && (
                     <>

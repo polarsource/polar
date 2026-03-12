@@ -12,8 +12,8 @@ import {
   getChartRangeParams,
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { SegmentedControl } from '@polar-sh/orbit'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Settings2 } from 'lucide-react'
 import React from 'react'
 import {

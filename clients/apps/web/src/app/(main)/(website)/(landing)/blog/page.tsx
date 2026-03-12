@@ -53,7 +53,7 @@ export default function BlogPage() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
                 <h2 className="text-lg leading-snug font-medium transition-opacity group-hover:opacity-70">
                   {post.title}
                 </h2>

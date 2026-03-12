@@ -3,7 +3,7 @@
 import { StaticImage } from '@/components/Image/StaticImage'
 import { useMemo } from 'react'
 
-const IMAGES = Array.from({ length: 18 }, (_, i) => i + 1)
+const IMAGES = Array.from({ length: 19 }, (_, i) => i + 1)
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]

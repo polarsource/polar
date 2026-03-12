@@ -16,4 +16,9 @@ export const isMeteredPrice = (
 
 export const getMeteredPrices = (
   prices: schemas['ProductPrice'][],
-): schemas['ProductPriceMeteredUnit'][] => prices.filter(isMeteredPrice)
+  currency?: string | null,
+): schemas['ProductPriceMeteredUnit'][] =>
+  prices.filter(
+    (price): price is schemas['ProductPriceMeteredUnit'] =>
+      isMeteredPrice(price) && (!currency || price.price_currency === currency),
+  )

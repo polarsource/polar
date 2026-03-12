@@ -62,10 +62,11 @@ const CheckoutPricingBreakdown = ({
     ? checkout.product.recurring_interval_count
     : null
 
-  const { product, prices } = checkout
+  const { product, prices, currency } = checkout
   const meteredPrices = useMemo(
-    () => (product && prices ? getMeteredPrices(prices[product.id]) : []),
-    [product, prices],
+    () =>
+      product && prices ? getMeteredPrices(prices[product.id], currency) : [],
+    [product, prices, currency],
   )
 
   const formattedDiscountDuration = useMemo(() => {

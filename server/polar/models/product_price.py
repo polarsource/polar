@@ -334,9 +334,9 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
         return relationship("Meter", lazy="joined")
 
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
-        label = f"({format_decimal(units, locale='en_US')} consumed units"
+        label = f"({format_decimal(max(0, units), locale='en_US')} consumed units"
 
-        label += f") × {format_currency(self.unit_amount, self.price_currency)}"
+        label += f") × {format_currency(self.unit_amount, self.price_currency, decimal_quantization=False)}"
 
         billable_units = Decimal(max(0, units))
         raw_amount = self.unit_amount * billable_units
@@ -345,7 +345,7 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
         if self.cap_amount is not None and amount > self.cap_amount:
             amount = self.cap_amount
             label += (
-                f"— Capped at {format_currency(self.cap_amount, self.price_currency)}"
+                f" — Capped at {format_currency(self.cap_amount, self.price_currency)}"
             )
 
         return amount, label

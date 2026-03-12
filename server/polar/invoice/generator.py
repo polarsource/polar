@@ -208,23 +208,14 @@ class InvoiceGenerator(FPDF):
     logo: ClassVar[Path] = Path(__file__).parent / "invoice-logo.svg"
     """Path to the logo image for the invoice."""
 
-    regular_font_file = Path(__file__).parent / "fonts/Geist-Regular.otf"
+    regular_font_file = Path(__file__).parent / "fonts/Inter-Regular.ttf"
     """Path to the regular font file."""
 
-    bold_font_file = Path(__file__).parent / "fonts/Geist-Bold.otf"
+    bold_font_file = Path(__file__).parent / "fonts/Inter-Bold.ttf"
     """Path to the bold font file."""
 
-    fallback_regular_font_file = Path(__file__).parent / "fonts/NotoSans-Regular.ttf"
-    """Path to the fallback regular font file for Unicode characters not in Geist."""
-
-    fallback_bold_font_file = Path(__file__).parent / "fonts/NotoSans-Bold.ttf"
-    """Path to the fallback bold font file for Unicode characters not in Geist."""
-
-    font_name: ClassVar[str] = "geist"
+    font_name: ClassVar[str] = "inter"
     """Font family name."""
-
-    fallback_font_name: ClassVar[str] = "notosans"
-    """Fallback font family name for Unicode characters not supported by the main font."""
 
     base_font_size: ClassVar[int] = 10
     """Base font size in points."""
@@ -261,12 +252,6 @@ class InvoiceGenerator(FPDF):
         self.add_font(self.font_name, fname=self.regular_font_file)
         self.add_font(self.font_name, fname=self.bold_font_file, style="B")
         self.set_font(self.font_name, size=self.base_font_size)
-
-        self.add_font(self.fallback_font_name, fname=self.fallback_regular_font_file)
-        self.add_font(
-            self.fallback_font_name, fname=self.fallback_bold_font_file, style="B"
-        )
-        self.set_fallback_fonts([self.fallback_font_name], exact_match=False)
 
         self.alias_nb_pages()
         self.data = data

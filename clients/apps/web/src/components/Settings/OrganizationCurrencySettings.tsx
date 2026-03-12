@@ -13,8 +13,8 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import React from 'react'
 import { useForm } from 'react-hook-form'
-import { toast } from '../Toast/use-toast'
 import { CurrencySelector } from '../CurrencySelector'
+import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCurrencySettingsProps {

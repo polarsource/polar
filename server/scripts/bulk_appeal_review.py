@@ -44,6 +44,9 @@ if _jwks_content:
 import httpx  # noqa: E402
 import structlog  # noqa: E402
 from plain_client import (  # noqa: E402
+    CreateNoteInput,
+    DoneStatusDetail,
+    MarkThreadAsDoneInput,
     Plain,
     ReplyToThreadInput,
     SnoozeStatusDetail,
@@ -143,7 +146,13 @@ async def get_appeal_threads(plain: Plain) -> list[dict[str, str]]:
                 )
                 continue
 
-            threads.append({"thread_id": thread.id, "slug": match.group(1)})
+            threads.append(
+                {
+                    "thread_id": thread.id,
+                    "slug": match.group(1),
+                    "customer_id": thread.customer.id,
+                }
+            )
 
         if not result.page_info.has_next_page:
             break
@@ -191,6 +200,94 @@ async def is_thread_answered(plain_token: str, thread_id: str) -> bool:
             return True
 
     return False
+
+
+async def handle_org(
+    plain: Plain,
+    thread_id: str,
+    customer_id: str,
+    slug: str,
+    session_maker: Any,
+    dry_run: bool,
+) -> bool:
+    """Check if org is deleted; if so, deny appeal, leave a note, and close thread.
+
+    Returns True if the org was deleted and handled, False otherwise.
+    """
+    async with session_maker() as session:
+        org_repo = OrganizationRepository.from_session(session)
+        stmt = org_repo.get_base_statement(include_deleted=True).where(
+            OrganizationRepository.model.slug == slug
+        )
+        org = await org_repo.get_one_or_none(stmt)
+        if org is None or org.deleted_at is None:
+            # Org doesn't exist or is not deleted — skip
+            return False
+
+        log.info(
+            "Organization is deleted, closing appeal",
+            slug=slug,
+            deleted_at=str(org.deleted_at),
+        )
+
+        if dry_run:
+            log.info(
+                "DRY RUN: Would deny appeal, leave note, and close thread for deleted org",
+                slug=slug,
+                thread_id=thread_id,
+            )
+            return True
+
+        # Deny appeal in DB
+        try:
+            await organization_service.deny_appeal(session, org)
+            await session.commit()
+            log.info("Denied appeal for deleted org in DB", slug=slug)
+        except ValueError as e:
+            log.warning(
+                "Could not deny appeal in DB (may already be denied)",
+                slug=slug,
+                error=str(e),
+            )
+
+        # Leave an internal note on the thread
+        note_text = (
+            f"Organization '{slug}' has been deleted. "
+            "Appeal automatically denied — no customer reply sent."
+        )
+        note_result = await plain.create_note(
+            CreateNoteInput(
+                customer_id=customer_id,
+                thread_id=thread_id,
+                text=note_text,
+            )
+        )
+        if note_result.error is not None:
+            log.error(
+                "Failed to create note",
+                thread_id=thread_id,
+                error=str(note_result.error),
+            )
+        else:
+            log.info("Left internal note on thread", thread_id=thread_id)
+
+        # Mark thread as done
+        done_result = await plain.mark_thread_as_done(
+            MarkThreadAsDoneInput(
+                thread_id=thread_id,
+                status_detail=DoneStatusDetail.DONE_AUTOMATICALLY_SET,
+            )
+        )
+        if done_result.error is not None:
+            log.error(
+                "Failed to mark thread as done",
+                thread_id=thread_id,
+                error=str(done_result.error),
+            )
+        else:
+            log.info("Marked thread as done", thread_id=thread_id)
+
+        return True
 
 
 async def process_appeals(
@@ -245,12 +342,27 @@ async def process_appeals(
             # 4. Process each thread
             counts: Counter[str] = Counter()
             errors = 0
+            deleted_count = 0
 
             for thread_data in to_process:
                 thread_id = thread_data["thread_id"]
                 slug = thread_data["slug"]
+                customer_id = thread_data["customer_id"]
 
                 try:
+                    # Handle deleted orgs: deny, leave note, close thread
+                    was_deleted = await handle_org(
+                        plain,
+                        thread_id,
+                        customer_id,
+                        slug,
+                        session_maker,
+                        dry_run,
+                    )
+                    if was_deleted:
+                        deleted_count += 1
+                        continue
+
                     log.info("Running appeal review", slug=slug, thread_id=thread_id)
                     result = await run_appeal_review_with_deps(
                         slug,
@@ -340,6 +452,7 @@ async def process_appeals(
                 approve=counts.get(AppealAction.APPROVE, 0),
                 deny=counts.get(AppealAction.DENY, 0),
                 follow_up=counts.get(AppealAction.FOLLOW_UP, 0),
+                orgs=deleted_count,
                 errors=errors,
                 dry_run=dry_run,
             )

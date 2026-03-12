@@ -103,6 +103,17 @@ Thank you for your business!
             },
             "long_item_description",
         ),
+        (
+            {
+                "customer_name": "Nguyễn Văn Hữu",
+                "customer_address": Address(
+                    line1="33 Đường Nguyễn Hữu Thọ",
+                    city="Quận 7",
+                    country=CountryAlpha2("VN"),
+                ),
+            },
+            "unicode_vietnamese",
+        ),
     ],
 )
 def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:

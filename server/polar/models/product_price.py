@@ -345,7 +345,7 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
         if self.cap_amount is not None and amount > self.cap_amount:
             amount = self.cap_amount
             label += (
-                f"— Capped at {format_currency(self.cap_amount, self.price_currency)}"
+                f" — Capped at {format_currency(self.cap_amount, self.price_currency)}"
             )
 
         return amount, label

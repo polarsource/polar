@@ -20,7 +20,7 @@ from tests.fixtures.random_objects import create_product_price_metered_unit
             50_00,
             1000,
             50_00,
-            "(1,000 consumed units) × $1.00— Capped at $5.00",
+            "(1,000 consumed units) × $1.00 — Capped at $5.00",
         ),
         (Decimal(1_00), 50_00, 1, 1_00, "(1 consumed units) × $1.00"),
         (

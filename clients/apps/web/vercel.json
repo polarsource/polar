@@ -6,6 +6,20 @@
       "main": false
     }
   },
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "https://polar.sh/docs",
+      "has": [{ "type": "host", "value": "sandbox.polar.sh" }],
+      "permanent": true
+    },
+    {
+      "source": "/docs/:path+",
+      "destination": "https://polar.sh/docs/:path+",
+      "has": [{ "type": "host", "value": "sandbox.polar.sh" }],
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/_mintlify/api/:path+",

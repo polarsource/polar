@@ -6,7 +6,7 @@ from collections.abc import Generator
 from datetime import datetime
 
 from fastapi import Request
-from tagflow import tag, text
+from tagflow import attr, tag, text
 
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
@@ -239,6 +239,7 @@ class OverviewSection(ChecklistMixin):
             # Per-dimension breakdown (collapsible)
             if review_report.dimensions:
                 with tag.details(classes="mb-4"):
+                    attr("open", True)
                     with tag.summary(
                         classes="text-sm font-bold cursor-pointer hover:text-base-content"
                     ):

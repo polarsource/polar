@@ -358,7 +358,13 @@ export const OrganizationStep = ({
                 <Button
                   type="submit"
                   loading={createOrganization.isPending}
-                  disabled={name.length === 0 || slug.length === 0 || !terms}
+                  disabled={
+                    !name ||
+                    !slug ||
+                    name.length < 3 ||
+                    slug.length < 3 ||
+                    !terms
+                  }
                 >
                   {experimentVariant === 'treatment' ? 'Continue' : 'Create'}
                 </Button>

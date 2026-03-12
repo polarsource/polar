@@ -306,7 +306,9 @@ const OrganizationSelectionPage = ({
           <Button
             type="submit"
             loading={createOrganization.isPending}
-            disabled={name.length < 3 || slug.length < 3 || !terms}
+            disabled={
+              !name || !slug || name.length < 3 || slug.length < 3 || !terms
+            }
             form="organization-create-form"
           >
             Create Organization

@@ -19,7 +19,6 @@ from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
 from polar.models import Customer, CustomerSession, Member, MemberSession
-from polar.models.customer import CustomerType
 from polar.postgres import AsyncSession
 
 from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
@@ -109,19 +108,6 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         if customer_create.external_member_id is not None:
             return await self._get_member_by_external_id(
                 member_repository, customer, customer_create.external_member_id
-            )
-
-        customer_type = customer.type or CustomerType.individual
-        if customer_type == CustomerType.team:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "loc": ("body", "member_id"),
-                        "msg": "member_id is required for team customers.",
-                        "type": "value_error",
-                        "input": None,
-                    }
-                ]
             )
 
         return await self._resolve_owner_member(session, member_repository, customer)

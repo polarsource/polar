@@ -61,7 +61,7 @@ export const Logotypes = () => {
     >
       {/* Mobile: masked marquee */}
       <div
-        className="w-full overflow-hidden xl:hidden"
+        className="w-full max-w-full overflow-hidden xl:hidden"
         style={{
           maskImage:
             'linear-gradient(to right, transparent, black 15%, black 85%, transparent)',

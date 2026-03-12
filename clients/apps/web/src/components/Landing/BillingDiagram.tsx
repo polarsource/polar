@@ -421,7 +421,7 @@ export const BillingDiagram = () => {
 
       {/* Right — isometric illustration with floating labels */}
       <div
-        className="pointer-events-none relative flex-1 overflow-visible"
+        className="pointer-events-none relative flex-1 overflow-hidden"
         style={{ minHeight: 510 }}
       >
         {/* Illustration, centered and shifted down to prevent top overflow */}

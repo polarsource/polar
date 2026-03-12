@@ -137,6 +137,57 @@ class MemberService:
 
         return deleted_member
 
+    async def delete_by_customer(
+        self,
+        session: AsyncSession,
+        customer_id: UUID,
+    ) -> Sequence[Member]:
+        """
+        Soft-delete all members for a customer.
+
+        Unlike delete(), this skips the owner guard since the entire
+        customer is being removed.
+        """
+        from polar.benefit.grant.service import (
+            benefit_grant as benefit_grant_service,
+        )
+
+        repository = MemberRepository.from_session(session)
+        members = await repository.list_by_customer(session, customer_id)
+
+        if not members:
+            return []
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            members[0].organization_id
+        )
+
+        deleted: list[Member] = []
+        for member in members:
+            enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
+            await benefit_grant_service.enqueue_member_grant_deletions(
+                session, member.id
+            )
+            deleted_member = await repository.soft_delete(member)
+            log.info(
+                "member.delete.success",
+                member_id=member.id,
+                customer_id=member.customer_id,
+                organization_id=member.organization_id,
+            )
+
+            if organization:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_deleted,
+                    deleted_member,
+                )
+            deleted.append(deleted_member)
+
+        return deleted
+
     async def create_owner_member(
         self,
         session: AsyncSession,

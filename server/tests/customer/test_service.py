@@ -20,7 +20,7 @@ from polar.redis import Redis
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_member
 
 
 @pytest.mark.asyncio
@@ -836,6 +836,143 @@ class TestDelete:
                 external_id=recycled.external_id,
                 user_metadata=recycled.user_metadata,
             )
+
+    async def test_delete_soft_deletes_members(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Deleting a customer should soft-delete its members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="member-cleanup@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        assert member.deleted_at is None
+        await customer_service.delete(session, customer)
+        await session.flush()
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_customer(session, customer.id)
+        assert len(active_members) == 0
+
+    async def test_delete_prevents_duplicate_members_on_recreate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """
+        Reproducer for the duplicate member bug:
+        1. Create customer → member auto-created
+        2. Delete customer → member should be deleted too
+        3. Create new customer with same email → new member created
+        4. Only ONE active member should exist for this email+org
+        """
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="duplicate-test@example.com",
+        )
+        member1 = await create_member(
+            save_fixture,
+            customer=customer1,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        await customer_service.delete(session, customer1)
+        await session.flush()
+
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="duplicate-test@example.com",
+        )
+        member2 = await create_member(
+            save_fixture,
+            customer=customer2,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_email_and_organization(
+            session, "duplicate-test@example.com", organization.id
+        )
+        assert len(active_members) == 1
+        assert active_members[0].id == member2.id
+        assert active_members[0].customer_id == customer2.id
+
+    async def test_delete_with_anonymize_soft_deletes_members(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Deleting with anonymize=True should also soft-delete members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="anon-member@example.com",
+            name="Anon Member User",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        assert member.deleted_at is None
+        await customer_service.delete(session, customer, anonymize=True)
+        await session.flush()
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_customer(session, customer.id)
+        assert len(active_members) == 0
+
+    async def test_delete_with_multiple_members(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Deleting a customer should soft-delete all its members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="multi-member@example.com",
+        )
+        member_owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="multi-member@example.com",
+        )
+        member_regular = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="team-member@example.com",
+        )
+
+        await customer_service.delete(session, customer)
+        await session.flush()
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_customer(session, customer.id)
+        assert len(active_members) == 0
 
 
 @pytest.mark.asyncio

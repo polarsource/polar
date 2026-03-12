@@ -20,6 +20,7 @@ class TestTinybirdEventRepository:
         now = datetime.now(UTC)
         expected = [
             TinybirdEventTypeStats(
+                organization_id=organization_id,
                 name="event.created",
                 source=EventSource.system,
                 occurrences=3,
@@ -56,6 +57,7 @@ class TestTinybirdEventRepository:
         now = datetime.now(UTC)
         expected = [
             TinybirdEventTypeStats(
+                organization_id=organization_id,
                 name="event.created",
                 source=EventSource.user,
                 occurrences=1,

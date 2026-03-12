@@ -51,7 +51,9 @@
     "MCP_OAUTH2_CLIENT_SECRET"
   ],
   "tasks": {
-    "test": {},
+    "test": {
+      "dependsOn": ["^build"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]

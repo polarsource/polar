@@ -59,7 +59,7 @@ export const OrganizationNavigation = ({
                   className={twMerge(
                     'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
                     route.isActive
-                      ? 'text-blue-500 dark:text-white'
+                      ? 'text-black dark:text-white'
                       : 'bg-transparent',
                   )}
                 >
@@ -79,7 +79,7 @@ export const OrganizationNavigation = ({
                       prefetch={true}
                       className={twMerge(
                         'dark:text-polar-500 ml-4 inline-flex flex-row items-center gap-x-2 text-sm font-medium text-gray-500 transition-colors hover:text-black dark:hover:text-white',
-                        subRoute.isActive && 'text-blue-500 dark:text-white',
+                        subRoute.isActive && 'text-black dark:text-white',
                       )}
                     >
                       {subRoute.title}

@@ -185,11 +185,7 @@ export const DownloadablesBenefitForm = ({
     )
   }
 
-  // Use file IDs as key to force remount when benefit is updated
-  const fileIds = getValues('properties.files')
-  const key = fileIds?.join(',') ?? ''
-
-  return <DownloadablesEditForm key={key} organization={organization} />
+  return <DownloadablesEditForm organization={organization} />
 }
 
 const DownloadablesEditForm = ({

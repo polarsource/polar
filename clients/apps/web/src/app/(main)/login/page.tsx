@@ -9,11 +9,12 @@ export const metadata: Metadata = {
 export default async function Page(props: {
   searchParams: Promise<{
     return_to?: string
+    from?: string
   }>
 }) {
   const searchParams = await props.searchParams
 
-  const { return_to, ...rest } = searchParams
+  const { return_to, from, ...rest } = searchParams
 
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
@@ -22,10 +23,14 @@ export default async function Page(props: {
           <PolarLogotype logoVariant="icon" size={60} />
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl text-black dark:text-white">
-              Welcome to Polar
+              {from === 'onboarding'
+                ? 'Welcome to the Polar Sandbox'
+                : 'Welcome to Polar'}
             </h2>
             <span className="dark:text-polar-400 text-lg text-balance text-gray-500">
-              Monetize your software
+              {from === 'onboarding'
+                ? 'The sandbox uses test data and mock payments, no real money involved.'
+                : 'Monetize your software'}
             </span>
           </div>
         </div>

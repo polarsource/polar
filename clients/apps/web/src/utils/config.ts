@@ -29,6 +29,9 @@ const defaults = {
   APPLE_DOMAIN_ASSOCIATION:
     process.env.NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION ||
     '<Replace with Apple Pay Domain Association from Stripe>',
+  SANDBOX_FRONTEND_BASE_URL:
+    process.env.NEXT_PUBLIC_SANDBOX_FRONTEND_BASE_URL ||
+    'http://127.0.0.1:3000',
   CHECKOUT_EMBED_SCRIPT_SRC:
     process.env.NEXT_PUBLIC_CHECKOUT_EMBED_SCRIPT_SRC ||
     'node_modules/@polar-sh/checkout/dist/embed.global.js',

@@ -637,9 +637,9 @@ class TestHandleOngoingReviewVerdict:
             session, organization, ReviewVerdict.APPROVE
         )
 
-        # Then: not eligible, escalated to Plain
+        # Then: not eligible, but org is not under review so no Plain thread
         assert result is False
-        plain_mock.assert_called_once_with(session, organization)
+        plain_mock.assert_not_called()
         enqueue_job_mock.assert_not_called()
 
 

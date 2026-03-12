@@ -91,7 +91,9 @@ async def list(
                     "organization.name",
                     "Organization",
                     external_href=lambda r, i: str(
-                        r.url_for("organizations-classic:get", id=i.organization_id)
+                        r.url_for(
+                            "organizations:detail", organization_id=i.organization_id
+                        )
                     ),
                 ),
             ).render(request, items):
@@ -186,8 +188,8 @@ async def get(
                                 "Name",
                                 href_getter=lambda r, i: str(
                                     r.url_for(
-                                        "organizations-classic:get",
-                                        id=i.organization_id,
+                                        "organizations:detail",
+                                        organization_id=i.organization_id,
                                     )
                                 ),
                             ),

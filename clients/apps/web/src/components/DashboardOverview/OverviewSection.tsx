@@ -13,9 +13,9 @@ import {
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { SegmentedControl } from '@polar-sh/orbit'
 import { Settings2 } from 'lucide-react'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import {
   MetricSelectorModalContent,
   useMetricSelectorModal,
@@ -64,24 +64,13 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
           Overview
         </h2>
         <div className="flex items-center gap-x-4">
-          <div className="dark:bg-polar-800 flex items-center gap-x-1 rounded-xl bg-gray-50 p-1">
-            {(Object.entries(CHART_RANGES) as [ChartRange, string][]).map(
-              ([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setRange(key)}
-                  className={twMerge(
-                    'cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium',
-                    range === key
-                      ? 'dark:bg-polar-600 bg-white text-black shadow-lg dark:text-white'
-                      : 'dark:text-polar-500 text-gray-500 hover:text-gray-900 dark:hover:text-white',
-                  )}
-                >
-                  {label}
-                </button>
-              ),
-            )}
-          </div>
+          <SegmentedControl
+            options={(
+              Object.entries(CHART_RANGES) as [ChartRange, string][]
+            ).map(([value, label]) => ({ value, label }))}
+            value={range}
+            onChange={setRange}
+          />
           <Button
             type="button"
             onClick={show}

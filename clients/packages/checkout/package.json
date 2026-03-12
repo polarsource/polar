@@ -75,9 +75,7 @@
     "terser": "^5.46.0",
     "tsup": "^8.5.1",
     "typescript": "latest",
-    "vitest": "^4.0.18"
-  },
-  "dependencies": {
+    "vitest": "^4.0.18",
     "@polar-sh/currency": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/i18n": "workspace:*",
@@ -87,6 +85,7 @@
     "markdown-to-jsx": "^8.0.0",
     "react-hook-form": "~7.71.2"
   },
+  "dependencies": {},
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",
     "@stripe/stripe-js": "^7.1.0",

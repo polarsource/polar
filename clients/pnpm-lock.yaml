@@ -586,7 +586,7 @@ importers:
         version: 14.1.1
 
   packages/checkout:
-    dependencies:
+    devDependencies:
       '@polar-sh/client':
         specifier: workspace:*
         version: link:../client
@@ -596,25 +596,12 @@ importers:
       '@polar-sh/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@polar-sh/ui':
-        specifier: workspace:^
-        version: link:../ui
-      event-source-plus:
-        specifier: ^0.1.15
-        version: 0.1.15
-      eventemitter3:
-        specifier: ^5.0.4
-        version: 5.0.4
-      markdown-to-jsx:
-        specifier: ^8.0.0
-        version: 8.0.0(react@19.2.4)
-      react-hook-form:
-        specifier: ~7.71.2
-        version: 7.71.2(react@19.2.4)
-    devDependencies:
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@polar-sh/ui':
+        specifier: workspace:^
+        version: link:../ui
       '@stripe/react-stripe-js':
         specifier: ^4.0.2
         version: 4.0.2(@stripe/stripe-js@7.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -633,12 +620,24 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^5.1.4
         version: 5.1.4(vite@7.3.0(@types/node@25.0.2)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      event-source-plus:
+        specifier: ^0.1.15
+        version: 0.1.15
+      eventemitter3:
+        specifier: ^5.0.4
+        version: 5.0.4
       jsdom:
         specifier: ^27.4.0
         version: 27.4.0(postcss@8.5.8)
+      markdown-to-jsx:
+        specifier: ^8.0.0
+        version: 8.0.0(react@19.2.4)
       react:
         specifier: ^19.2.4
         version: 19.2.4
+      react-hook-form:
+        specifier: ~7.71.2
+        version: 7.71.2(react@19.2.4)
       terser:
         specifier: ^5.46.0
         version: 5.46.0
@@ -6232,10 +6231,6 @@ packages:
   encodeurl@2.0.0:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
     engines: {node: '>= 0.8'}
-
-  enhanced-resolve@5.18.4:
-    resolution: {integrity: sha512-LgQMM4WXU3QI+SYgEc2liRgznaD5ojbmY3sb8LxyguVkIg5FxdpTkvk72te2R38/TGKxH634oLxXRGY6d7AP+Q==}
-    engines: {node: '>=10.13.0'}
 
   enhanced-resolve@5.20.0:
     resolution: {integrity: sha512-/ce7+jQ1PQ6rVXwe+jKEg5hW5ciicHwIQUagZkp6IufBoY3YDgdTTY1azVs0qoRgVmvsNB+rbjLJxDAeHHtwsQ==}
@@ -17944,11 +17939,6 @@ snapshots:
 
   encodeurl@2.0.0: {}
 
-  enhanced-resolve@5.18.4:
-    dependencies:
-      graceful-fs: 4.2.11
-      tapable: 2.3.0
-
   enhanced-resolve@5.20.0:
     dependencies:
       graceful-fs: 4.2.11
@@ -24476,7 +24466,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.15.0)
       browserslist: 4.28.1
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.18.4
+      enhanced-resolve: 5.20.0
       es-module-lexer: 1.7.0
       eslint-scope: 5.1.1
       events: 3.3.0

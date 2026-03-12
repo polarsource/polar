@@ -27,7 +27,7 @@ export default function BlogPage() {
       <section className="mx-auto flex w-full max-w-2xl flex-col items-center px-6 py-12">
         <BlogHero
           title="Blog"
-          description="Thoughts on developer tooling, billing, and building a company."
+          description="Building in the open — payments, developer tools, and lessons from the road."
         />
       </section>
 

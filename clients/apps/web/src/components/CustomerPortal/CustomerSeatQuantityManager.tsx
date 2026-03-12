@@ -42,9 +42,6 @@ export const CustomerSeatQuantityManager = ({
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
 
-  const unusedSeats =
-    seats !== undefined ? seats - assignedSeats : availableSeats
-
   const invoicingMessage = useMemo(() => {
     if (!prorationBehavior) return null
     switch (prorationBehavior) {
@@ -78,11 +75,23 @@ export const CustomerSeatQuantityManager = ({
             variant: 'error',
           })
         } else {
+          const descriptionMessage = (() => {
+            const seatText = `${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}`
+            switch (prorationBehavior) {
+              case 'invoice':
+                return `Subscription now has ${seatText}. You'll be charged immediately with a proration for the current month.`
+              case 'prorate':
+                return `Subscription now has ${seatText}. Your next invoice will include the updated seats plus the proration for the current month.`
+              case 'next_period':
+                return `Subscription will have ${seatText} starting on your next billing cycle.`
+              default:
+                return `Subscription now has ${seatText}.`
+            }
+          })()
           toast({
             title: 'Seats updated',
-            description: `Subscription now has ${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}.`,
+            description: descriptionMessage,
           })
-
           onUpdate?.()
         }
       } catch (error) {

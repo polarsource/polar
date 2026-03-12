@@ -2,7 +2,6 @@
 
 import type { schemas } from '@polar-sh/client'
 
-import { isValidationError } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
@@ -82,19 +81,19 @@ export const CheckoutFormProvider = ({
         return value
       } else {
         if (error) {
-          if (isValidationError(error.detail)) {
-            setValidationErrors(error.detail, setError)
-          } else {
-            switch (error.error) {
-              case 'AlreadyActiveSubscriptionError':
-              case 'NotOpenCheckout':
-              case 'PaymentNotReady':
-                setError('root', { message: error.detail })
-                break
-              case 'ResourceNotFound':
-              case 'ExpiredCheckoutError':
-                break
-            }
+          switch (error.error) {
+            case 'PolarRequestValidationError':
+              console.log('validation error', { error })
+              setValidationErrors(error.detail, setError)
+              break
+            case 'AlreadyActiveSubscriptionError':
+            case 'NotOpenCheckout':
+            case 'PaymentNotReady':
+              setError('root', { message: error.detail })
+              break
+            case 'ResourceNotFound':
+            case 'ExpiredCheckoutError':
+              break
           }
         }
         throw error
@@ -108,30 +107,32 @@ export const CheckoutFormProvider = ({
       checkoutConfirmStripe: schemas['CheckoutConfirmStripe'],
     ): Promise<schemas['CheckoutPublicConfirmed']> => {
       const { ok, value, error } = await confirmOuter(checkoutConfirmStripe)
+
       if (ok) {
         return value
       }
+
       if (error) {
-        if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
-        } else {
-          switch (error.error) {
-            case 'PaymentError':
-            case 'AlreadyActiveSubscriptionError':
-            case 'NotOpenCheckout':
-            case 'PaymentNotReady':
-              setError('root', { message: error.detail })
-              break
-            case 'TrialAlreadyRedeemed':
-              setError('root', { message: error.detail })
-              await update({ allow_trial: false })
-              break
-            case 'ResourceNotFound':
-            case 'ExpiredCheckoutError':
-              break
-          }
+        switch (error.error) {
+          case 'PolarRequestValidationError':
+            setValidationErrors(error.detail, setError)
+            break
+          case 'PaymentError':
+          case 'AlreadyActiveSubscriptionError':
+          case 'NotOpenCheckout':
+          case 'PaymentNotReady':
+            setError('root', { message: error.detail })
+            break
+          case 'TrialAlreadyRedeemed':
+            setError('root', { message: error.detail })
+            await update({ allow_trial: false })
+            break
+          case 'ResourceNotFound':
+          case 'ExpiredCheckoutError':
+            break
         }
       }
+
       throw error
     },
     [confirmOuter, setError],
@@ -150,8 +151,8 @@ export const CheckoutFormProvider = ({
         try {
           const checkoutConfirmed = await _confirm(data)
           return checkoutConfirmed
-        } catch (e) {
-          throw e
+        } catch (error) {
+          throw error
         } finally {
           setLoading(false)
         }
@@ -201,9 +202,9 @@ export const CheckoutFormProvider = ({
         })
         confirmationToken = confirmationTokenResponse.confirmationToken
         error = confirmationTokenResponse.error
-      } catch (err) {
+      } catch (error) {
         setLoading(false)
-        throw err
+        throw error
       }
 
       if (!confirmationToken || error) {
@@ -221,9 +222,9 @@ export const CheckoutFormProvider = ({
           ...data,
           confirmation_token_id: confirmationToken.id,
         })
-      } catch (e) {
+      } catch (error) {
         setLoading(false)
-        throw e
+        throw error
       }
 
       setLoadingLabel(t('checkout.loading.paymentSuccessful'))

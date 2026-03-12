@@ -316,11 +316,7 @@ const Checkout = ({
                 {checkout.product_price.amount_type === 'seat_based' && (
                   <CheckoutSeatSelector
                     checkout={checkout}
-                    update={
-                      update as (
-                        data: schemas['CheckoutUpdatePublic'],
-                      ) => Promise<ProductCheckoutPublic>
-                    }
+                    update={update}
                     locale={locale}
                     compact
                   />
@@ -458,11 +454,7 @@ const Checkout = ({
                     {checkout.product_price.amount_type === 'seat_based' && (
                       <CheckoutSeatSelector
                         checkout={checkout}
-                        update={
-                          update as (
-                            data: schemas['CheckoutUpdatePublic'],
-                          ) => Promise<ProductCheckoutPublic>
-                        }
+                        update={update}
                         locale={locale}
                         compact
                       />

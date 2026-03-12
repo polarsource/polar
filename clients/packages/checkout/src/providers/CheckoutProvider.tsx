@@ -20,8 +20,6 @@ import {
 
 // Mimicking the SDK error handling pattern, for now.
 // Extract non-200 status codes from a responses object
-type APIError<T extends string> = { error: T; detail: string }
-
 type ResponseMap = Record<number, { content?: { 'application/json': unknown } }>
 
 type ErrorCodes<T extends ResponseMap> = Exclude<keyof T, 200 | 201 | 202 | 204>
@@ -39,11 +37,25 @@ type SuccessBody<T extends ResponseMap> = T[200] extends {
   ? R
   : never
 
+type APIError<T extends keyof operations> = {
+  error: ErrorTypes<operations[T]['responses']>
+  detail: string
+}
+
+type ValidationError = {
+  error: 'PolarRequestValidationError'
+  detail: { input: number; loc: string[]; msg: string; type: string }[]
+}
+
+export type ErrorResponse<T extends keyof operations> =
+  | APIError<T>
+  | ValidationError
+
 export type Result<T extends keyof operations> =
   | { ok: true; error: never; value: SuccessBody<operations[T]['responses']> }
   | {
       ok: false
-      error: APIError<ErrorTypes<operations[T]['responses']>> | null
+      error: ErrorResponse<T> | null
       value: never
     }
 
@@ -63,9 +75,7 @@ const checkoutsClientGet = async (
     if (error instanceof ClientResponseError) {
       return {
         ok: false,
-        error: error.error as APIError<
-          ErrorTypes<operations['checkouts:client_get']['responses']>
-        >,
+        error: error.error as ErrorResponse<'checkouts:client_get'>,
       } as Result<'checkouts:client_get'>
     }
 
@@ -94,7 +104,7 @@ const checkoutsClientConfirm = async (
     if (error instanceof ClientResponseError) {
       return {
         ok: false,
-        error: error.error,
+        error: error.error as ErrorResponse<'checkouts:client_confirm'>,
       } as Result<'checkouts:client_confirm'>
     }
 
@@ -126,7 +136,7 @@ const checkoutsClientUpdate = async (
     if (error instanceof ClientResponseError) {
       return {
         ok: false,
-        error: error.error,
+        error: error.error as ErrorResponse<'checkouts:client_update'>,
       } as Result<'checkouts:client_update'>
     }
     return { ok: false, error: null } as Result<'checkouts:client_update'>

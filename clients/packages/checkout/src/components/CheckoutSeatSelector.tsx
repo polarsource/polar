@@ -1,20 +1,20 @@
 'use client'
 
-import type { schemas } from '@polar-sh/client'
+import { type schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror.js'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useEffect, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
+import { ErrorResponse } from '../providers/CheckoutProvider'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
   update: (
-    body: schemas['CheckoutUpdatePublic'],
-  ) => Promise<ProductCheckoutPublic>
+    data: schemas['CheckoutUpdatePublic'],
+  ) => Promise<schemas['CheckoutPublic']>
   locale?: AcceptedLocale
   compact?: boolean
 }
@@ -31,10 +31,13 @@ const CheckoutSeatSelector = ({
   const [error, setError] = useState<string | null>(null)
   const [autoCorrectAttempted, setAutoCorrectAttempted] = useState(false)
 
-  const getErrorMessage = (err: unknown): string => {
-    if (err instanceof HTTPValidationError && err.detail?.[0]?.msg) {
-      return err.detail[0].msg
+  const getErrorMessage = (
+    error: ErrorResponse<'checkouts:client_update'> | null,
+  ): string => {
+    if (error && error.error === 'PolarRequestValidationError') {
+      return error.detail[0]?.msg
     }
+
     return 'Failed to update seats'
   }
 
@@ -80,9 +83,10 @@ const CheckoutSeatSelector = ({
       !autoCorrectAttempted
     ) {
       setAutoCorrectAttempted(true)
+
       update({
         seats: minimumSeats,
-      } satisfies schemas['CheckoutUpdatePublic']).catch((err) => {
+      }).catch((err) => {
         setError(getErrorMessage(err))
       })
     }
@@ -101,15 +105,16 @@ const CheckoutSeatSelector = ({
 
     setIsUpdating(true)
     setError(null)
-    try {
-      await update({
-        seats: newSeats,
-      } satisfies schemas['CheckoutUpdatePublic'])
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setIsUpdating(false)
-    }
+
+    await update({
+      seats: newSeats,
+    })
+      .catch((error) => {
+        setError(getErrorMessage(error))
+      })
+      .finally(() => {
+        setIsUpdating(false)
+      })
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

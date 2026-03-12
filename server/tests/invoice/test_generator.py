@@ -105,10 +105,10 @@ Thank you for your business!
         ),
         (
             {
-                "customer_name": "Nguyễn Văn Hữu",
+                "customer_name": "Văn bản thử nghiệm tiếng Việt",
                 "customer_address": Address(
-                    line1="33 Đường Nguyễn Hữu Thọ",
-                    city="Quận 7",
+                    line1="Số 42, Đồi Mây Trắng",
+                    city="Phường Gió Mới",
                     country=CountryAlpha2("VN"),
                 ),
             },

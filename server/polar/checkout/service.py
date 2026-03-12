@@ -76,7 +76,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
+from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.observability.checkout_metrics import (
     CHECKOUT_CREATED_TOTAL,
@@ -1721,7 +1721,7 @@ class CheckoutService:
             )
 
         for price in subscription.prices:
-            if price.amount_type != ProductPriceAmountType.free:
+            if not price.is_free:
                 raise PolarRequestValidationError(
                     [
                         {

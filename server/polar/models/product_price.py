@@ -177,6 +177,10 @@ class ProductPrice(RecordModel):
     def legacy_recurring_interval(self) -> SubscriptionRecurringInterval | None:
         return self.product.recurring_interval
 
+    @property
+    def is_free(self) -> bool:
+        return False
+
     __mapper_args__ = {
         "polymorphic_on": case(
             (type.is_(None), amount_type),
@@ -281,6 +285,10 @@ class _ProductPriceFree(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.free
     )
+
+    @property
+    def is_free(self) -> bool:
+        return True
 
     __mapper_args__ = {
         "polymorphic_abstract": True,
@@ -387,6 +395,18 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
             return None
         sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
         return sorted_tiers[-1].get("max_seats")
+
+    @property
+    def is_free(self) -> bool:
+        """Check if ALL tiers have price_per_seat == 0.
+
+        A seat-based price is only considered free if every single tier
+        has a zero price per seat. If any tier charges, it's not free.
+        """
+        tiers = self.seat_tiers.get("tiers", [])
+        if not tiers:
+            return True
+        return all(tier["price_per_seat"] == 0 for tier in tiers)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,

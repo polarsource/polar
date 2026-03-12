@@ -68,7 +68,7 @@ class OrganizationColumn(datatable.DatatableAttrColumn[Product, ProductSortPrope
     def __init__(self) -> None:
         super().__init__("organization.name", "Organization")
         self.href_getter = lambda r, i: str(
-            r.url_for("organizations-classic:get", id=i.organization_id)
+            r.url_for("organizations:detail", organization_id=i.organization_id)
         )
 
 
@@ -227,8 +227,8 @@ async def get(
                                 "Name",
                                 href_getter=lambda r, i: str(
                                     r.url_for(
-                                        "organizations-classic:get",
-                                        id=i.organization_id,
+                                        "organizations:detail",
+                                        organization_id=i.organization_id,
                                     )
                                 ),
                             ),

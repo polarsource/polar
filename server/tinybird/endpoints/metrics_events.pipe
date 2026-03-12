@@ -277,297 +277,383 @@ SQL >
         )
         IS NOT NULL
 
-NODE events_baseline
+NODE orders_combined
 SQL >
     %
     SELECT
-        COALESCE(sum(oe.revenue_amount), 0) AS hist_revenue,
-        COALESCE(
-            sum(oe.net_revenue_before_refunds_amount + oe.refund_net_amount), 0
-        ) AS hist_net_revenue
-    FROM orders_enriched AS oe
-    WHERE
-        oe.event_timestamp < toDateTime(
-            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
-            {{ String(tz, 'UTC', description="Timezone") }}
-        )
-
-NODE orders_daily
-SQL >
-    %
-    SELECT
-        {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
-        {% elif interval == 'hour' %}
-            toStartOfHour(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
-        {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}), 1) AS day,
-        {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
-        {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
-        {% else %} toStartOfDay(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
-        {% end %}
-        count(*) AS orders,
-        COALESCE(sum(oe.revenue_amount), 0) AS revenue,
-        COALESCE(sum(oe.net_revenue_before_refunds_amount + oe.refund_net_amount), 0) AS net_revenue,
-        CASE
-            WHEN count(*) > 0 THEN toInt64(ceil(sum(oe.revenue_amount) / count(*))) ELSE 0
-        END AS average_order_value,
-        CASE
-            WHEN count(*) > 0
-            THEN
-                toInt64(
-                    ceil(sum(oe.net_revenue_before_refunds_amount + oe.refund_net_amount) / count(*))
+        oc.day,
+        oc.is_baseline,
+        oc.orders,
+        oc.revenue,
+        oc.net_revenue,
+        oc.average_order_value,
+        oc.net_average_order_value,
+        oc.one_time_products,
+        oc.one_time_products_revenue,
+        oc.one_time_products_net_revenue,
+        oc.new_subscriptions_revenue,
+        oc.new_subscriptions_net_revenue,
+        oc.renewed_subscriptions,
+        oc.renewed_subscriptions_revenue,
+        oc.renewed_subscriptions_net_revenue,
+        sumIf(oc.revenue, oc.is_baseline = 1) OVER () AS hist_revenue,
+        sumIf(oc.net_revenue, oc.is_baseline = 1) OVER () AS hist_net_revenue
+    FROM
+        (
+            SELECT
+                {% if not defined(interval) or interval == 'day' %}
+                    if(
+                        oe.event_timestamp < toDateTime(
+                            {{
+                                String(
+                                    bounds_start,
+                                    '2024-01-01 00:00:00',
+                                    description="Bounds start datetime",
+                                )
+                            }}, {{ String(tz, 'UTC', description="Timezone") }}
+                        ),
+                        toDateTime('1970-01-01 00:00:00', {{ String(tz, 'UTC') }}),
+                        toStartOfDay(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}))
+                    ) AS day,
+                {% elif interval == 'hour' %}
+                    if(
+                        oe.event_timestamp < toDateTime(
+                            {{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}
+                        ),
+                        toDateTime('1970-01-01 00:00:00', {{ String(tz, 'UTC') }}),
+                        toStartOfHour(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}))
+                    ) AS day,
+                {% elif interval == 'week' %}
+                    if(
+                        oe.event_timestamp < toDateTime(
+                            {{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}
+                        ),
+                        toDateTime('1970-01-01 00:00:00', {{ String(tz, 'UTC') }}),
+                        toStartOfWeek(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}), 1)
+                    ) AS day,
+                {% elif interval == 'month' %}
+                    if(
+                        oe.event_timestamp < toDateTime(
+                            {{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}
+                        ),
+                        toDateTime('1970-01-01 00:00:00', {{ String(tz, 'UTC') }}),
+                        toStartOfMonth(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}))
+                    ) AS day,
+                {% elif interval == 'year' %}
+                    if(
+                        oe.event_timestamp < toDateTime(
+                            {{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}
+                        ),
+                        toDateTime('1970-01-01 00:00:00', {{ String(tz, 'UTC') }}),
+                        toStartOfYear(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}))
+                    ) AS day,
+                {% else %}
+                    if(
+                        oe.event_timestamp < toDateTime(
+                            {{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}
+                        ),
+                        toDateTime('1970-01-01 00:00:00', {{ String(tz, 'UTC') }}),
+                        toStartOfDay(toDateTime(oe.event_timestamp, {{ String(tz, 'UTC') }}))
+                    ) AS day,
+                {% end %}
+                toUInt8(
+                    oe.event_timestamp < toDateTime(
+                        {{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}
+                    )
+                ) AS is_baseline,
+                count(*) AS orders,
+                COALESCE(sum(oe.revenue_amount), 0) AS revenue,
+                COALESCE(
+                    sum(oe.net_revenue_before_refunds_amount + oe.refund_net_amount), 0
+                ) AS net_revenue,
+                CASE
+                    WHEN count(*) > 0 THEN toInt64(ceil(sum(oe.revenue_amount) / count(*))) ELSE 0
+                END AS average_order_value,
+                CASE
+                    WHEN count(*) > 0
+                    THEN
+                        toInt64(
+                            ceil(
+                                sum(oe.net_revenue_before_refunds_amount + oe.refund_net_amount)
+                                / count(*)
+                            )
+                        )
+                    ELSE 0
+                END AS net_average_order_value,
+                countIf(oe.subscription_id IS NULL) AS one_time_products,
+                COALESCE(
+                    sumIf(oe.revenue_amount, oe.subscription_id IS NULL), 0
+                ) AS one_time_products_revenue,
+                COALESCE(
+                    sumIf(
+                        oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                        oe.subscription_id IS NULL
+                    ),
+                    0
+                ) AS one_time_products_net_revenue,
+                {% if not defined(interval) or interval == 'day' %}
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_net_revenue,
+                    countDistinctIf(
+                        oe.subscription_id,
+                        oe.subscription_id IS NOT NULL
+                        AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    ) AS renewed_subscriptions,
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_net_revenue
+                {% elif interval == 'hour' %}
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_net_revenue,
+                    countDistinctIf(
+                        oe.subscription_id,
+                        oe.subscription_id IS NOT NULL
+                        AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    ) AS renewed_subscriptions,
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_net_revenue
+                {% elif interval == 'week' %}
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_net_revenue,
+                    countDistinctIf(
+                        oe.subscription_id,
+                        oe.subscription_id IS NOT NULL
+                        AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
+                        != day
+                    ) AS renewed_subscriptions,
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1)
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_net_revenue
+                {% elif interval == 'month' %}
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_net_revenue,
+                    countDistinctIf(
+                        oe.subscription_id,
+                        oe.subscription_id IS NOT NULL
+                        AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                        != day
+                    ) AS renewed_subscriptions,
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_net_revenue
+                {% elif interval == 'year' %}
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_net_revenue,
+                    countDistinctIf(
+                        oe.subscription_id,
+                        oe.subscription_id IS NOT NULL
+                        AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    ) AS renewed_subscriptions,
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_net_revenue
+                {% else %}
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            = day
+                        ),
+                        0
+                    ) AS new_subscriptions_net_revenue,
+                    countDistinctIf(
+                        oe.subscription_id,
+                        oe.subscription_id IS NOT NULL
+                        AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    ) AS renewed_subscriptions,
+                    COALESCE(
+                        sumIf(
+                            oe.revenue_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_revenue,
+                    COALESCE(
+                        sumIf(
+                            oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
+                            oe.subscription_id IS NOT NULL
+                            AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}))
+                            != day
+                        ),
+                        0
+                    ) AS renewed_subscriptions_net_revenue
+                {% end %}
+            FROM orders_enriched AS oe
+            WHERE
+                oe.event_timestamp <= toDateTime(
+                    {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+                    {{ String(tz, 'UTC') }}
                 )
-            ELSE 0
-        END AS net_average_order_value,
-        countIf(oe.subscription_id IS NULL) AS one_time_products,
-        COALESCE(sumIf(oe.revenue_amount, oe.subscription_id IS NULL), 0) AS one_time_products_revenue,
-        COALESCE(
-            sumIf(
-                oe.net_revenue_before_refunds_amount + oe.refund_net_amount, oe.subscription_id IS NULL
-            ),
-            0
-        ) AS one_time_products_net_revenue,
-        {% if not defined(interval) or interval == 'day' %}
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_net_revenue,
-            countDistinctIf(
-                oe.subscription_id,
-                oe.subscription_id IS NOT NULL
-                AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-            ) AS renewed_subscriptions,
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_net_revenue
-        {% elif interval == 'hour' %}
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_net_revenue,
-            countDistinctIf(
-                oe.subscription_id,
-                oe.subscription_id IS NOT NULL
-                AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-            ) AS renewed_subscriptions,
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfHour(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_net_revenue
-        {% elif interval == 'week' %}
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1) = day
-                ),
-                0
-            ) AS new_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1) = day
-                ),
-                0
-            ) AS new_subscriptions_net_revenue,
-            countDistinctIf(
-                oe.subscription_id,
-                oe.subscription_id IS NOT NULL
-                AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
-            ) AS renewed_subscriptions,
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
-                ),
-                0
-            ) AS renewed_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
-                ),
-                0
-            ) AS renewed_subscriptions_net_revenue
-        {% elif interval == 'month' %}
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_net_revenue,
-            countDistinctIf(
-                oe.subscription_id,
-                oe.subscription_id IS NOT NULL
-                AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-            ) AS renewed_subscriptions,
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfMonth(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_net_revenue
-        {% elif interval == 'year' %}
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_net_revenue,
-            countDistinctIf(
-                oe.subscription_id,
-                oe.subscription_id IS NOT NULL
-                AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-            ) AS renewed_subscriptions,
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfYear(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_net_revenue
-        {% else %}
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) = day
-                ),
-                0
-            ) AS new_subscriptions_net_revenue,
-            countDistinctIf(
-                oe.subscription_id,
-                oe.subscription_id IS NOT NULL
-                AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-            ) AS renewed_subscriptions,
-            COALESCE(
-                sumIf(
-                    oe.revenue_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_revenue,
-            COALESCE(
-                sumIf(
-                    oe.net_revenue_before_refunds_amount + oe.refund_net_amount,
-                    oe.subscription_id IS NOT NULL
-                    AND toStartOfDay(toDateTime(oe.sub_started_at, {{ String(tz, 'UTC') }})) != day
-                ),
-                0
-            ) AS renewed_subscriptions_net_revenue
-        {% end %}
-    FROM orders_enriched AS oe
-    WHERE
-        oe.event_timestamp
-        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND oe.event_timestamp <= toDateTime(
-            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
-            {{ String(tz, 'UTC') }}
-        )
-    GROUP BY day
+            GROUP BY day, is_baseline
+        ) oc
 
 NODE subscription_events_raw
 SQL >
@@ -727,9 +813,9 @@ SQL >
         COALESCE(od.revenue, 0) AS revenue,
         COALESCE(od.net_revenue, 0) AS net_revenue,
         COALESCE(sum(COALESCE(od.revenue, 0)) OVER (ORDER BY w.interval), 0)
-        + b.hist_revenue AS cumulative_revenue,
+        + COALESCE(any (od.hist_revenue) OVER (), 0) AS cumulative_revenue,
         COALESCE(sum(COALESCE(od.net_revenue, 0)) OVER (ORDER BY w.interval), 0)
-        + b.hist_net_revenue AS net_cumulative_revenue,
+        + COALESCE(any (od.hist_net_revenue) OVER (), 0) AS net_cumulative_revenue,
         COALESCE(od.average_order_value, 0) AS average_order_value,
         COALESCE(od.net_average_order_value, 0) AS net_average_order_value,
         COALESCE(od.one_time_products, 0) AS one_time_products,
@@ -742,9 +828,8 @@ SQL >
         COALESCE(od.renewed_subscriptions_revenue, 0) AS renewed_subscriptions_revenue,
         COALESCE(od.renewed_subscriptions_net_revenue, 0) AS renewed_subscriptions_net_revenue
     FROM intervals w
-    LEFT JOIN orders_daily od ON od.day = w.interval
+    LEFT JOIN orders_combined od ON od.day = w.interval AND od.is_baseline = 0
     LEFT JOIN sub_created_daily sc ON sc.day = w.interval
-    CROSS JOIN events_baseline b
     ORDER BY w.interval
 
 TYPE ENDPOINT

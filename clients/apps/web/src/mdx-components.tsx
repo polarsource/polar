@@ -1,3 +1,4 @@
+import { BlogHero } from '@/components/Blog/BlogHero'
 import { StaticImage } from '@/components/Image/StaticImage'
 import ProseWrapper from '@/components/MDX/ProseWrapper'
 import type { MDXComponents } from 'mdx/types'
@@ -15,6 +16,7 @@ interface ImportedImageSrc {
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     ...components,
+    BlogHero,
     BodyWrapper(props) {
       return (
         <ProseWrapper className="flex w-full flex-col items-center md:max-w-7xl!">

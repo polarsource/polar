@@ -24,12 +24,12 @@ export function TeamCarousel() {
     <section className="w-full overflow-hidden">
       <div
         className="flex w-max gap-2"
-        style={{ animation: 'marquee 200s linear infinite' }}
+        style={{ animation: 'marquee 230s linear infinite' }}
       >
         {order.map((n, i) => (
           <div
             key={i}
-            className="relative h-36 w-64 shrink-0 md:h-[336px] md:w-[598px]"
+            className="relative h-[115px] w-64 shrink-0 md:h-[269px] md:w-[478px]"
           >
             <StaticImage
               src={`/assets/landing/company/team/${String(n).padStart(2, '0')}.jpg`}

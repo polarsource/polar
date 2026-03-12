@@ -92,6 +92,10 @@ const mobileNavigationItems: NavigationItem[] = [
     target: '_blank',
   },
   {
+    title: 'Blog',
+    href: '/blog',
+  },
+  {
     title: 'Company',
     href: '/company',
   },
@@ -300,6 +304,9 @@ const LandingPageDesktopNavigation = () => {
           </li>
           <li>
             <NavPopover trigger="Docs" sections={docsSections} layout="flex" />
+          </li>
+          <li>
+            <NavLink href="/blog">Blog</NavLink>
           </li>
           <li>
             <NavLink href="/company">Company</NavLink>

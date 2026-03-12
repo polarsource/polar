@@ -24,7 +24,7 @@ export const companyTestimonials = [
     ),
   },
   {
-    link: '/customers/repo-prompt',
+    link: 'https://repoprompt.com',
     name: 'Eric Provencher',
     company: 'Repo Prompt',
     verified: true,

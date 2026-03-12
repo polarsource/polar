@@ -9,6 +9,26 @@ import { createServerSideAPI } from './utils/client'
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
+const IS_SANDBOX =
+  (process.env.NEXT_PUBLIC_ENVIRONMENT ||
+    process.env.VERCEL_ENV ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV) === 'sandbox'
+
+// App routes allowed on sandbox — everything else (marketing, docs) is blocked
+const SANDBOX_ALLOWED_PATHS = [
+  '/login',
+  '/dashboard',
+  '/start',
+  '/onboarding',
+  '/finance',
+  '/settings',
+  '/oauth2',
+  '/checkout',
+  '/portal',
+  '/verify-email',
+  '/api',
+]
+
 const AUTHENTICATED_ROUTES = [
   new RegExp('^/start(/.*)?'),
   new RegExp('^/dashboard(/.*)?'),
@@ -72,6 +92,28 @@ export async function proxy(request: NextRequest) {
   // doesn't appear to be working consistently with Vercel rewrites
   if (isForwardedRoute(request)) {
     return NextResponse.next()
+  }
+
+  // Sandbox: rewrite root to login, block non-app routes
+  if (IS_SANDBOX) {
+    const { pathname } = request.nextUrl
+
+    if (pathname === '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+
+    const isAllowed = SANDBOX_ALLOWED_PATHS.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    )
+    if (!isAllowed) {
+      // Rewrite to a non-existent path so Next.js renders the not-found page
+      const url = request.nextUrl.clone()
+      url.pathname = '/_sandbox_blocked'
+      return NextResponse.rewrite(url, { status: 404 })
+    }
   }
 
   // Redirect old customer query string URLs to path-based URLs

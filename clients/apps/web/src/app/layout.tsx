@@ -186,7 +186,7 @@ export default async function RootLayout({
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
                   <NavigationHistoryProvider>
-                    <SandboxBanner />
+                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
                     {children}
                   </NavigationHistoryProvider>
                 </PolarNuqsProvider>

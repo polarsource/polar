@@ -15,6 +15,7 @@ interface CustomerSeatQuantityManagerProps {
   totalSeats: number
   availableSeats: number
   prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
+  pendingUpdate?: schemas['PendingSubscriptionUpdate'] | null
   onUpdate?: () => void
 }
 
@@ -24,6 +25,7 @@ export const CustomerSeatQuantityManager = ({
   totalSeats,
   availableSeats,
   prorationBehavior,
+  pendingUpdate,
   onUpdate,
 }: CustomerSeatQuantityManagerProps) => {
   const updateSubscription = useCustomerUpdateSubscription(api)
@@ -158,6 +160,19 @@ export const CustomerSeatQuantityManager = ({
           </div>
         </div>
       </div>
+
+      {!hasChanges &&
+        pendingUpdate?.seats != null &&
+        pendingUpdate.seats !== totalSeats && (
+          <span className="dark:text-polar-500 mt-3 text-sm text-gray-500">
+            A change to{' '}
+            <span className="font-medium">
+              {pendingUpdate.seats}{' '}
+              {pendingUpdate.seats === 1 ? 'seat' : 'seats'}
+            </span>{' '}
+            is scheduled for your next billing cycle.
+          </span>
+        )}
 
       {hasChanges && (
         <div className="mt-4 flex flex-col gap-3">

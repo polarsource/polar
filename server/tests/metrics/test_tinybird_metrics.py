@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -9,6 +10,10 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import registry as entities_registry
+from sqlalchemy.schema import CreateSequence
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -24,7 +29,7 @@ from polar.metrics import queries_tinybird
 from polar.metrics.metrics import METRICS_TINYBIRD
 from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
-from polar.models import Customer, Event, Organization, Product, Subscription
+from polar.models import Customer, Event, Model, Organization, Product, Subscription
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
@@ -1528,11 +1533,53 @@ async def _query_metrics(
 
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
+async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
+    # The harness commits shared seed data once for speed, so it can't use the
+    # worker database that regular tests rely on transaction rollbacks to isolate.
+    database_id = f"{worker_id}_tinybird_metrics"
+    sync_database_url = get_database_url(database_id, "psycopg2")
+
+    if database_exists(sync_database_url):
+        drop_database(sync_database_url)
+
+    create_database(sync_database_url)
+
+    async_database_url = get_database_url(database_id)
+    engine = create_async_engine(
+        dsn=async_database_url,
+        application_name=f"test_{worker_id}_tinybird_metrics_database",
+        pool_size=settings.DATABASE_POOL_SIZE,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    )
+
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(CreateSequence(Customer.short_id_sequence))
+            for entity in entities_registry.entities():
+                if isinstance(entity, PGTrigger):
+                    continue
+                await conn.execute(entity.to_sql_statement_create())
+            await conn.run_sync(Model.metadata.create_all)
+            for entity in entities_registry.entities():
+                if not isinstance(entity, PGTrigger):
+                    continue
+                await conn.execute(entity.to_sql_statement_create())
+
+        yield async_database_url
+    finally:
+        await engine.dispose()
+        drop_database(sync_database_url)
+
+
+@pytest_asyncio.fixture(scope="module", loop_scope="module")
 async def metrics_harness(
-    worker_id: str, tinybird_workspace: str, tinybird_clickhouse_token: str
+    tinybird_metrics_database_url: str,
+    worker_id: str,
+    tinybird_workspace: str,
+    tinybird_clickhouse_token: str,
 ) -> MetricsHarness:
     engine = create_async_engine(
-        dsn=get_database_url(worker_id),
+        dsn=tinybird_metrics_database_url,
         application_name=f"test_{worker_id}_metrics_harness",
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,

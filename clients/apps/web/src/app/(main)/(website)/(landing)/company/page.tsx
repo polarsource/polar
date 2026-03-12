@@ -10,41 +10,16 @@ const JOBS = [
     category: 'Product & Engineering',
     roles: [
       {
-        role: 'Staff Infrastructure Engineer',
-        description:
-          'Own the end-to-end architecture and implementation of our infrastructure to ensure world-class uptime and latency.',
-        location: 'Remote, Europe',
-        experience: '8+ Years',
-        link: 'https://jobs.ashbyhq.com/polar/e610cfb0-a883-4138-aef0-f826f82958cb',
-      },
-      {
         role: 'Senior Product Engineer',
-        description:
-          'Ship features, APIs and SDKs that empowers the next generation of developers to build businesses.',
         location: 'Remote, Europe',
         experience: '7+ Years',
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
       },
       {
         role: 'Senior Growth Engineer',
-        description:
-          'Design and ship growth-focused features, enhancements and experiments end-to-end.',
         location: 'Remote, Europe',
         experience: '7+ Years',
         link: 'https://jobs.ashbyhq.com/polar/1496592e-16ff-47e7-b11e-a993c887fc1f',
-      },
-    ],
-  },
-  {
-    category: 'Customer Success',
-    roles: [
-      {
-        role: 'Support Engineer',
-        description:
-          'Help provide exceptional support to developers world-wide and scale our efforts by improving docs, guides and internal tooling.',
-        location: 'Remote, Europe',
-        experience: '2+ Years',
-        link: 'https://jobs.ashbyhq.com/polar/3b7b5522-3781-4a6b-b112-5ad93320192a',
       },
     ],
   },

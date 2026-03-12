@@ -77,6 +77,7 @@ class TestListEventTypes:
                 save_fixture,
                 organization=organization,
                 event_type=event_type_1,
+                name="test.event.1",
                 timestamp=base_time - timedelta(days=i),
             )
 
@@ -85,6 +86,7 @@ class TestListEventTypes:
                 save_fixture,
                 organization=organization,
                 event_type=event_type_2,
+                name="test.event.2",
                 timestamp=base_time - timedelta(days=i),
             )
 
@@ -135,10 +137,16 @@ class TestListEventTypes:
         )
 
         await create_event(
-            save_fixture, organization=organization, event_type=event_type_1
+            save_fixture,
+            organization=organization,
+            event_type=event_type_1,
+            name="test.event.1",
         )
         await create_event(
-            save_fixture, organization=organization_second, event_type=event_type_2
+            save_fixture,
+            organization=organization_second,
+            event_type=event_type_2,
+            name="test.event.2",
         )
 
         response = await client.get(
@@ -175,10 +183,16 @@ class TestListEventTypes:
         )
 
         await create_event(
-            save_fixture, organization=organization, event_type=event_type_1
+            save_fixture,
+            organization=organization,
+            event_type=event_type_1,
+            name="api.request",
         )
         await create_event(
-            save_fixture, organization=organization, event_type=event_type_2
+            save_fixture,
+            organization=organization,
+            event_type=event_type_2,
+            name="user.login",
         )
 
         response = await client.get("/v1/event-types/", params={"query": "API"})
@@ -224,12 +238,14 @@ class TestListEventTypes:
             save_fixture,
             organization=organization,
             event_type=event_type_1,
+            name="zzz.event",
             timestamp=base_time - timedelta(hours=2),
         )
         await create_event(
             save_fixture,
             organization=organization,
             event_type=event_type_2,
+            name="aaa.event",
             timestamp=base_time - timedelta(hours=1),
         )
 
@@ -240,12 +256,12 @@ class TestListEventTypes:
         assert json["items"][0]["name"] == "aaa.event"
         assert json["items"][1]["name"] == "zzz.event"
 
-        response = await client.get("/v1/event-types/", params={"sorting": "-label"})
+        response = await client.get("/v1/event-types/", params={"sorting": "-name"})
 
         assert response.status_code == 200
         json = response.json()
-        labels = [item["label"] for item in json["items"]]
-        assert labels == ["ZZZ Event", "AAA Event"]
+        assert json["items"][0]["name"] == "zzz.event"
+        assert json["items"][1]["name"] == "aaa.event"
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
@@ -265,7 +281,10 @@ class TestListEventTypes:
                 name=f"event.{i:02d}",
             )
             await create_event(
-                save_fixture, organization=organization, event_type=event_type
+                save_fixture,
+                organization=organization,
+                event_type=event_type,
+                name=f"event.{i:02d}",
             )
 
         response = await client.get("/v1/event-types/", params={"limit": 10})
@@ -292,8 +311,6 @@ class TestListEventTypes:
         user_organization: UserOrganization,
         save_fixture: SaveFixture,
     ) -> None:
-        from polar.models.event import EventSource
-
         event_type_1 = await create_event_type(
             save_fixture,
             organization=organization,
@@ -309,12 +326,14 @@ class TestListEventTypes:
             save_fixture,
             organization=organization,
             event_type=event_type_1,
+            name="root.event",
             source=EventSource.user,
         )
         await create_event(
             save_fixture,
             organization=organization,
             event_type=event_type_2,
+            name="child.event",
             parent_id=root_event.id,
             source=EventSource.user,
         )
@@ -361,12 +380,14 @@ class TestListEventTypes:
             save_fixture,
             organization=organization,
             event_type=event_type_1,
+            name="user.event",
             source=EventSource.user,
         )
         await create_event(
             save_fixture,
             organization=organization,
             event_type=event_type_2,
+            name="system.event",
             source=EventSource.system,
         )
 

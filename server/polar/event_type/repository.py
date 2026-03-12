@@ -1,14 +1,12 @@
 from collections.abc import Sequence
-from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, select
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import Event, EventType, UserOrganization
-from polar.models.event import EventSource
+from polar.models import EventType, UserOrganization
 
 
 class EventTypeRepository(
@@ -38,31 +36,6 @@ class EventTypeRepository(
 
         return statement
 
-    def get_event_types_with_stats_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[EventType, EventSource, int, datetime, datetime]]:
-        return (
-            self.get_readable_statement(auth_subject)
-            .join(Event, EventType.id == Event.event_type_id)
-            .with_only_columns(
-                EventType,
-                Event.source,
-                func.count(Event.id).label("occurrences"),
-                func.min(Event.timestamp).label("first_seen"),
-                func.max(Event.timestamp).label("last_seen"),
-            )
-            .group_by(
-                EventType.id,
-                EventType.created_at,
-                EventType.modified_at,
-                EventType.deleted_at,
-                EventType.name,
-                EventType.label,
-                EventType.organization_id,
-                Event.source,
-            )
-        )
-
     async def get_by_name_and_organization(
         self, name: str, organization_id: UUID
     ) -> EventType | None:
@@ -91,6 +64,31 @@ class EventTypeRepository(
         )
         result = await self.session.execute(statement)
         return {(et.organization_id, et.name): et for et in result.scalars().all()}
+
+    async def get_readable_organization_ids(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[UUID] | None,
+    ) -> Sequence[UUID]:
+        if is_organization(auth_subject):
+            if (
+                organization_id is not None
+                and auth_subject.subject.id not in organization_id
+            ):
+                return []
+            return [auth_subject.subject.id]
+
+        statement = select(UserOrganization.organization_id).where(
+            UserOrganization.user_id == auth_subject.subject.id,
+            UserOrganization.is_deleted.is_(False),
+        )
+        if organization_id is not None:
+            statement = statement.where(
+                UserOrganization.organization_id.in_(organization_id)
+            )
+
+        result = await self.session.execute(statement)
+        return list(dict.fromkeys(result.scalars().all()))
 
     async def get_or_create(self, name: str, organization_id: UUID) -> EventType:
         existing = await self.get_by_name_and_organization(name, organization_id)

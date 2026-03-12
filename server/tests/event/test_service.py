@@ -359,6 +359,7 @@ class TestListNames:
             new_callable=AsyncMock,
             return_value=[
                 TinybirdEventTypeStats(
+                    organization_id=uuid.uuid4(),
                     name="event_1",
                     source=EventSource.user,
                     occurrences=5,
@@ -366,6 +367,7 @@ class TestListNames:
                     last_seen=now - timedelta(hours=1),
                 ),
                 TinybirdEventTypeStats(
+                    organization_id=uuid.uuid4(),
                     name="event_2",
                     source=EventSource.system,
                     occurrences=3,

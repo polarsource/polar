@@ -80,6 +80,7 @@ DENORMALIZED_COLUMNS: dict[str, Any] = {
 
 @dataclass
 class TinybirdEventTypeStats:
+    organization_id: UUID
     name: str
     source: EventSource
     occurrences: int
@@ -312,9 +313,18 @@ def _parse_datetime(value: datetime | str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def _parse_event_type_stats(rows: list[dict[str, Any]]) -> list[TinybirdEventTypeStats]:
+def _parse_uuid(value: UUID | str) -> UUID:
+    return value if isinstance(value, UUID) else UUID(value)
+
+
+def _parse_event_type_stats(
+    rows: list[dict[str, Any]], organization_id: UUID | None = None
+) -> list[TinybirdEventTypeStats]:
     return [
         TinybirdEventTypeStats(
+            organization_id=_parse_uuid(row["organization_id"])
+            if "organization_id" in row
+            else organization_id,  # type: ignore[arg-type]
             name=row["name"],
             source=EventSource(row["source"]),
             occurrences=row["occurrences"],
@@ -561,6 +571,7 @@ class TinybirdEventsQuery:
         base_filter = self._get_organization_filter()
         statement = (
             select(
+                events_table.c.organization_id,
                 events_table.c.name,
                 events_table.c.source,
                 func.count().label("occurrences"),
@@ -568,7 +579,11 @@ class TinybirdEventsQuery:
                 func.max(events_table.c.timestamp).label("last_seen"),
             )
             .where(base_filter)
-            .group_by(events_table.c.name, events_table.c.source)
+            .group_by(
+                events_table.c.organization_id,
+                events_table.c.name,
+                events_table.c.source,
+            )
         )
 
         for f in self._filters:
@@ -970,7 +985,9 @@ class TinybirdEventTypesQuery:
 
         try:
             rows = await client.endpoint("event_types_endpoint", params)
-            return _parse_event_type_stats(rows)
+            return _parse_event_type_stats(
+                rows, organization_id=UUID(self._organization_id)
+            )
         except Exception as e:
             log.error("tinybird.get_event_type_stats_from_mv.failed", error=str(e))
             raise

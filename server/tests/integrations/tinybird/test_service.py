@@ -312,10 +312,15 @@ class TestTinybirdEventsQuery:
         query = TinybirdEventsQuery([org_1, org_2])
         stats = await query.get_event_type_stats()
 
-        stats_by_name = {(s.name, s.source): s for s in stats}
-        assert len(stats) == 2
-        assert stats_by_name[("shared.event", EventSource.system)].occurrences == 3
-        assert stats_by_name[("org2.only", EventSource.user)].occurrences == 1
+        stats_by_key = {(s.organization_id, s.name, s.source): s for s in stats}
+        assert len(stats) == 3
+        assert (
+            stats_by_key[(org_1, "shared.event", EventSource.system)].occurrences == 2
+        )
+        assert (
+            stats_by_key[(org_2, "shared.event", EventSource.system)].occurrences == 1
+        )
+        assert stats_by_key[(org_2, "org2.only", EventSource.user)].occurrences == 1
 
 
 async def _get_source_stats(

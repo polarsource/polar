@@ -88,6 +88,9 @@ class TinybirdEventRepository:
             if source is not None:
                 tinybird_query.filter_source(source)
         else:
+            # TODO: Revisit this to make TinybirdEventTypesQuery
+            # accept a list of org ids. It's not super urgent as
+            # this is mostly called with a single org.
             tinybird_query = TinybirdEventTypesQuery(organization_ids[0])
             if source is not None:
                 tinybird_query.filter_source(source)

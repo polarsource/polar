@@ -158,9 +158,9 @@ export const MetricSelectorModalContent = ({
             </h3>
             <span
               className={twMerge(
-                'text-xs',
+                'text-sm font-medium',
                 selected.length === 5
-                  ? 'text-green-600 dark:text-green-400'
+                  ? 'text-black dark:text-white'
                   : 'dark:text-polar-400 text-gray-500',
               )}
             >

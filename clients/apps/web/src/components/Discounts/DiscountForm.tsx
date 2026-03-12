@@ -2,6 +2,7 @@
 
 import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { SegmentedControl } from '@polar-sh/orbit'
 import {
   Accordion,
   AccordionContent,
@@ -19,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 
 import { enums, schemas } from '@polar-sh/client'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
@@ -155,27 +155,18 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
       />
 
       {!update && (
-        <Tabs
+        <SegmentedControl
+          variant="tabs"
+          options={[
+            { value: 'percentage', label: 'Percentage discount' },
+            { value: 'fixed', label: 'Fixed amount discount' },
+          ]}
+          size="lg"
           value={type}
-          onValueChange={(value: string) =>
+          onChange={(value) =>
             setValue('type', value as schemas['DiscountType'])
           }
-        >
-          <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
-            <TabsTrigger
-              className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
-              value="percentage"
-            >
-              Percentage discount
-            </TabsTrigger>
-            <TabsTrigger
-              className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
-              value="fixed"
-            >
-              Fixed amount discount
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        />
       )}
 
       {type === 'percentage' && (

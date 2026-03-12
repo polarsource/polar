@@ -21,6 +21,8 @@ export type {
   StandardInputProps,
   TextareaInputProps,
 } from './components/Input'
+export { SegmentedControl } from './components/SegmentedControl'
+export type { SegmentedControlProps } from './components/SegmentedControl'
 export { Stack } from './components/Stack'
 export type { StackBreakpoint, StackGap, StackProps } from './components/Stack'
 export { Status } from './components/Status'

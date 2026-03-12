@@ -60,7 +60,7 @@ export const useUpdateSubscription = (id: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -115,7 +115,7 @@ export const useUncancelSubscription = (id: string) =>
         },
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return

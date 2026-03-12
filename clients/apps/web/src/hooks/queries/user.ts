@@ -22,7 +22,7 @@ export const useDeletePersonalAccessToken = () =>
         },
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }

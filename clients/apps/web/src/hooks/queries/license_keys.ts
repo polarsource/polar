@@ -15,7 +15,7 @@ export const useLicenseKeyUpdate = (organizationId: string) =>
         params: { path: { id: variables.id } },
         body: variables.body,
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result, _variables) => {
       if (result.error) {
         return
       }

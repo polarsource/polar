@@ -1,10 +1,13 @@
 'use client'
 
 import { StaticImage } from '@/components/Image/StaticImage'
-import { LocalStorageKey } from '@/hooks/upsell'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+
+export enum LocalStorageKey {
+  IOS_APP_BANNER_DISMISSED = 'ios_app_banner_dismissed',
+}
 
 const getIsDismissed = (): boolean => {
   if (typeof window === 'undefined') {

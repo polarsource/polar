@@ -38,7 +38,7 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
-import { useForm, useFormContext } from 'react-hook-form'
+import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
@@ -228,10 +228,10 @@ const CompactTextArea = ({
 export const OrganizationDetailsForm: React.FC<
   OrganizationDetailsFormProps
 > = ({ organization, inKYCMode }) => {
-  const { control, watch, setError, setValue } =
+  const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
-  const name = watch('name')
-  const avatarURL = watch('avatar_url')
+  const { name, avatar_url: avatarURL } = useWatch({ control })
+
   const { status: urlStatus, validateURL } = useURLValidation({
     organizationSlug: organization.slug,
   })

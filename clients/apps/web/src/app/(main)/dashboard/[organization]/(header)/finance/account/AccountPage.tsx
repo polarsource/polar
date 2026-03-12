@@ -15,7 +15,7 @@ import {
 } from '@/hooks/queries'
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { loadStripe } from '@stripe/stripe-js'
@@ -47,7 +47,8 @@ export default function ClientPage({
   const [validationCompleted, setValidationCompleted] = useState(false)
 
   const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+    accountError &&
+    (accountError as ClientResponseError)?.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 

@@ -2,15 +2,18 @@ import { getServerURL } from '@/utils/api'
 import { EventSourcePlus } from 'event-source-plus'
 import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
-import { onBenefitGranted, onBenefitRevoked } from './benefits'
 import { onOrganizationUpdated } from './organizations'
 
-const ACTIONS: {
-  [key: string]: (payload: any) => Promise<void>
-} = {
+const ACTIONS = {
   'organization.updated': onOrganizationUpdated,
-  'benefit.granted': onBenefitGranted,
-  'benefit.revoked': onBenefitRevoked,
+} as const
+
+const isSupportedKey = (key: unknown): key is keyof typeof ACTIONS => {
+  if (typeof key !== 'string') {
+    return false
+  }
+
+  return typeof ACTIONS[key as keyof typeof ACTIONS] != 'undefined'
 }
 
 const emitter = new EventEmitter()
@@ -25,10 +28,13 @@ const useSSE = (streamURL: string, token?: string): EventEmitter => {
     const controller = eventSource.listen({
       onMessage: async (message) => {
         const data = JSON.parse(message.data)
-        const handler = ACTIONS[data.key]
-        if (handler) {
+        const key = data.key
+
+        if (typeof key === 'string' && isSupportedKey(key)) {
+          const handler = ACTIONS[key]
           await handler(data.payload)
         }
+
         emitter.emit(data.key, data.payload)
       },
     })

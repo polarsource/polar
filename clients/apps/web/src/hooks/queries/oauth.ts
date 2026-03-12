@@ -16,7 +16,7 @@ export const useCreateOAuth2Client = () =>
   useMutation({
     mutationFn: (body: schemas['OAuth2ClientConfiguration']) =>
       api.POST('/v1/oauth2/register', { body }),
-    onSuccess(data, _variables, _context) {
+    onSuccess(data) {
       if (data.error) {
         return
       }
@@ -39,7 +39,7 @@ export const useUpdateOAuth2Client = () =>
         params: { path: { client_id } },
         body,
       }),
-    onSuccess(data, _variables, _context) {
+    onSuccess(data) {
       if (data.error) {
         return
       }
@@ -55,7 +55,7 @@ export const useDeleteOAuthClient = () =>
       api.DELETE('/v1/oauth2/register/{client_id}', {
         params: { path: { client_id: clientId } },
       }),
-    onSuccess(data, _variables, _context) {
+    onSuccess(data) {
       if (data.error) {
         return
       }

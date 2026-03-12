@@ -18,7 +18,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
+import { ClientResponseError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -90,7 +90,8 @@ export default function ClientPage({
   )
 
   const isNotAdmin =
-    accountError && (accountError as any)?.response?.status === 403
+    accountError &&
+    (accountError as ClientResponseError)?.response?.status === 403
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
     ...getAPIParams(pagination, sorting),

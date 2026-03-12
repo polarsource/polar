@@ -57,7 +57,7 @@ export const useCreateCheckoutLink = () =>
     mutationFn: (body: schemas['CheckoutLinkCreateProducts']) => {
       return api.POST('/v1/checkout-links/', { body })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
 
       if (error) {
@@ -85,7 +85,7 @@ export const useUpdateCheckoutLink = () =>
         body: variables.body,
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       if (result.error) {
         return
       }
@@ -139,7 +139,7 @@ export const useDeleteCheckoutLink = () =>
         },
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       if (result.error) {
         return
       }

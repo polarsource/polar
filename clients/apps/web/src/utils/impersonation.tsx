@@ -8,7 +8,7 @@ export const isImpersonating = () => {
   if (impersonationCookie.length == 0) {
     return false
   }
-  const [_, value] = impersonationCookie[0].split('=')
+  const [, value] = impersonationCookie[0].split('=')
 
   return value === 'true'
 }

@@ -798,9 +798,7 @@ class OrganizationService:
             OrganizationStatus.INITIAL_REVIEW,
             OrganizationStatus.ONGOING_REVIEW,
         ):
-            await plain_service.create_organization_review_thread(
-                session, organization
-            )
+            await plain_service.create_organization_review_thread(session, organization)
         return False
 
     async def deny_organization(

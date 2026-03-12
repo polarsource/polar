@@ -792,7 +792,13 @@ class OrganizationService:
             return True
 
         # Not eligible or not approved → create Plain ticket for human review
-        await plain_service.create_organization_review_thread(session, organization)
+        # Guard: only create a thread if the org is still under review
+        # (it may have been handled already, e.g. on a task retry)
+        if organization.status in (
+            OrganizationStatus.INITIAL_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
+        ):
+            await plain_service.create_organization_review_thread(session, organization)
         return False
 
     async def deny_organization(

@@ -47,25 +47,36 @@ export const NewBenefitForm = ({
 interface UpdateBenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType']
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export const UpdateBenefitForm = ({
   organization,
   type,
+  onUploadingChange,
 }: UpdateBenefitFormProps) => {
-  return <BenefitForm organization={organization} type={type} update={true} />
+  return (
+    <BenefitForm
+      organization={organization}
+      type={type}
+      update={true}
+      onUploadingChange={onUploadingChange}
+    />
+  )
 }
 
 interface BenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType'] | 'usage'
   update?: boolean
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export const BenefitForm = ({
   organization,
   type,
   update = false,
+  onUploadingChange,
 }: BenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCreate']>()
 
@@ -110,7 +121,11 @@ export const BenefitForm = ({
         <GitHubRepositoryBenefitForm update={update} />
       )}
       {type === 'downloadables' && (
-        <DownloadablesBenefitForm organization={organization} update={update} />
+        <DownloadablesBenefitForm
+          organization={organization}
+          update={update}
+          onUploadingChange={onUploadingChange}
+        />
       )}
       {type === 'license_keys' && <LicenseKeysBenefitForm />}
       {type === 'meter_credit' && (

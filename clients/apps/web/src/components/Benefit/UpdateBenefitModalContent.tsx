@@ -4,7 +4,7 @@ import { isValidationError, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { MouseEvent, useCallback, useEffect } from 'react'
+import { MouseEvent, useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 import { toast } from '../Toast/use-toast'
@@ -33,10 +33,11 @@ const UpdateBenefitModalContent = ({
   })
   const { setError } = form
 
+  const [isUploading, setIsUploading] = useState(false)
   const { isDirty } = form.formState
   useEffect(() => {
-    onDirtyChange?.(isDirty)
-  }, [isDirty, onDirtyChange])
+    onDirtyChange?.(isDirty || isUploading)
+  }, [isDirty, isUploading, onDirtyChange])
 
   const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
   const handleUpdateNewBenefit = useCallback(
@@ -90,6 +91,7 @@ const UpdateBenefitModalContent = ({
             <UpdateBenefitForm
               organization={organization}
               type={benefit.type}
+              onUploadingChange={setIsUploading}
             />
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button

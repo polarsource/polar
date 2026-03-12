@@ -658,7 +658,7 @@ const BaseCheckoutForm = ({
                 type="submit"
                 size="lg"
                 wrapperClassNames="text-base"
-                className="w-full rounded-xl"
+                className="w-full"
                 disabled={disabled || isUpdatePending}
                 loading={loading}
               >

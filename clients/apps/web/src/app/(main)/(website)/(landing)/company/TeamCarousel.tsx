@@ -27,7 +27,7 @@ export function TeamCarousel() {
         style={{ animation: 'marquee 200s linear infinite' }}
       >
         {order.map((n, i) => (
-          <div key={i} className="relative aspect-video h-36 shrink-0 md:h-84">
+          <div key={i} className="relative h-36 w-64 shrink-0 md:h-[336px] md:w-[598px]">
             <StaticImage
               src={`/assets/landing/company/team/${String(n).padStart(2, '0')}.jpg`}
               alt=""

@@ -522,7 +522,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             bucket_expr = func.date_trunc(
                 interval.value,
                 literal_column("root_event.timestamp"),
-                timezone,
+                literal_column(f"'{timezone}'"),
             )
 
         per_root_select_exprs: list[ColumnElement[Any]] = [

@@ -15,7 +15,8 @@ const IS_SANDBOX =
     process.env.NEXT_PUBLIC_VERCEL_ENV) === 'sandbox'
 
 // App routes allowed on sandbox — everything else (marketing, docs) is blocked
-const SANDBOX_ALLOWED_PATHS = [
+// Strings match by prefix, RegExps are tested directly
+const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
   '/login',
   '/dashboard',
   '/start',
@@ -24,9 +25,9 @@ const SANDBOX_ALLOWED_PATHS = [
   '/settings',
   '/oauth2',
   '/checkout',
-  '/portal',
   '/verify-email',
   '/api',
+  /^\/[^/]+\/portal(\/|$)/, // /:organization/portal
 ]
 
 const AUTHENTICATED_ROUTES = [
@@ -105,9 +106,12 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    const isAllowed = SANDBOX_ALLOWED_PATHS.some(
-      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    const isAllowed = SANDBOX_ALLOWED_PATHS.some((path) =>
+      typeof path === 'string'
+        ? pathname === path || pathname.startsWith(`${path}/`)
+        : path.test(pathname),
     )
+
     if (!isAllowed) {
       // Rewrite to a non-existent path so Next.js renders the not-found page
       const url = request.nextUrl.clone()

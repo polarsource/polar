@@ -49,12 +49,14 @@ interface DownloadablesFormProps {
   organization: schemas['Organization']
   initialFiles: FileRead[]
   initialArchivedFiles: { [key: string]: boolean }
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 const DownloadablesForm = ({
   organization,
   initialFiles,
   initialArchivedFiles,
+  onUploadingChange,
 }: DownloadablesFormProps) => {
   const {
     setValue,
@@ -135,6 +137,10 @@ const DownloadablesForm = ({
   const isUploading = files.some((file) => !file.is_uploaded)
 
   useEffect(() => {
+    onUploadingChange?.(isUploading)
+  }, [isUploading, onUploadingChange])
+
+  useEffect(() => {
     // Only re-validate when uploads complete, not during upload progress
     // This prevents the error message from bouncing in/out while uploading
     if (!isUploading) {
@@ -167,11 +173,13 @@ const DownloadablesForm = ({
 interface DownloadablesBenefitFormProps {
   organization: schemas['Organization']
   update?: boolean
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export const DownloadablesBenefitForm = ({
   organization,
   update = false,
+  onUploadingChange,
 }: DownloadablesBenefitFormProps) => {
   const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
@@ -181,17 +189,25 @@ export const DownloadablesBenefitForm = ({
         organization={organization}
         initialFiles={[]}
         initialArchivedFiles={{}}
+        onUploadingChange={onUploadingChange}
       />
     )
   }
 
-  return <DownloadablesEditForm organization={organization} />
+  return (
+    <DownloadablesEditForm
+      organization={organization}
+      onUploadingChange={onUploadingChange}
+    />
+  )
 }
 
 const DownloadablesEditForm = ({
   organization,
+  onUploadingChange,
 }: {
   organization: schemas['Organization']
+  onUploadingChange?: (uploading: boolean) => void
 }) => {
   const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
@@ -212,6 +228,7 @@ const DownloadablesEditForm = ({
       organization={organization}
       initialFiles={filesQuery.data?.items ?? []}
       initialArchivedFiles={initial.archivedFiles}
+      onUploadingChange={onUploadingChange}
     />
   )
 }

@@ -220,13 +220,21 @@ def get_active_subscriptions_cte(
         .scalar_subquery()
     )
 
-    converted_amount = func.round(
-        Subscription.amount
-        * func.coalesce(
-            bucketed_fx.c.avg_exchange_rate,
-            closest_global_fx_rate,
-            1,
-        )
+    # TODO: Change this to look at the organization settlement currency
+    # when it can be something else than USD
+    converted_amount = case(
+        (
+            func.lower(Subscription.currency) == "usd",
+            Subscription.amount,
+        ),
+        else_=func.round(
+            Subscription.amount
+            * func.coalesce(
+                bucketed_fx.c.avg_exchange_rate,
+                closest_global_fx_rate,
+                1,
+            )
+        ),
     )
     monthly_amount = case(
         (

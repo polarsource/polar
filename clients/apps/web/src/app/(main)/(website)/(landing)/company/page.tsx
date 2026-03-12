@@ -10,16 +10,33 @@ const JOBS = [
     category: 'Product & Engineering',
     roles: [
       {
+        role: 'Senior Compliance & Risk Engineer',
+        location: 'Remote, Europe',
+        experience: '5+ Years',
+        link: 'https://jobs.ashbyhq.com/polar/c65b092e-0a5b-4e7f-a2ca-ab5bf559765f',
+      },
+      {
+        role: 'Senior Payments Engineer',
+        location: 'Remote, Europe',
+        experience: '5-8+ Years',
+        link: 'https://jobs.ashbyhq.com/polar/d193753e-ffa6-46bb-90da-d735cb8428f3',
+      },
+      {
+        role: 'Senior Platform Engineer',
+        location: 'Remote, Europe',
+        experience: '5-8+ Years',
+        link: 'https://jobs.ashbyhq.com/polar/8a82633e-e7b9-42f4-92e1-33032a56097a',
+      },
+      {
         role: 'Senior Product Engineer',
         location: 'Remote, Europe',
         experience: '7+ Years',
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
       },
       {
-        role: 'Senior Growth Engineer',
+        role: 'Technical Support Lead',
         location: 'Remote, Europe',
-        experience: '7+ Years',
-        link: 'https://jobs.ashbyhq.com/polar/1496592e-16ff-47e7-b11e-a993c887fc1f',
+        link: 'https://jobs.ashbyhq.com/polar/4adb9a30-28d1-4db1-a7bf-80a07bfea337',
       },
     ],
   },
@@ -52,18 +69,26 @@ export default function CompanyPage() {
       {/* About */}
       <section className="mx-auto flex w-full max-w-xl flex-col gap-8 py-24 md:px-6">
         <h2 className="font-display text-2xl font-medium md:text-4xl">
-          We believe the next unicorns will be created by individual developers.
+          billing = fn(events)
         </h2>
         <div className="flex flex-col gap-4 text-lg leading-relaxed">
           <p>
-            As lines blur between indie hackers, startups, and enterprises,
-            we&apos;re building Polar to empower solo builders and early-stage
-            startups — the future enterprises, without the headcount.
+            Modern software is priced around usage. Yet billing systems remain
+            static.
           </p>
           <p>
-            Polar is a small team with big ambitions, empowered by a culture of
-            ownership and autonomy. We&apos;re proud to be open source and built
-            for transparency to shape the future with our community.
+            We believe analytics & billing belong in the same platform —
+            real-time event ingestion powering instant unit economics and
+            analytics, leading to deterministic and versioned billing as code.
+          </p>
+          <p>
+            We&apos;re building Polar to become the standard Events → Analytics
+            → Billing stack for the next generation of software.
+          </p>
+          <p>
+            We&apos;re a small team with big ambitions, working with high
+            ownership and autonomy. Polar is open source and built in the open
+            with our community.
           </p>
         </div>
       </section>
@@ -84,19 +109,23 @@ export default function CompanyPage() {
                       key={job.link}
                       href={job.link}
                       target="_blank"
-                      className="dark:border-polar-800 group grid grid-cols-1 gap-4 border-t border-gray-100 py-6 md:grid-cols-2"
+                      className="dark:border-polar-800 group flex flex-row items-baseline justify-between gap-4 border-t border-gray-100 py-6"
                     >
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-1 flex-col gap-1">
                         <span className="font-medium group-hover:underline">
                           {job.role}
                         </span>
-                        <div className="dark:text-polar-500 flex flex-row gap-x-4 text-gray-500">
-                          <span>{job.experience}</span>
-                          <span>·</span>
+                        <div className="dark:text-polar-500 flex flex-row gap-x-2 text-gray-500">
+                          {job.experience && (
+                            <>
+                              <span>{job.experience}</span>
+                              <span>·</span>
+                            </>
+                          )}
                           <span>{job.location}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex gap-2">
                         <ArrowOutwardOutlined fontSize="inherit" />
                       </div>
                     </Link>

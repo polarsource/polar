@@ -306,6 +306,8 @@ def _compile(statement: Select[Any]) -> tuple[str, str]:
 
 def _parse_datetime(value: datetime | str) -> datetime:
     if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
         return value
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 

@@ -111,9 +111,24 @@ def tinybird_workspace() -> Generator[str, None, None]:
     )
 
 
+@pytest.fixture(scope="session")
+def tinybird_clickhouse_token(tinybird_workspace: str) -> str:
+    """Create a WORKSPACE:READ_ALL token for ClickHouse interface access."""
+    host = settings.TINYBIRD_API_URL
+    token_name = f"clickhouse_read_{uuid.uuid4().hex[:8]}"
+    response = httpx.post(
+        f"{host}/v0/tokens",
+        params={"name": token_name, "scope": "WORKSPACE:READ_ALL"},
+        headers={"Authorization": f"Bearer {tinybird_workspace}"},
+    )
+    response.raise_for_status()
+    return response.json()["token"]
+
+
 @pytest.fixture
 def tinybird_client(
     tinybird_workspace: str,
+    tinybird_clickhouse_token: str,
 ) -> Generator[TinybirdClient]:
     client = TinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
@@ -121,7 +136,7 @@ def tinybird_client(
         api_token=tinybird_workspace,
         read_token=tinybird_workspace,
         clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
-        clickhouse_token=tinybird_workspace,
+        clickhouse_token=tinybird_clickhouse_token,
     )
     with (
         patch.object(tinybird_service, "client", client),
@@ -133,6 +148,7 @@ def tinybird_client(
 __all__ = [
     "get_tinybird_tokens",
     "tinybird_available",
+    "tinybird_clickhouse_token",
     "tinybird_client",
     "tinybird_workspace",
 ]

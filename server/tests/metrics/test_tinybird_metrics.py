@@ -1535,7 +1535,9 @@ async def _query_metrics(
 
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHarness:
+async def metrics_harness(
+    worker_id: str, tinybird_workspace: str, tinybird_clickhouse_token: str
+) -> MetricsHarness:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),
         application_name=f"test_{worker_id}_metrics_harness",
@@ -1551,7 +1553,7 @@ async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHar
         api_token=tinybird_workspace,
         read_token=tinybird_workspace,
         clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
-        clickhouse_token=tinybird_workspace,
+        clickhouse_token=tinybird_clickhouse_token,
     )
 
     events: list[Event] = []

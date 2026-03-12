@@ -429,8 +429,11 @@ class EventService:
         def _to_decimal_dict(d: dict[str, float]) -> dict[str, Decimal]:
             return {k: Decimal(str(round(v, 12))) for k, v in d.items()}
 
+        def _to_uuid(value: str | uuid.UUID) -> uuid.UUID:
+            return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+
         def _row_to_stats(row: TinybirdTimeseriesStats) -> EventStatistics:
-            org_id = uuid.UUID(row.organization_id)
+            org_id = _to_uuid(row.organization_id)
             et = event_types_by_name.get((org_id, row.name))
             return EventStatistics(
                 name=row.name,
@@ -482,7 +485,7 @@ class EventService:
                 if event_key in stats_by_key:
                     complete_stats.append(stats_by_key[event_key])
                 else:
-                    org_id = uuid.UUID(event_key[0])
+                    org_id = _to_uuid(event_key[0])
                     event_name = event_key[1]
                     et = event_types_by_name.get((org_id, event_name))
                     complete_stats.append(

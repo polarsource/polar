@@ -40,15 +40,15 @@ const MeteredPricesDisplay = ({
   locale = DEFAULT_LOCALE,
 }: MeteredPricesDisplayProps) => {
   const t = useTranslations(locale)
-  const { product, prices, product_price } = checkout
+  const { product, prices, product_price, currency } = checkout
 
   // Get the metered prices, minus the currently selected one, in case there are only metered prices
   const meteredPrices = useMemo(
     () =>
-      getMeteredPrices(prices[product.id]).filter(
+      getMeteredPrices(prices[product.id], currency).filter(
         (p) => p.id !== product_price.id,
       ),
-    [product, product_price],
+    [product, product_price, currency],
   )
 
   if (meteredPrices.length === 0) {

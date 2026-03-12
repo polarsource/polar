@@ -200,8 +200,11 @@ class OverviewSection(ChecklistMixin):
                 else:
                     badge_class = "badge-neutral"
                     display_verdict = verdict
-                with tag.div(classes=f"badge {badge_class} badge-lg font-semibold"):
-                    text(display_verdict)
+                with tag.div(classes="flex items-center gap-1"):
+                    with tag.span(classes="text-sm text-base-content/60"):
+                        text("AI Verdict:")
+                    with tag.div(classes=f"badge {badge_class} badge-sm"):
+                        text(display_verdict)
 
                 risk_level = review_report.overall_risk_level.value
                 risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")

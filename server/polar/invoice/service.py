@@ -56,8 +56,8 @@ class InvoiceService:
     async def create_order_receipt(self, order: Order) -> tuple[str, str]:
         """Generate a paid receipt PDF for a completed order.
 
-        The receipt is identical to the invoice but carries a prominent
-        semi-transparent 'PAID' watermark to confirm payment.
+        The receipt includes the date of payment and a "Paid" status
+        in the heading items.
 
         Returns:
             A tuple of (s3_path, filename) for the uploaded receipt.
@@ -65,10 +65,13 @@ class InvoiceService:
         assert order.invoice_number is not None
 
         invoice = Invoice.from_order(order)
+        invoice.extra_heading_items = [
+            InvoiceHeadingItem(label="Date of payment", value=order.modified_at),
+            InvoiceHeadingItem(label="Status", value="Paid"),
+        ]
         generator = InvoiceGenerator(
             invoice,
             heading_title="Receipt",
-            paid_stamp=True,
         )
         generator.generate()
         receipt_bytes = generator.output()
@@ -77,17 +80,6 @@ class InvoiceService:
         s3 = S3Service(settings.S3_CUSTOMER_INVOICES_BUCKET_NAME)
         path = s3.upload(bytes(receipt_bytes), filename, "application/pdf")
         return path, filename
-
-    async def get_order_receipt_url(
-        self, receipt_path: str, receipt_filename: str
-    ) -> tuple[str, datetime]:
-        """Generate a presigned download URL for an order receipt."""
-        s3 = S3Service(settings.S3_CUSTOMER_INVOICES_BUCKET_NAME)
-        return s3.generate_presigned_download_url(
-            path=receipt_path,
-            filename=receipt_filename,
-            mime_type="application/pdf",
-        )
 
     async def create_payout_invoice(self, session: AsyncSession, payout: Payout) -> str:
         account = payout.account

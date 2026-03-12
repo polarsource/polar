@@ -596,9 +596,6 @@ importers:
       '@polar-sh/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@polar-sh/sdk':
-        specifier: ^0.46.1
-        version: 0.46.1
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui

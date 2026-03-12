@@ -465,9 +465,14 @@ class Checkout(
         prices: dict[uuid.UUID, list[ProductPrice]] = {}
         for checkout_product in self.checkout_products:
             if checkout_product.ad_hoc_prices:
-                prices[checkout_product.product_id] = checkout_product.ad_hoc_prices
+                product_prices = checkout_product.ad_hoc_prices
             else:
-                prices[checkout_product.product_id] = checkout_product.product.prices
+                product_prices = checkout_product.product.prices
+            prices[checkout_product.product_id] = [
+                price
+                for price in product_prices
+                if price.price_currency == self.currency
+            ]
         return prices
 
     @property

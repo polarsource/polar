@@ -587,15 +587,15 @@ importers:
 
   packages/checkout:
     dependencies:
+      '@polar-sh/client':
+        specifier: workspace:*
+        version: link:../client
       '@polar-sh/currency':
         specifier: workspace:^
         version: link:../currency
       '@polar-sh/i18n':
         specifier: workspace:*
         version: link:../i18n
-      '@polar-sh/sdk':
-        specifier: ^0.46.1
-        version: 0.46.1
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui

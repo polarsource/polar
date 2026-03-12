@@ -13,15 +13,17 @@ export const createClient = (
   baseUrl: string,
   token?: string,
   headers?: HeadersOptions,
-) =>
-  createOpenAPIFetchClient<paths>({
+) => ({
+  ...createOpenAPIFetchClient<paths>({
     baseUrl,
     credentials: 'include',
     headers: {
       ...(headers ? headers : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-  })
+  }),
+  baseUrl,
+})
 
 export class ClientResponseError extends Error {
   error: any

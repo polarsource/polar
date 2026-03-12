@@ -3,13 +3,12 @@
 import { UploadImage } from '@/components/Image/Image'
 import { getResizedImage } from '@/utils/getResizedImage'
 import { markdownOptions } from '@/utils/markdown'
+import type { schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
-import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import {
   Dialog,
   DialogContent,
@@ -67,13 +66,13 @@ const ExpandableDescription = ({
 }
 
 interface CheckoutProductInfoProps {
-  organization: CheckoutOrganization
-  product: CheckoutProduct
+  organization: schemas['CheckoutOrganization']
+  product: schemas['CheckoutProduct']
   locale?: AcceptedLocale
 }
 
 const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
-  const firstImage = product.medias[0]?.publicUrl
+  const firstImage = product.medias[0]?.public_url
   const additionalImages = product.medias.slice(1)
 
   return (
@@ -108,7 +107,7 @@ const CheckoutProductInfo = ({ product, locale }: CheckoutProductInfoProps) => {
                 </DialogHeader>
                 <Slideshow
                   images={product.medias.map((m) =>
-                    getResizedImage(m.publicUrl, 672),
+                    getResizedImage(m.public_url, 672),
                   )}
                 />
               </DialogContent>

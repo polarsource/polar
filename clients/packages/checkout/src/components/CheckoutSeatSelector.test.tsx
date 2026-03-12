@@ -10,18 +10,18 @@ import CheckoutSeatSelector from './CheckoutSeatSelector'
 
 const seatDefaults: Partial<ProductCheckoutPublic> = {
   amount: 3147,
-  netAmount: 3147,
-  taxAmount: null,
-  totalAmount: 3147,
+  net_amount: 3147,
+  tax_amount: null,
+  total_amount: 3147,
   seats: 3,
-  minSeats: null,
-  maxSeats: null,
-  pricePerSeat: 1049,
-  productPrice: createSeatBasedPrice({
-    seatTiers: {
-      tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1049 }],
-      minimumSeats: 1,
-      maximumSeats: null,
+  min_seats: null,
+  max_seats: null,
+  price_per_seat: 1049,
+  product_price: createSeatBasedPrice({
+    seat_tiers: {
+      tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1049 }],
+      minimum_seats: 1,
+      maximum_seats: null,
     },
   }),
 }
@@ -38,9 +38,9 @@ describe('CheckoutSeatSelector', () => {
   describe('default layout total amount display', () => {
     it('shows netAmount (current behavior, no tax)', () => {
       const checkout = createSeatCheckout({
-        netAmount: 3147,
-        totalAmount: 3147,
-        taxAmount: null,
+        net_amount: 3147,
+        total_amount: 3147,
+        tax_amount: null,
       })
 
       render(
@@ -56,9 +56,9 @@ describe('CheckoutSeatSelector', () => {
 
     it('shows netAmount even when totalAmount differs (current behavior with tax)', () => {
       const checkout = createSeatCheckout({
-        netAmount: 3147,
-        taxAmount: 787,
-        totalAmount: 3934,
+        net_amount: 3147,
+        tax_amount: 787,
+        total_amount: 3934,
       })
 
       render(
@@ -92,7 +92,7 @@ describe('CheckoutSeatSelector', () => {
   describe('returns null for non-seat-based pricing', () => {
     it('renders nothing for fixed price', () => {
       const checkout = createCheckout({
-        productPrice: createFixedPrice(),
+        product_price: createFixedPrice(),
       })
 
       const { container } = render(
@@ -111,17 +111,17 @@ describe('CheckoutSeatSelector', () => {
     it('shows discounted netAmount (current behavior)', () => {
       const checkout = createSeatCheckout({
         amount: 3147,
-        discountAmount: 629,
-        netAmount: 2518,
-        taxAmount: null,
-        totalAmount: 2518,
+        discount_amount: 629,
+        net_amount: 2518,
+        tax_amount: null,
+        total_amount: 2518,
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
+          basis_points: 2000,
         } as ProductCheckoutPublic['discount'],
       })
 
@@ -139,17 +139,17 @@ describe('CheckoutSeatSelector', () => {
     it('shows netAmount not totalAmount when discount + tax (current behavior)', () => {
       const checkout = createSeatCheckout({
         amount: 3147,
-        discountAmount: 629,
-        netAmount: 2518,
-        taxAmount: 630,
-        totalAmount: 3148,
+        discount_amount: 629,
+        net_amount: 2518,
+        tax_amount: 630,
+        total_amount: 3148,
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
+          basis_points: 2000,
         } as ProductCheckoutPublic['discount'],
       })
 
@@ -203,8 +203,8 @@ describe('CheckoutSeatSelector', () => {
     it('shows just the seat count, no stepper buttons', () => {
       const checkout = createSeatCheckout({
         seats: 5,
-        minSeats: 5,
-        maxSeats: 5,
+        min_seats: 5,
+        max_seats: 5,
       })
 
       render(
@@ -222,8 +222,8 @@ describe('CheckoutSeatSelector', () => {
     it('shows just the count in compact mode too', () => {
       const checkout = createSeatCheckout({
         seats: 5,
-        minSeats: 5,
-        maxSeats: 5,
+        min_seats: 5,
+        max_seats: 5,
       })
 
       render(
@@ -244,13 +244,13 @@ describe('CheckoutSeatSelector', () => {
     it('shows "Minimum X seats" when only min is set', () => {
       const checkout = createSeatCheckout({
         seats: 5,
-        minSeats: 3,
-        maxSeats: null,
-        productPrice: createSeatBasedPrice({
-          seatTiers: {
-            tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1000 }],
-            minimumSeats: 1,
-            maximumSeats: null,
+        min_seats: 3,
+        max_seats: null,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
+            minimum_seats: 1,
+            maximum_seats: null,
           },
         }),
       })
@@ -269,13 +269,13 @@ describe('CheckoutSeatSelector', () => {
     it('shows "Maximum X seats" when only max is set', () => {
       const checkout = createSeatCheckout({
         seats: 3,
-        minSeats: null,
-        maxSeats: 10,
-        productPrice: createSeatBasedPrice({
-          seatTiers: {
-            tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1000 }],
-            minimumSeats: 1,
-            maximumSeats: null,
+        min_seats: null,
+        max_seats: 10,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
+            minimum_seats: 1,
+            maximum_seats: null,
           },
         }),
       })
@@ -294,13 +294,13 @@ describe('CheckoutSeatSelector', () => {
     it('shows "X - Y seats" when both min and max are set', () => {
       const checkout = createSeatCheckout({
         seats: 5,
-        minSeats: 3,
-        maxSeats: 10,
-        productPrice: createSeatBasedPrice({
-          seatTiers: {
-            tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1000 }],
-            minimumSeats: 1,
-            maximumSeats: null,
+        min_seats: 3,
+        max_seats: 10,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
+            minimum_seats: 1,
+            maximum_seats: null,
           },
         }),
       })
@@ -321,8 +321,8 @@ describe('CheckoutSeatSelector', () => {
     it('disables decrease button at minimum seats', () => {
       const checkout = createSeatCheckout({
         seats: 1,
-        minSeats: null,
-        maxSeats: null,
+        min_seats: null,
+        max_seats: null,
       })
 
       render(
@@ -340,13 +340,13 @@ describe('CheckoutSeatSelector', () => {
     it('disables increase button at maximum seats', () => {
       const checkout = createSeatCheckout({
         seats: 5,
-        minSeats: null,
-        maxSeats: 5,
-        productPrice: createSeatBasedPrice({
-          seatTiers: {
-            tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1000 }],
-            minimumSeats: 1,
-            maximumSeats: null,
+        min_seats: null,
+        max_seats: 5,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
+            minimum_seats: 1,
+            maximum_seats: null,
           },
         }),
       })

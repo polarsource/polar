@@ -24,12 +24,8 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
+import { ClientResponseError, type schemas } from '@polar-sh/client'
 import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
-import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -145,7 +141,7 @@ const Checkout = ({
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
     fetch(
-      getServerURL(`/v1/checkouts/client/${checkout.clientSecret}/opened`),
+      getServerURL(`/v1/checkouts/client/${checkout.client_secret}/opened`),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -154,7 +150,7 @@ const Checkout = ({
     ).catch(() => {
       // Silently ignore - don't affect checkout experience
     })
-  }, [checkout.clientSecret, posthog])
+  }, [checkout.client_secret, posthog])
 
   const themePreset = getThemePreset(theme)
 
@@ -166,7 +162,7 @@ const Checkout = ({
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
-  const isPaymentRequired = checkout.isPaymentRequired
+  const isPaymentRequired = checkout.is_payment_required
   const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
 
   // Track payment not ready state
@@ -175,7 +171,7 @@ const Checkout = ({
       posthog.capture('storefront:subscriptions:payment_not_ready:view', {
         organization_slug: checkout.organization.slug,
         organization_status: paymentStatus?.organization_status,
-        product_id: checkout.productId,
+        product_id: checkout.product_id,
       })
     }
   }, [
@@ -183,7 +179,7 @@ const Checkout = ({
     shouldBlockCheckout,
     checkout.organization.slug,
     paymentStatus?.organization_status,
-    checkout.productId,
+    checkout.product_id,
     posthog,
   ])
 
@@ -226,11 +222,14 @@ const Checkout = ({
   )
 
   const update = useCallback(
-    async (data: CheckoutUpdatePublic) => {
+    async (data: schemas['CheckoutUpdatePublic']) => {
       try {
         return await _update(data)
       } catch (error) {
-        if (error instanceof ExpiredCheckoutError) {
+        if (
+          error instanceof ClientResponseError &&
+          error.response.status === 410
+        ) {
           window.location.reload()
         }
         throw error
@@ -241,16 +240,19 @@ const Checkout = ({
 
   const confirm = useCallback(
     async (
-      data: CheckoutConfirmStripe,
+      data: schemas['CheckoutConfirmStripe'],
       stripe: Stripe | null,
       elements: StripeElements | null,
     ) => {
       setFullLoading(true)
-      let confirmedCheckout: CheckoutPublicConfirmed
+      let confirmedCheckout: schemas['CheckoutPublicConfirmed']
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
-        if (error instanceof ExpiredCheckoutError) {
+        if (
+          error instanceof ClientResponseError &&
+          error.response.status === 410
+        ) {
           window.location.reload()
         }
         setFullLoading(false)
@@ -259,7 +261,7 @@ const Checkout = ({
 
       await checkoutConfirmedRedirect(
         confirmedCheckout,
-        confirmedCheckout.customerSessionToken,
+        confirmedCheckout.customer_session_token,
       )
 
       return confirmedCheckout
@@ -277,17 +279,19 @@ const Checkout = ({
               checkout={checkout}
               update={
                 update as (
-                  data: CheckoutUpdatePublic,
+                  data: schemas['CheckoutUpdatePublic'],
                 ) => Promise<ProductCheckoutPublic>
               }
               themePreset={themePreset}
               locale={locale}
             />
-            {checkout.productPrice.amountType === 'custom' && (
+            {checkout.product_price.amount_type === 'custom' && (
               <CheckoutPWYWForm
                 checkout={checkout}
                 update={update}
-                productPrice={checkout.productPrice as ProductPriceCustom}
+                productPrice={
+                  checkout.product_price as schemas['ProductPriceCustom']
+                }
                 themePreset={themePreset}
                 locale={locale}
               />
@@ -307,16 +311,12 @@ const Checkout = ({
           isUpdatePending={isUpdatePending}
           locale={locale}
           beforeSubmit={
-            hasProductCheckout(checkout) && !checkout.isFreeProductPrice ? (
+            hasProductCheckout(checkout) && !checkout.is_free_product_price ? (
               <div className="flex flex-col gap-4">
-                {checkout.productPrice.amountType === 'seat_based' && (
+                {checkout.product_price.amount_type === 'seat_based' && (
                   <CheckoutSeatSelector
                     checkout={checkout}
-                    update={
-                      update as (
-                        data: CheckoutUpdatePublic,
-                      ) => Promise<ProductCheckoutPublic>
-                    }
+                    update={update}
                     locale={locale}
                     compact
                   />
@@ -340,9 +340,9 @@ const Checkout = ({
 
   const orgHeader = (
     <div className="flex flex-row items-center gap-x-4">
-      {checkout.returnUrl && (
+      {checkout.return_url && (
         <Link
-          href={checkout.returnUrl}
+          href={checkout.return_url}
           className="dark:text-polar-500 text-gray-600"
         >
           <ArrowBackOutlined fontSize="small" />
@@ -350,7 +350,7 @@ const Checkout = ({
       )}
       <div className="flex flex-row items-center gap-x-2">
         <Avatar
-          avatar_url={checkout.organization.avatarUrl}
+          avatar_url={checkout.organization.avatar_url}
           name={checkout.organization.name}
           className="h-6 w-6"
         />
@@ -371,7 +371,7 @@ const Checkout = ({
               <>
                 <div className="flex flex-col gap-y-2">
                   <div className="flex flex-row items-start gap-x-3">
-                    {hasMedia && checkout.product.medias[0]?.publicUrl && (
+                    {hasMedia && checkout.product.medias[0]?.public_url && (
                       <Dialog>
                         <DialogTrigger
                           asChild
@@ -381,7 +381,7 @@ const Checkout = ({
                             className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
                           >
                             <UploadImage
-                              src={checkout.product.medias[0].publicUrl}
+                              src={checkout.product.medias[0].public_url}
                               approximateWidth={40}
                               alt={checkout.product.name}
                               className="h-10 w-10 rounded-lg object-cover"
@@ -402,7 +402,7 @@ const Checkout = ({
                           </DialogHeader>
                           <Slideshow
                             images={checkout.product.medias.map((m) =>
-                              getResizedImage(m.publicUrl, 672),
+                              getResizedImage(m.public_url, 672),
                             )}
                           />
                         </DialogContent>
@@ -432,31 +432,29 @@ const Checkout = ({
                   checkout={checkout}
                   update={
                     update as (
-                      data: CheckoutUpdatePublic,
+                      data: schemas['CheckoutUpdatePublic'],
                     ) => Promise<ProductCheckoutPublic>
                   }
                   themePreset={themePreset}
                   locale={locale}
                 />
-                {checkout.productPrice.amountType === 'custom' && (
+                {checkout.product_price.amount_type === 'custom' && (
                   <CheckoutPWYWForm
                     checkout={checkout}
                     update={update}
-                    productPrice={checkout.productPrice as ProductPriceCustom}
+                    productPrice={
+                      checkout.product_price as schemas['ProductPriceCustom']
+                    }
                     themePreset={themePreset}
                     locale={locale}
                   />
                 )}
-                {!checkout.isFreeProductPrice && (
+                {!checkout.is_free_product_price && (
                   <div className="flex flex-col gap-4 text-sm">
-                    {checkout.productPrice.amountType === 'seat_based' && (
+                    {checkout.product_price.amount_type === 'seat_based' && (
                       <CheckoutSeatSelector
                         checkout={checkout}
-                        update={
-                          update as (
-                            data: CheckoutUpdatePublic,
-                          ) => Promise<ProductCheckoutPublic>
-                        }
+                        update={update}
                         locale={locale}
                         compact
                       />

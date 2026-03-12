@@ -1,4 +1,4 @@
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import { schemas } from '@polar-sh/client'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -18,9 +18,9 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows subtotal and total as the same amount', () => {
       const checkout = createBaseCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -35,9 +35,9 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows subtotal, tax amount, and total correctly', () => {
       const checkout = createBaseCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: 250,
-        totalAmount: 1249,
+        net_amount: 999,
+        tax_amount: 250,
+        total_amount: 1249,
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -52,18 +52,18 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows subtotal, discount, taxable amount, and total', () => {
       const checkout = createBaseCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: null,
-        totalAmount: 1600,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -80,18 +80,18 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows all breakdown rows correctly', () => {
       const checkout = createBaseCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: 400,
-        totalAmount: 2000,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: 400,
+        total_amount: 2000,
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -108,9 +108,9 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows $0 for taxes, not em-dash', () => {
       const checkout = createBaseCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: 0,
-        totalAmount: 999,
+        net_amount: 999,
+        tax_amount: 0,
+        total_amount: 999,
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -123,9 +123,9 @@ describe('CheckoutPricingBreakdown', () => {
     it('renders nothing', () => {
       const checkout = createBaseCheckout({
         amount: 0,
-        netAmount: 0,
-        totalAmount: 0,
-        isFreeProductPrice: true,
+        net_amount: 0,
+        total_amount: 0,
+        is_free_product_price: true,
       })
 
       const { container } = render(
@@ -140,18 +140,18 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows $0 total', () => {
       const checkout = createBaseCheckout({
         amount: 999,
-        discountAmount: 999,
-        netAmount: 0,
-        taxAmount: 0,
-        totalAmount: 0,
+        discount_amount: 999,
+        net_amount: 0,
+        tax_amount: 0,
+        total_amount: 0,
         discount: {
           id: 'disc_1',
           name: '100% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 10000,
-        } as CheckoutPublic['discount'],
+          basis_points: 10000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -165,14 +165,14 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "Every month" as total label', () => {
       const checkout = createCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
       })
 
@@ -186,14 +186,14 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "Every year" as total label', () => {
       const checkout = createCheckout({
         amount: 4999,
-        netAmount: 4999,
-        taxAmount: null,
-        totalAmount: 4999,
+        net_amount: 4999,
+        tax_amount: null,
+        total_amount: 4999,
         product: {
           ...createCheckout().product,
-          recurringInterval: 'year',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'year',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
       })
 
@@ -207,10 +207,10 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows discount name without percentage', () => {
       const checkout = createBaseCheckout({
         amount: 2000,
-        discountAmount: 500,
-        netAmount: 1500,
-        taxAmount: null,
-        totalAmount: 1500,
+        discount_amount: 500,
+        net_amount: 1500,
+        tax_amount: null,
+        total_amount: 1500,
         discount: {
           id: 'disc_1',
           name: '$5 off',
@@ -219,7 +219,7 @@ describe('CheckoutPricingBreakdown', () => {
           code: null,
           amount: 500,
           currency: 'usd',
-        } as CheckoutPublic['discount'],
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -232,25 +232,25 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows duration text for repeating discount on monthly product', () => {
       const checkout = createCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: null,
-        totalAmount: 1600,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'repeating',
-          durationInMonths: 3,
+          duration_in_months: 3,
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -263,15 +263,15 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "for the first month" for once duration', () => {
       const checkout = createCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: null,
-        totalAmount: 1600,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
         discount: {
           id: 'disc_1',
@@ -279,8 +279,8 @@ describe('CheckoutPricingBreakdown', () => {
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -293,15 +293,15 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows no duration text for forever discount', () => {
       const checkout = createCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: null,
-        totalAmount: 1600,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
         discount: {
           id: 'disc_1',
@@ -309,8 +309,8 @@ describe('CheckoutPricingBreakdown', () => {
           type: 'percentage',
           duration: 'forever',
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -324,12 +324,12 @@ describe('CheckoutPricingBreakdown', () => {
       const trialEnd = new Date('2026-04-05T00:00:00Z')
       const checkout = createBaseCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: trialEnd.toISOString(),
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -348,11 +348,11 @@ describe('CheckoutPricingBreakdown', () => {
       })
       const checkout = createCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
         prices: {
-          prod_1: [createCheckout().productPrice, meteredPrice],
+          prod_1: [createCheckout().product_price, meteredPrice],
         },
       })
 
@@ -367,8 +367,8 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "Free" text', () => {
       const checkout = createBaseCheckout({
         amount: 0,
-        netAmount: 0,
-        totalAmount: 0,
+        net_amount: 0,
+        total_amount: 0,
         currency: null as unknown as string,
       })
 

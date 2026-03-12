@@ -10,12 +10,12 @@ import CheckoutPricing from './CheckoutPricing'
 
 describe('CheckoutPricing', () => {
   describe('fixed price, no discount', () => {
-    it('shows the catalog price (price.priceAmount)', () => {
+    it('shows the catalog price (price.price_amount)', () => {
       const checkout = createCheckout({
         amount: 999,
-        netAmount: 999,
-        totalAmount: 999,
-        taxAmount: null,
+        net_amount: 999,
+        total_amount: 999,
+        tax_amount: null,
       })
 
       render(<CheckoutPricing checkout={checkout} locale="en" />)
@@ -28,9 +28,9 @@ describe('CheckoutPricing', () => {
     it('shows the catalog price (does NOT include tax — current behavior)', () => {
       const checkout = createCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: 250,
-        totalAmount: 1249,
+        net_amount: 999,
+        tax_amount: 250,
+        total_amount: 1249,
       })
 
       render(<CheckoutPricing checkout={checkout} locale="en" />)
@@ -43,17 +43,17 @@ describe('CheckoutPricing', () => {
     it('shows netAmount (discounted price, current behavior)', () => {
       const checkout = createCheckout({
         amount: 1999,
-        discountAmount: 400,
-        netAmount: 1599,
-        taxAmount: null,
-        totalAmount: 1599,
+        discount_amount: 400,
+        net_amount: 1599,
+        tax_amount: null,
+        total_amount: 1599,
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
+          basis_points: 2000,
         } as ProductCheckoutPublic['discount'],
       })
 
@@ -69,17 +69,17 @@ describe('CheckoutPricing', () => {
     it('shows netAmount (does NOT include tax — current behavior)', () => {
       const checkout = createCheckout({
         amount: 1999,
-        discountAmount: 400,
-        netAmount: 1599,
-        taxAmount: 400,
-        totalAmount: 1999,
+        discount_amount: 400,
+        net_amount: 1599,
+        tax_amount: 400,
+        total_amount: 1999,
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 2000,
+          basis_points: 2000,
         } as ProductCheckoutPublic['discount'],
       })
 
@@ -95,9 +95,9 @@ describe('CheckoutPricing', () => {
     it('shows checkout.amount', () => {
       const checkout = createCheckout({
         amount: 1550,
-        netAmount: 1550,
-        totalAmount: 1550,
-        productPrice: createCustomPrice({ presetAmount: 1550 }),
+        net_amount: 1550,
+        total_amount: 1550,
+        product_price: createCustomPrice({ preset_amount: 1550 }),
       })
 
       render(<CheckoutPricing checkout={checkout} locale="en" />)
@@ -110,10 +110,10 @@ describe('CheckoutPricing', () => {
     it('renders "Free"', () => {
       const checkout = createCheckout({
         amount: 0,
-        netAmount: 0,
-        totalAmount: 0,
-        isFreeProductPrice: true,
-        productPrice: createFreePrice(),
+        net_amount: 0,
+        total_amount: 0,
+        is_free_product_price: true,
+        product_price: createFreePrice(),
       })
 
       render(<CheckoutPricing checkout={checkout} locale="en" />)

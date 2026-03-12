@@ -1,21 +1,12 @@
 'use client'
 
+import type { schemas } from '@polar-sh/client'
+
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror.js'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
-import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
-import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
-import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
-import { TrialAlreadyRedeemed } from '@polar-sh/sdk/models/errors/trialalreadyredeemed'
 import type {
   ConfirmationToken,
   Stripe,
@@ -35,20 +26,22 @@ const stub = (): never => {
 }
 
 export interface CheckoutFormContextProps {
-  checkout: CheckoutPublic
-  form: UseFormReturn<CheckoutUpdatePublic>
-  update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  checkout: schemas['CheckoutPublic']
+  form: UseFormReturn<schemas['CheckoutUpdatePublic']>
+  update: (
+    data: schemas['CheckoutUpdatePublic'],
+  ) => Promise<schemas['CheckoutPublic']>
   confirm: (
-    data: CheckoutConfirmStripe,
+    data: schemas['CheckoutConfirmStripe'],
     stripe: Stripe | null,
     elements: StripeElements | null,
-  ) => Promise<CheckoutPublicConfirmed>
+  ) => Promise<schemas['CheckoutPublicConfirmed']>
   loading: boolean
   loadingLabel: string | undefined
   isUpdatePending: boolean
 }
 
-// @ts-ignore
+// @ts-expect-error
 export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 
 export const CheckoutFormProvider = ({
@@ -61,13 +54,14 @@ export const CheckoutFormProvider = ({
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
   const [isUpdatePending, setIsUpdatePending] = useState(false)
 
-  const form = useForm<CheckoutUpdatePublic>({
+  const form = useForm<schemas['CheckoutUpdatePublic']>({
     defaultValues: {
       ...checkout,
-      customerBillingAddress:
-        checkout.customerBillingAddress as AddressInput | null,
-      discountCode: checkout.discount ? checkout.discount.code : undefined,
-      allowTrial: undefined,
+      customer_billing_address: checkout.customer_billing_address as
+        | schemas['AddressInput'] // We need to typecast here for some reason (it tries to match all_countries to supported_countries)
+        | null,
+      discount_code: checkout.discount ? checkout.discount.code : undefined,
+      allow_trial: undefined,
     },
     shouldUnregister: true,
   })
@@ -75,8 +69,8 @@ export const CheckoutFormProvider = ({
 
   const update = useCallback(
     async (
-      checkoutUpdatePublic: CheckoutUpdatePublic,
-    ): Promise<CheckoutPublic> => {
+      checkoutUpdatePublic: schemas['CheckoutUpdatePublic'],
+    ): Promise<schemas['CheckoutPublic']> => {
       setIsUpdatePending(true)
       const { ok, value, error } = await updateOuter(
         checkoutUpdatePublic,
@@ -86,15 +80,21 @@ export const CheckoutFormProvider = ({
       if (ok) {
         return value
       } else {
-        if (error instanceof HTTPValidationError) {
-          setValidationErrors(error.detail || [], setError)
-        } else if (
-          error instanceof AlreadyActiveSubscriptionError ||
-          error instanceof NotOpenCheckout ||
-          error instanceof PaymentError ||
-          error instanceof PaymentNotReady
-        ) {
-          setError('root', { message: error.detail })
+        if (error) {
+          switch (error.error) {
+            case 'PolarRequestValidationError':
+              console.log('validation error', { error })
+              setValidationErrors(error.detail, setError)
+              break
+            case 'AlreadyActiveSubscriptionError':
+            case 'NotOpenCheckout':
+            case 'PaymentNotReady':
+              setError('root', { message: error.detail })
+              break
+            case 'ResourceNotFound':
+            case 'ExpiredCheckoutError':
+              break
+          }
         }
         throw error
       }
@@ -104,26 +104,35 @@ export const CheckoutFormProvider = ({
 
   const _confirm = useCallback(
     async (
-      checkoutConfirmStripe: CheckoutConfirmStripe,
-    ): Promise<CheckoutPublicConfirmed> => {
+      checkoutConfirmStripe: schemas['CheckoutConfirmStripe'],
+    ): Promise<schemas['CheckoutPublicConfirmed']> => {
       const { ok, value, error } = await confirmOuter(checkoutConfirmStripe)
+
       if (ok) {
         return value
       }
-      if (error instanceof HTTPValidationError) {
-        setValidationErrors(error.detail || [], setError)
-      } else if (
-        error instanceof AlreadyActiveSubscriptionError ||
-        error instanceof NotOpenCheckout ||
-        error instanceof PaymentError ||
-        error instanceof PaymentNotReady ||
-        error instanceof TrialAlreadyRedeemed
-      ) {
-        setError('root', { message: error.detail })
-        if (error instanceof TrialAlreadyRedeemed) {
-          await update({ allowTrial: false })
+
+      if (error) {
+        switch (error.error) {
+          case 'PolarRequestValidationError':
+            setValidationErrors(error.detail, setError)
+            break
+          case 'PaymentError':
+          case 'AlreadyActiveSubscriptionError':
+          case 'NotOpenCheckout':
+          case 'PaymentNotReady':
+            setError('root', { message: error.detail })
+            break
+          case 'TrialAlreadyRedeemed':
+            setError('root', { message: error.detail })
+            await update({ allow_trial: false })
+            break
+          case 'ResourceNotFound':
+          case 'ExpiredCheckoutError':
+            break
         }
       }
+
       throw error
     },
     [confirmOuter, setError],
@@ -131,19 +140,19 @@ export const CheckoutFormProvider = ({
 
   const confirm = useCallback(
     async (
-      data: CheckoutConfirmStripe,
+      data: schemas['CheckoutConfirmStripe'],
       stripe: Stripe | null,
       elements: StripeElements | null,
-    ): Promise<CheckoutPublicConfirmed> => {
+    ): Promise<schemas['CheckoutPublicConfirmed']> => {
       setLoading(true)
 
-      if (!checkout.isPaymentFormRequired) {
+      if (!checkout.is_payment_form_required) {
         setLoadingLabel(t('checkout.loading.processingOrder'))
         try {
           const checkoutConfirmed = await _confirm(data)
           return checkoutConfirmed
-        } catch (e) {
-          throw e
+        } catch (error) {
+          throw error
         } finally {
           setLoading(false)
         }
@@ -175,15 +184,16 @@ export const CheckoutFormProvider = ({
             payment_method_data: {
               // Stripe requires fields to be explicitly set to null if they are not provided
               billing_details: {
-                name: data.customerName || null,
-                email: data.customerEmail,
+                name: data.customer_name || null,
+                email: data.customer_email,
                 address: {
-                  line1: data.customerBillingAddress?.line1 || null,
-                  line2: data.customerBillingAddress?.line2 || null,
-                  postal_code: data.customerBillingAddress?.postalCode || null,
-                  city: data.customerBillingAddress?.city || null,
-                  state: data.customerBillingAddress?.state || null,
-                  country: data.customerBillingAddress?.country || null,
+                  line1: data.customer_billing_address?.line1 || null,
+                  line2: data.customer_billing_address?.line2 || null,
+                  postal_code:
+                    data.customer_billing_address?.postal_code || null,
+                  city: data.customer_billing_address?.city || null,
+                  state: data.customer_billing_address?.state || null,
+                  country: data.customer_billing_address?.country || null,
                 },
                 phone: null,
               },
@@ -192,9 +202,9 @@ export const CheckoutFormProvider = ({
         })
         confirmationToken = confirmationTokenResponse.confirmationToken
         error = confirmationTokenResponse.error
-      } catch (err) {
+      } catch (error) {
         setLoading(false)
-        throw err
+        throw error
       }
 
       if (!confirmationToken || error) {
@@ -206,21 +216,21 @@ export const CheckoutFormProvider = ({
         throw new Error(error?.message || fallbackMessage)
       }
 
-      let updatedCheckout: CheckoutPublicConfirmed
+      let updatedCheckout: schemas['CheckoutPublicConfirmed']
       try {
         updatedCheckout = await _confirm({
           ...data,
-          confirmationTokenId: confirmationToken.id,
+          confirmation_token_id: confirmationToken.id,
         })
-      } catch (e) {
+      } catch (error) {
         setLoading(false)
-        throw e
+        throw error
       }
 
       setLoadingLabel(t('checkout.loading.paymentSuccessful'))
 
       const { intent_status, intent_client_secret } =
-        updatedCheckout.paymentProcessorMetadata as Record<string, string>
+        updatedCheckout.payment_processor_metadata
 
       if (intent_status === 'requires_action') {
         const { error } = await stripe.handleNextAction({

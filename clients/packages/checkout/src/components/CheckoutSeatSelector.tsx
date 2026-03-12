@@ -1,18 +1,20 @@
 'use client'
 
+import { type schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useEffect, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
+import { ErrorResponse } from '../providers/CheckoutProvider'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
-  update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
+  update: (
+    data: schemas['CheckoutUpdatePublic'],
+  ) => Promise<schemas['CheckoutPublic']>
   locale?: AcceptedLocale
   compact?: boolean
 }
@@ -29,16 +31,19 @@ const CheckoutSeatSelector = ({
   const [error, setError] = useState<string | null>(null)
   const [autoCorrectAttempted, setAutoCorrectAttempted] = useState(false)
 
-  const getErrorMessage = (err: unknown): string => {
-    if (err instanceof HTTPValidationError && err.detail?.[0]?.msg) {
-      return err.detail[0].msg
+  const getErrorMessage = (
+    error: ErrorResponse<'checkouts:client_update'> | null,
+  ): string => {
+    if (error && error.error === 'PolarRequestValidationError') {
+      return error.detail[0]?.msg
     }
+
     return 'Failed to update seats'
   }
 
   // Check if the product has seat-based pricing
-  const productPrice = checkout.productPrice
-  const isSeatBased = productPrice.amountType === 'seat_based'
+  const productPrice = checkout.product_price
+  const isSeatBased = productPrice.amount_type === 'seat_based'
 
   if (!isSeatBased) {
     return null
@@ -46,13 +51,14 @@ const CheckoutSeatSelector = ({
 
   // Get seat limits from the tiers
   // The minimum comes from the first tier's min_seats, maximum from the last tier's max_seats
-  const seatTiers = productPrice.seatTiers
+  const seatTiers = productPrice.seat_tiers
   const tiers = seatTiers?.tiers ?? []
-  const sortedTiers = [...tiers].sort((a, b) => a.minSeats - b.minSeats)
-  const tierMinimumSeats = sortedTiers[0]?.minSeats ?? 1
-  const tierMaximumSeats = sortedTiers[sortedTiers.length - 1]?.maxSeats ?? null
-  const minimumSeats = checkout.minSeats ?? tierMinimumSeats
-  const maximumSeats = checkout.maxSeats ?? tierMaximumSeats
+  const sortedTiers = [...tiers].sort((a, b) => a.min_seats - b.min_seats)
+  const tierMinimumSeats = sortedTiers[0]?.min_seats ?? 1
+  const tierMaximumSeats =
+    sortedTiers[sortedTiers.length - 1]?.max_seats ?? null
+  const minimumSeats = checkout.min_seats ?? tierMinimumSeats
+  const maximumSeats = checkout.max_seats ?? tierMaximumSeats
   const hasMaximumLimit = maximumSeats !== null
   const isFixedSeats = hasMaximumLimit && minimumSeats === maximumSeats
 
@@ -64,9 +70,9 @@ const CheckoutSeatSelector = ({
     checkout.seats !== undefined &&
     checkout.seats < minimumSeats
 
-  const netAmount = checkout.netAmount || 0
-  const currency = productPrice.priceCurrency
-  const pricePerSeat = checkout.pricePerSeat || 0
+  const netAmount = checkout.net_amount || 0
+  const currency = productPrice.price_currency
+  const pricePerSeat = checkout.price_per_seat || 0
 
   // Auto-correct seat count if it's below the minimum (only attempt once)
   useEffect(() => {
@@ -77,7 +83,10 @@ const CheckoutSeatSelector = ({
       !autoCorrectAttempted
     ) {
       setAutoCorrectAttempted(true)
-      update({ seats: minimumSeats } as CheckoutUpdatePublic).catch((err) => {
+
+      update({
+        seats: minimumSeats,
+      }).catch((err) => {
         setError(getErrorMessage(err))
       })
     }
@@ -96,13 +105,16 @@ const CheckoutSeatSelector = ({
 
     setIsUpdating(true)
     setError(null)
-    try {
-      await update({ seats: newSeats } as CheckoutUpdatePublic)
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setIsUpdating(false)
-    }
+
+    await update({
+      seats: newSeats,
+    })
+      .catch((error) => {
+        setError(getErrorMessage(error))
+      })
+      .finally(() => {
+        setIsUpdating(false)
+      })
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

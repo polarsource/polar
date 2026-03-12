@@ -1,9 +1,4 @@
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom'
-import type { ProductPriceFixed } from '@polar-sh/sdk/models/components/productpricefixed'
-import type { ProductPriceFree } from '@polar-sh/sdk/models/components/productpricefree'
-import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit'
-import type { ProductPriceSeatBased } from '@polar-sh/sdk/models/components/productpriceseatbased'
+import type { schemas } from '@polar-sh/client'
 import type { ProductCheckoutPublic } from '../guards'
 
 const now = new Date()
@@ -11,72 +6,72 @@ const now = new Date()
 const priceDefaults = {
   id: 'price_1',
   source: 'catalog' as const,
-  priceCurrency: 'usd',
-  isArchived: false,
-  productId: 'prod_1',
-  createdAt: now,
-  modifiedAt: null,
+  price_currency: 'usd',
+  is_archived: false,
+  product_id: 'prod_1',
+  created_at: now.toISOString(),
+  modified_at: null,
 }
 
 export function createFixedPrice(
-  overrides: Partial<ProductPriceFixed> = {},
-): ProductPriceFixed {
+  overrides: Partial<schemas['ProductPriceFixed']> = {},
+): schemas['ProductPriceFixed'] {
   return {
     ...priceDefaults,
-    amountType: 'fixed',
-    priceAmount: 999,
+    amount_type: 'fixed',
+    price_amount: 999,
     ...overrides,
   }
 }
 
 export function createFreePrice(
-  overrides: Partial<ProductPriceFree> = {},
-): ProductPriceFree {
+  overrides: Partial<schemas['ProductPriceFree']> = {},
+): schemas['ProductPriceFree'] {
   return {
     ...priceDefaults,
-    amountType: 'free',
+    amount_type: 'free',
     ...overrides,
   }
 }
 
 export function createCustomPrice(
-  overrides: Partial<ProductPriceCustom> = {},
-): ProductPriceCustom {
+  overrides: Partial<schemas['ProductPriceCustom']> = {},
+): schemas['ProductPriceCustom'] {
   return {
     ...priceDefaults,
-    amountType: 'custom',
-    minimumAmount: 500,
-    maximumAmount: null,
-    presetAmount: 1500,
+    amount_type: 'custom',
+    minimum_amount: 500,
+    maximum_amount: null,
+    preset_amount: 1500,
     ...overrides,
   }
 }
 
 export function createSeatBasedPrice(
-  overrides: Partial<ProductPriceSeatBased> = {},
-): ProductPriceSeatBased {
+  overrides: Partial<schemas['ProductPriceSeatBased']> = {},
+): schemas['ProductPriceSeatBased'] {
   return {
     ...priceDefaults,
-    amountType: 'seat_based',
-    seatTiers: {
-      tiers: [{ minSeats: 1, maxSeats: null, pricePerSeat: 1000 }],
-      minimumSeats: 1,
-      maximumSeats: null,
+    amount_type: 'seat_based',
+    seat_tiers: {
+      tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
+      minimum_seats: 1,
+      maximum_seats: null,
     },
     ...overrides,
   }
 }
 
 export function createMeteredPrice(
-  overrides: Partial<ProductPriceMeteredUnit> = {},
-): ProductPriceMeteredUnit {
+  overrides: Partial<schemas['ProductPriceMeteredUnit']> = {},
+): schemas['ProductPriceMeteredUnit'] {
   return {
     ...priceDefaults,
     id: 'price_metered_1',
-    amountType: 'metered_unit',
-    unitAmount: '0.05',
-    capAmount: null,
-    meterId: 'meter_1',
+    amount_type: 'metered_unit',
+    unit_amount: '0.05',
+    cap_amount: null,
+    meter_id: 'meter_1',
     meter: { id: 'meter_1', name: 'API Calls' },
     ...overrides,
   }
@@ -85,51 +80,51 @@ export function createMeteredPrice(
 const defaults: ProductCheckoutPublic = {
   // SDK CheckoutPublic required fields
   id: 'checkout_1',
-  createdAt: now,
-  modifiedAt: null,
-  paymentProcessor: 'stripe',
+  created_at: now.toISOString(),
+  modified_at: null,
+  payment_processor: 'stripe',
   status: 'open',
-  clientSecret: 'cs_test_123',
+  client_secret: 'cs_test_123',
   url: 'https://checkout.example.com',
-  expiresAt: new Date(Date.now() + 3600_000),
-  successUrl: 'https://example.com/success',
-  returnUrl: null,
-  embedOrigin: null,
+  expires_at: new Date(Date.now() + 3600_000).toISOString(),
+  success_url: 'https://example.com/success',
+  return_url: null,
+  embed_origin: null,
   amount: 999,
-  discountAmount: 0,
-  netAmount: 999,
-  taxAmount: null,
-  totalAmount: 999,
+  discount_amount: 0,
+  net_amount: 999,
+  tax_amount: null,
+  total_amount: 999,
   currency: 'usd',
-  allowTrial: null,
-  activeTrialInterval: null,
-  activeTrialIntervalCount: null,
-  trialEnd: null,
-  organizationId: 'org_1',
-  productId: 'prod_1',
-  productPriceId: 'price_1',
-  discountId: null,
-  allowDiscountCodes: true,
-  requireBillingAddress: false,
-  isDiscountApplicable: true,
-  isFreeProductPrice: false,
-  isPaymentRequired: true,
-  isPaymentSetupRequired: false,
-  isPaymentFormRequired: true,
-  customerId: null,
-  isBusinessCustomer: false,
-  customerName: null,
-  customerEmail: null,
-  customerIpAddress: null,
-  customerBillingName: null,
-  customerBillingAddress: null,
-  customerTaxId: null,
-  paymentProcessorMetadata: {},
-  billingAddressFields: {
+  allow_trial: null,
+  active_trial_interval: null,
+  active_trial_interval_count: null,
+  trial_end: null,
+  organization_id: 'org_1',
+  product_id: 'prod_1',
+  product_price_id: 'price_1',
+  discount_id: null,
+  allow_discount_codes: true,
+  require_billing_address: false,
+  is_discount_applicable: true,
+  is_free_product_price: false,
+  is_payment_required: true,
+  is_payment_setup_required: false,
+  is_payment_form_required: true,
+  customer_id: null,
+  is_business_customer: false,
+  customer_name: null,
+  customer_email: null,
+  customer_ip_address: null,
+  customer_billing_name: null,
+  customer_billing_address: null,
+  customer_tax_id: null,
+  payment_processor_metadata: {},
+  billing_address_fields: {
     country: 'required',
     state: 'optional',
     city: 'optional',
-    postalCode: 'optional',
+    postal_code: 'optional',
     line1: 'optional',
     line2: 'disabled',
   },
@@ -139,11 +134,11 @@ const defaults: ProductCheckoutPublic = {
     id: 'org_1',
     slug: 'test-org',
     name: 'Test Org',
-    avatarUrl: null,
-    createdAt: now,
-    modifiedAt: null,
-    prorationBehavior: 'invoice',
-    allowCustomerUpdates: true,
+    avatar_url: null,
+    created_at: now.toISOString(),
+    modified_at: null,
+    proration_behavior: 'invoice',
+    allow_customer_updates: true,
   },
   attachedCustomFields: null,
 
@@ -152,24 +147,24 @@ const defaults: ProductCheckoutPublic = {
   product: {
     id: 'prod_1',
     name: 'Test Product',
-    recurringInterval: null,
-    recurringIntervalCount: null,
-    isRecurring: false,
-    trialInterval: null,
-    trialIntervalCount: null,
+    recurring_interval: null,
+    recurring_interval_count: null,
+    is_recurring: false,
+    trial_interval: null,
+    trial_interval_count: null,
     visibility: 'public',
     prices: [],
     benefits: [],
     medias: [],
     description: null,
-    isArchived: false,
-    organizationId: 'org_1',
-    createdAt: now,
-    modifiedAt: null,
+    is_archived: false,
+    organization_id: 'org_1',
+    created_at: now.toISOString(),
+    modified_at: null,
   },
-  productPrice: createFixedPrice(),
+  product_price: createFixedPrice(),
   prices: { prod_1: [] },
-} as ProductCheckoutPublic
+} satisfies ProductCheckoutPublic
 
 /**
  * Create a ProductCheckoutPublic for testing.
@@ -181,17 +176,17 @@ export function createCheckout(
   return {
     ...defaults,
     ...overrides,
-  } as ProductCheckoutPublic
+  } satisfies ProductCheckoutPublic
 }
 
 /**
  * Create a CheckoutPublic (without the product mixin) for testing.
  */
 export function createBaseCheckout(
-  overrides: Partial<CheckoutPublic> = {},
-): CheckoutPublic {
+  overrides: Partial<schemas['CheckoutPublic']> = {},
+): schemas['CheckoutPublic'] {
   return {
     ...defaults,
     ...overrides,
-  } as CheckoutPublic
+  } satisfies schemas['CheckoutPublic']
 }

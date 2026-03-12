@@ -3,7 +3,7 @@
 import { useAssignSeatFromCheckout } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { MailCheckIcon, PlusIcon, XIcon } from 'lucide-react'
@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 
 export interface CheckoutSeatInvitationsProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
 }
 
 interface EmailInput {
@@ -29,12 +29,12 @@ const CheckoutSeatInvitations = ({
   // Check if this is a seat-based product
   const isSeatBased =
     hasProductCheckout(checkout) &&
-    checkout.productPrice.amountType === 'seat_based'
+    checkout.product_price.amount_type === 'seat_based'
 
   const [emailInputs, setEmailInputs] = useState<EmailInput[]>(
-    checkout.customerEmail
+    checkout.customer_email
       ? [
-          { id: '1', value: checkout.customerEmail },
+          { id: '1', value: checkout.customer_email },
           { id: '2', value: '' },
         ]
       : [{ id: '1', value: '' }],

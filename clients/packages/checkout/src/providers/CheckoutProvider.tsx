@@ -1,29 +1,14 @@
 'use client'
 
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientConfirm } from '@polar-sh/sdk/funcs/checkoutsClientConfirm'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import { checkoutsClientUpdate } from '@polar-sh/sdk/funcs/checkoutsClientUpdate'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import type { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror'
-import type { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
-import type {
-  ConnectionError,
-  InvalidRequestError,
-  RequestAbortedError,
-  RequestTimeoutError,
-  UnexpectedClientError,
-} from '@polar-sh/sdk/models/errors/httpclienterrors'
-import type { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
-import type { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
-import type { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
-import type { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
-import type { SDKError } from '@polar-sh/sdk/models/errors/sdkerror'
-import type { SDKValidationError } from '@polar-sh/sdk/models/errors/sdkvalidationerror'
-import type { Result } from '@polar-sh/sdk/types/fp'
+import {
+  ClientResponseError,
+  createClient,
+  unwrap,
+  type Client,
+  type operations,
+  type schemas,
+} from '@polar-sh/client'
+
 import {
   createContext,
   useCallback,
@@ -33,70 +18,148 @@ import {
   useState,
 } from 'react'
 
+// Mimicking the SDK error handling pattern, for now.
+// Extract non-200 status codes from a responses object
+type ResponseMap = Record<number, { content?: { 'application/json': unknown } }>
+
+type ErrorCodes<T extends ResponseMap> = Exclude<keyof T, 200 | 201 | 202 | 204>
+
+type ErrorTypes<T extends ResponseMap> = Extract<
+  T[ErrorCodes<T>] extends { content: { 'application/json': infer R } }
+    ? R
+    : never,
+  { error: string }
+>['error']
+
+type SuccessBody<T extends ResponseMap> = T[200] extends {
+  content: { 'application/json': infer R }
+}
+  ? R
+  : never
+
+type APIError<T extends keyof operations> = {
+  error: ErrorTypes<operations[T]['responses']>
+  detail: string
+}
+
+type ValidationError = {
+  error: 'PolarRequestValidationError'
+  detail: { input: number; loc: string[]; msg: string; type: string }[]
+}
+
+export type ErrorResponse<T extends keyof operations> =
+  | APIError<T>
+  | ValidationError
+
+export type Result<T extends keyof operations> =
+  | { ok: true; error: never; value: SuccessBody<operations[T]['responses']> }
+  | {
+      ok: false
+      error: ErrorResponse<T> | null
+      value: never
+    }
+
+const checkoutsClientGet = async (
+  api: Client,
+  path: operations['checkouts:client_get']['parameters']['path'],
+): Promise<Result<'checkouts:client_get'>> => {
+  try {
+    const checkout = await unwrap(
+      api.GET('/v1/checkouts/client/{client_secret}', {
+        params: { path },
+      }),
+    )
+
+    return { ok: true, value: checkout } as Result<'checkouts:client_get'>
+  } catch (error) {
+    if (error instanceof ClientResponseError) {
+      return {
+        ok: false,
+        error: error.error as ErrorResponse<'checkouts:client_get'>,
+      } as Result<'checkouts:client_get'>
+    }
+
+    return { ok: false, error: null } as Result<'checkouts:client_get'>
+  }
+}
+
+const checkoutsClientConfirm = async (
+  api: Client,
+  path: operations['checkouts:client_confirm']['parameters']['path'],
+  body: operations['checkouts:client_confirm']['requestBody']['content']['application/json'],
+): Promise<Result<'checkouts:client_confirm'>> => {
+  try {
+    const confirmedCheckout = await unwrap(
+      api.POST('/v1/checkouts/client/{client_secret}/confirm', {
+        params: { path },
+        body,
+      }),
+    )
+
+    return {
+      ok: true,
+      value: confirmedCheckout,
+    } as Result<'checkouts:client_confirm'>
+  } catch (error) {
+    if (error instanceof ClientResponseError) {
+      return {
+        ok: false,
+        error: error.error as ErrorResponse<'checkouts:client_confirm'>,
+      } as Result<'checkouts:client_confirm'>
+    }
+
+    return {
+      ok: false,
+      error: null,
+    } as Result<'checkouts:client_confirm'>
+  }
+}
+
+const checkoutsClientUpdate = async (
+  api: Client,
+  path: operations['checkouts:client_update']['parameters']['path'],
+  body: operations['checkouts:client_update']['requestBody']['content']['application/json'],
+): Promise<Result<'checkouts:client_update'>> => {
+  try {
+    const updatedCheckout = await unwrap(
+      api.PATCH('/v1/checkouts/client/{client_secret}', {
+        params: { path },
+        body,
+      }),
+    )
+
+    return {
+      ok: true,
+      value: updatedCheckout,
+    } as Result<'checkouts:client_update'>
+  } catch (error) {
+    if (error instanceof ClientResponseError) {
+      return {
+        ok: false,
+        error: error.error as ErrorResponse<'checkouts:client_update'>,
+      } as Result<'checkouts:client_update'>
+    }
+    return { ok: false, error: null } as Result<'checkouts:client_update'>
+  }
+}
+
 const stub = (): never => {
   throw new Error('You forgot to wrap your component in <CheckoutProvider>.')
 }
 
 export interface CheckoutContextProps {
-  checkout: CheckoutPublic
-  refresh: () => Promise<
-    Result<
-      CheckoutPublic,
-      | ResourceNotFound
-      | ExpiredCheckoutError
-      | HTTPValidationError
-      | SDKError
-      | SDKValidationError
-      | UnexpectedClientError
-      | InvalidRequestError
-      | RequestAbortedError
-      | RequestTimeoutError
-      | ConnectionError
-    >
-  >
+  checkout: schemas['CheckoutPublic']
+  refresh: () => Promise<Result<'checkouts:client_get'>>
   update: (
-    data: CheckoutUpdatePublic,
-  ) => Promise<
-    Result<
-      CheckoutPublic,
-      | AlreadyActiveSubscriptionError
-      | NotOpenCheckout
-      | ExpiredCheckoutError
-      | ResourceNotFound
-      | HTTPValidationError
-      | SDKError
-      | SDKValidationError
-      | UnexpectedClientError
-      | InvalidRequestError
-      | RequestAbortedError
-      | RequestTimeoutError
-      | ConnectionError
-    >
-  >
+    data: schemas['CheckoutUpdatePublic'],
+  ) => Promise<Result<'checkouts:client_update'>>
   confirm: (
-    data: CheckoutConfirmStripe,
-  ) => Promise<
-    Result<
-      CheckoutPublicConfirmed,
-      | AlreadyActiveSubscriptionError
-      | NotOpenCheckout
-      | ExpiredCheckoutError
-      | PaymentError
-      | ResourceNotFound
-      | HTTPValidationError
-      | SDKError
-      | SDKValidationError
-      | UnexpectedClientError
-      | InvalidRequestError
-      | RequestAbortedError
-      | RequestTimeoutError
-      | ConnectionError
-    >
-  >
-  client: PolarCore
+    data: schemas['CheckoutConfirmStripe'],
+  ) => Promise<Result<'checkouts:client_confirm'>>
+  client: Client
 }
 
-// @ts-ignore
+// @ts-expect-error - Allow to throw an error if the context is used without a provider
 export const CheckoutContext = createContext<CheckoutContextProps>(stub)
 
 interface CheckoutProviderProps {
@@ -111,57 +174,92 @@ export const CheckoutProvider = ({
   server,
   children,
 }: React.PropsWithChildren<CheckoutProviderProps>) => {
-  const client = useMemo(
-    () => new PolarCore({ server, serverURL }),
-    [server, serverURL],
+  const client = useMemo(() => {
+    const baseUrl = (() => {
+      if (serverURL) {
+        return serverURL
+      }
+
+      switch (server) {
+        case 'sandbox': {
+          return 'https://sandbox-api.polar.sh/v1/'
+        }
+
+        case 'production':
+        case undefined: {
+          return 'https://api.polar.sh/v1/'
+        }
+
+        default:
+          throw new Error(`Unknown server: '${server}'`)
+      }
+    })()
+
+    return createClient(baseUrl)
+  }, [server, serverURL])
+
+  const [checkout, setCheckout] = useState<schemas['CheckoutPublic'] | null>(
+    null,
   )
-  const [checkout, setCheckout] = useState<CheckoutPublic | null>(null)
 
   useEffect(() => {
-    checkoutsClientGet(client, { clientSecret }).then(
-      ({ ok, value, error }) => {
-        if (ok) {
-          setCheckout(value)
+    checkoutsClientGet(client, {
+      client_secret: clientSecret,
+    })
+      .then((result) => {
+        if (result.ok) {
+          setCheckout(result.value)
         } else {
-          throw error
         }
-      },
-    )
+      })
+      .catch((error) => {
+        throw error
+      })
   }, [client, clientSecret])
 
   const refresh = useCallback(async () => {
-    const result = await checkoutsClientGet(client, { clientSecret })
+    const result = await checkoutsClientGet(client, {
+      client_secret: clientSecret,
+    })
+
     if (result.ok) {
       setCheckout(result.value)
     }
+
     return result
   }, [client, clientSecret])
 
   const update = useCallback(
-    async (data: CheckoutUpdatePublic) => {
-      const result = await checkoutsClientUpdate(client, {
-        clientSecret: clientSecret,
-        checkoutUpdatePublic: data,
-      })
+    async (data: schemas['CheckoutUpdatePublic']) => {
+      const result = await checkoutsClientUpdate(
+        client,
+        {
+          client_secret: clientSecret,
+        },
+        data,
+      )
+
       if (result.ok) {
         setCheckout(result.value)
       }
+
       return result
     },
     [client, clientSecret],
   )
 
   const confirm = useCallback(
-    async (data: CheckoutConfirmStripe) => {
-      const result = await checkoutsClientConfirm(client, {
-        clientSecret: clientSecret,
-        checkoutConfirmStripe: data,
-      })
+    async (data: schemas['CheckoutConfirmStripe']) => {
+      const result = await checkoutsClientConfirm(
+        client,
+        { client_secret: clientSecret },
+        data,
+      )
+
       if (result.ok) {
-        setCheckout(
-          result.value as CheckoutPublicConfirmed & { status: 'confirmed' },
-        )
+        setCheckout(result.value)
       }
+
       return result
     },
     [client, clientSecret],

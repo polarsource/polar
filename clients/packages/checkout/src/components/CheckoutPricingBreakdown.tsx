@@ -1,5 +1,6 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   DEFAULT_LOCALE,
@@ -7,12 +8,12 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { PropsWithChildren, useMemo } from 'react'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
 import { getMeteredPrices } from '../utils/product'
+import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
@@ -42,7 +43,7 @@ const DetailRow = ({
 }
 
 export interface CheckoutPricingBreakdownProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
 }
 
@@ -53,12 +54,12 @@ const CheckoutPricingBreakdown = ({
   const t = useTranslations(locale)
 
   const interval = hasProductCheckout(checkout)
-    ? isLegacyRecurringProductPrice(checkout.productPrice)
-      ? checkout.productPrice.recurringInterval
-      : checkout.product.recurringInterval
+    ? isLegacyRecurringProductPrice(checkout.product_price)
+      ? checkout.product_price.recurring_interval
+      : checkout.product.recurring_interval
     : null
   const intervalCount = hasProductCheckout(checkout)
-    ? checkout.product.recurringIntervalCount
+    ? checkout.product.recurring_interval_count
     : null
 
   const { product, prices } = checkout
@@ -93,8 +94,8 @@ const CheckoutPricingBreakdown = ({
     }
 
     const durationInMonths =
-      'durationInMonths' in checkout.discount && checkout.discount
-        ? checkout.discount.durationInMonths
+      'duration_in_months' in checkout.discount && checkout.discount
+        ? checkout.discount.duration_in_months
         : -1
 
     const calculatedDuration =
@@ -124,14 +125,11 @@ const CheckoutPricingBreakdown = ({
       case 'year':
         return t('checkout.pricing.everyInterval.year', { count })
       default:
-        // With Speakeasy's forward compatibility,
-        // we can't do exhaustive switches anymore.
-        // unreachable(interval)
-        return ''
+        unreachable(interval)
     }
   }, [interval, intervalCount, t])
 
-  if (checkout.isFreeProductPrice) {
+  if (checkout.is_free_product_price) {
     return null
   }
 
@@ -160,7 +158,7 @@ const CheckoutPricingBreakdown = ({
                 className="text-gray-600"
               >
                 {formatCurrency('standard', locale)(
-                  -checkout.discountAmount,
+                  -checkout.discount_amount,
                   checkout.currency,
                 )}
               </DetailRow>
@@ -169,7 +167,7 @@ const CheckoutPricingBreakdown = ({
                 className="text-gray-600"
               >
                 {formatCurrency('standard', locale)(
-                  checkout.netAmount,
+                  checkout.net_amount,
                   checkout.currency,
                 )}
               </DetailRow>
@@ -180,9 +178,9 @@ const CheckoutPricingBreakdown = ({
             title={t('checkout.pricing.taxes')}
             className="text-gray-600"
           >
-            {checkout.taxAmount !== null
+            {checkout.tax_amount !== null
               ? formatCurrency('standard', locale)(
-                  checkout.taxAmount,
+                  checkout.tax_amount,
                   checkout.currency,
                 )
               : '—'}
@@ -191,7 +189,7 @@ const CheckoutPricingBreakdown = ({
           <DetailRow title={totalLabel} emphasis>
             <div className="flex flex-col items-end gap-y-1">
               <AmountLabel
-                amount={checkout.totalAmount}
+                amount={checkout.total_amount}
                 currency={checkout.currency}
                 interval={interval}
                 intervalCount={intervalCount}
@@ -229,36 +227,36 @@ const CheckoutPricingBreakdown = ({
       ) : (
         <span>{t('checkout.pricing.free')}</span>
       )}
-      {(checkout.trialEnd ||
-        (checkout.activeTrialInterval &&
-          checkout.activeTrialIntervalCount)) && (
+      {(checkout.trial_end ||
+        (checkout.active_trial_interval &&
+          checkout.active_trial_interval_count)) && (
         <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
-          {checkout.activeTrialInterval &&
-            checkout.activeTrialIntervalCount && (
+          {checkout.active_trial_interval &&
+            checkout.active_trial_interval_count && (
               <DetailRow
                 emphasis
                 title={
-                  checkout.activeTrialInterval === 'year'
+                  checkout.active_trial_interval === 'year'
                     ? t('checkout.trial.duration.years', {
-                        count: checkout.activeTrialIntervalCount,
+                        count: checkout.active_trial_interval_count,
                       })
-                    : checkout.activeTrialInterval === 'month'
+                    : checkout.active_trial_interval === 'month'
                       ? t('checkout.trial.duration.months', {
-                          count: checkout.activeTrialIntervalCount,
+                          count: checkout.active_trial_interval_count,
                         })
-                      : checkout.activeTrialInterval === 'week'
+                      : checkout.active_trial_interval === 'week'
                         ? t('checkout.trial.duration.weeks', {
-                            count: checkout.activeTrialIntervalCount,
+                            count: checkout.active_trial_interval_count,
                           })
                         : t('checkout.trial.duration.days', {
-                            count: checkout.activeTrialIntervalCount,
+                            count: checkout.active_trial_interval_count,
                           })
                 }
               >
                 <span>{t('checkout.pricing.free')}</span>
               </DetailRow>
             )}
-          {checkout.trialEnd && (
+          {checkout.trial_end && (
             <span
               className={cn(
                 'dark:text-polar-500 text-sm text-gray-500',
@@ -266,7 +264,7 @@ const CheckoutPricingBreakdown = ({
               )}
             >
               {t('checkout.trial.ends', {
-                endDate: formatDate(checkout.trialEnd, locale),
+                endDate: formatDate(checkout.trial_end, locale),
               })}
             </span>
           )}

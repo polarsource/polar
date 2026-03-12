@@ -410,6 +410,8 @@ class CustomerService:
         enqueue_job("subscription.cancel_customer", customer_id=customer.id)
         enqueue_job("benefit.revoke_customer", customer_id=customer.id)
 
+        await member_service.delete_by_customer(session, customer.id)
+
         if anonymize:
             # Anonymize also sets deleted_at
             return await self.anonymize(session, customer)

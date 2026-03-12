@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { MoreVertical } from 'lucide-react'
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import UpdateBenefitModalContent from '../../../Benefit/UpdateBenefitModalContent'
 import { ConfirmModal } from '../../../Modal/ConfirmModal'
@@ -46,6 +46,30 @@ export const BenefitRow = ({
     hide: hideDelete,
     toggle: toggleDelete,
   } = useModal()
+  const {
+    isShown: isDiscardShown,
+    hide: hideDiscard,
+    show: showDiscard,
+  } = useModal()
+
+  const isDirtyRef = useRef(false)
+
+  const requestClose = useCallback(() => {
+    if (isDirtyRef.current) {
+      showDiscard()
+    } else {
+      hideEdit()
+    }
+  }, [showDiscard, hideEdit])
+
+  const handleDiscardConfirm = useCallback(() => {
+    hideDiscard()
+    hideEdit()
+  }, [hideDiscard, hideEdit])
+
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    isDirtyRef.current = dirty
+  }, [])
 
   const deleteBenefit = useDeleteBenefit(organization.id)
 
@@ -128,14 +152,25 @@ export const BenefitRow = ({
       </div>
       <InlineModal
         isShown={isEditShown}
-        hide={hideEdit}
+        hide={requestClose}
         modalContent={
           <UpdateBenefitModalContent
             organization={organization}
             benefit={benefit}
             hideModal={hideEdit}
+            requestClose={requestClose}
+            onDirtyChange={handleDirtyChange}
           />
         }
+      />
+      <ConfirmModal
+        isShown={isDiscardShown}
+        hide={hideDiscard}
+        title="Discard changes?"
+        description="You have unsaved changes that will be lost."
+        onConfirm={handleDiscardConfirm}
+        destructiveText="Discard"
+        destructive
       />
       <ConfirmModal
         isShown={isDeleteShown}

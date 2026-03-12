@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -49,6 +49,31 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hide: hideDelete,
     toggle: toggleDelete,
   } = useModal()
+
+  const {
+    isShown: isDiscardShown,
+    hide: hideDiscard,
+    show: showDiscard,
+  } = useModal()
+
+  const isDirtyRef = useRef(false)
+
+  const requestClose = useCallback(() => {
+    if (isDirtyRef.current) {
+      showDiscard()
+    } else {
+      hideEdit()
+    }
+  }, [showDiscard, hideEdit])
+
+  const handleDiscardConfirm = useCallback(() => {
+    hideDiscard()
+    hideEdit()
+  }, [hideDiscard, hideEdit])
+
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    isDirtyRef.current = dirty
+  }, [])
 
   const deleteBenefit = useDeleteBenefit(organization.id)
 
@@ -145,14 +170,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
       <InlineModal
         isShown={isEditShown}
-        hide={hideEdit}
+        hide={requestClose}
         modalContent={
           <UpdateBenefitModalContent
             organization={organization}
             benefit={benefit}
             hideModal={hideEdit}
+            requestClose={requestClose}
+            onDirtyChange={handleDirtyChange}
           />
         }
+      />
+      <ConfirmModal
+        isShown={isDiscardShown}
+        hide={hideDiscard}
+        title="Discard changes?"
+        description="You have unsaved changes that will be lost."
+        onConfirm={handleDiscardConfirm}
+        destructiveText="Discard"
+        destructive
       />
       <ConfirmModal
         isShown={isDeleteShown}

@@ -4,7 +4,7 @@ import { isValidationError, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { MouseEvent, useCallback } from 'react'
+import { MouseEvent, useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 import { toast } from '../Toast/use-toast'
@@ -13,6 +13,8 @@ interface UpdateBenefitModalContentProps {
   organization: schemas['Organization']
   benefit: schemas['Benefit']
   hideModal: () => void
+  requestClose: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 type BenefitUpdate =
@@ -22,12 +24,19 @@ const UpdateBenefitModalContent = ({
   organization,
   benefit,
   hideModal,
+  requestClose,
+  onDirtyChange,
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
   const form = useForm<BenefitUpdate>({
     defaultValues: benefit,
   })
   const { setError } = form
+
+  const { isDirty } = form.formState
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
   const handleUpdateNewBenefit = useCallback(
@@ -62,7 +71,7 @@ const UpdateBenefitModalContent = ({
   const onCancel = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
-    hideModal()
+    requestClose()
   }
 
   const { handleSubmit } = form

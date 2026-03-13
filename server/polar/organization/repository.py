@@ -81,8 +81,12 @@ class OrganizationRepository(
 
         return await self.get_one_or_none(statement)
 
-    async def get_by_slug(self, slug: str) -> Organization | None:
-        statement = self.get_base_statement().where(Organization.slug == slug)
+    async def get_by_slug(
+        self, slug: str, include_deleted: bool = False
+    ) -> Organization | None:
+        statement = self.get_base_statement(include_deleted=include_deleted).where(
+            Organization.slug == slug
+        )
         return await self.get_one_or_none(statement)
 
     async def slug_exists(self, slug: str) -> bool:

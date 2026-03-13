@@ -199,7 +199,9 @@ class PlainService:
                     raise ValueError("Organization is not under review")
 
             should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
-            assigned_to = CreateThreadAssignedToInput(user_id=random.choice(SUPPORT_AGENT_IDS))
+            assigned_to = CreateThreadAssignedToInput(
+                user_id=random.choice(SUPPORT_AGENT_IDS)
+            )
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(

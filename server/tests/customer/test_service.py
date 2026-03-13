@@ -13,8 +13,8 @@ from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
-from polar.models.member import Member, MemberRole
 from polar.models.customer import CustomerType
+from polar.models.member import Member, MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -746,7 +746,6 @@ class TestUpdate:
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
 
-
     async def test_syncs_owner_member_email_on_email_change(
         self,
         session: AsyncSession,
@@ -849,6 +848,7 @@ class TestUpdate:
         assert updated_customer.email == "same@example.com"
         assert updated_customer.name == "New Name"
         assert member.email == "same@example.com"
+
 
 @pytest.mark.asyncio
 class TestDelete:

@@ -2,7 +2,10 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from sqlalchemy import select
 
+from polar.customer.schemas.customer import CustomerUpdate
+from polar.customer.service import customer as customer_service
 from polar.customer_portal.service.customer_session import (
     CustomerDoesNotExist,
     CustomerSelectionRequired,
@@ -14,11 +17,14 @@ from polar.customer_portal.service.customer_session import (
 )
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.kit.utils import utc_now
-from polar.models import CustomerSession, CustomerSessionCode, Member, MemberSession, Organization
+from polar.models import (
+    CustomerSession,
+    CustomerSessionCode,
+    Member,
+    MemberSession,
+    Organization,
+)
 from polar.models.member import MemberRole
-from sqlalchemy import select
-from polar.customer.schemas.customer import CustomerUpdate
-from polar.customer.service import customer as customer_service
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture

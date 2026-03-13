@@ -3,7 +3,6 @@ from collections.abc import Sequence
 from typing import Any
 
 import structlog
-
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -43,7 +42,6 @@ from .schemas.customer import (
 )
 from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
-
 
 log = structlog.get_logger()
 
@@ -410,26 +408,24 @@ class CustomerService:
                 ) from e
             raise
 
-        # Sync member emails when the customer email changes.
-        # Members whose email matched the old customer email are updated to the new one.
-        # Members with custom emails (e.g. individual team member emails) are left untouched.
-        if email_changed:
+        # Sync member email when the customer email changes.
+        # Only the member whose email matched the old customer email is updated.
+        if email_changed and old_email is not None:
             member_repository = MemberRepository.from_session(session)
-            members = await member_repository.list_by_customer(
-                session, updated_customer.id
+            member = await member_repository.get_by_customer_and_email(
+                session, updated_customer, old_email
             )
-            for member in members:
-                if member.email.lower() == old_email.lower():
-                    await member_repository.update(
-                        member, update_dict={"email": updated_customer.email}
-                    )
-                    log.info(
-                        "customer.update.synced_member_email",
-                        customer_id=updated_customer.id,
-                        member_id=member.id,
-                        old_email=old_email,
-                        new_email=updated_customer.email,
-                    )
+            if member is not None:
+                await member_repository.update(
+                    member, update_dict={"email": updated_customer.email}
+                )
+                log.info(
+                    "customer.update.synced_member_email",
+                    customer_id=updated_customer.id,
+                    member_id=member.id,
+                    old_email=old_email,
+                    new_email=updated_customer.email,
+                )
 
         return updated_customer
 

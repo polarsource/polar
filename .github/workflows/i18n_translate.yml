@@ -44,7 +44,7 @@ jobs:
 
       - name: Generate translations
         env:
-          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          PYDANTIC_AI_GATEWAY_API_KEY: ${{ secrets.PYDANTIC_AI_GATEWAY_API_KEY }}
         run: pnpm --filter @polar-sh/i18n translate
 
       - name: Commit translations

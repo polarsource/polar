@@ -3,8 +3,8 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
-import { anthropic } from '@ai-sdk/anthropic'
-import { google } from '@ai-sdk/google'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { experimental_createMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { withTracing } from '@posthog/ai'
@@ -26,6 +26,19 @@ const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
       host: 'https://us.i.posthog.com',
     })
   : null
+
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
+  headers: {
+    Authorization: `Bearer ${process.env.PYDANTIC_AI_GATEWAY_API_KEY}`,
+  },
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/google-vertex/',
+})
+
+const anthropic = createAnthropic({
+  apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/anthropic',
+})
 
 const sharedSystemPrompt = `
 You are a helpful assistant that helps users create products on Polar.

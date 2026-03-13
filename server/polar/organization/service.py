@@ -830,6 +830,17 @@ class OrganizationService:
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
+
+        # Record a human ESCALATE decision so the agent knows not to auto-act
+        review_repository = AgentReviewRepository.from_session(session)
+        await review_repository.deactivate_current_decisions(organization.id)
+        await review_repository.save_review_decision(
+            organization_id=organization.id,
+            actor_type="human",
+            decision="ESCALATE",
+            review_context="manual",
+        )
+
         if enqueue_review:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization

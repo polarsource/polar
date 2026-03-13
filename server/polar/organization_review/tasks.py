@@ -114,6 +114,27 @@ async def run_review_agent(
         # For THRESHOLD context with auto-approve eligibility:
         # delegate decision to the service layer
         if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
+            # If a human manually set this org under review, skip auto-action
+            current_decision = await review_repository.get_current_decision(
+                organization_id
+            )
+            if (
+                current_decision is not None
+                and current_decision.actor_type == "human"
+                and current_decision.review_context == "manual"
+            ):
+                auto_approve_eligible = False
+                log.info(
+                    "organization_review.threshold.manual_review_override",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    verdict=report.verdict.value,
+                )
+                await plain_service.create_organization_review_thread(
+                    session, organization
+                )
+
+        if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
             auto_approved = await organization_service.handle_ongoing_review_verdict(
                 session, organization, report.verdict
             )

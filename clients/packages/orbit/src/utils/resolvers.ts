@@ -6,14 +6,14 @@ import type {
   ColorToken,
   ShadowToken,
   SpacingToken,
-} from '../tokens.stylex'
+} from '../tokens/tokens.stylex'
 import {
   borderRadii,
   breakpoints,
   colors,
   shadows,
   spacing,
-} from '../tokens.stylex'
+} from '../tokens/tokens.stylex'
 import {
   alignContentStyles,
   alignItemsStyles,

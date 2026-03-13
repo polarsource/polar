@@ -1569,7 +1569,9 @@ async def edit_organization(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id, include_blocked=True, include_deleted=True)
+    organization = await repository.get_by_id(
+        organization_id, include_blocked=True, include_deleted=True
+    )
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1580,7 +1582,9 @@ async def edit_organization(
         try:
             form = UpdateOrganizationBasicForm.model_validate_form(data)
             if form.slug != organization.slug:
-                existing_slug = await repository.get_by_slug(form.slug, include_deleted=True)
+                existing_slug = await repository.get_by_slug(
+                    form.slug, include_deleted=True
+                )
                 if existing_slug is not None and existing_slug.id != organization.id:
                     raise ValidationError.from_exception_data(
                         title="SlugAlreadyExists",

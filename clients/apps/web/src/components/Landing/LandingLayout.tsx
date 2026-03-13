@@ -18,6 +18,7 @@ import { usePathname } from 'next/navigation'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { NavPopover, NavPopoverSection } from './NavPopover'
@@ -288,8 +289,8 @@ const LandingPageDesktopNavigation = () => {
   ]
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex">
-      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-6xl">
+    <div className="dark:text-polar-50 dark:bg-polar-950 sticky top-0 z-10 hidden w-full flex-col items-center gap-12 bg-white py-8 md:flex">
+      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
         <Link href="/">
           <PolarLogotype logoVariant="icon" size={40} />
         </Link>
@@ -313,9 +314,16 @@ const LandingPageDesktopNavigation = () => {
           </li>
         </ul>
 
-        <Button onClick={onLoginClick} variant="ghost" className="rounded-full">
-          Log In
-        </Button>
+        <div className="flex flex-row items-center gap-x-4">
+          <Button
+            onClick={onLoginClick}
+            variant="ghost"
+            className="rounded-full"
+          >
+            Log In
+          </Button>
+          <GetStartedButton size="default" />
+        </div>
       </div>
       <Modal
         title="Login"

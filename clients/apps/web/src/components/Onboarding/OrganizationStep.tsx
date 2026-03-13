@@ -254,7 +254,7 @@ export const OrganizationStep = ({
                     render={({ field }) => (
                       <FormItem className="w-full">
                         <FormLabel htmlFor="default_presentment_currency">
-                          Default Payment Currency
+                          Default payment currency
                         </FormLabel>
                         <FormControl className="flex w-full flex-col gap-y-4">
                           <CurrencySelector

@@ -205,7 +205,7 @@ const OrganizationSelectionPage = ({
                 render={({ field }) => (
                   <FormItem className="w-full">
                     <Label htmlFor="default_presentment_currency">
-                      Default Payment Currency
+                      Default payment currency
                     </Label>
                     <FormControl>
                       <CurrencySelector

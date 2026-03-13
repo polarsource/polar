@@ -303,7 +303,7 @@ jobs:
           cpukind: shared
           ha: false
           image: ${{ steps.fly_image.outputs.fly_image }}
-          memory: 1024
+          memory: 2048
           name: ${{ steps.meta.outputs.fly_app_name }}
           org: ${{ vars.POLAR_PREVIEW_FLY_ORG }}
           secrets: |

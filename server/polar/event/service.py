@@ -9,10 +9,7 @@ from zoneinfo import ZoneInfo
 import logfire
 import structlog
 from opentelemetry import trace
-from sqlalchemy import (
-    or_,
-    select,
-)
+from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
@@ -40,7 +37,6 @@ from polar.models import (
     Customer,
     CustomerMeter,
     Event,
-    EventClosure,
     Meter,
     MeterEvent,
     Organization,
@@ -723,6 +719,9 @@ class EventService:
         processed_events: dict[uuid.UUID, dict[str, Any]] = {}
 
         with logfire.span("process_events", event_count=len(sorted_metadata)):
+            # Events needs to be sorted here primarily for the purpose of root id
+            # resolution. Hierarchical events with parent_id in the same batch should
+            # get the same root id assigned.
             for metadata in sorted_metadata:
                 index = metadata["index"]
                 event_create = ingest.events[index]
@@ -825,93 +824,16 @@ class EventService:
         )
         return event
 
-    async def populate_event_closures_batch(
+    async def _build_ancestors_batch(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> Mapping[uuid.UUID, Sequence[str]]:
-        if not event_ids:
-            return {}
-
-        result = await session.execute(
-            select(Event.id, Event.parent_id).where(Event.id.in_(event_ids))
-        )
-        events_data = result.all()
-
-        events_list = [
-            {"id": event_id, "parent_id": parent_id}
-            for event_id, parent_id in events_data
-        ]
-        sorted_events = _topological_sort_events(events_list)
-
-        all_closure_entries = []
-        event_closures: dict[uuid.UUID, list[tuple[uuid.UUID, int]]] = {}
-        ancestors_by_event: dict[uuid.UUID, list[str]] = {}
-
-        for event in sorted_events:
-            event_id = event["id"]
-            parent_id = event.get("parent_id")
-
-            event_closures[event_id] = [(event_id, 0)]
-            all_closure_entries.append(
-                {
-                    "ancestor_id": event_id,
-                    "descendant_id": event_id,
-                    "depth": 0,
-                }
-            )
-
-            if parent_id is not None:
-                # Check if parent is in current batch
-                if parent_id in event_closures:
-                    # Parent is in current batch, use in-memory closures
-                    for ancestor_id, depth in event_closures[parent_id]:
-                        event_closures[event_id].append((ancestor_id, depth + 1))
-                        all_closure_entries.append(
-                            {
-                                "ancestor_id": ancestor_id,
-                                "descendant_id": event_id,
-                                "depth": depth + 1,
-                            }
-                        )
-                else:
-                    # Parent is from previous batch, query database
-                    parent_closures_result = await session.execute(
-                        select(
-                            EventClosure.ancestor_id,
-                            EventClosure.depth,
-                        ).where(EventClosure.descendant_id == parent_id)
-                    )
-
-                    for ancestor_id, depth in parent_closures_result:
-                        event_closures[event_id].append((ancestor_id, depth + 1))
-                        all_closure_entries.append(
-                            {
-                                "ancestor_id": ancestor_id,
-                                "descendant_id": event_id,
-                                "depth": depth + 1,
-                            }
-                        )
-
-            ancestors_by_event[event_id] = [
-                str(aid)
-                for aid, d in sorted(event_closures[event_id], key=lambda x: x[1])
-                if d > 0
-            ]
-
-        if all_closure_entries:
-            await session.execute(
-                insert(EventClosure)
-                .values(all_closure_entries)
-                .on_conflict_do_nothing(index_elements=["ancestor_id", "descendant_id"])
-            )
-
-        return ancestors_by_event
+        repository = EventRepository.from_session(session)
+        return await repository.get_ancestors_batch(event_ids)
 
     async def ingested(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
-        ancestors_by_event = await self.populate_event_closures_batch(
-            session, event_ids
-        )
+        ancestors_by_event = await self._build_ancestors_batch(session, event_ids)
         repository = EventRepository.from_session(session)
         statement = (
             repository.get_base_statement()

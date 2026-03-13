@@ -4,6 +4,9 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
+    UUID as SA_UUID,
+)
+from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
     Numeric,
@@ -15,12 +18,13 @@ from sqlalchemy import (
     cast,
     desc,
     func,
+    literal,
     literal_column,
     or_,
     select,
     text,
 )
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -264,6 +268,44 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         results = await self.get_all(statement)
         order = {id: i for i, id in enumerate(ids)}
         return sorted(results, key=lambda e: order.get(e.id, 0))
+
+    async def get_ancestors_batch(
+        self, event_ids: Sequence[UUID]
+    ) -> dict[UUID, list[str]]:
+        if not event_ids:
+            return {}
+
+        anchor = select(
+            Event.id.label("event_id"),
+            Event.parent_id.label("ancestor_id"),
+            literal(1).label("depth"),
+        ).where(Event.id.in_(event_ids), Event.parent_id.is_not(None))
+
+        cte = anchor.cte("ancestor_chain", recursive=True)
+        parent = Event.__table__.alias("parent")
+        recursive = (
+            select(
+                cte.c.event_id,
+                parent.c.parent_id.label("ancestor_id"),
+                (cte.c.depth + 1).label("depth"),
+            )
+            .select_from(cte.join(parent, cte.c.ancestor_id == parent.c.id))
+            .where(parent.c.parent_id.is_not(None))
+        )
+        cte = cte.union_all(recursive)
+
+        statement = select(
+            cte.c.event_id,
+            func.array_agg(
+                aggregate_order_by(cte.c.ancestor_id, cte.c.depth.asc()),
+                type_=SA_UUID(),
+            ).label("ancestors"),
+        ).group_by(cte.c.event_id)
+
+        result = await self.session.execute(statement)
+        return {
+            row.event_id: [str(aid) for aid in row.ancestors] for row in result.all()
+        }
 
     async def get_hierarchy_stats(
         self,

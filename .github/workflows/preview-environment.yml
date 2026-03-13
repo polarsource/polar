@@ -314,7 +314,7 @@ jobs:
             POLAR_POSTGRES_PWD=${{ steps.preview_resources.outputs.preview_postgres_password }}
             POLAR_POSTGRES_USER=${{ steps.preview_resources.outputs.preview_postgres_user }}
             POLAR_USER_SESSION_COOKIE_DOMAIN=${{ steps.meta.outputs.fly_hostname }}
-            TAILSCALE_ADVERTISE_TAGS=${{ vars.POLAR_PREVIEW_TAILSCALE_ADVERTISE_TAGS || 'tag:preview' }}
+            TAILSCALE_ADVERTISE_TAGS=${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
             TAILSCALE_HOSTNAME_PREFIX=${{ steps.meta.outputs.fly_app_name }}
             TAILSCALE_OAUTH_SECRET=${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
             TINYBIRD_API_TOKEN=${{ steps.preview_resources.outputs.preview_tinybird_token }}

@@ -36,6 +36,11 @@ Usage:
         uv run python -m scripts.migrate_organizations_members prepare
         uv run python -m scripts.migrate_organizations_members prepare --slug my-org --no-dry-run
         uv run python -m scripts.migrate_organizations_members prepare --limit 10 --no-dry-run
+
+    Find one-off order grants incorrectly deleted by the backfill:
+        uv run python -m scripts.migrate_organizations_members restore-oneoff-grants
+        uv run python -m scripts.migrate_organizations_members restore-oneoff-grants --verbose
+        uv run python -m scripts.migrate_organizations_members restore-oneoff-grants --restore
 """
 
 import asyncio
@@ -47,7 +52,7 @@ from typing import Any
 import structlog
 import typer
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased, joinedload
 
 from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -835,6 +840,273 @@ async def prepare(
     typer.echo("Preparation complete:")
     typer.echo(f"  - Prepared: {prepared_count}")
     typer.echo(f"  - Failed: {failed_count}")
+
+
+_RESTORE_BATCH_SIZE = 100
+
+
+async def find_deleted_oneoff_grants(
+    session: AsyncSession,
+    *,
+    eager_load: bool = False,
+) -> list[BenefitGrant]:
+    """Find one-off order grants incorrectly soft-deleted by the backfill.
+
+    Returns grants where:
+    - order_id IS NOT NULL (one-off order)
+    - subscription_id IS NULL
+    - deleted_at IS NOT NULL (was soft-deleted)
+    - member_id IS NULL (backfill deleted before linking)
+    - A surviving sibling exists (same customer + benefit, different order,
+      not deleted, and still granted — i.e. not revoked due to benefit removal)
+
+    When eager_load=True, the customer and benefit relationships are loaded.
+    """
+    from polar.models import Benefit
+
+    sibling = aliased(BenefitGrant)
+    sibling_exists = (
+        select(sibling.id)
+        .where(
+            sibling.customer_id == BenefitGrant.customer_id,
+            sibling.benefit_id == BenefitGrant.benefit_id,
+            sibling.id != BenefitGrant.id,
+            sibling.order_id.is_not(None),
+            sibling.deleted_at.is_(None),
+            sibling.revoked_at.is_(None),
+        )
+        .correlate(BenefitGrant)
+        .exists()
+    )
+
+    statement = (
+        select(BenefitGrant)
+        .where(
+            BenefitGrant.order_id.is_not(None),
+            BenefitGrant.subscription_id.is_(None),
+            BenefitGrant.deleted_at.is_not(None),
+            BenefitGrant.member_id.is_(None),
+            sibling_exists,
+        )
+        .order_by(BenefitGrant.customer_id, BenefitGrant.benefit_id)
+    )
+
+    if eager_load:
+        statement = statement.options(
+            joinedload(BenefitGrant.customer),
+            joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+        )
+
+    result = await session.execute(statement)
+    return list(result.scalars().unique().all())
+
+
+async def restore_oneoff_grant_batch(
+    session: AsyncSession,
+    grant_ids: list[uuid.UUID],
+) -> tuple[int, int]:
+    """Restore a batch of incorrectly deleted one-off order grants.
+
+    For each grant:
+    - Clears deleted_at
+    - Copies member_id from the surviving sibling
+    - Ensures granted_at is set, clears revoked_at
+    - Restores the associated license key (if any)
+
+    Returns (grants_restored, license_keys_restored).
+    """
+    from polar.kit.utils import utc_now
+    from polar.models.license_key import LicenseKey, LicenseKeyStatus
+
+    # Re-fetch with qualifying filters so the function is safe
+    # regardless of what IDs are passed in.
+    grants = list(
+        (
+            await session.execute(
+                select(BenefitGrant).where(
+                    BenefitGrant.id.in_(grant_ids),
+                    BenefitGrant.order_id.is_not(None),
+                    BenefitGrant.subscription_id.is_(None),
+                    BenefitGrant.deleted_at.is_not(None),
+                    BenefitGrant.member_id.is_(None),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    restored = 0
+    lk_restored = 0
+
+    for grant in grants:
+        # Find the surviving sibling to copy member_id from.
+        # Sibling must still be granted (not revoked due to benefit removal).
+        sibling_grant = await session.scalar(
+            select(BenefitGrant).where(
+                BenefitGrant.customer_id == grant.customer_id,
+                BenefitGrant.benefit_id == grant.benefit_id,
+                BenefitGrant.id != grant.id,
+                BenefitGrant.order_id.is_not(None),
+                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.revoked_at.is_(None),
+            )
+        )
+
+        # Restore the grant
+        grant.deleted_at = None
+        if sibling_grant is not None and sibling_grant.member_id is not None:
+            grant.member_id = sibling_grant.member_id
+        if grant.granted_at is None:
+            grant.granted_at = utc_now()
+        if grant.revoked_at is not None:
+            grant.revoked_at = None
+
+        # Restore associated license key if referenced in properties
+        lk_id_raw = (grant.properties or {}).get("license_key_id")
+        if lk_id_raw:
+            try:
+                lk_id = uuid.UUID(str(lk_id_raw))
+            except ValueError:
+                restored += 1
+                continue
+
+            lk = await session.get(LicenseKey, lk_id)
+            if lk is not None:
+                # Verify ownership before mutating
+                if (
+                    lk.customer_id != grant.customer_id
+                    or lk.benefit_id != grant.benefit_id
+                ):
+                    restored += 1
+                    continue
+
+                lk_changed = False
+                if lk.deleted_at is not None:
+                    lk.deleted_at = None
+                    lk_changed = True
+                if lk.status != LicenseKeyStatus.granted:
+                    lk.status = LicenseKeyStatus.granted
+                    lk_changed = True
+                if grant.member_id is not None and lk.member_id != grant.member_id:
+                    lk.member_id = grant.member_id
+                    lk_changed = True
+                if lk_changed:
+                    lk_restored += 1
+
+        restored += 1
+
+    await session.flush()
+    return restored, lk_restored
+
+
+@cli.command("restore-oneoff-grants")
+@typer_async
+async def restore_oneoff_grants(
+    restore: bool = typer.Option(
+        False, help="Actually restore the grants. Without this flag, only finds them."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show customer, member, and benefit details"
+    ),
+) -> None:
+    """Find (and optionally restore) one-off order benefit grants incorrectly deleted by backfill.
+
+    The member backfill previously treated one-off order grants as duplicates
+    when the same (subscription_id=NULL, member_id, benefit_id) already existed.
+    This deleted one grant per (customer, benefit) pair even though each order
+    should have its own independent grant.
+
+    By default, this command only lists the affected grants.
+    Pass --restore to actually fix them.
+    """
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        deleted_grants = await find_deleted_oneoff_grants(session, eager_load=verbose)
+
+    if not deleted_grants:
+        typer.echo("No incorrectly deleted one-off grants found.")
+        return
+
+    typer.echo(f"Found {len(deleted_grants)} grant(s) to restore")
+    typer.echo()
+
+    if verbose:
+        for grant in deleted_grants:
+            customer = grant.customer
+            benefit = grant.benefit
+            org = benefit.organization
+            typer.echo(f"  Grant {grant.id}")
+            typer.echo(f"    Organization: {org.slug} ({org.id})")
+            typer.echo(f"    Customer:     {customer.email} ({customer.id})")
+            typer.echo(f"    Benefit:      {benefit.description} ({benefit.id})")
+            typer.echo(f"    Order:        {grant.order_id}")
+            lk_id = (grant.properties or {}).get("license_key_id")
+            if lk_id:
+                typer.echo(f"    License key:  {lk_id}")
+            typer.echo()
+    else:
+        typer.echo(
+            f"  {'Grant ID':<38} {'Customer ID':<38} {'Benefit ID':<38} {'Order ID'}"
+        )
+        typer.echo(f"  {'-' * 150}")
+        for grant in deleted_grants:
+            typer.echo(
+                f"  {grant.id!s:<38} {grant.customer_id!s:<38} "
+                f"{grant.benefit_id!s:<38} {grant.order_id}"
+            )
+        typer.echo()
+
+    if not restore:
+        typer.echo("Pass --restore to actually restore these grants.")
+        return
+
+    # Restore grants in batches
+    typer.echo(f"Restoring {len(deleted_grants)} grant(s)...")
+    typer.echo()
+
+    total_restored = 0
+    total_lk_restored = 0
+    failed_count = 0
+
+    grant_ids = [g.id for g in deleted_grants]
+    for batch_start in range(0, len(grant_ids), _RESTORE_BATCH_SIZE):
+        batch_ids = grant_ids[batch_start : batch_start + _RESTORE_BATCH_SIZE]
+
+        try:
+            async with sessionmaker() as session:
+                restored, lk_restored = await restore_oneoff_grant_batch(
+                    session, batch_ids
+                )
+                await session.commit()
+
+            total_restored += restored
+            total_lk_restored += lk_restored
+            typer.echo(
+                f"  Batch {batch_start // _RESTORE_BATCH_SIZE + 1}: "
+                f"restored {restored} grant(s)"
+            )
+
+        except Exception as e:
+            failed_count += len(batch_ids)
+            typer.echo(
+                f"  FAILED batch {batch_start // _RESTORE_BATCH_SIZE + 1}: {e}",
+                err=True,
+            )
+
+    typer.echo()
+    typer.echo("Restore complete:")
+    typer.echo(f"  - Grants restored: {total_restored}")
+    typer.echo(f"  - License keys restored: {total_lk_restored}")
+    typer.echo(f"  - Failed: {failed_count}")
+    if total_restored > 0:
+        typer.echo()
+        typer.echo(
+            "NOTE: Run 'repair' afterwards to link any grants "
+            "that could not be matched to a member."
+        )
 
 
 if __name__ == "__main__":

@@ -1945,10 +1945,15 @@ async def create_event(
     external_customer_id: str | None = None,
     external_id: str | None = None,
     parent_id: uuid.UUID | None = None,
+    root_id: uuid.UUID | None = None,
     metadata: dict[str, str | int | bool | float | Any] | None = None,
     event_type: EventType | None = None,
 ) -> Event:
+    event_id = uuid.uuid4()
+    if root_id is None:
+        root_id = parent_id if parent_id is not None else event_id
     event = Event(
+        id=event_id,
         timestamp=timestamp or utc_now(),
         source=source,
         name=name,
@@ -1956,6 +1961,7 @@ async def create_event(
         external_customer_id=external_customer_id,
         external_id=external_id,
         parent_id=parent_id,
+        root_id=root_id,
         organization=organization,
         user_metadata=metadata or {},
         event_type_id=event_type.id if event_type else None,

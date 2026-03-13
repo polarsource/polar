@@ -1,14 +1,8 @@
 'use client'
 
 import { enums, schemas } from '@polar-sh/client'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import { useMemo } from 'react'
+import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
+import { useCallback, useMemo, useState } from 'react'
 
 interface CurrencySelectorProps {
   value: schemas['PresentmentCurrency']
@@ -18,38 +12,80 @@ interface CurrencySelectorProps {
 
 const formatter = new Intl.DisplayNames('en-US', { type: 'currency' })
 
-const formatCurrencyName = (currency: schemas['PresentmentCurrency']) => {
-  return formatter.of(currency)
+type CurrencyItem = { code: string; label: string }
+
+const labelOverrides: Record<string, string> = {
+  aed: 'UAE Dirham',
 }
+
+const pinnedCodes = ['usd', 'eur', 'gbp']
+
+const allCurrencies: CurrencyItem[] = enums.presentmentCurrencyValues
+  .map((code) => ({
+    code,
+    label: labelOverrides[code] ?? formatter.of(code) ?? code.toUpperCase(),
+  }))
+  .sort((a, b) => {
+    const aPin = pinnedCodes.indexOf(a.code)
+    const bPin = pinnedCodes.indexOf(b.code)
+    if (aPin !== -1 && bPin !== -1) return aPin - bPin
+    if (aPin !== -1) return -1
+    if (bPin !== -1) return 1
+    return a.label.localeCompare(b.label)
+  })
 
 export const CurrencySelector = ({
   value,
   onChange,
   disabled,
 }: CurrencySelectorProps) => {
-  const sortedCurrencies = useMemo(() => {
-    const formatter = new Intl.DisplayNames('en-US', { type: 'currency' })
+  const [query, setQuery] = useState('')
 
-    return enums.presentmentCurrencyValues
-      .map((currency) => [
-        currency,
-        formatter.of(currency) ?? currency.toLocaleUpperCase(),
-      ])
-      .sort(([, a], [, b]) => a.localeCompare(b))
-  }, [])
+  const filteredCurrencies = useMemo(() => {
+    if (!query) return allCurrencies
+    const q = query.toLowerCase()
+    return allCurrencies.filter(
+      ({ code, label }) => code.includes(q) || label.toLowerCase().includes(q),
+    )
+  }, [query])
+
+  const selectedItem = useMemo(
+    () => allCurrencies.find((c) => c.code === value) ?? null,
+    [value],
+  )
+
+  const handleChange = useCallback(
+    (newValue: string | null) => {
+      if (newValue) {
+        onChange(newValue)
+      }
+    },
+    [onChange],
+  )
 
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select currency" />
-      </SelectTrigger>
-      <SelectContent>
-        {sortedCurrencies.map(([currency, label]) => (
-          <SelectItem key={currency} value={currency}>
-            {label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Combobox
+      items={filteredCurrencies}
+      value={value}
+      selectedItem={selectedItem}
+      onChange={handleChange}
+      onQueryChange={setQuery}
+      getItemValue={(item) => item.code}
+      getItemLabel={(item) => item.label}
+      renderItem={(item) => (
+        <span className="flex flex-1 items-center gap-2">
+          <span className="text-muted-foreground group-data-[selected=true]:text-white/60 w-8">
+            {item.code.toUpperCase()}
+          </span>
+          <span className="truncate">{item.label}</span>
+        </span>
+      )}
+      placeholder="Select currency"
+      searchPlaceholder="Search currencies…"
+      emptyLabel="No currencies found"
+      popoverClassName="min-w-[230px]"
+      popoverAlign="end"
+      className={disabled ? 'pointer-events-none opacity-50' : undefined}
+    />
   )
 }

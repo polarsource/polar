@@ -1318,7 +1318,7 @@ class TestCreate:
     )
     @pytest.mark.parametrize(
         "currency",
-        [PresentmentCurrency.usd, PresentmentCurrency.eur, PresentmentCurrency.gbp],
+        [PresentmentCurrency.USD, PresentmentCurrency.EUR, PresentmentCurrency.GBP],
     )
     async def test_multi_currencies_set(
         self,
@@ -1350,7 +1350,7 @@ class TestCreate:
     )
     @pytest.mark.parametrize(
         "currency",
-        [PresentmentCurrency.sek, PresentmentCurrency.aud],
+        [PresentmentCurrency.SEK, PresentmentCurrency.AUD],
     )
     async def test_multi_currencies_set_unavailable(
         self,
@@ -2154,7 +2154,7 @@ class TestCreate:
                             ProductPriceFixedCreate(
                                 amount_type=ProductPriceAmountType.fixed,
                                 price_amount=100_00,
-                                price_currency=PresentmentCurrency.usd,
+                                price_currency=PresentmentCurrency.USD,
                             ),
                         ]
                     },
@@ -2182,7 +2182,7 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=100_00,
-                            price_currency=PresentmentCurrency.usd,
+                            price_currency=PresentmentCurrency.USD,
                         ),
                     ]
                 },
@@ -3637,7 +3637,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             checkout,
-            CheckoutUpdate(currency=PresentmentCurrency.usd),
+            CheckoutUpdate(currency=PresentmentCurrency.USD),
         )
 
         assert updated_checkout.product == product_one_time_multiple_currencies
@@ -3663,7 +3663,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 checkout,
-                CheckoutUpdate(currency=PresentmentCurrency.eur),
+                CheckoutUpdate(currency=PresentmentCurrency.EUR),
             )
 
 

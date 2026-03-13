@@ -3146,7 +3146,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency=PresentmentCurrency.usd,
+            price_currency=PresentmentCurrency.USD,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -3333,7 +3333,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency=PresentmentCurrency.usd,
+            price_currency=PresentmentCurrency.USD,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 3, "max_seats": None, "price_per_seat": 1000},
@@ -3374,7 +3374,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency=PresentmentCurrency.usd,
+            price_currency=PresentmentCurrency.USD,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -3415,7 +3415,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency=PresentmentCurrency.usd,
+            price_currency=PresentmentCurrency.USD,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 2, "max_seats": 20, "price_per_seat": 1000},

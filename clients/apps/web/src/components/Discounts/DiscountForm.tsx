@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 
-import { enums, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   FormControl,
@@ -33,6 +33,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import React, { useCallback, useMemo } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
+import { CurrencySelector } from '../CurrencySelector'
 import ProductSelect from '../Products/ProductSelect'
 
 export type DiscountFormValues = (
@@ -85,10 +86,6 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
   })
 
   const activeCurrencies = fields.map((f) => f.currency)
-
-  const availableCurrencies = enums.presentmentCurrencyValues.filter(
-    (c) => !activeCurrencies.includes(c),
-  )
 
   const handleAddCurrency = useCallback(
     (currency: string) => {
@@ -261,21 +258,13 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
             })}
           </div>
 
-          {canUpdateAmount && availableCurrencies.length > 0 && (
-            <Select onValueChange={handleAddCurrency}>
-              <SelectTrigger className="mt-2 h-8 w-auto self-start rounded-md">
-                <span className="text-xs text-black dark:text-white">
-                  Add Currency
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                {availableCurrencies.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c.toUpperCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {canUpdateAmount && (
+            <CurrencySelector
+              onChange={handleAddCurrency}
+              excludeCurrencies={activeCurrencies}
+              placeholder="Add Currency"
+              className="mt-2 h-8 w-auto self-start text-xs"
+            />
           )}
 
           {!canUpdateAmount && (

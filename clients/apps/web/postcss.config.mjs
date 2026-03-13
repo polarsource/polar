@@ -6,7 +6,10 @@ const babelConfig = require('./babel.config.js')
 export default {
   plugins: {
     '@stylexjs/postcss-plugin': {
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      include: [
+        'src/**/*.{js,jsx,ts,tsx}',
+        '../../packages/orbit/src/**/*.{js,jsx,ts,tsx}',
+      ],
       babelConfig: {
         babelrc: false,
         parserOpts: { plugins: ['typescript', 'jsx'] },

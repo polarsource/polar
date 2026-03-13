@@ -1,5 +1,5 @@
 import * as stylex from '@stylexjs/stylex'
-import { borderRadii, colors, shadows, spacing } from '../tokens.stylex'
+import { borderRadii, colors, shadows, spacing } from '../tokens/tokens.stylex'
 
 /*
   This is where we connect each prop to the corresponding CSS property from our design tokens.

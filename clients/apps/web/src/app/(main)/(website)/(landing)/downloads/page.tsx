@@ -1,6 +1,6 @@
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Apple, Framer, Google, Raycast } from '@/components/Landing/Logos'
-import { Box } from '@/design-system/components/Box'
+import { Box } from '@polar-sh/orbit/Box'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'

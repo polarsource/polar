@@ -2,8 +2,8 @@
 
 import * as stylex from '@stylexjs/stylex'
 import React, { useId } from 'react'
-import { BOX_STYLE_PROP_KEYS, resolveBoxStyles } from '../../utils/resolvers'
-import type { BoxStyleProps } from '../../utils/types'
+import { BOX_STYLE_PROP_KEYS, resolveBoxStyles } from '../utils/resolvers'
+import type { BoxStyleProps } from '../utils/types'
 
 type BoxElement =
   | 'div'

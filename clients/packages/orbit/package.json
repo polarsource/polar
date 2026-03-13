@@ -21,6 +21,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./dist/components/*.d.ts",
+      "default": "./src/components/*.tsx"
     }
   },
   "scripts": {
@@ -30,6 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@stylexjs/stylex": "^0.18.1",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "framer-motion": "^12.35.2",

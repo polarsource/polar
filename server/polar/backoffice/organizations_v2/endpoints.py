@@ -3275,4 +3275,40 @@ async def set_refunds_blocked(
     )
 
 
+@router.post(
+    "/{organization_id}/refunds-blocked-until",
+    name="organizations:set_refunds_blocked_until",
+    dependencies=[Depends(get_admin)],
+)
+async def set_refunds_blocked_until(
+    request: Request,
+    organization_id: UUID4,
+    blocked: bool,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    value = datetime.now(UTC) if blocked else None
+    organization = await repository.update(
+        organization, update_dict={"refunds_blocked_until": value}
+    )
+
+    action = "set" if blocked else "cleared"
+    await add_toast(
+        request,
+        f"Past order refund block has been {action} for this organization.",
+        "success",
+    )
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=settings",
+        303,
+    )
+
+
 __all__ = ["router"]

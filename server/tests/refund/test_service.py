@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -965,5 +966,124 @@ class TestOrganizationRefundsBlocked:
         refund = await refund_service.create(session, order, create_schema)
 
         # Verify refund was created
+        assert refund is not None
+        assert refund.order_id == order.id
+
+
+@pytest.mark.asyncio
+class TestOrganizationRefundsBlockedUntil:
+    async def test_refund_blocked_for_order_before_cutoff(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that refunds are blocked for orders created before the cutoff."""
+        from polar.organization.repository import OrganizationRepository
+
+        cutoff = datetime.now(UTC)
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.update(
+            organization, update_dict={"refunds_blocked_until": cutoff}
+        )
+
+        # Create an order with created_at before the cutoff
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=cutoff - timedelta(hours=1),
+        )
+
+        create_schema = RefundCreate(
+            order_id=order.id,
+            amount=100,
+            reason=RefundReason.customer_request,
+        )
+
+        from polar.refund.service import RefundsBlocked
+
+        with pytest.raises(RefundsBlocked) as exc_info:
+            await refund_service.create(session, order, create_schema)
+
+        assert exc_info.value.order.id == order.id
+
+    async def test_refund_allowed_for_order_after_cutoff(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that refunds are allowed for orders created after the cutoff."""
+        from polar.organization.repository import OrganizationRepository
+
+        cutoff = datetime.now(UTC) - timedelta(hours=2)
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.update(
+            organization, update_dict={"refunds_blocked_until": cutoff}
+        )
+
+        # Create an order with payment (created_at defaults to now, which is after cutoff)
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=100,
+            tax_amount=0,
+        )
+
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=100,
+            charge_id=payment.processor_id,
+        )
+
+        create_schema = RefundCreate(
+            order_id=order.id,
+            amount=100,
+            reason=RefundReason.customer_request,
+        )
+
+        refund = await refund_service.create(session, order, create_schema)
+
+        assert refund is not None
+        assert refund.order_id == order.id
+
+    async def test_refund_not_blocked_when_cutoff_is_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that refunds are not blocked when refunds_blocked_until is None."""
+        # Organization has refunds_blocked_until=None by default
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=100,
+            tax_amount=0,
+        )
+
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=100,
+            charge_id=payment.processor_id,
+        )
+
+        create_schema = RefundCreate(
+            order_id=order.id,
+            amount=100,
+            reason=RefundReason.customer_request,
+        )
+
+        refund = await refund_service.create(session, order, create_schema)
+
         assert refund is not None
         assert refund.order_id == order.id

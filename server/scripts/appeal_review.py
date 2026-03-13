@@ -15,7 +15,7 @@ Usage:
     uv run python -m scripts.appeal_review <org_slug> --plain-api-key <key>
 
     # Override AI model
-    uv run python -m scripts.appeal_review <org_slug> --model gpt-4o
+    uv run python -m scripts.appeal_review <org_slug> --model openai:gpt-4o
 
     # Skip optional data sources
     uv run python -m scripts.appeal_review <org_slug> --skip-website
@@ -36,8 +36,6 @@ import httpx
 import structlog
 from pydantic import model_validator
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -374,11 +372,9 @@ when their explanation is reasonable and consistent with the data.
 
 
 def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]:
-    provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-    model = OpenAIChatModel(model_name, provider=provider)
-
+    model_instance, _, _ = settings.get_pydantic_gateway_model(model_name)
     agent: Agent[AppealAgentDeps, AppealReviewResult] = Agent(
-        model,
+        model_instance,
         output_type=AppealReviewResult,
         deps_type=AppealAgentDeps,
         system_prompt=SYSTEM_PROMPT,
@@ -1058,7 +1054,7 @@ async def run_appeal_review_with_deps(
     session_maker: Any,
     plain_client: Any | None,
     plain_token: str | None,
-    model: str = "gpt-5.2-2025-12-11",
+    model: str = "openai:gpt-5.2-2025-12-11",
     skip_website: bool = False,
 ) -> AppealReviewResult:
     """Run the appeal review agent with pre-created dependencies.
@@ -1088,7 +1084,7 @@ async def run_appeal_review_with_deps(
 async def run_appeal_review(
     org_slug: str,
     *,
-    model: str = "gpt-5.2-2025-12-11",
+    model: str = "openai:gpt-5.2-2025-12-11",
     plain_api_key: str | None = None,
     skip_website: bool = False,
     skip_plain: bool = False,
@@ -1189,8 +1185,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--model",
-        default="gpt-4o",
-        help="OpenAI model to use (default: gpt-4o)",
+        default="openai:gpt-4o",
+        help="OpenAI model to use (default: openai:gpt-4o)",
     )
     parser.add_argument(
         "--skip-website",

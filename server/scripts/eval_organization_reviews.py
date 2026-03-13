@@ -16,7 +16,7 @@ Usage:
     uv run python -m scripts.eval_organization_reviews run
 
     # Run eval with a different model
-    uv run python -m scripts.eval_organization_reviews run --model gpt-4o
+    uv run python -m scripts.eval_organization_reviews run --dataset eval_dataset.json --model openai:gpt-4o
 
     # Optimize the system prompt with GEPA
     uv run python -m scripts.eval_organization_reviews optimize --max-evals 50

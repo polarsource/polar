@@ -85,7 +85,7 @@ async def run_organization_review(
         return AgentReviewResult(
             report=report,
             data_snapshot=snapshot,
-            model_used=review_analyzer.model.model_name,
+            model_used=review_analyzer.model_name,
             duration_seconds=round(duration, 2),
             usage=usage,
         )

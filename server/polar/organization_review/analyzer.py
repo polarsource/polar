@@ -2,8 +2,6 @@ import asyncio
 
 import structlog
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
@@ -329,15 +327,18 @@ def _annotate_domains(domains: list[str]) -> str:
 
 
 class ReviewAnalyzer:
-    def __init__(self) -> None:
-        provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        self.model = OpenAIChatModel(settings.OPENAI_MODEL, provider=provider)
+    def __init__(self, model: str | None = None) -> None:
+        model_instance, model_provider, model_name = (
+            settings.get_pydantic_gateway_model(model)
+        )
         self.agent = Agent(
-            self.model,
+            model_instance,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
             model_settings={"temperature": 0},
         )
+        self.model_provider = model_provider
+        self.model_name = model_name
 
     async def analyze(
         self,
@@ -361,7 +362,9 @@ class ReviewAnalyzer:
                 self.agent.run(prompt, instructions=instructions),
                 timeout=timeout_seconds,
             )
-            usage = UsageInfo.from_agent_usage(result.usage(), self.model.model_name)
+            usage = UsageInfo.from_agent_usage(
+                result.usage(), self.model_provider, self.model_name
+            )
             return result.output, usage
         except TimeoutError:
             log.warning(

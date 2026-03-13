@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import overload
 
 import structlog
@@ -98,10 +99,33 @@ class TaxCalculationService:
         raise TaxCalculationTechnicalError("All tax processors failed to calculate tax")
 
     async def record(
-        self, processor: TaxProcessor, calculation_id: str, reference: str
-    ) -> str:
-        tax_processor_service = _get_tax_service(processor)
-        return await tax_processor_service.record(calculation_id, reference)
+        self,
+        calculation_processor: TaxProcessor,
+        *,
+        calculation: TaxCalculation,
+        amount: int,
+        address: Address,
+        tax_code: TaxCode,
+        reference: str,
+        transaction_date: datetime,
+    ) -> tuple[str, TaxProcessor]:
+        tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
+        if calculation_processor != settings.TAX_RECORD_PROCESSOR:
+            log.info(
+                "Recording tax calculation with a different processor than the one used for calculation",
+                calculation_processor=calculation_processor,
+                record_processor=settings.TAX_RECORD_PROCESSOR,
+                calculation_id=calculation["processor_id"],
+            )
+            return await tax_processor_service.backfill(
+                calculation, amount, address, tax_code, reference, transaction_date
+            ), settings.TAX_RECORD_PROCESSOR
+
+        processor_id = calculation.get("processor_id")
+        assert processor_id is not None
+        return await tax_processor_service.record(
+            processor_id, reference
+        ), settings.TAX_RECORD_PROCESSOR
 
     @overload
     async def revert(

@@ -42,7 +42,7 @@
     "@ai-sdk/google": "^2.0.62",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^5.0.152",
+    "ai": "^5.0.153",
     "dotenv": "^16.6.1",
     "prettier": "^3.8.1",
     "react": "^19.2.4",

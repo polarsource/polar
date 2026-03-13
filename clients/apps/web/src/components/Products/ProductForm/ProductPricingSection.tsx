@@ -130,7 +130,12 @@ export const ProductPricingSection = ({
   )
 
   const pricesForSelectedCurrency = useMemo(
-    () => pricesByCurrency.get(validatedSelectedCurrency) || [],
+    () =>
+      (pricesByCurrency.get(validatedSelectedCurrency) || []).sort((a, b) => {
+        const aMetered = isMeteredPrice(a.price as ProductPrice) ? 1 : 0
+        const bMetered = isMeteredPrice(b.price as ProductPrice) ? 1 : 0
+        return aMetered - bMetered
+      }),
     [pricesByCurrency, validatedSelectedCurrency],
   )
 
@@ -501,23 +506,33 @@ export const ProductPricingSection = ({
             )}
           </div>
           {pricesForSelectedCurrency.map(({ price, index }) => (
-            <ProductPriceItem
-              organization={organization}
-              index={index}
-              currency={validatedSelectedCurrency}
-              onRemove={handleRemovePrice}
-              onAmountTypeChange={handleAmountTypeChange}
-              canRemove={
-                isMeteredPrice(price as ProductPrice) &&
-                (pricesForSelectedCurrency.filter((p) =>
-                  isMeteredPrice(p.price as ProductPrice),
-                ).length > 1 ||
-                  pricesForSelectedCurrency.filter(
-                    (p) => !isMeteredPrice(p.price as ProductPrice),
-                  ).length >= 1)
-              }
+            <div
               key={`${selectedCurrency}-${index}`}
-            />
+              className={
+                pricesForSelectedCurrency.length > 1 &&
+                isMeteredPrice(price as ProductPrice)
+                  ? 'dark:bg-polar-800 rounded-2xl bg-gray-50 p-4'
+                  : ''
+              }
+            >
+              <ProductPriceItem
+                organization={organization}
+                index={index}
+                currency={validatedSelectedCurrency}
+                onRemove={handleRemovePrice}
+                onAmountTypeChange={handleAmountTypeChange}
+                canRemove={
+                  isMeteredPrice(price as ProductPrice) &&
+                  (pricesForSelectedCurrency.filter((p) =>
+                    isMeteredPrice(p.price as ProductPrice),
+                  ).length > 1 ||
+                    pricesForSelectedCurrency.filter(
+                      (p) => !isMeteredPrice(p.price as ProductPrice),
+                    ).length >= 1)
+                }
+                key={`${selectedCurrency}-${index}`}
+              />
+            </div>
           ))}
         </div>
 

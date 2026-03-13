@@ -5,9 +5,12 @@ import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import { useCallback, useMemo, useState } from 'react'
 
 interface CurrencySelectorProps {
-  value: schemas['PresentmentCurrency']
+  value?: schemas['PresentmentCurrency'] | null
   onChange: (value: string) => void
   disabled?: boolean
+  excludeCurrencies?: string[]
+  placeholder?: string
+  className?: string
 }
 
 const formatter = new Intl.DisplayNames('en-US', { type: 'currency' })
@@ -38,19 +41,29 @@ export const CurrencySelector = ({
   value,
   onChange,
   disabled,
+  excludeCurrencies,
+  placeholder = 'Select currency',
+  className,
 }: CurrencySelectorProps) => {
   const [query, setQuery] = useState('')
 
+  const baseCurrencies = useMemo(() => {
+    if (!excludeCurrencies || excludeCurrencies.length === 0)
+      return allCurrencies
+    return allCurrencies.filter((c) => !excludeCurrencies.includes(c.code))
+  }, [excludeCurrencies])
+
   const filteredCurrencies = useMemo(() => {
-    if (!query) return allCurrencies
+    if (!query) return baseCurrencies
     const q = query.toLowerCase()
-    return allCurrencies.filter(
+    return baseCurrencies.filter(
       ({ code, label }) => code.includes(q) || label.toLowerCase().includes(q),
     )
-  }, [query])
+  }, [query, baseCurrencies])
 
   const selectedItem = useMemo(
-    () => allCurrencies.find((c) => c.code === value) ?? null,
+    () =>
+      value ? (allCurrencies.find((c) => c.code === value) ?? null) : null,
     [value],
   )
 
@@ -66,7 +79,7 @@ export const CurrencySelector = ({
   return (
     <Combobox
       items={filteredCurrencies}
-      value={value}
+      value={value ?? null}
       selectedItem={selectedItem}
       onChange={handleChange}
       onQueryChange={setQuery}
@@ -80,12 +93,12 @@ export const CurrencySelector = ({
           <span className="truncate">{item.label}</span>
         </span>
       )}
-      placeholder="Select currency"
+      placeholder={placeholder}
       searchPlaceholder="Search currencies…"
       emptyLabel="No currencies found"
       popoverClassName="min-w-[230px]"
       popoverAlign="end"
-      className={disabled ? 'pointer-events-none opacity-50' : undefined}
+      className={disabled ? 'pointer-events-none opacity-50' : className}
     />
   )
 }

@@ -101,8 +101,17 @@ export const ProductPriceSeatBasedItem: React.FC<
 
   return (
     <div className="flex flex-col gap-6">
-      {!hasSingleTier && <h3>Volume pricing</h3>}
-
+      {!hasSingleTier &&
+        tiers?.[0]?.min_seats != null &&
+        tiers[0].min_seats > 1 && (
+          <div className="dark:border-polar-800 dark:bg-polar-900 rounded-2xl border border-gray-200 bg-white p-4 opacity-50">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              {tiers[0].min_seats === 2
+                ? 'Buying one seat is not allowed'
+                : `Buying less than ${tiers[0].min_seats} seats is not allowed`}
+            </span>
+          </div>
+        )}
       {fields.map((field, tierIndex) => {
         const isFirst = tierIndex === 0
         const currentTier = tiers?.[tierIndex]
@@ -142,12 +151,7 @@ export const ProductPriceSeatBasedItem: React.FC<
               </div>
             )}
 
-            <div
-              className={twMerge(
-                'grid gap-4',
-                hasSingleTier ? 'grid-cols-1' : 'grid-cols-2',
-              )}
-            >
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={control}
                 name={
@@ -170,8 +174,10 @@ export const ProductPriceSeatBasedItem: React.FC<
                   },
                 }}
                 render={({ field }) => (
-                  <FormItem className={hasSingleTier ? 'hidden' : ''}>
-                    <FormLabel>Starting from</FormLabel>
+                  <FormItem>
+                    <FormLabel>
+                      {hasSingleTier ? 'Minimum Seats' : 'Starting from'}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -181,7 +187,6 @@ export const ProductPriceSeatBasedItem: React.FC<
                             ? (tiers?.[tierIndex - 1]?.min_seats ?? 1) + 1
                             : 1
                         }
-                        disabled={isFirst}
                         onChange={(e) => {
                           const parsed = parseInt(e.target.value)
                           field.onChange(isNaN(parsed) ? '' : parsed)
@@ -237,7 +242,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                   },
                 }}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="col-span-2">
                     <FormLabel>Price per seat</FormLabel>
                     <FormControl>
                       <div ref={field.ref} tabIndex={-1}>

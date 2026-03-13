@@ -1,15 +1,9 @@
 'use client'
 
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import { enums } from '@polar-sh/client'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from '@polar-sh/ui/components/atoms/Select'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import React from 'react'
+import { CurrencySelector } from '../../../CurrencySelector'
 
 interface CurrencyTabsProps {
   activeCurrencies: string[]
@@ -28,31 +22,17 @@ export const CurrencyTabs: React.FC<CurrencyTabsProps> = ({
   onRemoveCurrency,
   defaultCurrency,
 }) => {
-  const availableCurrencies = enums.presentmentCurrencyValues.filter(
-    (c: string) => !activeCurrencies.includes(c),
-  )
-
   return (
     <div className="flex flex-col gap-y-4 py-6">
       <div className="flex flex-row items-center justify-between gap-x-6">
         <h3 className="">Currencies</h3>
 
-        {availableCurrencies.length > 0 && (
-          <Select onValueChange={onAddCurrency}>
-            <SelectTrigger className="h-8 w-auto rounded-md">
-              <span className="text-xs text-black dark:text-white">
-                Add Currency
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              {availableCurrencies.map((currency: string) => (
-                <SelectItem key={currency} value={currency}>
-                  {currency.toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <CurrencySelector
+          onChange={onAddCurrency}
+          excludeCurrencies={activeCurrencies}
+          placeholder="Add Currency"
+          className="h-8 w-auto text-xs"
+        />
       </div>
       <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-1">
         <Tabs value={selectedCurrency} onValueChange={onSelectCurrency}>

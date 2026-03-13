@@ -51,7 +51,7 @@ from typing import Any
 
 import structlog
 import typer
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, func, or_, select, update
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -1107,6 +1107,127 @@ async def restore_oneoff_grants(
             "NOTE: Run 'repair' afterwards to link any grants "
             "that could not be matched to a member."
         )
+
+
+async def _backfill_license_keys(session: AsyncSession) -> int:
+    """Backfill member_id on license keys using the grant's properties->>'license_key_id'."""
+    from polar.models.license_key import LicenseKey
+
+    lk_subq = (
+        select(
+            BenefitGrant.properties["license_key_id"].as_string().label("lk_id"),
+            BenefitGrant.member_id,
+        )
+        .where(
+            BenefitGrant.member_id.is_not(None),
+            BenefitGrant.is_deleted.is_(False),
+            BenefitGrant.properties["license_key_id"].is_not(None),
+        )
+        .subquery()
+    )
+
+    result = await session.execute(
+        update(LicenseKey)
+        .where(
+            LicenseKey.member_id.is_(None),
+            LicenseKey.id.cast(String) == lk_subq.c.lk_id,
+        )
+        .values(member_id=lk_subq.c.member_id)
+    )
+    return result.rowcount
+
+
+async def _backfill_downloadables(session: AsyncSession) -> int:
+    """Backfill member_id on downloadables via (customer_id, benefit_id).
+
+    Uses DISTINCT ON to pick the most recently granted grant.
+    """
+    from polar.models.downloadable import Downloadable
+
+    dl_subq = (
+        select(
+            BenefitGrant.customer_id,
+            BenefitGrant.benefit_id,
+            BenefitGrant.member_id,
+        )
+        .where(
+            BenefitGrant.member_id.is_not(None),
+            BenefitGrant.is_deleted.is_(False),
+        )
+        .distinct(BenefitGrant.customer_id, BenefitGrant.benefit_id)
+        .order_by(
+            BenefitGrant.customer_id,
+            BenefitGrant.benefit_id,
+            BenefitGrant.granted_at.desc().nulls_last(),
+        )
+        .subquery()
+    )
+
+    result = await session.execute(
+        update(Downloadable)
+        .where(
+            Downloadable.member_id.is_(None),
+            Downloadable.customer_id == dl_subq.c.customer_id,
+            Downloadable.benefit_id == dl_subq.c.benefit_id,
+        )
+        .values(member_id=dl_subq.c.member_id)
+    )
+    return result.rowcount
+
+
+@cli.command()
+@typer_async
+async def backfill_benefit_records(
+    dry_run: bool = typer.Option(
+        True, help="If True, only show what would be done without making changes"
+    ),
+) -> None:
+    """One-time backfill of member_id on license_keys and downloadables.
+
+    Uses benefit_grants (which already have member_id set by the migration)
+    to populate the missing member_id on the related benefit records.
+
+    License keys are matched 1:1 via the grant's properties->>'license_key_id'.
+    Downloadables are matched via (customer_id, benefit_id) with DISTINCT ON
+    to pick the most recently granted grant.
+    """
+    from polar.models.downloadable import Downloadable
+    from polar.models.license_key import LicenseKey
+
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as session:
+        lk_count = await session.scalar(
+            select(func.count())
+            .select_from(LicenseKey)
+            .where(LicenseKey.member_id.is_(None))
+        )
+        dl_count = await session.scalar(
+            select(func.count())
+            .select_from(Downloadable)
+            .where(Downloadable.member_id.is_(None))
+        )
+
+    typer.echo(f"License keys without member_id: {lk_count}")
+    typer.echo(f"Downloadables without member_id: {dl_count}")
+    typer.echo()
+
+    if dry_run:
+        typer.echo("DRY RUN - No changes will be made.")
+        return
+
+    async with sessionmaker() as session:
+        lk_updated = await _backfill_license_keys(session)
+        typer.echo(f"License keys updated: {lk_updated}")
+
+        dl_updated = await _backfill_downloadables(session)
+        typer.echo(f"Downloadables updated: {dl_updated}")
+
+        await session.commit()
+
+    typer.echo()
+    typer.echo("Backfill complete.")
 
 
 if __name__ == "__main__":

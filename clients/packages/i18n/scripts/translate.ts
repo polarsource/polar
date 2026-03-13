@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateText } from 'ai'
 import dotenv from 'dotenv'
 import { execSync } from 'node:child_process'
@@ -38,6 +38,11 @@ const CONFIG_DIR = path.join(LOCALES_DIR, 'config')
 const PROMPT_FILE = path.join(CONFIG_DIR, 'prompt.md')
 const LOCKS_FILE = path.join(CONFIG_DIR, 'locks.json')
 const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
+
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
+  baseURL: 'https://gateway.pydantic.dev/proxy/google-vertex',
+})
 
 async function callLLM(
   targetLocale: TranslatedLocale,

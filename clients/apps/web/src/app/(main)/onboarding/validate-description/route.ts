@@ -1,5 +1,5 @@
 import { CONFIG } from '@/utils/config'
-import { openai } from '@ai-sdk/openai'
+import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,6 +12,11 @@ const MAX_DESCRIPTION_LENGTH = 3000
 const MAX_HISTORY_LENGTH = 5
 const MAX_CATEGORY_LENGTH = 100
 const MAX_CATEGORIES = 10
+
+const openai = createOpenAI({
+  apiKey: process.env.PYDANTIC_AI_GATEWAY_API_KEY,
+  baseURL: 'https://gateway-us.pydantic.dev/proxy/chat/',
+})
 
 // Loaded from the local copy of the canonical MDX file.
 // The file is created by `scripts/copy-aup.mjs` (run via `prebuild`).
@@ -49,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.PYDANTIC_AI_GATEWAY_API_KEY) {
     return NextResponse.json({ verdict: 'APPROVE', confidence: 1 })
   }
 

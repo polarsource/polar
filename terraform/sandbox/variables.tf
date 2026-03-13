@@ -32,6 +32,12 @@ variable "openai_api_key_sandbox" {
   sensitive   = true
 }
 
+variable "pydantic_ai_gateway_api_key_sandbox" {
+  description = "Pydantic AI Gateway API Key for sandbox"
+  type        = string
+  sensitive   = true
+}
+
 # Backend - Sandbox
 variable "backend_current_jwk_kid_sandbox" {
   description = "Current JWK KID for sandbox"

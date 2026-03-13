@@ -183,6 +183,10 @@ module "test" {
     api_key = var.openai_api_key
   }
 
+  pydantic_ai_gateway_secrets = {
+    api_key = var.pydantic_ai_gateway_api_key
+  }
+
   backend_config = {
     environment                = "test"
     base_url                   = "https://test-api.polar.sh"

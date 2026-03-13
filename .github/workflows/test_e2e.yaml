@@ -1,8 +1,10 @@
 name: "E2E Tests"
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_call:
+    inputs:
+      preview_url:
+        type: string
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
@@ -24,7 +26,7 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      NEXT_PUBLIC_API_URL: ${{ github.event_name == 'schedule' && vars.E2E_PRODUCTION_API_URL || vars.E2E_API_URL }}
+      NEXT_PUBLIC_API_URL: ${{ inputs.preview_url || (github.event_name == 'schedule' && vars.E2E_PRODUCTION_API_URL || vars.E2E_API_URL) }}
       E2E_CHECKOUT_LINK_SUBSCRIPTION: ${{ github.event_name == 'schedule' && secrets.E2E_PRODUCTION_CHECKOUT_LINK_SUBSCRIPTION || secrets.E2E_CHECKOUT_LINK_SUBSCRIPTION }}
 
     steps:
@@ -64,6 +66,14 @@ jobs:
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm exec playwright install-deps chromium
+
+      - name: Connect to Tailscale
+        if: inputs.preview_url
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
 
       - name: Run E2E tests
         id: e2e

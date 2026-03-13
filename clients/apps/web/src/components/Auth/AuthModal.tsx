@@ -1,5 +1,4 @@
 import { schemas } from '@polar-sh/client'
-import LogoIcon from '../Brand/logos/LogoIcon'
 import Login from './Login'
 
 interface AuthModalProps {
@@ -26,8 +25,6 @@ export const AuthModal = ({
   return (
     <div className="overflow-y-auto p-12">
       <div className="flex flex-col justify-between gap-y-16">
-        <LogoIcon className="text-black dark:text-white" size={60} />
-
         <div className="flex flex-col gap-y-4">
           <h1 className="text-3xl">{title}</h1>
           {copy}

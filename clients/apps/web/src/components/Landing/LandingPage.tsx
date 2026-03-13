@@ -41,11 +41,7 @@ export const PageContent = () => {
             prefetch
             className="dark:text-polar-400 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
           >
-            <Button
-              variant="secondary"
-              size="lg"
-              className="dark:bg-polar-800 rounded-full border-none bg-white"
-            >
+            <Button variant="secondary" size="lg">
               Why Polar
             </Button>
           </Link>

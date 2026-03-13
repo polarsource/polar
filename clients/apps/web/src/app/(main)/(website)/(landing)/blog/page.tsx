@@ -1,6 +1,5 @@
 import { BlogHero } from '@/components/Blog/BlogHero'
 import { StaticImage } from '@/components/Image/StaticImage'
-import Footer from '@/components/Organization/Footer'
 import { getAllContent } from '@/utils/blog'
 import Link from 'next/link'
 
@@ -71,8 +70,6 @@ export default function BlogPage() {
           ))}
         </div>
       </section>
-
-      <Footer />
     </div>
   )
 }

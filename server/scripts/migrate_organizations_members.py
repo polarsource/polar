@@ -857,7 +857,8 @@ async def find_deleted_oneoff_grants(
     - subscription_id IS NULL
     - deleted_at IS NOT NULL (was soft-deleted)
     - member_id IS NULL (backfill deleted before linking)
-    - A surviving sibling exists (same customer + benefit, different order, not deleted)
+    - A surviving sibling exists (same customer + benefit, different order,
+      not deleted, and still granted — i.e. not revoked due to benefit removal)
 
     When eager_load=True, the customer and benefit relationships are loaded.
     """
@@ -872,6 +873,7 @@ async def find_deleted_oneoff_grants(
             sibling.id != BenefitGrant.id,
             sibling.order_id.is_not(None),
             sibling.deleted_at.is_(None),
+            sibling.revoked_at.is_(None),
         )
         .correlate(BenefitGrant)
         .exists()
@@ -938,7 +940,8 @@ async def restore_oneoff_grant_batch(
     lk_restored = 0
 
     for grant in grants:
-        # Find the surviving sibling to copy member_id from
+        # Find the surviving sibling to copy member_id from.
+        # Sibling must still be granted (not revoked due to benefit removal).
         sibling_grant = await session.scalar(
             select(BenefitGrant).where(
                 BenefitGrant.customer_id == grant.customer_id,
@@ -946,6 +949,7 @@ async def restore_oneoff_grant_batch(
                 BenefitGrant.id != grant.id,
                 BenefitGrant.order_id.is_not(None),
                 BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.revoked_at.is_(None),
             )
         )
 

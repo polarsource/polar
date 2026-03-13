@@ -247,6 +247,49 @@ class TestFindDeletedOneoffGrants:
         result = await find_deleted_oneoff_grants(session)
         assert len(result) == 0
 
+    async def test_ignores_grant_when_sibling_was_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """If the benefit was removed from the product, the surviving sibling
+        gets revoked. We must not restore the deleted grant in that case."""
+        (
+            organization,
+            customer,
+            product,
+            benefit,
+            owner,
+        ) = await _setup_org_customer_product_benefit(save_fixture)
+        order1 = await create_order(save_fixture, customer=customer, product=product)
+        order2 = await create_order(save_fixture, customer=customer, product=product)
+
+        # Surviving sibling — but revoked because benefit was removed
+        surviving = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            order=order1,
+        )
+        surviving.set_revoked()
+        await save_fixture(surviving)
+
+        # Backfill-deleted grant
+        deleted_grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            order=order2,
+        )
+        deleted_grant.set_deleted_at()
+        await save_fixture(deleted_grant)
+
+        session.expunge_all()
+        result = await find_deleted_oneoff_grants(session)
+        assert len(result) == 0
+
     async def test_finds_multiple_deleted_grants_across_customers(
         self,
         session: AsyncSession,

@@ -3,6 +3,7 @@
 import { useAuth, useOnboardingTracking } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -211,7 +212,7 @@ export function BusinessDetailsStep() {
                 </FormControl>
                 <FormMessage />
                 {/* Inline slug preview */}
-                <div className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
+                <span className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
                   <span>polar.sh/</span>
                   {editingSlug ? (
                     <input
@@ -230,13 +231,19 @@ export function BusinessDetailsStep() {
                       {orgSlug || 'your-slug'}
                     </button>
                   )}
-                </div>
+                </span>
               </FormItem>
             )}
           />
 
-          <div
-            className={`grid gap-3 ${organizationType === 'business' ? 'grid-cols-2' : 'grid-cols-1'}`}
+          <Box
+            display="grid"
+            gap="m"
+            gridTemplateColumns={
+              organizationType === 'business'
+                ? 'repeat(2, minmax(0, 1fr))'
+                : 'repeat(1, minmax(0, 1fr))'
+            }
           >
             <FormField
               control={control}
@@ -282,11 +289,11 @@ export function BusinessDetailsStep() {
                 )}
               />
             )}
-          </div>
+          </Box>
 
           {organizationType === 'business' && (
             <>
-              <div className="flex items-center justify-between">
+              <Box display="flex" alignItems="center" justifyContent="between">
                 <FormField
                   control={control}
                   name="ventureBacked"
@@ -300,7 +307,7 @@ export function BusinessDetailsStep() {
                     </FormItem>
                   )}
                 />
-              </div>
+              </Box>
 
               {ventureBacked && (
                 <FormField
@@ -331,7 +338,12 @@ export function BusinessDetailsStep() {
             rules={{ required: 'You must accept the terms to continue' }}
             render={({ field }) => (
               <FormItem>
-                <div className="flex flex-row items-start gap-x-3">
+                <Box
+                  display="flex"
+                  flexDirection="row"
+                  alignItems="start"
+                  columnGap="m"
+                >
                   <Checkbox
                     id="terms"
                     checked={field.value}
@@ -374,7 +386,7 @@ export function BusinessDetailsStep() {
                       </a>
                     </label>
                   </div>
-                </div>
+                </Box>
                 <FormMessage />
               </FormItem>
             )}

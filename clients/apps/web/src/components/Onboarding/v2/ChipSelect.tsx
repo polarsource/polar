@@ -1,5 +1,7 @@
 'use client'
 
+import { Box } from '@polar-sh/orbit/Box'
+
 interface ChipSelectProps {
   options: readonly string[]
   selected: string[]
@@ -26,7 +28,7 @@ export function ChipSelect({
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <Box display="flex" flexWrap="wrap" gap="s">
       {options.map((option) => {
         const isSelected = selected.includes(option)
         return (
@@ -44,6 +46,6 @@ export function ChipSelect({
           </button>
         )
       })}
-    </div>
+    </Box>
   )
 }

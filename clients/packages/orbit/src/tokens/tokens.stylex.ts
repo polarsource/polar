@@ -11,12 +11,13 @@ export const spacing = stylex.defineVars({
   none: '0',
   xs: '4px',
   s: '8px',
-  m: '16px',
-  l: '24px',
-  xl: '32px',
-  '2xl': '48px',
-  '3xl': '64px',
-  '4xl': '96px',
+  m: '12px',
+  l: '16px',
+  xl: '24px',
+  '2xl': '32px',
+  '3xl': '48px',
+  '4xl': '64px',
+  '5xl': '96px',
 })
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -28,12 +29,20 @@ const DARK = '@media (prefers-color-scheme: dark)'
 export const colors = stylex.defineVars({
   // Backgrounds
   'background-primary': {
-    default: 'red',
-    [DARK]: 'blue',
+    default: '#ffffff',
+    [DARK]: 'hsl(233, 4%, 3.5%)',
   },
   'background-secondary': {
-    default: 'oklch(0.967 0.003 264.542)',
-    [DARK]: 'oklch(0.232 0.006 279.9)',
+    default: 'oklch(0.985 0.002 247.839)',
+    [DARK]: 'hsl(233, 4%, 6.5%)',
+  },
+  'background-card': {
+    default: '#ffffff',
+    [DARK]: 'hsl(233, 4%, 9.5%)',
+  },
+  'background-warning': {
+    default: 'oklch(0.97 0.026 102.5)',
+    [DARK]: 'oklch(0.445 0.1 82.5 / 0.2)',
   },
 
   // Text
@@ -45,15 +54,23 @@ export const colors = stylex.defineVars({
     default: 'oklch(0.551 0.027 264.364)',
     [DARK]: 'oklch(0.599 0.020 279.8)',
   },
+  'text-tertiary': {
+    default: 'oklch(0.707 0.022 261.325)',
+    [DARK]: 'hsl(233, 4%, 46%)',
+  },
 
   // Borders
   'border-primary': {
     default: 'oklch(0.928 0.006 264.531)',
-    [DARK]: 'oklch(0.232 0.006 279.9)',
+    [DARK]: 'hsl(233, 4%, 12%)',
   },
   'border-secondary': {
-    default: 'oklch(0.967 0.003 264.542)',
+    default: 'oklch(0.928 0.006 264.531)',
     [DARK]: 'oklch(0.206 0.005 279.9)',
+  },
+  'border-warning': {
+    default: 'oklch(0.836 0.138 100)',
+    [DARK]: 'oklch(0.572 0.14 91)',
   },
 })
 

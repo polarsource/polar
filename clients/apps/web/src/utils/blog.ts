@@ -41,7 +41,7 @@ function findCoverImage(dir: string): string | null {
 
 const BLOG_DIR = path.join(
   process.cwd(),
-  'src/app/(main)/(website)/(landing)/(mdx)/blog/(header)',
+  'src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/_posts',
 )
 
 const STORIES_DIR = path.join(

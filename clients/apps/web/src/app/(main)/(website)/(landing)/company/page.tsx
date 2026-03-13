@@ -48,7 +48,7 @@ export default function CompanyPage() {
   return (
     <div className="dark:bg-polar-950 min-h-screen bg-white text-gray-900 dark:text-white">
       {/* Hero */}
-      <section className="flex flex-col items-center gap-8 py-24 text-center md:px-4">
+      <section className="flex flex-col items-center gap-8 pt-12 pb-24 text-center md:px-4">
         <h1 className="font-display leading-tighter max-w-2xl text-5xl font-medium text-balance md:text-7xl">
           Small team, big ambitions.
         </h1>

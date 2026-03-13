@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call
@@ -73,12 +74,14 @@ class TestList:
     @pytest.mark.auth
     async def test_not_organization_member(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
     ) -> None:
-        await create_event(save_fixture, organization=organization)
+        await create_event(buffered_save_fixture, organization=organization)
+        await flush_tinybird_events()
 
         events, count = await event_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
@@ -93,7 +96,8 @@ class TestList:
     )
     async def test_valid(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -105,8 +109,9 @@ class TestList:
         )
 
         await create_event(
-            save_fixture, organization=organization, event_type=event_type
+            buffered_save_fixture, organization=organization, event_type=event_type
         )
+        await flush_tinybird_events()
 
         events, count = await event_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
@@ -122,24 +127,26 @@ class TestList:
     )
     async def test_filter(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         event1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             timestamp=utc_now() - timedelta(days=1),
             metadata={"tokens": 10},
         )
         event2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             timestamp=utc_now() + timedelta(days=1),
             metadata={"tokens": 100},
         )
+        await flush_tinybird_events()
 
         events, count = await event_service.list(
             session,
@@ -167,22 +174,24 @@ class TestList:
     )
     async def test_after_before_filter(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         event1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             timestamp=utc_now() - timedelta(days=1),
         )
         event2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             timestamp=utc_now() + timedelta(days=1),
         )
+        await flush_tinybird_events()
 
         # Start timestamp
         events, count = await event_service.list(
@@ -212,21 +221,27 @@ class TestList:
     )
     async def test_metadata_filter(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         event1 = await create_event(
-            save_fixture, organization=organization, metadata={"foo": "bar"}
+            buffered_save_fixture, organization=organization, metadata={"foo": "bar"}
         )
         await create_event(
-            save_fixture, organization=organization, metadata={"foo": "baz"}
+            buffered_save_fixture,
+            organization=organization,
+            metadata={"foo": "baz"},
         )
         await create_event(
-            save_fixture, organization=organization, metadata={"hello": "world"}
+            buffered_save_fixture,
+            organization=organization,
+            metadata={"hello": "world"},
         )
+        await flush_tinybird_events()
 
         events, count = await event_service.list(
             session,
@@ -263,12 +278,14 @@ class TestGet:
     @pytest.mark.auth
     async def test_not_organization_member(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
     ) -> None:
-        event = await create_event(save_fixture, organization=organization)
+        event = await create_event(buffered_save_fixture, organization=organization)
+        await flush_tinybird_events()
 
         result = await event_service.get(session, auth_subject, event.id)
 
@@ -850,7 +867,8 @@ class TestListWithAggregateCosts:
     )
     async def test_aggregate_costs(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -858,14 +876,14 @@ class TestListWithAggregateCosts:
         customer: Customer,
     ) -> None:
         root_with_cost = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
         child1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
@@ -873,7 +891,7 @@ class TestListWithAggregateCosts:
             metadata={"_cost": {"amount": 5, "currency": "usd"}},
         )
         child2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
@@ -881,20 +899,21 @@ class TestListWithAggregateCosts:
             metadata={"_cost": {"amount": 3, "currency": "usd"}},
         )
         root_without_cost = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
             metadata={"conversationId": "123"},
         )
         child3 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
             parent_id=root_without_cost.id,
             metadata={"_cost": {"amount": 7, "currency": "usd"}},
         )
+        await flush_tinybird_events()
 
         events_without_agg, _ = await event_service.list(
             session,
@@ -957,7 +976,8 @@ class TestListStatisticsTimeseries:
     )
     async def test_hierarchy_stats_timeseries(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -969,7 +989,7 @@ class TestListStatisticsTimeseries:
             label="API Request",
             organization=organization,
         )
-        await save_fixture(request_event_type)
+        await buffered_save_fixture(request_event_type)
 
         now = utc_now()
         today = now.replace(hour=12, minute=0, second=0, microsecond=0)
@@ -977,7 +997,7 @@ class TestListStatisticsTimeseries:
         two_days_ago = today - timedelta(days=2)
 
         root1_p0 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
@@ -985,7 +1005,7 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
         child1_p0 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
@@ -995,7 +1015,7 @@ class TestListStatisticsTimeseries:
         )
 
         root2_p0 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
@@ -1003,7 +1023,7 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
         child2_p0 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
@@ -1013,7 +1033,7 @@ class TestListStatisticsTimeseries:
         )
 
         root1_p1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
@@ -1021,7 +1041,7 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 30, "currency": "usd"}},
         )
         child1_p1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
@@ -1031,7 +1051,7 @@ class TestListStatisticsTimeseries:
         )
 
         root2_p1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
@@ -1039,7 +1059,7 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 40, "currency": "usd"}},
         )
         child2_p1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
@@ -1047,6 +1067,7 @@ class TestListStatisticsTimeseries:
             timestamp=yesterday,
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
+        await flush_tinybird_events()
 
         result = await event_service.list_statistics_timeseries(
             session,
@@ -1140,7 +1161,8 @@ class TestListStatisticsTimeseries:
     )
     async def test_hierarchy_stats_multiple_customers(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -1151,16 +1173,22 @@ class TestListStatisticsTimeseries:
             label="API Request",
             organization=organization,
         )
-        await save_fixture(request_event_type)
+        await buffered_save_fixture(request_event_type)
 
         customer1 = await create_customer(
-            save_fixture, organization=organization, email="customer1@example.com"
+            buffered_save_fixture,
+            organization=organization,
+            email="customer1@example.com",
         )
         customer2 = await create_customer(
-            save_fixture, organization=organization, email="customer2@example.com"
+            buffered_save_fixture,
+            organization=organization,
+            email="customer2@example.com",
         )
         customer3 = await create_customer(
-            save_fixture, organization=organization, email="customer3@example.com"
+            buffered_save_fixture,
+            organization=organization,
+            email="customer3@example.com",
         )
 
         now = utc_now()
@@ -1168,7 +1196,7 @@ class TestListStatisticsTimeseries:
         yesterday = today - timedelta(days=1)
 
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer1,
             name="request",
@@ -1176,7 +1204,7 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer1,
             name="request",
@@ -1184,7 +1212,7 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer2,
             name="request",
@@ -1192,13 +1220,14 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 30, "currency": "usd"}},
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer3,
             name="request",
             timestamp=today,
             metadata={"_cost": {"amount": 40, "currency": "usd"}},
         )
+        await flush_tinybird_events()
 
         result = await event_service.list_statistics_timeseries(
             session,
@@ -1234,7 +1263,8 @@ class TestListStatisticsTimeseries:
     )
     async def test_hierarchy_stats_external_customer_not_in_db(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -1247,17 +1277,19 @@ class TestListStatisticsTimeseries:
             label="API Request",
             organization=organization,
         )
-        await save_fixture(request_event_type)
+        await buffered_save_fixture(request_event_type)
 
         customer1 = await create_customer(
-            save_fixture, organization=organization, email="customer1@example.com"
+            buffered_save_fixture,
+            organization=organization,
+            email="customer1@example.com",
         )
 
         now = utc_now()
         today = now.replace(hour=12, minute=0, second=0, microsecond=0)
 
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer1,
             name="request",
@@ -1265,13 +1297,14 @@ class TestListStatisticsTimeseries:
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             external_customer_id="unknown_external_customer",
             name="request",
             timestamp=today,
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
+        await flush_tinybird_events()
 
         result = await event_service.list_statistics_timeseries(
             session,
@@ -1302,7 +1335,8 @@ class TestAggregateFieldsDoNotPersist:
     )
     async def test_aggregate_fields_do_not_modify_database(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -1310,20 +1344,21 @@ class TestAggregateFieldsDoNotPersist:
         customer: Customer,
     ) -> None:
         root = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="request",
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
         child = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             customer=customer,
             name="child",
             parent_id=root.id,
             metadata={"_cost": {"amount": 5, "currency": "usd"}},
         )
+        await flush_tinybird_events()
 
         # Store original values and IDs
         root_id = root.id

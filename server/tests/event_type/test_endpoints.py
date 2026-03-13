@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 
 import pytest
@@ -56,16 +57,17 @@ class TestListEventTypes:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         event_type_1 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="test.event.1",
             label="Test Event 1",
         )
         event_type_2 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="test.event.2",
             label="Test Event 2",
@@ -74,7 +76,7 @@ class TestListEventTypes:
         base_time = utc_now()
         for i in range(5):
             await create_event(
-                save_fixture,
+                buffered_save_fixture,
                 organization=organization,
                 event_type=event_type_1,
                 name="test.event.1",
@@ -83,12 +85,14 @@ class TestListEventTypes:
 
         for i in range(3):
             await create_event(
-                save_fixture,
+                buffered_save_fixture,
                 organization=organization,
                 event_type=event_type_2,
                 name="test.event.2",
                 timestamp=base_time - timedelta(days=i),
             )
+
+        await flush_tinybird_events()
 
         response = await client.get("/v1/event-types/")
 
@@ -123,31 +127,34 @@ class TestListEventTypes:
         organization: Organization,
         organization_second: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         event_type_1 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="test.event.1",
         )
         event_type_2 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization_second,
             name="test.event.2",
         )
 
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_1,
             name="test.event.1",
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization_second,
             event_type=event_type_2,
             name="test.event.2",
         )
+
+        await flush_tinybird_events()
 
         response = await client.get(
             "/v1/event-types/", params={"organization_id": str(organization.id)}
@@ -167,33 +174,36 @@ class TestListEventTypes:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         event_type_1 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="api.request",
             label="API Request",
         )
         event_type_2 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="user.login",
             label="User Login",
         )
 
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_1,
             name="api.request",
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_2,
             name="user.login",
         )
+
+        await flush_tinybird_events()
 
         response = await client.get("/v1/event-types/", params={"query": "API"})
 
@@ -218,16 +228,17 @@ class TestListEventTypes:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         event_type_1 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="zzz.event",
             label="ZZZ Event",
         )
         event_type_2 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="aaa.event",
             label="AAA Event",
@@ -235,19 +246,21 @@ class TestListEventTypes:
 
         base_time = utc_now()
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_1,
             name="zzz.event",
             timestamp=base_time - timedelta(hours=2),
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_2,
             name="aaa.event",
             timestamp=base_time - timedelta(hours=1),
         )
+
+        await flush_tinybird_events()
 
         response = await client.get("/v1/event-types/", params={"sorting": "name"})
 
@@ -272,23 +285,25 @@ class TestListEventTypes:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         for i in range(15):
             event_type = await create_event_type(
-                save_fixture,
+                buffered_save_fixture,
                 organization=organization,
                 name=f"event.{i:02d}",
             )
             await create_event(
-                save_fixture,
+                buffered_save_fixture,
                 organization=organization,
                 event_type=event_type,
                 name=f"event.{i:02d}",
             )
 
-        response = await client.get("/v1/event-types/", params={"limit": 10})
+        await flush_tinybird_events()
 
+        response = await client.get("/v1/event-types/", params={"limit": 10})
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 15
@@ -309,34 +324,37 @@ class TestListEventTypes:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         event_type_1 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="root.event",
         )
         event_type_2 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child.event",
         )
 
         root_event = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_1,
             name="root.event",
             source=EventSource.user,
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_2,
             name="child.event",
             parent_id=root_event.id,
             source=EventSource.user,
         )
+
+        await flush_tinybird_events()
 
         response = await client.get("/v1/event-types/", params={"root_events": True})
 
@@ -363,33 +381,36 @@ class TestListEventTypes:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
     ) -> None:
         event_type_1 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="user.event",
         )
         event_type_2 = await create_event_type(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="system.event",
         )
 
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_1,
             name="user.event",
             source=EventSource.user,
         )
         await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             event_type=event_type_2,
             name="system.event",
             source=EventSource.system,
         )
+
+        await flush_tinybird_events()
 
         response = await client.get("/v1/event-types/", params={"source": "user"})
 

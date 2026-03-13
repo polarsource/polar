@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 from datetime import date, timedelta
 from typing import Any
 from uuid import uuid4
@@ -45,23 +46,26 @@ class TestListEvents:
     @pytest.mark.auth
     async def test_filter(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         event1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             timestamp=utc_now() - timedelta(days=1),
             metadata={"tokens": 10},
         )
         event2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             timestamp=utc_now() + timedelta(days=1),
             metadata={"tokens": 100},
         )
+
+        await flush_tinybird_events()
 
         filter = Filter(
             conjunction=FilterConjunction.and_,
@@ -86,7 +90,8 @@ class TestListEvents:
     @pytest.mark.auth
     async def test_children_sorting(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -95,21 +100,21 @@ class TestListEvents:
         base_time = utc_now()
 
         root_event1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="root1",
             timestamp=base_time - timedelta(hours=10),
         )
 
         root_event2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="root2",
             timestamp=base_time - timedelta(hours=5),
         )
 
         child1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child1",
             parent_id=root_event1.id,
@@ -117,7 +122,7 @@ class TestListEvents:
         )
 
         child2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child2",
             parent_id=root_event1.id,
@@ -125,12 +130,14 @@ class TestListEvents:
         )
 
         child3 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child3",
             parent_id=root_event1.id,
             timestamp=base_time - timedelta(hours=2),
         )
+
+        await flush_tinybird_events()
 
         # Test descending sort (newest first) - no depth returns all events
         response = await client.get(
@@ -218,7 +225,8 @@ class TestListEvents:
     @pytest.mark.auth
     async def test_depth_filtering(
         self,
-        save_fixture: SaveFixture,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -227,21 +235,21 @@ class TestListEvents:
         base_time = utc_now()
 
         root_event1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="root1",
             timestamp=base_time - timedelta(hours=10),
         )
 
         root_event2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="root2",
             timestamp=base_time - timedelta(hours=5),
         )
 
         child1 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child1",
             parent_id=root_event1.id,
@@ -249,7 +257,7 @@ class TestListEvents:
         )
 
         child2 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child2",
             parent_id=root_event1.id,
@@ -257,12 +265,14 @@ class TestListEvents:
         )
 
         child3 = await create_event(
-            save_fixture,
+            buffered_save_fixture,
             organization=organization,
             name="child3",
             parent_id=root_event1.id,
             timestamp=base_time - timedelta(hours=2),
         )
+
+        await flush_tinybird_events()
 
         # Test descending sort (newest first) - depth=0 returns only root events
         response = await client.get(

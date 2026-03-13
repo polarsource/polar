@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+from datetime import datetime
 from typing import Literal
 
 import stripe as stripe_lib
@@ -157,6 +158,7 @@ class StripeTaxService(TaxServiceProtocol):
                 return {
                     "processor_id": f"taxcalc_sandbox_{uuid.uuid4().hex}",
                     "amount": 0,
+                    "currency": currency,
                     "taxability_reason": None,
                     "tax_rate": None,
                 }
@@ -180,6 +182,7 @@ class StripeTaxService(TaxServiceProtocol):
             return {
                 "processor_id": calculation.id,
                 "amount": amount,
+                "currency": currency,
                 "taxability_reason": TaxabilityReason.from_stripe(
                     breakdown.taxability_reason, amount
                 ),
@@ -209,6 +212,19 @@ class StripeTaxService(TaxServiceProtocol):
                 transaction_id, "partial", reference, -total_amount
             )
         return transaction.id
+
+    async def backfill(
+        self,
+        calculation: TaxCalculation,
+        amount: int,
+        address: Address,
+        tax_code: TaxCode,
+        reference: str,
+        transaction_date: datetime,
+    ) -> str:
+        raise NotADirectoryError(
+            "Backfilling tax calculations is not supported for StripeTaxService."
+        )
 
 
 stripe_tax_service = StripeTaxService()

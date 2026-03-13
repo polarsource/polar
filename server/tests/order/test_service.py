@@ -174,7 +174,7 @@ def tax_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = mocker.patch(
         "polar.order.service.tax_calculation_service", spec=TaxCalculationService
     )
-    mock.record.return_value = "TAX_TRANSACTION_ID"
+    mock.record.return_value = ("TAX_TRANSACTION_ID", TaxProcessor.numeral)
     return mock
 
 
@@ -193,6 +193,7 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
             {
                 "processor_id": "TAX_PROCESSOR_ID",
                 "amount": polar_round(amount * 0.20),
+                "currency": currency,
                 "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_rate": None,
             },
@@ -1947,8 +1948,12 @@ class TestCreateWalletOrder:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        customer: Customer,
     ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
         wallet = await create_wallet(
             save_fixture, customer=customer, type=WalletType.usage
         )
@@ -2215,6 +2220,7 @@ class TestHandlePayment:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
+            billing_address=Address(country=CountryAlpha2("FR")),
         )
 
         # Set tax_calculation_processor_id
@@ -2271,6 +2277,7 @@ class TestHandlePayment:
             status=OrderStatus.pending,
             subtotal_amount=1000,
             tax_amount=200,
+            billing_address=customer_with_address.billing_address,
         )
 
         order.tax_processor = TaxProcessor.stripe
@@ -2286,7 +2293,7 @@ class TestHandlePayment:
         # First call to record raises CalculationExpiredError; second call (after recalculation) succeeds
         tax_service_mock.record.side_effect = [
             CalculationExpiredError(),
-            "NEW_TAX_TRANSACTION_ID",
+            ("NEW_TAX_TRANSACTION_ID", TaxProcessor.numeral),
         ]
 
         updated_order = await order_service.handle_payment(session, order, payment)
@@ -2301,11 +2308,18 @@ class TestHandlePayment:
         # once succeeding with the newly recalculated calculation ID
         assert tax_service_mock.record.call_count == 2
         first_record_call, second_record_call = tax_service_mock.record.call_args_list
-        assert first_record_call.args[1] == "tax_calc_expired_123"
-        assert second_record_call.args[1] == "TAX_PROCESSOR_ID"
+        assert (
+            first_record_call.kwargs["calculation"]["processor_id"]
+            == "tax_calc_expired_123"
+        )
+        assert (
+            second_record_call.kwargs["calculation"]["processor_id"]
+            == "TAX_PROCESSOR_ID"
+        )
 
         # The tax transaction processor ID should reflect the second (successful) record call
         assert updated_order.tax_transaction_processor_id == "NEW_TAX_TRANSACTION_ID"
+        assert updated_order.tax_processor == TaxProcessor.numeral
 
         # The balance job should still be enqueued
         enqueue_job_mock.assert_called_once_with(

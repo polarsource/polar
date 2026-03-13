@@ -65,65 +65,86 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   return (
     <div className="flex flex-col gap-y-6">
       <input type="hidden" {...register(`prices.${index}.id`)} />
-      <FormField
-        control={control}
-        name={`prices.${index}.amount_type`}
-        rules={{
-          required: 'Please select a price type',
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <div className="flex flex-row items-center gap-2">
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => {
-                      field.onChange(v)
-                      onAmountTypeChange(
-                        index,
-                        v as ProductPriceCreate['amount_type'],
-                      )
-                    }}
-                    disabled={hasOtherStaticPrice}
-                  >
-                    <SelectTrigger ref={field.ref}>
-                      <SelectValue placeholder="Select a price type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixed">Fixed price</SelectItem>
-                      <SelectItem value="custom">Pay what you want</SelectItem>
-                      <SelectItem value="free">Free</SelectItem>
-                      {organization.feature_settings
-                        ?.seat_based_pricing_enabled && (
-                        <SelectItem value="seat_based">Seats</SelectItem>
-                      )}
-                      {recurringInterval !== null && (
-                        <SelectItem value="metered_unit">
-                          Metered price
+      {hasOtherStaticPrice ? (
+        <div className="flex flex-row items-center justify-between">
+          <h4 className="dark:text-polar-500 text-sm font-medium text-gray-500">
+            Metered price
+          </h4>
+          {canRemove && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="dark:text-polar-500 dark:bg-polar-900 dark:hover:bg-polar-700 dark:hover:border-polar-600 bg-white/80 text-gray-500 hover:bg-white"
+              onClick={() => {
+                onRemove(index)
+              }}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      ) : (
+        <FormField
+          control={control}
+          name={`prices.${index}.amount_type`}
+          rules={{
+            required: 'Please select a price type',
+          }}
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <div className="flex flex-row items-center gap-2">
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        onAmountTypeChange(
+                          index,
+                          v as ProductPriceCreate['amount_type'],
+                        )
+                      }}
+                    >
+                      <SelectTrigger ref={field.ref}>
+                        <SelectValue placeholder="Select a price type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Fixed price</SelectItem>
+                        <SelectItem value="custom">
+                          Pay what you want
                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                {canRemove && (
-                  <Button
-                    size="icon"
-                    className="aspect-square h-10 w-10"
-                    variant="secondary"
-                    onClick={() => {
-                      onRemove(index)
-                    }}
-                  >
-                    <CloseOutlined className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <FormMessage className="px-3 py-2" />
-            </FormItem>
-          )
-        }}
-      />
+                        <SelectItem value="free">Free</SelectItem>
+                        {organization.feature_settings
+                          ?.seat_based_pricing_enabled && (
+                          <SelectItem value="seat_based">Seats</SelectItem>
+                        )}
+                        {recurringInterval !== null && (
+                          <SelectItem value="metered_unit">
+                            Metered price
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  {canRemove && (
+                    <Button
+                      size="icon"
+                      className="aspect-square h-10 w-10"
+                      variant="secondary"
+                      onClick={() => {
+                        onRemove(index)
+                      }}
+                    >
+                      <CloseOutlined className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <FormMessage className="px-3 py-2" />
+              </FormItem>
+            )
+          }}
+        />
+      )}
       {amountType && amountType !== 'free' && (
         <div className="flex flex-col gap-3">
           {amountType === 'fixed' && (

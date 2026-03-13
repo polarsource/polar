@@ -11,13 +11,17 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { PlusIcon } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import { InfoIcon, PlusIcon } from 'lucide-react'
 import React, { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
@@ -114,63 +118,74 @@ export const ProductPriceMeteredUnitItem: React.FC<
               )
             }}
           />
-          <FormField
-            control={control}
-            name={`prices.${index}.unit_amount`}
-            rules={{
-              min: 0,
-              required: 'This field is required',
-            }}
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Amount per unit</FormLabel>
-                  <FormControl>
-                    <UnitAmountInput
-                      {...field}
-                      name={field.name}
-                      currency={currency}
-                      value={field.value}
-                      onValueChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name={`prices.${index}.cap_amount`}
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Cap amount</FormLabel>
-                  <FormControl>
-                    <MoneyInput
-                      {...field}
-                      name={field.name}
-                      currency={currency}
-                      value={field.value}
-                      onChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                      placeholder={10000}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Optional maximum amount that can be charged, regardless of
-                    the number of units consumed.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
+          <div className="grid grid-cols-2 gap-x-3">
+            <FormField
+              control={control}
+              name={`prices.${index}.unit_amount`}
+              rules={{
+                min: 0,
+                required: 'This field is required',
+              }}
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Amount per unit</FormLabel>
+                    <FormControl>
+                      <UnitAmountInput
+                        {...field}
+                        name={field.name}
+                        currency={currency}
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={control}
+              name={`prices.${index}.cap_amount`}
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>
+                      <span className="flex items-center gap-x-1.5">
+                        Cap amount
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InfoIcon className="dark:text-polar-400 h-3.5 w-3.5 text-gray-400" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-3xs">
+                            Optional maximum amount that can be charged,
+                            regardless of the number of units consumed.
+                          </TooltipContent>
+                        </Tooltip>
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <MoneyInput
+                        {...field}
+                        name={field.name}
+                        currency={currency}
+                        value={field.value}
+                        onChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                        placeholder={10000}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          </div>
         </>
       )}
       <InlineModal

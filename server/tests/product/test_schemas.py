@@ -48,6 +48,27 @@ def test_invalid_product_name(name: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("price_currency", "price_amount"),
+    [
+        (PresentmentCurrency.usd, 49),
+        (PresentmentCurrency.inr, 5000),
+    ],
+)
+def test_product_price_fixed_minimum_amount(
+    price_currency: PresentmentCurrency, price_amount: int
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        ProductPriceFixedCreate(
+            amount_type=ProductPriceAmountType.fixed,
+            price_amount=price_amount,
+            price_currency=price_currency,
+        )
+
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+
+
+@pytest.mark.parametrize(
     "payload",
     [
         {"trial_interval_count": 1},

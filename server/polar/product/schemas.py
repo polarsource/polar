@@ -1,6 +1,6 @@
 import builtins
 from decimal import Decimal
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
@@ -9,6 +9,7 @@ from pydantic import (
     Tag,
     computed_field,
     field_validator,
+    model_validator,
 )
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
@@ -20,7 +21,7 @@ from polar.custom_field.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
-from polar.kit.currency import PresentmentCurrency
+from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.db.models import Model
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -74,9 +75,65 @@ ProductID = Annotated[
     SelectorWidget("/v1/products", "Product", "name"),
 ]
 
-# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
+# Ref: https://docs.stripe.com/currencies#minimum-and-maximum-charge-amounts
 MAXIMUM_PRICE_AMOUNT = 99999999
 MINIMUM_PRICE_AMOUNT = 50
+
+# Minimums as provided by Stripe, but with some changes on some currencies.
+# Stripe indeeds enforces the source amount converted to target currency match the minimum
+# of the target currency.
+# Comment added for the cases where our minimum differs from Stripe's.
+MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
+    "usd": 50,
+    "aed": 200,
+    "ars": 50,
+    "aud": 50,
+    "brl": 50,
+    "cad": 50,
+    "chf": 50,
+    "cop": 50,
+    "czk": 1500,
+    "dkk": 250,
+    "eur": 50,
+    "gbp": 30,
+    "hkd": 400,
+    "huf": 17500,
+    "idr": 50,
+    "ils": 50,
+    "inr": 6000,  # 60.00 INR > 0.50 USD
+    "jpy": 50,
+    "krw": 50,
+    "mxn": 10,
+    "myr": 200,
+    "nok": 300,
+    "nzd": 50,
+    "php": 50,
+    "pln": 200,
+    "ron": 200,
+    "rub": 50,
+    "sek": 300,
+    "sgd": 50,
+    "thb": 10,
+    "zar": 50,
+}
+
+MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
+    f"- {currency.upper()}: {format_currency(amount, currency)}"
+    for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
+)
+
+
+def validate_minimum_price_amount(
+    currency: str, amount: int, *, allow_zero: bool = False
+) -> int:
+    minimum = MINIMUM_PRICE_PER_CURRENCY.get(currency.lower(), MINIMUM_PRICE_AMOUNT)
+    if amount < minimum and not (allow_zero and amount == 0):
+        if allow_zero:
+            message = f"Amount must be at least {format_currency(minimum, currency)} or 0 for free pricing"
+        else:
+            message = f"Amount must be at least {format_currency(minimum, currency)}"
+        raise ValueError(message)
+    return amount
 
 
 PriceAmount = Annotated[
@@ -85,7 +142,7 @@ PriceAmount = Annotated[
         ...,
         ge=MINIMUM_PRICE_AMOUNT,
         le=MAXIMUM_PRICE_AMOUNT,
-        description="The price in cents.",
+        description=f"The price in cents.\nMinimum amounts per currency:\n{MINIMUM_PRICE_PER_CURRENCY_DOCSTRING}",
     ),
 ]
 SeatPriceAmount = Annotated[
@@ -132,6 +189,11 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.fixed]
     price_amount: PriceAmount
+
+    @model_validator(mode="after")
+    def validate_price_amount(self) -> Self:
+        validate_minimum_price_amount(self.price_currency, self.price_amount)
+        return self
 
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel

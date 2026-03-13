@@ -96,6 +96,11 @@ async def test_webhook_send_not_subscribed_to_event(
             "a" * 2048,
             id="long response that is truncated",
         ),
+        pytest.param(
+            httpx.Response(200, content=b"foo\x00bar"),
+            "foobar",
+            id="response with null bytes",
+        ),
     ],
 )
 async def test_webhook_delivery_success(

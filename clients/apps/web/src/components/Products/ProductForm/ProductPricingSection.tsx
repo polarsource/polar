@@ -130,7 +130,12 @@ export const ProductPricingSection = ({
   )
 
   const pricesForSelectedCurrency = useMemo(
-    () => pricesByCurrency.get(validatedSelectedCurrency) || [],
+    () =>
+      (pricesByCurrency.get(validatedSelectedCurrency) || []).sort((a, b) => {
+        const aMetered = isMeteredPrice(a.price as ProductPrice) ? 1 : 0
+        const bMetered = isMeteredPrice(b.price as ProductPrice) ? 1 : 0
+        return aMetered - bMetered
+      }),
     [pricesByCurrency, validatedSelectedCurrency],
   )
 

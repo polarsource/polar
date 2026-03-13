@@ -244,6 +244,7 @@ class SubscriptionRepository(
             .where(
                 Subscription.status == SubscriptionStatus.active,
                 Subscription.cancel_at_period_end.is_(False),
+                Subscription.amount > 0,
                 Subscription.current_period_end.isnot(None),
                 Subscription.current_period_end > now,
                 Subscription.current_period_end <= reminder_window_end,
@@ -315,6 +316,8 @@ class SubscriptionRepository(
             self.get_base_statement()
             .where(
                 Subscription.status == SubscriptionStatus.trialing,
+                Subscription.cancel_at_period_end.is_(False),
+                Subscription.amount > 0,
                 Subscription.trial_start.isnot(None),
                 Subscription.trial_end.isnot(None),
                 trial_window_condition,

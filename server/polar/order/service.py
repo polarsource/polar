@@ -79,7 +79,6 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
-    is_free_price,
     is_seat_price,
     is_static_price,
 )
@@ -1484,7 +1483,7 @@ class OrderService:
             subscription = order.subscription
             if subscription is not None:
                 is_free_product_price = all(
-                    is_free_price(spp.product_price)
+                    spp.product_price.is_free
                     for spp in subscription.subscription_product_prices
                 )
                 if is_free_product_price:

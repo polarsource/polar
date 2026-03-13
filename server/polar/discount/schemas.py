@@ -212,7 +212,7 @@ class DiscountFixedCreateBase(Schema):
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
     currency: Currency | None = Field(
-        default=PresentmentCurrency.USD,
+        default=PresentmentCurrency.usd,
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
     amounts: Amounts | None = None

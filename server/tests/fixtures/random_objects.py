@@ -650,13 +650,13 @@ async def create_legacy_recurring_product_price(
     if amount_type == ProductPriceAmountType.fixed:
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,
-            price_currency=PresentmentCurrency.USD,
+            price_currency=PresentmentCurrency.usd,
             product=product,
             is_archived=False,
         )
     elif amount_type == ProductPriceAmountType.custom:
         product_price = LegacyRecurringProductPriceCustom(
-            price_currency=PresentmentCurrency.USD,
+            price_currency=PresentmentCurrency.usd,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
             preset_amount=preset_amount,

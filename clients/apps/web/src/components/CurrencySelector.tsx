@@ -74,7 +74,7 @@ export const CurrencySelector = ({
       getItemLabel={(item) => item.label}
       renderItem={(item) => (
         <span className="flex flex-1 items-center gap-2">
-          <span className="text-muted-foreground group-data-[selected=true]:text-white/60 w-8">
+          <span className="text-muted-foreground w-8 group-data-[selected=true]:text-white/60">
             {item.code.toUpperCase()}
           </span>
           <span className="truncate">{item.label}</span>

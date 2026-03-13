@@ -119,7 +119,7 @@ ProductDescription = Annotated[
 
 class ProductPriceCreateBase(Schema):
     amount_type: ProductPriceAmountType
-    price_currency: PriceCurrency = PresentmentCurrency.USD
+    price_currency: PriceCurrency = PresentmentCurrency.usd
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()

@@ -342,7 +342,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -365,7 +365,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -389,7 +389,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -418,7 +418,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -441,7 +441,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -463,7 +463,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -487,7 +487,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             medias=[uuid.uuid4()],
@@ -537,7 +537,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             medias=[file.id],
@@ -577,7 +577,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             medias=[file.id],
@@ -596,7 +596,7 @@ class TestCreate:
                     ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
                         price_amount=1000,
-                        price_currency=PresentmentCurrency.USD,
+                        price_currency=PresentmentCurrency.usd,
                     )
                 ],
             ),
@@ -608,7 +608,7 @@ class TestCreate:
                         minimum_amount=1000,
                         maximum_amount=2000,
                         preset_amount=1500,
-                        price_currency=PresentmentCurrency.USD,
+                        price_currency=PresentmentCurrency.usd,
                     ),
                 ],
             ),
@@ -635,7 +635,7 @@ class TestCreate:
                 prices=[
                     ProductPriceMeteredUnitCreate(
                         amount_type=ProductPriceAmountType.metered_unit,
-                        price_currency=PresentmentCurrency.USD,
+                        price_currency=PresentmentCurrency.usd,
                         unit_amount=Decimal(100),
                         meter_id=METER_ID,
                     )
@@ -677,12 +677,12 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=1000,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                         ),
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=2000,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                         ),
                     ],
                     organization_id=organization.id,
@@ -707,7 +707,7 @@ class TestCreate:
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=uuid.uuid4(),
                         ),
@@ -734,7 +734,7 @@ class TestCreate:
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=meter.id,
                         ),
@@ -762,13 +762,13 @@ class TestCreate:
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=meter.id,
                         ),
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(200),
                             meter_id=meter.id,
                         ),
@@ -796,12 +796,12 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=1000,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                         ),
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=2000,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                         ),
                     ],
                     organization_id=organization.id,
@@ -829,18 +829,18 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=1000,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                         ),
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency=PresentmentCurrency.USD,
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=meter.id,
                         ),
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=900,
-                            price_currency=PresentmentCurrency.EUR,
+                            price_currency=PresentmentCurrency.eur,
                         ),
                         # Missing metered price for EUR - should fail
                     ],
@@ -869,7 +869,7 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=900,
-                            price_currency=PresentmentCurrency.EUR,
+                            price_currency=PresentmentCurrency.eur,
                         ),
                     ],
                     organization_id=organization.id,
@@ -897,11 +897,11 @@ class TestCreate:
                     ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
                         price_amount=1000,
-                        price_currency=PresentmentCurrency.USD,
+                        price_currency=PresentmentCurrency.usd,
                     ),
                     ProductPriceMeteredUnitCreate(
                         amount_type=ProductPriceAmountType.metered_unit,
-                        price_currency=PresentmentCurrency.USD,
+                        price_currency=PresentmentCurrency.usd,
                         unit_amount=Decimal(100),
                         meter_id=meter.id,
                     ),
@@ -909,11 +909,11 @@ class TestCreate:
                     ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
                         price_amount=900,
-                        price_currency=PresentmentCurrency.EUR,
+                        price_currency=PresentmentCurrency.eur,
                     ),
                     ProductPriceMeteredUnitCreate(
                         amount_type=ProductPriceAmountType.metered_unit,
-                        price_currency=PresentmentCurrency.EUR,
+                        price_currency=PresentmentCurrency.eur,
                         unit_amount=Decimal(90),
                         meter_id=meter.id,
                     ),
@@ -921,11 +921,11 @@ class TestCreate:
                     ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
                         price_amount=800,
-                        price_currency=PresentmentCurrency.GBP,
+                        price_currency=PresentmentCurrency.gbp,
                     ),
                     ProductPriceMeteredUnitCreate(
                         amount_type=ProductPriceAmountType.metered_unit,
-                        price_currency=PresentmentCurrency.GBP,
+                        price_currency=PresentmentCurrency.gbp,
                         unit_amount=Decimal(80),
                         meter_id=meter.id,
                     ),
@@ -966,7 +966,7 @@ class TestCreate:
             prices=[
                 ProductPriceSeatBasedCreate(
                     amount_type=ProductPriceAmountType.seat_based,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                     seat_tiers=ProductPriceSeatTiers(
                         tiers=[
                             ProductPriceSeatTier(
@@ -1002,7 +1002,7 @@ class TestCreate:
             prices=[
                 ProductPriceSeatBasedCreate(
                     amount_type=ProductPriceAmountType.seat_based,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                     seat_tiers=ProductPriceSeatTiers(
                         tiers=[
                             ProductPriceSeatTier(
@@ -1149,7 +1149,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=12000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ]
         )
@@ -1387,7 +1387,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=12000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ]
         )
@@ -1455,7 +1455,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=12000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ],
         )
@@ -1485,7 +1485,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=2000,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ]
         )
@@ -1512,7 +1512,7 @@ class TestUpdate:
             prices=[
                 ProductPriceMeteredUnitCreate(
                     amount_type=ProductPriceAmountType.metered_unit,
-                    price_currency=PresentmentCurrency.USD,
+                    price_currency=PresentmentCurrency.usd,
                     unit_amount=Decimal(100),
                     meter_id=uuid.uuid4(),
                 ),

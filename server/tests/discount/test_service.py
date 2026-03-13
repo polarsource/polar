@@ -58,7 +58,7 @@ class TestCreate:
                 duration=DiscountDuration.once,
                 type=DiscountType.fixed,
                 amount=1000,
-                currency=PresentmentCurrency.USD,
+                currency=PresentmentCurrency.usd,
                 name="A" * 256,
                 code=None,
                 starts_at=None,
@@ -182,14 +182,14 @@ class TestUpdate:
                     basis_points=2000,
                     # Make sure passing "currency" doesn't cause AttributeError
                     # on percentage discounts
-                    currency=PresentmentCurrency.USD,
+                    currency=PresentmentCurrency.usd,
                 ),
             ),
             (
                 DiscountType.fixed,
                 DiscountUpdate(
                     amount=2000,
-                    currency=PresentmentCurrency.USD,
+                    currency=PresentmentCurrency.usd,
                     # Make sure passing "basis_points" doesn't cause AttributeError
                     # on percentage discounts
                     basis_points=2000,

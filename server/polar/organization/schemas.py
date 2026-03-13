@@ -351,7 +351,7 @@ class OrganizationCreate(Schema):
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency = Field(
-        PresentmentCurrency.USD,
+        PresentmentCurrency.usd,
         description="Default presentment currency for the organization",
     )
 

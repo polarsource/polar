@@ -626,18 +626,23 @@ async def _backfill_benefit_grants(
                     )
                 )
                 if existing_id is not None:
-                    existing_grant = await session.get(BenefitGrant, existing_id)
-                    assert existing_grant is not None
-                    # The existing member-linked grant is the one the system
-                    # actively manages. The old unlinked grant is stale
-                    # (e.g. never revoked because it had no member_id when
-                    # the cancellation flow ran post-migration).
-                    # Keep the existing grant, but carry over any properties
-                    # the old grant had (e.g. file refs, license keys).
-                    if grant.properties and not existing_grant.properties:
-                        existing_grant.properties = grant.properties
-                    grant.set_deleted_at()
-                    duplicates_deleted += 1
+                    if grant.order_id is not None:
+                        # One-off order — each purchase is distinct, keep both
+                        grant.member_id = target_member_id
+                        count += 1
+                    else:
+                        # The existing member-linked grant is the one the system
+                        # actively manages. The old unlinked grant is stale
+                        # (e.g. never revoked because it had no member_id when
+                        # the cancellation flow ran post-migration).
+                        # Keep the existing grant, but carry over any properties
+                        # the old grant had (e.g. file refs, license keys).
+                        existing_grant = await session.get(BenefitGrant, existing_id)
+                        assert existing_grant is not None
+                        if grant.properties and not existing_grant.properties:
+                            existing_grant.properties = grant.properties
+                        grant.set_deleted_at()
+                        duplicates_deleted += 1
                 else:
                     grant.member_id = target_member_id
                     count += 1

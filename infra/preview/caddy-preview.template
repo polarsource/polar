@@ -1,0 +1,18 @@
+https://__TS_HOSTNAME__:__FRONTEND_PORT__ {
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:__API_PORT__
+	}
+	handle /backoffice/* {
+		reverse_proxy 127.0.0.1:__API_PORT__
+	}
+	handle /healthz {
+		reverse_proxy 127.0.0.1:__API_PORT__
+	}
+	handle {
+		reverse_proxy 127.0.0.1:__FRONTEND_LOCAL_PORT__
+	}
+
+	tls {
+		get_certificate tailscale
+	}
+}

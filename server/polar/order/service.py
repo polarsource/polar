@@ -85,7 +85,6 @@ from polar.tax.calculation import (
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationLogicalError,
-    TaxCode,
     TaxRate,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
@@ -585,27 +584,13 @@ class OrderService:
         # Record tax transaction
         if checkout.tax_processor_id is not None:
             assert checkout.tax_processor is not None
-            assert order.billing_address is not None
-            assert order.product is not None
-            transaction_id, tax_processor = await tax_calculation_service.record(
-                checkout.tax_processor,
-                calculation={
-                    "processor_id": checkout.tax_processor_id,
-                    "amount": checkout.tax_amount or 0,
-                    "currency": checkout.currency,
-                    "tax_rate": checkout.tax_rate,
-                    "taxability_reason": checkout.taxability_reason,
-                },
-                amount=checkout.net_amount,
-                address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=str(order.id),
-                transaction_date=order.created_at,
+            transaction_id = await tax_calculation_service.record(
+                checkout.tax_processor, checkout.tax_processor_id, str(order.id)
             )
             await repository.update(
                 order,
                 update_dict={
-                    "tax_processor": tax_processor,
+                    "tax_processor": checkout.tax_processor,
                     "tax_transaction_processor_id": transaction_id,
                 },
             )
@@ -920,26 +905,15 @@ class OrderService:
         # Record tax transaction
         if wallet_transaction.tax_calculation_processor_id is not None:
             assert wallet_transaction.tax_processor is not None
-            assert order.billing_address is not None
-            transaction_id, tax_processor = await tax_calculation_service.record(
+            transaction_id = await tax_calculation_service.record(
                 wallet_transaction.tax_processor,
-                calculation={
-                    "processor_id": wallet_transaction.tax_calculation_processor_id,
-                    "amount": wallet_transaction.tax_amount or 0,
-                    "currency": wallet_transaction.currency,
-                    "tax_rate": wallet_transaction.tax_rate,
-                    "taxability_reason": wallet_transaction.taxability_reason,
-                },
-                amount=order.net_amount,
-                address=order.billing_address,
-                tax_code=TaxCode.general_electronically_supplied_services,
-                reference=str(order.id),
-                transaction_date=order.created_at,
+                wallet_transaction.tax_calculation_processor_id,
+                str(order.id),
             )
             await repository.update(
                 order,
                 update_dict={
-                    "tax_processor": tax_processor,
+                    "tax_processor": wallet_transaction.tax_processor,
                     "tax_transaction_processor_id": transaction_id,
                 },
             )
@@ -1310,32 +1284,14 @@ class OrderService:
             order.tax_calculation_processor_id is not None
             and order.tax_transaction_processor_id is None
         ):
-            tax_processor: TaxProcessor | None = None
             assert order.tax_processor is not None
-            assert order.billing_address is not None
-            assert order.product is not None
             try:
-                transaction_id, tax_processor = await tax_calculation_service.record(
+                transaction_id = await tax_calculation_service.record(
                     order.tax_processor,
-                    calculation={
-                        "processor_id": order.tax_calculation_processor_id,
-                        "amount": order.tax_amount or 0,
-                        "currency": order.currency,
-                        "tax_rate": order.tax_rate,
-                        "taxability_reason": order.taxability_reason,
-                    },
-                    amount=order.net_amount,
-                    address=order.billing_address,
-                    tax_code=order.product.tax_code,
-                    reference=str(order.id),
-                    transaction_date=order.created_at,
+                    order.tax_calculation_processor_id,
+                    str(order.id),
                 )
-                update_dict = {
-                    **update_dict,
-                    "tax_processor": tax_processor,
-                    "tax_transaction_processor_id": transaction_id,
-                }
-
+                update_dict["tax_transaction_processor_id"] = transaction_id
             except CalculationExpiredError as e:
                 # Recover by recalculating tax
                 # Happens if the order was created a long time ago and the tax calculation result expired before payment was completed
@@ -1361,6 +1317,7 @@ class OrderService:
                 )
                 update_dict = {
                     **update_dict,
+                    "tax_processor": tax_processor,
                     "tax_calculation_processor_id": tax_calculation_processor_id,
                     "tax_amount": tax_amount,
                     "taxability_reason": taxability_reason,
@@ -1373,29 +1330,10 @@ class OrderService:
                     )
 
                 if tax_processor and tax_calculation_processor_id:
-                    (
-                        transaction_id,
-                        tax_processor,
-                    ) = await tax_calculation_service.record(
-                        tax_processor,
-                        calculation={
-                            "processor_id": tax_calculation_processor_id,
-                            "amount": tax_amount,
-                            "currency": order.currency,
-                            "tax_rate": tax_rate,
-                            "taxability_reason": taxability_reason,
-                        },
-                        amount=order.net_amount,
-                        address=order.billing_address,
-                        tax_code=order.product.tax_code,
-                        reference=str(order.id),
-                        transaction_date=order.created_at,
+                    transaction_id = await tax_calculation_service.record(
+                        tax_processor, tax_calculation_processor_id, str(order.id)
                     )
-                    update_dict = {
-                        **update_dict,
-                        "tax_processor": tax_processor,
-                        "tax_transaction_processor_id": transaction_id,
-                    }
+                    update_dict["tax_transaction_processor_id"] = transaction_id
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)

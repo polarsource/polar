@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 from enum import StrEnum
 from typing import Literal, Protocol, TypedDict, overload
 
@@ -124,7 +123,6 @@ class TaxRate(TypedDict):
 class TaxCalculation(TypedDict):
     processor_id: str | None
     amount: int
-    currency: str
     taxability_reason: TaxabilityReason | None
     tax_rate: TaxRate | None
 
@@ -157,14 +155,4 @@ class TaxServiceProtocol(Protocol):
         reference: str,
         total_amount: int | None = None,
         tax_amount: int | None = None,
-    ) -> str: ...
-
-    async def backfill(
-        self,
-        calculation: TaxCalculation,
-        amount: int,
-        address: Address,
-        tax_code: TaxCode,
-        reference: str,
-        transaction_date: datetime,
     ) -> str: ...

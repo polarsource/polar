@@ -1,13 +1,11 @@
 import uuid
 
 import pytest
-from sqlalchemy import select
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import BenefitGrant
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File, FileServiceTypes
 from polar.models.license_key import LicenseKey

@@ -47,11 +47,12 @@ import asyncio
 import logging.config
 import uuid
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 import structlog
 import typer
 from sqlalchemy import String, func, or_, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -1126,13 +1127,16 @@ async def _backfill_license_keys(session: AsyncSession) -> int:
         .subquery()
     )
 
-    result = await session.execute(
-        update(LicenseKey)
-        .where(
-            LicenseKey.member_id.is_(None),
-            LicenseKey.id.cast(String) == lk_subq.c.lk_id,
-        )
-        .values(member_id=lk_subq.c.member_id)
+    result = cast(
+        CursorResult[Any],
+        await session.execute(
+            update(LicenseKey)
+            .where(
+                LicenseKey.member_id.is_(None),
+                LicenseKey.id.cast(String) == lk_subq.c.lk_id,
+            )
+            .values(member_id=lk_subq.c.member_id)
+        ),
     )
     return result.rowcount
 
@@ -1163,14 +1167,17 @@ async def _backfill_downloadables(session: AsyncSession) -> int:
         .subquery()
     )
 
-    result = await session.execute(
-        update(Downloadable)
-        .where(
-            Downloadable.member_id.is_(None),
-            Downloadable.customer_id == dl_subq.c.customer_id,
-            Downloadable.benefit_id == dl_subq.c.benefit_id,
-        )
-        .values(member_id=dl_subq.c.member_id)
+    result = cast(
+        CursorResult[Any],
+        await session.execute(
+            update(Downloadable)
+            .where(
+                Downloadable.member_id.is_(None),
+                Downloadable.customer_id == dl_subq.c.customer_id,
+                Downloadable.benefit_id == dl_subq.c.benefit_id,
+            )
+            .values(member_id=dl_subq.c.member_id)
+        ),
     )
     return result.rowcount
 

@@ -246,6 +246,7 @@ module "production" {
     auth_cookie_domain         = "polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
     tax_processors             = "[\"stripe\"]"
+    tax_record_processor       = "stripe"
   }
 
   backend_secrets = {

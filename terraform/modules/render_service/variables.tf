@@ -119,6 +119,7 @@ variable "backend_config" {
     auth_cookie_key            = optional(string, "") # "polar.sh"
     invoices_additional_info   = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
     tax_processors             = optional(string, "[\"stripe\"]")
+    tax_record_processor       = optional(string, "stripe")
   })
 }
 

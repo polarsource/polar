@@ -54,6 +54,7 @@ resource "render_env_group" "backend" {
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }
       POLAR_TAX_PROCESSORS             = { value = var.backend_config.tax_processors }
+      POLAR_TAX_RECORD_PROCESSOR       = { value = var.backend_config.tax_record_processor }
       POLAR_NUMERAL_API_KEY            = { value = var.backend_secrets.numeral_api_key }
     },
     var.backend_config.user_session_cookie_key != "" ? {

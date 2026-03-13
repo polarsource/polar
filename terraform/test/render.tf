@@ -200,6 +200,7 @@ module "test" {
     auth_cookie_domain         = "test.polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
     tax_processors             = "[\"numeral\",\"stripe\"]"
+    tax_record_processor       = "numeral"
   }
 
   backend_secrets = {

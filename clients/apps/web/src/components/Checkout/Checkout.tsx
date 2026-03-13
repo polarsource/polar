@@ -292,7 +292,6 @@ const Checkout = ({
                 productPrice={
                   checkout.product_price as schemas['ProductPriceCustom']
                 }
-                themePreset={themePreset}
                 locale={locale}
               />
             )}
@@ -445,7 +444,6 @@ const Checkout = ({
                     productPrice={
                       checkout.product_price as schemas['ProductPriceCustom']
                     }
-                    themePreset={themePreset}
                     locale={locale}
                   />
                 )}

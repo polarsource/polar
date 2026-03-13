@@ -1,9 +1,10 @@
 import { useCallback, useRef } from 'react'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
   delay: number,
-  dependencies?: any[],
+  dependencies?: unknown[],
 ) => {
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 

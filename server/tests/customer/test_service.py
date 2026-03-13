@@ -13,7 +13,8 @@ from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
-from polar.models.member import MemberRole
+from polar.models.customer import CustomerType
+from polar.models.member import Member, MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -590,7 +591,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that customer type can be upgraded from individual to team."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -617,7 +617,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that customer type cannot be downgraded from team to individual."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -644,7 +643,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that updating to the same type is allowed."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -747,6 +745,109 @@ class TestUpdate:
                 ),
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
+
+    async def test_syncs_owner_member_email_on_email_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When customer email changes, active members with the old email are synced."""
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="old@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="old@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="new@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "new@example.com"
+        assert member.email == "new@example.com"
+
+    async def test_does_not_sync_member_email_when_member_email_differs(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Members with custom (non-customer) emails are NOT synced on customer email change."""
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        # This member deliberately has a different email (e.g. a team member's personal email)
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="employee@example.com",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="customer-new@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "customer-new@example.com"
+        # Employee member email should NOT be changed
+        assert member.email == "employee@example.com"
+
+    async def test_no_email_sync_when_email_unchanged(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When the email does not change, no member sync occurs."""
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="same@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="same@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        # Update name only – email stays the same
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="same@example.com", name="New Name"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "same@example.com"
+        assert updated_customer.name == "New Name"
+        assert member.email == "same@example.com"
 
 
 @pytest.mark.asyncio
@@ -1072,7 +1173,6 @@ class TestAnonymize:
         organization: Organization,
     ) -> None:
         """Billing address should be cleared (invoices retain original)."""
-        from polar.kit.address import Address
 
         customer = await create_customer(
             save_fixture,

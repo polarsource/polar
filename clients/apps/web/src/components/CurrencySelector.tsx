@@ -79,7 +79,7 @@ export const CurrencySelector = ({
   return (
     <Combobox
       items={filteredCurrencies}
-      value={value}
+      value={value ?? null}
       selectedItem={selectedItem}
       onChange={handleChange}
       onQueryChange={setQuery}

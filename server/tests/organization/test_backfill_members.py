@@ -2171,6 +2171,72 @@ class TestBackfillBenefitGrantsDuplicates:
         assert refreshed_new is not None
         assert dict(refreshed_new.properties) == {"license_key_id": "new-key"}
 
+    async def test_keeps_both_order_scoped_grants(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When two order-scoped grants exist for the same benefit and customer,
+        both should be kept since each order is a distinct purchase."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="order-dup@test.com",
+            stripe_customer_id="stripe_order_dup",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        order1 = await create_order(save_fixture, customer=customer, product=product)
+        order2 = await create_order(save_fixture, customer=customer, product=product)
+
+        # First grant already linked to the member (e.g. from a prior backfill)
+        grant1 = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            member=owner_member,
+            order=order1,
+        )
+
+        # Second grant: no member_id yet
+        grant2 = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            order=order2,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed1 = await session.get(BenefitGrant, grant1.id)
+        assert refreshed1 is not None
+        assert refreshed1.deleted_at is None
+        assert refreshed1.member_id == owner_member.id
+
+        refreshed2 = await session.get(BenefitGrant, grant2.id)
+        assert refreshed2 is not None
+        assert refreshed2.deleted_at is None
+        assert refreshed2.member_id == owner_member.id
+
     async def test_no_duplicate_links_normally_when_no_conflict(
         self,
         session: AsyncSession,

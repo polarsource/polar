@@ -688,7 +688,11 @@ async def _prepare_benefit_grants(
                     )
                 )
                 if existing_id is not None:
-                    skipped_conflicts += 1
+                    if grant.order_id is not None:
+                        grant.member_id = target_member_id
+                        count += 1
+                    else:
+                        skipped_conflicts += 1
                 else:
                     grant.member_id = target_member_id
                     count += 1

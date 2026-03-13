@@ -21,6 +21,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  id-token: write
 
 jobs:
   preview:
@@ -207,6 +208,20 @@ jobs:
             --branch "$BRANCH" \
             --sha "$SHA" \
             --github-output "$GITHUB_OUTPUT"
+
+  # --- E2E Tests ---
+  e2e:
+    name: "Preview: E2E"
+    needs: preview
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action != 'closed' &&
+      needs.preview.result == 'success' &&
+      needs.preview.outputs.preview_url != ''
+    uses: ./.github/workflows/test_e2e.yaml
+    with:
+      preview_url: ${{ needs.preview.outputs.preview_url }}
+    secrets: inherit
 
   # --- PR Comment ---
   preview_comment:

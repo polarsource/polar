@@ -118,7 +118,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
               )
             }}
           />
-          <div className="grid grid-cols-2 gap-x-3">
+          <div className="grid grid-cols-2 gap-x-4">
             <FormField
               control={control}
               name={`prices.${index}.unit_amount`}

@@ -11,7 +11,7 @@ from polar.kit.currency import get_presentment_currency
         pytest.param("FR", "eur", id="supported country FR"),
         pytest.param("SE", "sek", id="supported country SE"),
         pytest.param("AX", "eur", id="supported territory AX"),
-        pytest.param("CN", None, id="unsupported country"),
+        pytest.param("RU", None, id="unsupported country"),
         pytest.param("KK", None, id="invalid country code"),
     ],
 )

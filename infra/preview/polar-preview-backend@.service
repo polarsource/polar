@@ -1,0 +1,19 @@
+[Unit]
+Description=Polar Preview Backend (PR %i)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/previews/pr-%i/server
+EnvironmentFile=/srv/previews/pr-%i/server/.env
+ExecStart=/srv/previews/pr-%i/server/run-preview-backend.sh
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+MemoryMax=2G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target

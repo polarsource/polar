@@ -3,6 +3,7 @@ import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 
+const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
@@ -67,6 +68,11 @@ const nextConfig = {
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
+  ...(PREVIEW_BUILD && {
+    typescript: { ignoreBuildErrors: true },
+    eslint: { ignoreDuringBuilds: true },
+  }),
+
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 
@@ -129,7 +135,24 @@ const nextConfig = {
   },
 
   async rewrites() {
+    const apiUrl = process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL
     return [
+      ...(PREVIEW_BUILD && apiUrl
+        ? [
+            {
+              source: '/v1/:path*',
+              destination: `${apiUrl}/v1/:path*`,
+            },
+            {
+              source: '/backoffice/:path*',
+              destination: `${apiUrl}/backoffice/:path*`,
+            },
+            {
+              source: '/healthz',
+              destination: `${apiUrl}/healthz`,
+            },
+          ]
+        : []),
       {
         source: '/ingest/static/:path*',
         destination: 'https://us-assets.i.posthog.com/static/:path*',

@@ -54,6 +54,7 @@ class BenefitDownloadablesService(
                 customer=customer,
                 benefit_id=benefit.id,
                 file_id=file_id,
+                member_id=member.id if member else None,
             )
             if downloadable:
                 granted.append(str(downloadable.file_id))

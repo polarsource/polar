@@ -3,7 +3,15 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, User, is_organization, is_user
+from polar.auth.models import (
+    AuthSubject,
+    Customer,
+    Member,
+    User,
+    is_member,
+    is_organization,
+    is_user,
+)
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -81,6 +89,22 @@ class LicenseKeyRepository(
             joinedload(LicenseKey.activations),
             joinedload(LicenseKey.benefit),
         )
+
+    def get_customer_statement(
+        self, auth_subject: AuthSubject[Customer | Member]
+    ) -> Select[tuple[LicenseKey]]:
+        statement = self.get_base_statement()
+
+        if is_member(auth_subject):
+            statement = statement.where(
+                LicenseKey.member_id == auth_subject.subject.id,
+            )
+        else:
+            statement = statement.where(
+                LicenseKey.customer_id == auth_subject.subject.id,
+            )
+
+        return statement
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

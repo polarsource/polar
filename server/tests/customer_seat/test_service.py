@@ -651,14 +651,6 @@ class TestAssignSeat:
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """Test that assign_seat creates a member when member_model_enabled is true.
-
-        When member_model_enabled=True:
-        - seat.customer_id = billing customer (subscription owner)
-        - seat.member_id = member created under billing customer
-        - seat.email = email of the seat member
-        - No separate Customer is created for the seat member
-        """
         organization = await create_organization(
             save_fixture,
             feature_settings={
@@ -672,7 +664,6 @@ class TestAssignSeat:
             recurring_interval=SubscriptionRecurringInterval.month,
             prices=[("seat", 1000, "usd")],
         )
-        # Billing manager customer (subscription owner)
         billing_customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -683,18 +674,18 @@ class TestAssignSeat:
         )
 
         seat = await seat_service.assign_seat(
-            session, subscription, email="seat@example.com"
+            session,
+            subscription,
+            email="seat@example.com",
+            external_member_id="ext-member-1",
         )
 
-        # customer_id should be the billing customer (purchaser), not a new customer
         assert seat.customer_id == billing_customer.id
         assert seat.member_id is not None
         assert seat.email == "seat@example.com"
 
-        # Verify member was created with correct properties
         await session.refresh(seat, ["member"])
         assert seat.member is not None
-        # Member is created under the billing customer
         assert seat.member.customer_id == billing_customer.id
         assert seat.member.email == "seat@example.com"
         assert seat.member.organization_id == organization.id
@@ -706,8 +697,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
     ) -> None:
-        """Test that assign_seat does not create a member when member_model is disabled."""
-        customer = await create_customer(
+        seat_customer = await create_customer(
             save_fixture,
             organization=subscription_with_seats.product.organization,
             email="test@example.com",
@@ -717,8 +707,16 @@ class TestAssignSeat:
             session, subscription_with_seats, email="test@example.com"
         )
 
-        assert seat.customer_id == customer.id
-        assert seat.member_id is None
+        billing_customer_id = subscription_with_seats.customer_id
+        assert seat.customer_id == seat_customer.id
+        assert seat.customer_id != billing_customer_id
+        assert seat.member_id is not None
+        assert seat.email == "test@example.com"
+
+        await session.refresh(seat, ["member"])
+        assert seat.member is not None
+        assert seat.member.customer_id == billing_customer_id
+        assert seat.member.email == "test@example.com"
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_customer_id_backward_compat_member_model(
@@ -726,7 +724,6 @@ class TestAssignSeat:
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """Test that assign_seat auto-resolves customer_id to email when member_model_enabled."""
         organization = await create_organization(
             save_fixture,
             feature_settings={
@@ -755,14 +752,13 @@ class TestAssignSeat:
             stripe_customer_id="stripe_seat_compat",
         )
 
-        # Should succeed — auto-resolves customer_id to email and creates member
         seat = await seat_service.assign_seat(
             session, subscription, customer_id=seat_customer.id
         )
         assert seat is not None
         assert seat.email == "seat@example.com"
         assert seat.member_id is not None
-        assert seat.customer_id == billing_customer.id
+        assert seat.customer_id == seat_customer.id
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_external_customer_id_backward_compat(
@@ -806,7 +802,7 @@ class TestAssignSeat:
         assert seat is not None
         assert seat.email == "ext-seat@example.com"
         assert seat.member_id is not None
-        assert seat.customer_id == billing_customer.id
+        assert seat.customer_id == seat_customer.id
 
     @pytest.mark.asyncio
     async def test_assign_seat_customer_id_not_found_member_model(
@@ -837,7 +833,7 @@ class TestAssignSeat:
             save_fixture, product=product, customer=billing_customer, seats=5
         )
 
-        with pytest.raises(InvalidSeatAssignmentRequest):
+        with pytest.raises(CustomerNotFound):
             await seat_service.assign_seat(
                 session, subscription, customer_id=uuid.uuid4()
             )
@@ -1322,34 +1318,48 @@ class TestAssignSeat:
             )
 
     @pytest.mark.asyncio
-    async def test_assign_seat_rejects_external_member_id_when_member_model_disabled(
+    async def test_assign_seat_accepts_external_member_id_when_member_model_disabled(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
     ) -> None:
-        """Test that external_member_id is rejected when member_model_enabled is false."""
-        with pytest.raises(InvalidSeatAssignmentRequest):
-            await seat_service.assign_seat(
-                session,
-                subscription_with_seats,
-                external_member_id="ext_123",
-            )
+        """Test that external_member_id opts into member model semantics in legacy mode."""
+        seat = await seat_service.assign_seat(
+            session,
+            subscription_with_seats,
+            external_member_id="ext_123",
+            email="member@example.com",
+        )
+
+        assert seat.member_id is not None
+        assert seat.email == "member@example.com"
 
     @pytest.mark.asyncio
-    async def test_assign_seat_rejects_member_id_when_member_model_disabled(
+    async def test_assign_seat_accepts_member_id_when_member_model_disabled(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
     ) -> None:
-        """Test that member_id is rejected when member_model_enabled is false."""
-        with pytest.raises(InvalidSeatAssignmentRequest):
-            await seat_service.assign_seat(
-                session,
-                subscription_with_seats,
-                member_id=uuid.uuid4(),
-            )
+        """Test that member_id opts into member model semantics in legacy mode."""
+        billing_customer = subscription_with_seats.customer
+        organization = subscription_with_seats.product.organization
+        member = await create_member(
+            save_fixture,
+            customer=billing_customer,
+            organization=organization,
+            email="member@example.com",
+        )
+
+        seat = await seat_service.assign_seat(
+            session,
+            subscription_with_seats,
+            member_id=member.id,
+        )
+
+        assert seat.member_id == member.id
+        assert seat.email == "member@example.com"
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_member_id_immediate_claim(
@@ -1620,7 +1630,6 @@ class TestClaimSeat:
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """Test that claim_seat creates session for billing customer when member_model_enabled."""
         organization = await create_organization(
             save_fixture,
             feature_settings={
@@ -1643,9 +1652,11 @@ class TestClaimSeat:
             save_fixture, product=product, customer=billing_customer, seats=5
         )
 
-        # Assign seat using the new model
         seat = await seat_service.assign_seat(
-            session, subscription, email="seat@example.com"
+            session,
+            subscription,
+            email="seat@example.com",
+            external_member_id="ext-member-claim",
         )
 
         assert seat.invitation_token is not None
@@ -1653,14 +1664,13 @@ class TestClaimSeat:
         assert seat.member_id is not None
         assert seat.email == "seat@example.com"
 
-        # Claim the seat
         claimed_seat, session_token = await seat_service.claim_seat(
             session, seat.invitation_token
         )
 
         assert claimed_seat.status == SeatStatus.claimed
         assert claimed_seat.claimed_at is not None
-        assert claimed_seat.invitation_token is None  # Token should be cleared
+        assert claimed_seat.invitation_token is None
         assert session_token is not None
         assert len(session_token) > 0
         assert session_token.startswith("polar_mst_")
@@ -1750,9 +1760,12 @@ class TestRevokeSeat:
             save_fixture, product=product, customer=billing_customer, seats=5
         )
 
-        # Assign and claim a seat
         seat = await seat_service.assign_seat(
-            session, subscription, email="seat@example.com", immediate_claim=True
+            session,
+            subscription,
+            email="seat@example.com",
+            external_member_id="ext-member-revoke",
+            immediate_claim=True,
         )
 
         assert seat.customer_id == billing_customer.id
@@ -1760,7 +1773,6 @@ class TestRevokeSeat:
         assert seat.email == "seat@example.com"
         assert seat.status == SeatStatus.claimed
 
-        # Revoke the seat
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])

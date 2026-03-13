@@ -40,12 +40,12 @@ class TestResolveMember:
 
         assert result is None
 
-    async def test_feature_flag_disabled_ignores_explicit_member_id(
+    async def test_feature_flag_disabled_uses_explicit_member_id(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """When feature flag is disabled, even explicit member_id is ignored."""
+        """When feature flag is disabled, explicit member_id is still used."""
         organization = await create_organization(
             save_fixture, feature_settings={"member_model_enabled": False}
         )
@@ -66,6 +66,28 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=member.id,  # Explicit member_id provided
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.id == member.id
+
+    async def test_feature_flag_disabled_no_member_id_returns_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When feature flag is disabled and no member_id, returns None."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": False}
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
             is_seat_based=False,
         )
 

@@ -299,8 +299,11 @@ jobs:
         uses: superfly/fly-pr-review-apps@1.6.0
         with:
           config: server/fly.review.toml
+          cpu: 2
+          cpukind: shared
           ha: false
           image: ${{ steps.fly_image.outputs.fly_image }}
+          memory: 1024
           name: ${{ steps.meta.outputs.fly_app_name }}
           org: ${{ vars.POLAR_PREVIEW_FLY_ORG }}
           secrets: |

@@ -59,9 +59,9 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app/server
 
-RUN --mount=type=bind,source=uv.lock,target=uv.lock \
-  --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-  apt-get update \
+COPY uv.lock pyproject.toml ./
+
+RUN apt-get update \
   && apt-get install -y \
   git \
   build-essential \

@@ -6,4 +6,9 @@ export default [
     ignores: ['node_modules/**', 'dist/**', 'coverage/**'],
   },
   ...config,
+  {
+    rules: {
+      'react/prop-types': 'off',
+    },
+  },
 ]

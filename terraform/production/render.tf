@@ -236,6 +236,10 @@ module "production" {
     api_key = var.openai_api_key_production
   }
 
+  pydantic_ai_gateway_secrets = {
+    api_key = var.pydantic_ai_gateway_api_key_production
+  }
+
   backend_config = {
     base_url                   = "https://api.polar.sh"
     backoffice_host            = "backoffice.polar.sh"

@@ -97,6 +97,14 @@ variable "openai_secrets" {
   sensitive = true
 }
 
+variable "pydantic_ai_gateway_secrets" {
+  description = "Pydantic AI Gateway secrets (sensitive)"
+  type = object({
+    api_key = string
+  })
+  sensitive = true
+}
+
 variable "backend_config" {
   description = "Backend environment configuration (non-sensitive)"
   type = object({

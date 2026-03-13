@@ -157,6 +157,10 @@ module "sandbox" {
     api_key = var.openai_api_key_sandbox
   }
 
+  pydantic_ai_gateway_secrets = {
+    api_key = var.pydantic_ai_gateway_api_key_sandbox
+  }
+
   backend_config = {
     base_url                   = "https://sandbox-api.polar.sh"
     user_session_cookie_domain = "polar.sh"

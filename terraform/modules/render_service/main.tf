@@ -24,6 +24,14 @@ resource "render_env_group" "openai" {
   }
 }
 
+resource "render_env_group" "pydantic_ai_gateway" {
+  environment_id = var.render_environment_id
+  name           = "pydantic-ai-gateway-${var.environment}"
+  env_vars = {
+    POLAR_PYDANTIC_AI_GATEWAY_API_KEY = { value = var.pydantic_ai_gateway_secrets.api_key }
+  }
+}
+
 resource "render_env_group" "backend" {
   environment_id = var.render_environment_id
   name           = "backend-${var.environment}"
@@ -415,6 +423,11 @@ resource "render_env_group_link" "logfire" {
 
 resource "render_env_group_link" "openai" {
   env_group_id = render_env_group.openai.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "pydantic_ai_gateway" {
+  env_group_id = render_env_group.pydantic_ai_gateway.id
   service_ids  = local.all_service_ids
 }
 

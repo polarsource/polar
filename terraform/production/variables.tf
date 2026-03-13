@@ -34,6 +34,12 @@ variable "openai_api_key_production" {
   sensitive   = true
 }
 
+# Pydantic AI Gateway
+variable "pydantic_ai_gateway_api_key_production" {
+  description = "Pydantic AI Gateway API Key for production"
+  type        = string
+  sensitive   = true
+}
 
 # Backend - Production
 variable "backend_current_jwk_kid_production" {

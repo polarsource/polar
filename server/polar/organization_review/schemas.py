@@ -44,12 +44,12 @@ class UsageInfo(Schema):
         )
 
     @classmethod
-    def from_agent_usage(cls, usage: Usage, model_name: str) -> UsageInfo:
+    def from_agent_usage(cls, usage: Usage, provider: str, model: str) -> UsageInfo:
         import genai_prices
 
         estimated_cost: float | None = None
         try:
-            price = genai_prices.calc_price(usage, model_name, provider_id="openai")
+            price = genai_prices.calc_price(usage, model, provider_id=provider)
             estimated_cost = float(price.total_price)
         except Exception:
             pass

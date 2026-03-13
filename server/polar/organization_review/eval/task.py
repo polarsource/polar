@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from polar.organization_review.analyzer import ReviewAnalyzer
 from polar.organization_review.schemas import ReviewContext
 
 from .dataset import EvalInput
@@ -45,29 +46,10 @@ def create_review_task(
     after the eval run.
 
     Args:
-        model: Override the model (uses settings.OPENAI_MODEL if None).
+        model: Override the model (uses settings.PYDANTIC_AI_GATEWAY_MODEL if None).
         policy_override: If set, use this policy text instead of fetching live.
     """
-    from pydantic_ai import Agent
-    from pydantic_ai.models.openai import OpenAIChatModel
-    from pydantic_ai.providers.openai import OpenAIProvider
-
-    from polar.config import settings
-    from polar.organization_review.analyzer import SYSTEM_PROMPT, ReviewAnalyzer
-    from polar.organization_review.schemas import ReviewAgentReport
-
-    analyzer = ReviewAnalyzer()
-    model_name = model or settings.OPENAI_MODEL
-
-    if model:
-        provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        analyzer.model = OpenAIChatModel(model_name, provider=provider)
-        analyzer.agent = Agent(
-            analyzer.model,
-            output_type=ReviewAgentReport,
-            system_prompt=SYSTEM_PROMPT,
-            model_settings={"temperature": 0},
-        )
+    analyzer = ReviewAnalyzer(model)
 
     costs: list[float] = []
 
@@ -81,6 +63,8 @@ def create_review_task(
         costs.append(usage.estimated_cost_usd or 0)
         return _VERDICT_MAP.get(report.verdict.value, report.verdict.value)
 
+    # Set the name for pydantic-evals reporting
+    model_name = analyzer.model_name
     review_task.__name__ = f"review_{model_name}"
     review_task.__qualname__ = review_task.__name__
     review_task.costs = costs  # type: ignore[attr-defined]

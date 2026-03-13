@@ -1,3 +1,4 @@
+import functools
 import os
 import tempfile
 from datetime import timedelta
@@ -8,6 +9,8 @@ from urllib.parse import urlparse
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
+from pydantic_ai.models import Model, infer_model, parse_model_id
+from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from polar.enums import EmailSender, TaxProcessor
@@ -223,9 +226,9 @@ class Settings(BaseSettings):
     RISK_COUNTRY_CODES: list[str] = []
     RISK_CURRENCY_CODES: list[str] = []
 
-    # OpenAI
-    OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-5.2-2025-12-11"
+    # Pydantic AI Gateway
+    PYDANTIC_AI_GATEWAY_API_KEY: str = ""
+    PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.2-2025-12-11"
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
@@ -521,6 +524,23 @@ class Settings(BaseSettings):
     def get_minimum_payout_for_currency(self, currency: str) -> int:
         return self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY.get(
             currency.lower(), self._DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE
+        )
+
+    def get_pydantic_gateway_model(
+        self, model: str | None = None
+    ) -> tuple[Model, str, str]:
+        model = model or settings.PYDANTIC_AI_GATEWAY_MODEL
+        model_provider, model_name = parse_model_id(model)
+        assert model_provider is not None
+        return (
+            infer_model(
+                model,
+                provider_factory=functools.partial(
+                    gateway_provider, api_key=self.PYDANTIC_AI_GATEWAY_API_KEY
+                ),
+            ),
+            model_provider,
+            model_name,
         )
 
 

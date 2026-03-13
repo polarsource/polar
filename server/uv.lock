@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14.0"
 
 [options]
-exclude-newer = "2026-03-27T07:10:06.025437959Z"
+exclude-newer = "2026-03-27T09:24:05.953188Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -2175,7 +2175,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.5" },
     { name = "pycountry", specifier = ">=24.6.1" },
     { name = "pydantic", specifier = ">=2.11" },
-    { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=0.7.1" },
+    { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=1.16.0" },
     { name = "pydantic-extra-types", specifier = ">=2.9.0" },
     { name = "pydantic-settings", specifier = ">=2.5.2" },
     { name = "pyjwt", specifier = ">=2.6.0" },

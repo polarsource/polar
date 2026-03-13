@@ -293,7 +293,7 @@ async def handle_org(
 async def process_appeals(
     dry_run: bool = True,
     limit: int = 1,
-    model: str = "gpt-5.2-2025-12-11",
+    model: str = "openai:gpt-5.2-2025-12-11",
     skip_website: bool = False,
 ) -> None:
     engine = create_async_engine("script")
@@ -477,8 +477,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--model",
-        default="gpt-5.2-2025-12-11",
-        help="AI model to use for review (default: gpt-5.2-2025-12-11)",
+        default="openai:gpt-5.2-2025-12-11",
+        help="AI model to use for review (default: openai:gpt-5.2-2025-12-11)",
     )
     parser.add_argument(
         "--skip-website",

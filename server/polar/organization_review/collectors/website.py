@@ -12,8 +12,6 @@ import structlog
 import trafilatura
 from playwright.async_api import Browser, Page, Playwright, Route, async_playwright
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 
@@ -234,11 +232,10 @@ class WebsiteDeps:
 # Module-level singleton agent
 # ---------------------------------------------------------------------------
 
-_provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-_model = OpenAIChatModel(settings.OPENAI_MODEL, provider=_provider)
 
+model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
 _website_agent: Agent[WebsiteDeps, str] = Agent(
-    _model,
+    model_instance,
     output_type=str,
     deps_type=WebsiteDeps,
     system_prompt=SYSTEM_PROMPT,
@@ -563,7 +560,9 @@ async def _run_website_agent(base_url: str) -> WebsiteData:
                 total_pages_succeeded=len(
                     [p for p in deps.pages_visited if p.content.strip()]
                 ),
-                usage=UsageInfo.from_agent_usage(result.usage(), _model.model_name),
+                usage=UsageInfo.from_agent_usage(
+                    result.usage(), model_provider, model_name
+                ),
             )
         finally:
             await deps.cleanup()

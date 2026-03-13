@@ -410,6 +410,7 @@ class Settings(BaseSettings):
     ]
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
+    TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

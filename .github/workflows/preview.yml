@@ -10,25 +10,12 @@ on:
         required: true
         type: choice
         options:
-          - create-or-update
-          - reset-data
+          - deploy
           - destroy
-        default: create-or-update
-      preview_id:
-        description: Override preview identifier
-        required: false
-        type: string
+        default: deploy
       pr_number:
-        description: Pull request number for preview naming
-        required: false
-        type: string
-      branch:
-        description: Branch or ref to deploy
-        required: false
-        type: string
-      sha:
-        description: Exact git SHA to deploy
-        required: false
+        description: PR number
+        required: true
         type: string
 
 permissions:
@@ -36,77 +23,199 @@ permissions:
   pull-requests: write
 
 jobs:
-  changes:
-    name: "Preview: Detect Changes"
+  preview:
+    name: "Preview: ${{ github.event_name == 'pull_request' && (github.event.action == 'closed' && 'Destroy' || 'Deploy') || github.event.inputs.action }}"
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend || steps.defaults.outputs.backend || 'false' }}
-      frontend: ${{ steps.filter.outputs.frontend || steps.defaults.outputs.frontend || 'false' }}
-      migrations: ${{ steps.filter.outputs.migrations || steps.defaults.outputs.migrations || 'false' }}
-      tinybird: ${{ steps.filter.outputs.tinybird || steps.defaults.outputs.tinybird || 'false' }}
+      preview_url: ${{ steps.deploy.outputs.preview_url }}
+    concurrency:
+      group: preview-pr-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
+      cancel-in-progress: false
+    env:
+      PR_NUM: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
+      BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+      SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Set default change flags
-        id: defaults
-        if: github.event_name != 'pull_request' || github.event.action == 'closed'
-        run: |
-          echo "backend=false" >> "$GITHUB_OUTPUT"
-          echo "frontend=false" >> "$GITHUB_OUTPUT"
-          echo "migrations=false" >> "$GITHUB_OUTPUT"
-          echo "tinybird=false" >> "$GITHUB_OUTPUT"
-
       - uses: actions/checkout@v6
-        if: github.event_name == 'pull_request' && github.event.action != 'closed'
 
-      - uses: dorny/paths-filter@v3
-        id: filter
-        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+      - name: Determine action
+        id: action
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.action }}" == "closed" ]]; then
+            echo "action=destroy" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "action=${{ github.event.inputs.action }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "action=deploy" >> "$GITHUB_OUTPUT"
+          fi
+
+      # --- Provision database + tinybird (deploy only) ---
+      - name: Install uv
+        if: steps.action.outputs.action == 'deploy'
+        uses: astral-sh/setup-uv@v7
         with:
-          filters: |
-            backend:
-              - 'server/**'
-              - '.github/workflows/preview.yml'
-              - '.github/workflows/preview-environment.yml'
-            frontend:
-              - 'clients/**'
-              - '.github/workflows/preview.yml'
-              - '.github/workflows/preview-environment.yml'
-            migrations:
-              - 'server/migrations/**'
-            tinybird:
-              - 'server/tinybird/**'
+          enable-cache: true
 
-  preview_upsert:
-    name: "Preview: Create or Update"
-    needs: changes
-    if: |
-      (
-        github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'destroy' ||
-        github.event_name == 'pull_request' &&
-        github.event.action != 'closed'
-      )
-    uses: ./.github/workflows/preview-environment.yml
-    with:
-      action: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.action || 'create-or-update' }}
-      preview_id: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.preview_id || '' }}
-      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
-      branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.inputs.branch || github.ref_name }}
-      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs.sha || github.sha }}
-      changed_backend: ${{ needs.changes.outputs.backend == 'true' }}
-      changed_frontend: ${{ needs.changes.outputs.frontend == 'true' }}
-      changed_migrations: ${{ needs.changes.outputs.migrations == 'true' }}
-      changed_tinybird: ${{ needs.changes.outputs.tinybird == 'true' }}
-    secrets:
-      PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
-      PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
-      TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
-      TAILSCALE_OAUTH_SECRET: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+      - name: Set up Python
+        if: steps.action.outputs.action == 'deploy'
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
 
+      - name: Install server dependencies
+        if: steps.action.outputs.action == 'deploy'
+        working-directory: ./server
+        run: uv sync --dev
+
+      - name: Install Tinybird CLI
+        if: steps.action.outputs.action == 'deploy'
+        run: curl https://tinybird.co | sh
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
+
+      - name: Provision preview resources
+        if: steps.action.outputs.action == 'deploy'
+        id: provision
+        working-directory: ./server
+        env:
+          POLAR_PREVIEW_BASE_DOMAIN: ${{ vars.POLAR_PREVIEW_BASE_DOMAIN }}
+          POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+          POLAR_PREVIEW_POSTGRES_APP_HOST: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_HOST }}
+          POLAR_PREVIEW_POSTGRES_APP_PORT: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_PORT }}
+          POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+          POLAR_PREVIEW_TINYBIRD_API_URL: ${{ vars.POLAR_PREVIEW_TINYBIRD_API_URL }}
+          POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+          POLAR_PREVIEW_TINYBIRD_WORKSPACE: ${{ vars.POLAR_PREVIEW_TINYBIRD_WORKSPACE }}
+          POLAR_PREVIEW_TINYBIRD_LAST_PARTITION: ${{ vars.POLAR_PREVIEW_TINYBIRD_LAST_PARTITION || 'false' }}
+        run: |
+          set -euo pipefail
+          uv run python -m scripts.preview create-or-update \
+            --pr-number "$PR_NUM" \
+            --branch "$BRANCH" \
+            --sha "$SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Build env JSON
+        if: steps.action.outputs.action == 'deploy'
+        id: env_json
+        run: |
+          set -euo pipefail
+          ENV_JSON=$(jq -n \
+            --arg pg_db "${{ steps.provision.outputs.preview_postgres_database }}" \
+            --arg pg_host "${{ fromJson(steps.provision.outputs.preview_postgres_env_json).POLAR_POSTGRES_HOST }}" \
+            --arg pg_port "${{ fromJson(steps.provision.outputs.preview_postgres_env_json).POLAR_POSTGRES_PORT }}" \
+            --arg pg_user "${{ steps.provision.outputs.preview_postgres_user }}" \
+            --arg pg_pwd "${{ steps.provision.outputs.preview_postgres_password }}" \
+            --arg tb_token "${{ steps.provision.outputs.preview_tinybird_token }}" \
+            --arg tb_url "${{ fromJson(steps.provision.outputs.preview_tinybird_env_json).TINYBIRD_API_URL }}" \
+            --arg tb_ch_url "$(echo "${{ fromJson(steps.provision.outputs.preview_tinybird_env_json).TINYBIRD_API_URL }}" | sed 's|://api\.|://clickhouse.|')" \
+            --arg tb_branch "${{ steps.provision.outputs.preview_tinybird_branch }}" \
+            --arg tb_workspace "${{ steps.provision.outputs.preview_tinybird_workspace }}" \
+            '{
+              POLAR_POSTGRES_DATABASE: $pg_db,
+              POLAR_POSTGRES_HOST: $pg_host,
+              POLAR_POSTGRES_PORT: $pg_port,
+              POLAR_POSTGRES_USER: $pg_user,
+              POLAR_POSTGRES_PWD: $pg_pwd,
+              POLAR_TINYBIRD_API_TOKEN: $tb_token,
+              POLAR_TINYBIRD_API_URL: $tb_url,
+              POLAR_TINYBIRD_BRANCH: $tb_branch,
+              POLAR_TINYBIRD_READ_TOKEN: $tb_token,
+              POLAR_TINYBIRD_WORKSPACE: $tb_workspace,
+              POLAR_TINYBIRD_CLICKHOUSE_URL: $tb_ch_url,
+              POLAR_TINYBIRD_CLICKHOUSE_USERNAME: $tb_workspace,
+              POLAR_TINYBIRD_CLICKHOUSE_TOKEN: $tb_token
+            }')
+          echo "$ENV_JSON" > /tmp/env.json
+
+      # --- SSH deploy ---
+      - name: Sync deploy script to VM
+        if: steps.action.outputs.action == 'deploy'
+        env:
+          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
+          PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
+          PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
+          chmod 600 ~/.ssh/preview_key
+          SSH_OPTS="-o StrictHostKeyChecking=no -i ~/.ssh/preview_key"
+
+          scp $SSH_OPTS infra/preview/deploy.sh "${PREVIEW_USER}@${PREVIEW_HOST}":/tmp/deploy-preview.sh
+          ssh $SSH_OPTS "${PREVIEW_USER}@${PREVIEW_HOST}" \
+            "sudo install -m 755 /tmp/deploy-preview.sh /srv/preview-tools/deploy.sh"
+
+      - name: Deploy to preview VM
+        id: deploy
+        if: steps.action.outputs.action == 'deploy'
+        env:
+          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
+          PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
+          PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+          ENV_B64=$(base64 -w0 < /tmp/env.json)
+
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
+            "${PREVIEW_USER}@${PREVIEW_HOST}" \
+            "sudo /srv/preview-tools/deploy.sh deploy $PR_NUM '$BRANCH' '$SHA' '$ENV_B64'" \
+            | tee /tmp/deploy.log
+
+          PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
+          echo "preview_url=${PREVIEW_URL}" >> "$GITHUB_OUTPUT"
+
+      # --- SSH destroy ---
+      - name: Destroy preview on VM
+        if: steps.action.outputs.action == 'destroy'
+        env:
+          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
+          PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
+          PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
+          chmod 600 ~/.ssh/preview_key
+
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key \
+            "${PREVIEW_USER}@${PREVIEW_HOST}" \
+            "sudo /srv/preview-tools/deploy.sh destroy $PR_NUM"
+
+      - name: Teardown preview resources
+        if: steps.action.outputs.action == 'destroy'
+        working-directory: ./server
+        env:
+          POLAR_PREVIEW_BASE_DOMAIN: ${{ vars.POLAR_PREVIEW_BASE_DOMAIN }}
+          POLAR_PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
+          POLAR_PREVIEW_POSTGRES_APP_HOST: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_HOST }}
+          POLAR_PREVIEW_POSTGRES_APP_PORT: ${{ vars.POLAR_PREVIEW_POSTGRES_APP_PORT }}
+          POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE: ${{ vars.POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE }}
+          POLAR_PREVIEW_TINYBIRD_API_URL: ${{ vars.POLAR_PREVIEW_TINYBIRD_API_URL }}
+          POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
+          POLAR_PREVIEW_TINYBIRD_WORKSPACE: ${{ vars.POLAR_PREVIEW_TINYBIRD_WORKSPACE }}
+          POLAR_PREVIEW_TINYBIRD_LAST_PARTITION: ${{ vars.POLAR_PREVIEW_TINYBIRD_LAST_PARTITION || 'false' }}
+        run: |
+          set -euo pipefail
+          uv run python -m scripts.preview destroy \
+            --pr-number "$PR_NUM" \
+            --branch "$BRANCH" \
+            --sha "$SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
+  # --- PR Comment ---
   preview_comment:
     name: "Preview: Comment"
-    needs: preview_upsert
+    needs: preview
     if: |
       github.event_name == 'pull_request' &&
-      needs.preview_upsert.result == 'success'
+      github.event.action != 'closed' &&
+      needs.preview.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Find existing preview comment
@@ -124,38 +233,17 @@ jobs:
           edit-mode: replace
           body: |
             <!-- __PREVIEW_ENV__ -->
-            Preview: ${{ needs.preview_upsert.outputs.preview_url }}
-            Status: ${{ needs.preview_upsert.outputs.preview_status }}
-            SHA: ${{ github.event.pull_request.head.sha }}
-
-  preview_destroy:
-    name: "Preview: Destroy"
-    if: |
-      (
-        github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy' ||
-        github.event_name == 'pull_request' &&
-        github.event.action == 'closed'
-      )
-    uses: ./.github/workflows/preview-environment.yml
-    with:
-      action: destroy
-      preview_id: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.preview_id || '' }}
-      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event.inputs.pr_number }}
-      branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.event.inputs.branch || github.ref_name }}
-      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs.sha || github.sha }}
-    secrets:
-      PREVIEW_POSTGRES_ADMIN_DSN: ${{ secrets.POLAR_PREVIEW_POSTGRES_ADMIN_DSN }}
-      PREVIEW_TINYBIRD_ADMIN_TOKEN: ${{ secrets.POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN }}
-      TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
-      TAILSCALE_OAUTH_SECRET: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+            **Preview Environment**
+            URL: ${{ needs.preview.outputs.preview_url }}
+            SHA: `${{ github.event.pull_request.head.sha }}`
 
   preview_delete_comment:
     name: "Preview: Delete Comment"
-    needs: preview_destroy
+    needs: preview
     if: |
       github.event_name == 'pull_request' &&
       github.event.action == 'closed' &&
-      needs.preview_destroy.result == 'success'
+      needs.preview.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Find existing preview comment

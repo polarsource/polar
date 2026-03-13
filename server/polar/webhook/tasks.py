@@ -143,7 +143,8 @@ async def _webhook_event_send(
             delivery.http_code = response.status_code
             delivery.response = (
                 # Limit to first 2048 characters to avoid bloating the DB
-                response.text[:2048] if response.text else None
+                # Strip null bytes which are invalid in PostgreSQL UTF-8 VARCHAR columns
+                response.text.replace("\x00", "")[:2048] if response.text else None
             )
             event.last_http_code = response.status_code
             response.raise_for_status()

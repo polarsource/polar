@@ -2216,6 +2216,11 @@ class SubscriptionService:
     async def send_renewal_reminder_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        if all(
+            spp.product_price.is_free
+            for spp in subscription.subscription_product_prices
+        ):
+            return
         if subscription.current_period_end is None:
             return
         renewal_date = subscription.current_period_end.strftime("%m/%d/%Y")
@@ -2230,6 +2235,11 @@ class SubscriptionService:
     async def send_trial_conversion_reminder_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        if all(
+            spp.product_price.is_free
+            for spp in subscription.subscription_product_prices
+        ):
+            return
         if subscription.trial_end is None:
             return
         conversion_date = subscription.trial_end.strftime("%m/%d/%Y")

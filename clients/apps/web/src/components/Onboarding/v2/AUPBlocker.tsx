@@ -1,8 +1,20 @@
 'use client'
 
+import { Box } from '@polar-sh/orbit/Box'
+
 export function AUPBlocker() {
   return (
-    <div className="flex flex-col gap-y-3 rounded-xl border border-yellow-300 bg-yellow-50 p-4 dark:border-yellow-700 dark:bg-yellow-900/20">
+    <Box
+      display="flex"
+      flexDirection="column"
+      rowGap="m"
+      borderRadius="md"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-warning"
+      backgroundColor="background-warning"
+      padding="l"
+    >
       <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
         Physical products and services are not supported
       </p>
@@ -19,6 +31,6 @@ export function AUPBlocker() {
         </a>
         .
       </p>
-    </div>
+    </Box>
   )
 }

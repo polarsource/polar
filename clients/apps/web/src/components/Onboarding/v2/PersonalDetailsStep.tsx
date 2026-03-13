@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { enums } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -119,7 +120,11 @@ export function PersonalDetailsStep() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
-          <div className="grid grid-cols-2 gap-3">
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gap="m"
+          >
             <FormField
               control={control}
               name="firstName"
@@ -148,7 +153,7 @@ export function PersonalDetailsStep() {
                 </FormItem>
               )}
             />
-          </div>
+          </Box>
 
           <FormField
             control={control}
@@ -170,9 +175,9 @@ export function PersonalDetailsStep() {
             )}
           />
 
-          <div className="flex flex-col gap-y-2">
+          <Box display="flex" flexDirection="column" rowGap="s">
             <FormLabel>Date of Birth</FormLabel>
-            <div className="flex gap-3">
+            <Box display="flex" gap="m">
               <FormField
                 control={control}
                 name="dobMonth"
@@ -254,8 +259,8 @@ export function PersonalDetailsStep() {
                   </FormItem>
                 )}
               />
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           <Button type="submit" fullWidth>
             Continue

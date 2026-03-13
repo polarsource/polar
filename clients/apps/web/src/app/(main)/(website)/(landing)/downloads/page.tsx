@@ -72,26 +72,26 @@ export default function Downloads() {
     <Box
       display="flex"
       flexDirection="column"
-      mx="auto"
+      marginHorizontal="auto"
       height="100%"
       minHeight="100vh"
       width="100%"
       maxWidth="72rem"
-      rowGap={{ base: 'xl', md: '4xl' }}
+      rowGap={{ base: '2xl', md: '5xl' }}
     >
       <Box
         display="flex"
         width="100%"
         flexDirection="column"
         alignItems="center"
-        rowGap="xl"
+        rowGap="2xl"
       >
         <Box
           display="flex"
           flexDirection="column"
           alignItems="center"
-          rowGap="xl"
-          py="2xl"
+          rowGap="2xl"
+          paddingVertical="3xl"
           textAlign="center"
           maxWidth={{ lg: '42rem' }}
         >
@@ -108,14 +108,14 @@ export default function Downloads() {
           </p>
         </Box>
       </Box>
-      <Box display="flex" flexDirection="column" rowGap="xl">
+      <Box display="flex" flexDirection="column" rowGap="2xl">
         <Box
           display="grid"
           gridTemplateColumns={{
             base: 'repeat(1, minmax(0, 1fr))',
             md: 'repeat(3, minmax(0, 1fr))',
           }}
-          gap="xl"
+          gap="2xl"
         >
           <Box display="flex" flexDirection="column" rowGap="s">
             <h3 className="text-2xl">Mobile Apps</h3>
@@ -136,7 +136,7 @@ export default function Downloads() {
                 display="flex"
                 flexDirection="row"
                 alignItems="center"
-                columnGap="m"
+                columnGap="l"
               >
                 <span>{link.icon}</span>
                 {!link.href ? (
@@ -155,14 +155,14 @@ export default function Downloads() {
           ))}
         </Box>
       </Box>
-      <Box display="flex" flexDirection="column" rowGap="xl">
+      <Box display="flex" flexDirection="column" rowGap="2xl">
         <Box
           display="grid"
           gridTemplateColumns={{
             base: 'repeat(1, minmax(0, 1fr))',
             md: 'repeat(3, minmax(0, 1fr))',
           }}
-          gap="xl"
+          gap="2xl"
         >
           <Box display="flex" flexDirection="column" rowGap="s">
             <h3 className="text-2xl">Plugins</h3>
@@ -181,7 +181,7 @@ export default function Downloads() {
                 display="flex"
                 flexDirection="row"
                 alignItems="center"
-                columnGap="m"
+                columnGap="l"
               >
                 <span>{link.icon}</span>
                 {!link.href ? (

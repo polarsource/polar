@@ -19,6 +19,7 @@ export const paddingStyles = stylex.create({
   '2xl': { padding: spacing['2xl'] },
   '3xl': { padding: spacing['3xl'] },
   '4xl': { padding: spacing['4xl'] },
+  '5xl': { padding: spacing['5xl'] },
 })
 
 export const paddingTopStyles = stylex.create({
@@ -31,6 +32,7 @@ export const paddingTopStyles = stylex.create({
   '2xl': { paddingTop: spacing['2xl'] },
   '3xl': { paddingTop: spacing['3xl'] },
   '4xl': { paddingTop: spacing['4xl'] },
+  '5xl': { paddingTop: spacing['5xl'] },
 })
 
 export const paddingRightStyles = stylex.create({
@@ -43,6 +45,7 @@ export const paddingRightStyles = stylex.create({
   '2xl': { paddingRight: spacing['2xl'] },
   '3xl': { paddingRight: spacing['3xl'] },
   '4xl': { paddingRight: spacing['4xl'] },
+  '5xl': { paddingRight: spacing['5xl'] },
 })
 
 export const paddingBottomStyles = stylex.create({
@@ -55,6 +58,7 @@ export const paddingBottomStyles = stylex.create({
   '2xl': { paddingBottom: spacing['2xl'] },
   '3xl': { paddingBottom: spacing['3xl'] },
   '4xl': { paddingBottom: spacing['4xl'] },
+  '5xl': { paddingBottom: spacing['5xl'] },
 })
 
 export const paddingLeftStyles = stylex.create({
@@ -67,6 +71,7 @@ export const paddingLeftStyles = stylex.create({
   '2xl': { paddingLeft: spacing['2xl'] },
   '3xl': { paddingLeft: spacing['3xl'] },
   '4xl': { paddingLeft: spacing['4xl'] },
+  '5xl': { paddingLeft: spacing['5xl'] },
 })
 
 export const paddingInlineStyles = stylex.create({
@@ -79,6 +84,7 @@ export const paddingInlineStyles = stylex.create({
   '2xl': { paddingInline: spacing['2xl'] },
   '3xl': { paddingInline: spacing['3xl'] },
   '4xl': { paddingInline: spacing['4xl'] },
+  '5xl': { paddingInline: spacing['5xl'] },
 })
 
 export const paddingBlockStyles = stylex.create({
@@ -91,6 +97,7 @@ export const paddingBlockStyles = stylex.create({
   '2xl': { paddingBlock: spacing['2xl'] },
   '3xl': { paddingBlock: spacing['3xl'] },
   '4xl': { paddingBlock: spacing['4xl'] },
+  '5xl': { paddingBlock: spacing['5xl'] },
 })
 
 export const marginStyles = stylex.create({
@@ -103,6 +110,7 @@ export const marginStyles = stylex.create({
   '2xl': { margin: spacing['2xl'] },
   '3xl': { margin: spacing['3xl'] },
   '4xl': { margin: spacing['4xl'] },
+  '5xl': { margin: spacing['5xl'] },
   auto: { margin: 'auto' },
 })
 
@@ -116,6 +124,7 @@ export const marginTopStyles = stylex.create({
   '2xl': { marginTop: spacing['2xl'] },
   '3xl': { marginTop: spacing['3xl'] },
   '4xl': { marginTop: spacing['4xl'] },
+  '5xl': { marginTop: spacing['5xl'] },
   auto: { marginTop: 'auto' },
 })
 
@@ -129,6 +138,7 @@ export const marginRightStyles = stylex.create({
   '2xl': { marginRight: spacing['2xl'] },
   '3xl': { marginRight: spacing['3xl'] },
   '4xl': { marginRight: spacing['4xl'] },
+  '5xl': { marginRight: spacing['5xl'] },
   auto: { marginRight: 'auto' },
 })
 
@@ -142,6 +152,7 @@ export const marginBottomStyles = stylex.create({
   '2xl': { marginBottom: spacing['2xl'] },
   '3xl': { marginBottom: spacing['3xl'] },
   '4xl': { marginBottom: spacing['4xl'] },
+  '5xl': { marginBottom: spacing['5xl'] },
   auto: { marginBottom: 'auto' },
 })
 
@@ -155,6 +166,7 @@ export const marginLeftStyles = stylex.create({
   '2xl': { marginLeft: spacing['2xl'] },
   '3xl': { marginLeft: spacing['3xl'] },
   '4xl': { marginLeft: spacing['4xl'] },
+  '5xl': { marginLeft: spacing['5xl'] },
   auto: { marginLeft: 'auto' },
 })
 
@@ -168,6 +180,7 @@ export const marginInlineStyles = stylex.create({
   '2xl': { marginInline: spacing['2xl'] },
   '3xl': { marginInline: spacing['3xl'] },
   '4xl': { marginInline: spacing['4xl'] },
+  '5xl': { marginInline: spacing['5xl'] },
   auto: { marginInline: 'auto' },
 })
 
@@ -181,6 +194,7 @@ export const marginBlockStyles = stylex.create({
   '2xl': { marginBlock: spacing['2xl'] },
   '3xl': { marginBlock: spacing['3xl'] },
   '4xl': { marginBlock: spacing['4xl'] },
+  '5xl': { marginBlock: spacing['5xl'] },
   auto: { marginBlock: 'auto' },
 })
 
@@ -194,6 +208,7 @@ export const gapStyles = stylex.create({
   '2xl': { gap: spacing['2xl'] },
   '3xl': { gap: spacing['3xl'] },
   '4xl': { gap: spacing['4xl'] },
+  '5xl': { gap: spacing['5xl'] },
 })
 
 export const rowGapStyles = stylex.create({
@@ -206,6 +221,7 @@ export const rowGapStyles = stylex.create({
   '2xl': { rowGap: spacing['2xl'] },
   '3xl': { rowGap: spacing['3xl'] },
   '4xl': { rowGap: spacing['4xl'] },
+  '5xl': { rowGap: spacing['5xl'] },
 })
 
 export const columnGapStyles = stylex.create({
@@ -218,6 +234,7 @@ export const columnGapStyles = stylex.create({
   '2xl': { columnGap: spacing['2xl'] },
   '3xl': { columnGap: spacing['3xl'] },
   '4xl': { columnGap: spacing['4xl'] },
+  '5xl': { columnGap: spacing['5xl'] },
 })
 
 // ── Colors ───────────────────────────────────────────────────────────────────
@@ -225,28 +242,40 @@ export const columnGapStyles = stylex.create({
 export const backgroundColorStyles = stylex.create({
   'background-primary': { backgroundColor: colors['background-primary'] },
   'background-secondary': { backgroundColor: colors['background-secondary'] },
+  'background-card': { backgroundColor: colors['background-card'] },
+  'background-warning': { backgroundColor: colors['background-warning'] },
   'text-primary': { backgroundColor: colors['text-primary'] },
   'text-secondary': { backgroundColor: colors['text-secondary'] },
+  'text-tertiary': { backgroundColor: colors['text-tertiary'] },
   'border-primary': { backgroundColor: colors['border-primary'] },
   'border-secondary': { backgroundColor: colors['border-secondary'] },
+  'border-warning': { backgroundColor: colors['border-warning'] },
 })
 
 export const colorStyles = stylex.create({
   'background-primary': { color: colors['background-primary'] },
   'background-secondary': { color: colors['background-secondary'] },
+  'background-card': { color: colors['background-card'] },
+  'background-warning': { color: colors['background-warning'] },
   'text-primary': { color: colors['text-primary'] },
   'text-secondary': { color: colors['text-secondary'] },
+  'text-tertiary': { color: colors['text-tertiary'] },
   'border-primary': { color: colors['border-primary'] },
   'border-secondary': { color: colors['border-secondary'] },
+  'border-warning': { color: colors['border-warning'] },
 })
 
 export const borderColorStyles = stylex.create({
   'background-primary': { borderColor: colors['background-primary'] },
   'background-secondary': { borderColor: colors['background-secondary'] },
+  'background-card': { borderColor: colors['background-card'] },
+  'background-warning': { borderColor: colors['background-warning'] },
   'text-primary': { borderColor: colors['text-primary'] },
   'text-secondary': { borderColor: colors['text-secondary'] },
+  'text-tertiary': { borderColor: colors['text-tertiary'] },
   'border-primary': { borderColor: colors['border-primary'] },
   'border-secondary': { borderColor: colors['border-secondary'] },
+  'border-warning': { borderColor: colors['border-warning'] },
 })
 
 // ── Border Radius ────────────────────────────────────────────────────────────

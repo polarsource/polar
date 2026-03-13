@@ -1,5 +1,6 @@
 'use client'
 
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -131,14 +132,14 @@ export function ProductDetailsStep() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
-          <div className="flex flex-col gap-y-3">
+          <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>What are you selling?</FormLabel>
             <ChipSelect
               options={SELLING_CATEGORIES}
               selected={sellingCategories}
               onChange={(val) => setValue('sellingCategories', val)}
             />
-          </div>
+          </Box>
 
           {hasBlockedCategory && <AUPBlocker />}
 
@@ -160,16 +161,16 @@ export function ProductDetailsStep() {
             )}
           />
 
-          <div className="flex flex-col gap-y-3">
+          <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>Pricing model</FormLabel>
             <ChipSelect
               options={PRICING_MODELS}
               selected={pricingModel}
               onChange={(val) => setValue('pricingModel', val)}
             />
-          </div>
+          </Box>
 
-          <div className="flex flex-col gap-y-3">
+          <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>
               Currently selling on{' '}
               <span className="dark:text-polar-500 text-gray-400">
@@ -181,9 +182,13 @@ export function ProductDetailsStep() {
               selected={watch('currentlySellingOn')}
               onChange={(val) => setValue('currentlySellingOn', val)}
             />
-          </div>
+          </Box>
 
-          <div className="grid grid-cols-2 gap-3">
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gap="m"
+          >
             <FormField
               control={control}
               name="supportEmail"
@@ -229,7 +234,7 @@ export function ProductDetailsStep() {
                 </FormItem>
               )}
             />
-          </div>
+          </Box>
 
           <Button
             type="submit"

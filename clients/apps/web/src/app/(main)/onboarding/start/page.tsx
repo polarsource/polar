@@ -3,6 +3,7 @@
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
 import { CONFIG } from '@/utils/config'
+import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { redirect, useRouter } from 'next/navigation'
 
@@ -26,23 +27,61 @@ export default function Page() {
   }
 
   return (
-    <div className="dark:bg-polar-950 flex min-h-screen items-center justify-center bg-white px-4">
-      <div className="flex w-full max-w-3xl flex-col items-center gap-y-8">
+    <Box
+      backgroundColor="background-primary"
+      display="flex"
+      minHeight="100vh"
+      alignItems="center"
+      justifyContent="center"
+      paddingHorizontal="l"
+    >
+      <Box
+        display="flex"
+        width="100%"
+        maxWidth="48rem"
+        flexDirection="column"
+        alignItems="center"
+        rowGap="2xl"
+      >
         <LogoIcon size={48} />
 
-        <div className="flex flex-col items-center gap-y-2 text-center">
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          rowGap="s"
+          textAlign="center"
+        >
           <h1 className="text-2xl font-medium text-gray-900 dark:text-white">
             Welcome to Polar
           </h1>
           <p className="dark:text-polar-400 text-gray-500">
             What are you looking to do?
           </p>
-        </div>
+        </Box>
 
-        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
+        <Box
+          display="grid"
+          width="100%"
+          gridTemplateColumns={{
+            base: 'repeat(1, minmax(0, 1fr))',
+            md: 'repeat(2, minmax(0, 1fr))',
+          }}
+          gap="l"
+        >
           {/* Left card — Sandbox */}
-          <div className="dark:border-polar-700 dark:bg-polar-800 flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="flex flex-col gap-y-2">
+          <Box
+            backgroundColor="background-card"
+            borderColor="border-primary"
+            borderWidth={1}
+            borderStyle="solid"
+            borderRadius="lg"
+            display="flex"
+            flexDirection="column"
+            justifyContent="between"
+            padding="xl"
+          >
+            <Box display="flex" flexDirection="column" rowGap="s">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">
                 I&apos;m just exploring
               </h2>
@@ -50,32 +89,42 @@ export default function Page() {
                 Jump into a sandbox environment with test data and mock
                 payments. No real money, no setup required.
               </p>
-            </div>
-            <div className="mt-6">
+            </Box>
+            <Box marginTop="xl">
               <Button fullWidth onClick={handleSandbox}>
                 Launch sandbox
               </Button>
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Right card — Business setup */}
-          <div className="dark:border-polar-700 dark:bg-polar-800 flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="flex flex-col gap-y-2">
+          <Box
+            backgroundColor="background-card"
+            borderColor="border-primary"
+            borderWidth={1}
+            borderStyle="solid"
+            borderRadius="lg"
+            display="flex"
+            flexDirection="column"
+            justifyContent="between"
+            padding="xl"
+          >
+            <Box display="flex" flexDirection="column" rowGap="s">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white">
                 I&apos;m setting up my business
               </h2>
               <p className="dark:text-polar-400 text-sm text-gray-500">
                 Set up your organization and start accepting payments.
               </p>
-            </div>
-            <div className="mt-6">
+            </Box>
+            <Box marginTop="xl">
               <Button fullWidth onClick={handleGetStarted}>
                 Get started
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -37,9 +38,19 @@ export function OnboardingShell({
   const currentIndex = STEPS.indexOf(step)
 
   return (
-    <div className="flex h-full min-h-screen">
+    <Box display="flex" height="100%" minHeight="100vh">
       {/* Left: form */}
-      <div className="dark:bg-polar-950 flex flex-1 flex-col items-center justify-center overflow-y-auto bg-white px-8 py-12 md:px-16 lg:px-24">
+      <Box
+        backgroundColor="background-primary"
+        display="flex"
+        flex={1}
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        overflowY="auto"
+        paddingHorizontal={{ base: '2xl', md: '4xl', lg: '5xl' }}
+        paddingVertical="3xl"
+      >
         <motion.div
           key={step}
           initial={{ opacity: 0, y: 12 }}
@@ -48,8 +59,13 @@ export function OnboardingShell({
           className="flex w-full max-w-md flex-col gap-y-8"
         >
           {/* Logo + back + progress */}
-          <div className="relative flex flex-col gap-y-6">
-            <div className="flex items-center justify-center">
+          <Box
+            position="relative"
+            display="flex"
+            flexDirection="column"
+            rowGap="xl"
+          >
+            <Box display="flex" alignItems="center" justifyContent="center">
               {currentIndex > 0 && (
                 <button
                   type="button"
@@ -60,10 +76,10 @@ export function OnboardingShell({
                 </button>
               )}
               <LogoIcon size={36} />
-            </div>
-            <div className="flex w-full items-center gap-2">
+            </Box>
+            <Box display="flex" width="100%" alignItems="center" gap="s">
               {STEPS.map((s, i) => (
-                <div key={s} className="flex flex-1">
+                <Box key={s} display="flex" flex={1}>
                   <div
                     className={`h-0.5 w-full rounded-full transition-colors ${
                       i <= currentIndex
@@ -71,12 +87,12 @@ export function OnboardingShell({
                         : 'dark:bg-polar-700 bg-gray-200'
                     }`}
                   />
-                </div>
+                </Box>
               ))}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="flex flex-col gap-y-3">
+          <Box display="flex" flexDirection="column" rowGap="m">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {title}
             </h1>
@@ -85,17 +101,27 @@ export function OnboardingShell({
                 {subtitle}
               </p>
             )}
-          </div>
+          </Box>
           {children}
         </motion.div>
-      </div>
+      </Box>
 
       {/* Right: API preview */}
-      <div className="dark:bg-polar-900 hidden w-1/2 max-w-xl flex-col items-center justify-center bg-gray-50 px-12 py-12 lg:flex">
-        <div className="w-full max-w-sm">
+      <Box
+        backgroundColor="background-secondary"
+        display={{ base: 'none', lg: 'flex' }}
+        width="50%"
+        maxWidth="36rem"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        paddingHorizontal="3xl"
+        paddingVertical="3xl"
+      >
+        <Box width="100%" maxWidth="24rem">
           <APIPreview step={step} />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

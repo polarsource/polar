@@ -8,7 +8,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -136,25 +136,25 @@ const AccessTokensSettings = () => {
           href={`/dashboard/${organizations?.items[0].slug}/settings#developers`}
         >
           <Button variant="link" className="p-0">
-            Create Organization Access Token
+            Create Token
           </Button>
         </Link>
       </div>
-      <ShadowListGroup>
+      <ListGroup>
         {tokens.data?.items && tokens.data.items.length > 0 ? (
           tokens.data?.items.map((token) => (
-            <ShadowListGroup.Item key={token.id}>
+            <ListGroup.Item key={token.id}>
               <AccessToken {...token} />
-            </ShadowListGroup.Item>
+            </ListGroup.Item>
           ))
         ) : (
-          <ShadowListGroup.Item>
+          <ListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               You don&apos;t have any active Personal Access Tokens.
             </p>
-          </ShadowListGroup.Item>
+          </ListGroup.Item>
         )}
-      </ShadowListGroup>
+      </ListGroup>
     </div>
   )
 }

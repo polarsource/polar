@@ -8,7 +8,7 @@ import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { useState } from 'react'
 import { EditOAuthClientModal } from './EditOAuthClientModal'
 import { NewOAuthClientModal } from './NewOAuthClientModal'
@@ -50,29 +50,29 @@ const OAuthSettings = () => {
   }
 
   return (
-    <ShadowListGroup>
+    <ListGroup>
       {oauthClients.data?.items && oauthClients.data.items.length > 0 ? (
         oauthClients.data?.items.map((client) => {
           return (
-            <ShadowListGroup.Item key={client.client_id}>
+            <ListGroup.Item key={client.client_id}>
               <OAuthClientDetails client={client} onClick={onOpen} />
-            </ShadowListGroup.Item>
+            </ListGroup.Item>
           )
         })
       ) : (
-        <ShadowListGroup.Item>
+        <ListGroup.Item>
           <p className="dark:text-polar-400 text-sm text-gray-500">
             You don&apos;t have any configured OAuth Applications
           </p>
-        </ShadowListGroup.Item>
+        </ListGroup.Item>
       )}
-      <ShadowListGroup.Item>
+      <ListGroup.Item>
         <div className="flex flex-row items-center gap-x-4">
           <Button asChild onClick={showNewOAuthClientModal}>
             New OAuth App
           </Button>
         </div>
-      </ShadowListGroup.Item>
+      </ListGroup.Item>
       <InlineModal
         isShown={isNewOAuthClientModalShown}
         hide={hideNewOAuthClientModal}
@@ -99,7 +99,7 @@ const OAuthSettings = () => {
           )
         }
       />
-    </ShadowListGroup>
+    </ListGroup>
   )
 }
 

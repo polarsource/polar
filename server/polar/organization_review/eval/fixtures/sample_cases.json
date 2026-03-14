@@ -1,0 +1,476 @@
+[
+  {
+    "org_name": "Contenfly",
+    "review_type": "threshold",
+    "human_decision": "APPROVE",
+    "agent_verdict": "DENY",
+    "human_reason": "drafting content vs automatically posting",
+    "review_context": "threshold",
+    "data_snapshot": {
+      "setup": {
+        "integration": {
+          "webhook_urls": [],
+          "api_key_count": 1,
+          "webhook_domains": [],
+          "webhook_known_service_domains": []
+        },
+        "checkout_links": {
+          "links": [],
+          "total_links": 0,
+          "links_without_benefits": 0
+        },
+        "checkout_return_urls": {
+          "domains": [],
+          "unique_urls": []
+        },
+        "checkout_success_urls": {
+          "domains": [],
+          "unique_urls": []
+        }
+      },
+      "account": {
+        "country": "DE",
+        "currency": "eur",
+        "business_url": null,
+        "capabilities": {
+          "transfers": "active"
+        },
+        "business_name": "org/k-roma",
+        "business_type": "company",
+        "is_charges_enabled": true,
+        "is_payouts_enabled": true,
+        "requirements_errors": [],
+        "is_details_submitted": true,
+        "requirements_past_due": [],
+        "requirements_currently_due": [],
+        "requirements_disabled_reason": null,
+        "business_support_address_country": null,
+        "requirements_pending_verification": []
+      },
+      "context": "threshold",
+      "history": {
+        "user_email": "aikromke@gmail.com",
+        "user_blocked_at": null,
+        "has_blocked_orgs": false,
+        "has_prior_denials": false,
+        "prior_organizations": []
+      },
+      "metrics": {
+        "refund_count": 0,
+        "dispute_count": 0,
+        "p50_risk_score": 1,
+        "p90_risk_score": 1,
+        "total_payments": 1,
+        "succeeded_payments": 1,
+        "total_amount_cents": 1190,
+        "refund_amount_cents": 0,
+        "dispute_amount_cents": 0
+      },
+      "website": {
+        "pages": [
+          {
+            "url": "https://contentfly.eu",
+            "title": "ContentFly \u2014 AI-powered content generator for all social networks",
+            "method": "http",
+            "content": "",
+            "content_truncated": false
+          },
+          {
+            "url": "https://contentfly.eu/",
+            "title": "ContentFly \u2014 AI-powered content generator for all social networks",
+            "method": "browser",
+            "content": "# Content for\n\nin 2 minutes\n\nEnter your website URL \u2014 get a ready content plan with posts for Instagram, Facebook, LinkedIn, TikTok and 10+ more platforms",
+            "content_truncated": false
+          },
+          {
+            "url": "https://contentfly.eu/use-cases",
+            "title": "ContentFly \u2014 AI-powered content generator for all social networks",
+            "method": "browser",
+            "content": "# Built for creators and businesses\n\nSee how ContentFly helps different types of users save time and grow their presence",
+            "content_truncated": false
+          }
+        ],
+        "usage": {
+          "input_tokens": 7873,
+          "total_tokens": 8479,
+          "output_tokens": 606,
+          "estimated_cost_usd": 0.01863295
+        },
+        "summary": "ContentFly is an AI-powered SMM content generator. It analyzes a user's website URL to generate platform-specific posts and content plans across 15+ social platforms.",
+        "base_url": "https://contentfly.eu",
+        "scrape_error": null,
+        "total_pages_attempted": 6,
+        "total_pages_succeeded": 2
+      },
+      "identity": {
+        "verified_dob": null,
+        "verified_last_name": "KOLIADA",
+        "verification_status": "verified",
+        "verified_first_name": "ROMAN",
+        "verification_error_code": null,
+        "verified_address_country": null
+      },
+      "products": {
+        "products": [
+          {
+            "name": "Starter",
+            "prices": [
+              {
+                "currency": "eur",
+                "amount_type": "fixed",
+                "amount_cents": 900
+              }
+            ],
+            "visibility": "public",
+            "description": null,
+            "is_archived": false,
+            "billing_type": "month"
+          },
+          {
+            "name": "Pro",
+            "prices": [
+              {
+                "currency": "eur",
+                "amount_type": "fixed",
+                "amount_cents": 1900
+              }
+            ],
+            "visibility": "public",
+            "description": null,
+            "is_archived": false,
+            "billing_type": "month"
+          }
+        ],
+        "total_count": 4
+      },
+      "collected_at": "2026-03-08T11:15:29.347846Z",
+      "organization": {
+        "name": "Contenfly",
+        "slug": "k-roma",
+        "about": "Contentfly is an AI-powered content automation platform for startups and indie developers built on Lovable.",
+        "email": "team@contentfly.eu",
+        "socials": [
+          {
+            "url": "https://www.linkedin.com/company/k-roma",
+            "platform": "linkedin"
+          }
+        ],
+        "website": "https://contentfly.eu/",
+        "blocked_at": null,
+        "created_at": "2026-03-06T19:29:45.754515Z",
+        "intended_use": "Polar handles all subscription billing for our three plans.",
+        "switching_from": null,
+        "product_description": "SaaS subscription platform with AI-generated social media content.",
+        "customer_acquisition": [
+          "socials",
+          "ads"
+        ],
+        "details_submitted_at": "2026-03-08T06:03:16.080906Z",
+        "previous_annual_revenue": 0
+      },
+      "prior_feedback": {
+        "entries": []
+      }
+    }
+  },
+  {
+    "org_name": "Dikalog",
+    "review_type": "threshold",
+    "human_decision": "DENY",
+    "agent_verdict": "APPROVE",
+    "human_reason": "ma/mad + all test sales + no benefits and all webhooks are failing + non-existent socials",
+    "review_context": "threshold",
+    "data_snapshot": {
+      "setup": {
+        "integration": {
+          "webhook_urls": [
+            "https://www.dikalog.com/api/webhooks/polar"
+          ],
+          "api_key_count": 1,
+          "webhook_domains": [
+            "www.dikalog.com"
+          ]
+        },
+        "checkout_links": {
+          "links": [],
+          "total_links": 0,
+          "links_without_benefits": 0
+        },
+        "checkout_return_urls": {
+          "domains": [],
+          "unique_urls": []
+        },
+        "checkout_success_urls": {
+          "domains": [],
+          "unique_urls": []
+        }
+      },
+      "account": {
+        "country": "MA",
+        "currency": "mad",
+        "business_url": null,
+        "capabilities": {
+          "transfers": "active"
+        },
+        "business_name": "org/scenephile-studio",
+        "business_type": "individual",
+        "is_charges_enabled": true,
+        "is_payouts_enabled": true,
+        "requirements_errors": [],
+        "is_details_submitted": true,
+        "requirements_past_due": [],
+        "requirements_currently_due": [],
+        "requirements_disabled_reason": null,
+        "business_support_address_country": null,
+        "requirements_pending_verification": []
+      },
+      "context": "threshold",
+      "history": {
+        "user_email": "skyanimyy@gmail.com",
+        "user_blocked_at": null,
+        "has_blocked_orgs": false,
+        "has_prior_denials": false,
+        "prior_organizations": []
+      },
+      "metrics": {
+        "refund_count": 0,
+        "dispute_count": 0,
+        "p50_risk_score": 0,
+        "p90_risk_score": 0,
+        "total_payments": 3,
+        "succeeded_payments": 1,
+        "total_amount_cents": 1649,
+        "refund_amount_cents": 0,
+        "dispute_amount_cents": 0
+      },
+      "website": {
+        "pages": [
+          {
+            "url": "https://www.dikalog.com/",
+            "title": "Dikalog | Visual Workspace for Film Lovers",
+            "method": "http",
+            "content": "Import your Letterboxd lists, organize films on infinite boards, and get personalized AI recommendations.",
+            "content_truncated": false
+          }
+        ],
+        "usage": {
+          "input_tokens": 6065,
+          "total_tokens": 6483,
+          "output_tokens": 418,
+          "estimated_cost_usd": 0.01303855
+        },
+        "summary": "Dikalog is a visual workspace and companion tool for film lovers\u2014especially Letterboxd users.",
+        "base_url": "https://dikalog.com",
+        "scrape_error": null,
+        "total_pages_attempted": 5,
+        "total_pages_succeeded": 4
+      },
+      "identity": {
+        "verified_dob": null,
+        "verified_last_name": "HIMRANE",
+        "verification_status": "verified",
+        "verified_first_name": "MOHAMED",
+        "verification_error_code": null,
+        "verified_address_country": "MA"
+      },
+      "products": {
+        "products": [
+          {
+            "name": "Lifetime Access",
+            "prices": [
+              {
+                "currency": "usd",
+                "amount_type": "fixed",
+                "amount_cents": 1499
+              }
+            ],
+            "visibility": "public",
+            "description": "Pay once, keep it forever.",
+            "is_archived": false,
+            "billing_type": "one_time"
+          }
+        ],
+        "total_count": 1
+      },
+      "collected_at": "2026-03-02T11:11:07.542039Z",
+      "organization": {
+        "name": "Dikalog",
+        "slug": "scenephile-studio",
+        "about": "Industry: Software / Entertainment Technology",
+        "email": "dikaloog@gmail.com",
+        "socials": [
+          {
+            "url": "https://x.com/dikallog",
+            "platform": "x"
+          }
+        ],
+        "website": "https://dikalog.com/",
+        "blocked_at": null,
+        "created_at": "2025-08-27T11:41:08.383412Z",
+        "intended_use": "Integrated directly on our website's upgrade page, linking to your hosted checkout.",
+        "switching_from": "other",
+        "product_description": "Product Type: B2C SaaS web application. We sell a premium visual list editor for film enthusiasts.",
+        "customer_acquisition": [
+          "website",
+          "socials",
+          "email",
+          "other"
+        ],
+        "details_submitted_at": "2026-03-01T18:45:10.407420Z",
+        "previous_annual_revenue": 0
+      },
+      "prior_feedback": {
+        "entries": []
+      }
+    }
+  },
+  {
+    "org_name": "imnida",
+    "review_type": "threshold",
+    "human_decision": "APPROVE",
+    "agent_verdict": "DENY",
+    "human_reason": "This site is a simple language learning website. No real exam questions being used etc. Looks all good.",
+    "review_context": "threshold",
+    "data_snapshot": {
+      "setup": {
+        "integration": {
+          "webhook_urls": [
+            "https://topikpracticetest.com/api/polar-webhook"
+          ],
+          "api_key_count": 1,
+          "webhook_domains": [
+            "topikpracticetest.com"
+          ],
+          "webhook_known_service_domains": []
+        },
+        "checkout_links": {
+          "links": [],
+          "total_links": 0,
+          "links_without_benefits": 0
+        },
+        "checkout_return_urls": {
+          "domains": [
+            "127.0.0.1:4174",
+            "topikpracticetest.com"
+          ],
+          "unique_urls": [
+            "http://127.0.0.1:4174/result?purchase=cancel",
+            "https://topikpracticetest.com/result?purchase=cancel"
+          ]
+        },
+        "checkout_success_urls": {
+          "domains": [],
+          "unique_urls": []
+        }
+      },
+      "account": {
+        "country": "KR",
+        "currency": "krw",
+        "business_url": null,
+        "capabilities": {
+          "transfers": "active"
+        },
+        "business_name": "org/imnida",
+        "business_type": "individual",
+        "is_charges_enabled": true,
+        "is_payouts_enabled": true,
+        "requirements_errors": [],
+        "is_details_submitted": true,
+        "requirements_past_due": [],
+        "requirements_currently_due": [],
+        "requirements_disabled_reason": null,
+        "business_support_address_country": null,
+        "requirements_pending_verification": []
+      },
+      "context": "threshold",
+      "history": {
+        "user_email": "kimgwangsung1@gmail.com",
+        "user_blocked_at": null,
+        "has_blocked_orgs": false,
+        "has_prior_denials": false,
+        "prior_organizations": []
+      },
+      "metrics": {
+        "refund_count": 0,
+        "dispute_count": 0,
+        "p50_risk_score": 0,
+        "p90_risk_score": 0,
+        "total_payments": 4,
+        "succeeded_payments": 1,
+        "total_amount_cents": 499,
+        "refund_amount_cents": 0,
+        "dispute_amount_cents": 0
+      },
+      "website": {
+        "pages": [],
+        "usage": {
+          "input_tokens": 2437,
+          "total_tokens": 2651,
+          "output_tokens": 214,
+          "estimated_cost_usd": 0.00726075
+        },
+        "summary": "Business description: Unable to verify. The homepage redirects to topikpracticetest.com, an off-domain destination.",
+        "base_url": "https://my-react-01.pages.dev",
+        "scrape_error": null,
+        "total_pages_attempted": 3,
+        "total_pages_succeeded": 0
+      },
+      "identity": {
+        "verified_dob": null,
+        "verified_last_name": "KIM",
+        "verification_status": "verified",
+        "verified_first_name": "GWANGSUNG",
+        "verification_error_code": null,
+        "verified_address_country": null
+      },
+      "products": {
+        "products": [
+          {
+            "name": "TOPIK AI Report (Single Use)",
+            "prices": [
+              {
+                "currency": "usd",
+                "amount_type": "fixed",
+                "amount_cents": 499
+              }
+            ],
+            "visibility": "public",
+            "description": "Get a personalized TOPIK Level 1 study report based on your quiz results.",
+            "is_archived": false,
+            "billing_type": "one_time"
+          }
+        ],
+        "total_count": 1
+      },
+      "collected_at": "2026-03-07T05:45:29.214087Z",
+      "organization": {
+        "name": "imnida",
+        "slug": "imnida",
+        "about": "We operate an education technology web service for Korean language learners preparing for TOPIK Level 1.",
+        "email": "kimgwangsung1@gmail.com",
+        "socials": [
+          {
+            "url": "https://www.instagram.com/gwangsungkim",
+            "platform": "instagram"
+          }
+        ],
+        "website": "https://my-react-01.pages.dev/",
+        "blocked_at": null,
+        "created_at": "2026-02-25T14:15:35.861476Z",
+        "intended_use": "Polar checkout is displayed on our website result page.",
+        "switching_from": null,
+        "product_description": "We sell a digital education product. One-time report unlock (USD 4.99).",
+        "customer_acquisition": [
+          "website",
+          "socials",
+          "ads"
+        ],
+        "details_submitted_at": "2026-02-25T20:41:02.403256Z",
+        "previous_annual_revenue": 0
+      },
+      "prior_feedback": {
+        "entries": []
+      }
+    }
+  }
+]

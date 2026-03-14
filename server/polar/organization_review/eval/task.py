@@ -1,73 +1,43 @@
-"""The eval task function — takes ReviewInput, returns a verdict string."""
+"""The eval task function — takes FeedbackReviewInput, returns a verdict string.
+
+Supports two modes:
+1. Standard eval: run the current system prompt against the stored DataSnapshot.
+2. GEPA optimization: run a *candidate* system prompt against the DataSnapshot.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from polar.organization_review.schemas import (
-    AccountData,
-    DataSnapshot,
-    HistoryData,
-    IdentityData,
-    OrganizationData,
-    PaymentMetrics,
-    ProductsData,
-    ReviewContext,
-)
+from polar.organization_review.schemas import ReviewContext
 
-from .dataset import ReviewInput
+from .dataset import FeedbackReviewInput
 
-# Map from ReviewVerdict (model output) to OrganizationReview.Verdict (ground truth)
+# Map from ReviewVerdict (model output) to eval expected output
 _VERDICT_MAP = {
     "APPROVE": "PASS",
     "DENY": "FAIL",
+    "NEEDS_HUMAN_REVIEW": "FAIL",
 }
 
-
-def build_snapshot(review_input: ReviewInput) -> DataSnapshot:
-    """Reconstruct a DataSnapshot from the stored organization_details_snapshot.
-
-    For SUBMISSION context, products/account/identity/metrics are empty.
-    """
-    details = review_input.details
-
-    org_data = OrganizationData(
-        name=review_input.name,
-        slug=review_input.name.lower().replace(" ", "-"),
-        website=review_input.website,
-        about=details.get("about"),
-        product_description=details.get("product_description"),
-        intended_use=details.get("intended_use"),
-        customer_acquisition=details.get("customer_acquisition", []),
-        switching_from=details.get("switching_from"),
-        previous_annual_revenue=details.get("previous_annual_revenue"),
-        socials=review_input.socials,
-    )
-
-    from datetime import UTC, datetime
-
-    return DataSnapshot(
-        context=ReviewContext.SUBMISSION,
-        organization=org_data,
-        products=ProductsData(),
-        identity=IdentityData(),
-        account=AccountData(),
-        metrics=PaymentMetrics(),
-        history=HistoryData(),
-        website=None,
-        collected_at=datetime.now(UTC),
-    )
+_CONTEXT_MAP = {
+    "submission": ReviewContext.SUBMISSION,
+    "setup_complete": ReviewContext.SETUP_COMPLETE,
+    "threshold": ReviewContext.THRESHOLD,
+    "manual": ReviewContext.MANUAL,
+}
 
 
 def create_review_task(
     model: str | None = None,
-    context: ReviewContext = ReviewContext.SUBMISSION,
-) -> Callable[[ReviewInput], Awaitable[str]]:
+    system_prompt: str | None = None,
+) -> Callable[[FeedbackReviewInput], Awaitable[str]]:
     """Create a task function for the eval.
 
     Args:
-        model: Override the model (uses settings.OPENAI_MODEL if None)
-        context: Review context to use
+        model: Override the model (uses settings.OPENAI_MODEL if None).
+        system_prompt: Override the system prompt (for GEPA optimization).
+            If None, uses the default SYSTEM_PROMPT.
     """
     from pydantic_ai import Agent
     from pydantic_ai.models.openai import OpenAIChatModel
@@ -79,22 +49,26 @@ def create_review_task(
 
     analyzer = ReviewAnalyzer()
 
-    if model:
+    effective_prompt = system_prompt or SYSTEM_PROMPT
+    model_name = model or settings.OPENAI_MODEL
+
+    if model or system_prompt:
         provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        analyzer.model = OpenAIChatModel(model, provider=provider)
+        analyzer.model = OpenAIChatModel(model_name, provider=provider)
         analyzer.agent = Agent(
             analyzer.model,
             output_type=ReviewAgentReport,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=effective_prompt,
         )
 
-    async def review_task(review_input: ReviewInput) -> str:
-        snapshot = build_snapshot(review_input)
+    async def review_task(review_input: FeedbackReviewInput) -> str:
+        snapshot = review_input.data_snapshot
+        context = _CONTEXT_MAP.get(
+            review_input.review_type, ReviewContext.THRESHOLD
+        )
         report, _usage = await analyzer.analyze(snapshot, context=context)
         return _VERDICT_MAP.get(report.verdict.value, report.verdict.value)
 
-    # Set the name for pydantic-evals reporting
-    model_name = model or settings.OPENAI_MODEL
     review_task.__name__ = f"review_{model_name}"
     review_task.__qualname__ = f"review_{model_name}"
 

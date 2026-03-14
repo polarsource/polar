@@ -24,7 +24,6 @@ import {
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
-import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
 
@@ -143,7 +142,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         title={
           <div className="flex min-w-0 flex-row items-center gap-4">
             <div className="flex min-w-0 flex-row items-center gap-4">
-              <ProductThumbnail product={product} />
               <h1 className="truncate text-2xl">{product.name}</h1>
             </div>
 

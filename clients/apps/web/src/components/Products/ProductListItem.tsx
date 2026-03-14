@@ -2,7 +2,6 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
-import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateProduct } from '@/hooks/queries/products'
 import {
@@ -95,8 +94,7 @@ export const ProductListItem = ({
       <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
         <ListItem className="flex flex-row items-center justify-between gap-x-6">
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
-            <ProductThumbnail product={product} />
-            <div className="flex min-w-0 flex-row items-center gap-x-2">
+<div className="flex min-w-0 flex-row items-center gap-x-2">
               <span className="truncate">{product.name}</span>
               {product.visibility === 'private' && (
                 <Pill color="gray" className="shrink-0 px-2 py-0.5 text-xs">

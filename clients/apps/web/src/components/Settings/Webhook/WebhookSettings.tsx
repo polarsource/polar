@@ -4,7 +4,7 @@ import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { ArrowUpRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { InlineModal } from '../../Modal/InlineModal'
@@ -26,23 +26,23 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
 
   return (
     <>
-      <ShadowListGroup>
+      <ListGroup>
         {endpoints.data?.items && endpoints.data.items.length > 0 ? (
           endpoints.data?.items.map((e) => {
             return (
-              <ShadowListGroup.Item key={e.id}>
+              <ListGroup.Item key={e.id}>
                 <Endpoint organization={props.org} endpoint={e} />
-              </ShadowListGroup.Item>
+              </ListGroup.Item>
             )
           })
         ) : (
-          <ShadowListGroup.Item>
+          <ListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.org.name} doesn&apos;t have any webhooks yet
             </p>
-          </ShadowListGroup.Item>
+          </ListGroup.Item>
         )}
-        <ShadowListGroup.Item>
+        <ListGroup.Item>
           <div className="flex flex-row items-center gap-x-4">
             <Button asChild onClick={showNewWebhookModal}>
               Add Endpoint
@@ -51,14 +51,14 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
               href="https://polar.sh/docs/integrate/webhooks/endpoints"
               className="shrink-0"
             >
-              <Button className="gap-x-1" asChild variant="ghost">
+              <Button className="gap-x-2" asChild variant="ghost">
                 <span>Documentation</span>
                 <ArrowUpRightIcon className="h-4 w-4" />
               </Button>
             </Link>
           </div>
-        </ShadowListGroup.Item>
-      </ShadowListGroup>
+        </ListGroup.Item>
+      </ListGroup>
       <InlineModal
         isShown={isNewWebhookModalShown}
         hide={hideNewWebhookModal}

@@ -15,7 +15,7 @@ import GitHub from '@mui/icons-material/GitHub'
 import Google from '@mui/icons-material/Google'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
@@ -202,26 +202,26 @@ const AuthenticationSettings = () => {
   }
 
   return (
-    <ShadowListGroup>
-      <ShadowListGroup.Item>
+    <ListGroup>
+      <ListGroup.Item>
         <GitHubAuthenticationMethod
           oauthAccount={githubAccount}
           returnTo={pathname || '/start'}
           onDisconnect={() => disconnectOAuth.mutate('github')}
           isDisconnecting={disconnectOAuth.isPending}
         />
-      </ShadowListGroup.Item>
+      </ListGroup.Item>
 
-      <ShadowListGroup.Item>
+      <ListGroup.Item>
         <GoogleAuthenticationMethod
           oauthAccount={googleAccount}
           returnTo={pathname || '/start'}
           onDisconnect={() => disconnectOAuth.mutate('google')}
           isDisconnecting={disconnectOAuth.isPending}
         />
-      </ShadowListGroup.Item>
+      </ListGroup.Item>
 
-      <ShadowListGroup.Item>
+      <ListGroup.Item>
         <AuthenticationMethod
           icon={<AlternateEmailOutlined />}
           title={currentUser?.email}
@@ -229,8 +229,8 @@ const AuthenticationSettings = () => {
           action={updateEmailContent[updateEmailStage]}
           hideTitle={updateEmailStage !== 'off'}
         />
-      </ShadowListGroup.Item>
-    </ShadowListGroup>
+      </ListGroup.Item>
+    </ListGroup>
   )
 }
 

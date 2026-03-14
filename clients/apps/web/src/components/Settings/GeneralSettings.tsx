@@ -2,7 +2,7 @@
 
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,8 +67,8 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
   }, [])
 
   return (
-    <ShadowListGroup>
-      <ShadowListGroup.Item>
+    <ListGroup>
+      <ListGroup.Item>
         <div className="flex flex-row items-start justify-between">
           <div className="flex flex-col gap-y-1">
             <h3>Theme</h3>
@@ -103,8 +103,8 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
             </DropdownMenu>
           )}
         </div>
-      </ShadowListGroup.Item>
-    </ShadowListGroup>
+      </ListGroup.Item>
+    </ListGroup>
   )
 }
 

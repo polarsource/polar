@@ -1,0 +1,43 @@
+{
+  "timestamp": "20260314_224523",
+  "config": {
+    "max_metric_calls": 50,
+    "model": null,
+    "reflection_lm": "openai/gpt-5",
+    "context_filter": null,
+    "train_cases": 33,
+    "val_cases": 7
+  },
+  "baseline": {
+    "accuracy": 0.8571428571428571,
+    "avg_score": 0.8571428571428571,
+    "total": 7,
+    "correct": 6,
+    "false_positives": 1,
+    "false_negatives": 0,
+    "false_positive_orgs": [
+      "Andrei"
+    ],
+    "false_negative_orgs": []
+  },
+  "optimized": {
+    "accuracy": 1.0,
+    "avg_score": 1.0,
+    "total": 7,
+    "correct": 7,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "false_positive_orgs": [],
+    "false_negative_orgs": []
+  },
+  "improvement": {
+    "accuracy_delta": 0.1428571428571429,
+    "false_positives_delta": -1,
+    "false_negatives_delta": 0
+  },
+  "gepa": {
+    "total_metric_calls": 51,
+    "num_candidates": 3,
+    "elapsed_seconds": 641.8500734159898
+  }
+}

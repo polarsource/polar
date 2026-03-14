@@ -1,4 +1,7 @@
+import ipaddress
+import socket
 from typing import Annotated
+from urllib.parse import urlparse
 
 from pydantic import (
     UUID4,
@@ -13,6 +16,61 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
+
+
+def _validate_webhook_url_not_private(url: str) -> str:
+    """Validate that a webhook URL does not point to a local or private address."""
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if hostname is None:
+        raise ValueError("Webhook URL must have a valid hostname")
+
+    # Block localhost variants (case-insensitive)
+    lower = hostname.lower().rstrip(".")
+    if lower == "localhost" or lower.endswith(".localhost"):
+        raise ValueError("Webhook URL must not point to a local or private address")
+
+    # Check if hostname is already an IP literal
+    try:
+        addr = ipaddress.ip_address(hostname)
+        if (
+            addr.is_loopback
+            or addr.is_private
+            or addr.is_reserved
+            or addr.is_link_local
+            or addr.is_multicast
+            or addr.is_unspecified
+        ):
+            raise ValueError(
+                "Webhook URL must not point to a local or private address"
+            )
+    except ValueError as exc:
+        if "local or private" in str(exc):
+            raise
+        # Not an IP literal – resolve the hostname
+        try:
+            results = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+            for _family, _type, _proto, _canonname, sockaddr in results:
+                ip_str = sockaddr[0]
+                addr = ipaddress.ip_address(ip_str)
+                if (
+                    addr.is_loopback
+                    or addr.is_private
+                    or addr.is_reserved
+                    or addr.is_link_local
+                    or addr.is_multicast
+                    or addr.is_unspecified
+                ):
+                    raise ValueError(
+                        "Webhook URL must not point to a local or private address"
+                    )
+        except socket.gaierror:
+            # If DNS resolution fails, allow it through – the webhook delivery
+            # will fail later with a clear HTTP error.
+            pass
+
+    return url
+
 
 HttpsUrl = Annotated[
     AnyUrl,
@@ -101,6 +159,12 @@ class WebhookEndpointCreate(Schema):
             return v.strip()
         return v
 
+    @field_validator("url", mode="after")
+    @classmethod
+    def validate_url_not_private(cls, v: AnyUrl) -> AnyUrl:
+        _validate_webhook_url_not_private(str(v))
+        return v
+
 
 class WebhookEndpointUpdate(Schema):
     """
@@ -128,6 +192,13 @@ class WebhookEndpointUpdate(Schema):
     def strip_url(cls, v: str | None) -> str | None:
         if isinstance(v, str):
             return v.strip()
+        return v
+
+    @field_validator("url", mode="after")
+    @classmethod
+    def validate_url_not_private(cls, v: AnyUrl | None) -> AnyUrl | None:
+        if v is not None:
+            _validate_webhook_url_not_private(str(v))
         return v
 
 

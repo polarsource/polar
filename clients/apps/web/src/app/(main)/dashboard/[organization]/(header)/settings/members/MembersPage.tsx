@@ -167,7 +167,7 @@ export default function ClientPage({
           return (
             <div className="flex justify-end">
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleRemoveMember(member)}
               >
@@ -181,7 +181,7 @@ export default function ClientPage({
         if (!isCurrentUserAdmin && isCurrentUser) {
           return (
             <div className="flex justify-end">
-              <Button variant="ghost" size="sm" onClick={showLeaveModal}>
+              <Button variant="secondary" size="sm" onClick={showLeaveModal}>
                 Leave
               </Button>
             </div>

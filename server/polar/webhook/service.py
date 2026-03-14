@@ -16,7 +16,7 @@ from polar.config import settings
 from polar.customer.schemas.state import CustomerState
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
-from polar.exceptions import PolarError, ResourceNotFound
+from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
@@ -57,7 +57,7 @@ from polar.webhook.repository import (
 from polar.worker import enqueue_job
 
 from .eventstream import publish_webhook_event
-from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
+from .schemas import LOCALHOST_HOSTS, WebhookEndpointCreate, WebhookEndpointUpdate
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
@@ -157,6 +157,21 @@ class WebhookService:
         update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
         repository = WebhookEndpointRepository.from_session(session)
+
+        # Block enabling an endpoint that has a localhost URL
+        is_enabling = update_schema.enabled is True and not endpoint.enabled
+        if is_enabling and self._is_localhost_url(endpoint.url):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "enabled"),
+                        "msg": "Cannot enable a webhook endpoint with a localhost URL. Please update the URL first.",
+                        "input": update_schema.enabled,
+                    }
+                ]
+            )
+
         return await repository.update(
             endpoint,
             update_dict=update_schema.model_dump(exclude_unset=True, exclude_none=True),
@@ -799,6 +814,14 @@ class WebhookService:
 
             if updated_count < batch_size:
                 break
+
+    @staticmethod
+    def _is_localhost_url(url: str) -> bool:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        hostname = parsed.hostname or ""
+        return hostname.lower() in LOCALHOST_HOSTS
 
     async def _get_event_target_endpoints(
         self,

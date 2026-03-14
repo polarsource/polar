@@ -14,6 +14,8 @@ from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 
+LOCALHOST_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
+
 HttpsUrl = Annotated[
     AnyUrl,
     UrlConstraints(
@@ -101,6 +103,13 @@ class WebhookEndpointCreate(Schema):
             return v.strip()
         return v
 
+    @field_validator("url", mode="after")
+    @classmethod
+    def validate_not_localhost(cls, v: AnyUrl) -> AnyUrl:
+        if v.host and v.host.lower() in LOCALHOST_HOSTS:
+            raise ValueError("Webhook URLs cannot point to localhost.")
+        return v
+
 
 class WebhookEndpointUpdate(Schema):
     """
@@ -128,6 +137,13 @@ class WebhookEndpointUpdate(Schema):
     def strip_url(cls, v: str | None) -> str | None:
         if isinstance(v, str):
             return v.strip()
+        return v
+
+    @field_validator("url", mode="after")
+    @classmethod
+    def validate_not_localhost(cls, v: AnyUrl | None) -> AnyUrl | None:
+        if v is not None and v.host and v.host.lower() in LOCALHOST_HOSTS:
+            raise ValueError("Webhook URLs cannot point to localhost.")
         return v
 
 

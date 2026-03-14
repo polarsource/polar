@@ -66,6 +66,15 @@ export const FieldUrl = () => {
           if (!value.startsWith('https://')) {
             return false
           }
+          try {
+            const url = new URL(value)
+            const localhostHosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]']
+            if (localhostHosts.includes(url.hostname.toLowerCase())) {
+              return 'Webhook URLs cannot point to localhost.'
+            }
+          } catch {
+            return false
+          }
           return true
         },
       }}

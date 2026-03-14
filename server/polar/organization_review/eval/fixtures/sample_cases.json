@@ -44,7 +44,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "B R Abhishek",
+        "business_name": "NAME_9FBDDD",
         "business_type": "company",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -58,7 +58,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "abhishek.br.work@gmail.com",
+        "user_email": "user_c0ab519b@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -83,7 +83,7 @@
           "output_tokens": 320,
           "estimated_cost_usd": 0.00885325
         },
-        "summary": "- **Business description**: Personal portfolio website for Abhishek BR, a full\u2011stack developer. The site positions Abhishek as someone who builds \u201cfast, reliable, production-ready\u201d full\u2011stack products, including SaaS tools, AI features, and developer utilities. It includes a call-to-action for hiring/collaboration (internships, full-time roles, and selective freelance work).\n\n- **Products & pricing**: No commercial products or pricing listed on the pages accessible during review. The site showcases project work; one highlighted project is **MedRemind**, which converts doctor prescriptions into automated medication reminders using **Tesseract OCR** and **OpenAI models**, then schedules medication events in **Google Calendar**.\n\n- **Target audience**: Primarily prospective employers and recruiters (internships/full-time) and potential clients/collaborators seeking full\u2011stack development and AI-enabled product work.",
+        "summary": "- **Business description**: Personal portfolio website for [REDACTED_708B8F], a full\u2011stack developer. The site positions Abhishek as someone who builds \u201cfast, reliable, production-ready\u201d full\u2011stack products, including SaaS tools, AI features, and developer utilities. It includes a call-to-action for hiring/collaboration (internships, full-time roles, and selective freelance work).\n\n- **Products & pricing**: No commercial products or pricing listed on the pages accessible during review. The site showcases project work; one highlighted project is **MedRemind**, which converts doctor prescriptions into automated medication reminders using **Tesseract OCR** and **OpenAI models**, then schedules medication events in **Google Calendar**.\n\n- **Target audience**: Primarily prospective employers and recruiters (internships/full-time) and potential clients/collaborators seeking full\u2011stack development and AI-enabled product work.",
         "base_url": "https://abhishekbr.dev",
         "scrape_error": null,
         "total_pages_attempted": 5,
@@ -91,9 +91,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "ABHISHEK",
+        "verified_last_name": "NAME_43FC30",
         "verification_status": "verified",
-        "verified_first_name": "B R",
+        "verified_first_name": "NAME_CD7558",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -177,7 +177,7 @@
         "name": "Abhishek",
         "slug": "testing-abhishek",
         "about": "I am build SAAS products and trying to become a indie-hacker",
-        "email": "abhishek.br.work@gmail.com",
+        "email": "user_c0ab519b@example.com",
         "socials": [
           {
             "url": "https://x.com/abhitwt",
@@ -255,7 +255,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "mchfollow@gmail.com",
+        "user_email": "user_979230d5@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -359,7 +359,7 @@
         "name": "Seedance2",
         "slug": "seedancd2",
         "about": "We operate an AI-powered video generation platform. We provide access to advanced video generation models to help creators and small teams produce high-quality videos efficiently. Our customers are individual creators, startups, and developers.",
-        "email": "support@seedance-v2.app",
+        "email": "user_92d41336@example.com",
         "socials": [
           {
             "url": "https://x.com/yasuomang_zh",
@@ -481,7 +481,7 @@
         "name": "LumiYing",
         "slug": "lumiying",
         "about": "We're in the AI creative tools / SaaS space.\nCreative professionals today have to juggle multiple AI generation platforms \u2014 Sora, Midjourney, Seedance, Veo \u2014 each requiring separate accounts, billing, and workflows. This creates friction, fragmented costs, and wasted time.\nLumiYing solves this by bringing all top AI video and image generation models into one platform with a single unified credit system. Users can generate videos and images from text, images, audio, or video references \u2014 all in one place, with one account and one credit pool.\nOur customers are freelance filmmakers, motion designers, social media content creators, e-commerce founders, marketing teams, and VFX professionals \u2014 anyone who needs high-quality AI-generated visual content without the overhead of managing multiple platforms.",
-        "email": "support@visubrand.com",
+        "email": "user_87b304d7@example.com",
         "socials": [
           {
             "url": "https://x.com/LumiYing_AI",
@@ -508,7 +508,7 @@
     }
   },
   {
-    "org_name": "Volodymyr Fominykh",
+    "org_name": "[REDACTED_08DD2B]",
     "review_type": "threshold",
     "human_decision": "APPROVE",
     "agent_verdict": "APPROVE",
@@ -572,7 +572,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "fominykh.designer@gmail.com",
+        "user_email": "user_0186d4f4@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -597,7 +597,7 @@
           "output_tokens": 294,
           "estimated_cost_usd": 0.012369
         },
-        "summary": "- **Business description**: This site appears to be a personal portfolio/landing page for **Volodymyr Fominykh**, a **UX/UI designer**. The homepage mainly provides contact and a CV download link, with minimal additional business or service detail visible on-site.\n\n- **Products & pricing**: No products or service packages are described and **no pricing** is shown. The only clear calls-to-action are:\n  - **\u201cSay Hi!\u201d** (mailto link to `fominykh.designer@gmail.com`)\n  - **\u201cDownload CV\u201d** (links to a Google Drive CV file)\n\n- **Target audience**: Likely **potential employers, recruiters, or clients** seeking to hire a UX/UI designer, given the focus on contacting the designer and downloading a CV.",
+        "summary": "- **Business description**: This site appears to be a personal portfolio/landing page for **[REDACTED_08DD2B]**, a **UX/UI designer**. The homepage mainly provides contact and a CV download link, with minimal additional business or service detail visible on-site.\n\n- **Products & pricing**: No products or service packages are described and **no pricing** is shown. The only clear calls-to-action are:\n  - **\u201cSay Hi!\u201d** (mailto link to `user_0186d4f4@example.com`)\n  - **\u201cDownload CV\u201d** (links to a Google Drive CV file)\n\n- **Target audience**: Likely **potential employers, recruiters, or clients** seeking to hire a UX/UI designer, given the focus on contacting the designer and downloading a CV.",
         "base_url": "https://fmnx.framer.website",
         "scrape_error": null,
         "total_pages_attempted": 5,
@@ -605,9 +605,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "FOMINYKH",
+        "verified_last_name": "NAME_302960",
         "verification_status": "verified",
-        "verified_first_name": "VOLODYMYR",
+        "verified_first_name": "NAME_6881FD",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -674,10 +674,10 @@
       },
       "collected_at": "2026-03-10T07:12:35.038467Z",
       "organization": {
-        "name": "Volodymyr Fominykh",
+        "name": "[REDACTED_08DD2B]",
         "slug": "fmnx",
         "about": "i create Framer templates, design and develop websites",
-        "email": "fominykh.designer@gmail.com",
+        "email": "user_0186d4f4@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/v.fmnx/",
@@ -763,7 +763,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "dallakyanhovhannes@gmail.com",
+        "user_email": "user_cedc7462@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -796,9 +796,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "DALLAKYAN",
+        "verified_last_name": "NAME_12EC87",
         "verification_status": "verified",
-        "verified_first_name": "HOVHANNES",
+        "verified_first_name": "NAME_B4301B",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -840,7 +840,7 @@
         "name": "Hovo",
         "slug": "hovo",
         "about": "We build productivity software for ambitious individuals who want to optimize their life systems. Dalacus is a personal operating system that helps users manage tasks, goals, habits, and projects in one integrated platform designed for high performers.",
-        "email": "dallakyanhovhannes@gmail.com",
+        "email": "user_cedc7462@example.com",
         "socials": [
           {
             "url": "https://x.com/hovdallakyan",
@@ -966,7 +966,7 @@
         "name": "mjankowski.expert",
         "slug": "mjankowskiexpert",
         "about": "I am an independent developer (Indie Hacker) and a former ad agency professional building a portfolio of B2B micro-SaaS tools, web applications, and desktop software (including native macOS apps). My business focuses on solving operational and sales bottlenecks for small businesses, agency owners, and startup founders. I provide them with affordable, ready-to-use digital tools \u2013 ranging from AI-driven lead generation systems and automation blueprints, to fully-fledged web and desktop applications.",
-        "email": "contact@mjankowski.expert",
+        "email": "user_a1d9c9dd@example.com",
         "socials": [
           {
             "url": "https://x.com/MarJani81",
@@ -1092,7 +1092,7 @@
         "name": "Andrei",
         "slug": "andrei",
         "about": "I built a tool that cleans AI artifacts, scrub metadata, rewrite to remove AI patterns, and insert refreshed in-text citations in DOCX and PPTX.\n\n",
-        "email": "bucur.andrei.teodor@gmail.com",
+        "email": "user_1dc7b197@example.com",
         "socials": [],
         "website": "https://dochumanizer.com/",
         "blocked_at": null,
@@ -1173,7 +1173,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "nairdafirmware@gmail.com",
+        "user_email": "user_c12769e1@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -1221,9 +1221,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "ALVAREZ GALICIA",
+        "verified_last_name": "NAME_1C94E5",
         "verification_status": "verified",
-        "verified_first_name": "ADRIAN",
+        "verified_first_name": "NAME_323FF7",
         "verification_error_code": null,
         "verified_address_country": "MX"
       },
@@ -1251,7 +1251,7 @@
         "name": "PingMeBud",
         "slug": "pingmebud",
         "about": "Pingmebud is in the productivity software industry, building a privacy-first macOS desktop app for remote professionals. We want to solve the problem of meeting fatigue, since professionals waste hours passively attending video calls waiting for the one moment they're actually needed. Pingmebud uses local AI (Whisper) to listen for your name or custom keywords during meetings and instantly alerts you with context, so you can multitask freely. The customers are remote workers, multitasking professionals, and anyone drowning in back-to-back meetings who wants to reclaim their focus time. All processing runs 100% on-device, meaning no cloud, no accounts, no data leaves the user's Mac.",
-        "email": "shapefollowsdata@gmail.com",
+        "email": "user_18623366@example.com",
         "socials": [
           {
             "url": "https://www.facebook.com/adriandroidi",
@@ -1369,7 +1369,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "Armox AI",
+        "business_name": "NAME_2E7D95",
         "business_type": "company",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -1383,7 +1383,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "originalpala@gmail.com",
+        "user_email": "user_9001b906@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -1416,9 +1416,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "PALAZ\u00d3N PELLICER",
+        "verified_last_name": "NAME_F1C097",
         "verification_status": "verified",
-        "verified_first_name": "ALEX",
+        "verified_first_name": "NAME_01B7CC",
         "verification_error_code": null,
         "verified_address_country": "ES"
       },
@@ -1526,7 +1526,7 @@
         "name": "Armox",
         "slug": "armox",
         "about": "Armox is a SaaS platform that provides AI-powered creative tools for professionals such as architects, interior designers, and creative teams.\n\nUsers subscribe to Armox to access a visual AI canvas where they can generate images, architectural renderings, and other creative assets using generative AI models. The platform is used primarily for professional design workflows, concept visualization, and creative production.\n\nMost of our users are architects and design professionals using the platform for architecture visualization and creative ideation:\nhttps://armox.ai/ai-architecture-rendering",
-        "email": "hello@armox.ai",
+        "email": "user_01c0a81a@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/company/armox",
@@ -1609,7 +1609,7 @@
       },
       "context": "manual",
       "history": {
-        "user_email": "serdarrah@gmail.com",
+        "user_email": "user_a1ba4170@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -1642,9 +1642,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "\u00d6ZDEM\u0130RC\u0130",
+        "verified_last_name": "NAME_DA950A",
         "verification_status": "verified",
-        "verified_first_name": "ATA",
+        "verified_first_name": "NAME_FAD102",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -1714,7 +1714,7 @@
         "name": "Academia Marmara",
         "slug": "academia-marmara",
         "about": "We make B2B SaaS projects, also we prowing growht strategies mid-large companies",
-        "email": "info@academiamarmara.com",
+        "email": "user_cef74dd4@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/company/academiamarmara",
@@ -1790,7 +1790,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "rene@amayamedia.com",
+        "user_email": "user_7b6adf3c@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -1823,9 +1823,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "MERINO AMAYA",
+        "verified_last_name": "NAME_065DB1",
         "verification_status": "verified",
-        "verified_first_name": "RENE ALEXANDER",
+        "verified_first_name": "NAME_42691A",
         "verification_error_code": null,
         "verified_address_country": "US"
       },
@@ -1867,7 +1867,7 @@
         "name": "Binder Builder",
         "slug": "amaya-media",
         "about": "We build websites, apps and saas solutions for clients",
-        "email": "rene@amayamedia.com",
+        "email": "user_7b6adf3c@example.com",
         "socials": [
           {
             "url": "https://x.com/amayamedia",
@@ -1947,7 +1947,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "informacion@autonomio.es",
+        "user_email": "user_fe0ef04e@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -1988,9 +1988,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "MARTIN POLO",
+        "verified_last_name": "NAME_EF4766",
         "verification_status": "verified",
-        "verified_first_name": "ANTONIO SAMUEL",
+        "verified_first_name": "NAME_0C6BE6",
         "verification_error_code": null,
         "verified_address_country": "ES"
       },
@@ -2032,7 +2032,7 @@
         "name": "brek",
         "slug": "brek",
         "about": "Security and compliance for your vibecoded apps, easy and difrect",
-        "email": "support@brek.dev",
+        "email": "user_999d13cd@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/brek.dev/",
@@ -2111,7 +2111,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "pelumiisola87@gmail.com",
+        "user_email": "user_d4fd3c75@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -2144,9 +2144,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "ISOLA",
+        "verified_last_name": "NAME_729601",
         "verification_status": "verified",
-        "verified_first_name": "PELUMI PHILIP",
+        "verified_first_name": "NAME_F74118",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -2215,7 +2215,7 @@
         "name": "Philtech",
         "slug": "philtech",
         "about": "Autofill AI is an AI-powered productivity tool that automatically fills forms, applications, and online workflows in seconds. We help professionals, job seekers, and SaaS users save time and reduce repetitive tasks. Our customers are individuals and small businesses who want faster, error-free form completion.",
-        "email": "hello@autofill.live",
+        "email": "user_009f61c6@example.com",
         "socials": [
           {
             "url": "https://x.com/ai_autofill",
@@ -2306,7 +2306,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "admin@curiouscake.com",
+        "user_email": "user_19f4f8f7@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -2339,9 +2339,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "TSENG",
+        "verified_last_name": "NAME_605BF4",
         "verification_status": "verified",
-        "verified_first_name": "YU WEN",
+        "verified_first_name": "NAME_4CA1A7",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -2439,7 +2439,7 @@
         "name": "OpenLegion",
         "slug": "openlegion",
         "about": "OpenLegion is a SaaS company that develops a secure, production-ready AI agent orchestration framework. Our platform enables developers and technical teams to deploy and manage fleets of autonomous AI agents running in isolated container environments. Each agent has its own budget, permissions, and credential vault to ensure secure and predictable operation, with workflows defined through deterministic configuration.\n\nOpenLegion is used primarily by software engineers, AI researchers, and technical operations teams who need reliable automation of structured workflows, monitoring tasks, and integrations with existing development tools. We do not operate a marketplace, provide financial services, or handle third-party payments on behalf of customers",
-        "email": "admin@openlegion.ai",
+        "email": "user_7f87de58@example.com",
         "socials": [
           {
             "url": "https://x.com/openlegion",
@@ -2507,7 +2507,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "Aurelima",
+        "business_name": "NAME_9A0C74",
         "business_type": "company",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -2521,7 +2521,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "g.lunesu@outlook.com",
+        "user_email": "user_94a72777@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -2562,9 +2562,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "Lunesu",
+        "verified_last_name": "NAME_40CB7F",
         "verification_status": "verified",
-        "verified_first_name": "Gabriel Salvatore Kesia",
+        "verified_first_name": "NAME_89843C",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -2606,7 +2606,7 @@
         "name": "gmccheck",
         "slug": "gmcchecker",
         "about": "we make it easy to check if your ecom store is GMC compliant for Google ads",
-        "email": "gabriel@lunesu.co",
+        "email": "user_e138bbef@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/glunesu/",
@@ -2704,7 +2704,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "oncelcebeci@gmail.com",
+        "user_email": "user_c63326ce@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -2737,9 +2737,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "OZGEBAYRAM",
+        "verified_last_name": "NAME_AA7DAC",
         "verification_status": "verified",
-        "verified_first_name": "MR. ONCEL",
+        "verified_first_name": "NAME_B22B3D",
         "verification_error_code": null,
         "verified_address_country": "TH"
       },
@@ -2781,7 +2781,7 @@
         "name": "Tiny Things",
         "slug": "notchpad",
         "about": "NotchPad is a native macOS productivity app \u2014 a notepad, clipboard manager, and snippets tool that drops down from your MacBook's notch. It targets developers and power users who want quick access to notes and clipboard history without switching windows. Distributed as a one-time purchase via direct download (DMG).",
-        "email": "support@notchpad.com",
+        "email": "user_6381caa0@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/in/oncelcebeci/",
@@ -2856,7 +2856,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "aikromke@gmail.com",
+        "user_email": "user_172cfc3c@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -2889,9 +2889,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "KOLIADA",
+        "verified_last_name": "NAME_FA0481",
         "verification_status": "verified",
-        "verified_first_name": "ROMAN",
+        "verified_first_name": "NAME_53D8B1",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -2981,7 +2981,7 @@
         "name": "Contenfly",
         "slug": "k-roma",
         "about": "Contentfly is an AI-powered content automation platform for startups and indie developers built on Lovable. We solve the problem of founders spending hours on social media content instead of building their product. Our customers are startup founders, indie hackers, and small SaaS teams who need consistent social media presence without hiring an SMM.",
-        "email": "team@contentfly.eu",
+        "email": "user_a3651143@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/company/k-roma",
@@ -3046,7 +3046,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "Valente Ventures GmbH",
+        "business_name": "NAME_459E30",
         "business_type": "company",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -3060,7 +3060,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "levent.valente@googlemail.com",
+        "user_email": "user_41d23ea4@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -3093,9 +3093,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "VALENTE",
+        "verified_last_name": "NAME_CAFDEE",
         "verification_status": "verified",
-        "verified_first_name": "LEVENT",
+        "verified_first_name": "NAME_27CC93",
         "verification_error_code": null,
         "verified_address_country": "DE"
       },
@@ -3229,7 +3229,7 @@
         "name": "webblitz.ai",
         "slug": "webblitz",
         "about": "WebBlitz helps marketing teams, founders, and indie hackers getting mentioned and recommended by AI engines, by sending real prompts to AI platforms \u2014 the same kinds of questions your potential customers would ask. We then analyze each response to determine: whether your brand was mentioned, your position in the response, the sentiment of the mention, and which sources were cited. Over time, this builds a visibility score and trend data so you can see if your brand is gaining or losing ground in AI recommendations.",
-        "email": "payments@webblitz.ai",
+        "email": "user_a40aae64@example.com",
         "socials": [
           {
             "url": "https://linkedin.com/in/levo",
@@ -3323,7 +3323,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "mail@sanderboer.nl",
+        "user_email": "user_73e8d183@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -3371,9 +3371,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "Boer",
+        "verified_last_name": "NAME_CBD5B7",
         "verification_status": "verified",
-        "verified_first_name": "Adrianus Sebastiaan",
+        "verified_first_name": "NAME_5EA0C2",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -3415,7 +3415,7 @@
         "name": "glosario",
         "slug": "glosario",
         "about": "A multi-tenant SaaS tool for organizations to collaboratively build, manage, and publish a structured glossary \u2014 ensuring consistent terminology across teams and domains.",
-        "email": "mail@sanderboer.nl",
+        "email": "user_73e8d183@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/in/xiduzo/?skipRedirect=true",
@@ -3491,7 +3491,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "Checklist Design",
+        "business_name": "NAME_ACA04E",
         "business_type": "company",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -3505,7 +3505,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "hello@georgehatzis.com",
+        "user_email": "user_cebde2b1@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -3538,9 +3538,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "HATZIS",
+        "verified_last_name": "NAME_10248A",
         "verification_status": "verified",
-        "verified_first_name": "GEORGE R",
+        "verified_first_name": "NAME_3E2ADA",
         "verification_error_code": null,
         "verified_address_country": "AU"
       },
@@ -3610,7 +3610,7 @@
         "name": "Checklist Design",
         "slug": "checklist-design",
         "about": "Design tool and education resource that helps early designers, engineers or builders understand the best practices for UI/UX design.",
-        "email": "hello@georgehatzis.com",
+        "email": "user_cebde2b1@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/in/georgehatzis/",
@@ -3689,7 +3689,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "jemong2012@gmail.com",
+        "user_email": "user_7532b5c5@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -3722,7 +3722,7 @@
           "output_tokens": 432,
           "estimated_cost_usd": 0.01447075
         },
-        "summary": "- **Business description**: CozyNavi is an AI \u201ccompanion\u201d conversation service focused on ongoing, personalized dialogue. The homepage highlights that it remembers prior conversations, user interests, and mood so users don\u2019t have to re-explain context. It supports voice-only conversation (no text required), can discuss current news/information, and the AI (\u201cAmy\u201d) may proactively start conversations. Login is available via Google and Apple accounts.\n\n- **Products & pricing**: No pricing information was visible from the accessible pages. The site presents a single core service (AI companion chat/voice conversation).  \n  *Note:* Only the homepage and the privacy policy were accessible during review; other linked pages (Terms, FAQ, Contact) failed to load.\n\n- **Target audience**: Individuals seeking an AI conversation partner for personal check-ins, mood-based/ongoing chats, and hands-free (voice) interaction. Per the privacy policy, the service is intended for users aged **14 and older**.\n\nAdditional compliance-relevant notes from the **Privacy Policy** (last updated 2026-02-15): it states data is retained as needed to provide the service; upon account deletion request, personal data is deleted within 90 days (payment records retained per law); conversation records are accessed only when legally required; and privacy inquiries can be sent to **support@cozynavi.com**.",
+        "summary": "- **Business description**: CozyNavi is an AI \u201ccompanion\u201d conversation service focused on ongoing, personalized dialogue. The homepage highlights that it remembers prior conversations, user interests, and mood so users don\u2019t have to re-explain context. It supports voice-only conversation (no text required), can discuss current news/information, and the AI (\u201cAmy\u201d) may proactively start conversations. Login is available via Google and Apple accounts.\n\n- **Products & pricing**: No pricing information was visible from the accessible pages. The site presents a single core service (AI companion chat/voice conversation).  \n  *Note:* Only the homepage and the privacy policy were accessible during review; other linked pages (Terms, FAQ, Contact) failed to load.\n\n- **Target audience**: Individuals seeking an AI conversation partner for personal check-ins, mood-based/ongoing chats, and hands-free (voice) interaction. Per the privacy policy, the service is intended for users aged **14 and older**.\n\nAdditional compliance-relevant notes from the **Privacy Policy** (last updated 2026-02-15): it states data is retained as needed to provide the service; upon account deletion request, personal data is deleted within 90 days (payment records retained per law); conversation records are accessed only when legally required; and privacy inquiries can be sent to **user_0d9ebf6b@example.com**.",
         "base_url": "https://cozynavi.com",
         "scrape_error": null,
         "total_pages_attempted": 6,
@@ -3843,7 +3843,7 @@
         "name": "CozyNavi",
         "slug": "cozynavi",
         "about": "CozyNavi is an AI companion app that provides personalized voice and text conversations with emotionally expressive anime-style characters. We operate in the consumer AI / entertainment industry, solving the problem of impersonal, forgettable AI interactions. Our AI remembers past conversations, responds with emotions and gestures through Live2D animations, and supports real-time web search to stay up to date. Our target customers are Korean-speaking users who want a friendly, always-available AI companion for casual conversation, learning, and emotional support.",
-        "email": "support@cozynavi.com",
+        "email": "user_0d9ebf6b@example.com",
         "socials": [
           {
             "url": "https://x.com/jemong2012",
@@ -3922,7 +3922,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "bauka.alimgazy1@gmail.com",
+        "user_email": "user_b764ac9e@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -3955,9 +3955,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "ALIMGAZY",
+        "verified_last_name": "NAME_9E414F",
         "verification_status": "verified",
-        "verified_first_name": "BAUYRGAZY",
+        "verified_first_name": "NAME_E7E75B",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -3985,7 +3985,7 @@
         "name": "opentext.cc",
         "slug": "opentext",
         "about": "AI Text detector/enhancer service like Grammarly, Justdone, etc.",
-        "email": "bauka.alimgazy1@gmail.com",
+        "email": "user_b764ac9e@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/in/baurgazy-alimgazy-7a17bb243/",
@@ -4063,7 +4063,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "info@kloctechnologies.com",
+        "user_email": "user_c1ab6a3f@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -4096,9 +4096,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "DAS",
+        "verified_last_name": "NAME_764C58",
         "verification_status": "verified",
-        "verified_first_name": "ABHISARIKA",
+        "verified_first_name": "NAME_C361B8",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -4168,7 +4168,7 @@
         "name": "Kloc Technologies Private Limited",
         "slug": "kloctech",
         "about": "LLMEO is a SaaS product which combines brand monitoring, competitive intelligence, and AI optimization. It tracks how a brand appears in responses from ChatGPT, Gemini, Claude, and more, and then surfaces actions to improve that visibility.\n",
-        "email": "info@kloctechnologies.com",
+        "email": "user_c1ab6a3f@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/llmeo",
@@ -4253,7 +4253,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "skyanimyy@gmail.com",
+        "user_email": "user_eebdc8ce@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -4286,9 +4286,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "HIMRANE",
+        "verified_last_name": "NAME_D82042",
         "verification_status": "verified",
-        "verified_first_name": "MOHAMED",
+        "verified_first_name": "NAME_D8BCF7",
         "verification_error_code": null,
         "verified_address_country": "MA"
       },
@@ -4316,7 +4316,7 @@
         "name": "Dikalog",
         "slug": "scenephile-studio",
         "about": "Industry: Software / Entertainment Technology\nProblem we solve: Film enthusiasts and Letterboxd users lack a visual, dedicated tool to organize and analyze large movie watchlists, often relying on messy spreadsheets or notes. Dikalog provides a digital \"staging area\" with an infinite canvas and AI-powered insights to help users visually curate, clean, and map out their film collections.\nOur customers: Cinephiles, list curators, and Letterboxd power-users who want to deeply analyze their cinematic tastes and share beautifully organized movie boards.",
-        "email": "dikaloog@gmail.com",
+        "email": "user_1bf133a4@example.com",
         "socials": [
           {
             "url": "https://x.com/dikallog",
@@ -4440,7 +4440,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "ayoubdev65@gmail.com",
+        "user_email": "user_fa024689@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": true,
@@ -4481,9 +4481,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "DOUIB",
+        "verified_last_name": "NAME_81CDC6",
         "verification_status": "verified",
-        "verified_first_name": "AYOUB",
+        "verified_first_name": "NAME_738000",
         "verification_error_code": null,
         "verified_address_country": "MA"
       },
@@ -4591,7 +4591,7 @@
         "name": "Emergess",
         "slug": "emergess-app",
         "about": "We offer project management software for agencies to streamline tasks, manage clients, and collaborate efficiently.",
-        "email": "ayoubdev65@gmail.com",
+        "email": "user_fa024689@example.com",
         "socials": [
           {
             "url": "https://x.com/EmergessTool",
@@ -4681,7 +4681,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "heybhaveshmishra@gmail.com",
+        "user_email": "user_be6b564c@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -4714,9 +4714,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "MISHRA",
+        "verified_last_name": "NAME_89791F",
         "verification_status": "verified",
-        "verified_first_name": "BHAVESH SUNIL",
+        "verified_first_name": "NAME_C12B17",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -4732,7 +4732,7 @@
               }
             ],
             "visibility": "public",
-            "description": "QR Code Studio\n\n  Design-first QR codes for Framer, with instant canvas insert and Pro branding controls.\n\n  Create beautiful, scan-safe QR codes directly inside Framer. Customize style, apply presets, add logos, export PNG/SVG, and insert to canvas in one click.\n\n\n  QR code Studio is a premium QR code plugin for Framer teams who care about both aesthetics and reliability.\n\n  Generate QR codes for URLs and text in seconds, then style them with pattern/corner controls, colors, sizing, quiet zone, and error-correction level. Use curated presets for fast results, preview live, and run scan-safety checks before export.\n\n  For advanced workflows, unlock Pro to access richer content types and brand controls, including logo overlays, gradients, high-resolution export, SVG unlocks, and direct Add to Canvas insertion for production-ready assets.\n\n  Perfect for landing pages, print collateral mockups, event pages, product packaging, and brand campaigns.\n\n  Core Features (Free)\n\n  - URL + Text QR generation\n  - Live QR preview\n  - Pattern + corner styling\n  - Color and size controls\n  - Quiet zone and error-correction controls\n  - Scan-safety warnings\n  - PNG export (up to 512px)\n\n  Pro Features\n\n  - Email, Phone, Wi-Fi, and vCard QR content types\n  - Gradient styling controls\n  - Logo overlay with sizing/padding/white plate\n  - Premium preset: Brand Gradient\n  - High-resolution PNG export (up to 4096px)\n  - SVG export\n  - Add to Canvas (one-click insert in Framer)\n\n  Pricing\n\n  - QR Studio Pro: $29.99 one-time\n\n  Support Email\n  heybahveshmishra@gmail.com",
+            "description": "QR Code Studio\n\n  Design-first QR codes for Framer, with instant canvas insert and Pro branding controls.\n\n  Create beautiful, scan-safe QR codes directly inside Framer. Customize style, apply presets, add logos, export PNG/SVG, and insert to canvas in one click.\n\n\n  QR code Studio is a premium QR code plugin for Framer teams who care about both aesthetics and reliability.\n\n  Generate QR codes for URLs and text in seconds, then style them with pattern/corner controls, colors, sizing, quiet zone, and error-correction level. Use curated presets for fast results, preview live, and run scan-safety checks before export.\n\n  For advanced workflows, unlock Pro to access richer content types and brand controls, including logo overlays, gradients, high-resolution export, SVG unlocks, and direct Add to Canvas insertion for production-ready assets.\n\n  Perfect for landing pages, print collateral mockups, event pages, product packaging, and brand campaigns.\n\n  Core Features (Free)\n\n  - URL + Text QR generation\n  - Live QR preview\n  - Pattern + corner styling\n  - Color and size controls\n  - Quiet zone and error-correction controls\n  - Scan-safety warnings\n  - PNG export (up to 512px)\n\n  Pro Features\n\n  - Email, Phone, Wi-Fi, and vCard QR content types\n  - Gradient styling controls\n  - Logo overlay with sizing/padding/white plate\n  - Premium preset: Brand Gradient\n  - High-resolution PNG export (up to 4096px)\n  - SVG export\n  - Add to Canvas (one-click insert in Framer)\n\n  Pricing\n\n  - QR Studio Pro: $29.99 one-time\n\n  Support Email\n  user_f1f7e494@example.com",
             "is_archived": false,
             "billing_type": "one_time"
           },
@@ -4760,7 +4760,7 @@
               }
             ],
             "visibility": "public",
-            "description": "A cinematic animated waveform\u00a0component featuring a static heartbeat pulse with\u00a0a traveling white highlight. BeatWave creates an elegant audio-visualization effect where a glowing \"train\u00a0light\" smoothly sweeps across a\u00a0centered oscillation cluster from left to right. The waveform mimics a\u00a0real sound impulse visualization with a\u00a0Gaussian envelope that creates natural peaks in the\u00a0center and flat baselines on the edges. Perfect\u00a0for hero sections, music/audio-related pages, fintech dashboards, or any design requiring a premium, high-tech visual presence.\n\nKey Features\n\n\n\n\n\nStatic\u00a0waveform with Gaussian envelope oscillation cluster\n\n\n\n\n\nSmooth traveling white\u00a0highlight with multi-layer glow bloom\n\n\n\n\n\nAsymmetric trailing tail\u00a0for cinematic \"train light\" effect\n\n\n\n\n\nElegant\u00a0serif text overlay with\u00a0automatic\u00a0positioning\n\n\n\n\n\nDot grid background pattern derived\u00a0from your\u00a0background\u00a0color\n\n\n\n\n\nBuilt-in responsive scaling\u00a0\u2014 automatically adapts to mobile and\u00a0tablet\n\n\n\n\n\nText\u00a0auto-centers on smaller screens\n\n\n\n\n\n60fps butter-smooth canvas animation\n\n\n\n\n\nClean, focused\u00a0property\u00a0panel for\u00a0quick\u00a0customization\n\nProperties\n\nText:\u00a0Text\u00a0Content sets the main headline text. Font\u00a0Size controls\u00a0typography scale. Text Color sets the display\u00a0color. Text Align controls\u00a0horizontal\u00a0placement\u00a0\u2014 text\u00a0position follows automatically.\n\nWave:\u00a0Wave Color sets\u00a0the base waveform stroke color. Amplitude\u00a0sets the\u00a0wave peak height. Frequency controls the\u00a0number of oscillations. Speed\u00a0controls how fast the highlight travels in\u00a0pixels per second. Show\u00a0Glow toggles the multi-layer bloom effect.\n\nBackground:\u00a0Background Color sets the background\u00a0\u2014 the\u00a0grid\u00a0dot\u00a0color\u00a0is\u00a0derived automatically. Show Grid toggles the dot pattern\u00a0on\u00a0or\u00a0off.\n\nBest\u00a0Practices\n\n\n\n\n\nUse a cream/off-white text color (#F5E6C8) against a\u00a0deep blue background for high contrast\n\n\n\n\n\nKeep amplitude\u00a0between 0.2\u20130.35 for balanced proportions\n\n\n\n\n\nSet speed between 120\u2013180 for\u00a0a calm, cinematic sweep\n\n\n\n\n\nEnable\u00a0the glow effect for a more polished, premium appearance\n\n\n\n\n\nUse\u00a0text\u00a0align\u00a0\"right\" for\u00a0desktop layouts\u00a0\u2014 it\u00a0auto-centers on smaller\u00a0screens\n\nUse Cases\n\n\n\n\n\nHero\u00a0sections for music, audio, or podcast\u00a0platforms\n\n\n\n\n\nFintech and trading\u00a0dashboards showing market activity\n\n\n\n\n\nHealthcare\u00a0and medical apps displaying heartbeat/vital signs\n\n\n\n\n\nTechnology and\u00a0SaaS landing pages for a\u00a0futuristic feel\n\n\n\n\n\nCreative agency\u00a0portfolios showcasing premium design\n\n\n\n\n\nEvent and entertainment websites for visual impact\n\n\n\n\n\nLoading or transition screens with ambient animation\n\n\n\n\n\n\nContact - sloth1135@gmail.com",
+            "description": "A cinematic animated waveform\u00a0component featuring a static heartbeat pulse with\u00a0a traveling white highlight. BeatWave creates an elegant audio-visualization effect where a glowing \"train\u00a0light\" smoothly sweeps across a\u00a0centered oscillation cluster from left to right. The waveform mimics a\u00a0real sound impulse visualization with a\u00a0Gaussian envelope that creates natural peaks in the\u00a0center and flat baselines on the edges. Perfect\u00a0for hero sections, music/audio-related pages, fintech dashboards, or any design requiring a premium, high-tech visual presence.\n\nKey Features\n\n\n\n\n\nStatic\u00a0waveform with Gaussian envelope oscillation cluster\n\n\n\n\n\nSmooth traveling white\u00a0highlight with multi-layer glow bloom\n\n\n\n\n\nAsymmetric trailing tail\u00a0for cinematic \"train light\" effect\n\n\n\n\n\nElegant\u00a0serif text overlay with\u00a0automatic\u00a0positioning\n\n\n\n\n\nDot grid background pattern derived\u00a0from your\u00a0background\u00a0color\n\n\n\n\n\nBuilt-in responsive scaling\u00a0\u2014 automatically adapts to mobile and\u00a0tablet\n\n\n\n\n\nText\u00a0auto-centers on smaller screens\n\n\n\n\n\n60fps butter-smooth canvas animation\n\n\n\n\n\nClean, focused\u00a0property\u00a0panel for\u00a0quick\u00a0customization\n\nProperties\n\nText:\u00a0Text\u00a0Content sets the main headline text. Font\u00a0Size controls\u00a0typography scale. Text Color sets the display\u00a0color. Text Align controls\u00a0horizontal\u00a0placement\u00a0\u2014 text\u00a0position follows automatically.\n\nWave:\u00a0Wave Color sets\u00a0the base waveform stroke color. Amplitude\u00a0sets the\u00a0wave peak height. Frequency controls the\u00a0number of oscillations. Speed\u00a0controls how fast the highlight travels in\u00a0pixels per second. Show\u00a0Glow toggles the multi-layer bloom effect.\n\nBackground:\u00a0Background Color sets the background\u00a0\u2014 the\u00a0grid\u00a0dot\u00a0color\u00a0is\u00a0derived automatically. Show Grid toggles the dot pattern\u00a0on\u00a0or\u00a0off.\n\nBest\u00a0Practices\n\n\n\n\n\nUse a cream/off-white text color (#F5E6C8) against a\u00a0deep blue background for high contrast\n\n\n\n\n\nKeep amplitude\u00a0between 0.2\u20130.35 for balanced proportions\n\n\n\n\n\nSet speed between 120\u2013180 for\u00a0a calm, cinematic sweep\n\n\n\n\n\nEnable\u00a0the glow effect for a more polished, premium appearance\n\n\n\n\n\nUse\u00a0text\u00a0align\u00a0\"right\" for\u00a0desktop layouts\u00a0\u2014 it\u00a0auto-centers on smaller\u00a0screens\n\nUse Cases\n\n\n\n\n\nHero\u00a0sections for music, audio, or podcast\u00a0platforms\n\n\n\n\n\nFintech and trading\u00a0dashboards showing market activity\n\n\n\n\n\nHealthcare\u00a0and medical apps displaying heartbeat/vital signs\n\n\n\n\n\nTechnology and\u00a0SaaS landing pages for a\u00a0futuristic feel\n\n\n\n\n\nCreative agency\u00a0portfolios showcasing premium design\n\n\n\n\n\nEvent and entertainment websites for visual impact\n\n\n\n\n\nLoading or transition screens with ambient animation\n\n\n\n\n\n\nContact - user_4bc6a482@example.com",
             "is_archived": false,
             "billing_type": "one_time"
           }
@@ -4772,7 +4772,7 @@
         "name": "FramerSumit",
         "slug": "framersumit",
         "about": "I create and sell premium Framer coded components and UI design assets for website builders, startups, and creators. These are digital products delivered online.",
-        "email": "heybhaveshmishra@gmail.com",
+        "email": "user_be6b564c@example.com",
         "socials": [
           {
             "url": "https://x.com/thefool1135",
@@ -4867,7 +4867,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "new.omar.naser@gmail.com",
+        "user_email": "user_f9b19117@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -4900,9 +4900,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "\u0627\u0644\u0645\u0644\u064a\u062c\u0649",
+        "verified_last_name": "NAME_30A3A2",
         "verification_status": "verified",
-        "verified_first_name": "\u0639\u0645\u0631 \u0646\u0627\u0635\u0631 \u0639\u0633\u0631\u0627\u0646 \u0645\u062d\u0645\u062f",
+        "verified_first_name": "NAME_D42201",
         "verification_error_code": null,
         "verified_address_country": "EG"
       },
@@ -4944,7 +4944,7 @@
         "name": "OnlineBilling",
         "slug": "onlinebilling",
         "about": "We provide online educational content focused on market literacy and general financial knowledge. Our customers are individuals interested in learning how markets work and how to understand price movements conceptually.",
-        "email": "support@therealtrading.com",
+        "email": "user_93ae4269@example.com",
         "socials": [
           {
             "url": "https://www.youtube.com/@SkillzTrading",
@@ -5023,7 +5023,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "gabor@halmosi.me",
+        "user_email": "user_7a403a38@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -5056,9 +5056,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "MALMOSI",
+        "verified_last_name": "NAME_61A7CF",
         "verification_status": "verified",
-        "verified_first_name": "G\u00c1BOR",
+        "verified_first_name": "NAME_B17983",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -5114,7 +5114,7 @@
         "name": "Backlog Fejleszt\u0151 Kft.",
         "slug": "backlog-fejleszto-kft",
         "about": "I'm a product owner and would like to start my first SaaS business. ",
-        "email": "info@backlog.hu",
+        "email": "user_d4433a49@example.com",
         "socials": [
           {
             "url": "https://www.facebook.com/halmosi.gabor",
@@ -5195,7 +5195,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "montana@momentgenie.com",
+        "user_email": "user_ecb3f4f9@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -5228,9 +5228,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "FLYNN",
+        "verified_last_name": "NAME_7D97F7",
         "verification_status": "verified",
-        "verified_first_name": "MONTANA QUILLAN",
+        "verified_first_name": "NAME_A8C2C9",
         "verification_error_code": null,
         "verified_address_country": "US"
       },
@@ -5308,7 +5308,7 @@
         "name": "MomentGenie",
         "slug": "momentgenie",
         "about": "We create personalized digital coloring books using AI. Customers upload family photos and choose creative themes, and our platform transforms those photos into custom black-and-white coloring pages. Our customers are parents, families, and individuals looking for fun, personalized gifts or creative activities for children and adults.",
-        "email": "montana@momentgenie.com",
+        "email": "user_ecb3f4f9@example.com",
         "socials": [
           {
             "url": "https://www.facebook.com/momentgenie",
@@ -5396,7 +5396,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "Wize Design",
+        "business_name": "NAME_9B4765",
         "business_type": "individual",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -5410,7 +5410,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "teo@wize.design",
+        "user_email": "user_0ec8b433@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -5443,9 +5443,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "\u0418\u041b\u0418\u0415\u0412",
+        "verified_last_name": "NAME_302454",
         "verification_status": "verified",
-        "verified_first_name": "TEODOR",
+        "verified_first_name": "NAME_151538",
         "verification_error_code": null,
         "verified_address_country": "BG"
       },
@@ -5461,7 +5461,7 @@
               }
             ],
             "visibility": "public",
-            "description": "A sleek and responsive Framer template designed for AI-powered startups and tech innovators. Showcase your AI solutions with modern layouts, fast performance, and conversion-focused design.\n\nRefund Policy: 48-hour 100% Money-Back Guarantee\n\nYes! We offer a 48-hour full money-back guarantee if you are not happy with your purchase, and if you've used Wize Template's team assistance and you still are not satisfied.\n\nIf you need assistance, you can reach out at teo@wize.design",
+            "description": "A sleek and responsive Framer template designed for AI-powered startups and tech innovators. Showcase your AI solutions with modern layouts, fast performance, and conversion-focused design.\n\nRefund Policy: 48-hour 100% Money-Back Guarantee\n\nYes! We offer a 48-hour full money-back guarantee if you are not happy with your purchase, and if you've used Wize Template's team assistance and you still are not satisfied.\n\nIf you need assistance, you can reach out at user_0ec8b433@example.com",
             "is_archived": false,
             "billing_type": "one_time"
           },
@@ -5475,7 +5475,7 @@
               }
             ],
             "visibility": "public",
-            "description": "Aylix \u2014 a sleek Framer template for AI startups and SaaS brands. Showcase your on-demand AI workforce, integrations, automation and compliance with elegance.\n\nRefund Policy: 48-hour 100% Money-Back Guarantee\n\nYes! We offer a 48-hour full money-back guarantee if you are not happy with your purchase, and if you've used Wize Template's team assistance and you still are not satisfied.\n\nIf you need assistance, you can reach out at teo@wize.design",
+            "description": "Aylix \u2014 a sleek Framer template for AI startups and SaaS brands. Showcase your on-demand AI workforce, integrations, automation and compliance with elegance.\n\nRefund Policy: 48-hour 100% Money-Back Guarantee\n\nYes! We offer a 48-hour full money-back guarantee if you are not happy with your purchase, and if you've used Wize Template's team assistance and you still are not satisfied.\n\nIf you need assistance, you can reach out at user_0ec8b433@example.com",
             "is_archived": false,
             "billing_type": "one_time"
           },
@@ -5489,7 +5489,7 @@
               }
             ],
             "visibility": "public",
-            "description": "Educate is a Framer website template built for digital course creators. It's built with a conversion funnel that contains everything you need to sell your course effectively.\n\nExplore it here: https://educate.framer.website\n\nRefund Policy: 48-hour 100% Money-Back Guarantee\n\nYes! We offer a 48-hour full money-back guarantee if you are not happy with your purchase, and if you've used Wize Template's team assistance and you still are not satisfied.\n\nIf you need assistance, you can reach out at teo@wize.design",
+            "description": "Educate is a Framer website template built for digital course creators. It's built with a conversion funnel that contains everything you need to sell your course effectively.\n\nExplore it here: https://educate.framer.website\n\nRefund Policy: 48-hour 100% Money-Back Guarantee\n\nYes! We offer a 48-hour full money-back guarantee if you are not happy with your purchase, and if you've used Wize Template's team assistance and you still are not satisfied.\n\nIf you need assistance, you can reach out at user_0ec8b433@example.com",
             "is_archived": false,
             "billing_type": "one_time"
           }
@@ -5501,7 +5501,7 @@
         "name": "Wize Templates",
         "slug": "wize-templates",
         "about": "We sell Framer website templates to business owners and creators who want to setup a website quickly and affordably.",
-        "email": "teo@wize.design",
+        "email": "user_0ec8b433@example.com",
         "socials": [
           {
             "url": "https://x.com/the0teo",
@@ -5593,7 +5593,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "wantdat@gmail.com",
+        "user_email": "user_09e0643c@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -5626,9 +5626,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "ARTEM",
+        "verified_last_name": "NAME_F0938D",
         "verification_status": "verified",
-        "verified_first_name": "MR. GRIGORETS",
+        "verified_first_name": "NAME_B08B11",
         "verification_error_code": null,
         "verified_address_country": "TH"
       },
@@ -5670,7 +5670,7 @@
         "name": "Mint AI",
         "slug": "mint",
         "about": "We make subscription based service that helps Business owners and creators instantly create content for all socials.   If Claude and Canva had a baby",
-        "email": "wantdat@gmail.com",
+        "email": "user_09e0643c@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/a.grigorets/",
@@ -5759,7 +5759,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "account@wes.email",
+        "user_email": "user_241d8398@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -5800,9 +5800,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "van Heije",
+        "verified_last_name": "NAME_76257C",
         "verification_status": "verified",
-        "verified_first_name": "Wesley Ives Loran",
+        "verified_first_name": "NAME_29C90C",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -5843,7 +5843,7 @@
         "name": "paperweight",
         "slug": "paperweight",
         "about": "I'm an independent software engineer based in the Netherlands, registration Nr 62934384. I run multiple (open-source) projects and trying out Polar for a new project called Paperweight.",
-        "email": "support@paperweight.email",
+        "email": "user_beacd47f@example.com",
         "socials": [
           {
             "url": "https://x.com/wslyvh",
@@ -5930,7 +5930,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "sriram@integrofy.com",
+        "user_email": "user_2e9e10df@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -5963,9 +5963,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "KIDAMBI",
+        "verified_last_name": "NAME_BB2991",
         "verification_status": "verified",
-        "verified_first_name": "SAI SRIRAMA KRISHNAN",
+        "verified_first_name": "NAME_7BD5B5",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -5993,7 +5993,7 @@
         "name": "Integrofy LLC",
         "slug": "integrofy-llc",
         "about": "Integrofy LLC is in the AI software industry. We solve the problem of information overload and fragmented workflows by building intelligent products like DriftOS,(https://driftos.app) a personal AI-powered second brain, and by delivering custom AI software solutions. Our customers are knowledge workers, teams, and businesses that want to capture, organize, and act on information faster with AI",
-        "email": "support@integrofy.com",
+        "email": "user_a999dccd@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/company/integrofy/",
@@ -6067,7 +6067,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "k.emily0.0yz@gmail.com",
+        "user_email": "user_2b96f3f9@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -6138,7 +6138,7 @@
         "name": "charm-AIArt",
         "slug": "charm-aiart",
         "about": "We provide AI-powered art analysis services for children's drawings. Our platform helps parents and educators understand children's emotional expressions and creative development through their artwork. We serve parents, teachers, and educational institutions who want to gain insights into children's emotional well-being and artistic development. Our service combines AI technology with professional art therapy principles to provide educational insights, not medical diagnosis.",
-        "email": "k.emily0.0yz@gmail.com",
+        "email": "user_2b96f3f9@example.com",
         "socials": [
           {
             "url": "https://www.facebook.com/C.Gseon",
@@ -6219,7 +6219,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "sina@rendercv.com",
+        "user_email": "user_5679eaef@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -6252,9 +6252,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "ATALAY",
+        "verified_last_name": "NAME_E71743",
         "verification_status": "verified",
-        "verified_first_name": "SINA",
+        "verified_first_name": "NAME_C201D4",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -6338,7 +6338,7 @@
         "name": "RenderCV",
         "slug": "rendercv",
         "about": "We're an open-source CV/resume builder (15.7k+ stars on GitHub): https://github.com/rendercv/rendercv\n\nWe brought this open-source tool into a web app 2 years ago at https://app.rendercv.com. Now, we've built a new one from scratch with AI features, which we want to charge users for using Polar. The new web app will be deployed at https://rendercv.com. We haven't deployed yet. We'll deploy when everything is ready, including the payment processor. If you'd like to preview the new web app, please visit https://future.rendercv.com and use the code HIPOLARS.\n\nWe solve the problem of writing CVs. People use RenderCV because it's much easier to write and maintain CVs with it. Users write their content in YAML and get a perfectly typeset PDF. Our customers are usually engineers and academics.",
-        "email": "team@rendercv.com",
+        "email": "user_1c267081@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/in/sinaatalay/",
@@ -6436,7 +6436,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "muhammedwmtr@gmail.com",
+        "user_email": "user_2c2ca0fc@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -6469,9 +6469,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "AVCI",
+        "verified_last_name": "NAME_050833",
         "verification_status": "verified",
-        "verified_first_name": "MUHAMMED ENES",
+        "verified_first_name": "NAME_AB4A51",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -6667,7 +6667,7 @@
         "name": "Bearready",
         "slug": "bearready",
         "about": "The goal of BearReady is to empower Shopify entrepreneurs with an \"always-on\" sales assistant. By turning abandoned carts into completed orders, we help e-commerce businesses increase their ROI and build stronger, more personal relationships with their customers.",
-        "email": "info@stradilab.com",
+        "email": "user_52fa9054@example.com",
         "socials": [
           {
             "url": "https://x.com/1muhammedavci",
@@ -6748,7 +6748,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "best.timewon@gmail.com",
+        "user_email": "user_c49385a5@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -6861,7 +6861,7 @@
         "name": "Allchodae",
         "slug": "allchodae",
         "about": "AllChodae is an online invitation creation platform based in South Korea. We help individuals and organizations create beautiful digital invitations for events such as weddings, birthday parties, seminars, and corporate gatherings. Our customers are primarily Korean-speaking users, with growing international demand. The platform allows users to design invitations with 12+ customizable sections, 5 theme presets, and manage attendee responses through built-in forms.",
-        "email": "support@allchodae.com",
+        "email": "user_4e21946b@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/seong._min06/",
@@ -6943,7 +6943,7 @@
         "capabilities": {
           "transfers": "active"
         },
-        "business_name": "Sayr",
+        "business_name": "NAME_B9623C",
         "business_type": "company",
         "is_charges_enabled": true,
         "is_payouts_enabled": true,
@@ -6957,7 +6957,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "tom@doras.to",
+        "user_email": "user_cc067a45@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -6998,9 +6998,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "LUNDY",
+        "verified_last_name": "NAME_DE0044",
         "verification_status": "verified",
-        "verified_first_name": "THOMAS",
+        "verified_first_name": "NAME_91E413",
         "verification_error_code": null,
         "verified_address_country": "IE"
       },
@@ -7066,7 +7066,7 @@
         "name": "Sayr",
         "slug": "sayr",
         "about": "Transparent project management for bridging the gap between users & developers",
-        "email": "hi@sayr.io",
+        "email": "user_e5c2e8bf@example.com",
         "socials": [
           {
             "url": "https://doras.to/sayr",
@@ -7151,7 +7151,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "geralpixelhunter@gmail.com",
+        "user_email": "user_7b82a7a6@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -7184,9 +7184,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "DA COSTA FERNANDES",
+        "verified_last_name": "NAME_283633",
         "verification_status": "verified",
-        "verified_first_name": "ANA RITA",
+        "verified_first_name": "NAME_7A7D4A",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -7214,7 +7214,7 @@
         "name": "breakcolorui",
         "slug": "breakcolorui",
         "about": "BreakcolorUI is a design and UI component platform that provides modern interface templates, reusable components and design systems for developers and design teams. The platform helps teams build digital products faster by offering ready-to-use UI elements, layouts and front-end resources that integrate easily with modern web frameworks.",
-        "email": "geralpixelhunter@gmail.com",
+        "email": "user_7b82a7a6@example.com",
         "socials": [
           {
             "url": "https://www.instagram.com/pixelhunter.pt/",
@@ -7297,7 +7297,7 @@
       },
       "context": "threshold",
       "history": {
-        "user_email": "ca@applaigrants.com",
+        "user_email": "user_29384d57@example.com",
         "user_blocked_at": null,
         "has_blocked_orgs": false,
         "has_prior_denials": false,
@@ -7330,9 +7330,9 @@
       },
       "identity": {
         "verified_dob": null,
-        "verified_last_name": "AROH",
+        "verified_last_name": "NAME_1BB437",
         "verification_status": "verified",
-        "verified_first_name": "CHUKWUMA NNAETO",
+        "verified_first_name": "NAME_D6FDEB",
         "verification_error_code": null,
         "verified_address_country": null
       },
@@ -7626,7 +7626,7 @@
         "name": "Applai",
         "slug": "applai",
         "about": "Applai helps nonprofit and startups discover grants, apply using AI and manage teams & grant deadlines",
-        "email": "contact@applaigrants.com",
+        "email": "user_1b108152@example.com",
         "socials": [
           {
             "url": "https://www.linkedin.com/in/chuma-aroh-203268163/",

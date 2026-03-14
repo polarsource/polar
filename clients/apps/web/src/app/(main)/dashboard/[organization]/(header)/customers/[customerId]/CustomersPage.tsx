@@ -31,7 +31,7 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback } from 'react'
 
 const CustomerHeader = ({
   customer,
@@ -226,17 +226,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
       getNextValidInterval('day', startDate, endDate),
     ),
   )
-
-  useEffect(() => {
-    if (customer) {
-      const customerCreatedAt = startOfDay(new Date(customer.created_at))
-      const now = endOfToday()
-
-      setStartDate(customerCreatedAt)
-      setEndDate(now)
-      setInterval((prev) => getNextValidInterval(prev, customerCreatedAt, now))
-    }
-  }, [customer, setStartDate, setEndDate, setInterval])
 
   return (
     <MasterDetailLayoutContent

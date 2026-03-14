@@ -28,7 +28,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -250,10 +250,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
     product_id: productId,
     metrics: ['orders', 'revenue', 'cumulative_revenue'],
   })
+  const today = useMemo(() => new Date(), [])
   const { data: todayMetricsData } = useMetrics({
     organization_id: organization.id,
-    startDate: new Date(),
-    endDate: new Date(),
+    startDate: today,
+    endDate: today,
     interval: 'day',
     product_id: productId,
     metrics: ['revenue'],

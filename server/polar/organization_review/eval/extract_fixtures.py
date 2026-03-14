@@ -1,6 +1,6 @@
-"""Extract sample eval fixtures from the database for offline testing.
+"""Extract eval fixtures from the database for offline testing.
 
-Run: cd server && uv run python -m polar.organization_review.eval.extract_fixtures
+Run: cd server && uv run python -m polar.organization_review.eval.extract_fixtures [--limit 30]
 
 Saves cases to eval/fixtures/sample_cases.json.
 """
@@ -9,19 +9,19 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from pathlib import Path
 
 import structlog
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 log = structlog.get_logger(__name__)
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
-async def extract() -> None:
-    from sqlalchemy import select
-    from sqlalchemy.orm import selectinload
-
+async def extract(limit: int = 30) -> None:
     from polar.kit.db.postgres import AsyncReadSessionMaker
     from polar.models.organization_agent_review import OrganizationAgentReview
     from polar.models.organization_review_feedback import OrganizationReviewFeedback
@@ -29,7 +29,6 @@ async def extract() -> None:
     FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
 
     async with AsyncReadSessionMaker() as session:
-        # Get a diverse sample: overrides + agreements + false negatives
         stmt = (
             select(OrganizationReviewFeedback)
             .where(
@@ -40,7 +39,7 @@ async def extract() -> None:
             )
             .options(selectinload(OrganizationReviewFeedback.agent_review))
             .order_by(OrganizationReviewFeedback.created_at.desc())
-            .limit(20)
+            .limit(limit)
         )
 
         result = await session.execute(stmt)
@@ -73,13 +72,22 @@ async def extract() -> None:
     with open(output_path, "w") as f:
         json.dump(cases, f, indent=2, default=str)
 
-    log.info(
-        "fixtures.extracted",
-        count=len(cases),
-        path=str(output_path),
+    overrides = sum(1 for c in cases if c["human_decision"] != c["agent_verdict"])
+    print(f"Extracted {len(cases)} cases ({overrides} overrides) to {output_path}")
+    print(f"File size: {output_path.stat().st_size / 1024:.0f} KB")
+
+
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Extract eval fixtures from DB")
+    parser.add_argument(
+        "--limit", type=int, default=30,
+        help="Max cases to extract (default: 30)",
     )
-    print(f"Extracted {len(cases)} cases to {output_path}")
+    args = parser.parse_args()
+    asyncio.run(extract(limit=args.limit))
 
 
 if __name__ == "__main__":
-    asyncio.run(extract())
+    main()

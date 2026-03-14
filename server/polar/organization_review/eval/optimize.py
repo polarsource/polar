@@ -4,7 +4,11 @@ Uses human-reviewed feedback from organization_review_feedback as ground truth
 and GEPA's evolutionary search to optimize the system prompt.
 
 Usage:
-    python -m polar.organization_review.eval.optimize [--max-evals 300] [--model gpt-5.2-2025-12-11]
+    cd server
+    uv run python -m polar.organization_review.eval.optimize --max-evals 30 --limit 20
+
+    # Full run (~$30-50):
+    uv run python -m polar.organization_review.eval.optimize --max-evals 300
 
 Requires: pip install gepa
 """
@@ -14,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -23,18 +28,46 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
+_VERDICT_MAP = {
+    "APPROVE": "PASS",
+    "DENY": "FAIL",
+    "NEEDS_HUMAN_REVIEW": "FAIL",
+}
+
+# Asymmetric weights: false negatives (letting bad orgs through) are more
+# dangerous than false positives (blocking good orgs), but false positives
+# are the current main problem (77 threshold overrides).
+WEIGHT_VERDICT_MATCH = 0.40
+WEIGHT_NOT_FALSE_NEGATIVE = 0.35
+WEIGHT_NOT_FALSE_POSITIVE = 0.25
+
 
 # ---------------------------------------------------------------------------
 # Dataset loading
 # ---------------------------------------------------------------------------
 
 
-async def load_feedback_dataset(
+def _load_cases_from_fixtures() -> list[dict[str, Any]]:
+    """Load cases from the fixtures JSON file (offline mode)."""
+    fixtures_path = Path(__file__).parent / "fixtures" / "sample_cases.json"
+    if not fixtures_path.exists():
+        raise FileNotFoundError(
+            f"No fixtures at {fixtures_path}. "
+            "Run: uv run python -m polar.organization_review.eval.extract_fixtures"
+        )
+    with open(fixtures_path) as f:
+        raw_cases = json.load(f)
+    if not raw_cases:
+        raise ValueError("Fixtures file is empty")
+    return raw_cases
+
+
+async def _load_cases_from_db(
     *,
     context_filter: list[str] | None = None,
     limit: int | None = None,
-) -> Any:
-    """Load human-reviewed feedback cases from the database."""
+) -> list[dict[str, Any]]:
+    """Load cases from the database via extract_dataset."""
     from polar.kit.db.postgres import AsyncReadSessionMaker
 
     from .dataset import extract_dataset
@@ -45,226 +78,268 @@ async def load_feedback_dataset(
             context_filter=context_filter,
             limit=limit,
         )
-    return dataset
+
+    # Convert pydantic-evals Cases into plain dicts for GEPA's dataset
+    cases = []
+    for case in dataset.cases:
+        cases.append(
+            {
+                "name": case.name,
+                "inputs": case.inputs,
+                "expected_output": case.expected_output,
+                "metadata": case.metadata,
+            }
+        )
+    return cases
 
 
 def split_dataset(
-    dataset: Any,
+    cases: list[dict[str, Any]],
     val_fraction: float = 0.2,
     seed: int = 42,
-) -> tuple[list[Any], list[Any]]:
-    """Split dataset cases into train/val sets.
-
-    Stratifies by expected_output so both sets have representative
-    PASS/FAIL ratios. Override cases are distributed proportionally.
-    """
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Stratified train/val split."""
     import random
 
     rng = random.Random(seed)
-    cases = list(dataset.cases)
 
-    pass_cases = [c for c in cases if c.expected_output == "PASS"]
-    fail_cases = [c for c in cases if c.expected_output == "FAIL"]
+    pass_cases = [c for c in cases if c["expected_output"] == "PASS"]
+    fail_cases = [c for c in cases if c["expected_output"] != "PASS"]
 
     rng.shuffle(pass_cases)
     rng.shuffle(fail_cases)
 
-    val_pass = int(len(pass_cases) * val_fraction)
-    val_fail = int(len(fail_cases) * val_fraction)
+    val_pass = max(1, int(len(pass_cases) * val_fraction))
+    val_fail = max(1, int(len(fail_cases) * val_fraction))
 
-    val_cases = pass_cases[:val_pass] + fail_cases[:val_fail]
-    train_cases = pass_cases[val_pass:] + fail_cases[val_fail:]
+    val = pass_cases[:val_pass] + fail_cases[:val_fail]
+    train = pass_cases[val_pass:] + fail_cases[val_fail:]
 
-    rng.shuffle(val_cases)
-    rng.shuffle(train_cases)
+    rng.shuffle(val)
+    rng.shuffle(train)
 
-    return train_cases, val_cases
+    return train, val
 
 
 # ---------------------------------------------------------------------------
-# GEPA evaluator
+# Scoring
 # ---------------------------------------------------------------------------
 
-# Asymmetric weights: false negatives (letting bad orgs through) are more
-# dangerous than false positives (blocking good orgs), but false positives
-# are the current main problem (77 threshold overrides).
-WEIGHT_VERDICT_MATCH = 0.40
-WEIGHT_NOT_FALSE_NEGATIVE = 0.35
-WEIGHT_NOT_FALSE_POSITIVE = 0.25
 
-_VERDICT_MAP = {
-    "APPROVE": "PASS",
-    "DENY": "FAIL",
-    "NEEDS_HUMAN_REVIEW": "FAIL",
-}
-
-_CONTEXT_MAP: dict[str, str] = {
-    "submission": "submission",
-    "setup_complete": "setup_complete",
-    "threshold": "threshold",
-    "manual": "manual",
-}
-
-
-async def _run_single_eval(
-    candidate_prompt: str,
-    case: Any,
-    model: str | None = None,
-) -> tuple[float, str]:
-    """Run the review analyzer with a candidate prompt on a single case.
-
-    Returns (score, actionable_side_information).
-    """
-    from .task import create_review_task
-
-    task_fn = create_review_task(model=model, system_prompt=candidate_prompt)
-
-    predicted = await task_fn(case.inputs)
-    expected = case.expected_output
-
-    # Multi-objective scoring
+def _score(predicted: str, expected: str) -> float:
+    """Multi-objective score with asymmetric FP/FN weighting."""
     verdict_match = 1.0 if predicted == expected else 0.0
-    not_false_negative = (
-        0.0 if (expected in ("FAIL", "UNCERTAIN") and predicted == "PASS") else 1.0
-    )
-    not_false_positive = (
-        0.0 if (expected == "PASS" and predicted == "FAIL") else 1.0
-    )
+    not_fn = 0.0 if (expected in ("FAIL", "UNCERTAIN") and predicted == "PASS") else 1.0
+    not_fp = 0.0 if (expected == "PASS" and predicted == "FAIL") else 1.0
 
-    score = (
+    return (
         WEIGHT_VERDICT_MATCH * verdict_match
-        + WEIGHT_NOT_FALSE_NEGATIVE * not_false_negative
-        + WEIGHT_NOT_FALSE_POSITIVE * not_false_positive
+        + WEIGHT_NOT_FALSE_NEGATIVE * not_fn
+        + WEIGHT_NOT_FALSE_POSITIVE * not_fp
     )
 
-    # Build actionable side information (ASI) for GEPA's reflection step
-    metadata = case.metadata
-    org_name = metadata.organization_name if metadata else "unknown"
-    human_reason = metadata.human_reason if metadata else None
-    review_context = metadata.review_context if metadata else "unknown"
 
-    asi_parts = [
-        f"Organization: {org_name}",
-        f"Context: {review_context}",
-        f"Expected: {expected}, Predicted: {predicted}",
-        f"Match: {'YES' if predicted == expected else 'NO'}",
-    ]
+# ---------------------------------------------------------------------------
+# GEPA evaluator (per-example, as required by GEPA's Evaluator protocol)
+# ---------------------------------------------------------------------------
 
-    if human_reason:
-        asi_parts.append(f"Human reviewer reasoning: {human_reason}")
 
-    if predicted != expected and metadata:
-        asi_parts.append(f"Agent verdict was: {metadata.agent_verdict}")
-        if metadata.is_override:
-            asi_parts.append(
-                "This was a human OVERRIDE — the agent got this wrong."
+def make_evaluator(model: str | None = None):
+    """Build the GEPA evaluator function.
+
+    GEPA calls this as: evaluator(candidate, example) -> (score, side_info)
+    where `candidate` is the system prompt string and `example` is one case
+    from the dataset.
+    """
+    # Cache the analyzer across calls to avoid re-creating it for every eval
+    _analyzers: dict[int, Any] = {}
+
+    def _get_or_create_analyzer(candidate_prompt: str):
+        from pydantic_ai import Agent
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        from polar.config import settings
+        from polar.organization_review.analyzer import ReviewAnalyzer
+        from polar.organization_review.schemas import ReviewAgentReport
+
+        key = hash(candidate_prompt)
+        if key not in _analyzers:
+            analyzer = ReviewAnalyzer()
+            model_name = model or settings.OPENAI_MODEL
+            provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
+            analyzer.model = OpenAIChatModel(model_name, provider=provider)
+            analyzer.agent = Agent(
+                analyzer.model,
+                output_type=ReviewAgentReport,
+                system_prompt=candidate_prompt,
+            )
+            _analyzers[key] = analyzer
+            # Keep cache bounded
+            if len(_analyzers) > 20:
+                oldest = next(iter(_analyzers))
+                del _analyzers[oldest]
+        return _analyzers[key]
+
+    def evaluator(candidate: Any, example: dict[str, Any]) -> tuple[float, dict[str, Any]]:
+        """GEPA evaluator: score a candidate prompt on a single example."""
+        from polar.organization_review.schemas import DataSnapshot, ReviewContext
+
+        # GEPA passes candidate as Candidate dict: {"current_candidate": "..."}
+        if isinstance(candidate, dict):
+            candidate = candidate.get("current_candidate", str(candidate))
+
+        CONTEXT_MAP = {
+            "submission": ReviewContext.SUBMISSION,
+            "setup_complete": ReviewContext.SETUP_COMPLETE,
+            "threshold": ReviewContext.THRESHOLD,
+            "manual": ReviewContext.MANUAL,
+        }
+
+        # Extract data from the example
+        inputs = example["inputs"]
+        expected = example["expected_output"]
+        metadata = example.get("metadata")
+
+        # Handle both FeedbackReviewInput objects and raw fixture dicts
+        if hasattr(inputs, "data_snapshot"):
+            snapshot = inputs.data_snapshot
+            review_type = inputs.review_type
+        else:
+            snapshot = DataSnapshot.model_validate(inputs["data_snapshot"])
+            review_type = inputs.get("review_type", "threshold")
+
+        context = CONTEXT_MAP.get(review_type, ReviewContext.THRESHOLD)
+        analyzer = _get_or_create_analyzer(candidate)
+
+        # Run the async analyzer in the current event loop
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                report, usage = pool.submit(
+                    asyncio.run,
+                    analyzer.analyze(snapshot, context=context),
+                ).result()
+        else:
+            report, usage = asyncio.run(
+                analyzer.analyze(snapshot, context=context)
             )
 
-    return score, "\n".join(asi_parts)
+        predicted = _VERDICT_MAP.get(report.verdict.value, report.verdict.value)
+        score = _score(predicted, expected)
 
+        # Build ASI (actionable side information)
+        org_name = snapshot.organization.name
+        human_reason = None
+        is_override = False
+        if metadata:
+            if hasattr(metadata, "human_reason"):
+                human_reason = metadata.human_reason
+                is_override = metadata.is_override
+            elif isinstance(metadata, dict):
+                human_reason = metadata.get("human_reason")
+                is_override = metadata.get("is_override", False)
 
-def build_gepa_evaluator(
-    train_cases: list[Any],
-    model: str | None = None,
-    concurrency: int = 5,
-) -> Any:
-    """Build the evaluator function for GEPA's optimize_anything.
-
-    The evaluator runs the candidate system prompt against a minibatch of
-    train cases and returns a score + ASI string.
-    """
-    import asyncio
-
-    async def evaluator(candidate: str) -> dict[str, Any]:
-        semaphore = asyncio.Semaphore(concurrency)
-
-        async def run_with_limit(case: Any) -> tuple[float, str]:
-            async with semaphore:
-                return await _run_single_eval(candidate, case, model=model)
-
-        results = await asyncio.gather(
-            *[run_with_limit(case) for case in train_cases],
-            return_exceptions=True,
-        )
-
-        scores = []
-        asi_parts = []
-        errors = 0
-
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                errors += 1
-                asi_parts.append(
-                    f"Case {i} ERROR: {type(result).__name__}: {result}"
-                )
-                continue
-            score, asi = result
-            scores.append(score)
-            if score < 1.0:  # Only include failed cases in ASI for efficiency
-                asi_parts.append(asi)
-
-        avg_score = sum(scores) / len(scores) if scores else 0.0
-        total = len(results)
-
-        header = (
-            f"Score: {avg_score:.3f} "
-            f"({sum(1 for s in scores if s >= 1.0)}/{total} perfect, "
-            f"{errors} errors)"
-        )
-
-        return {
-            "score": avg_score,
-            "asi": header + "\n\n" + "\n---\n".join(asi_parts),
+        side_info: dict[str, Any] = {
+            "organization": org_name,
+            "expected": expected,
+            "predicted": predicted,
+            "correct": predicted == expected,
+            "agent_verdict": report.verdict.value,
+            "risk_level": report.overall_risk_level.value
+            if hasattr(report.overall_risk_level, "value")
+            else str(report.overall_risk_level),
+            "summary": report.summary[:300],
         }
+
+        if human_reason:
+            side_info["human_reasoning"] = human_reason
+        if is_override and predicted != expected:
+            side_info["note"] = "Human OVERRIDE — agent got this wrong"
+
+        # Include dimension details for misses
+        if predicted != expected:
+            side_info["dimensions"] = [
+                {
+                    "dim": d.dimension.value
+                    if hasattr(d.dimension, "value")
+                    else str(d.dimension),
+                    "risk": d.risk_level.value
+                    if hasattr(d.risk_level, "value")
+                    else str(d.risk_level),
+                    "findings": d.findings[:3],
+                }
+                for d in report.dimensions
+            ]
+
+        return score, side_info
 
     return evaluator
 
 
 # ---------------------------------------------------------------------------
-# Validation
+# Validation (runs outside GEPA)
 # ---------------------------------------------------------------------------
 
 
 async def validate_prompt(
     prompt: str,
-    val_cases: list[Any],
+    val_cases: list[dict[str, Any]],
     model: str | None = None,
     concurrency: int = 5,
 ) -> dict[str, Any]:
     """Run a prompt against the validation set and return detailed metrics."""
+    from .task import create_review_task
+    from .dataset import FeedbackReviewInput
+    from polar.organization_review.schemas import DataSnapshot
+
+    task_fn = create_review_task(model=model, system_prompt=prompt)
     semaphore = asyncio.Semaphore(concurrency)
 
-    async def run_with_limit(case: Any) -> tuple[Any, float, str]:
+    async def eval_one(case: dict[str, Any]) -> tuple[str, str, str]:
         async with semaphore:
-            score, asi = await _run_single_eval(prompt, case, model=model)
-            return case, score, asi
+            inputs = case["inputs"]
+            if hasattr(inputs, "data_snapshot"):
+                review_input = inputs
+            else:
+                snapshot = DataSnapshot.model_validate(inputs["data_snapshot"])
+                review_input = FeedbackReviewInput(
+                    data_snapshot=snapshot,
+                    review_type=inputs.get("review_type", "threshold"),
+                )
+            predicted = await task_fn(review_input)
+            expected = case["expected_output"]
+            name = case.get("name", "unknown")
+            return name, predicted, expected
 
     results = await asyncio.gather(
-        *[run_with_limit(c) for c in val_cases],
+        *[eval_one(c) for c in val_cases],
         return_exceptions=True,
     )
 
-    scores = []
-    false_positives = []
-    false_negatives = []
     correct = 0
+    false_positives: list[str] = []
+    false_negatives: list[str] = []
+    total = 0
 
     for result in results:
         if isinstance(result, Exception):
+            logger.warning("validate.error", error=str(result))
             continue
-        case, score, asi = result
-        scores.append(score)
-        if score >= 1.0:
+        name, predicted, expected = result
+        total += 1
+        if predicted == expected:
             correct += 1
-        elif case.expected_output == "PASS":
-            false_positives.append(case.metadata.organization_name)
-        elif case.expected_output in ("FAIL", "UNCERTAIN"):
-            false_negatives.append(case.metadata.organization_name)
+        elif expected == "PASS":
+            false_positives.append(name)
+        elif expected in ("FAIL", "UNCERTAIN"):
+            false_negatives.append(name)
 
-    total = len(scores)
     return {
         "accuracy": correct / total if total else 0.0,
-        "avg_score": sum(scores) / total if total else 0.0,
+        "avg_score": correct / total if total else 0.0,
         "total": total,
         "correct": correct,
         "false_positives": len(false_positives),
@@ -275,7 +350,7 @@ async def validate_prompt(
 
 
 # ---------------------------------------------------------------------------
-# Main optimization entry point
+# Main optimization
 # ---------------------------------------------------------------------------
 
 
@@ -289,6 +364,7 @@ async def run_optimization(
     val_fraction: float = 0.2,
     concurrency: int = 5,
     output_dir: str | None = None,
+    use_fixtures: bool = False,
 ) -> dict[str, Any]:
     """Run GEPA optimization on the review system prompt.
 
@@ -300,36 +376,58 @@ async def run_optimization(
         limit: Max number of feedback cases to load.
         val_fraction: Fraction of data to hold out for validation.
         concurrency: Max concurrent LLM calls per evaluation batch.
-        output_dir: Directory to save results. Defaults to
-            server/polar/organization_review/eval/optimization_results/.
+        output_dir: Directory to save results.
+        use_fixtures: Load from fixtures file instead of database.
     """
-    from gepa import GEPAConfig, EngineConfig, optimize_anything
+    from gepa.optimize_anything import GEPAConfig, EngineConfig, optimize_anything
 
     from polar.organization_review.analyzer import SYSTEM_PROMPT
 
     # 1. Load dataset
-    logger.info("optimize.loading_dataset", context_filter=context_filter, limit=limit)
-    dataset = await load_feedback_dataset(
-        context_filter=context_filter, limit=limit
-    )
-    total_cases = len(dataset.cases)
+    logger.info("optimize.loading_dataset")
+    if use_fixtures:
+        raw_cases = _load_cases_from_fixtures()
+        # Convert fixture dicts to the format GEPA expects
+        cases = []
+        for rc in raw_cases:
+            decision_map = {"APPROVE": "PASS", "DENY": "FAIL"}
+            cases.append(
+                {
+                    "name": rc["org_name"],
+                    "inputs": {
+                        "data_snapshot": rc["data_snapshot"],
+                        "review_type": rc["review_type"],
+                    },
+                    "expected_output": decision_map.get(
+                        rc["human_decision"], rc["human_decision"]
+                    ),
+                    "metadata": {
+                        "human_reason": rc.get("human_reason"),
+                        "agent_verdict": rc.get("agent_verdict"),
+                        "is_override": rc.get("human_decision") != rc.get("agent_verdict"),
+                        "review_context": rc.get("review_context", "unknown"),
+                    },
+                }
+            )
+    else:
+        cases = await _load_cases_from_db(
+            context_filter=context_filter, limit=limit
+        )
+
+    total_cases = len(cases)
     logger.info("optimize.dataset_loaded", total_cases=total_cases)
 
-    if total_cases < 10:
+    if total_cases < 3:
         raise ValueError(
-            f"Only {total_cases} cases found — need at least 10 for optimization. "
-            "Check that human-reviewed feedback exists in the database."
+            f"Only {total_cases} cases — need at least 3 for optimization."
         )
 
     # 2. Split train/val
-    train_cases, val_cases = split_dataset(dataset, val_fraction=val_fraction)
+    train_cases, val_cases = split_dataset(cases, val_fraction=val_fraction)
     logger.info(
         "optimize.split",
         train=len(train_cases),
         val=len(val_cases),
-        train_overrides=sum(
-            1 for c in train_cases if c.metadata and c.metadata.is_override
-        ),
     )
 
     # 3. Baseline validation
@@ -340,28 +438,32 @@ async def run_optimization(
     logger.info("optimize.baseline_results", **baseline_metrics)
 
     # 4. Build evaluator and run GEPA
-    evaluator = build_gepa_evaluator(
-        train_cases, model=model, concurrency=concurrency
-    )
+    evaluator = make_evaluator(model=model)
 
     logger.info(
         "optimize.starting_gepa",
         max_metric_calls=max_metric_calls,
         reflection_lm=reflection_lm,
+        train_cases=len(train_cases),
     )
+
+    # Set OPENAI_API_KEY for GEPA's reflection LM (uses litellm)
+    from polar.config import settings
+    os.environ.setdefault("OPENAI_API_KEY", settings.OPENAI_API_KEY)
 
     start_time = time.monotonic()
     result = optimize_anything(
         seed_candidate=SYSTEM_PROMPT,
         evaluator=evaluator,
+        dataset=train_cases,
+        valset=val_cases,
         objective=(
             "Optimize the compliance review system prompt for a Merchant of Record "
             "platform. The prompt instructs an LLM to review organizations applying "
             "to sell digital products.\n\n"
             "KEY PROBLEM: The current prompt produces too many false positives — it "
             "denies legitimate businesses (template sellers, AI tools, content "
-            "creation SaaS) that human reviewers later approve. 77 threshold-stage "
-            "overrides and 28 submission-stage overrides show this pattern.\n\n"
+            "creation SaaS) that human reviewers later approve.\n\n"
             "CONSTRAINTS:\n"
             "- Must NOT increase false negatives (letting risky orgs through)\n"
             "- Must maintain clear DENY for: marketplaces, financial advisory, "
@@ -370,42 +472,53 @@ async def run_optimization(
             "content creation tools, digital education platforms\n"
             "- The prompt MUST instruct the model to return only APPROVE or DENY\n"
             "- Few-shot examples should calibrate edge cases\n\n"
-            "The ASI includes human reviewer reasoning for overridden cases — "
+            "The side_info includes human reviewer reasoning for overridden cases — "
             "these explain WHY the current prompt fails."
         ),
         config=GEPAConfig(
-            engine=EngineConfig(max_metric_calls=max_metric_calls),
+            engine=EngineConfig(
+                max_metric_calls=max_metric_calls,
+                candidate_selection_strategy="pareto",
+                display_progress_bar=True,
+            ),
         ),
     )
     elapsed = time.monotonic() - start_time
 
     logger.info(
         "optimize.gepa_complete",
-        best_score=result.best_score,
+        total_metric_calls=result.total_metric_calls,
+        num_candidates=result.num_candidates,
         elapsed_seconds=elapsed,
     )
 
     # 5. Validate optimized prompt
+    # best_candidate is a Candidate (dict subclass). For single-string
+    # optimization GEPA uses the key from _STR_CANDIDATE_KEY.
+    best_candidate = result.best_candidate
+    if isinstance(best_candidate, dict):
+        # Single-string mode: dict has one key
+        keys = list(best_candidate.keys())
+        if len(keys) == 1:
+            best_candidate = best_candidate[keys[0]]
+        else:
+            best_candidate = str(best_candidate)
+
     logger.info("optimize.validating_optimized_prompt")
     optimized_metrics = await validate_prompt(
-        result.best_candidate, val_cases, model=model, concurrency=concurrency
+        best_candidate, val_cases, model=model, concurrency=concurrency
     )
     logger.info("optimize.optimized_results", **optimized_metrics)
 
     # 6. Save results
-    out_dir = Path(
-        output_dir
-        or Path(__file__).parent / "optimization_results"
-    )
+    out_dir = Path(output_dir or Path(__file__).parent / "optimization_results")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Save the optimized prompt
     prompt_path = out_dir / f"system_prompt_{timestamp}.txt"
-    prompt_path.write_text(result.best_candidate)
+    prompt_path.write_text(best_candidate)
 
-    # Save metrics comparison
     report = {
         "timestamp": timestamp,
         "config": {
@@ -419,31 +532,22 @@ async def run_optimization(
         "baseline": baseline_metrics,
         "optimized": optimized_metrics,
         "improvement": {
-            "accuracy_delta": (
-                optimized_metrics["accuracy"] - baseline_metrics["accuracy"]
-            ),
+            "accuracy_delta": optimized_metrics["accuracy"] - baseline_metrics["accuracy"],
             "false_positives_delta": (
-                optimized_metrics["false_positives"]
-                - baseline_metrics["false_positives"]
+                optimized_metrics["false_positives"] - baseline_metrics["false_positives"]
             ),
             "false_negatives_delta": (
-                optimized_metrics["false_negatives"]
-                - baseline_metrics["false_negatives"]
+                optimized_metrics["false_negatives"] - baseline_metrics["false_negatives"]
             ),
         },
         "gepa": {
-            "best_score": result.best_score,
+            "total_metric_calls": result.total_metric_calls,
+            "num_candidates": result.num_candidates,
             "elapsed_seconds": elapsed,
         },
     }
     report_path = out_dir / f"report_{timestamp}.json"
     report_path.write_text(json.dumps(report, indent=2, default=str))
-
-    logger.info(
-        "optimize.saved",
-        prompt_path=str(prompt_path),
-        report_path=str(report_path),
-    )
 
     # 7. Print summary
     print("\n" + "=" * 60)
@@ -480,7 +584,7 @@ async def run_optimization(
 
 
 # ---------------------------------------------------------------------------
-# CLI entry point
+# CLI
 # ---------------------------------------------------------------------------
 
 
@@ -491,53 +595,40 @@ def main() -> None:
         description="Optimize the review system prompt with GEPA"
     )
     parser.add_argument(
-        "--max-evals",
-        type=int,
-        default=300,
+        "--max-evals", type=int, default=300,
         help="GEPA evaluation budget (default: 300)",
     )
     parser.add_argument(
-        "--model",
-        type=str,
-        default=None,
+        "--model", type=str, default=None,
         help="Model for review evals (default: settings.OPENAI_MODEL)",
     )
     parser.add_argument(
-        "--reflection-lm",
-        type=str,
-        default="openai/gpt-5",
+        "--reflection-lm", type=str, default="openai/gpt-5",
         help="Model for GEPA reflection/mutation (default: openai/gpt-5)",
     )
     parser.add_argument(
-        "--context",
-        type=str,
-        nargs="*",
-        default=None,
+        "--context", type=str, nargs="*", default=None,
         help="Filter by review context (e.g., submission threshold)",
     )
     parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Max feedback cases to load",
+        "--limit", type=int, default=None,
+        help="Max feedback cases to load from DB",
     )
     parser.add_argument(
-        "--val-fraction",
-        type=float,
-        default=0.2,
+        "--val-fraction", type=float, default=0.2,
         help="Validation set fraction (default: 0.2)",
     )
     parser.add_argument(
-        "--concurrency",
-        type=int,
-        default=5,
-        help="Max concurrent LLM calls (default: 5)",
+        "--concurrency", type=int, default=5,
+        help="Max concurrent LLM calls for validation (default: 5)",
     )
     parser.add_argument(
-        "--output-dir",
-        type=str,
-        default=None,
+        "--output-dir", type=str, default=None,
         help="Directory for output files",
+    )
+    parser.add_argument(
+        "--fixtures", action="store_true",
+        help="Use fixtures file instead of database",
     )
 
     args = parser.parse_args()
@@ -554,6 +645,7 @@ def main() -> None:
             val_fraction=args.val_fraction,
             concurrency=args.concurrency,
             output_dir=args.output_dir,
+            use_fixtures=args.fixtures,
         )
     )
 

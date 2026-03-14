@@ -154,3 +154,6 @@ server/.tinyb
 
 .turbo
 .claude/worktrees
+# GEPA eval artifacts (generated, may contain PII)
+server/polar/organization_review/eval/fixtures/
+server/polar/organization_review/eval/optimization_results/

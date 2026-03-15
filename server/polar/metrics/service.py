@@ -10,9 +10,19 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.meter.service import meter as meter_service
+from polar.models import (
+    Customer,
+    MetricDefinition,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.product import ProductBillingType
+from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .metrics import (
@@ -30,7 +40,14 @@ from .queries_tinybird import (
     TinybirdQuery,
     query_metrics,
 )
-from .schemas import MetricsPeriod, MetricsResponse
+from .repository import MetricDefinitionRepository
+from .schemas import (
+    Metric,
+    MetricDefinitionCreate,
+    MetricDefinitionUpdate,
+    MetricsPeriod,
+    MetricsResponse,
+)
 
 
 def _expand_metrics_with_dependencies(
@@ -83,6 +100,122 @@ class _TinybirdFilters(NamedTuple):
 
 
 class MetricsService:
+    async def list_definitions(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+    ) -> Sequence[MetricDefinition]:
+        repository = MetricDefinitionRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+        if organization_id is not None:
+            statement = statement.where(
+                MetricDefinition.organization_id.in_(organization_id)
+            )
+        return await repository.get_all(statement)
+
+    async def get_definition(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> MetricDefinition | None:
+        repository = MetricDefinitionRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            MetricDefinition.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def create_definition(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        create_schema: MetricDefinitionCreate,
+    ) -> MetricDefinition:
+        repository = MetricDefinitionRepository.from_session(session)
+
+        # Validate slug doesn't conflict with built-in metrics
+        builtin_slugs = {m.slug for m in METRICS}
+        if create_schema.slug in builtin_slugs:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "slug"),
+                        "msg": (
+                            f"Slug '{create_schema.slug}' conflicts with a built-in metric slug."
+                        ),
+                        "type": "value_error",
+                        "input": create_schema.slug,
+                    }
+                ]
+            )
+
+        organization = await get_payload_organization(
+            session, auth_subject, create_schema
+        )
+
+        # Validate slug is unique within the organization
+        existing = await repository.get_one_or_none(
+            repository.get_base_statement().where(
+                MetricDefinition.organization_id == organization.id,
+                MetricDefinition.slug == create_schema.slug,
+            )
+        )
+        if existing is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "slug"),
+                        "msg": f"A metric with slug '{create_schema.slug}' already exists in this organization.",
+                        "type": "value_error",
+                        "input": create_schema.slug,
+                    }
+                ]
+            )
+
+        # Validate the meter belongs to the organization
+        meter = await meter_service.get(session, auth_subject, create_schema.meter_id)
+        if meter is None or meter.organization_id != organization.id:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "meter_id"),
+                        "msg": "Meter not found or does not belong to this organization.",
+                        "type": "value_error",
+                        "input": create_schema.meter_id,
+                    }
+                ]
+            )
+
+        definition = MetricDefinition(
+            name=create_schema.name,
+            slug=create_schema.slug,
+            organization_id=organization.id,
+            meter_id=create_schema.meter_id,
+            meter=meter,
+        )
+        return await repository.create(definition, flush=True)
+
+    async def update_definition(
+        self,
+        session: AsyncSession,
+        definition: MetricDefinition,
+        update_schema: MetricDefinitionUpdate,
+    ) -> MetricDefinition:
+        repository = MetricDefinitionRepository.from_session(session)
+        update_dict = update_schema.model_dump(exclude_unset=True)
+        return await repository.update(definition, update_dict=update_dict)
+
+    async def delete_definition(
+        self,
+        session: AsyncSession,
+        definition: MetricDefinition,
+    ) -> None:
+        repository = MetricDefinitionRepository.from_session(session)
+        await session.delete(definition)
+        await session.flush()
+
     async def get_metrics(
         self,
         session: AsyncSession | AsyncReadSession,
@@ -123,7 +256,50 @@ class MetricsService:
 
         now_dt = now or datetime.now(tz=timezone)
 
-        pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(metrics)
+        # Resolve organization IDs for loading metric definitions
+        org_ids = await self._get_org_ids_for_subject(
+            session, auth_subject, organization_id=organization_id
+        )
+
+        # Load user-defined meter-backed metric definitions
+        all_meter_definitions = await self._load_meter_definitions(
+            session, auth_subject, org_ids=org_ids
+        )
+        meter_def_by_slug = {d.slug: d for d in all_meter_definitions}
+
+        builtin_slugs = {m.slug for m in METRICS}
+        meter_slugs = set(meter_def_by_slug.keys())
+
+        # Determine which metric slugs are being requested
+        if metrics is not None:
+            # Validate all requested slugs
+            invalid_slugs = set(metrics) - builtin_slugs - meter_slugs
+            if invalid_slugs:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": ("query", "metrics"),
+                            "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
+                            "type": "value_error",
+                            "input": metrics,
+                        }
+                    ]
+                )
+            requested_meter_slugs = meter_slugs & set(metrics)
+        else:
+            requested_meter_slugs = meter_slugs
+
+        requested_meter_definitions = [
+            d for d in all_meter_definitions if d.slug in requested_meter_slugs
+        ]
+
+        # Expand built-in metrics
+        builtin_metrics_filter = (
+            [s for s in metrics if s in builtin_slugs] if metrics is not None else None
+        )
+        pg_slugs, tb_slugs, meta_slugs = _expand_metrics_with_dependencies(
+            builtin_metrics_filter
+        )
 
         filtered_pg_metrics = [m for m in METRICS_POSTGRES if m.slug in pg_slugs]
         filtered_tb_metrics = [m for m in METRICS_TINYBIRD if m.slug in tb_slugs]
@@ -131,7 +307,9 @@ class MetricsService:
             m for m in METRICS_POST_COMPUTE if m.slug in meta_slugs
         ]
         filtered_all_metrics = (
-            [m for m in METRICS if m.slug in metrics] if metrics else list(METRICS)
+            [m for m in METRICS if m.slug in builtin_slugs & set(metrics)]
+            if metrics is not None
+            else list(METRICS)
         )
         required_queries = {m.query for m in filtered_pg_metrics}
         pg_query_fns: list[QueryCallable] = [
@@ -180,10 +358,29 @@ class MetricsService:
             tb_needed=tb_slugs,
         )
 
+        # Run PG and Tinybird queries concurrently (Tinybird doesn't use session)
         pg_periods, tb_periods = await asyncio.gather(pg_coro, tb_coro)
 
+        # Run meter queries sequentially after pg to avoid session conflicts
+        meter_period_maps: list[tuple[str, dict[datetime, float]]] = []
+        for definition in requested_meter_definitions:
+            periods_map = await self._get_meter_metric_periods(
+                session,
+                definition,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                interval=interval,
+                timezone=timezone,
+                customer_id=customer_id,
+            )
+            meter_period_maps.append((definition.slug, periods_map))
+
         periods: list[MetricsPeriod] = []
-        all_timestamps = sorted(set(pg_periods.keys()) | set(tb_periods.keys()))
+        all_timestamps = sorted(
+            set(pg_periods.keys())
+            | set(tb_periods.keys())
+            | {ts for _, m in meter_period_maps for ts in m}
+        )
 
         for ts in all_timestamps:
             period_dict: dict[str, object] = {"timestamp": ts}
@@ -208,8 +405,12 @@ class MetricsService:
                 period = MetricsPeriod.model_validate(period_dict)
                 period_dict[meta_metric.slug] = meta_metric.compute_from_period(period)
 
+            # Add meter-based metric values
+            for slug, period_map in meter_period_maps:
+                period_dict[slug] = period_map.get(ts, 0)
+
             if metrics is not None:
-                all_resolved = pg_slugs | tb_slugs | meta_slugs
+                all_resolved = pg_slugs | tb_slugs | meta_slugs | requested_meter_slugs
                 period_dict = {
                     k: v
                     for k, v in period_dict.items()
@@ -221,6 +422,11 @@ class MetricsService:
         totals: dict[str, int | float] = {}
         for metric in filtered_all_metrics:
             totals[metric.slug] = metric.get_cumulative(periods)
+        for definition in requested_meter_definitions:
+            slug = definition.slug
+            totals[slug] = sum(
+                p.model_extra.get(slug) or 0 for p in periods if p.model_extra
+            )
 
         if metrics is not None:
             requested = set(metrics)
@@ -235,13 +441,60 @@ class MetricsService:
                 for p in periods
             ]
 
+        # Build metrics metadata including meter-based metrics
+        metrics_meta: dict[str, object] = {m.slug: m for m in filtered_all_metrics}
+        for definition in requested_meter_definitions:
+            if metrics is None or definition.slug in set(metrics):
+                metrics_meta[definition.slug] = Metric(
+                    slug=definition.slug,
+                    display_name=definition.name,
+                    type="scalar",
+                )
+
         return MetricsResponse.model_validate(
             {
                 "periods": periods,
                 "totals": totals,
-                "metrics": {m.slug: m for m in filtered_all_metrics},
+                "metrics": metrics_meta,
             }
         )
+
+    async def _load_meter_definitions(
+        self,
+        session: AsyncReadSession | AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        org_ids: list[uuid.UUID],
+    ) -> Sequence[MetricDefinition]:
+        if not org_ids:
+            return []
+        repository = MetricDefinitionRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            MetricDefinition.organization_id.in_(org_ids)
+        )
+        return await repository.get_all(statement)
+
+    async def _get_meter_metric_periods(
+        self,
+        session: AsyncReadSession | AsyncSession,
+        definition: MetricDefinition,
+        *,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        interval: TimeInterval,
+        timezone: ZoneInfo,
+        customer_id: Sequence[uuid.UUID] | None = None,
+    ) -> dict[datetime, float]:
+        quantities = await meter_service.get_quantities(
+            session,
+            definition.meter,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            interval=interval,
+            timezone=timezone,
+            customer_id=customer_id,
+        )
+        return {q.timestamp: float(q.quantity) for q in quantities.quantities}
 
     async def _get_metrics_from_pg(
         self,

@@ -2028,6 +2028,68 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/metrics/definitions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Metric Definitions
+     * @description List user-defined metric definitions backed by meters.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['metrics:list_definitions']
+    put?: never
+    /**
+     * Create Metric Definition
+     * @description Create a user-defined metric definition backed by a meter.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    post: operations['metrics:create_definition']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/metrics/definitions/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Metric Definition
+     * @description Get a user-defined metric definition by ID.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['metrics:get_definition']
+    put?: never
+    post?: never
+    /**
+     * Delete Metric Definition
+     * @description Delete a user-defined metric definition.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    delete: operations['metrics:delete_definition']
+    options?: never
+    head?: never
+    /**
+     * Update Metric Definition
+     * @description Update a user-defined metric definition.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    patch: operations['metrics:update_definition']
+    trace?: never
+  }
   '/v1/integrations/google/login/authorize': {
     parameters: {
       query?: never
@@ -5914,6 +5976,7 @@ export interface components {
        *       "refunds:write": "Create or modify refunds",
        *       "payments:read": "Read payments made on your organizations",
        *       "metrics:read": "Read metrics",
+       *       "metrics:write": "Create or modify metric definitions",
        *       "webhooks:read": "Read webhooks",
        *       "webhooks:write": "Create or modify webhooks",
        *       "license_keys:read": "Read license keys",
@@ -5999,6 +6062,7 @@ export interface components {
        *       "refunds:write": "Create or modify refunds",
        *       "payments:read": "Read payments made on your organizations",
        *       "metrics:read": "Read metrics",
+       *       "metrics:write": "Create or modify metric definitions",
        *       "webhooks:read": "Read webhooks",
        *       "webhooks:write": "Create or modify webhooks",
        *       "license_keys:read": "Read license keys",
@@ -6086,6 +6150,7 @@ export interface components {
       | 'refunds:write'
       | 'payments:read'
       | 'metrics:read'
+      | 'metrics:write'
       | 'webhooks:read'
       | 'webhooks:write'
       | 'license_keys:read'
@@ -19894,6 +19959,91 @@ export interface components {
       /** @description Type of the metric, useful to know the unit or format of the value. */
       type: components['schemas']['MetricType']
     }
+    /**
+     * MetricDefinitionCreate
+     * @description Schema for creating a user-defined metric backed by a meter.
+     */
+    MetricDefinitionCreate: {
+      /**
+       * Name
+       * @description Display name for the metric.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique identifier for the metric within the organization. Must not conflict with built-in metric slugs.
+       */
+      slug: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description ID of the meter to use as the data source for this metric.
+       */
+      meter_id: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning this metric. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /**
+     * MetricDefinitionSchema
+     * @description A user-defined metric backed by a meter.
+     */
+    MetricDefinitionSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Display name for the metric.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique identifier for the metric.
+       */
+      slug: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning this metric.
+       */
+      organization_id: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description ID of the meter used as the data source for this metric.
+       */
+      meter_id: string
+      /** @description The meter used as the data source. */
+      meter: components['schemas']['Meter']
+    }
+    /**
+     * MetricDefinitionUpdate
+     * @description Schema for updating a user-defined metric.
+     */
+    MetricDefinitionUpdate: {
+      /**
+       * Name
+       * @description Display name for the metric.
+       */
+      name?: string | null
+    }
     /** MetricPeriod */
     MetricPeriod: {
       /**
@@ -19988,6 +20138,8 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
+    } & {
+      [key: string]: unknown
     }
     /**
      * MetricType
@@ -20053,6 +20205,8 @@ export interface components {
       gross_margin?: components['schemas']['Metric'] | null
       gross_margin_percentage?: components['schemas']['Metric'] | null
       cashflow?: components['schemas']['Metric'] | null
+    } & {
+      [key: string]: unknown
     }
     /**
      * MetricsIntervalLimit
@@ -20203,6 +20357,8 @@ export interface components {
       gross_margin_percentage?: number | null
       /** Cashflow */
       cashflow?: number | null
+    } & {
+      [key: string]: unknown
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
@@ -20356,7 +20512,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -20421,7 +20577,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -20467,7 +20623,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read metrics:write webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -24972,6 +25128,7 @@ export interface components {
       | 'refunds:write'
       | 'payments:read'
       | 'metrics:read'
+      | 'metrics:write'
       | 'webhooks:read'
       | 'webhooks:write'
       | 'license_keys:read'
@@ -34160,6 +34317,169 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MetricsLimits']
+        }
+      }
+    }
+  }
+  'metrics:list_definitions': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDefinitionSchema'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:create_definition': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricDefinitionCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDefinitionSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:get_definition': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The metric definition ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDefinitionSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:delete_definition': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The metric definition ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:update_definition': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The metric definition ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricDefinitionUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDefinitionSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -45708,6 +46028,7 @@ export const availableScopeValues: ReadonlyArray<
   'refunds:write',
   'payments:read',
   'metrics:read',
+  'metrics:write',
   'webhooks:read',
   'webhooks:write',
   'license_keys:read',
@@ -48124,6 +48445,7 @@ export const scopeValues: ReadonlyArray<
   'refunds:write',
   'payments:read',
   'metrics:read',
+  'metrics:write',
   'webhooks:read',
   'webhooks:write',
   'license_keys:read',

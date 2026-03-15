@@ -11,13 +11,13 @@ import {
   useQueryState,
 } from 'nuqs'
 import { useMemo } from 'react'
-import { CancellationsContent } from '../components/CancellationsContent'
-import { MetricGroup } from '../components/MetricGroup'
+import { CancellationsContent } from './CancellationsContent'
+import { MetricGroup } from './MetricGroup'
 import {
   CANCELLATION_METRICS,
   getMetricsForType,
   MetricType,
-} from '../components/metrics-config'
+} from './metrics-config'
 
 const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
 

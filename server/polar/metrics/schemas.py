@@ -171,3 +171,47 @@ class MetricDefinitionSchema(IDSchema, TimestampedSchema):
         description="ID of the meter used as the data source for this metric."
     )
     meter: MeterSchema = Field(description="The meter used as the data source.")
+
+
+# MetricDashboard schemas
+
+
+class MetricDashboardCreate(Schema):
+    """Schema for creating a metrics dashboard."""
+
+    name: str = Field(..., description="Display name for the dashboard.", min_length=1)
+    metrics: list[str] = Field(
+        default_factory=list,
+        description="List of metric slugs to display in this dashboard.",
+    )
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning this dashboard. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
+class MetricDashboardUpdate(Schema):
+    """Schema for updating a metrics dashboard."""
+
+    name: str | None = Field(
+        default=None, description="Display name for the dashboard.", min_length=1
+    )
+    metrics: list[str] | None = Field(
+        default=None,
+        description="List of metric slugs to display in this dashboard.",
+    )
+
+
+class MetricDashboardSchema(IDSchema, TimestampedSchema):
+    """A user-defined metrics dashboard."""
+
+    name: str = Field(description="Display name for the dashboard.")
+    metrics: list[str] = Field(
+        description="List of metric slugs displayed in this dashboard."
+    )
+    organization_id: UUID4 = Field(
+        description="The ID of the organization owning this dashboard."
+    )

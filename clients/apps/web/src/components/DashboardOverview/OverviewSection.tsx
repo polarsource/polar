@@ -1,6 +1,6 @@
 'use client'
 
-import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'
+import { MetricGroup } from '@/components/metrics/dashboards/MetricGroup'
 import { Modal } from '@/components/Modal'
 import { useMetrics } from '@/hooks/queries'
 import { useChartRange } from '@/hooks/useChartRange'

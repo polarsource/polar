@@ -1,12 +1,19 @@
+import ClientPage from '@/components/metrics/dashboards/ClientPage'
+import CustomMetricsPage from '@/components/metrics/dashboards/CustomMetricsPage'
+import DashboardDetailClientPage from '@/components/metrics/dashboards/DashboardDetailClientPage'
+import {
+  isValidMetricType,
+  MetricType,
+} from '@/components/metrics/dashboards/metrics-config'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
 import { endOfDay, max, subMonths } from 'date-fns'
 import { notFound, redirect, RedirectType } from 'next/navigation'
-import { isValidMetricType, MetricType } from '../components/metrics-config'
-import ClientPage from './ClientPage'
-import CustomMetricsPage from './CustomMetricsPage'
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function Page(props: {
   params: Promise<{ organization: string; metric: string }>
@@ -20,15 +27,31 @@ export default async function Page(props: {
   const { organization: organizationSlug, metric } = await props.params
   const searchParams = await props.searchParams
 
-  if (!isValidMetricType(metric)) {
-    notFound()
-  }
-
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     organizationSlug,
   )
+
+  // Handle custom user-created dashboards (UUID slugs)
+  if (UUID_REGEX.test(metric)) {
+    const result = await api.GET('/v1/metrics/dashboards/{id}', {
+      params: { path: { id: metric } },
+    })
+    if (result.error || !result.data) {
+      notFound()
+    }
+    return (
+      <DashboardDetailClientPage
+        organization={organization}
+        dashboard={result.data}
+      />
+    )
+  }
+
+  if (!isValidMetricType(metric)) {
+    notFound()
+  }
 
   if (metric === 'custom') {
     return <CustomMetricsPage organization={organization} />

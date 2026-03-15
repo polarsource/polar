@@ -15,6 +15,7 @@ from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.meter.service import meter as meter_service
 from polar.models import (
     Customer,
+    MetricDashboard,
     MetricDefinition,
     Organization,
     Product,
@@ -40,9 +41,11 @@ from .queries_tinybird import (
     TinybirdQuery,
     query_metrics,
 )
-from .repository import MetricDefinitionRepository
+from .repository import MetricDashboardRepository, MetricDefinitionRepository
 from .schemas import (
     Metric,
+    MetricDashboardCreate,
+    MetricDashboardUpdate,
     MetricDefinitionCreate,
     MetricDefinitionUpdate,
     MetricsPeriod,
@@ -214,6 +217,71 @@ class MetricsService:
     ) -> None:
         repository = MetricDefinitionRepository.from_session(session)
         await session.delete(definition)
+        await session.flush()
+
+    # Dashboard CRUD
+
+    async def list_dashboards(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+    ) -> Sequence[MetricDashboard]:
+        repository = MetricDashboardRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+        if organization_id is not None:
+            statement = statement.where(
+                MetricDashboard.organization_id.in_(organization_id)
+            )
+        return await repository.get_all(statement)
+
+    async def get_dashboard(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> MetricDashboard | None:
+        repository = MetricDashboardRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            MetricDashboard.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def create_dashboard(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        create_schema: MetricDashboardCreate,
+    ) -> MetricDashboard:
+        organization = await get_payload_organization(
+            session, auth_subject, create_schema
+        )
+
+        repository = MetricDashboardRepository.from_session(session)
+        dashboard = MetricDashboard(
+            name=create_schema.name,
+            metrics=create_schema.metrics,
+            organization_id=organization.id,
+        )
+        return await repository.create(dashboard, flush=True)
+
+    async def update_dashboard(
+        self,
+        session: AsyncSession,
+        dashboard: MetricDashboard,
+        update_schema: MetricDashboardUpdate,
+    ) -> MetricDashboard:
+        repository = MetricDashboardRepository.from_session(session)
+        update_dict = update_schema.model_dump(exclude_unset=True)
+        return await repository.update(dashboard, update_dict=update_dict)
+
+    async def delete_dashboard(
+        self,
+        session: AsyncSession,
+        dashboard: MetricDashboard,
+    ) -> None:
+        await session.delete(dashboard)
         await session.flush()
 
     async def get_metrics(

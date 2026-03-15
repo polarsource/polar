@@ -23,7 +23,7 @@ import {
 } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { MetricGroup } from '../components/MetricGroup'
+import { MetricGroup } from './MetricGroup'
 
 const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
 

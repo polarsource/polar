@@ -2090,6 +2090,68 @@ export interface paths {
     patch: operations['metrics:update_definition']
     trace?: never
   }
+  '/v1/metrics/dashboards': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Metric Dashboards
+     * @description List user-defined metric dashboards.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['metrics:list_dashboards']
+    put?: never
+    /**
+     * Create Metric Dashboard
+     * @description Create a user-defined metric dashboard.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    post: operations['metrics:create_dashboard']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/metrics/dashboards/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Metric Dashboard
+     * @description Get a user-defined metric dashboard by ID.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['metrics:get_dashboard']
+    put?: never
+    post?: never
+    /**
+     * Delete Metric Dashboard
+     * @description Delete a user-defined metric dashboard.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    delete: operations['metrics:delete_dashboard']
+    options?: never
+    head?: never
+    /**
+     * Update Metric Dashboard
+     * @description Update a user-defined metric dashboard.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    patch: operations['metrics:update_dashboard']
+    trace?: never
+  }
   '/v1/integrations/google/login/authorize': {
     parameters: {
       query?: never
@@ -19960,6 +20022,82 @@ export interface components {
       type: components['schemas']['MetricType']
     }
     /**
+     * MetricDashboardCreate
+     * @description Schema for creating a metrics dashboard.
+     */
+    MetricDashboardCreate: {
+      /**
+       * Name
+       * @description Display name for the dashboard.
+       */
+      name: string
+      /**
+       * Metrics
+       * @description List of metric slugs to display in this dashboard.
+       */
+      metrics?: string[]
+      /**
+       * Organization Id
+       * @description The ID of the organization owning this dashboard. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /**
+     * MetricDashboardSchema
+     * @description A user-defined metrics dashboard.
+     */
+    MetricDashboardSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Display name for the dashboard.
+       */
+      name: string
+      /**
+       * Metrics
+       * @description List of metric slugs displayed in this dashboard.
+       */
+      metrics: string[]
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning this dashboard.
+       */
+      organization_id: string
+    }
+    /**
+     * MetricDashboardUpdate
+     * @description Schema for updating a metrics dashboard.
+     */
+    MetricDashboardUpdate: {
+      /**
+       * Name
+       * @description Display name for the dashboard.
+       */
+      name?: string | null
+      /**
+       * Metrics
+       * @description List of metric slugs to display in this dashboard.
+       */
+      metrics?: string[] | null
+    }
+    /**
      * MetricDefinitionCreate
      * @description Schema for creating a user-defined metric backed by a meter.
      */
@@ -34471,6 +34609,169 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MetricDefinitionSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:list_dashboards': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDashboardSchema'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:create_dashboard': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricDashboardCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDashboardSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:get_dashboard': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The metric dashboard ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDashboardSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:delete_dashboard': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The metric dashboard ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'metrics:update_dashboard': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The metric dashboard ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricDashboardUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MetricDashboardSchema']
         }
       }
       /** @description Validation Error */

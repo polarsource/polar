@@ -30,6 +30,9 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import (
+    MetricDashboardCreate,
+    MetricDashboardSchema,
+    MetricDashboardUpdate,
     MetricDefinitionCreate,
     MetricDefinitionSchema,
     MetricDefinitionUpdate,
@@ -41,6 +44,7 @@ from .service import metrics as metrics_service
 router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
 
 MetricDefinitionID = Annotated[uuid.UUID, Path(description="The metric definition ID.")]
+MetricDashboardID = Annotated[uuid.UUID, Path(description="The metric dashboard ID.")]
 
 
 @router.get(
@@ -231,3 +235,93 @@ async def delete_definition(
     if definition is None:
         raise ResourceNotFound()
     await metrics_service.delete_definition(session, definition)
+
+
+@router.get(
+    "/dashboards",
+    summary="List Metric Dashboards",
+    response_model=list[MetricDashboardSchema],
+)
+async def list_dashboards(
+    auth_subject: auth.MetricsRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> list[MetricDashboardSchema]:
+    """List user-defined metric dashboards."""
+    dashboards = await metrics_service.list_dashboards(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+    )
+    return [MetricDashboardSchema.model_validate(d) for d in dashboards]
+
+
+@router.post(
+    "/dashboards",
+    summary="Create Metric Dashboard",
+    response_model=MetricDashboardSchema,
+    status_code=201,
+)
+async def create_dashboard(
+    auth_subject: auth.MetricsWrite,
+    body: MetricDashboardCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> MetricDashboardSchema:
+    """Create a user-defined metric dashboard."""
+    dashboard = await metrics_service.create_dashboard(session, auth_subject, body)
+    return MetricDashboardSchema.model_validate(dashboard)
+
+
+@router.get(
+    "/dashboards/{id}",
+    summary="Get Metric Dashboard",
+    response_model=MetricDashboardSchema,
+)
+async def get_dashboard(
+    auth_subject: auth.MetricsRead,
+    id: MetricDashboardID,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MetricDashboardSchema:
+    """Get a user-defined metric dashboard by ID."""
+    dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
+    if dashboard is None:
+        raise ResourceNotFound()
+    return MetricDashboardSchema.model_validate(dashboard)
+
+
+@router.patch(
+    "/dashboards/{id}",
+    summary="Update Metric Dashboard",
+    response_model=MetricDashboardSchema,
+)
+async def update_dashboard(
+    auth_subject: auth.MetricsWrite,
+    id: MetricDashboardID,
+    body: MetricDashboardUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> MetricDashboardSchema:
+    """Update a user-defined metric dashboard."""
+    dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
+    if dashboard is None:
+        raise ResourceNotFound()
+    updated = await metrics_service.update_dashboard(session, dashboard, body)
+    return MetricDashboardSchema.model_validate(updated)
+
+
+@router.delete(
+    "/dashboards/{id}",
+    summary="Delete Metric Dashboard",
+    status_code=204,
+)
+async def delete_dashboard(
+    auth_subject: auth.MetricsWrite,
+    id: MetricDashboardID,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a user-defined metric dashboard."""
+    dashboard = await metrics_service.get_dashboard(session, auth_subject, id)
+    if dashboard is None:
+        raise ResourceNotFound()
+    await metrics_service.delete_dashboard(session, dashboard)

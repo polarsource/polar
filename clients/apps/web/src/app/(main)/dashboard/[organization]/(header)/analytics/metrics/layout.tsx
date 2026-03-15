@@ -1,9 +1,10 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { DashboardsListSidebar } from '@/components/metrics/dashboards/DashboardsListSidebar'
+import { DashboardViewHeader } from '@/components/metrics/dashboards/DashboardViewHeader'
+import { MetricType } from '@/components/metrics/dashboards/metrics-config'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { unwrap } from '@polar-sh/client'
-import { MetricsHeader } from './components/MetricsHeader'
-import { MetricsSubNav } from './components/MetricsSubNav'
 
 export default async function Layout(props: {
   params: Promise<{ organization: string }>
@@ -33,24 +34,46 @@ export default async function Layout(props: {
 
   const hasRecurringProducts = products.items.some((p) => p.is_recurring)
   const hasOneTimeProducts = products.items.some((p) => !p.is_recurring)
+  const revopsEnabled = organization.feature_settings?.revops_enabled ?? false
+
+  const allDefaultDashboards: { slug: MetricType; title: string }[] = [
+    { slug: 'subscriptions' as const, title: 'Subscriptions' },
+    { slug: 'cancellations' as const, title: 'Cancellations' },
+    { slug: 'net-revenue' as const, title: 'Net Revenue' },
+    { slug: 'orders' as const, title: 'Orders' },
+    { slug: 'checkouts' as const, title: 'Checkouts' },
+    { slug: 'one-time' as const, title: 'One-time Purchases' },
+    { slug: 'costs' as const, title: 'Costs' },
+  ]
+
+  const defaultDashboards = allDefaultDashboards.filter(({ slug }) => {
+    if (slug === 'subscriptions' || slug === 'cancellations') {
+      return hasRecurringProducts
+    }
+    if (slug === 'one-time') return hasOneTimeProducts
+    if (slug === 'costs') return revopsEnabled
+    return true
+  })
 
   return (
     <DashboardBody
       wide
+      title={null}
       header={
-        <MetricsHeader
+        <DashboardViewHeader
           organization={organization}
           earliestDateISOString={limits.min_date}
         />
       }
-    >
-      <div className="mb-7">
-        <MetricsSubNav
+      contextView={
+        <DashboardsListSidebar
           organization={organization}
-          hasRecurringProducts={hasRecurringProducts}
-          hasOneTimeProducts={hasOneTimeProducts}
+          defaultDashboards={defaultDashboards}
         />
-      </div>
+      }
+      contextViewPlacement="left"
+      contextViewClassName="md:max-w-[300px] xl:max-w-[320px]"
+    >
       {props.children}
     </DashboardBody>
   )

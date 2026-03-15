@@ -83,6 +83,58 @@ export const useDeleteMetricDefinition = (id: string, organizationId: string) =>
     },
   })
 
+export const useMetricDashboards = (organizationId: string) =>
+  useQuery({
+    queryKey: ['metric_dashboards', { organizationId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/metrics/dashboards', {
+          params: {
+            query: { organization_id: organizationId },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
+export const useCreateMetricDashboard = (organizationId: string) =>
+  useMutation({
+    mutationFn: (body: schemas['MetricDashboardCreate']) =>
+      api.POST('/v1/metrics/dashboards', { body }),
+    onSuccess: (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({
+        queryKey: ['metric_dashboards', { organizationId }],
+      })
+    },
+  })
+
+export const useUpdateMetricDashboard = (id: string, organizationId: string) =>
+  useMutation({
+    mutationFn: (body: schemas['MetricDashboardUpdate']) =>
+      api.PATCH('/v1/metrics/dashboards/{id}', {
+        params: { path: { id } },
+        body,
+      }),
+    onSuccess: (result) => {
+      if (result.error) return
+      getQueryClient().invalidateQueries({
+        queryKey: ['metric_dashboards', { organizationId }],
+      })
+    },
+  })
+
+export const useDeleteMetricDashboard = (id: string, organizationId: string) =>
+  useMutation({
+    mutationFn: () =>
+      api.DELETE('/v1/metrics/dashboards/{id}', { params: { path: { id } } }),
+    onSuccess: () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['metric_dashboards', { organizationId }],
+      })
+    },
+  })
+
 export const useMetrics = (
   { startDate, endDate, ...parameters }: GetMetricsRequest,
   enabled: boolean = true,

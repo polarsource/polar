@@ -77,6 +77,11 @@ export function MetricsSubNav({
         href: `${basePath}/custom`,
         visible: true,
       },
+      {
+        title: 'Dashboards',
+        href: `${basePath}/dashboards`,
+        visible: true,
+      },
     ]
     return allTabs.filter((tab) => tab.visible)
   }, [

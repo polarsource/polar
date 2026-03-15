@@ -1,14 +1,12 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { unwrap } from '@polar-sh/client'
-import { notFound } from 'next/navigation'
+import { schemas, unwrap } from '@polar-sh/client'
+import { endOfDay, max, subMonths } from 'date-fns'
+import { notFound, redirect, RedirectType } from 'next/navigation'
 import { isValidMetricType, MetricType } from '../components/metrics-config'
 import ClientPage from './ClientPage'
-
-import { fromISODate, toISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
-import { endOfDay, max, subMonths } from 'date-fns'
-import { redirect, RedirectType } from 'next/navigation'
+import CustomMetricsPage from './CustomMetricsPage'
 
 export default async function Page(props: {
   params: Promise<{ organization: string; metric: string }>
@@ -31,6 +29,10 @@ export default async function Page(props: {
     api,
     organizationSlug,
   )
+
+  if (metric === 'custom') {
+    return <CustomMetricsPage organization={organization} />
+  }
 
   const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics/${metric}`
 

@@ -72,6 +72,11 @@ export function MetricsSubNav({
         href: `${basePath}/costs`,
         visible: organization.feature_settings?.revops_enabled ?? false,
       },
+      {
+        title: 'Custom',
+        href: `${basePath}/custom`,
+        visible: true,
+      },
     ]
     return allTabs.filter((tab) => tab.visible)
   }, [

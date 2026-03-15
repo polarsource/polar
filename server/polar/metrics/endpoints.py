@@ -1,11 +1,13 @@
+import uuid
 from datetime import date
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Query
+from fastapi import Depends, Path, Query
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import (
     MAX_INTERVAL_DAYS,
@@ -17,16 +19,28 @@ from polar.kit.time_queries import (
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from . import auth
-from .metrics import METRICS
-from .schemas import MetricsLimits, MetricsResponse
+from .schemas import (
+    MetricDefinitionCreate,
+    MetricDefinitionSchema,
+    MetricDefinitionUpdate,
+    MetricsLimits,
+    MetricsResponse,
+)
 from .service import metrics as metrics_service
 
 router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
+
+MetricDefinitionID = Annotated[uuid.UUID, Path(description="The metric definition ID.")]
 
 
 @router.get(
@@ -97,21 +111,6 @@ async def get(
             ]
         )
 
-    if metrics is not None:
-        valid_slugs = {m.slug for m in METRICS}
-        invalid_slugs = set(metrics) - valid_slugs
-        if invalid_slugs:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "loc": ("query", "metrics"),
-                        "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
-                        "type": "value_error",
-                        "input": metrics,
-                    }
-                ]
-            )
-
     return await metrics_service.get_metrics(
         session,
         auth_subject,
@@ -142,3 +141,93 @@ async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
             },
         }
     )
+
+
+@router.get(
+    "/definitions",
+    summary="List Metric Definitions",
+    response_model=list[MetricDefinitionSchema],
+)
+async def list_definitions(
+    auth_subject: auth.MetricsRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> list[MetricDefinitionSchema]:
+    """List user-defined metric definitions backed by meters."""
+    definitions = await metrics_service.list_definitions(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+    )
+    return [MetricDefinitionSchema.model_validate(d) for d in definitions]
+
+
+@router.post(
+    "/definitions",
+    summary="Create Metric Definition",
+    response_model=MetricDefinitionSchema,
+    status_code=201,
+)
+async def create_definition(
+    auth_subject: auth.MetricsWrite,
+    body: MetricDefinitionCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> MetricDefinitionSchema:
+    """Create a user-defined metric definition backed by a meter."""
+    definition = await metrics_service.create_definition(session, auth_subject, body)
+    return MetricDefinitionSchema.model_validate(definition)
+
+
+@router.get(
+    "/definitions/{id}",
+    summary="Get Metric Definition",
+    response_model=MetricDefinitionSchema,
+)
+async def get_definition(
+    auth_subject: auth.MetricsRead,
+    id: MetricDefinitionID,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MetricDefinitionSchema:
+    """Get a user-defined metric definition by ID."""
+    definition = await metrics_service.get_definition(session, auth_subject, id)
+    if definition is None:
+        raise ResourceNotFound()
+    return MetricDefinitionSchema.model_validate(definition)
+
+
+@router.patch(
+    "/definitions/{id}",
+    summary="Update Metric Definition",
+    response_model=MetricDefinitionSchema,
+)
+async def update_definition(
+    auth_subject: auth.MetricsWrite,
+    id: MetricDefinitionID,
+    body: MetricDefinitionUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> MetricDefinitionSchema:
+    """Update a user-defined metric definition."""
+    definition = await metrics_service.get_definition(session, auth_subject, id)
+    if definition is None:
+        raise ResourceNotFound()
+    updated = await metrics_service.update_definition(session, definition, body)
+    return MetricDefinitionSchema.model_validate(updated)
+
+
+@router.delete(
+    "/definitions/{id}",
+    summary="Delete Metric Definition",
+    status_code=204,
+)
+async def delete_definition(
+    auth_subject: auth.MetricsWrite,
+    id: MetricDefinitionID,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a user-defined metric definition."""
+    definition = await metrics_service.get_definition(session, auth_subject, id)
+    if definition is None:
+        raise ResourceNotFound()
+    await metrics_service.delete_definition(session, definition)

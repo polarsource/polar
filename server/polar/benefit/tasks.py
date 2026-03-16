@@ -234,6 +234,7 @@ async def benefit_revoke(
             organization=benefit.organization,
             member_id=member_id,
             is_seat_based=is_seat_based,
+            include_deleted=True,
         )
 
         try:

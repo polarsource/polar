@@ -229,8 +229,36 @@ describe('CheckoutPricingBreakdown', () => {
     })
   })
 
-  describe('discount duration - repeating months', () => {
-    it('shows duration text for repeating discount on monthly product', () => {
+  describe('discount end date on discount line', () => {
+    it('shows "Until" date for once discount on monthly product', () => {
+      const checkout = createCheckout({
+        amount: 2000,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
+        product: {
+          ...createCheckout().product,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
+        },
+        discount: {
+          id: 'disc_1',
+          name: '20% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
+    })
+
+    it('shows "Until" date for repeating discount', () => {
       const checkout = createCheckout({
         amount: 2000,
         discount_amount: 400,
@@ -256,42 +284,10 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText(/for the first 3 months/i)).toBeInTheDocument()
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
     })
-  })
 
-  describe('discount duration - once on monthly', () => {
-    it('shows "for the first month" for once duration', () => {
-      const checkout = createCheckout({
-        amount: 2000,
-        discount_amount: 400,
-        net_amount: 1600,
-        tax_amount: null,
-        total_amount: 1600,
-        product: {
-          ...createCheckout().product,
-          recurring_interval: 'month',
-          recurring_interval_count: 1,
-          is_recurring: true,
-        },
-        discount: {
-          id: 'disc_1',
-          name: '20% off',
-          type: 'percentage',
-          duration: 'once',
-          code: null,
-          basis_points: 2000,
-        } satisfies schemas['CheckoutPublic']['discount'],
-      })
-
-      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
-
-      expect(screen.getByText(/for the first month/i)).toBeInTheDocument()
-    })
-  })
-
-  describe('discount duration - forever', () => {
-    it('shows no duration text for forever discount', () => {
+    it('does not show "Until" for forever discount', () => {
       const checkout = createCheckout({
         amount: 2000,
         discount_amount: 400,
@@ -316,12 +312,34 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.queryByText(/for the first/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Until/i)).not.toBeInTheDocument()
     })
   })
 
   describe('trial section', () => {
-    it('shows "Total after trial" and "Due today" $0', () => {
+    it('shows the regular total row with trial active', () => {
+      const checkout = createCheckout({
+        amount: 999,
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
+        product: {
+          ...createCheckout().product,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
+        },
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByTestId('detail-row-Monthly')).toBeInTheDocument()
+    })
+
+    it('does not show "Total when trial ends" or "Total due today"', () => {
       const checkout = createBaseCheckout({
         amount: 999,
         net_amount: 999,
@@ -334,17 +352,13 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
-      expect(screen.getByText('Total due today')).toBeInTheDocument()
       expect(
-        screen.getByTestId('detail-row-Total due today').textContent,
-      ).toContain('$0')
-      expect(
-        screen.queryByText('Total when discount expires'),
+        screen.queryByText('Total when trial ends'),
       ).not.toBeInTheDocument()
+      expect(screen.queryByText('Total due today')).not.toBeInTheDocument()
     })
 
-    it('shows "Total when discount expires" for once discount on monthly', () => {
+    it('shows "Until" date on discount line for trial with once discount', () => {
       const checkout = createBaseCheckout({
         amount: 999,
         discount_amount: 500,
@@ -366,174 +380,7 @@ describe('CheckoutPricingBreakdown', () => {
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
 
-      expect(
-        screen.getByText('Total when discount expires'),
-      ).toBeInTheDocument()
-      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
-      expect(screen.getByText('Total due today')).toBeInTheDocument()
-    })
-
-    it('shows "Total when discount expires" for once discount on yearly', () => {
-      const checkout = createCheckout({
-        amount: 9999,
-        discount_amount: 5000,
-        net_amount: 4999,
-        tax_amount: null,
-        total_amount: 4999,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
-        product: {
-          ...createCheckout().product,
-          recurring_interval: 'year',
-          recurring_interval_count: 1,
-          is_recurring: true,
-        },
-        discount: {
-          id: 'disc_1',
-          name: '50% off',
-          type: 'percentage',
-          duration: 'once',
-          code: null,
-          basis_points: 5000,
-        } satisfies schemas['CheckoutPublic']['discount'],
-      })
-
-      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
-
-      expect(
-        screen.getByText('Total when discount expires'),
-      ).toBeInTheDocument()
-    })
-
-    it('shows "Total when discount expires" for repeating discount with durationInMonths', () => {
-      const checkout = createCheckout({
-        amount: 2000,
-        discount_amount: 400,
-        net_amount: 1600,
-        tax_amount: null,
-        total_amount: 1600,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
-        product: {
-          ...createCheckout().product,
-          recurring_interval: 'month',
-          recurring_interval_count: 1,
-          is_recurring: true,
-        },
-        discount: {
-          id: 'disc_1',
-          name: '20% off',
-          type: 'percentage',
-          duration: 'repeating',
-          duration_in_months: 3,
-          code: null,
-          basis_points: 2000,
-        } satisfies schemas['CheckoutPublic']['discount'],
-      })
-
-      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
-
-      expect(
-        screen.getByText('Total when discount expires'),
-      ).toBeInTheDocument()
-    })
-
-    it('does not show "Total when discount expires" for forever discount', () => {
-      const checkout = createCheckout({
-        amount: 2000,
-        discount_amount: 400,
-        net_amount: 1600,
-        tax_amount: null,
-        total_amount: 1600,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
-        product: {
-          ...createCheckout().product,
-          recurring_interval: 'month',
-          recurring_interval_count: 1,
-          is_recurring: true,
-        },
-        discount: {
-          id: 'disc_1',
-          name: '20% off',
-          type: 'percentage',
-          duration: 'forever',
-          code: null,
-          basis_points: 2000,
-        } satisfies schemas['CheckoutPublic']['discount'],
-      })
-
-      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
-
-      expect(
-        screen.queryByText('Total when discount expires'),
-      ).not.toBeInTheDocument()
-      expect(screen.getByText('Total when trial ends')).toBeInTheDocument()
-    })
-
-    it('shows date without year when trial ends in current year', () => {
-      const currentYear = new Date().getFullYear()
-      const checkout = createBaseCheckout({
-        amount: 999,
-        net_amount: 999,
-        tax_amount: null,
-        total_amount: 999,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date(`${currentYear}-06-15T00:00:00Z`).toISOString(),
-      })
-
-      const { container } = render(
-        <CheckoutPricingBreakdown checkout={checkout} locale="en" />,
-      )
-
-      expect(container.textContent).toContain('Jun 15')
-      expect(container.textContent).not.toContain(`${currentYear}`)
-    })
-
-    it('shows date with year when trial ends in a different year', () => {
-      const checkout = createBaseCheckout({
-        amount: 999,
-        net_amount: 999,
-        tax_amount: null,
-        total_amount: 999,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date('2028-01-10T00:00:00Z').toISOString(),
-      })
-
-      const { container } = render(
-        <CheckoutPricingBreakdown checkout={checkout} locale="en" />,
-      )
-
-      expect(container.textContent).toContain('Jan 10')
-      expect(container.textContent).toContain('2028')
-    })
-
-    it('hides the regular total row when trial is active', () => {
-      const checkout = createCheckout({
-        amount: 999,
-        net_amount: 999,
-        tax_amount: null,
-        total_amount: 999,
-        active_trial_interval: 'month',
-        active_trial_interval_count: 1,
-        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
-        product: {
-          ...createCheckout().product,
-          recurring_interval: 'month',
-          recurring_interval_count: 1,
-          is_recurring: true,
-        },
-      })
-
-      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
-
-      expect(screen.queryByTestId('detail-row-Monthly')).not.toBeInTheDocument()
-      expect(screen.getByText('Total due today')).toBeInTheDocument()
+      expect(screen.getByText(/Until/i)).toBeInTheDocument()
     })
   })
 

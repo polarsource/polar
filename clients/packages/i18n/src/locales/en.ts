@@ -104,6 +104,11 @@ export default {
             other: 'for the first # years',
           },
         },
+        until: {
+          value: 'Until {date}',
+          _llmContext:
+            'Shown next to the discount name to indicate when the discount expires. Displayed as: "Spring Sale (-50%) · Until Apr 23".',
+        },
       },
     },
     trial: {

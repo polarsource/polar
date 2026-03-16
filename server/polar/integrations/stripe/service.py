@@ -333,6 +333,7 @@ class StripeService:
             stripe_account=stripe_account,
             amount=amount,
             currency=currency,
+            statement_descriptor=settings.STRIPE_STATEMENT_DESCRIPTOR,
             metadata=metadata or {},
         )
 

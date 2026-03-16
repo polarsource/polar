@@ -1,27 +1,25 @@
-https://__TS_HOSTNAME__:__FRONTEND_PORT__ {
-	handle /v1/* {
-		reverse_proxy 127.0.0.1:__API_PORT__
-	}
-	handle /backoffice/* {
-		reverse_proxy 127.0.0.1:__API_PORT__
-	}
-	handle /healthz {
-		reverse_proxy 127.0.0.1:__API_PORT__
-	}
-	handle_path /_logs/* {
-		rewrite * /pr-__PR_NUM__{path}
-		reverse_proxy 127.0.0.1:9999
-	}
-	handle {
-		reverse_proxy __VERCEL_PREVIEW_URL__ {
-			header_up Host __VERCEL_PREVIEW_HOST__
-			header_up -X-Forwarded-Host
-			header_up -X-Forwarded-Proto
-			header_up x-vercel-protection-bypass __VERCEL_BYPASS_SECRET__
-		}
-	}
-
-	tls {
-		get_certificate tailscale
+handle /pr-__PR_NUM__/v1/* {
+	uri strip_prefix /pr-__PR_NUM__
+	reverse_proxy 127.0.0.1:__API_PORT__
+}
+handle /pr-__PR_NUM__/backoffice/* {
+	uri strip_prefix /pr-__PR_NUM__
+	reverse_proxy 127.0.0.1:__API_PORT__
+}
+handle /pr-__PR_NUM__/healthz {
+	uri strip_prefix /pr-__PR_NUM__
+	reverse_proxy 127.0.0.1:__API_PORT__
+}
+handle_path /pr-__PR_NUM__/_logs/* {
+	rewrite * /pr-__PR_NUM__{path}
+	reverse_proxy 127.0.0.1:9999
+}
+@vercel__PR_NUM__ path /pr-__PR_NUM__ /pr-__PR_NUM__/*
+handle @vercel__PR_NUM__ {
+	reverse_proxy __VERCEL_PREVIEW_URL__ {
+		header_up Host __VERCEL_PREVIEW_HOST__
+		header_up X-Forwarded-Host __TS_HOSTNAME__
+		header_up X-Forwarded-Proto https
+		header_up x-vercel-protection-bypass __VERCEL_BYPASS_SECRET__
 	}
 }

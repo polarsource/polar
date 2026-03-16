@@ -251,7 +251,8 @@ jobs:
             <!-- __PREVIEW_ENV__ -->
             **Preview Environment**
             URL: ${{ needs.preview.outputs.preview_url }}
-            Logs: [backend](${{ needs.preview.outputs.preview_url }}/_logs/backend) | [frontend](${{ needs.preview.outputs.preview_url }}/_logs/frontend)
+            API: ${{ needs.preview.outputs.preview_url }}/v1/
+            Logs: [backend](${{ needs.preview.outputs.preview_url }}/_logs/backend)
             SHA: `${{ github.event.pull_request.head.sha }}`
 
   preview_delete_comment:

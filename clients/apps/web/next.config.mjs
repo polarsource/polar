@@ -5,16 +5,17 @@ import { themeConfig } from './shiki.config.mjs'
 
 const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
 
-// Vercel preview: compute backend URL from PR number + Tailscale hostname
+// Vercel preview: compute basePath and API URL from PR number + Tailscale hostname
+let previewBasePath = ''
 if (
   process.env.VERCEL_GIT_PULL_REQUEST_ID &&
   process.env.POLAR_PREVIEW_BACKEND_HOST
 ) {
   const prNum = parseInt(process.env.VERCEL_GIT_PULL_REQUEST_ID)
-  const port = 20000 + prNum
-  const tsUrl = `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}:${port}`
-  process.env.NEXT_PUBLIC_API_URL = tsUrl
-  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = tsUrl
+  previewBasePath = `/pr-${prNum}`
+  const baseUrl = `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}${previewBasePath}`
+  process.env.NEXT_PUBLIC_API_URL = baseUrl
+  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = baseUrl
 }
 
 const POLAR_AUTH_COOKIE_KEY =
@@ -26,6 +27,7 @@ const CODESPACES = process.env.CODESPACES === 'true'
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
+
 
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
@@ -80,6 +82,13 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+
+  ...(previewBasePath && {
+    basePath: previewBasePath,
+    env: {
+      POLAR_API_URL: `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}${previewBasePath}`,
+    },
+  }),
 
   ...(PREVIEW_BUILD && {
     typescript: { ignoreBuildErrors: true },
@@ -251,23 +260,28 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Redirect /maintainer to polar.sh if on a different domain name
-      {
-        source: '/dashboard/:path*',
-        destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
-        missing: [
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
-          {
-            type: 'header',
-            key: 'x-forwarded-host',
-            value: defaultFrontendHostname,
-          },
-        ],
-        permanent: false,
-      },
+      // Redirect /dashboard to correct domain if on a different domain name
+      // Skip in preview builds — preview env uses a single domain via Caddy proxy
+      ...(!previewBasePath
+        ? [
+            {
+              source: '/dashboard/:path*',
+              destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
+              missing: [
+                {
+                  type: 'host',
+                  value: defaultFrontendHostname,
+                },
+                {
+                  type: 'header',
+                  key: 'x-forwarded-host',
+                  value: defaultFrontendHostname,
+                },
+              ],
+              permanent: false,
+            },
+          ]
+        : []),
 
       {
         source: '/maintainer',

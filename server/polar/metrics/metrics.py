@@ -82,7 +82,7 @@ class ActiveSubscriptionsMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.count(Subscription.id) + 100
+        return func.count(Subscription.id) + 1234
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:

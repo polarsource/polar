@@ -767,7 +767,7 @@ class TinybirdEventsQuery:
         per_root = self._build_per_root_subquery(aggregate_fields)
 
         bucket = func.date_trunc(
-            interval, per_root.c.root_timestamp, sqlalchemy.literal(timezone)
+            interval, per_root.c.root_timestamp, sqlalchemy.literal(timezone, String)
         ).label("bucket")
 
         statement = (

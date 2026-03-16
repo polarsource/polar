@@ -2,6 +2,7 @@ import datetime
 import json
 from collections.abc import Sequence
 from typing import Literal, cast, overload
+from urllib.parse import urlparse
 from uuid import UUID
 
 import structlog
@@ -57,7 +58,11 @@ from polar.webhook.repository import (
 from polar.worker import enqueue_job
 
 from .eventstream import publish_webhook_event
-from .schemas import LOCALHOST_HOSTS, WebhookEndpointCreate, WebhookEndpointUpdate
+from .schemas import (
+    WebhookEndpointCreate,
+    WebhookEndpointUpdate,
+    is_blocked_webhook_host,
+)
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
@@ -158,15 +163,14 @@ class WebhookService:
     ) -> WebhookEndpoint:
         repository = WebhookEndpointRepository.from_session(session)
 
-        # Block enabling an endpoint that has a localhost URL
         is_enabling = update_schema.enabled is True and not endpoint.enabled
-        if is_enabling and self._is_localhost_url(endpoint.url):
+        if is_enabling and self._is_blocked_url(endpoint.url):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "enabled"),
-                        "msg": "Cannot enable a webhook endpoint with a localhost URL. Please update the URL first.",
+                        "msg": "Cannot enable a webhook endpoint with a localhost or private IP URL. Please update the URL first.",
                         "input": update_schema.enabled,
                     }
                 ]
@@ -816,12 +820,10 @@ class WebhookService:
                 break
 
     @staticmethod
-    def _is_localhost_url(url: str) -> bool:
-        from urllib.parse import urlparse
-
+    def _is_blocked_url(url: str) -> bool:
         parsed = urlparse(url)
         hostname = parsed.hostname or ""
-        return hostname.lower() in LOCALHOST_HOSTS
+        return is_blocked_webhook_host(hostname)
 
     async def _get_event_target_endpoints(
         self,

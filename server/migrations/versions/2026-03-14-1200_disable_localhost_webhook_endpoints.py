@@ -1,4 +1,4 @@
-"""Disable localhost webhook endpoints
+"""Disable localhost and private IP webhook endpoints
 
 Revision ID: 147643549822
 Revises: 9b73bce01fd4
@@ -30,6 +30,11 @@ def upgrade() -> None:
                 OR url ~ '^https?://127\\.0\\.0\\.1([:/]|$)'
                 OR url ~ '^https?://\\[::1\\]([:/]|$)'
                 OR url ~ '^https?://0\\.0\\.0\\.0([:/]|$)'
+                OR url ~ '^https?://10\\.[0-9]+\\.[0-9]+\\.[0-9]+([:/]|$)'
+                OR url ~ '^https?://172\\.(1[6-9]|2[0-9]|3[01])\\.[0-9]+\\.[0-9]+([:/]|$)'
+                OR url ~ '^https?://192\\.168\\.[0-9]+\\.[0-9]+([:/]|$)'
+                OR url ~ '^https?://169\\.254\\.[0-9]+\\.[0-9]+([:/]|$)'
+                OR url ~ '^https?://100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.[0-9]+\\.[0-9]+([:/]|$)'
               )
             """
         )

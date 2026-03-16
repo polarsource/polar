@@ -49,7 +49,7 @@
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "latest",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "react": "^19.2.4"

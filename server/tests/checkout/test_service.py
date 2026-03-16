@@ -26,6 +26,7 @@ from polar.checkout.schemas import (
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     CheckoutCustomerDeleted,
+    CheckoutCustomerExternalIdMismatch,
     NotConfirmedCheckout,
     NotOpenCheckout,
     TrialAlreadyRedeemed,
@@ -3885,6 +3886,85 @@ class TestConfirm:
                     }
                 ),
             )
+
+    async def test_external_id_mismatch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+        organization: Organization,
+    ) -> None:
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="EXTERNAL_ID",
+            email="existing@example.com",
+        )
+
+        checkout_one_time_fixed.external_customer_id = "EXTERNAL_ID"
+        await save_fixture(checkout_one_time_fixed)
+
+        with pytest.raises(CheckoutCustomerExternalIdMismatch):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "different@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+    async def test_external_id_no_mismatch_same_email(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+        organization: Organization,
+    ) -> None:
+        """When the email matches an existing customer with the same external_id,
+        the checkout should proceed normally (matched by email lookup)."""
+        existing = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="EXTERNAL_ID",
+            email="same@example.com",
+        )
+
+        checkout_one_time_fixed.external_customer_id = "EXTERNAL_ID"
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.update_customer.return_value = SimpleNamespace(
+            id=existing.stripe_customer_id
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "same@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer.id == existing.id
 
     async def test_archived_price(
         self,

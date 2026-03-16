@@ -25,7 +25,7 @@ jobs:
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: json

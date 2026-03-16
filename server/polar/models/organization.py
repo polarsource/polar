@@ -272,6 +272,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
         default=False,
     )
 
+    country: Mapped[str | None] = mapped_column(String(2), nullable=True, default=None)
+
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )

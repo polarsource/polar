@@ -48,7 +48,7 @@ const MeteredPricesDisplay = ({
       getMeteredPrices(prices[product.id], currency).filter(
         (p) => p.id !== product_price.id,
       ),
-    [product, product_price, currency],
+    [prices, product, product_price, currency],
   )
 
   if (meteredPrices.length === 0) {

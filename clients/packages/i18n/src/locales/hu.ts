@@ -59,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: '{date}-ig',
       },
       everyInterval: {
         day: {
@@ -110,6 +111,38 @@ export default {
           other: '# éves próbaidőszak',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# nap ingyen',
+            other: '# nap ingyen',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# hónap ingyen',
+            other: '# hónap ingyen',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# év ingyen',
+            other: '# év ingyen',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/nap',
+          week: '/hét',
+          month: '/hó',
+          year: '/év',
+        },
+        then: 'Ezután',
+        startingDate: 'kezdés: {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Fizetendő a próbaidőszak végén',
+        totalWhenDiscountExpires: 'Fizetendő a kedvezmény lejárta után',
+        totalDueToday: 'Ma fizetendő',
       },
     },
     pwywForm: {

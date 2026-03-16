@@ -16,6 +16,7 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useCallback, useId, useMemo, useState } from 'react'
+import { ReferenceLine } from 'recharts'
 import type { ExternalMouseEvents } from 'recharts/types/chart/types'
 import type { AxisTick } from 'recharts/types/util/types'
 
@@ -78,6 +79,7 @@ export interface GenericChartProps<T extends Record<string, unknown>> {
   onDataIndexHover?: (index: number | null) => void
   simple?: boolean
   ticks?: AxisTick[]
+  activeCursorIndex?: number | null
 }
 
 export const GenericChart = <T extends Record<string, unknown>>({
@@ -96,6 +98,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
   onDataIndexHover,
   simple = false,
   ticks: customTicks,
+  activeCursorIndex,
 }: GenericChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -212,6 +215,15 @@ export const GenericChart = <T extends Record<string, unknown>>({
   }, [data, primarySeries])
 
   const chartContent = useMemo(() => {
+    const cursorLine =
+      activeCursorIndex != null && data[activeCursorIndex] ? (
+        <ReferenceLine
+          x={data[activeCursorIndex][xAxisKey as string] as string | number}
+          stroke={isDark ? '#27282A' : '#E5E7EB'}
+          strokeWidth={1}
+        />
+      ) : null
+
     const commonProps = {
       accessibilityLayer: true,
       data: data,
@@ -278,7 +290,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
 
     const tooltip = (
       <ChartTooltip
-        cursor={true}
+        cursor={false}
         content={(props) => (
           <ChartTooltipContent
             {...(props as any)}
@@ -331,6 +343,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {cursorLine}
           {series
             .slice()
             .reverse()
@@ -359,6 +372,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {cursorLine}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -422,6 +436,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
         {yAxis}
         {tooltip}
         {legend}
+        {cursorLine}
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
@@ -451,6 +466,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     activeSeries,
     handleLegendClick,
     id,
+    activeCursorIndex,
   ])
 
   return (

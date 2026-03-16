@@ -59,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Tot {date}',
       },
       everyInterval: {
         day: {
@@ -110,6 +111,38 @@ export default {
           other: '# jaar proefperiode',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# dag gratis',
+            other: '# dagen gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# maand gratis',
+            other: '# maanden gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# jaar gratis',
+            other: '# jaar gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dag',
+          week: '/week',
+          month: '/maand',
+          year: '/jaar',
+        },
+        then: 'Daarna',
+        startingDate: 'vanaf {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Totaal na proefperiode',
+        totalWhenDiscountExpires: 'Totaal na afloop korting',
+        totalDueToday: 'Totaal vandaag te betalen',
       },
     },
     pwywForm: {

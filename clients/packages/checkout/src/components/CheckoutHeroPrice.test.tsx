@@ -134,4 +134,39 @@ describe('CheckoutHeroPrice', () => {
       expect(screen.getByText('$0')).toBeInTheDocument()
     })
   })
+
+  describe('trial delegation', () => {
+    it('delegates to CheckoutTrialHeroPrice when trial is active', () => {
+      const checkout = createCheckout({
+        amount: 9999,
+        net_amount: 9999,
+        total_amount: 9999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
+        product: {
+          id: 'prod_1',
+          name: 'Test Product',
+          recurring_interval: 'year',
+          recurring_interval_count: null,
+          is_recurring: true,
+          trial_interval: 'month',
+          trial_interval_count: 1,
+          visibility: 'public',
+          prices: [],
+          benefits: [],
+          medias: [],
+          description: null,
+          is_archived: false,
+          organization_id: 'org_1',
+          created_at: new Date().toISOString(),
+          modified_at: null,
+        },
+      })
+
+      render(<CheckoutHeroPrice checkout={checkout} locale="en" />)
+
+      expect(screen.getByText('1 month free')).toBeInTheDocument()
+    })
+  })
 })

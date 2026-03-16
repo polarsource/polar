@@ -35,6 +35,7 @@ class MemberService:
         *,
         customer_id: UUID | None = None,
         external_customer_id: str | None = None,
+        role: MemberRole | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[MemberSortProperty]] = [
             (MemberSortProperty.created_at, True)
@@ -46,6 +47,9 @@ class MemberService:
 
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
+
+        if role is not None:
+            statement = statement.where(Member.role == role)
 
         if external_customer_id is not None:
             statement = statement.join(Customer).where(

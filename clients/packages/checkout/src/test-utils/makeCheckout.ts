@@ -140,10 +140,9 @@ const defaults: ProductCheckoutPublic = {
     proration_behavior: 'invoice',
     allow_customer_updates: true,
   },
-  attachedCustomFields: null,
+  attached_custom_fields: null,
 
   // ProductCheckoutMixin fields
-  product_id: 'prod_1',
   product: {
     id: 'prod_1',
     name: 'Test Product',

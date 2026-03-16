@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -9,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     ColumnElement,
+    Date,
     ForeignKey,
     Integer,
     String,
@@ -165,6 +166,13 @@ class User(RecordModel):
     )
 
     meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    first_name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    last_name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    country: Mapped[str | None] = mapped_column(String(2), nullable=True, default=None)
+    date_of_birth: Mapped[date | None] = mapped_column(
+        Date, nullable=True, default=None
+    )
 
     @hybrid_property
     def can_authenticate(self) -> bool:

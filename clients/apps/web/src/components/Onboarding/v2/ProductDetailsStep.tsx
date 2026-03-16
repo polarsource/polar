@@ -1,5 +1,6 @@
 'use client'
 
+import { useUpdateOrganization } from '@/hooks/queries'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -58,6 +59,7 @@ interface FormSchema {
 export function ProductDetailsStep() {
   const router = useRouter()
   const { data, updateData, showApiResponse } = useOnboardingData()
+  const updateOrganization = useUpdateOrganization()
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -117,6 +119,20 @@ export function ProductDetailsStep() {
       productUrl: formData.productUrl,
       currentlySellingOn: formData.currentlySellingOn,
     })
+
+    if (data.organizationId) {
+      const body: Record<string, string | undefined> = {}
+      if (formData.supportEmail) body.email = formData.supportEmail
+      if (formData.productUrl) body.website = formData.productUrl
+
+      if (Object.keys(body).length > 0) {
+        await updateOrganization.mutateAsync({
+          id: data.organizationId,
+          body,
+        })
+      }
+    }
+
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
   }

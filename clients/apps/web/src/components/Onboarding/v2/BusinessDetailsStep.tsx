@@ -128,6 +128,33 @@ export function BusinessDetailsStep() {
       registeredBusinessName: formData.registeredBusinessName,
     })
 
+    const { data: org, error } = await createOrganization.mutateAsync({
+      name: formData.orgName,
+      slug: formData.orgSlug,
+      default_presentment_currency:
+        formData.defaultCurrency as schemas['PresentmentCurrency'],
+      country: (formData.businessCountry || undefined) as
+        | schemas['CountryAlpha2Input']
+        | undefined,
+    })
+
+    if (error) {
+      if (Array.isArray(error.detail)) {
+        setError('root', {
+          message: error.detail[0]?.msg || 'Failed to create organization',
+        })
+      } else if (typeof error.detail === 'string') {
+        setError('root', { message: error.detail })
+      } else {
+        setError('root', { message: 'Failed to create organization' })
+      }
+      return
+    }
+
+    setUserOrganizations((prev) => [...prev, org])
+    updateData({ organizationId: org.id })
+
+    trackStepCompleted('business')
     await showApiResponse(200, 'OK')
     router.push('/onboarding/product')
   }

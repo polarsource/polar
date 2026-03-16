@@ -1,6 +1,6 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -34,6 +34,19 @@ export const useCreateIdentityVerification = () =>
   useMutation({
     mutationFn: () => {
       return api.POST('/v1/users/me/identity-verification')
+    },
+  })
+
+export const useUpdateUser = () =>
+  useMutation({
+    mutationFn: (body: schemas['UserUpdate']) => {
+      return api.PATCH('/v1/users/me', { body })
+    },
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      getQueryClient().invalidateQueries({ queryKey: ['user'] })
     },
   })
 

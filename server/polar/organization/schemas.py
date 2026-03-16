@@ -17,6 +17,7 @@ from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
+from polar.kit.address import CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
@@ -327,6 +328,9 @@ class Organization(OrganizationBase):
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
         description="Settings related to the customer portal",
     )
+    country: CountryAlpha2 | None = Field(
+        None, description="Two-letter country code (ISO 3166-1 alpha-2)."
+    )
 
 
 class OrganizationCreate(Schema):
@@ -344,6 +348,9 @@ class OrganizationCreate(Schema):
     details: OrganizationDetails | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
+    )
+    country: CountryAlpha2Input | None = Field(
+        None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
@@ -370,6 +377,9 @@ class OrganizationUpdate(Schema):
     details: OrganizationDetails | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
+    )
+    country: CountryAlpha2Input | None = Field(
+        None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
 
     feature_settings: OrganizationFeatureSettings | None = None

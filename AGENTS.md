@@ -175,6 +175,10 @@ When adding or modifying tax ID validators in `server/polar/tax/tax_id.py`:
 - **Use stdnum library**: Leverage the `stdnum` library for validation when a module exists for the tax ID type.
 - **Minimal tests**: Add a few representative valid format tests and only one invalid test case per tax ID type. Do not add excessive negative tests.
 
+## Internationalization (i18n)
+
+Translation files are located in `clients/packages/i18n/src/locales/`. When adding new translatable strings, **only add them to `en.ts`**. Do not manually edit any other locale files (e.g., `fr.ts`, `de.ts`, `sv.ts`). A CI job automatically translates new English strings into all supported languages and commits the results to the branch. After pushing changes to `en.ts`, pull the branch once the CI translation job completes.
+
 ## Frontend Conventions
 
 - **Modular Structure**: The code is organized in a modular way, with features grouped into their own folders.

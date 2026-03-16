@@ -159,7 +159,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -321,7 +322,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -483,7 +485,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -645,7 +648,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -807,7 +811,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -961,7 +966,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1115,7 +1121,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1269,7 +1276,8 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1423,6 +1431,7 @@
     "checkout.trial.hero.startingDate": "starting {date}",
     "checkout.trial.summary.totalWhenTrialEnds": "Total when trial ends",
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
-    "checkout.trial.summary.totalDueToday": "Total due today"
+    "checkout.trial.summary.totalDueToday": "Total due today",
+    "checkout.pricing.discount.until": "Until {date}"
   }
 }

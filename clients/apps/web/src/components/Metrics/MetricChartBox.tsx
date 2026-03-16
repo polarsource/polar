@@ -107,8 +107,9 @@ const MetricChartBox = ({
   }, [previousData])
 
   const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
-  const [hoveredPeriodIndexLocal, setHoveredPeriodIndexLocal] =
-    React.useState<number | null>(null)
+  const [hoveredPeriodIndexLocal, setHoveredPeriodIndexLocal] = React.useState<
+    number | null
+  >(null)
   const hoveredPeriodIndex =
     hoveredPeriodIndexProp !== undefined
       ? hoveredPeriodIndexProp

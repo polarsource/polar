@@ -43,25 +43,10 @@ type EmbedCheckoutMessage =
   | EmbedCheckoutMessageConfirmed
   | EmbedCheckoutMessageSuccess
 
-/**
- * Event map for typed addEventListener/removeEventListener.
- */
-interface EmbedCheckoutEventMap {
-  loaded: CustomEvent<EmbedCheckoutMessageLoaded>
-  close: CustomEvent<EmbedCheckoutMessageClose>
-  confirmed: CustomEvent<EmbedCheckoutMessageConfirmed>
-  success: CustomEvent<EmbedCheckoutMessageSuccess>
-}
-
 const isEmbedCheckoutMessage = (
-  message: unknown,
+  message: any,
 ): message is EmbedCheckoutMessage => {
-  return (
-    typeof message === 'object' &&
-    message !== null &&
-    'type' in message &&
-    (message as { type: unknown }).type === POLAR_CHECKOUT_EVENT
-  )
+  return message.type === POLAR_CHECKOUT_EVENT
 }
 
 /**
@@ -188,7 +173,7 @@ class EmbedCheckout {
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = 'auto'
 
-    // @ts-expect-error - Global defined at build time by tsup
+    // @ts-ignore
     const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
       .split(',')
       .join(' ')
@@ -252,12 +237,32 @@ class EmbedCheckout {
    * @param type
    * @param listener
    */
-  public addEventListener<K extends keyof EmbedCheckoutEventMap>(
-    type: K,
-    listener: (event: EmbedCheckoutEventMap[K]) => void,
+  public addEventListener(
+    type: 'loaded',
+    listener: (event: CustomEvent<EmbedCheckoutMessageLoaded>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: 'close',
+    listener: (event: CustomEvent<EmbedCheckoutMessageClose>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: 'confirmed',
+    listener: (event: CustomEvent<EmbedCheckoutMessageConfirmed>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: 'success',
+    listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  public addEventListener(
+    type: string,
+    listener: any,
     options?: AddEventListenerOptions | boolean,
   ): void {
-    this.eventTarget.addEventListener(type, listener as EventListener, options)
+    this.eventTarget.addEventListener(type, listener, options)
   }
 
   /**
@@ -266,11 +271,24 @@ class EmbedCheckout {
    * @param type
    * @param listener
    */
-  public removeEventListener<K extends keyof EmbedCheckoutEventMap>(
-    type: K,
-    listener: (event: EmbedCheckoutEventMap[K]) => void,
-  ): void {
-    this.eventTarget.removeEventListener(type, listener as EventListener)
+  public removeEventListener(
+    type: 'loaded',
+    listener: (event: CustomEvent<EmbedCheckoutMessageLoaded>) => void,
+  ): void
+  public removeEventListener(
+    type: 'close',
+    listener: (event: CustomEvent<EmbedCheckoutMessageClose>) => void,
+  ): void
+  public removeEventListener(
+    type: 'confirmed',
+    listener: (event: CustomEvent<EmbedCheckoutMessageConfirmed>) => void,
+  ): void
+  public removeEventListener(
+    type: 'success',
+    listener: (event: CustomEvent<EmbedCheckoutMessageSuccess>) => void,
+  ): void
+  public removeEventListener(type: string, listener: any): void {
+    this.eventTarget.removeEventListener(type, listener)
   }
 
   private static async checkoutElementClickHandler(e: Event) {
@@ -359,7 +377,7 @@ class EmbedCheckout {
    */
   private handleWindowMessage({ data, origin }: MessageEvent): void {
     if (
-      // @ts-expect-error - Global defined at build time by tsup
+      // @ts-ignore
       !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
         .split(',')
         .includes(origin)

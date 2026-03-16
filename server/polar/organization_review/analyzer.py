@@ -45,12 +45,15 @@ Cross-reference what the organization claims in their setup with what their webs
 Look for mismatches between stated business and actual content, signs of prohibited businesses,
 pricing discrepancies between website and Polar listings.
 
-### 3. Identity & Trust
+### 3. Identity, Trust & History
 Evaluate the identity verification status, account completeness, and social presence. \
 Social link should be linked to the user's profile on the platform, and not the organization's social media accounts. \
 Unverified identity is a red flag.
 Countries with high risk of fraud or money laundering are yellow flags that requires \
 human reviews.
+Also check if the user has other organizations on Polar, especially denied or blocked ones. \
+Prior denials are a strong signal. Re-creating an organization after denial is grounds \
+for automatic denial.
 
 ### 4. Financial Risk
 Assess payment risk scores, refund rates, charge back rates, authorization rate, and dispute history. \
@@ -62,10 +65,27 @@ The following thresholds need human review:
 If thare are any monthly products above $1000 USD, mark this as a high risk if the organization
 is new and has no prior payment history.
 
-### 5. Prior History
-Check if the user has other organizations on Polar, especially denied or blocked ones. \
-Prior denials are a strong signal. Re-creating an organization after denial is grounds \
-for automatic denial.
+Note: older reviews may contain a separate "prior_history" dimension — this has been \
+merged into IDENTITY_TRUST. Do NOT output a "prior_history" dimension; assess prior \
+history under IDENTITY_TRUST instead.
+
+### 5. Setup Readiness (optional — only when setup/integration data is available)
+Evaluate whether the organization is properly set up to sell and deliver products. \
+An organization is considered ready to sell if ANY of these conditions is met:
+- **Checkout links with benefits**: At least one checkout link has benefits attached \
+(customers receive something after payment).
+- **API keys + checkout return URLs**: The org has API keys AND checkout return URLs configured \
+(indicates programmatic checkout creation with a frontend integration).
+- **API keys + working webhooks**: The org has API keys AND at least one enabled webhook \
+(webhooks are auto-disabled after 10 consecutive failures, so enabled = working).
+
+If NONE of these conditions is met, the org has no delivery mechanism — customers pay \
+but receive nothing. This is a red flag.
+
+Additionally, validate domain consistency: checkout return URL domains and webhook \
+domains should match the organization's website domain. If they don't match (and are \
+not known service domains), this is a MEDIUM risk concern — it suggests the integration \
+may point to an unrelated or suspicious destination.
 
 ## Verdict Guidelines
 
@@ -175,9 +195,10 @@ sellers. False approvals can expose Polar to risk. Balance both.
 SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
 No Stripe account, payments, or products exist yet. \
-Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, PRIOR_HISTORY. \
-Skip IDENTITY_TRUST and FINANCIAL_RISK — set those to LOW risk with confidence 0. \
-Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged.
+Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, IDENTITY_TRUST. \
+Skip FINANCIAL_RISK and SETUP_READINESS — set those to LOW risk with confidence 0. \
+Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged. \
+For IDENTITY_TRUST at this stage, focus only on prior history (prior denials, blocked organizations).
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
@@ -239,9 +260,10 @@ verified name should match the business name. Significant mismatches are yellow 
 - **Business profile cross-reference**: There are two types of Stripe business, \
 individual and business. Compare the Stripe business name and URL with the \
 Polar organization name and website. Significant mismatches are yellow flags.
-- **Prior history**: Check for prior denials or blocked organizations.
+- **Prior history** (assess under IDENTITY_TRUST): Check for prior denials or blocked organizations.
 
 Set FINANCIAL_RISK to LOW risk with confidence 0 — no payments have occurred yet.
+Set SETUP_READINESS to LOW risk with confidence 0 — setup was just completed, integration is not expected yet.
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
@@ -254,20 +276,19 @@ Return only APPROVE or DENY.
 
 THRESHOLD_PREAMBLE = f"""\
 This is a THRESHOLD review triggered when a payment threshold is hit. \
-Perform a comprehensive analysis across ALL five dimensions. \
+Perform a comprehensive analysis across ALL five dimensions, including SETUP_READINESS. \
 If website content is not available, flag this as a red flag.
 
-Important information to check:
-- **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
-the API when creating checkouts programmatically) should point to domains matching the \
-organization's website. Mismatched or suspicious domains are yellow flags.
-- **Checkout links without benefits**: Checkout links selling products with zero benefits \
-mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
-or API keys configured.
-- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
-Webhook domains should match the organization's website or known services. \
-Domains marked '(known service)' in the webhook domain list are legitimate third-party \
-integration platforms and should NOT be flagged as suspicious mismatches.
+Important information to check (assess under SETUP_READINESS):
+- **Setup readiness check**: The org is ready to sell if ANY of these is true:
+  1. At least one checkout link has benefits attached.
+  2. API keys are configured AND checkout return URLs exist (programmatic integration).
+  3. API keys are configured AND at least one webhook is enabled (working).
+  If none of these conditions is met, it's a red flag — customers pay but receive nothing.
+- **Domain consistency**: Checkout return URL domains and webhook domains should match \
+the organization's website domain. If they don't match (and are not known service domains), \
+this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
+integration platforms and should NOT be flagged.
 
 Known integration platform domains:
 {known_domains_for_prompt()}
@@ -278,7 +299,7 @@ Return only APPROVE or DENY.
 
 MANUAL_PREAMBLE = f"""\
 This is a MANUAL review triggered by a human reviewer from the backoffice. \
-Perform a comprehensive analysis across ALL five dimensions with full detail.
+Perform a comprehensive analysis across ALL five dimensions with full detail, including SETUP_READINESS.
 
 You have access to ALL available data: products, account info, identity verification, \
 payment metrics (if any exist), prior history, and website content.
@@ -309,20 +330,18 @@ the Polar organization name. Significant mismatches are yellow flags.
 {thresholds_for_prompt()}
     - any dispute created
   - No payment history is neutral (new org), not negative.
-- **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
-organization after denial is grounds for automatic denial.
-
-Setup & integration signals to check:
-- **Checkout URL consistency**: Success URLs (from checkout links) and return URLs (set via \
-the API when creating checkouts programmatically) should point to domains matching the \
-organization's website. Mismatched or suspicious domains are yellow flags.
-- **Checkout links without benefits**: Checkout links selling products with zero benefits \
-mean the customer pays but receives nothing tangible — a red flag if there are no webhooks \
-or API keys configured.
-- **API & Webhook integration**: Having API keys or webhook endpoints is a positive signal. \
-Webhook domains should match the organization's website or known services. \
-Domains marked '(known service)' in the webhook domain list are legitimate third-party \
-integration platforms and should NOT be flagged as suspicious mismatches.
+- **Prior history** (assess under IDENTITY_TRUST): Check for prior denials or blocked \
+organizations. Re-creating an organization after denial is grounds for automatic denial.
+- **Setup readiness** (assess under SETUP_READINESS):
+  - **Setup readiness check**: The org is ready to sell if ANY of these is true:
+    1. At least one checkout link has benefits attached.
+    2. API keys are configured AND checkout return URLs exist (programmatic integration).
+    3. API keys are configured AND at least one webhook is enabled (working).
+    If none of these conditions is met, it's a red flag — customers pay but receive nothing.
+  - **Domain consistency**: Checkout return URL domains and webhook domains should match \
+the organization's website domain. If they don't match (and are not known service domains), \
+this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
+integration platforms and should NOT be flagged.
 
 Known integration platform domains:
 {known_domains_for_prompt()}
@@ -494,10 +513,11 @@ class ReviewAnalyzer:
                 parts.append("No checkout links created.")
 
             parts.append(f"API Keys: {setup.integration.api_key_count}")
-            if setup.integration.webhook_urls:
-                parts.append(f"Webhooks ({len(setup.integration.webhook_urls)}):")
-                for url in setup.integration.webhook_urls:
-                    parts.append(f"  - {url}")
+            if setup.integration.webhook_endpoints:
+                parts.append(f"Webhooks ({len(setup.integration.webhook_endpoints)}):")
+                for ep in setup.integration.webhook_endpoints:
+                    status = "enabled" if ep.enabled else "DISABLED"
+                    parts.append(f"  - {ep.url} ({status})")
                 parts.append(
                     f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
                 )

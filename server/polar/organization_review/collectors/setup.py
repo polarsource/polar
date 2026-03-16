@@ -11,6 +11,7 @@ from ..schemas import (
     CheckoutSuccessUrlData,
     IntegrationData,
     SetupData,
+    WebhookEndpointData,
 )
 
 
@@ -89,12 +90,15 @@ def collect_setup_data(
     )
 
     # Integration data
+    webhook_endpoint_data = [
+        WebhookEndpointData(url=ep.url, enabled=ep.enabled) for ep in webhook_endpoints
+    ]
     webhook_urls = [ep.url for ep in webhook_endpoints]
     webhook_domains = _unique_domains(webhook_urls)
 
     integration_data = IntegrationData(
         api_key_count=api_key_count,
-        webhook_urls=webhook_urls,
+        webhook_endpoints=webhook_endpoint_data,
         webhook_domains=webhook_domains,
         webhook_known_service_domains=[
             d for d in webhook_domains if match_known_domain(d) is not None

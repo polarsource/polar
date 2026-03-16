@@ -38,9 +38,12 @@ def _build_checkout_link(
     return link
 
 
-def _build_webhook_endpoint(*, url: str = "https://example.com/webhook") -> MagicMock:
+def _build_webhook_endpoint(
+    *, url: str = "https://example.com/webhook", enabled: bool = True
+) -> MagicMock:
     ep = MagicMock()
     ep.url = url
+    ep.enabled = enabled
     return ep
 
 
@@ -191,16 +194,17 @@ class TestCollectSetupDataIntegration:
 
         result = collect_setup_data([], [], 0, [ep1, ep2, ep3])
 
-        assert result.integration.webhook_urls == [
+        assert [ep.url for ep in result.integration.webhook_endpoints] == [
             "https://myapp.com/webhook",
             "https://myapp.com/webhook2",
             "https://other.com/hook",
         ]
+        assert all(ep.enabled for ep in result.integration.webhook_endpoints)
         assert set(result.integration.webhook_domains) == {"myapp.com", "other.com"}
 
     def test_no_webhooks(self) -> None:
         result = collect_setup_data([], [], 0, [])
-        assert result.integration.webhook_urls == []
+        assert result.integration.webhook_endpoints == []
         assert result.integration.webhook_domains == []
 
 

@@ -157,6 +157,7 @@ def _migrate_dimension(d: DimensionAssessmentV1) -> DimensionAssessment:
         risk_level = _score_to_risk_level(d.score)
     if risk_level is None:
         risk_level = RiskLevel.MEDIUM
+
     return DimensionAssessment(
         dimension=d.dimension,
         risk_level=risk_level,

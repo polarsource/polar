@@ -173,9 +173,14 @@ class CheckoutLinksData(Schema):
     links: list[CheckoutLinkBenefitData] = Field(default_factory=list)
 
 
+class WebhookEndpointData(Schema):
+    url: str
+    enabled: bool = True
+
+
 class IntegrationData(Schema):
     api_key_count: int = 0
-    webhook_urls: list[str] = Field(default_factory=list)
+    webhook_endpoints: list[WebhookEndpointData] = Field(default_factory=list)
     webhook_domains: list[str] = Field(default_factory=list)
     webhook_known_service_domains: list[str] = Field(default_factory=list)
 
@@ -291,6 +296,7 @@ class ReviewDimension(StrEnum):
     IDENTITY_TRUST = "identity_trust"
     FINANCIAL_RISK = "financial_risk"
     PRIOR_HISTORY = "prior_history"
+    SETUP_READINESS = "setup_readiness"
 
 
 class RiskLevel(StrEnum):

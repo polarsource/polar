@@ -5,7 +5,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
-from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.exc import DBAPIError
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.discount.repository import DiscountRepository
@@ -172,21 +172,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        try:
-            return await repository.create(discount)
-        except IntegrityError as e:
-            if "ix_discounts_code_uniqueness" in str(e):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "code"),
-                            "msg": "Discount with this code already exists.",
-                            "input": discount_create.code,
-                        }
-                    ]
-                ) from e
-            raise
+        return await repository.create(discount)
 
     async def update(
         self,

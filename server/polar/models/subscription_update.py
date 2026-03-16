@@ -34,7 +34,7 @@ class SubscriptionUpdate(RecordModel):
             "ix_subscription_updates_subscription_id_pending",
             "subscription_id",
             unique=True,
-            postgresql_where="applied_at IS NULL",
+            postgresql_where="applied_at IS NULL AND deleted_at IS NULL",
         ),
     )
 

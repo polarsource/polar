@@ -10,6 +10,8 @@ from uvicorn import Server
 
 from polar.auth.dependencies import WebUserRead
 from polar.exceptions import ResourceNotFound
+from polar.observability import HTTP_SSE_CONNECTIONS_OPENED
+from polar.observability.utils import get_path_template
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -56,30 +58,38 @@ async def subscribe(
     async with redis.pubsub() as pubsub:
         await pubsub.subscribe(*channels)
 
-        while not _uvicorn_should_exit():
-            if await request.is_disconnected():
-                await pubsub.close()
-                break
+        endpoint = get_path_template(request.scope)
+        if endpoint is not None:
+            HTTP_SSE_CONNECTIONS_OPENED.labels(endpoint=endpoint).inc()
 
-            if on_iteration is not None:
-                await on_iteration()
+        try:
+            while not _uvicorn_should_exit():
+                if await request.is_disconnected():
+                    await pubsub.close()
+                    break
 
-            try:
-                message = await pubsub.get_message(
-                    ignore_subscribe_messages=True,
-                    # Waits for up to 10s for a new message
-                    timeout=10.0,
-                )
+                if on_iteration is not None:
+                    await on_iteration()
 
-                if message is not None:
-                    log.info("redis.pubsub", message=message["data"])
-                    yield message["data"]
-            except asyncio.CancelledError as e:
-                await pubsub.close()
-                raise e
-            except ConnectionError as e:
-                await pubsub.close()
-                raise e
+                try:
+                    message = await pubsub.get_message(
+                        ignore_subscribe_messages=True,
+                        # Waits for up to 10s for a new message
+                        timeout=10.0,
+                    )
+
+                    if message is not None:
+                        log.info("redis.pubsub", message=message["data"])
+                        yield message["data"]
+                except asyncio.CancelledError as e:
+                    await pubsub.close()
+                    raise e
+                except ConnectionError as e:
+                    await pubsub.close()
+                    raise e
+        finally:
+            if endpoint is not None:
+                HTTP_SSE_CONNECTIONS_OPENED.labels(endpoint=endpoint).dec()
 
 
 @router.get("/user")

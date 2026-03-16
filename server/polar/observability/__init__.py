@@ -5,6 +5,7 @@ from polar.observability.checkout_metrics import (
 from polar.observability.http_metrics import (
     HTTP_REQUEST_DURATION_SECONDS,
     HTTP_REQUEST_TOTAL,
+    HTTP_SSE_CONNECTIONS_OPENED,
     METRICS_DENY_LIST,
 )
 from polar.observability.metrics import (
@@ -28,6 +29,7 @@ __all__ = [
     # HTTP metrics (API server)
     "HTTP_REQUEST_DURATION_SECONDS",
     "HTTP_REQUEST_TOTAL",
+    "HTTP_SSE_CONNECTIONS_OPENED",
     "METRICS_DENY_LIST",
     # Operational error metrics
     "OPERATIONAL_ERROR_TOTAL",

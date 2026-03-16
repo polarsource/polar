@@ -45,12 +45,15 @@ Cross-reference what the organization claims in their setup with what their webs
 Look for mismatches between stated business and actual content, signs of prohibited businesses,
 pricing discrepancies between website and Polar listings.
 
-### 3. Identity & Trust
+### 3. Identity, Trust & History
 Evaluate the identity verification status, account completeness, and social presence. \
 Social link should be linked to the user's profile on the platform, and not the organization's social media accounts. \
 Unverified identity is a red flag.
 Countries with high risk of fraud or money laundering are yellow flags that requires \
 human reviews.
+Also check if the user has other organizations on Polar, especially denied or blocked ones. \
+Prior denials are a strong signal. Re-creating an organization after denial is grounds \
+for automatic denial.
 
 ### 4. Financial Risk
 Assess payment risk scores, refund rates, charge back rates, authorization rate, and dispute history. \
@@ -62,12 +65,7 @@ The following thresholds need human review:
 If thare are any monthly products above $1000 USD, mark this as a high risk if the organization
 is new and has no prior payment history.
 
-### 5. Prior History
-Check if the user has other organizations on Polar, especially denied or blocked ones. \
-Prior denials are a strong signal. Re-creating an organization after denial is grounds \
-for automatic denial.
-
-### 6. Setup Readiness (optional — only when setup/integration data is available)
+### 5. Setup Readiness (optional — only when setup/integration data is available)
 Evaluate whether the organization is properly set up to sell and deliver products. \
 An organization is considered ready to sell if ANY of these conditions is met:
 - **Checkout links with benefits**: At least one checkout link has benefits attached \
@@ -193,9 +191,10 @@ sellers. False approvals can expose Polar to risk. Balance both.
 SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
 No Stripe account, payments, or products exist yet. \
-Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, PRIOR_HISTORY. \
-Skip IDENTITY_TRUST, FINANCIAL_RISK, and SETUP_READINESS — set those to LOW risk with confidence 0. \
-Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged.
+Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, IDENTITY_TRUST. \
+Skip FINANCIAL_RISK and SETUP_READINESS — set those to LOW risk with confidence 0. \
+Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged. \
+For IDENTITY_TRUST at this stage, focus only on prior history (prior denials, blocked organizations).
 
 Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
 with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
@@ -257,7 +256,7 @@ verified name should match the business name. Significant mismatches are yellow 
 - **Business profile cross-reference**: There are two types of Stripe business, \
 individual and business. Compare the Stripe business name and URL with the \
 Polar organization name and website. Significant mismatches are yellow flags.
-- **Prior history**: Check for prior denials or blocked organizations.
+- **Prior history** (assess under IDENTITY_TRUST): Check for prior denials or blocked organizations.
 
 Set FINANCIAL_RISK to LOW risk with confidence 0 — no payments have occurred yet.
 Set SETUP_READINESS to LOW risk with confidence 0 — setup was just completed, integration is not expected yet.
@@ -273,7 +272,7 @@ Return only APPROVE or DENY.
 
 THRESHOLD_PREAMBLE = f"""\
 This is a THRESHOLD review triggered when a payment threshold is hit. \
-Perform a comprehensive analysis across ALL six dimensions, including SETUP_READINESS. \
+Perform a comprehensive analysis across ALL five dimensions, including SETUP_READINESS. \
 If website content is not available, flag this as a red flag.
 
 Important information to check (assess under SETUP_READINESS):
@@ -296,7 +295,7 @@ Return only APPROVE or DENY.
 
 MANUAL_PREAMBLE = f"""\
 This is a MANUAL review triggered by a human reviewer from the backoffice. \
-Perform a comprehensive analysis across ALL six dimensions with full detail, including SETUP_READINESS.
+Perform a comprehensive analysis across ALL five dimensions with full detail, including SETUP_READINESS.
 
 You have access to ALL available data: products, account info, identity verification, \
 payment metrics (if any exist), prior history, and website content.
@@ -327,8 +326,8 @@ the Polar organization name. Significant mismatches are yellow flags.
 {thresholds_for_prompt()}
     - any dispute created
   - No payment history is neutral (new org), not negative.
-- **Prior history**: Check for prior denials or blocked organizations. Re-creating an \
-organization after denial is grounds for automatic denial.
+- **Prior history** (assess under IDENTITY_TRUST): Check for prior denials or blocked \
+organizations. Re-creating an organization after denial is grounds for automatic denial.
 - **Setup readiness** (assess under SETUP_READINESS):
   - **Setup readiness check**: The org is ready to sell if ANY of these is true:
     1. At least one checkout link has benefits attached.

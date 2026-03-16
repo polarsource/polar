@@ -88,9 +88,6 @@ def enable_payments(slug: str) -> None:
                     organization.details = {
                         "about": "Dev organization",
                         "product_description": "Development and testing products.",
-                        "intended_use": "Development and testing.",
-                        "customer_acquisition": ["website"],
-                        "future_annual_revenue": 0,
                         "previous_annual_revenue": 0,
                         "switching": False,
                         "switching_from": None,

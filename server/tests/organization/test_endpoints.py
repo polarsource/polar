@@ -150,8 +150,6 @@ class TestUpdateOrganization:
                 "details": {
                     "about": "Test company",
                     "product_description": "SaaS product",
-                    "intended_use": "API integration",
-                    "customer_acquisition": ["website"],
                     "future_annual_revenue": -1000,
                     "switching": False,
                     "previous_annual_revenue": 25000,
@@ -177,8 +175,6 @@ class TestUpdateOrganization:
                 "details": {
                     "about": "Test company",
                     "product_description": "SaaS product",
-                    "intended_use": "API integration",
-                    "customer_acquisition": ["website"],
                     "future_annual_revenue": 50000,
                     "switching": False,
                     "previous_annual_revenue": -5000,

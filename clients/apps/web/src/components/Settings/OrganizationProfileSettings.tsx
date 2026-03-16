@@ -19,7 +19,6 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Select,
   SelectContent,
@@ -28,7 +27,6 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -53,15 +51,6 @@ import {
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
   inKYCMode: boolean
-}
-
-const AcquisitionOptions = {
-  website: 'Website & SEO',
-  socials: 'Social media',
-  sales: 'Sales',
-  ads: 'Ads',
-  email: 'Email marketing',
-  other: 'Other',
 }
 
 const SwitchingFromOptions = {
@@ -547,113 +536,6 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium">
-                How will you integrate Polar into your business? *
-              </label>
-              <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Polar, what features
-                you&apos;ll use, and how it fits your workflow
-              </p>
-              <FormField
-                control={control}
-                name="details.intended_use"
-                rules={{
-                  required: 'Please describe how you will use Polar',
-                  minLength: {
-                    value: 30,
-                    message: 'Please provide at least 30 characters',
-                  },
-                  maxLength: {
-                    value: 3000,
-                    message: 'Please keep under 3000 characters',
-                  },
-                }}
-                render={({ field }) => (
-                  <div>
-                    <CompactTextArea
-                      field={field}
-                      placeholder="Checkout on our website, API for subscription billing, webhooks for user access"
-                    />
-                    <div className="mt-1 flex items-center justify-between">
-                      <FormMessage />
-                      <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/3000 characters (min 30)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Main customer acquisition channels *
-              </label>
-              <FormField
-                control={control}
-                name="details.customer_acquisition"
-                rules={{
-                  required: 'Please select at least one acquisition channel',
-                  validate: (value) =>
-                    (value && value.length > 0) ||
-                    'Please select at least one channel',
-                }}
-                render={({ field }) => (
-                  <div>
-                    <div className="space-y-2">
-                      {Object.entries(AcquisitionOptions).map(
-                        ([key, label]) => (
-                          <label
-                            key={key}
-                            className="flex cursor-pointer items-center gap-2"
-                          >
-                            <Checkbox
-                              checked={field.value?.includes(key) || false}
-                              onCheckedChange={(checked) => {
-                                const current = field.value || []
-                                if (checked) {
-                                  field.onChange([...current, key])
-                                } else {
-                                  field.onChange(
-                                    current.filter((v) => v !== key),
-                                  )
-                                }
-                              }}
-                            />
-                            <span className="text-sm">{label}</span>
-                          </label>
-                        ),
-                      )}
-                    </div>
-                    <FormMessage className="mt-2" />
-                  </div>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Expected annual revenue *
-                </label>
-                <FormField
-                  control={control}
-                  name="details.future_annual_revenue"
-                  render={({ field }) => (
-                    <div>
-                      <MoneyInput
-                        {...field}
-                        placeholder={100_000_000}
-                        currency="usd"
-                        className="w-full"
-                      />
-                      <FormMessage />
-                    </div>
-                  )}
-                />
-              </div>
-
-              <div>
                 <label className="mb-2 block text-sm font-medium">
                   Currently using
                 </label>

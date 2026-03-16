@@ -242,14 +242,6 @@ class SettingsSection:
                                 ):
                                     text(details["product_description"])
 
-                        if details.get("intended_use"):
-                            with tag.div():
-                                with tag.div(classes="text-sm font-semibold mb-2"):
-                                    text("Intended Use")
-                                with tag.div(
-                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
-                                ):
-                                    text(details["intended_use"])
                     else:
                         with tag.div(
                             classes="text-sm text-base-content/60 text-center py-4"

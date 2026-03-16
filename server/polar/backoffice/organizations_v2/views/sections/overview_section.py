@@ -552,16 +552,6 @@ class OverviewSection(ChecklistMixin):
                         ):
                             text(details["product_description"])
 
-                if details.get("intended_use"):
-                    has_content = True
-                    with tag.div(classes="mb-4"):
-                        with tag.div(classes="text-sm font-semibold mb-2"):
-                            text("Intended Use")
-                        with tag.div(
-                            classes="text-sm text-base-content/80 whitespace-pre-wrap"
-                        ):
-                            text(details["intended_use"])
-
             # Social media links
             socials = self.org.socials or []
             if socials:

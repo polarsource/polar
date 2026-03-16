@@ -129,12 +129,6 @@ consider `browse_website` to verify.
    - Call `get_acceptable_use_policy` if you need to check specific policy sections.
    - Call `get_setup_signals` if you want to see checkout URLs, API keys, webhooks.
 
-## Data Reliability Notes
-
-- **Ignore revenue projections** (e.g. "future_annual_revenue", "previous_annual_revenue"). \
-These are self-reported numbers that merchants can easily fabricate. Do not use them as \
-evidence for or against approval.
-
 ## Appeal Consideration
 
 **The merchant's appeal is a critical piece of evidence.** Do not dismiss it. Read it \
@@ -415,8 +409,6 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                 f"Email: {org_data.email or 'not set'}",
                 f"About: {org_data.about or 'not provided'}",
                 f"Product Description: {org_data.product_description or 'not provided'}",
-                f"Intended Use: {org_data.intended_use or 'not provided'}",
-                f"Customer Acquisition: {', '.join(org_data.customer_acquisition) if org_data.customer_acquisition else 'not provided'}",
                 f"Switching From: {org_data.switching_from or 'not provided'}",
             ]
             if org_data.socials:

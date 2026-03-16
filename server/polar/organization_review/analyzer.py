@@ -432,10 +432,6 @@ class ReviewAnalyzer:
             parts.append(f"About: {org.about}")
         if org.product_description:
             parts.append(f"Product Description: {org.product_description}")
-        if org.intended_use:
-            parts.append(f"Intended Use: {org.intended_use}")
-        if org.customer_acquisition:
-            parts.append(f"Customer Acquisition: {', '.join(org.customer_acquisition)}")
         if org.switching_from:
             parts.append(f"Switching From: {org.switching_from}")
         if org.socials:

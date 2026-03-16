@@ -1,7 +1,7 @@
 """drop events_closure table
 
 Revision ID: f43048f9cd3a
-Revises: 9b73bce01fd4
+Revises: a3c8e1f6b9d2
 Create Date: 2026-03-13 09:11:31.106042
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "f43048f9cd3a"
-down_revision = "9b73bce01fd4"
+down_revision = "a3c8e1f6b9d2"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -4,6 +4,18 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 
 const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
+
+// Vercel preview: compute backend URL from PR number + Tailscale hostname
+if (
+  process.env.VERCEL_GIT_PULL_REQUEST_ID &&
+  process.env.POLAR_PREVIEW_BACKEND_HOST
+) {
+  const prNum = parseInt(process.env.VERCEL_GIT_PULL_REQUEST_ID)
+  const port = 20000 + prNum
+  process.env.NEXT_PUBLIC_API_URL = `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}:${port}`
+  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = `https://${process.env.VERCEL_URL}`
+}
+
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =

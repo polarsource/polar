@@ -138,6 +138,9 @@ else
 fi
 echo "Tailscale IP: $(tailscale ip -4)"
 
+tailscale serve reset
+tailscale funnel --bg --https=443 localhost:80
+
 TS_HOSTNAME="$(tailscale status --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["Self"]["DNSName"].rstrip("."))')"
 
 # --- Deploy user ---

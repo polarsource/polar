@@ -1,16 +1,6 @@
 import Paginator from '@polar-sh/ui/components/atoms/Paginator'
-import {
-  ReadonlyURLSearchParams,
-  useRouter,
-  useSearchParams,
-} from 'next/navigation'
-import {
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { ReadonlyURLSearchParams } from 'next/navigation'
+import { PropsWithChildren } from 'react'
 
 interface PaginationProps extends PropsWithChildren {
   totalCount: number
@@ -32,33 +22,3 @@ const Pagination = ({ children, ...paginatorProps }: PaginationProps) => {
 }
 
 export default Pagination
-
-const usePagination = () => {
-  const router = useRouter()
-  const search = useSearchParams()
-  const initialPage = useMemo(() => Number(search?.get('page')) || 1, [search])
-  const [currentPage, setCurrentPage] = useState<number>(initialPage)
-
-  useEffect(() => {
-    if (!search?.has('page')) {
-      setCurrentPage(1)
-    }
-  }, [search])
-
-  const handleSetCurrentPage = useCallback(
-    (page: number) => {
-      if (search) {
-        setCurrentPage(page)
-        const params = new URLSearchParams(search)
-        params.set('page', page.toString())
-
-        const url = new URL(window.location.href)
-        const newPath = `${url.pathname}?${params.toString()}`
-        router.replace(newPath, { scroll: false })
-      }
-    },
-    [router, search],
-  )
-
-  return { currentPage, setCurrentPage: handleSetCurrentPage }
-}

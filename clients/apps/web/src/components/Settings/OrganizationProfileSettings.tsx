@@ -226,9 +226,10 @@ const CompactTextArea = ({
   />
 )
 
-const OrganizationDetailsForm: React.FC<
-  OrganizationDetailsFormProps
-> = ({ organization, inKYCMode }) => {
+const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
+  organization,
+  inKYCMode,
+}) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
   const { name, avatar_url: avatarURL } = useWatch({ control })

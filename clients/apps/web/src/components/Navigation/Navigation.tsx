@@ -50,23 +50,3 @@ export const LinkItem = (props: {
     </a>
   )
 }
-
-const TextItem = (props: {
-  onClick: () => void
-  icon: React.ReactElement<any>
-  children: React.ReactElement<any>
-}) => {
-  return (
-    <div
-      className="flex cursor-pointer items-center text-sm"
-      onClick={props.onClick}
-    >
-      <ListItem current={false} className="gap-x-2 px-4 py-0 text-sm">
-        <>
-          <span className="text-lg">{props.icon}</span>
-          {props.children}
-        </>
-      </ListItem>
-    </div>
-  )
-}

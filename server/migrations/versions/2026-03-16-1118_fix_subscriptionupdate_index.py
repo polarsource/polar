@@ -1,17 +1,18 @@
-"""Fix subscription_updates pending index to exclude soft-deleted rows
+"""Fix SubscriptionUpdate index
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 37f2c8f7b4e1
 Revises: 147643549822
-Create Date: 2026-03-16 10:02:30.000000
+Create Date: 2026-03-16 11:18:44.365421
 
 """
 
+import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "a1b2c3d4e5f6"
+revision = "37f2c8f7b4e1"
 down_revision = "147643549822"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None

@@ -1,6 +1,8 @@
 import type { schemas } from '@polar-sh/client'
 import type { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
+import { useEffect } from 'react'
+import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createCheckout } from '../test-utils/makeCheckout'
@@ -17,11 +19,18 @@ beforeAll(() => {
 
 function FormWrapper({
   checkout,
+  defaultValues,
+  onForm,
   ...props
-}: Omit<Parameters<typeof CheckoutForm>[0], 'form'>) {
+}: Omit<Parameters<typeof CheckoutForm>[0], 'form'> & {
+  defaultValues?: Partial<schemas['CheckoutUpdatePublic']>
+  onForm?: (form: UseFormReturn<schemas['CheckoutUpdatePublic']>) => void
+}) {
   const form = useForm<schemas['CheckoutUpdatePublic']>({
-    defaultValues: { customer_email: '' },
+    defaultValues: { customer_email: '', ...defaultValues },
   })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onForm?.(form), [])
   return <CheckoutForm form={form} checkout={checkout} {...props} />
 }
 
@@ -210,5 +219,158 @@ describe('CheckoutForm', () => {
 
       expect(screen.getByRole('button')).toBeDisabled()
     })
+  })
+
+  it('resets state field when country changes', async () => {
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const update = vi.fn(async () => createCheckout())
+    const checkout = createCheckout({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payment_processor: 'dummy' as any,
+      billing_address_fields: {
+        country: 'required',
+        state: 'required',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        update={update}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{
+          customer_billing_address: {
+            country: 'SE',
+            state: 'Stockholm',
+            postal_code: '12391',
+            city: 'Stockholm',
+            line1: 'Foo St',
+          },
+        }}
+        locale="en"
+      />,
+    )
+
+    expect(form!.getValues('customer_billing_address.state')).toBe('Stockholm')
+    expect(form!.getValues('customer_billing_address.postal_code')).toBe(
+      '12391',
+    )
+    expect(form!.getValues('customer_billing_address.city')).toBe('Stockholm')
+    expect(form!.getValues('customer_billing_address.line1')).toBe('Foo St')
+
+    await act(async () => {
+      form!.setValue('customer_billing_address.country', 'US')
+    })
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 600))
+    })
+
+    // All address fields should be reset
+    expect(form!.getValues('customer_billing_address.state')).toBe('')
+    expect(form!.getValues('customer_billing_address.postal_code')).toBe('')
+    expect(form!.getValues('customer_billing_address.city')).toBe('')
+    expect(form!.getValues('customer_billing_address.line1')).toBe('')
+  })
+
+  it('displays validation error on billing address state field', async () => {
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const checkout = createCheckout({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payment_processor: 'dummy' as any,
+      billing_address_fields: {
+        country: 'required',
+        state: 'required',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{
+          customer_billing_address: {
+            country: 'US',
+            state: 'California',
+          },
+        }}
+        locale="en"
+      />,
+    )
+
+    await act(async () => {
+      form!.setError('customer_billing_address.state', {
+        type: 'value_error',
+        message: 'Invalid US state',
+      })
+    })
+
+    expect(screen.getByText('Invalid US state')).toBeInTheDocument()
+  })
+
+  it('clears billing address errors when country changes', async () => {
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const checkout = createCheckout({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payment_processor: 'dummy' as any,
+      billing_address_fields: {
+        country: 'required',
+        state: 'required',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{
+          customer_billing_address: {
+            country: 'US',
+            state: 'California',
+          },
+        }}
+        locale="en"
+      />,
+    )
+
+    await act(async () => {
+      form!.setError('customer_billing_address.state', {
+        type: 'value_error',
+        message: 'Invalid US state',
+      })
+    })
+
+    expect(screen.getByText('Invalid US state')).toBeInTheDocument()
+
+    await act(async () => {
+      form!.setValue('customer_billing_address.country', 'CA')
+    })
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 600))
+    })
+
+    expect(screen.queryByText('Invalid US state')).not.toBeInTheDocument()
   })
 })

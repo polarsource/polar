@@ -13,6 +13,8 @@ PREVIEW_BASE="/srv/previews"
 PREVIEW_TOOLS_DIR="/srv/preview-tools"
 CADDY_PREVIEWS_DIR="/etc/caddy/previews"
 REPO_URL="${POLAR_PREVIEW_REPO_URL:-https://github.com/polarsource/polar.git}"
+VERCEL_PROJECT="${POLAR_PREVIEW_VERCEL_PROJECT:-polar-sandbox}"
+VERCEL_SCOPE="${POLAR_PREVIEW_VERCEL_SCOPE:-polar-sh}"
 
 # Get the Tailscale hostname for URLs
 TS_HOSTNAME="$(tailscale status --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["Self"]["DNSName"].rstrip("."))')"
@@ -36,6 +38,10 @@ deploy() {
     if [[ -n "$ENV_B64" ]]; then
         ENV_JSON=$(echo "$ENV_B64" | base64 -d)
     fi
+
+    local BRANCH_SLUG
+    BRANCH_SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+    local VERCEL_PREVIEW_URL="https://${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
 
     log "Deploying branch=${BRANCH} sha=${SHA}"
 
@@ -110,6 +116,7 @@ POLAR_ENV=development
 POLAR_BASE_URL=${PREVIEW_URL}
 POLAR_FRONTEND_BASE_URL=${PREVIEW_URL}
 POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}"]
+POLAR_CORS_ORIGINS=["${PREVIEW_URL}","${VERCEL_PREVIEW_URL}"]
 POLAR_CHECKOUT_BASE_URL=${PREVIEW_URL}/v1/checkout-links/{client_secret}/redirect
 POLAR_USER_SESSION_COOKIE_DOMAIN=${TS_HOSTNAME}
 

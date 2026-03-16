@@ -285,6 +285,79 @@ class TestResolveMember:
                 is_seat_based=False,
             )
 
+    async def test_b2c_deleted_owner_not_found_without_include_deleted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """B2C: Soft-deleted owner member is not found without include_deleted."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        owner_member.set_deleted_at()
+        await save_fixture(owner_member)
+
+        # Without include_deleted, the deleted owner is invisible
+        # and auto-create is attempted (but customer still exists so it succeeds)
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.id != owner_member.id  # New member, not the deleted one
+
+    async def test_b2c_deleted_owner_found_with_include_deleted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """B2C: Soft-deleted owner member is found with include_deleted=True.
+        This is the benefit.revoke path for deleted customers."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        owner_member.set_deleted_at()
+        await save_fixture(owner_member)
+
+        # Soft-delete the customer too (matches the real scenario)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+            include_deleted=True,
+        )
+
+        assert result is not None
+        assert result.id == owner_member.id
+        assert result.is_deleted
+
     async def test_nonexistent_member_id_b2b_raises_error(
         self,
         session: AsyncSession,

@@ -114,6 +114,8 @@ class MemberRepository(
         self,
         session: AsyncReadSession,
         customer_id: UUID,
+        *,
+        include_deleted: bool = False,
     ) -> Member | None:
         """Get the owner member for a customer."""
         statement = (
@@ -121,10 +123,11 @@ class MemberRepository(
             .where(
                 Member.customer_id == customer_id,
                 Member.role == MemberRole.owner,
-                Member.is_deleted.is_(False),
             )
             .options(joinedload(Member.customer).joinedload(Customer.organization))
         )
+        if not include_deleted:
+            statement = statement.where(Member.is_deleted.is_(False))
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
 

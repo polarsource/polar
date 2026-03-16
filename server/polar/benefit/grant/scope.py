@@ -92,6 +92,8 @@ async def resolve_member(
     organization: Organization,
     member_id: UUID | None,
     is_seat_based: bool,
+    *,
+    include_deleted: bool = False,
 ) -> Member | None:
     member_model_enabled = organization.feature_settings.get(
         "member_model_enabled", False
@@ -120,7 +122,9 @@ async def resolve_member(
     if is_seat_based:
         raise MemberIdRequired()
 
-    member = await member_repository.get_owner_by_customer_id(session, customer_id)
+    member = await member_repository.get_owner_by_customer_id(
+        session, customer_id, include_deleted=include_deleted
+    )
     if member is None:
         # Auto-create owner member (graceful fallback during migration)
         customer_repository = CustomerRepository.from_session(session)

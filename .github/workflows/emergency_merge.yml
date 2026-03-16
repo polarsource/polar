@@ -1,0 +1,119 @@
+name: Emergency Merge 🚨
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  emergency:
+    if: |
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/emergency')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check authorization
+        id: auth
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.payload.comment.user.login,
+            });
+            const level = perm.permission;
+            const allowed = ['admin', 'maintain', 'write'];
+            if (!allowed.includes(level)) {
+              core.setFailed(`User ${context.payload.comment.user.login} has '${level}' permission — write access required`);
+              return;
+            }
+            core.info(`User ${context.payload.comment.user.login} authorized (${level})`);
+
+      - name: React to comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket',
+            });
+
+      - name: Merge PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.issue.number;
+
+            // Check PR is open and mergeable
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            if (pr.state !== 'open') {
+              core.setFailed('PR is not open');
+              return;
+            }
+
+            // Determine merge method from comment (default: squash)
+            const comment = context.payload.comment.body.trim();
+            let method = 'squash';
+            if (comment.includes('--merge')) method = 'merge';
+            if (comment.includes('--rebase')) method = 'rebase';
+
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: method,
+              });
+              core.info(`PR #${prNumber} merged via ${method}`);
+            } catch (error) {
+              core.setFailed(`Failed to merge: ${error.message}`);
+            }
+
+      - name: Comment result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.issue.number;
+            const success = '${{ job.status }}' === 'success';
+            const body = success
+              ? '🚀 Shipped! PR merged successfully.'
+              : '❌ Ship failed. Check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+      - name: Notify Slack
+        if: success()
+        uses: slackapi/slack-github-action@v3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
+          errors: true
+          payload: |
+            {
+              "channel": "C093CJXJXPT",
+              "text": "Emergency merge by ${{ github.event.comment.user.login }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rotating_light: *Emergency merge* by *${{ github.event.comment.user.login }}*\n<${{ github.event.issue.pull_request.html_url }}|#${{ github.event.issue.number }}: ${{ github.event.issue.title }}>"
+                  }
+                }
+              ]
+            }

@@ -58,13 +58,15 @@ export function PersonalDetailsStep() {
   const { data, updateData, showApiResponse } = useOnboardingData()
   const updateUser = useUpdateUser()
 
-  const parsedDob = data.dateOfBirth ? data.dateOfBirth.split('-') : []
+  const dateOfBirthSource =
+    data.dateOfBirth || currentUser?.date_of_birth || ''
+  const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
 
   const form = useForm<FormSchema>({
     defaultValues: {
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
-      country: data.country || '',
+      firstName: data.firstName || currentUser?.first_name || '',
+      lastName: data.lastName || currentUser?.last_name || '',
+      country: data.country || currentUser?.country || '',
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] || '',

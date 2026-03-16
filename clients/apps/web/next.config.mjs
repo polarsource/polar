@@ -86,7 +86,7 @@ const nextConfig = {
   ...(previewBasePath && {
     basePath: previewBasePath,
     env: {
-      POLAR_API_URL: `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}${previewBasePath}`,
+      POLAR_API_URL: `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}:8443${previewBasePath}`,
     },
   }),
 

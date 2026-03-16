@@ -53,6 +53,14 @@ export const createServerSideAPI = async (
     }
   }
 
+  // Preview environments: include access token so SSR calls pass through the funnel gate
+  if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
+    apiHeaders = {
+      ...apiHeaders,
+      'X-Preview-Token': process.env.POLAR_PREVIEW_ACCESS_TOKEN,
+    }
+  }
+
   // Use POLAR_API_URL for server-side requests (e.g., in Docker containers)
   // Fall back to NEXT_PUBLIC_API_URL for local development
   const apiUrl =

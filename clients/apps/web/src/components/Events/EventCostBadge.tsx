@@ -25,7 +25,7 @@ const getIndicatorColor = (type: 'cost' | 'revenue' | 'neutral') => {
   return colors.neutral
 }
 
-export const EventCostIndicator = ({
+const EventCostIndicator = ({
   type,
 }: {
   type: 'cost' | 'revenue' | 'neutral'

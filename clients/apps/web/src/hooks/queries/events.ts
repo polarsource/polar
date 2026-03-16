@@ -68,14 +68,6 @@ export const useEvents = (
   })
 }
 
-export const isCursorPagination = (
-  pagination:
-    | { total_count: number; max_page: number }
-    | { has_next_page: boolean },
-): pagination is { has_next_page: boolean } => {
-  return 'has_next_page' in pagination
-}
-
 export const useEvent = (
   organizationId: string,
   eventId: string,

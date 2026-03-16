@@ -39,7 +39,7 @@ export const useEventCard = (event: schemas['Event']) => {
   }, [event])
 }
 
-export const isOrderEvent = (
+const isOrderEvent = (
   event: schemas['Event'],
 ): event is schemas['OrderPaidEvent'] | schemas['OrderRefundedEvent'] => {
   return (

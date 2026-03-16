@@ -72,7 +72,7 @@ interface BenefitFormProps {
   onUploadingChange?: (uploading: boolean) => void
 }
 
-export const BenefitForm = ({
+const BenefitForm = ({
   organization,
   type,
   update = false,
@@ -141,7 +141,7 @@ interface CustomBenefitFormProps {
 }
 
 // eslint-disable-next-line no-empty-pattern
-export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
+const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
 
   return (
@@ -174,7 +174,7 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   )
 }
 
-export const FeatureFlagBenefitForm = () => {
+const FeatureFlagBenefitForm = () => {
   const { control } = useFormContext<schemas['BenefitFeatureFlagCreate']>()
 
   return (
@@ -244,7 +244,7 @@ export const FeatureFlagBenefitForm = () => {
   )
 }
 
-export const DiscordBenefitForm = () => {
+const DiscordBenefitForm = () => {
   const { control, watch } = useFormContext<schemas['BenefitDiscordCreate']>()
   const pathname = usePathname()
   const description = watch('description')

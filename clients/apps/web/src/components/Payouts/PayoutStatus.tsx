@@ -8,7 +8,7 @@ import {
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export const PayoutStatusDisplayTitle: Record<schemas['PayoutStatus'], string> =
+const PayoutStatusDisplayTitle: Record<schemas['PayoutStatus'], string> =
   {
     succeeded: 'Succeeded',
     pending: 'Pending',
@@ -17,7 +17,7 @@ export const PayoutStatusDisplayTitle: Record<schemas['PayoutStatus'], string> =
     canceled: 'Canceled',
   }
 
-export const PayoutStatusDisplayColor: Record<schemas['PayoutStatus'], string> =
+const PayoutStatusDisplayColor: Record<schemas['PayoutStatus'], string> =
   {
     succeeded: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
     pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',

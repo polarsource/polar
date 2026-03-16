@@ -1,5 +1,3 @@
-export { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
 import { isServer, QueryClient } from '@tanstack/react-query'
 
 function makeQueryClient() {

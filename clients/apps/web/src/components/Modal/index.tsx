@@ -108,7 +108,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
   return isShown ? ReactDOM.createPortal(modal, document.body) : null
 }
 
-export const ModalHeader = (props: {
+const ModalHeader = (props: {
   children: React.ReactNode
   className?: string
   hide: () => void
@@ -126,7 +126,7 @@ export const ModalHeader = (props: {
   )
 }
 
-export const CloseButton = (props: {
+const CloseButton = (props: {
   className?: string
   hide: () => void
 }) => {
@@ -157,7 +157,7 @@ const XIcon = () => {
   )
 }
 
-export const ModalBox = ({
+const ModalBox = ({
   children,
   className,
 }: {

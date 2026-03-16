@@ -2,26 +2,6 @@ import { useToast } from '@/components/Toast/use-toast'
 import { schemas } from '@polar-sh/client'
 import { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
-type ValidationErrorsMap = Record<string, string[]>
-
-export const getValidationErrorsMap = (
-  errors: schemas['ValidationError'][],
-): ValidationErrorsMap => {
-  return errors.reduce<ValidationErrorsMap>((map, error) => {
-    const loc = error.loc.slice(1).join('.')
-    if (map[loc]) {
-      return {
-        ...map,
-        [loc]: [...map[loc], error.msg],
-      }
-    }
-    return {
-      ...map,
-      [loc]: [error.msg],
-    }
-  }, {})
-}
-
 export const setValidationErrors = <TFieldValues extends FieldValues>(
   errors: schemas['ValidationError'][],
   setError: UseFormSetError<TFieldValues>,

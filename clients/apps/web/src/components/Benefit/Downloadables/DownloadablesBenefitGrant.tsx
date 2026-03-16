@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FilePreview } from './FileList/FileListItem'
 
-export const DownloadableItem = ({
+const DownloadableItem = ({
   className,
   downloadable,
   historic,

@@ -51,7 +51,7 @@ export const LinkItem = (props: {
   )
 }
 
-export const TextItem = (props: {
+const TextItem = (props: {
   onClick: () => void
   icon: React.ReactElement<any>
   children: React.ReactElement<any>

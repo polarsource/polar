@@ -62,7 +62,7 @@ export interface GenericChartSeries {
   color: string
 }
 
-export interface GenericChartProps<T extends Record<string, unknown>> {
+interface GenericChartProps<T extends Record<string, unknown>> {
   ref?: React.RefObject<HTMLDivElement | null>
   data: T[]
   series: GenericChartSeries[]
@@ -481,5 +481,3 @@ export const GenericChart = <T extends Record<string, unknown>>({
 }
 
 GenericChart.displayName = 'GenericChart'
-
-export default GenericChart

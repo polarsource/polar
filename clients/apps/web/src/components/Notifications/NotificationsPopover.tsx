@@ -109,7 +109,7 @@ export const NotificationsPopover = () => {
 
 export default Popover
 
-export const List = ({
+const List = ({
   notifications,
   setIsInNestedModal,
 }: {
@@ -291,7 +291,7 @@ const MaintainerAccountCreditsGranted = ({
   )
 }
 
-export const Notification = ({
+const Notification = ({
   n,
 }: {
   n: NotificationSchema

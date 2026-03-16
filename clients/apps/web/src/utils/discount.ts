@@ -16,7 +16,7 @@ export const isDiscountFixed = (
   return discount.type === 'fixed'
 }
 
-export const isDiscountPercentage = (
+const isDiscountPercentage = (
   discount: CheckoutDiscount,
 ): discount is
   | schemas['CheckoutDiscountPercentageOnceForeverDuration']

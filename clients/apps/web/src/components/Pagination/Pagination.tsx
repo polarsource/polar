@@ -33,7 +33,7 @@ const Pagination = ({ children, ...paginatorProps }: PaginationProps) => {
 
 export default Pagination
 
-export const usePagination = () => {
+const usePagination = () => {
   const router = useRouter()
   const search = useSearchParams()
   const initialPage = useMemo(() => Number(search?.get('page')) || 1, [search])

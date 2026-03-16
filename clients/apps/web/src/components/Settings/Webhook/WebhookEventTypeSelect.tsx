@@ -126,5 +126,3 @@ export const WebhookEventTypeSelect = ({
     </Popover>
   )
 }
-
-export default WebhookEventTypeSelect

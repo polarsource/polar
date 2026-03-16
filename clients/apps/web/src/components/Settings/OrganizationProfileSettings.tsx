@@ -226,7 +226,7 @@ const CompactTextArea = ({
   />
 )
 
-export const OrganizationDetailsForm: React.FC<
+const OrganizationDetailsForm: React.FC<
   OrganizationDetailsFormProps
 > = ({ organization, inKYCMode }) => {
   const { control, setError, setValue } =

@@ -12,7 +12,7 @@ const COLORS = {
   red: 'hsl(0, 84%, 60%)',
 }
 
-export function getEventCostDeviation(
+function getEventCostDeviation(
   eventCost: number,
   averageCost: number,
   p10Cost: number,

@@ -5,7 +5,7 @@ import GitHubIcon from '../Icons/GitHubIcon'
 
 export type CreatableBenefit = schemas['BenefitType']
 
-export const resolveBenefitCategoryIcon = (
+const resolveBenefitCategoryIcon = (
   type?: schemas['BenefitType'],
   className?: string,
 ) => {

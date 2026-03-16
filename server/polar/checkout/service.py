@@ -221,6 +221,15 @@ class CheckoutCustomerDeleted(CheckoutError):
         super().__init__(message, 409)
 
 
+class CheckoutCustomerExternalIdMismatch(CheckoutError):
+    def __init__(self) -> None:
+        message = (
+            "A customer with this external ID already exists "
+            "but with a different email address."
+        )
+        super().__init__(message, 422)
+
+
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
 
 
@@ -2475,6 +2484,13 @@ class CheckoutService:
             customer = await repository.get_by_email_and_organization(
                 checkout.customer_email, checkout.organization.id
             )
+            if customer is None and checkout.external_customer_id is not None:
+                existing = await repository.get_by_external_id_and_organization(
+                    checkout.external_customer_id,
+                    checkout.organization.id,
+                )
+                if existing is not None:
+                    raise CheckoutCustomerExternalIdMismatch()
             if customer is None:
                 customer = Customer(
                     external_id=checkout.external_customer_id,

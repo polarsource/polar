@@ -130,6 +130,46 @@ export default {
           other: '# years trial',
         },
       },
+      hero: {
+        free: {
+          day: {
+            _mode: 'plural',
+            '=1': '# day free',
+            other: '# days free',
+          },
+          month: {
+            _mode: 'plural',
+            '=1': '# month free',
+            other: '# months free',
+          },
+          year: {
+            _mode: 'plural',
+            '=1': '# year free',
+            other: '# years free',
+          },
+        },
+        intervalSuffix: {
+          day: '/day',
+          week: '/week',
+          month: '/month',
+          year: '/year',
+        },
+        then: {
+          value: 'Then',
+          _llmContext:
+            'Prefix before the recurring price in the trial hero subtitle. Displayed as: "Then <bold>$99.99/year</bold> starting April 5, 2026". The price is a separate bold element.',
+        },
+        startingDate: {
+          value: 'starting {date}',
+          _llmContext:
+            'Suffix after the recurring price when a trial end date is known. Displayed as: "Then $99.99/year starting April 5, 2026". The "Then" prefix and bold price are separate elements.',
+        },
+      },
+      summary: {
+        totalWhenTrialEnds: 'Total when trial ends',
+        totalWhenDiscountExpires: 'Total when discount expires',
+        totalDueToday: 'Total due today',
+      },
     },
     pwywForm: {
       label: 'Name a fair price',

@@ -111,6 +111,38 @@ export default {
           _mode: 'plural',
         },
       },
+      hero: {
+        free: {
+          day: {
+            '=1': '# dag gratis',
+            other: '# dagar gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# månad gratis',
+            other: '# månader gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# år gratis',
+            other: '# år gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dag',
+          week: '/vecka',
+          month: '/månad',
+          year: '/år',
+        },
+        then: 'Därefter',
+        startingDate: 'från {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Totalt efter provperioden',
+        totalWhenDiscountExpires: 'Totalt när rabatten löper ut',
+        totalDueToday: 'Att betala idag',
+      },
     },
     pwywForm: {
       label: 'Ange pris',

@@ -111,6 +111,38 @@ export default {
           _mode: 'plural',
         },
       },
+      hero: {
+        free: {
+          day: {
+            '=1': '# día gratis',
+            other: '# días gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# mes gratis',
+            other: '# meses gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# año gratis',
+            other: '# años gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/día',
+          week: '/semana',
+          month: '/mes',
+          year: '/año',
+        },
+        then: 'Después',
+        startingDate: 'a partir del {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Total al finalizar la prueba',
+        totalWhenDiscountExpires: 'Total al finalizar el descuento',
+        totalDueToday: 'Total a pagar hoy',
+      },
     },
     pwywForm: {
       label: 'Pon un precio justo',

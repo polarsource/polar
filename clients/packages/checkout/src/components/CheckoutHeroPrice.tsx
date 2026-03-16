@@ -4,6 +4,7 @@ import type { AcceptedLocale } from '@polar-sh/i18n'
 import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
+import CheckoutTrialHeroPrice from './CheckoutTrialHeroPrice'
 
 export interface CheckoutHeroPriceProps {
   checkout: ProductCheckoutPublic
@@ -12,6 +13,13 @@ export interface CheckoutHeroPriceProps {
 
 const CheckoutHeroPrice = ({ checkout, locale }: CheckoutHeroPriceProps) => {
   const { product, product_price } = checkout
+
+  const hasTrial =
+    checkout.active_trial_interval && checkout.active_trial_interval_count
+
+  if (hasTrial) {
+    return <CheckoutTrialHeroPrice checkout={checkout} locale={locale} />
+  }
 
   return (
     <AmountLabel

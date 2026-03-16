@@ -3465,6 +3465,54 @@ class TestUpdateSeats:
 
     @pytest.mark.parametrize(
         "proration_behavior",
+        list(SubscriptionProrationBehavior),
+    )
+    async def test_unchanged_seats(
+        self,
+        proration_behavior: SubscriptionProrationBehavior,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+
+        # When: Update with same seat count
+        updated = await subscription_service.update_seats(
+            session, subscription, seats=10, proration_behavior=proration_behavior
+        )
+        await session.flush()
+
+        # Then: Successfully updated (no-op)
+        assert updated.seats == 10
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is None
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 0
+
+    @pytest.mark.parametrize(
+        "proration_behavior",
         [
             SubscriptionProrationBehavior.prorate,
             SubscriptionProrationBehavior.invoice,
@@ -3540,8 +3588,17 @@ class TestUpdateSeats:
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.update_seats(session, subscription, seats=10)
 
+    @pytest.mark.parametrize(
+        ("initial", "new"),
+        [
+            (5, 10),  # Increase seats
+            (10, 5),  # Decrease seats
+        ],
+    )
     async def test_proration_invoice_behavior_success(
         self,
+        initial: int,
+        new: int,
         session: AsyncSession,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -3565,14 +3622,14 @@ class TestUpdateSeats:
             save_fixture,
             product=product,
             customer=customer,
-            seats=5,
+            seats=initial,
         )
 
         # When: Update with invoice behavior
         await subscription_service.update_seats(
             session,
             subscription,
-            seats=10,
+            seats=new,
             proration_behavior=SubscriptionProrationBehavior.invoice,
         )
         await session.flush()

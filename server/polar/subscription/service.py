@@ -1351,6 +1351,9 @@ class SubscriptionService:
         old_seats = subscription.seats or 1
         old_amount = subscription.amount
 
+        if old_seats == seats:
+            return subscription
+
         event = await event_service.create_event(
             session,
             build_system_event(

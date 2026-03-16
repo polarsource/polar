@@ -13,7 +13,12 @@ https://__TS_HOSTNAME__:__FRONTEND_PORT__ {
 		reverse_proxy 127.0.0.1:9999
 	}
 	handle {
-		reverse_proxy 127.0.0.1:__FRONTEND_LOCAL_PORT__
+		reverse_proxy __VERCEL_PREVIEW_URL__ {
+			header_up Host __VERCEL_PREVIEW_HOST__
+			header_up -X-Forwarded-Host
+			header_up -X-Forwarded-Proto
+			header_up x-vercel-protection-bypass __VERCEL_BYPASS_SECRET__
+		}
 	}
 
 	tls {

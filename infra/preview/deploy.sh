@@ -15,6 +15,7 @@ CADDY_PREVIEWS_DIR="/etc/caddy/previews"
 REPO_URL="${POLAR_PREVIEW_REPO_URL:-https://github.com/polarsource/polar.git}"
 VERCEL_PROJECT="${POLAR_PREVIEW_VERCEL_PROJECT:-polar-sandbox}"
 VERCEL_SCOPE="${POLAR_PREVIEW_VERCEL_SCOPE:-polar-sh}"
+VERCEL_BYPASS_SECRET="" # set per-deploy via argument
 
 # Get the Tailscale hostname for URLs
 TS_HOSTNAME="$(tailscale status --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["Self"]["DNSName"].rstrip("."))')"
@@ -34,6 +35,7 @@ deploy() {
     local BRANCH="${3:?Branch required}"
     local SHA="${4:?SHA required}"
     local ENV_B64="${5:-}"
+    VERCEL_BYPASS_SECRET="${6:-}"
     local ENV_JSON=""
     if [[ -n "$ENV_B64" ]]; then
         ENV_JSON=$(echo "$ENV_B64" | base64 -d)
@@ -115,7 +117,7 @@ deploy() {
 POLAR_ENV=development
 POLAR_BASE_URL=${PREVIEW_URL}
 POLAR_FRONTEND_BASE_URL=${PREVIEW_URL}
-POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}"]
+POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}","${TS_HOSTNAME}:${FRONTEND_PORT}"]
 POLAR_CORS_ORIGINS=["${PREVIEW_URL}","${VERCEL_PREVIEW_URL}"]
 POLAR_CHECKOUT_BASE_URL=${PREVIEW_URL}/v1/checkout-links/{client_secret}/redirect
 POLAR_USER_SESSION_COOKIE_DOMAIN=${TS_HOSTNAME}
@@ -157,41 +159,44 @@ for k, v in json.loads(sys.stdin.read()).items():
         log "Seed data already loaded, skipping"
     fi
 
-    # --- Frontend env (always write so runtime env is up to date) ---
-    cat > "${PREVIEW_DIR}/clients/apps/web/.env.local" <<DOTENV
-POLAR_PREVIEW_BUILD=1
-NEXT_PUBLIC_API_URL=${PREVIEW_URL}
-NEXT_PUBLIC_FRONTEND_BASE_URL=${PREVIEW_URL}
-NEXT_PUBLIC_BACKOFFICE_URL=${PREVIEW_URL}/backoffice
-S3_UPLOAD_ORIGINS=
-S3_PUBLIC_IMAGES_BUCKET_HOSTNAME=
-DOTENV
-
-    cat > "${PREVIEW_DIR}/clients/.env.preview" <<DOTENV
-POLAR_PREVIEW_BUILD=1
-NEXT_PUBLIC_API_URL=${PREVIEW_URL}
-POLAR_API_URL=http://127.0.0.1:${API_PORT}
-NEXT_PUBLIC_FRONTEND_BASE_URL=${PREVIEW_URL}
-NEXT_PUBLIC_BACKOFFICE_URL=${PREVIEW_URL}/backoffice
-PORT=${FRONTEND_LOCAL_PORT}
-DOTENV
-
-    # --- Frontend dependencies ---
-    if [[ "$FRONTEND_CHANGED" == "true" ]]; then
-        log "Installing frontend dependencies"
-        cd "${PREVIEW_DIR}/clients"
-        pnpm install --frozen-lockfile
-    fi
+    # --- Frontend (disabled — using Vercel preview deployments instead) ---
+    # cat > "${PREVIEW_DIR}/clients/apps/web/.env.local" <<DOTENV
+    # POLAR_PREVIEW_BUILD=1
+    # NEXT_PUBLIC_API_URL=${PREVIEW_URL}
+    # NEXT_PUBLIC_FRONTEND_BASE_URL=${PREVIEW_URL}
+    # NEXT_PUBLIC_BACKOFFICE_URL=${PREVIEW_URL}/backoffice
+    # S3_UPLOAD_ORIGINS=
+    # S3_PUBLIC_IMAGES_BUCKET_HOSTNAME=
+    # DOTENV
+    #
+    # cat > "${PREVIEW_DIR}/clients/.env.preview" <<DOTENV
+    # POLAR_PREVIEW_BUILD=1
+    # NEXT_PUBLIC_API_URL=${PREVIEW_URL}
+    # POLAR_API_URL=http://127.0.0.1:${API_PORT}
+    # NEXT_PUBLIC_FRONTEND_BASE_URL=${PREVIEW_URL}
+    # NEXT_PUBLIC_BACKOFFICE_URL=${PREVIEW_URL}/backoffice
+    # PORT=${FRONTEND_LOCAL_PORT}
+    # DOTENV
+    #
+    # if [[ "$FRONTEND_CHANGED" == "true" ]]; then
+    #     log "Installing frontend dependencies"
+    #     cd "${PREVIEW_DIR}/clients"
+    #     pnpm install --frozen-lockfile
+    # fi
 
     # --- Caddy config ---
     log "Configuring Caddy"
     mkdir -p "$CADDY_PREVIEWS_DIR"
+    local VERCEL_PREVIEW_HOST="${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
     sed \
         -e "s/__TS_HOSTNAME__/${TS_HOSTNAME}/g" \
         -e "s/__FRONTEND_PORT__/${FRONTEND_PORT}/g" \
         -e "s/__FRONTEND_LOCAL_PORT__/${FRONTEND_LOCAL_PORT}/g" \
         -e "s/__API_PORT__/${API_PORT}/g" \
         -e "s/__PR_NUM__/${PR_NUM}/g" \
+        -e "s|__VERCEL_PREVIEW_URL__|https://${VERCEL_PREVIEW_HOST}|g" \
+        -e "s/__VERCEL_PREVIEW_HOST__/${VERCEL_PREVIEW_HOST}/g" \
+        -e "s/__VERCEL_BYPASS_SECRET__/${VERCEL_BYPASS_SECRET}/g" \
         "${INFRA_SRC}/caddy-preview.template" \
         > "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
 
@@ -200,11 +205,13 @@ DOTENV
     # --- Restart services ---
     # Backend always restarts (env JSON includes rotated DB password every deploy)
     log "Restarting services"
-    systemctl enable "polar-preview-backend@${PR_NUM}" "polar-preview-frontend@${PR_NUM}"
+    systemctl enable "polar-preview-backend@${PR_NUM}"
     systemctl restart "polar-preview-backend@${PR_NUM}"
-    if [[ "$FRONTEND_CHANGED" == "true" ]]; then
-        systemctl restart "polar-preview-frontend@${PR_NUM}"
-    fi
+    # Frontend disabled — using Vercel preview deployments instead
+    # systemctl enable "polar-preview-frontend@${PR_NUM}"
+    # if [[ "$FRONTEND_CHANGED" == "true" ]]; then
+    #     systemctl restart "polar-preview-frontend@${PR_NUM}"
+    # fi
 
     echo "$SHA" > "${PREVIEW_DIR}/.deployed_sha"
     log "Deployed at ${PREVIEW_URL}"

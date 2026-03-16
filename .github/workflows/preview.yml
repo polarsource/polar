@@ -159,13 +159,14 @@ jobs:
           SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
           PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
           PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
+          VERCEL_BYPASS_SECRET: ${{ secrets.POLAR_PREVIEW_VERCEL_BYPASS_SECRET }}
         run: |
           set -euo pipefail
           ENV_B64=$(base64 -w0 < /tmp/env.json)
 
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
             "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "sudo /srv/preview-tools/deploy.sh deploy $PR_NUM '$BRANCH' '$SHA' '$ENV_B64'" \
+            "sudo /srv/preview-tools/deploy.sh deploy $PR_NUM '$BRANCH' '$SHA' '$ENV_B64' '$VERCEL_BYPASS_SECRET'" \
             | tee /tmp/deploy.log
 
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)

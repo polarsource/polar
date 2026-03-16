@@ -828,8 +828,12 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                 parts.append("No custom checkout return URLs.")
 
             parts.append(f"API Keys: {setup.integration.api_key_count}")
-            if setup.integration.webhook_urls:
-                parts.append(f"Webhooks: {', '.join(setup.integration.webhook_urls)}")
+            if setup.integration.webhook_endpoints:
+                webhook_strs = [
+                    f"{ep.url} ({'enabled' if ep.enabled else 'DISABLED'})"
+                    for ep in setup.integration.webhook_endpoints
+                ]
+                parts.append(f"Webhooks: {', '.join(webhook_strs)}")
             else:
                 parts.append("No webhook endpoints.")
 

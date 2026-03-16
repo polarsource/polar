@@ -513,14 +513,11 @@ class ReviewAnalyzer:
                 parts.append("No checkout links created.")
 
             parts.append(f"API Keys: {setup.integration.api_key_count}")
-            parts.append(
-                f"Webhooks Enabled: {setup.integration.webhook_enabled_count} "
-                f"of {len(setup.integration.webhook_urls)} total"
-            )
-            if setup.integration.webhook_urls:
-                parts.append(f"Webhooks ({len(setup.integration.webhook_urls)}):")
-                for url in setup.integration.webhook_urls:
-                    parts.append(f"  - {url}")
+            if setup.integration.webhook_endpoints:
+                parts.append(f"Webhooks ({len(setup.integration.webhook_endpoints)}):")
+                for ep in setup.integration.webhook_endpoints:
+                    status = "enabled" if ep.enabled else "DISABLED"
+                    parts.append(f"  - {ep.url} ({status})")
                 parts.append(
                     f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
                 )

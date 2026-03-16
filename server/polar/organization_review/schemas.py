@@ -173,12 +173,16 @@ class CheckoutLinksData(Schema):
     links: list[CheckoutLinkBenefitData] = Field(default_factory=list)
 
 
+class WebhookEndpointData(Schema):
+    url: str
+    enabled: bool = True
+
+
 class IntegrationData(Schema):
     api_key_count: int = 0
-    webhook_urls: list[str] = Field(default_factory=list)
+    webhook_endpoints: list[WebhookEndpointData] = Field(default_factory=list)
     webhook_domains: list[str] = Field(default_factory=list)
     webhook_known_service_domains: list[str] = Field(default_factory=list)
-    webhook_enabled_count: int = 0
 
 
 class SetupData(Schema):

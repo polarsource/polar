@@ -19,6 +19,7 @@ interface MetricChartProps {
   simple?: boolean
   showYAxis?: boolean
   chartType?: 'line' | 'bar'
+  activeCursorIndex?: number | null
 }
 
 const MetricChart = ({
@@ -34,6 +35,7 @@ const MetricChart = ({
   simple = false,
   showYAxis = false,
   chartType = 'line',
+  activeCursorIndex,
 }: MetricChartProps) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -41,7 +43,7 @@ const MetricChart = ({
   const genericData = useMemo(
     () =>
       data.map((period, index) => ({
-        timestamp: period.timestamp,
+        timestamp: period.timestamp.toISOString(),
         current:
           period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>],
         ...(previousData && previousData[index]
@@ -76,10 +78,11 @@ const MetricChart = ({
     [previousData, isDark],
   )
 
-  const timestampFormatter = useMemo(
-    () => getTimestampFormatter(interval),
-    [interval],
-  )
+  const timestampFormatter = useMemo(() => {
+    const fmt = getTimestampFormatter(interval)
+    return (value: string | Date) =>
+      fmt(typeof value === 'string' ? new Date(value) : value)
+  }, [interval])
 
   const valueFormatter = useMemo(
     () => (value: number) => getFormattedMetricValue(metric, value),
@@ -110,6 +113,7 @@ const MetricChart = ({
       onDataIndexHover={onDataIndexHover}
       simple={simple}
       ticks={ticks}
+      activeCursorIndex={activeCursorIndex}
     />
   )
 }

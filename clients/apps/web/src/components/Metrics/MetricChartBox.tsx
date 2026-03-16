@@ -50,6 +50,9 @@ interface MetricChartBoxProps {
   chartType?: 'line' | 'bar'
   /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
   availableMetrics?: MetricOption[]
+  /** Controlled hover index — syncs cursor across charts in a group. */
+  hoveredPeriodIndex?: number | null
+  onHoverPeriodChange?: (index: number | null) => void
 }
 
 const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
@@ -79,6 +82,8 @@ const MetricChartBox = ({
   simple = false,
   chartType = 'line',
   availableMetrics,
+  hoveredPeriodIndex: hoveredPeriodIndexProp,
+  onHoverPeriodChange,
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -102,9 +107,12 @@ const MetricChartBox = ({
   }, [previousData])
 
   const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
-  const [hoveredPeriodIndex, setHoveredPeriodIndex] = React.useState<
-    number | null
-  >(null)
+  const [hoveredPeriodIndexLocal, setHoveredPeriodIndexLocal] =
+    React.useState<number | null>(null)
+  const hoveredPeriodIndex =
+    hoveredPeriodIndexProp !== undefined
+      ? hoveredPeriodIndexProp
+      : hoveredPeriodIndexLocal
 
   const hoveredPeriod = useMemo(() => {
     if (!data || !hoveredPeriodIndex) return null
@@ -336,10 +344,12 @@ const MetricChartBox = ({
             interval={interval}
             metric={selectedMetric}
             onDataIndexHover={(period) => {
-              setHoveredPeriodIndex(period)
+              setHoveredPeriodIndexLocal(period)
+              onHoverPeriodChange?.(period)
             }}
             simple={simple}
             chartType={chartType}
+            activeCursorIndex={hoveredPeriodIndex}
           />
         ) : (
           <div

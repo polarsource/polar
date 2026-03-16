@@ -4,10 +4,12 @@
 # Run as root on Ubuntu 24.04. Safe to re-run (idempotent).
 #
 # Sets up: swap, caddy, redis, uv, node/pnpm, tailscale, deploy user + SSH
-# keypair, and directory structure.
+# keypair, preview tools, and directory structure.
 #
-# Preview tools (deploy.sh, caddy template, systemd units) are synced from
-# each PR's checkout at deploy time, so they stay up to date automatically.
+# Preview tools (deploy.sh, caddy template, systemd units) are installed
+# from this directory during setup. They are NOT synced from PR checkouts
+# to prevent untrusted code from modifying infrastructure. To update them,
+# re-run this script or manually install updated files to /srv/preview-tools/.
 #
 set -euo pipefail
 
@@ -96,11 +98,11 @@ cat > /etc/caddy/Caddyfile <<'CADDYFILE'
 	import /etc/caddy/previews/*.caddy
 }
 :8080 {
-	@no_token not header X-Preview-Token {$POLAR_PREVIEW_ACCESS_TOKEN}
-	handle @no_token {
-		respond "Forbidden" 403
+	route {
+		@no_token not header X-Preview-Token {$POLAR_PREVIEW_ACCESS_TOKEN}
+		respond @no_token "Forbidden" 403
+		import /etc/caddy/previews/*.caddy
 	}
-	import /etc/caddy/previews/*.caddy
 }
 CADDYFILE
 
@@ -130,9 +132,9 @@ systemctl start caddy || true
 echo "[4/8] Installing uv..."
 if ! command -v uv &>/dev/null; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    ln -sf /root/.local/bin/uv /usr/local/bin/uv
-    ln -sf /root/.local/bin/uvx /usr/local/bin/uvx
 fi
+cp -f /root/.local/bin/uv /usr/local/bin/uv
+cp -f /root/.local/bin/uvx /usr/local/bin/uvx
 echo "uv $(uv --version)"
 
 # --- Node.js + pnpm ---
@@ -141,10 +143,8 @@ if ! command -v node &>/dev/null; then
     curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
     apt-get install -y nodejs
 fi
-if ! command -v pnpm &>/dev/null; then
-    corepack enable
-    corepack prepare pnpm@latest --activate
-fi
+corepack enable
+corepack prepare pnpm@latest --activate
 echo "node $(node --version), pnpm $(pnpm --version)"
 
 # --- Tailscale ---
@@ -188,24 +188,34 @@ chmod 700 "$SSH_DIR"
 chmod 600 "${SSH_DIR}/authorized_keys" "$KEY_FILE"
 chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "$SSH_DIR"
 
-cat > /etc/sudoers.d/polar-preview <<EOF
-${DEPLOY_USER} ALL=(root) NOPASSWD: ${PREVIEW_TOOLS_DIR}/deploy.sh, /usr/bin/install
-EOF
-chmod 440 /etc/sudoers.d/polar-preview
+rm -f /etc/sudoers.d/polar-preview
 
-# --- Directory structure ---
-echo "[8/8] Setting up directories..."
+# --- Preview tools and directories ---
+echo "[8/8] Setting up preview tools and directories..."
 mkdir -p "$PREVIEW_TOOLS_DIR" "$PREVIEW_DIR"
 
-if [[ ! -x "${PREVIEW_TOOLS_DIR}/deploy.sh" ]] || grep -q "Seed deploy.sh" "${PREVIEW_TOOLS_DIR}/deploy.sh" 2>/dev/null; then
-    cat > "${PREVIEW_TOOLS_DIR}/deploy.sh" <<'SEED'
-#!/usr/bin/env bash
-set -euo pipefail
-echo "Seed deploy.sh — will be replaced by first real deploy" >&2
-exit 1
-SEED
-    chmod +x "${PREVIEW_TOOLS_DIR}/deploy.sh"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+for f in deploy.sh run-preview-backend.sh caddy-preview.template log-viewer.py regenerate-caddyfile.sh process-preview-triggers.sh; do
+    if [[ -f "${SCRIPT_DIR}/${f}" ]]; then
+        install -m 755 "${SCRIPT_DIR}/${f}" "${PREVIEW_TOOLS_DIR}/${f}"
+    fi
+done
+
+for f in polar-preview-backend@.service polar-preview-frontend@.service polar-preview-logs.service polar-preview-infra.path polar-preview-infra.service; do
+    if [[ -f "${SCRIPT_DIR}/${f}" ]]; then
+        cp "${SCRIPT_DIR}/${f}" "/etc/systemd/system/${f}"
+    fi
+done
+systemctl daemon-reload
+systemctl enable polar-preview-logs polar-preview-infra.path
+systemctl start polar-preview-logs 2>/dev/null || true
+systemctl start polar-preview-infra.path
+
+mkdir -p /srv/preview-triggers
+chown "${DEPLOY_USER}:${DEPLOY_USER}" /srv/preview-triggers
+chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "$PREVIEW_DIR"
+chown -R "${DEPLOY_USER}:${DEPLOY_USER}" /etc/caddy/previews
 
 echo ""
 echo "========================================="

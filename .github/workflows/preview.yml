@@ -50,26 +50,22 @@ jobs:
             echo "action=deploy" >> "$GITHUB_OUTPUT"
           fi
 
-      # --- Provision database + tinybird (deploy only) ---
+      # --- Python/uv setup (needed for both deploy and destroy) ---
       - name: Install uv
-        if: steps.action.outputs.action == 'deploy'
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
       - name: Set up Python
-        if: steps.action.outputs.action == 'deploy'
         uses: actions/setup-python@v6
         with:
           python-version-file: "server/pyproject.toml"
 
       - name: Install server dependencies
-        if: steps.action.outputs.action == 'deploy'
         working-directory: ./server
         run: uv sync --dev
 
       - name: Install Tinybird CLI
-        if: steps.action.outputs.action == 'deploy'
         run: curl https://tinybird.co | sh
 
       - name: Connect to Tailscale

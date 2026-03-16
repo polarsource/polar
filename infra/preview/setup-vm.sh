@@ -77,8 +77,31 @@ fi
 
 mkdir -p /etc/caddy/previews
 
+# Generate a preview access token for gating funnel (public internet) access.
+# Tailnet users get full access via tailscale serve on :443.
+# Vercel SSR reaches the API via tailscale funnel on :8443, gated by this token.
+if [[ ! -f /etc/caddy/env ]]; then
+    PREVIEW_ACCESS_TOKEN=$(openssl rand -hex 32)
+    echo "POLAR_PREVIEW_ACCESS_TOKEN=${PREVIEW_ACCESS_TOKEN}" > /etc/caddy/env
+    chmod 600 /etc/caddy/env
+    echo ""
+    echo "Generated preview access token: ${PREVIEW_ACCESS_TOKEN}"
+    echo "Add to GitHub secrets: POLAR_PREVIEW_ACCESS_TOKEN"
+    echo "Add to Vercel env vars: POLAR_PREVIEW_ACCESS_TOKEN"
+    echo ""
+fi
+
 cat > /etc/caddy/Caddyfile <<'CADDYFILE'
-import /etc/caddy/previews/*.caddy
+:80 {
+	import /etc/caddy/previews/*.caddy
+}
+:8080 {
+	@no_token not header X-Preview-Token {$POLAR_PREVIEW_ACCESS_TOKEN}
+	handle @no_token {
+		respond "Forbidden" 403
+	}
+	import /etc/caddy/previews/*.caddy
+}
 CADDYFILE
 
 # Create systemd service for caddy
@@ -89,6 +112,7 @@ After=network.target tailscaled.service
 
 [Service]
 Type=notify
+EnvironmentFile=/etc/caddy/env
 ExecStart=/usr/bin/caddy run --config /etc/caddy/Caddyfile
 ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile
 Restart=on-failure
@@ -138,10 +162,13 @@ else
 fi
 echo "Tailscale IP: $(tailscale ip -4)"
 
-tailscale serve reset
-tailscale funnel --bg --https=443 localhost:80
-
 TS_HOSTNAME="$(tailscale status --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["Self"]["DNSName"].rstrip("."))')"
+
+# Port 443: tailscale serve (tailnet only) → Caddy :80 (full access)
+# Port 8443: tailscale funnel (public) → Caddy :8080 (token-gated API for Vercel SSR)
+tailscale serve reset
+tailscale serve --bg --https=443 localhost:80
+tailscale funnel --bg --https=8443 localhost:8080
 
 # --- Deploy user ---
 echo "[7/8] Creating deploy user and SSH keypair..."

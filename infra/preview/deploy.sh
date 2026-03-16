@@ -37,6 +37,18 @@ regenerate_caddyfile() {
             [[ -f "$f" ]] && sed 's/^/\t/' "$f"
         done
         echo '}'
+        echo ''
+        echo ':8080 {'
+        cat <<'AUTH'
+	@no_token not header X-Preview-Token {$POLAR_PREVIEW_ACCESS_TOKEN}
+	handle @no_token {
+		respond "Forbidden" 403
+	}
+AUTH
+        for f in "$CADDY_PREVIEWS_DIR"/*.caddy; do
+            [[ -f "$f" ]] && sed 's/^/\t/' "$f"
+        done
+        echo '}'
     } > /etc/caddy/Caddyfile
 }
 
@@ -126,7 +138,7 @@ deploy() {
 POLAR_ENV=development
 POLAR_BASE_URL=${PREVIEW_URL}
 POLAR_FRONTEND_BASE_URL=${PREVIEW_URL}
-POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}"]
+POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}","${TS_HOSTNAME}:8443"]
 POLAR_CORS_ORIGINS=["${PREVIEW_URL}","${VERCEL_PREVIEW_URL}"]
 POLAR_CHECKOUT_BASE_URL=${PREVIEW_URL}/v1/checkout-links/{client_secret}/redirect
 POLAR_USER_SESSION_COOKIE_DOMAIN=${TS_HOSTNAME}
@@ -155,6 +167,11 @@ for k, v in json.loads(sys.stdin.read()).items():
         uv run python -m polar.kit.jwk polar_preview > "${PREVIEW_DIR}/server/.jwks.json"
     fi
 
+    # --- Start Redis for migrations/seeds ---
+    log "Starting Redis on port ${REDIS_PORT}"
+    redis-server --bind 127.0.0.1 --port "$REDIS_PORT" --save "" --appendonly no --daemonize yes
+    until redis-cli -p "$REDIS_PORT" ping >/dev/null 2>&1; do sleep 0.2; done
+
     # --- Run migrations ---
     log "Running database migrations"
     uv run alembic upgrade head
@@ -168,6 +185,9 @@ for k, v in json.loads(sys.stdin.read()).items():
     else
         log "Seed data already loaded, skipping"
     fi
+
+    # Stop the temporary Redis — the backend service starts its own
+    redis-cli -p "$REDIS_PORT" shutdown nosave 2>/dev/null || true
 
     # --- Frontend (disabled — using Vercel preview deployments instead) ---
     # cat > "${PREVIEW_DIR}/clients/apps/web/.env.local" <<DOTENV

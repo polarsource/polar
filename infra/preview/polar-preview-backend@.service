@@ -4,6 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
+User=deploy
+Group=deploy
 WorkingDirectory=/srv/previews/pr-%i/server
 EnvironmentFile=/srv/previews/pr-%i/server/.env
 ExecStart=/srv/previews/pr-%i/server/run-preview-backend.sh

@@ -131,23 +131,6 @@ jobs:
           echo "$ENV_JSON" > /tmp/env.json
 
       # --- SSH deploy ---
-      - name: Sync deploy script to VM
-        if: steps.action.outputs.action == 'deploy'
-        env:
-          SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
-          PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
-          PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
-          chmod 600 ~/.ssh/preview_key
-          SSH_OPTS="-o StrictHostKeyChecking=no -i ~/.ssh/preview_key"
-
-          scp $SSH_OPTS infra/preview/deploy.sh "${PREVIEW_USER}@${PREVIEW_HOST}":/tmp/deploy-preview.sh
-          ssh $SSH_OPTS "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "sudo install -m 755 /tmp/deploy-preview.sh /srv/preview-tools/deploy.sh"
-
       - name: Deploy to preview VM
         id: deploy
         if: steps.action.outputs.action == 'deploy'
@@ -158,11 +141,14 @@ jobs:
           VERCEL_BYPASS_SECRET: ${{ secrets.POLAR_PREVIEW_VERCEL_BYPASS_SECRET }}
         run: |
           set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
+          chmod 600 ~/.ssh/preview_key
           ENV_B64=$(base64 -w0 < /tmp/env.json)
 
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
             "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "sudo /srv/preview-tools/deploy.sh deploy $PR_NUM '$BRANCH' '$SHA' '$ENV_B64' '$VERCEL_BYPASS_SECRET'" \
+            "/srv/preview-tools/deploy.sh deploy $PR_NUM '$BRANCH' '$SHA' '$ENV_B64' '$VERCEL_BYPASS_SECRET'" \
             | tee /tmp/deploy.log
 
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
@@ -183,7 +169,7 @@ jobs:
 
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key \
             "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "sudo /srv/preview-tools/deploy.sh destroy $PR_NUM"
+            "/srv/preview-tools/deploy.sh destroy $PR_NUM"
 
       - name: Teardown preview resources
         if: steps.action.outputs.action == 'destroy'

@@ -30,28 +30,6 @@ PREVIEW_PATH_PREFIX="pr-${PR_NUM}"
 
 log() { echo "[preview:pr-${PR_NUM}] $*"; }
 
-regenerate_caddyfile() {
-    {
-        echo ':80 {'
-        for f in "$CADDY_PREVIEWS_DIR"/*.caddy; do
-            [[ -f "$f" ]] && sed 's/^/\t/' "$f"
-        done
-        echo '}'
-        echo ''
-        echo ':8080 {'
-        cat <<'AUTH'
-	@no_token not header X-Preview-Token {$POLAR_PREVIEW_ACCESS_TOKEN}
-	handle @no_token {
-		respond "Forbidden" 403
-	}
-AUTH
-        for f in "$CADDY_PREVIEWS_DIR"/*.caddy; do
-            [[ -f "$f" ]] && sed 's/^/\t/' "$f"
-        done
-        echo '}'
-    } > /etc/caddy/Caddyfile
-}
-
 deploy() {
     local BRANCH="${3:?Branch required}"
     local SHA="${4:?SHA required}"
@@ -103,23 +81,9 @@ deploy() {
         fi
     fi
 
-    # --- Sync preview tooling from checkout (do this early so service files are up to date) ---
-    local INFRA_SRC="${PREVIEW_DIR}/infra/preview"
-    log "Syncing preview tools from checkout"
-    cp "${INFRA_SRC}/run-preview-backend.sh" "${PREVIEW_DIR}/server/run-preview-backend.sh"
+    # Copy the run script from the pre-installed tools (not from the PR checkout)
+    cp "${PREVIEW_TOOLS_DIR}/run-preview-backend.sh" "${PREVIEW_DIR}/server/run-preview-backend.sh"
     chmod +x "${PREVIEW_DIR}/server/run-preview-backend.sh"
-
-    cp "${INFRA_SRC}/deploy.sh" "${PREVIEW_TOOLS_DIR}/deploy.sh"
-    chmod +x "${PREVIEW_TOOLS_DIR}/deploy.sh"
-
-    cp "${INFRA_SRC}/log-viewer.py" "${PREVIEW_TOOLS_DIR}/log-viewer.py"
-    cp "${INFRA_SRC}/polar-preview-logs.service" /etc/systemd/system/
-
-    cp "${INFRA_SRC}/polar-preview-backend@.service" /etc/systemd/system/
-    cp "${INFRA_SRC}/polar-preview-frontend@.service" /etc/systemd/system/
-    systemctl daemon-reload
-    systemctl enable polar-preview-logs
-    systemctl start polar-preview-logs
 
     # --- Backend dependencies ---
     cd "${PREVIEW_DIR}/server"
@@ -216,7 +180,6 @@ for k, v in json.loads(sys.stdin.read()).items():
 
     # --- Caddy config ---
     log "Configuring Caddy"
-    mkdir -p "$CADDY_PREVIEWS_DIR"
     local VERCEL_PREVIEW_HOST="${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
     sed \
         -e "s/__API_PORT__/${API_PORT}/g" \
@@ -225,22 +188,21 @@ for k, v in json.loads(sys.stdin.read()).items():
         -e "s/__VERCEL_PREVIEW_HOST__/${VERCEL_PREVIEW_HOST}/g" \
         -e "s/__VERCEL_BYPASS_SECRET__/${VERCEL_BYPASS_SECRET}/g" \
         -e "s/__TS_HOSTNAME__/${TS_HOSTNAME}/g" \
-        "${INFRA_SRC}/caddy-preview.template" \
+        "${PREVIEW_TOOLS_DIR}/caddy-preview.template" \
         > "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
 
-    regenerate_caddyfile
-    systemctl reload caddy
+    # Signal the root-owned infra service to regenerate caddy config and restart services.
+    # The deploy user has no sudo — it can only create trigger files.
+    log "Triggering infra update"
+    touch "/srv/preview-triggers/pr-${PR_NUM}.deploy"
 
-    # --- Restart services ---
-    # Backend always restarts (env JSON includes rotated DB password every deploy)
-    log "Restarting services"
-    systemctl enable "polar-preview-backend@${PR_NUM}"
-    systemctl restart "polar-preview-backend@${PR_NUM}"
-    # Frontend disabled — using Vercel preview deployments instead
-    # systemctl enable "polar-preview-frontend@${PR_NUM}"
-    # if [[ "$FRONTEND_CHANGED" == "true" ]]; then
-    #     systemctl restart "polar-preview-frontend@${PR_NUM}"
-    # fi
+    for _i in $(seq 1 30); do
+        [[ ! -f "/srv/preview-triggers/pr-${PR_NUM}.deploy" ]] && break
+        sleep 1
+    done
+    if [[ -f "/srv/preview-triggers/pr-${PR_NUM}.deploy" ]]; then
+        log "Warning: infra trigger not processed within 30s"
+    fi
 
     echo "$SHA" > "${PREVIEW_DIR}/.deployed_sha"
     log "Deployed at ${PREVIEW_URL}"
@@ -249,14 +211,13 @@ for k, v in json.loads(sys.stdin.read()).items():
 destroy() {
     log "Destroying preview"
 
-    systemctl stop "polar-preview-backend@${PR_NUM}" 2>/dev/null || true
-    systemctl stop "polar-preview-frontend@${PR_NUM}" 2>/dev/null || true
-    systemctl disable "polar-preview-backend@${PR_NUM}" 2>/dev/null || true
-    systemctl disable "polar-preview-frontend@${PR_NUM}" 2>/dev/null || true
-
     rm -f "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
-    regenerate_caddyfile
-    systemctl reload caddy 2>/dev/null || true
+
+    touch "/srv/preview-triggers/pr-${PR_NUM}.destroy"
+    for _i in $(seq 1 30); do
+        [[ ! -f "/srv/preview-triggers/pr-${PR_NUM}.destroy" ]] && break
+        sleep 1
+    done
 
     rm -rf "$PREVIEW_DIR"
 

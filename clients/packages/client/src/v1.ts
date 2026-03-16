@@ -33968,6 +33968,8 @@ export interface operations {
         customer_id?: string | null
         /** @description Filter by customer external ID. */
         external_customer_id?: string | null
+        /** @description Filter by member role. */
+        role?: components['schemas']['MemberRole'] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

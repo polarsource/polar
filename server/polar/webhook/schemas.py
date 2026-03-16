@@ -1,3 +1,4 @@
+import ipaddress
 from typing import Annotated
 
 from pydantic import (
@@ -15,6 +16,17 @@ from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 
 LOCALHOST_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
+
+
+def is_blocked_webhook_host(host: str) -> bool:
+    if host.lower() in LOCALHOST_HOSTS:
+        return True
+    clean = host.strip("[]")
+    try:
+        return not ipaddress.ip_address(clean).is_global
+    except ValueError:
+        return False
+
 
 HttpsUrl = Annotated[
     AnyUrl,
@@ -106,8 +118,10 @@ class WebhookEndpointCreate(Schema):
     @field_validator("url", mode="after")
     @classmethod
     def validate_not_localhost(cls, v: AnyUrl) -> AnyUrl:
-        if v.host and v.host.lower() in LOCALHOST_HOSTS:
-            raise ValueError("Webhook URLs cannot point to localhost.")
+        if v.host and is_blocked_webhook_host(v.host):
+            raise ValueError(
+                "Webhook URLs cannot point to localhost or private IP addresses."
+            )
         return v
 
 
@@ -142,8 +156,10 @@ class WebhookEndpointUpdate(Schema):
     @field_validator("url", mode="after")
     @classmethod
     def validate_not_localhost(cls, v: AnyUrl | None) -> AnyUrl | None:
-        if v is not None and v.host and v.host.lower() in LOCALHOST_HOSTS:
-            raise ValueError("Webhook URLs cannot point to localhost.")
+        if v is not None and v.host and is_blocked_webhook_host(v.host):
+            raise ValueError(
+                "Webhook URLs cannot point to localhost or private IP addresses."
+            )
         return v
 
 

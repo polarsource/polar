@@ -24,6 +24,22 @@ type CreateOrUpdate =
   | schemas['WebhookEndpointCreate']
   | schemas['WebhookEndpointUpdate']
 
+const isPrivateIP = (hostname: string): boolean => {
+  const parts = hostname.split('.')
+  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p))) {
+    const [a, b] = parts.map(Number)
+    if (a === 10) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+    if (a === 169 && b === 254) return true
+    if (a === 127) return true
+    if (a === 0) return true
+    if (a === 100 && b >= 64 && b <= 127) return true
+  }
+  if (/^\[?f[cd]/i.test(hostname) || /^\[?fe80/i.test(hostname)) return true
+  return false
+}
+
 export const FieldName = () => {
   const { control } = useFormContext<CreateOrUpdate>()
 
@@ -68,9 +84,18 @@ export const FieldUrl = () => {
           }
           try {
             const url = new URL(value)
-            const localhostHosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]']
-            if (localhostHosts.includes(url.hostname.toLowerCase())) {
-              return 'Webhook URLs cannot point to localhost.'
+            const hostname = url.hostname.toLowerCase()
+            const localhostHosts = [
+              'localhost',
+              '127.0.0.1',
+              '0.0.0.0',
+              '[::1]',
+            ]
+            if (localhostHosts.includes(hostname)) {
+              return 'Webhook URLs cannot point to localhost or private IP addresses.'
+            }
+            if (isPrivateIP(hostname)) {
+              return 'Webhook URLs cannot point to localhost or private IP addresses.'
             }
           } catch {
             return false

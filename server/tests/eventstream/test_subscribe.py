@@ -20,6 +20,7 @@ def _no_uvicorn_exit(mocker: MockerFixture) -> None:
 def _make_request(disconnect_after: int) -> AsyncMock:
     """Create a mock request that disconnects after N iterations."""
     request = AsyncMock()
+    request.scope = {"path": "/endpoint"}
     request.is_disconnected = AsyncMock(side_effect=[False] * disconnect_after + [True])
     return request
 

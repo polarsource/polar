@@ -16,9 +16,8 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from polar.observability.http_metrics import (
     HTTP_REQUEST_DURATION_SECONDS,
     HTTP_REQUEST_TOTAL,
-    METRICS_DENY_LIST,
-    METRICS_EXCLUDED_APPS,
 )
+from polar.observability.utils import get_path_template
 
 
 class HttpMetricsMiddleware:
@@ -31,40 +30,6 @@ class HttpMetricsMiddleware:
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
-
-    def _get_path_template(self, scope: Scope) -> str | None:
-        """
-        Get the normalized path template for metrics labeling.
-
-        Primary: Uses scope["route"].path set by FastAPI after routing.
-        Fallback: Regex normalization for 404s/unmatched routes.
-
-        Returns None for deny-listed paths or excluded apps (no metrics recorded).
-        """
-        # Check if app is excluded (e.g., backoffice)
-        app = scope.get("app")
-        if app is not None and app in METRICS_EXCLUDED_APPS:
-            return None
-
-        path = scope.get("path", "")
-
-        # Check deny list (exact match and prefix)
-        if path in METRICS_DENY_LIST:
-            return None
-        for denied in METRICS_DENY_LIST:
-            if path.startswith(denied):
-                return None
-
-        # Primary: Use FastAPI's route object (most reliable)
-        # This is populated after routing completes, which is why we
-        # call this in the finally block after the request
-        route = scope.get("route")
-        if route and hasattr(route, "path"):
-            return route.path  # e.g., "/v1/checkouts/{id}"
-
-        # No route matched (404 on unknown path) - skip metrics
-        # to prevent cardinality explosion from bots/attackers
-        return None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -84,7 +49,7 @@ class HttpMetricsMiddleware:
             await self.app(scope, receive, send_wrapper)
         finally:
             # Route is now populated by FastAPI (after routing completed)
-            path_template = self._get_path_template(scope)
+            path_template = get_path_template(scope)
             if path_template is not None:  # None means deny-listed
                 duration = time.perf_counter() - start_time
                 method = scope.get("method", "UNKNOWN")

@@ -85,6 +85,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Fino al {date}',
       },
     },
     trial: {

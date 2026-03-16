@@ -59,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: "Jusqu'au {date}",
       },
       everyInterval: {
         day: {

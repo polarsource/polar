@@ -128,6 +128,14 @@ const BaseCheckoutForm = ({
       if (name === 'customer_billing_address.country') {
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
+          resetField('customer_billing_address.state', { defaultValue: '' })
+          resetField('customer_billing_address.postal_code', {
+            defaultValue: '',
+          })
+          resetField('customer_billing_address.city', { defaultValue: '' })
+          resetField('customer_billing_address.line1', { defaultValue: '' })
+          resetField('customer_billing_address.line2', { defaultValue: '' })
+          clearErrors('customer_billing_address')
           payload = {
             ...payload,
             customer_billing_address: {
@@ -136,7 +144,7 @@ const BaseCheckoutForm = ({
           }
         }
         // Update other address fields
-      } else if (name.startsWith('customerBillingAddress')) {
+      } else if (name.startsWith('customer_billing_address')) {
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
           payload = {
@@ -160,7 +168,7 @@ const BaseCheckoutForm = ({
         /* API errors handled by provider */
       }
     },
-    [clearErrors, update],
+    [clearErrors, resetField, update],
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 

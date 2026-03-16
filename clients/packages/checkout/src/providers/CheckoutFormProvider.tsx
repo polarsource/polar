@@ -83,7 +83,6 @@ export const CheckoutFormProvider = ({
         if (error) {
           switch (error.error) {
             case 'PolarRequestValidationError':
-              console.log('validation error', { error })
               setValidationErrors(error.detail, setError)
               break
             case 'AlreadyActiveSubscriptionError':

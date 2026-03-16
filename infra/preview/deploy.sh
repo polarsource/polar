@@ -83,9 +83,14 @@ deploy() {
     cp "${INFRA_SRC}/deploy.sh" "${PREVIEW_TOOLS_DIR}/deploy.sh"
     chmod +x "${PREVIEW_TOOLS_DIR}/deploy.sh"
 
+    cp "${INFRA_SRC}/log-viewer.py" "${PREVIEW_TOOLS_DIR}/log-viewer.py"
+    cp "${INFRA_SRC}/polar-preview-logs.service" /etc/systemd/system/
+
     cp "${INFRA_SRC}/polar-preview-backend@.service" /etc/systemd/system/
     cp "${INFRA_SRC}/polar-preview-frontend@.service" /etc/systemd/system/
     systemctl daemon-reload
+    systemctl enable polar-preview-logs
+    systemctl start polar-preview-logs
 
     # --- Backend dependencies ---
     cd "${PREVIEW_DIR}/server"
@@ -179,6 +184,7 @@ DOTENV
         -e "s/__FRONTEND_PORT__/${FRONTEND_PORT}/g" \
         -e "s/__FRONTEND_LOCAL_PORT__/${FRONTEND_LOCAL_PORT}/g" \
         -e "s/__API_PORT__/${API_PORT}/g" \
+        -e "s/__PR_NUM__/${PR_NUM}/g" \
         "${INFRA_SRC}/caddy-preview.template" \
         > "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
 

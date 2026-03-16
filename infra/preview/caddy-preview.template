@@ -8,6 +8,10 @@ https://__TS_HOSTNAME__:__FRONTEND_PORT__ {
 	handle /healthz {
 		reverse_proxy 127.0.0.1:__API_PORT__
 	}
+	handle_path /_logs/* {
+		rewrite * /pr-__PR_NUM__{path}
+		reverse_proxy 127.0.0.1:9999
+	}
 	handle {
 		reverse_proxy 127.0.0.1:__FRONTEND_LOCAL_PORT__
 	}

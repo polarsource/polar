@@ -192,6 +192,26 @@ class UserService:
             },
         )
 
+    async def get_identity_verified_country(self, user: User) -> str | None:
+        if user.identity_verification_id is None:
+            return None
+        try:
+            vs = await stripe_service.get_verification_session(
+                user.identity_verification_id,
+                expand=["verified_outputs"],
+            )
+            verified_outputs = getattr(vs, "verified_outputs", None)
+            if verified_outputs:
+                address = getattr(verified_outputs, "address", None)
+                if address:
+                    return address.country
+        except stripe_lib.StripeError:
+            log.warning(
+                "get_identity_verified_country.fetch_failed",
+                identity_verification_id=user.identity_verification_id,
+            )
+        return None
+
     async def delete_identity_verification(
         self, session: AsyncSession, user: User
     ) -> User:

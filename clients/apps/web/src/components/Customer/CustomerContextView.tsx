@@ -39,8 +39,28 @@ export const CustomerContextView = ({
   >(null)
   const createCustomerSession = useCallback(async () => {
     setCustomerSessionLoading(true)
+
+    let memberId: string | undefined
+    if (customer.type === 'team') {
+      const { data: membersData } = await api.GET('/v1/members/', {
+        params: {
+          query: { customer_id: customer.id, role: 'owner', limit: 1 },
+        },
+      })
+      const ownerMember = membersData?.items?.[0]
+      if (!ownerMember) {
+        setCustomerSessionLoading(false)
+        setCustomerSessionError('No owner member found for this team customer.')
+        return
+      }
+      memberId = ownerMember.id
+    }
+
     const { data: session, error } = await api.POST('/v1/customer-sessions/', {
-      body: { customer_id: customer.id },
+      body: {
+        customer_id: customer.id,
+        ...(memberId ? { member_id: memberId } : {}),
+      },
     })
     setCustomerSessionLoading(false)
     if (error) {

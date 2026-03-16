@@ -5,7 +5,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
@@ -29,7 +29,7 @@ const CheckoutSeatSelector = ({
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [autoCorrectAttempted, setAutoCorrectAttempted] = useState(false)
+  const autoCorrectAttempted = useRef(false)
 
   const getErrorMessage = (
     error: ErrorResponse<'checkouts:client_update'> | null,
@@ -45,13 +45,9 @@ const CheckoutSeatSelector = ({
   const productPrice = checkout.product_price
   const isSeatBased = productPrice.amount_type === 'seat_based'
 
-  if (!isSeatBased) {
-    return null
-  }
-
   // Get seat limits from the tiers
   // The minimum comes from the first tier's min_seats, maximum from the last tier's max_seats
-  const seatTiers = productPrice.seat_tiers
+  const seatTiers = isSeatBased ? productPrice.seat_tiers : null
   const tiers = seatTiers?.tiers ?? []
   const sortedTiers = [...tiers].sort((a, b) => a.min_seats - b.min_seats)
   const tierMinimumSeats = sortedTiers[0]?.min_seats ?? 1
@@ -71,18 +67,19 @@ const CheckoutSeatSelector = ({
     checkout.seats < minimumSeats
 
   const netAmount = checkout.net_amount || 0
-  const currency = productPrice.price_currency
+  const currency = checkout.currency ?? 'usd'
   const pricePerSeat = checkout.price_per_seat || 0
 
   // Auto-correct seat count if it's below the minimum (only attempt once)
   useEffect(() => {
     if (
+      isSeatBased &&
       needsSeatCorrection &&
       !isFixedSeats &&
       !isUpdating &&
-      !autoCorrectAttempted
+      !autoCorrectAttempted.current
     ) {
-      setAutoCorrectAttempted(true)
+      autoCorrectAttempted.current = true
 
       update({
         seats: minimumSeats,
@@ -91,13 +88,17 @@ const CheckoutSeatSelector = ({
       })
     }
   }, [
+    isSeatBased,
     needsSeatCorrection,
     isFixedSeats,
     minimumSeats,
     isUpdating,
     update,
-    autoCorrectAttempted,
   ])
+
+  if (!isSeatBased) {
+    return null
+  }
 
   const handleUpdateSeats = async (newSeats: number) => {
     if (newSeats < minimumSeats || isUpdating) return

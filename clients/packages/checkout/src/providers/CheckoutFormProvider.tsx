@@ -41,7 +41,7 @@ export interface CheckoutFormContextProps {
   isUpdatePending: boolean
 }
 
-// @ts-expect-error
+// @ts-expect-error - Allow to throw an error if the context is used without a provider
 export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 
 export const CheckoutFormProvider = ({
@@ -135,7 +135,7 @@ export const CheckoutFormProvider = ({
 
       throw error
     },
-    [confirmOuter, setError],
+    [confirmOuter, setError, update],
   )
 
   const confirm = useCallback(
@@ -151,8 +151,6 @@ export const CheckoutFormProvider = ({
         try {
           const checkoutConfirmed = await _confirm(data)
           return checkoutConfirmed
-        } catch (error) {
-          throw error
         } finally {
           setLoading(false)
         }

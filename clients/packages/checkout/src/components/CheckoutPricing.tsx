@@ -1,6 +1,5 @@
 'use client'
 
-import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 
@@ -80,22 +79,16 @@ const CheckoutProductAmountLabel = ({
 
 interface CheckoutPricingProps {
   checkout: ProductCheckoutPublic
-  update?: (
-    data: schemas['CheckoutUpdatePublic'],
-  ) => Promise<schemas['CheckoutPublic']>
-  disabled?: boolean
   layout?: 'default' | 'stacked'
   locale?: AcceptedLocale
 }
 
 const CheckoutPricing = ({
   checkout,
-  update,
-  disabled,
   layout = 'default',
   locale,
 }: CheckoutPricingProps) => {
-  const { product_price, amount } = checkout
+  const { product_price } = checkout
 
   return (
     <div className="flex flex-col gap-6">

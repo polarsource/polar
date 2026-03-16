@@ -219,6 +219,7 @@ describe('CheckoutPricingBreakdown', () => {
           code: null,
           amount: 500,
           currency: 'usd',
+          amounts: { usd: 500 },
         } satisfies schemas['CheckoutPublic']['discount'],
       })
 

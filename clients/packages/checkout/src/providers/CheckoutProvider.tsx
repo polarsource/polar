@@ -209,7 +209,6 @@ export const CheckoutProvider = ({
       .then((result) => {
         if (result.ok) {
           setCheckout(result.value)
-        } else {
         }
       })
       .catch((error) => {

@@ -64,7 +64,9 @@ const XIcon = ({ className }: { className?: string }) => {
 interface BaseCheckoutFormProps {
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>
   checkout: schemas['CheckoutPublic']
-  confirm: (data: any) => Promise<schemas['CheckoutPublicConfirmed']>
+  confirm: (
+    data: schemas['CheckoutConfirmStripe'],
+  ) => Promise<schemas['CheckoutPublicConfirmed']>
   update: (
     data: schemas['CheckoutUpdatePublic'],
   ) => Promise<schemas['CheckoutPublic']>
@@ -72,7 +74,6 @@ interface BaseCheckoutFormProps {
   loadingLabel: string | undefined
   disabled?: boolean
   isUpdatePending?: boolean
-  themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   isWalletPayment?: boolean
   beforeSubmit?: React.ReactNode
@@ -88,7 +89,6 @@ const BaseCheckoutForm = ({
   disabled,
   isUpdatePending,
   children,
-  themePreset: themePresetProps,
   locale: localeProp,
   isWalletPayment,
   beforeSubmit,
@@ -104,7 +104,6 @@ const BaseCheckoutForm = ({
     watch,
     clearErrors,
     resetField,
-    setValue,
     formState: { errors },
   } = form
 
@@ -157,7 +156,9 @@ const BaseCheckoutForm = ({
 
       try {
         await update(payload)
-      } catch {}
+      } catch {
+        /* API errors handled by provider */
+      }
     },
     [clearErrors, update],
   )
@@ -175,7 +176,9 @@ const BaseCheckoutForm = ({
     async (isBusinessCustomer: boolean) => {
       try {
         await update({ is_business_customer: isBusinessCustomer })
-      } catch {}
+      } catch {
+        /* API errors handled by provider */
+      }
     },
     [update],
   )
@@ -193,14 +196,18 @@ const BaseCheckoutForm = ({
     clearErrors('customer_tax_id')
     try {
       await update({ customer_tax_id: taxId })
-    } catch {}
+    } catch {
+      /* API errors handled by provider */
+    }
   }, [update, taxId, clearErrors])
   const clearTaxId = useCallback(async () => {
     clearErrors('customer_tax_id')
     try {
       await update({ customer_tax_id: null })
       resetField('customer_tax_id')
-    } catch {}
+    } catch {
+      /* API errors handled by provider */
+    }
   }, [update, clearErrors, resetField])
 
   const onSubmit = async (data: schemas['CheckoutUpdatePublic']) => {
@@ -208,7 +215,7 @@ const BaseCheckoutForm = ({
     const cleanedFieldData = data.custom_field_data
       ? Object.fromEntries(
           Object.entries(data.custom_field_data).filter(
-            ([_, value]) => value !== undefined && value !== null,
+            ([, value]) => value !== undefined && value !== null,
           ),
         )
       : {}
@@ -224,7 +231,7 @@ const BaseCheckoutForm = ({
     await confirm({
       ...data,
       locale: localeProp,
-      customFieldData: cleanedFieldData,
+      custom_field_data: cleanedFieldData,
     })
   }
 
@@ -645,7 +652,6 @@ const BaseCheckoutForm = ({
                           customField={custom_field}
                           required={required}
                           field={field}
-                          themePreset={themePresetProps}
                         />
                       )}
                     />
@@ -704,6 +710,7 @@ const BaseCheckoutForm = ({
         href="https://polar.sh?utm_source=checkout"
         className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
         target="_blank"
+        rel="noreferrer"
       >
         <span>{t('checkout.footer.poweredBy')}</span>
         <PolarLogo className="h-5" />
@@ -734,17 +741,7 @@ interface CheckoutFormProps {
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
-  const {
-    checkout,
-    update,
-    confirm,
-    loading,
-    loadingLabel,
-    disabled,
-    isUpdatePending,
-    themePreset: themePresetProps,
-    locale,
-  } = props
+  const { checkout, confirm, themePreset: themePresetProps, locale } = props
   const {
     payment_processor_metadata: { publishable_key },
   } = checkout
@@ -816,10 +813,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             {...props}
             checkout={checkout}
             confirm={(data) => confirm(data, stripe, elements)}
-            update={update}
-            loading={loading}
-            loadingLabel={loadingLabel}
-            isUpdatePending={isUpdatePending}
             isWalletPayment={isWalletPayment}
           >
             {checkout.is_payment_form_required && (

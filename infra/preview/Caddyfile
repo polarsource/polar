@@ -1,1 +1,2 @@
-import /etc/caddy/previews/*.caddy
+:80 {
+}

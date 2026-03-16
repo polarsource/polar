@@ -24,12 +24,21 @@ ACTION="${1:?Usage: deploy.sh <deploy|destroy> <pr_num> ...}"
 PR_NUM="${2:?PR number required}"
 
 API_PORT=$((10000 + PR_NUM))
-FRONTEND_PORT=$((20000 + PR_NUM))
-FRONTEND_LOCAL_PORT=$((30000 + PR_NUM))
 REDIS_PORT=$((16000 + PR_NUM))
 PREVIEW_DIR="${PREVIEW_BASE}/pr-${PR_NUM}"
+PREVIEW_PATH_PREFIX="pr-${PR_NUM}"
 
 log() { echo "[preview:pr-${PR_NUM}] $*"; }
+
+regenerate_caddyfile() {
+    {
+        echo ':80 {'
+        for f in "$CADDY_PREVIEWS_DIR"/*.caddy; do
+            [[ -f "$f" ]] && sed 's/^/\t/' "$f"
+        done
+        echo '}'
+    } > /etc/caddy/Caddyfile
+}
 
 deploy() {
     local BRANCH="${3:?Branch required}"
@@ -112,15 +121,16 @@ deploy() {
 
     # --- Backend .env (must be written before migrations) ---
     log "Writing backend .env"
-    local PREVIEW_URL="https://${TS_HOSTNAME}:${FRONTEND_PORT}"
+    local PREVIEW_URL="https://${TS_HOSTNAME}/${PREVIEW_PATH_PREFIX}"
     cat > "${PREVIEW_DIR}/server/.env" <<DOTENV
 POLAR_ENV=development
 POLAR_BASE_URL=${PREVIEW_URL}
 POLAR_FRONTEND_BASE_URL=${PREVIEW_URL}
-POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}","${TS_HOSTNAME}:${FRONTEND_PORT}"]
+POLAR_ALLOWED_HOSTS=["${TS_HOSTNAME}"]
 POLAR_CORS_ORIGINS=["${PREVIEW_URL}","${VERCEL_PREVIEW_URL}"]
 POLAR_CHECKOUT_BASE_URL=${PREVIEW_URL}/v1/checkout-links/{client_secret}/redirect
 POLAR_USER_SESSION_COOKIE_DOMAIN=${TS_HOSTNAME}
+POLAR_USER_SESSION_COOKIE_KEY=polar_sandbox_session
 
 POLAR_PREVIEW_API_PORT=${API_PORT}
 POLAR_REDIS_HOST=127.0.0.1
@@ -189,17 +199,16 @@ for k, v in json.loads(sys.stdin.read()).items():
     mkdir -p "$CADDY_PREVIEWS_DIR"
     local VERCEL_PREVIEW_HOST="${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
     sed \
-        -e "s/__TS_HOSTNAME__/${TS_HOSTNAME}/g" \
-        -e "s/__FRONTEND_PORT__/${FRONTEND_PORT}/g" \
-        -e "s/__FRONTEND_LOCAL_PORT__/${FRONTEND_LOCAL_PORT}/g" \
         -e "s/__API_PORT__/${API_PORT}/g" \
         -e "s/__PR_NUM__/${PR_NUM}/g" \
         -e "s|__VERCEL_PREVIEW_URL__|https://${VERCEL_PREVIEW_HOST}|g" \
         -e "s/__VERCEL_PREVIEW_HOST__/${VERCEL_PREVIEW_HOST}/g" \
         -e "s/__VERCEL_BYPASS_SECRET__/${VERCEL_BYPASS_SECRET}/g" \
+        -e "s/__TS_HOSTNAME__/${TS_HOSTNAME}/g" \
         "${INFRA_SRC}/caddy-preview.template" \
         > "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
 
+    regenerate_caddyfile
     systemctl reload caddy
 
     # --- Restart services ---
@@ -226,6 +235,7 @@ destroy() {
     systemctl disable "polar-preview-frontend@${PR_NUM}" 2>/dev/null || true
 
     rm -f "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
+    regenerate_caddyfile
     systemctl reload caddy 2>/dev/null || true
 
     rm -rf "$PREVIEW_DIR"

@@ -5,7 +5,7 @@ import MeteredPriceLabel from './MeteredPriceLabel'
 
 describe('MeteredPriceLabel', () => {
   it('renders unit amount with "/ unit" suffix', () => {
-    const price = createMeteredPrice({ unitAmount: '500' })
+    const price = createMeteredPrice({ unit_amount: '500' })
 
     const { container } = render(
       <MeteredPriceLabel price={price} locale="en" />,
@@ -16,7 +16,7 @@ describe('MeteredPriceLabel', () => {
   })
 
   it('renders fractional unit amount', () => {
-    const price = createMeteredPrice({ unitAmount: '0.05' })
+    const price = createMeteredPrice({ unit_amount: '0.05' })
 
     const { container } = render(
       <MeteredPriceLabel price={price} locale="en" />,
@@ -27,7 +27,7 @@ describe('MeteredPriceLabel', () => {
   })
 
   it('renders sub-cent amount', () => {
-    const price = createMeteredPrice({ unitAmount: '0.005' })
+    const price = createMeteredPrice({ unit_amount: '0.005' })
 
     const { container } = render(
       <MeteredPriceLabel price={price} locale="en" />,
@@ -39,8 +39,8 @@ describe('MeteredPriceLabel', () => {
 
   it('renders with different currency', () => {
     const price = createMeteredPrice({
-      unitAmount: '10',
-      priceCurrency: 'eur',
+      unit_amount: '10',
+      price_currency: 'eur',
     })
 
     const { container } = render(
@@ -52,7 +52,7 @@ describe('MeteredPriceLabel', () => {
   })
 
   it('renders zero unit amount', () => {
-    const price = createMeteredPrice({ unitAmount: '0' })
+    const price = createMeteredPrice({ unit_amount: '0' })
 
     const { container } = render(
       <MeteredPriceLabel price={price} locale="en" />,

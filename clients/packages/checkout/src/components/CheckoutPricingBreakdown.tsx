@@ -53,7 +53,7 @@ function formatShortDate(date: Date, locale: AcceptedLocale): string {
 }
 
 function getDiscountEndDate(
-  trialEnd: string,
+  trialEnd: Date,
   discount: NonNullable<schemas['CheckoutPublic']['discount']>,
   interval: string | null,
   intervalCount: number | null,

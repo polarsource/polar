@@ -1,4 +1,5 @@
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import type { schemas } from '@polar-sh/client'
+import type { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { render, screen } from '@testing-library/react'
 import { useForm } from 'react-hook-form'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -10,6 +11,7 @@ beforeAll(() => {
     observe() {}
     unobserve() {}
     disconnect() {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
 })
 
@@ -17,8 +19,8 @@ function FormWrapper({
   checkout,
   ...props
 }: Omit<Parameters<typeof CheckoutForm>[0], 'form'>) {
-  const form = useForm<CheckoutUpdatePublic>({
-    defaultValues: { customerEmail: '' },
+  const form = useForm<schemas['CheckoutUpdatePublic']>({
+    defaultValues: { customer_email: '' },
   })
   return <CheckoutForm form={form} checkout={checkout} {...props} />
 }
@@ -28,44 +30,45 @@ const defaultProps = {
   confirm: vi.fn(async () => ({
     ...createCheckout(),
     status: 'confirmed' as const,
-    customerSessionToken: '',
+    customer_session_token: '',
   })),
   loading: false,
   loadingLabel: undefined,
-  themePreset: {} as any,
+  themePreset: {} as ThemingPresetProps,
 }
 
 const recurringProduct = {
   id: 'prod_1',
   name: 'Test',
-  recurringInterval: 'month' as const,
-  recurringIntervalCount: null,
-  isRecurring: true,
-  trialInterval: null,
-  trialIntervalCount: null,
+  recurring_interval: 'month' as const,
+  recurring_interval_count: null,
+  is_recurring: true,
+  trial_interval: null,
+  trial_interval_count: null,
   visibility: 'public' as const,
   prices: [],
   benefits: [],
   medias: [],
   description: null,
-  isArchived: false,
-  organizationId: 'org_1',
-  createdAt: new Date(),
-  modifiedAt: null,
+  is_archived: false,
+  organization_id: 'org_1',
+  created_at: new Date().toISOString(),
+  modified_at: null,
 }
 
 describe('CheckoutForm', () => {
   describe('CTA button label', () => {
     it('shows "Start trial" when trial is active', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        isPaymentFormRequired: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        is_payment_form_required: true,
         product: {
           ...recurringProduct,
-          trialInterval: 'month',
-          trialIntervalCount: 1,
+          trial_interval: 'month',
+          trial_interval_count: 1,
         },
       })
 
@@ -78,8 +81,9 @@ describe('CheckoutForm', () => {
 
     it('shows "Subscribe now" for recurring paid product', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: true,
         product: recurringProduct,
       })
 
@@ -92,8 +96,9 @@ describe('CheckoutForm', () => {
 
     it('shows "Pay now" for one-time paid product', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: true,
       })
 
       render(<FormWrapper checkout={checkout} {...defaultProps} locale="en" />)
@@ -105,13 +110,14 @@ describe('CheckoutForm', () => {
 
     it('shows "Get for free" when payment is not required', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: false,
-        isPaymentRequired: false,
-        isFreeProductPrice: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: false,
+        is_payment_required: false,
+        is_free_product_price: true,
         amount: 0,
-        totalAmount: 0,
-        netAmount: 0,
+        total_amount: 0,
+        net_amount: 0,
       })
 
       render(<FormWrapper checkout={checkout} {...defaultProps} locale="en" />)
@@ -125,10 +131,11 @@ describe('CheckoutForm', () => {
   describe('footer mandate text', () => {
     it('shows trial mandate for trial checkout', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: true,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: true,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
       })
 
       render(<FormWrapper checkout={checkout} {...defaultProps} locale="en" />)
@@ -140,8 +147,9 @@ describe('CheckoutForm', () => {
 
     it('shows subscription mandate for recurring product', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: true,
         product: recurringProduct,
       })
 
@@ -154,8 +162,9 @@ describe('CheckoutForm', () => {
 
     it('shows one-time mandate for one-time product', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: true,
       })
 
       render(<FormWrapper checkout={checkout} {...defaultProps} locale="en" />)
@@ -165,13 +174,14 @@ describe('CheckoutForm', () => {
 
     it('shows merchant of record text for free product', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
-        isPaymentFormRequired: false,
-        isPaymentRequired: false,
-        isFreeProductPrice: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+        is_payment_form_required: false,
+        is_payment_required: false,
+        is_free_product_price: true,
         amount: 0,
-        totalAmount: 0,
-        netAmount: 0,
+        total_amount: 0,
+        net_amount: 0,
       })
 
       render(<FormWrapper checkout={checkout} {...defaultProps} locale="en" />)
@@ -185,7 +195,8 @@ describe('CheckoutForm', () => {
   describe('disabled state', () => {
     it('disables the submit button when disabled prop is true', () => {
       const checkout = createCheckout({
-        paymentProcessor: 'dummy' as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
       })
 
       render(

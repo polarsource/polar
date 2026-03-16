@@ -15,7 +15,7 @@ function renderPWYW(
 ) {
   const update = vi.fn()
   const productPrice = createCustomPrice({
-    minimumAmount: overrides.minimumAmount ?? 500,
+    minimum_amount: overrides.minimumAmount ?? 500,
   })
   const checkout = createBaseCheckout({
     amount: overrides.amount ?? 1500,

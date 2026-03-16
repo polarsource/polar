@@ -376,18 +376,18 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "Total when discount expires" for once discount on yearly', () => {
       const checkout = createCheckout({
         amount: 9999,
-        discountAmount: 5000,
-        netAmount: 4999,
-        taxAmount: null,
-        totalAmount: 4999,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        discount_amount: 5000,
+        net_amount: 4999,
+        tax_amount: null,
+        total_amount: 4999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
         product: {
           ...createCheckout().product,
-          recurringInterval: 'year',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'year',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
         discount: {
           id: 'disc_1',
@@ -395,8 +395,8 @@ describe('CheckoutPricingBreakdown', () => {
           type: 'percentage',
           duration: 'once',
           code: null,
-          basisPoints: 5000,
-        } as CheckoutPublic['discount'],
+          basis_points: 5000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -409,28 +409,28 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows "Total when discount expires" for repeating discount with durationInMonths', () => {
       const checkout = createCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: null,
-        totalAmount: 1600,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
         discount: {
           id: 'disc_1',
           name: '20% off',
           type: 'percentage',
           duration: 'repeating',
-          durationInMonths: 3,
+          duration_in_months: 3,
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -443,18 +443,18 @@ describe('CheckoutPricingBreakdown', () => {
     it('does not show "Total when discount expires" for forever discount', () => {
       const checkout = createCheckout({
         amount: 2000,
-        discountAmount: 400,
-        netAmount: 1600,
-        taxAmount: null,
-        totalAmount: 1600,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
         discount: {
           id: 'disc_1',
@@ -462,8 +462,8 @@ describe('CheckoutPricingBreakdown', () => {
           type: 'percentage',
           duration: 'forever',
           code: null,
-          basisPoints: 2000,
-        } as CheckoutPublic['discount'],
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
       })
 
       render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
@@ -478,12 +478,12 @@ describe('CheckoutPricingBreakdown', () => {
       const currentYear = new Date().getFullYear()
       const checkout = createBaseCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd: new Date(`${currentYear}-06-15T00:00:00Z`),
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date(`${currentYear}-06-15T00:00:00Z`).toISOString(),
       })
 
       const { container } = render(
@@ -497,12 +497,12 @@ describe('CheckoutPricingBreakdown', () => {
     it('shows date with year when trial ends in a different year', () => {
       const checkout = createBaseCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd: new Date('2028-01-10T00:00:00Z'),
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2028-01-10T00:00:00Z').toISOString(),
       })
 
       const { container } = render(
@@ -516,17 +516,17 @@ describe('CheckoutPricingBreakdown', () => {
     it('hides the regular total row when trial is active', () => {
       const checkout = createCheckout({
         amount: 999,
-        netAmount: 999,
-        taxAmount: null,
-        totalAmount: 999,
-        activeTrialInterval: 'month',
-        activeTrialIntervalCount: 1,
-        trialEnd: new Date('2026-04-05T00:00:00Z'),
+        net_amount: 999,
+        tax_amount: null,
+        total_amount: 999,
+        active_trial_interval: 'month',
+        active_trial_interval_count: 1,
+        trial_end: new Date('2026-04-05T00:00:00Z').toISOString(),
         product: {
           ...createCheckout().product,
-          recurringInterval: 'month',
-          recurringIntervalCount: 1,
-          isRecurring: true,
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          is_recurring: true,
         },
       })
 

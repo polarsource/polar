@@ -5,7 +5,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.discount.repository import DiscountRepository
@@ -109,9 +109,13 @@ class DiscountService(ResourceServiceReader[Discount]):
             session, auth_subject, discount_create
         )
 
+        repository = DiscountRepository.from_session(session)
+
         if discount_create.code is not None:
-            existing_discount = await self.get_by_code_and_organization(
-                session, discount_create.code, organization, redeemable=False
+            existing_discount = (
+                await repository.get_by_code_and_organization_for_update(
+                    discount_create.code, organization.id
+                )
             )
             if existing_discount is not None:
                 raise PolarRequestValidationError(
@@ -168,8 +172,21 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        repository = DiscountRepository.from_session(session)
-        return await repository.create(discount)
+        try:
+            return await repository.create(discount)
+        except IntegrityError as e:
+            if "ix_discounts_code_uniqueness" in str(e):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "code"),
+                            "msg": "Discount with this code already exists.",
+                            "input": discount_create.code,
+                        }
+                    ]
+                ) from e
+            raise
 
     async def update(
         self,

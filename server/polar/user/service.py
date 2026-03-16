@@ -198,13 +198,22 @@ class UserService:
         try:
             vs = await stripe_service.get_verification_session(
                 user.identity_verification_id,
-                expand=["verified_outputs"],
+                expand=["verified_outputs", "last_verification_report"],
             )
+            # Try verified address country first
             verified_outputs = getattr(vs, "verified_outputs", None)
             if verified_outputs:
                 address = getattr(verified_outputs, "address", None)
-                if address:
+                if address and address.country:
                     return address.country
+            # Fall back to document issuing country from the verification report
+            report = getattr(vs, "last_verification_report", None)
+            if report:
+                document = getattr(report, "document", None)
+                if document:
+                    issuing_country = getattr(document, "issuing_country", None)
+                    if issuing_country:
+                        return issuing_country
         except stripe_lib.StripeError:
             log.warning(
                 "get_identity_verified_country.fetch_failed",

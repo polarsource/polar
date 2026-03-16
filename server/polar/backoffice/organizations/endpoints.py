@@ -1859,6 +1859,21 @@ async def get(
                                 text(
                                     organization.details.get("product_description", "—")
                                 )
+                        if organization.details.get("intended_use"):
+                            with accordion.item(a, "Intended Use"):
+                                with tag.p(classes="whitespace-pre-line"):
+                                    text(organization.details.get("intended_use", "—"))
+                        if organization.details.get("customer_acquisition"):
+                            with accordion.item(a, "Acquisition"):
+                                with tag.ul(classes="list-disc list-inside"):
+                                    for acquisition in organization.details.get(
+                                        "customer_acquisition", []
+                                    ):
+                                        with tag.li():
+                                            text(acquisition)
+                        if organization.details.get("future_annual_revenue"):
+                            with accordion.item(a, "Expected annual revenue"):
+                                text(format_currency(organization.details["future_annual_revenue"], "usd"))
                         if organization.details.get("switching"):
                                 with accordion.item(a, "Switching from"):
                                     text(

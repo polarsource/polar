@@ -34,12 +34,13 @@ _VERDICT_MAP = {
     "NEEDS_HUMAN_REVIEW": "FAIL",
 }
 
-# Asymmetric weights: false negatives (letting bad orgs through) are more
-# dangerous than false positives (blocking good orgs), but false positives
-# are the current main problem (77 threshold overrides).
-WEIGHT_VERDICT_MATCH = 0.40
-WEIGHT_NOT_FALSE_NEGATIVE = 0.35
-WEIGHT_NOT_FALSE_POSITIVE = 0.25
+# Asymmetric weights: the most dangerous error is the AI approving an org
+# that a human would deny (letting a bad actor through). This is weighted
+# heavily. The reverse (AI denying a legit org) is annoying but safe since
+# denied cases always get human review.
+WEIGHT_VERDICT_MATCH = 0.30
+WEIGHT_NOT_FALSE_NEGATIVE = 0.55  # AI approves, human denies — CRITICAL
+WEIGHT_NOT_FALSE_POSITIVE = 0.15  # AI denies, human approves — safe, less important
 
 
 # ---------------------------------------------------------------------------
@@ -461,11 +462,15 @@ async def run_optimization(
             "Optimize the compliance review system prompt for a Merchant of Record "
             "platform. The prompt instructs an LLM to review organizations applying "
             "to sell digital products.\n\n"
-            "KEY PROBLEM: The current prompt produces too many false positives — it "
-            "denies legitimate businesses (template sellers, AI tools, content "
-            "creation SaaS) that human reviewers later approve.\n\n"
+            "HIGHEST PRIORITY: Never approve an organization that should be denied. "
+            "When the AI approves a bad actor (marketplace, financial trading, dating, "
+            "gambling, crypto, physical goods), that is the most dangerous and costly "
+            "error — it lets a risky org onto the platform. This MUST be minimized "
+            "above all else.\n\n"
+            "SECONDARY: Reduce false denials of legitimate businesses (template "
+            "sellers, AI tools, content creation SaaS, digital education). These are "
+            "annoying but safe since denied cases always get human review.\n\n"
             "CONSTRAINTS:\n"
-            "- Must NOT increase false negatives (letting risky orgs through)\n"
             "- Must maintain clear DENY for: marketplaces, financial advisory, "
             "dating, physical goods, gambling, crypto trading\n"
             "- Must correctly APPROVE: template/asset sellers, AI-powered SaaS, "

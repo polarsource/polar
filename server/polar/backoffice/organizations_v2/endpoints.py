@@ -64,6 +64,7 @@ from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import ReviewAgentReport
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
 from ..components import button, modal
@@ -611,7 +612,14 @@ async def get_organization_detail(
             elif section == "team":
                 # Get admin user for the organization
                 admin_user = await repository.get_admin_user(session, organization)
-                team_section = TeamSection(organization, admin_user)
+                identity_country = None
+                if admin_user:
+                    identity_country = await user_service.get_identity_verified_country(
+                        admin_user
+                    )
+                team_section = TeamSection(
+                    organization, admin_user, identity_country=identity_country
+                )
                 with team_section.render(request):
                     pass
             elif section == "account":

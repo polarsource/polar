@@ -65,6 +65,10 @@ The following thresholds need human review:
 If thare are any monthly products above $1000 USD, mark this as a high risk if the organization
 is new and has no prior payment history.
 
+Note: older reviews may contain a separate "prior_history" dimension — this has been \
+merged into IDENTITY_TRUST. Do NOT output a "prior_history" dimension; assess prior \
+history under IDENTITY_TRUST instead.
+
 ### 5. Setup Readiness (optional — only when setup/integration data is available)
 Evaluate whether the organization is properly set up to sell and deliver products. \
 An organization is considered ready to sell if ANY of these conditions is met:

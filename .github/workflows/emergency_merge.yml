@@ -46,6 +46,7 @@ jobs:
       - name: Merge PR
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.EMERGENCY_MERGE_TOKEN }}
           script: |
             const prNumber = context.payload.issue.number;
 

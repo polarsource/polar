@@ -3,12 +3,12 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import delete, func, update
+from sqlalchemy import func, update
 
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion
-from polar.models import NotificationRecipient, OAuthAccount, User
+from polar.models import NotificationRecipient, User
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -328,32 +328,20 @@ class UserService:
         if user.meta:
             update_dict["meta"] = {}
 
-        await self._delete_oauth_accounts(session, user)
-        await self._delete_notification_recipients(session, user)
-
         user = await repository.update(user, update_dict=update_dict)
         await repository.soft_delete(user)
 
-        log.info(
-            "user.deleted",
-            user_id=user.id,
-        )
+        await self._delete_oauth_accounts(session, user)
+        await self._delete_notification_recipients(session, user)
+
+        log.info("user.deleted", user_id=user.id)
 
         return user
 
-    async def _delete_oauth_accounts(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> None:
+    async def _delete_oauth_accounts(self, session: AsyncSession, user: User) -> None:
         """Delete all OAuth accounts for a user."""
-        stmt = delete(OAuthAccount).where(OAuthAccount.user_id == user.id)
-        await session.execute(stmt)
-
-        log.info(
-            "user.oauth_accounts_deleted",
-            user_id=user.id,
-        )
+        for account in user.oauth_accounts:
+            await session.delete(account)
 
     async def _delete_notification_recipients(
         self,

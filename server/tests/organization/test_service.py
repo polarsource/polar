@@ -811,7 +811,7 @@ class TestGetPaymentStatus:
         organization.account = account
         organization.account_id = account.id
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"product_description": "Test"}
+        organization.details = {"about": "Test"}
         await save_fixture(organization)
 
         # Ensure relationships are loaded
@@ -869,7 +869,7 @@ class TestGetPaymentStatus:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"product_description": "Test"}
+        organization.details = {"about": "Test"}
 
         # Set up user verification
         user.identity_verification_status = IdentityVerificationStatus.verified
@@ -1803,7 +1803,7 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         """Soft delete clears details and socials."""
-        organization.details = {"product_description": "Test company"}
+        organization.details = {"about": "Test company"}
         organization.socials = [
             {"platform": "twitter", "url": "https://twitter.com/test"}
         ]

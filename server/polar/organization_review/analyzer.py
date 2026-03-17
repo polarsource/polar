@@ -428,6 +428,8 @@ class ReviewAnalyzer:
             parts.append(f"Website: {org.website}")
         if org.email:
             parts.append(f"Org Support Email: {org.email}")
+        if org.about:
+            parts.append(f"About: {org.about}")
         if org.product_description:
             parts.append(f"Product Description: {org.product_description}")
         if org.switching_from:

@@ -224,6 +224,15 @@ class SettingsSection:
                     if hasattr(self.org, "details") and self.org.details:
                         details = self.org.details
 
+                        if details.get("about"):
+                            with tag.div():
+                                with tag.div(classes="text-sm font-semibold mb-2"):
+                                    text("About")
+                                with tag.div(
+                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                                ):
+                                    text(details["about"])
+
                         if details.get("product_description"):
                             with tag.div():
                                 with tag.div(classes="text-sm font-semibold mb-2"):

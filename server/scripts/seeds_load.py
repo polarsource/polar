@@ -168,6 +168,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Leading provider of innovative solutions for modern businesses.",
             "status": OrganizationStatus.ACTIVE,
             "details": {
+                "about": "We provide business intelligence dashboard",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Our business intellignce dashboard are mostly monthly subscriptions, but our mobile app is accessible after a one-time payment.",
@@ -247,6 +248,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Your go-to solution for SQL database management and optimization.",
             "status": OrganizationStatus.ACTIVE,
             "details": {
+                "about": "We make beautiful SQL management products for macOS.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "The desktop apps that we create allows connecting to SQL databases, and performing queries on those databases.",
@@ -329,6 +331,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Online mail services like it's 1999!",
             "status": OrganizationStatus.ACTIVE,
             "details": {
+                "about": "We're a hottest cloud provider since sliced bread",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "We sell ColdMail which provides an email inbox plus file storage. We also sell TemperateDocs which allows creating and editing documents online.",
@@ -413,6 +416,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Your source of news",
             "status": OrganizationStatus.ACTIVE,
             "details": {
+                "about": "We provide news in various formats",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "We send out our news products as emails daily and weekly",
@@ -448,6 +452,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "is_admin": True,
             "details": {
+                "about": "Polar is an open source payment infrastructure platform for developers",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "SaaS platform for payment infrastructure",
@@ -470,6 +475,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Organization with seat-based pricing and members model enabled",
             "status": OrganizationStatus.ACTIVE,
             "details": {
+                "about": "Testing seat-based pricing with members model",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Team software licenses with per-seat billing",
@@ -505,6 +511,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Organization with seat-based pricing but members model disabled",
             "status": OrganizationStatus.ACTIVE,
             "details": {
+                "about": "Testing seat-based pricing without members model",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Team software licenses with simple seat billing",

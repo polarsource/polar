@@ -407,6 +407,7 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
                 f"Status: {org.status.value}",
                 f"Website: {org_data.website or 'not set'}",
                 f"Email: {org_data.email or 'not set'}",
+                f"About: {org_data.about or 'not provided'}",
                 f"Product Description: {org_data.product_description or 'not provided'}",
                 f"Switching From: {org_data.switching_from or 'not provided'}",
             ]

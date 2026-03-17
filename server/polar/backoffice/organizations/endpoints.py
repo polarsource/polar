@@ -1851,6 +1851,9 @@ async def get(
                                 text("Edit Details")
 
                         a = "organization-details-accordion"
+                        with accordion.item(a, "About"):
+                            with tag.p(classes="whitespace-pre-line"):
+                                text(organization.details.get("about", "—"))
                         with accordion.item(a, "Product Description"):
                             with tag.p(classes="whitespace-pre-line"):
                                 text(

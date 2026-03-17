@@ -148,6 +148,7 @@ class TestUpdateOrganization:
             f"/v1/organizations/{organization.id}",
             json={
                 "details": {
+                    "about": "Test company",
                     "product_description": "SaaS product",
                     "future_annual_revenue": -1000,
                     "switching": False,
@@ -172,6 +173,7 @@ class TestUpdateOrganization:
             f"/v1/organizations/{organization.id}",
             json={
                 "details": {
+                    "about": "Test company",
                     "product_description": "SaaS product",
                     "future_annual_revenue": 50000,
                     "switching": False,
@@ -556,7 +558,7 @@ class TestGetPaymentStatus:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"product_description": "Test"}
+        organization.details = {"about": "Test"}
 
         # Set up user verification
         user.identity_verification_status = IdentityVerificationStatus.verified

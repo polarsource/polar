@@ -459,6 +459,45 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
           <div className="space-y-6">
             <div>
               <label className="mb-2 block text-sm font-medium">
+                Describe your business *
+              </label>
+              <p className="mb-2 text-xs text-gray-600">
+                Tell us: what industry you&apos;re in, what problem you solve,
+                and who your customers are
+              </p>
+              <FormField
+                control={control}
+                name="details.about"
+                rules={{
+                  required: 'Please describe your business',
+                  minLength: {
+                    value: 50,
+                    message: 'Please provide at least 50 characters',
+                  },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
+                }}
+                render={({ field }) => (
+                  <div>
+                    <CompactTextArea
+                      field={field}
+                      placeholder="We make project management software for design teams."
+                    />
+                    <div className="mt-1 flex items-center justify-between">
+                      <FormMessage />
+                      <span className="text-xs text-gray-500">
+                        {field.value?.length || 0}/3000 characters (min 50)
+                      </span>
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
                 What do you sell? Include type and features that are granted *
               </label>
               <p className="mb-2 text-xs text-gray-600">

@@ -69,6 +69,7 @@ class OrganizationData(Schema):
     slug: str
     website: str | None = None
     email: str | None = None
+    about: str | None = None
     product_description: str | None = None
     switching_from: str | None = None
     previous_annual_revenue: int | None = None

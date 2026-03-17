@@ -43,6 +43,7 @@ class OrganizationSocials(TypedDict):
 
 
 class OrganizationDetails(TypedDict, total=False):
+    about: str
     product_description: str
     intended_use: str
     customer_acquisition: list[str]

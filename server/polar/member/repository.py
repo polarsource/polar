@@ -48,8 +48,6 @@ class MemberRepository(
         self,
         customer_id: UUID,
         email: str,
-        *,
-        include_deleted: bool = False,
     ) -> Member | None:
         """
         Get a member by customer ID and email.
@@ -60,9 +58,8 @@ class MemberRepository(
         statement = select(Member).where(
             Member.customer_id == customer_id,
             Member.email == email,
+            Member.is_deleted.is_(False),
         )
-        if not include_deleted:
-            statement = statement.where(Member.is_deleted.is_(False))
         return await self.get_one_or_none(statement)
 
     async def get_by_customer_id_and_external_id(

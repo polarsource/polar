@@ -861,80 +861,6 @@ class TestGetOrCreateByEmail:
         assert member.id == existing.id
         assert member.name == "Existing"  # Not updated
 
-    async def test_reactivates_deleted_member(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test that a soft-deleted member is reactivated when reactivate_deleted=True."""
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        deleted_member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="deleted@example.com",
-            name="Old Name",
-            role=MemberRole.member,
-        )
-        await save_fixture(deleted_member)
-        deleted_member.set_deleted_at()
-        await save_fixture(deleted_member)
-
-        member = await member_service.get_or_create_by_email(
-            session,
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="deleted@example.com",
-            name="New Name",
-            reactivate_deleted=True,
-        )
-
-        assert member.id == deleted_member.id
-        assert member.deleted_at is None
-        assert member.name == "New Name"
-
-    async def test_creates_new_when_deleted_exists_and_reactivate_false(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test that a new member is created (not reactivated) when reactivate_deleted=False."""
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        deleted_member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="deleted@example.com",
-            name="Deleted",
-            role=MemberRole.member,
-        )
-        await save_fixture(deleted_member)
-        deleted_member.set_deleted_at()
-        await save_fixture(deleted_member)
-
-        member = await member_service.get_or_create_by_email(
-            session,
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="deleted@example.com",
-            name="Brand New",
-            reactivate_deleted=False,
-        )
-
-        assert member.id != deleted_member.id
-        assert member.deleted_at is None
-        assert member.name == "Brand New"
-
     async def test_handles_integrity_error_race_condition(
         self,
         mocker: MockerFixture,
@@ -980,16 +906,12 @@ class TestGetOrCreateByEmail:
 
         get_call_count = 0
 
-        async def mock_get(
-            self: Any, customer_id: Any, email: Any, *, include_deleted: bool = False
-        ) -> Member | None:
+        async def mock_get(self: Any, customer_id: Any, email: Any) -> Member | None:
             nonlocal get_call_count
             get_call_count += 1
             if get_call_count == 1:
                 return None  # First call: no existing member found
-            return await original_get(
-                self, customer_id, email, include_deleted=include_deleted
-            )
+            return await original_get(self, customer_id, email)
 
         mocker.patch.object(MemberRepository, "get_by_customer_id_and_email", mock_get)
 

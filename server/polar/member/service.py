@@ -340,61 +340,22 @@ class MemberService:
         name: str | None = None,
         external_id: str | None = None,
         role: MemberRole = MemberRole.member,
-        reactivate_deleted: bool = False,
     ) -> Member:
         """
         Get or create a member by email under a customer.
 
         Consolidated get-or-create pattern that handles:
         - Returning existing active members
-        - Optionally reactivating soft-deleted members
         - Race condition retries on IntegrityError
-
-        Args:
-            session: Database session
-            customer_id: Customer to create/find member under
-            organization_id: Organization ID
-            email: Email address of the member
-            name: Optional name
-            external_id: Optional external ID
-            role: Role for new members (defaults to member)
-            reactivate_deleted: If True, reactivate soft-deleted members instead of creating new ones
-
-        Returns:
-            Existing or newly created Member
+        - Email normalization (strip + lowercase)
         """
         email = email.strip().lower()
 
         repository = MemberRepository.from_session(session)
 
-        # 1. Look up active member
         existing = await repository.get_by_customer_id_and_email(customer_id, email)
         if existing:
             return existing
-
-        # 2. Optionally reactivate soft-deleted member
-        if reactivate_deleted:
-            deleted = await repository.get_by_customer_id_and_email(
-                customer_id, email, include_deleted=True
-            )
-            if deleted and deleted.deleted_at is not None:
-                update_dict: dict[str, object] = {"deleted_at": None}
-                if name is not None:
-                    update_dict["name"] = name
-                if external_id is not None:
-                    update_dict["external_id"] = external_id
-                if role != deleted.role:
-                    update_dict["role"] = role
-                reactivated = await repository.update(deleted, update_dict=update_dict)
-                log.info(
-                    "member.get_or_create_by_email.reactivated",
-                    member_id=reactivated.id,
-                    customer_id=customer_id,
-                    email=email,
-                )
-                return reactivated
-
-        # 3. Create new member
         member = Member(
             customer_id=customer_id,
             organization_id=organization_id,

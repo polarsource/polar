@@ -287,7 +287,10 @@ export function ProductDetailsStep() {
           <Button
             type="submit"
             disabled={
-              blockedSelected.length > 0 || sellingCategories.length === 0
+              blockedSelected.length > 0 ||
+              sellingCategories.length === 0 ||
+              pricingModel.length === 0 ||
+              productDescription.trim().length === 0
             }
             fullWidth
           >

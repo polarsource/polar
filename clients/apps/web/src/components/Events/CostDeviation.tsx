@@ -75,7 +75,7 @@ export function CostDeviation({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="flex cursor-help flex-row items-center gap-x-4">
+        <div className="flex flex-row items-center gap-x-4">
           <span className="font-mono text-sm tabular-nums">
             {formatCurrency('subcent')(eventCost, currency)}
           </span>

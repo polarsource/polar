@@ -37,12 +37,14 @@ export const LLMInferenceEventCard = ({
         <DataRow label="Vendor" value={llmMetadata.vendor} />
         <DataRow label="Model" value={llmMetadata.model} />
         <DataRow label="Input Tokens" value={llmMetadata.input_tokens} />
-        {typeof llmMetadata.cached_input_tokens === 'number' && (
-          <DataRow
-            label="Cached Input Tokens"
-            value={llmMetadata.cached_input_tokens}
-          />
-        )}
+        <DataRow
+          label="Cached Input Tokens"
+          value={
+            typeof llmMetadata.cached_input_tokens === 'number'
+              ? llmMetadata.cached_input_tokens
+              : 0
+          }
+        />
         <DataRow label="Output Tokens" value={llmMetadata.output_tokens} />
         <DataRow label="Total Tokens" value={llmMetadata.total_tokens} />
       </EventCardBase>

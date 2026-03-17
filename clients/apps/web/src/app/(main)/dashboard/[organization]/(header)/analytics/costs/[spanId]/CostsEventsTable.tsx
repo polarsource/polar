@@ -132,9 +132,11 @@ export default function CostsEventsTable({
             )}
           </span>
           {group.type === 'empty-range' ? (
-            <p className="dark:text-polar-600 p-2 text-sm text-gray-400 italic">
-              No events
-            </p>
+            <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-6">
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                No events
+              </p>
+            </div>
           ) : (
             <div className="flex flex-col gap-y-2">
               {group.events.map((event) => {

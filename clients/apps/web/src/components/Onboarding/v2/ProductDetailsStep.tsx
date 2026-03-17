@@ -5,6 +5,7 @@ import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   Form,
   FormControl,
@@ -195,9 +196,12 @@ export function ProductDetailsStep() {
               <FormItem className="w-full">
                 <FormLabel>Describe your product</FormLabel>
                 <FormControl>
-                  <Input
+                  <TextArea
                     {...field}
+                    resizable={false}
                     placeholder="Tell us about what you're selling..."
+                    className="min-h-10 rounded-xl px-3 py-2.5"
+                    style={{ fieldSizing: 'content' } as React.CSSProperties}
                   />
                 </FormControl>
                 <FormMessage />

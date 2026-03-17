@@ -29,7 +29,6 @@ from sqlalchemy import (
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.util import ClauseAdapter
 
-from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
@@ -214,9 +213,6 @@ async def ingest_events(
     events: Sequence[Event],
     ancestors_by_event: Mapping[UUID, Sequence[str]] | None = None,
 ) -> None:
-    if not settings.TINYBIRD_EVENTS_WRITE:
-        return
-
     if not events:
         return
 

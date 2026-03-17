@@ -611,7 +611,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.email = org_data["email"]
         organization.website = org_data["website"]
         organization.bio = org_data["bio"]
-        organization.details = org_data.get("details", {})  # type: ignore
+        organization.details = org_data.get("details", {})
         organization.details_submitted_at = utc_now()
         organization.status = org_data.get("status", OrganizationStatus.CREATED)
         organization.feature_settings = org_data.get("feature_settings", {})

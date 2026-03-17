@@ -558,7 +558,7 @@ class TestGetPaymentStatus:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
 
         # Set up user verification
         user.identity_verification_status = IdentityVerificationStatus.verified

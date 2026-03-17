@@ -7,7 +7,6 @@ from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
 from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, ResourceNotFound
-from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Account
 from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
@@ -24,23 +23,6 @@ from .schemas import AccountCreateForOrganization, AccountLink, AccountUpdate
 from .service import account as account_service
 
 router = APIRouter(tags=["accounts", APITag.private])
-
-
-@router.get("/accounts/search", response_model=ListResource[AccountSchema])
-async def search(
-    auth_subject: WebUserRead,
-    pagination: PaginationParamsQuery,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[AccountSchema]:
-    results, count = await account_service.search(
-        session, auth_subject, pagination=pagination
-    )
-
-    return ListResource.from_paginated_results(
-        [AccountSchema.model_validate(result) for result in results],
-        count,
-        pagination,
-    )
 
 
 @router.get("/accounts/{id}", response_model=AccountSchema)

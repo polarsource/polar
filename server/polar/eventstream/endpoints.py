@@ -49,12 +49,21 @@ def _uvicorn_should_exit() -> bool:
     return False
 
 
+# Maximum lifetime for a single SSE connection.
+# After this duration the server sends a "reconnect" event and closes the connection,
+# forcing the client to reconnect. This caps steady-state memory growth caused by
+# long-lived connections holding DB sessions and Redis subscriptions indefinitely.
+MAX_SSE_CONNECTION_LIFETIME = 10 * 60  # 10 minutes
+
+
 async def subscribe(
     redis: Redis,
     channels: list[str],
     request: Request,
     on_iteration: Callable[[], Awaitable[None]] | None = None,
 ) -> AsyncGenerator[Any, Any]:
+    deadline = asyncio.get_event_loop().time() + MAX_SSE_CONNECTION_LIFETIME
+
     async with redis.pubsub() as pubsub:
         await pubsub.subscribe(*channels)
 
@@ -65,7 +74,12 @@ async def subscribe(
         try:
             while not _uvicorn_should_exit():
                 if await request.is_disconnected():
-                    await pubsub.close()
+                    break
+
+                # Enforce maximum connection lifetime
+                remaining = deadline - asyncio.get_event_loop().time()
+                if remaining <= 0:
+                    yield '{"type": "reconnect"}'
                     break
 
                 if on_iteration is not None:
@@ -74,19 +88,18 @@ async def subscribe(
                 try:
                     message = await pubsub.get_message(
                         ignore_subscribe_messages=True,
-                        # Waits for up to 10s for a new message
-                        timeout=10.0,
+                        # Waits for up to 1s for a new message (shorter interval
+                        # reduces disconnect detection latency from 10s to ~1s)
+                        timeout=min(1.0, remaining),
                     )
 
                     if message is not None:
-                        log.info("redis.pubsub", message=message["data"])
+                        log.debug("redis.pubsub", message=message["data"])
                         yield message["data"]
-                except asyncio.CancelledError as e:
-                    await pubsub.close()
-                    raise e
-                except ConnectionError as e:
-                    await pubsub.close()
-                    raise e
+                except asyncio.CancelledError:
+                    raise
+                except ConnectionError:
+                    raise
         finally:
             if endpoint is not None:
                 HTTP_SSE_CONNECTIONS_OPENED.labels(endpoint=endpoint).dec()

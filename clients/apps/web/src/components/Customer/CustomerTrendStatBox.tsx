@@ -8,9 +8,9 @@ import {
 } from '@polar-sh/ui/components/ui/tooltip'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { PropsWithChildren, useMemo } from 'react'
-import { CustomerStatBox, CustomerStatBoxProps } from './CustomerStatBox'
+import { StatisticCard, StatisticCardProps } from '@/components/Shared/StatisticCard'
 
-export interface CustomerTrendStatBoxProps extends CustomerStatBoxProps {
+export interface CustomerTrendStatBoxProps extends StatisticCardProps {
   trend?: {
     value: number
     direction: 'up' | 'down' | 'none'
@@ -44,7 +44,7 @@ export const CustomerTrendStatBox = ({
   }, [trend])
 
   return (
-    <CustomerStatBox
+    <StatisticCard
       title={title}
       className={className}
       valueClassName={valueClassName}
@@ -89,6 +89,6 @@ export const CustomerTrendStatBox = ({
           <div className="h-5" />
         )}
       </div>
-    </CustomerStatBox>
+    </StatisticCard>
   )
 }

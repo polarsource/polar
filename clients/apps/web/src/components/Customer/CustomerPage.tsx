@@ -36,7 +36,7 @@ import { twMerge } from 'tailwind-merge'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
-import { CustomerStatBox } from './CustomerStatBox'
+import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 
 interface CustomerPageProps {
@@ -270,22 +270,22 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             </>
           ) : (
             <>
-              <CustomerStatBox title="Lifetime Revenue" size="lg">
+              <StatisticCard title="Lifetime Revenue" size="lg">
                 {typeof metricsData?.totals.cumulative_revenue === 'number'
                   ? formatCurrency('statistics')(
                       metricsData.totals.cumulative_revenue,
                       'usd',
                     )
                   : '—'}
-              </CustomerStatBox>
-              <CustomerStatBox title="Orders" size="lg">
+              </StatisticCard>
+              <StatisticCard title="Orders" size="lg">
                 {metricsData?.totals.orders
                   ? formatScalar(metricsData?.totals.orders)
                   : '—'}
-              </CustomerStatBox>
+              </StatisticCard>
             </>
           )}
-          <CustomerStatBox title="Customer Balance" size="lg">
+          <StatisticCard title="Customer Balance" size="lg">
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (
                   <div key={wallet.id}>
@@ -296,7 +296,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                   </div>
                 ))
               : '—'}
-          </CustomerStatBox>
+          </StatisticCard>
         </div>
 
         {/** Disabling this for now until we're satisfied with the layout/presentation design */}

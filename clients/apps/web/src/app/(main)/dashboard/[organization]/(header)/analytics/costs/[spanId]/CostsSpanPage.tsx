@@ -143,12 +143,16 @@ export default function SpanDetailPage({
     const totalCost = parseFloat(stat.totals?.['_cost_amount'] || '0')
     const averageCost = parseFloat(stat.averages?.['_cost_amount'] || '0')
     const p99Cost = parseFloat(stat.p99?.['_cost_amount'] || '0')
+    const totalCustomers = stat.customers || 0
+    const costPerCustomer = totalCustomers > 0 ? totalCost / totalCustomers : 0
 
     return {
       totalOccurrences,
       totalCost,
       averageCost,
       p99Cost,
+      totalCustomers,
+      costPerCustomer,
     }
   }, [hierarchyStats])
 
@@ -225,7 +229,7 @@ export default function SpanDetailPage({
 
         <TabsContent value="overview">
           <div className="flex flex-col gap-y-8">
-            <div className="grid grid-cols-3 gap-8">
+            <div className="grid grid-cols-4 gap-8">
               <StatisticCard title="Occurrences" size="lg">
                 {costMetrics.totalOccurrences.toLocaleString()}
               </StatisticCard>
@@ -234,6 +238,9 @@ export default function SpanDetailPage({
               </StatisticCard>
               <StatisticCard title="Average Cost" size="lg">
                 {formatCurrency('subcent')(costMetrics.averageCost, 'usd')}
+              </StatisticCard>
+              <StatisticCard title="Cost per Customer" size="lg">
+                {formatCurrency('subcent')(costMetrics.costPerCustomer, 'usd')}
               </StatisticCard>
             </div>
 

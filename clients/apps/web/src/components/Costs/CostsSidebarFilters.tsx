@@ -22,13 +22,7 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 
-import { formatCurrency } from '@polar-sh/currency'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import {
-  BadgeDollarSignIcon,
-  CircleUserRound,
-  MousePointerClickIcon,
-} from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
@@ -210,35 +204,14 @@ function EventStatisticsCard({
         <h2 className="text-sm font-medium">
           {eventStatistics.label ?? eventStatistics.name}
         </h2>
-        <dl className="dark:text-polar-500 flex max-w-sm items-center gap-4 font-mono text-gray-500">
+        <div className="dark:text-polar-500 flex max-w-sm items-center gap-4 font-mono text-gray-500">
           <div className="flex flex-1 items-center justify-start gap-1.5 text-xs">
-            <dt>
-              <MousePointerClickIcon className="size-4" strokeWidth={1.5} />
-            </dt>
-            <dd>{eventStatistics.occurrences}</dd>
+            <span>{eventStatistics.occurrences}</span>
+            <span>
+              {eventStatistics.occurrences === 1 ? 'Occurrence' : 'Occurrences'}
+            </span>
           </div>
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-xs">
-            <dt>
-              <CircleUserRound className="size-4" strokeWidth={1.5} />
-            </dt>
-            <dd>{eventStatistics.customers}</dd>
-          </div>
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-xs">
-            {eventStatistics.totals?._cost_amount !== undefined && (
-              <>
-                <dt>
-                  <BadgeDollarSignIcon className="size-4" strokeWidth={1.5} />
-                </dt>
-                <dd>
-                  {formatCurrency('subcent')(
-                    Number(eventStatistics.totals?._cost_amount),
-                    'usd',
-                  )}
-                </dd>
-              </>
-            )}
-          </div>
-        </dl>
+        </div>
       </div>
     </ListItem>
   )

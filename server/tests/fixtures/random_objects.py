@@ -184,7 +184,7 @@ async def create_oauth_account(
         account_id="xxyyzz",
         account_email="foo@bar.com",
         account_username=rstr("gh_username"),
-        user_id=user.id,
+        user=user,
     )
     await save_fixture(oauth_account)
     return oauth_account

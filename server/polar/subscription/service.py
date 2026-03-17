@@ -1453,7 +1453,6 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         new_period_end: datetime,
-        allow_past_period_end: bool = False,
     ) -> Subscription:
         if subscription.revoked:
             raise AlreadyCanceledSubscription(subscription)
@@ -1463,21 +1462,6 @@ class SubscriptionService:
 
         if subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
-
-        if (
-            not allow_past_period_end
-            and new_period_end < subscription.current_period_end
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "current_billing_period_end"),
-                        "msg": "New period end is earlier than the current period end",
-                        "input": new_period_end,
-                    }
-                ]
-            )
 
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled

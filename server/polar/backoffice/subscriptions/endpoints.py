@@ -232,35 +232,38 @@ async def get(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
                     text(f"Subscription {subscription.id}")
-                if subscription.can_cancel():
-                    with button(
-                        hx_get=str(
-                            request.url_for("subscriptions:cancel", id=subscription.id)
-                        ),
-                        hx_target="#modal",
-                    ):
-                        text("Cancel")
-                if subscription.can_uncancel():
-                    with button(
-                        hx_get=str(
-                            request.url_for(
-                                "subscriptions:uncancel", id=subscription.id
-                            )
-                        ),
-                        hx_target="#modal",
-                    ):
-                        text("Uncancel")
-                if subscription.active:
-                    with button(
-                        hx_get=str(
-                            request.url_for(
-                                "subscriptions:update_billing_period_end",
-                                id=subscription.id,
-                            )
-                        ),
-                        hx_target="#modal",
-                    ):
-                        text("Update Billing Period End")
+                with tag.div(classes="flex flex-row gap-2"):
+                    if subscription.can_cancel():
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:cancel", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Cancel")
+                    if subscription.can_uncancel():
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:uncancel", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Uncancel")
+                    if subscription.active:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:update_billing_period_end",
+                                    id=subscription.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Update Billing Period End")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
@@ -484,7 +487,9 @@ async def update_billing_period_end(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     subscription_repository = SubscriptionRepository.from_session(session)
-    subscription = await subscription_repository.get_by_id(id)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
 
     if subscription is None:
         raise HTTPException(status_code=404)
@@ -503,7 +508,6 @@ async def update_billing_period_end(
                 session,
                 subscription,
                 new_period_end=form.new_period_end,
-                allow_past_period_end=True,
             )
             return HXRedirectResponse(
                 request, str(request.url_for("subscriptions:get", id=id)), 303

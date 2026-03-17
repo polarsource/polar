@@ -4402,35 +4402,6 @@ class TestUpdateBillingPeriod:
         assert event.customer_id == customer.id
         assert event.organization_id == customer.organization_id
 
-    async def test_period_end_in_past_raises(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-
-        assert subscription.current_period_end is not None
-        past_period_end = subscription.current_period_end - timedelta(days=1)
-
-        with pytest.raises(PolarRequestValidationError) as exc_info:
-            await subscription_service.update_currrent_billing_period_end(
-                session,
-                subscription,
-                new_period_end=past_period_end,
-            )
-
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["type"] == "value_error"
-        assert errors[0]["loc"] == ("body", "current_billing_period_end")
-        assert "earlier than the current period end" in errors[0]["msg"]
-
     async def test_canceled_subscription_raises(
         self,
         session: AsyncSession,

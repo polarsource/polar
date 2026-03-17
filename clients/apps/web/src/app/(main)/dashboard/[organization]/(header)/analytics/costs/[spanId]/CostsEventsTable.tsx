@@ -108,7 +108,7 @@ export default function CostsEventsTable({
   }, [events, startDate, endDate])
 
   return events.length > 0 && eventTypes.length > 0 ? (
-    <div className="flex flex-col gap-y-4">
+    <div className="flex flex-col gap-y-8">
       {dayGroups.map((group, groupIndex) => (
         <div
           key={
@@ -118,7 +118,7 @@ export default function CostsEventsTable({
           }
           className="flex flex-col gap-y-2"
         >
-          <span className="dark:text-polar-400 p-1 text-sm text-gray-400">
+          <span className="dark:text-polar-500 text-gray-500">
             {group.type === 'empty-range' ? (
               <FormattedInterval
                 startDatetime={group.endDate}

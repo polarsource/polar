@@ -1,7 +1,6 @@
 'use client'
 
 import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
-import AccountsList from '@/components/Accounts/AccountsList'
 import AccountStep from '@/components/Finance/Steps/AccountStep'
 import IdentityStep from '@/components/Finance/Steps/IdentityStep'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -14,14 +13,13 @@ import { toast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
 import {
   useCreateIdentityVerification,
-  useListAccounts,
   useOrganizationAccount,
 } from '@/hooks/queries'
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { api } from '@/utils/client'
 import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
 import { loadStripe } from '@stripe/stripe-js'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 export default function ClientPage({
   organization,
@@ -29,7 +27,6 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   const { currentUser, reloadUser } = useAuth()
-  const { data: accounts } = useListAccounts()
   const {
     isShown: isShownSetupModal,
     show: showSetupModal,
@@ -41,6 +38,8 @@ export default function ClientPage({
   )
   const identityVerificationStatus = currentUser?.identity_verification_status
   const identityVerified = identityVerificationStatus === 'verified'
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollingInitialStatusRef = useRef<string | undefined | null>(null)
 
   const { data: organizationAccount, error: accountError } =
     useOrganizationAccount(organization.id)
@@ -102,8 +101,41 @@ export default function ClientPage({
       })
       return
     }
+    pollingInitialStatusRef.current = identityVerificationStatus
     await reloadUser()
-  }, [createIdentityVerification, stripePromise, reloadUser])
+    pollingRef.current = setInterval(async () => {
+      await reloadUser()
+    }, 3000)
+    setTimeout(() => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }, 30_000)
+  }, [
+    createIdentityVerification,
+    stripePromise,
+    reloadUser,
+    identityVerificationStatus,
+  ])
+
+  useEffect(() => {
+    if (
+      pollingRef.current &&
+      identityVerificationStatus !== pollingInitialStatusRef.current
+    ) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+  }, [identityVerificationStatus])
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+      }
+    }
+  }, [])
 
   const handleDetailsSubmitted = useCallback(() => {
     setRequireDetails(false)
@@ -163,7 +195,7 @@ export default function ClientPage({
         <Section>
           <SectionDescription
             title="Payout Account"
-            description="Set up your Stripe account to receive payments."
+            description="Set up your payout account to receive payouts."
           />
           {!isApproved ? (
             <InfoCard>Please go through account review first</InfoCard>
@@ -192,19 +224,6 @@ export default function ClientPage({
             <InfoCard>Please go through account review first</InfoCard>
           )}
         </Section>
-
-        {accounts?.items && accounts.items.length > 0 && (
-          <Section>
-            <SectionDescription
-              title="All payout accounts"
-              description="Payout accounts you manage"
-            />
-            <AccountsList
-              accounts={accounts.items}
-              pauseActions={requireDetails}
-            />
-          </Section>
-        )}
 
         <Modal
           title="Create Payout Account"

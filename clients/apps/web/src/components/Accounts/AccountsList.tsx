@@ -23,45 +23,47 @@ const AccountsList = ({ accounts }: AccountsListProps) => {
   )
 
   return (
-    <table className="-mx-4 w-full text-left">
-      <thead className="dark:text-polar-500 text-gray-500">
-        <tr className="text-sm">
-          <th
-            scope="col"
-            className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
-          >
-            Type
-          </th>
-          <th
-            scope="col"
-            className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
-          >
-            Status
-          </th>
-          <th
-            scope="col"
-            className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
-          >
-            Used by
-          </th>
-          <th
-            scope="col"
-            className="relative isolate px-4 py-3.5 pr-2 font-normal whitespace-nowrap"
-          >
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {accountOrgs.map(({ account, organization }) => (
-          <AccountListItem
-            key={organization.id}
-            account={account}
-            organization={organization}
-          />
-        ))}
-      </tbody>
-    </table>
+    <div className="dark:bg-polar-800 rounded-2xl border bg-white p-4">
+      <table className="-mx-4 w-full text-left">
+        <thead className="dark:text-polar-500 text-gray-500">
+          <tr className="text-sm">
+            <th
+              scope="col"
+              className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
+            >
+              Type
+            </th>
+            <th
+              scope="col"
+              className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
+            >
+              Status
+            </th>
+            <th
+              scope="col"
+              className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
+            >
+              Used by
+            </th>
+            <th
+              scope="col"
+              className="relative isolate px-4 py-3.5 pr-2 font-normal whitespace-nowrap"
+            >
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {accountOrgs.map(({ account, organization }) => (
+            <AccountListItem
+              key={organization.id}
+              account={account}
+              organization={organization}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

@@ -1,24 +1,16 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
+import { api } from '@/utils/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { Card } from '@polar-sh/ui/components/ui/card'
-import { ArrowRight, UserCheck } from 'lucide-react'
-import React from 'react'
+import { ArrowRight, ExternalLink, UserCheck } from 'lucide-react'
+import { useCallback, useState } from 'react'
 
 interface AccountStepProps {
   organizationAccount?: schemas['Account']
   isNotAdmin: boolean
   onStartAccountSetup: () => void
 }
-
-const StepCard = ({
-  children,
-  className = '',
-}: {
-  children: React.ReactNode
-  className?: string
-}) => <Card className={`p-6 ${className}`}>{children}</Card>
 
 export default function AccountStep({
   organizationAccount,
@@ -31,12 +23,58 @@ export default function AccountStep({
     organizationAccount?.is_charges_enabled &&
     organizationAccount?.is_payouts_enabled
 
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false)
+
+  const handleOpenStripeDashboard = useCallback(async () => {
+    if (!organizationAccount) return
+    setIsLoadingDashboard(true)
+    try {
+      const link = await unwrap(
+        api.POST('/v1/accounts/{id}/dashboard_link', {
+          params: { path: { id: organizationAccount.id } },
+        }),
+      )
+      window.open(link.url, '_blank')
+    } finally {
+      setIsLoadingDashboard(false)
+    }
+  }, [organizationAccount])
+
   if (isAccountSetupComplete) {
+    const isStripe = organizationAccount?.stripe_id !== null
+
+    if (isStripe) {
+      return (
+        <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
+          <h4 className="mb-2 font-medium">Account setup complete</h4>
+          <p className="dark:text-polar-400 mx-auto mb-6 max-w-sm text-sm text-balance text-gray-600">
+            Your Stripe payout account is configured and ready to receive
+            payouts.
+          </p>
+          <Button
+            onClick={handleOpenStripeDashboard}
+            loading={isLoadingDashboard}
+            className="w-auto"
+          >
+            Open in Stripe
+            <ExternalLink className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )
+    }
+
     return (
       <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
-        <h4 className="mb-2 font-medium">Account setup complete</h4>
-        <p className="dark:text-polar-400 text-sm text-gray-600">
-          Your payout account is configured and ready.
+        <h4 className="mb-2 font-medium">Manual payouts</h4>
+        <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
+          You&apos;re receiving manual payouts.{' '}
+          <a
+            href="mailto:support@polar.sh"
+            className="underline hover:no-underline"
+          >
+            Reach out to support
+          </a>{' '}
+          to request a payout or change this.
         </p>
       </div>
     )
@@ -69,7 +107,7 @@ export default function AccountStep({
   return (
     <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
       <h4 className="mb-2 font-medium">Connect payout account</h4>
-      <p className="dark:text-polar-400 mx-auto mb-6 max-w-sm text-sm text-pretty text-gray-600">
+      <p className="dark:text-polar-400 mx-auto mb-6 max-w-sm text-sm text-balance text-gray-600">
         Connect or create a Stripe account to receive payments from your
         customers.
       </p>

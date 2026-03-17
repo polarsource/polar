@@ -202,23 +202,6 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          {organizationType === 'company' && (
-            <FormField
-              control={control}
-              name="registeredBusinessName"
-              rules={{ required: 'Registered business name is required' }}
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Registered Business Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Acme Corporation Ltd." />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
           {/* Org name with inline slug */}
           <FormField
             control={control}
@@ -255,6 +238,23 @@ export function BusinessDetailsStep() {
               </FormItem>
             )}
           />
+
+          {organizationType === 'company' && (
+            <FormField
+              control={control}
+              name="registeredBusinessName"
+              rules={{ required: 'Registered business name is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Registered Business Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Acme Corporation Ltd." />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <Box
             display="grid"

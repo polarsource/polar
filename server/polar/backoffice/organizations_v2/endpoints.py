@@ -2640,6 +2640,55 @@ async def setup_account(
     return None
 
 
+@router.post(
+    "/{organization_id}/resync-stripe-account",
+    name="organizations:resync_stripe_account",
+    response_model=None,
+)
+async def resync_stripe_account(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse:
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id_with_account(organization_id)
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if not organization.account:
+        raise HTTPException(status_code=400, detail="Organization has no account")
+
+    if organization.account.account_type != AccountType.stripe:
+        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
+
+    if not organization.account.stripe_id:
+        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
+
+    stripe_account = await stripe_lib.Account.retrieve_async(
+        organization.account.stripe_id
+    )
+    await account_service.update_account_from_stripe(
+        session, stripe_account=stripe_account
+    )
+
+    logger.info(
+        "Stripe account resynced from backoffice",
+        organization_id=str(organization_id),
+        stripe_id=organization.account.stripe_id,
+        admin_user_id=str(user_session.user_id),
+    )
+
+    await add_toast(request, "Account resynced from Stripe", variant="success")
+
+    redirect_url = (
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=account"
+    )
+    return HXRedirectResponse(request, redirect_url, 303)
+
+
 @router.api_route(
     "/{organization_id}/disconnect-stripe-account",
     name="organizations:disconnect_stripe_account",

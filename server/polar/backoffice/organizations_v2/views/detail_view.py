@@ -520,6 +520,18 @@ class OrganizationDetailView:
                                     hx_target="#modal",
                                 ):
                                     text("Add Domain to Allowlist")
+                            if self.org.account and self.org.account.stripe_id:
+                                with tag.li():
+                                    with tag.a(
+                                        hx_post=str(
+                                            request.url_for(
+                                                "organizations:resync_stripe_account",
+                                                organization_id=self.org.id,
+                                            )
+                                        ),
+                                        hx_confirm="Resync account data from Stripe?",
+                                    ):
+                                        text("Resync Stripe Account")
                             with tag.li(classes="border-t border-base-200 mt-1 pt-1"):
                                 with tag.a(
                                     hx_get=str(

@@ -5,6 +5,7 @@ import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
 import AmountLabel from '@/components/Shared/AmountLabel'
+import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
@@ -36,7 +37,6 @@ import { twMerge } from 'tailwind-merge'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
-import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 
 interface CustomerPageProps {

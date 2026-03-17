@@ -122,6 +122,51 @@ export const useEventHierarchyStats = (
   })
 }
 
+export interface PropertyGroupStat {
+  value: string
+  occurrences: number
+  customers: number
+  totals: Record<string, string>
+}
+
+export const useEventPropertyGroupStats = (
+  organizationId: string,
+  property: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:get_statistics_by_property']['parameters']['query']
+    >,
+    'organization_id' | 'timezone' | 'property'
+  >,
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:get_statistics_by_property']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'eventPropertyGroupStats',
+      organizationId,
+      property,
+      { timezone, ...parameters },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-property', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              property,
+              timezone,
+              ...parameters,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
 export const useEventNames = (
   organizationId: string,
   parameters?: operations['event-types:list']['parameters']['query'],

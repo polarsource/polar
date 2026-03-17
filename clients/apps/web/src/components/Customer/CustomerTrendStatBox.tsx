@@ -1,3 +1,7 @@
+import {
+  StatisticCard,
+  StatisticCardProps,
+} from '@/components/Shared/StatisticCard'
 import { formatHumanFriendlyScalar, formatPercentage } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -8,7 +12,6 @@ import {
 } from '@polar-sh/ui/components/ui/tooltip'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { PropsWithChildren, useMemo } from 'react'
-import { StatisticCard, StatisticCardProps } from '@/components/Shared/StatisticCard'
 
 export interface CustomerTrendStatBoxProps extends StatisticCardProps {
   trend?: {

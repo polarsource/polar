@@ -1,5 +1,6 @@
 'use client'
 
+import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
@@ -16,7 +17,6 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
-import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerContextViewProps {

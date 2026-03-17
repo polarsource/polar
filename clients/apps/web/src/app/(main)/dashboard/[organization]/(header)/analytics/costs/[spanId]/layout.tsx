@@ -1,8 +1,8 @@
+import CostsSidebarFilters from '@/components/Costs/CostsSidebarFilters'
+import { CostsSidebarTitle } from '@/components/Costs/CostsSidebarTitle'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import CostsSidebarFilters from '@/components/Costs/CostsSidebarFilters'
-import { CostsSidebarTitle } from '@/components/Costs/CostsSidebarTitle'
 
 export default async function Layout({
   children,

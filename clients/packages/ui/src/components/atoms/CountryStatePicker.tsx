@@ -102,7 +102,7 @@ const CountryStatePicker = ({
   placeholder?: string
   fallbackPlaceholder?: string
 }) => {
-  if (country === 'US' || country === 'CA') {
+  if (country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country as typeof COUNTRIES_WITH_FIXED_STATE_OPTIONS[number])) {
     const states = country === 'US' ? US_STATES : CA_SUBDIVISIONS
     return (
       <Select

@@ -1,0 +1,6 @@
+[Unit]
+Description=Hibernate idle preview backends
+
+[Service]
+Type=oneshot
+ExecStart=/srv/preview-tools/preview-hibernate.sh

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Minimal log viewer for preview environments. Serves journalctl output over HTTP."""
 
+import os
 import subprocess
 import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -35,10 +36,50 @@ HTML_TEMPLATE = """\
 """
 
 
+WAKE_HTML = """\
+<!DOCTYPE html>
+<html>
+<head>
+<title>Waking PR {pr}</title>
+<meta http-equiv="refresh" content="3">
+<style>
+  body {{ background: #1a1a2e; color: #e0e0e0; font-family: monospace;
+         display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
+  .box {{ text-align: center; }}
+  h1 {{ font-size: 18px; color: #8888cc; }}
+  p {{ color: #888; font-size: 14px; }}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>PR {pr} preview is hibernating</h1>
+  <p>Waking up... this page will refresh automatically.</p>
+</div>
+</body>
+</html>
+"""
+
+TRIGGER_DIR = "/srv/preview-triggers"
+
+
 class LogHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         query = self.path.split("?")[1] if "?" in self.path else ""
+
+        wake_match = re.match(r"/wake/pr-(\d+)", path)
+        if wake_match:
+            pr_num = wake_match.group(1)
+            trigger = os.path.join(TRIGGER_DIR, f"pr-{pr_num}.wake")
+            try:
+                open(trigger, "w").close()
+            except OSError:
+                pass
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(WAKE_HTML.format(pr=pr_num).encode())
+            return
 
         match = re.match(r"/pr-(\d+)/(backend|frontend)", path)
         if not match:

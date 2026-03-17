@@ -196,21 +196,22 @@ mkdir -p "$PREVIEW_TOOLS_DIR" "$PREVIEW_DIR"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-for f in deploy.sh run-preview-backend.sh caddy-preview.template log-viewer.py regenerate-caddyfile.sh process-preview-triggers.sh; do
+for f in deploy.sh run-preview-backend.sh caddy-preview.template log-viewer.py regenerate-caddyfile.sh process-preview-triggers.sh preview-hibernate.sh; do
     if [[ -f "${SCRIPT_DIR}/${f}" ]]; then
         install -m 755 "${SCRIPT_DIR}/${f}" "${PREVIEW_TOOLS_DIR}/${f}"
     fi
 done
 
-for f in polar-preview-backend@.service polar-preview-frontend@.service polar-preview-logs.service polar-preview-infra.path polar-preview-infra.service; do
+for f in polar-preview-backend@.service polar-preview-frontend@.service polar-preview-logs.service polar-preview-infra.path polar-preview-infra.service polar-preview-hibernate.service polar-preview-hibernate.timer; do
     if [[ -f "${SCRIPT_DIR}/${f}" ]]; then
         cp "${SCRIPT_DIR}/${f}" "/etc/systemd/system/${f}"
     fi
 done
 systemctl daemon-reload
-systemctl enable polar-preview-logs polar-preview-infra.path
+systemctl enable polar-preview-logs polar-preview-infra.path polar-preview-hibernate.timer
 systemctl start polar-preview-logs 2>/dev/null || true
 systemctl start polar-preview-infra.path
+systemctl start polar-preview-hibernate.timer
 
 mkdir -p /srv/preview-triggers
 chown "${DEPLOY_USER}:${DEPLOY_USER}" /srv/preview-triggers

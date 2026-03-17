@@ -39,6 +39,15 @@ while true; do
                     systemctl reload caddy 2>/dev/null || true
                 fi
                 ;;
+            pr-*.wake)
+                PR_NUM="${filename#pr-}"
+                PR_NUM="${PR_NUM%.wake}"
+                if [[ "$PR_NUM" =~ ^[0-9]+$ ]]; then
+                    if ! systemctl is-active --quiet "polar-preview-backend@${PR_NUM}"; then
+                        systemctl start "polar-preview-backend@${PR_NUM}"
+                    fi
+                fi
+                ;;
         esac
 
         rm -f "$trigger"

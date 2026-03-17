@@ -119,10 +119,13 @@ export default function CostsEventsTable({
           ) : (
             <div className="flex flex-col gap-y-2">
               {group.events.map((event) => {
-                const eventCost = Number(
-                  (event.metadata as { _cost?: { amount?: string } })._cost
-                    ?.amount ?? 0,
-                )
+                const costMeta = (
+                  event.metadata as {
+                    _cost?: { amount?: string; currency?: string }
+                  }
+                )._cost
+                const eventCost = Number(costMeta?.amount ?? 0)
+                const eventCurrency = costMeta?.currency ?? 'usd'
                 return (
                   <EventRow
                     key={event.id}
@@ -130,9 +133,10 @@ export default function CostsEventsTable({
                     organization={organization}
                     expandChildren
                     costBadge={
-                      costDeviationMetadata ? (
+                      costDeviationMetadata && spanId.length > 0 ? (
                         <CostDeviationBar
                           eventCost={eventCost}
+                          currency={eventCurrency}
                           averageCost={costDeviationMetadata.average}
                           p10Cost={costDeviationMetadata.p10}
                           p90Cost={costDeviationMetadata.p90}

@@ -16,7 +16,7 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
-import { CustomerStatBox } from './CustomerStatBox'
+import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerContextViewProps {
@@ -107,16 +107,16 @@ export const CustomerContextView = ({
           </div>
         </Link>
         <div className="flex flex-row justify-between gap-4">
-          <CustomerStatBox title="Cumulative Revenue">
+          <StatisticCard title="Cumulative Revenue">
             {formatCurrency('statistics')(
               metrics.data?.periods[metrics.data.periods.length - 1]
                 .cumulative_revenue ?? 0,
               'usd',
             )}
-          </CustomerStatBox>
-          <CustomerStatBox title="First Seen">
+          </StatisticCard>
+          <StatisticCard title="First Seen">
             <FormattedDateTime datetime={customer.created_at} />
-          </CustomerStatBox>
+          </StatisticCard>
         </div>
         {!customer.deleted_at && (
           <div className="flex flex-col gap-4">

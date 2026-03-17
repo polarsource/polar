@@ -14,16 +14,12 @@ import React, { useEffect, useState } from 'react'
 interface AppealFormProps {
   organization: schemas['Organization']
   reason?: string | null
-  onAppealApproved?: () => void
-  onContinueAfterSubmission?: () => void
   existingReviewStatus?: schemas['OrganizationReviewStatus']
 }
 
 const AppealForm: React.FC<AppealFormProps> = ({
   organization,
   reason,
-  onAppealApproved,
-  onContinueAfterSubmission,
   existingReviewStatus,
 }) => {
   const [appealReason, setAppealReason] = useState('')

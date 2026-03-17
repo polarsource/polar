@@ -27,8 +27,8 @@ export default function IdentityStep({
         </>
       ) : identityVerificationStatus === 'verified' ? (
         <>
-          <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-polar-700">
-            <CheckIcon className="h-4 w-4 text-gray-500 dark:text-polar-400" />
+          <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+            <CheckIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
           </span>
           <h4 className="mb-2 font-medium">Identity verified</h4>
           <p className="dark:text-polar-400 mx-auto text-sm text-gray-500">

@@ -1,5 +1,6 @@
 'use client'
 
+import { type schemas } from '@polar-sh/client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useOnboardingData, useOnboardingDataLive } from './OnboardingContext'
@@ -20,6 +21,7 @@ const STEP_CONFIG = {
 interface Line {
   key: string
   fingerprint: string
+  indent: number
   content: React.ReactNode
 }
 
@@ -34,41 +36,54 @@ export function APIPreview({
   const body = useMemo(() => {
     switch (step) {
       case 'personal': {
-        const obj: Record<string, unknown> = {}
+        const obj: Partial<schemas['UserUpdate']> = {}
         if (data.firstName) obj.first_name = data.firstName
         if (data.lastName) obj.last_name = data.lastName
-        if (data.country) obj.country = data.country
-        if (data.dateOfBirth)
-          obj.date_of_birth = `${data.dateOfBirth}T00:00:00Z`
-        if (data.buildingIntent?.length)
-          obj.intent = data.buildingIntent.map(toSnakeCase)
+        if (data.country)
+          obj.country = data.country as schemas['UserUpdate']['country']
+        if (data.dateOfBirth) obj.date_of_birth = data.dateOfBirth
         return obj
       }
       case 'business': {
-        const obj: Record<string, unknown> = {}
+        const obj: Partial<schemas['OrganizationCreate']> = {
+          default_presentment_currency:
+            (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
+        }
         if (data.orgName) obj.name = data.orgName
         if (data.orgSlug) obj.slug = data.orgSlug
-        if (data.defaultCurrency)
-          obj.default_currency = toSnakeCase(data.defaultCurrency)
-        if (data.organizationType) obj.organization_type = data.organizationType
-        if (data.registeredBusinessName)
-          obj.registered_business_name = data.registeredBusinessName
-        if (data.businessCountry) obj.country = data.businessCountry
-        if (data.ventureBacked) obj.venture_backed = data.ventureBacked
-        if (data.mainInvestor) obj.main_investor = data.mainInvestor
+        if (data.businessCountry)
+          obj.country =
+            data.businessCountry as schemas['OrganizationCreate']['country']
+        const legalEntity: schemas['OrganizationCreate']['legal_entity'] =
+          data.organizationType === 'company' && data.registeredBusinessName
+            ? {
+                type: 'company' as const,
+                registered_name: data.registeredBusinessName,
+              }
+            : { type: 'individual' as const }
+        obj.legal_entity = legalEntity
         return obj
       }
       case 'product': {
         const obj: Record<string, unknown> = {}
+        if (data.supportEmail) obj.email = data.supportEmail
+        if (data.productUrl) obj.website = data.productUrl
+
+        const product: Record<string, unknown> = {}
         if (data.sellingCategories?.length)
-          obj.categories = data.sellingCategories.map(toSnakeCase)
-        if (data.productDescription) obj.description = data.productDescription
+          product.type = data.sellingCategories.map(toSnakeCase)
         if (data.pricingModel?.length)
-          obj.pricing_model = data.pricingModel.map(toSnakeCase)
-        if (data.supportEmail) obj.support_email = data.supportEmail
-        if (data.productUrl) obj.product_url = data.productUrl
-        if (data.currentlySellingOn?.length)
-          obj.currently_selling_on = data.currentlySellingOn.map(toSnakeCase)
+          product.model = data.pricingModel.map(toSnakeCase)
+        if (data.productDescription)
+          product.description = data.productDescription
+        if (Object.keys(product).length > 0) obj.product = product
+
+        const switching = (data.currentlySellingOn?.length ?? 0) > 0
+        if (switching) {
+          obj.switching = true
+          obj.switching_from = data
+            .currentlySellingOn![0] as schemas['OrganizationDetails']['switching_from']
+        }
         return obj
       }
     }
@@ -154,7 +169,10 @@ export function APIPreview({
               >
                 {i + 1}
               </span>
-              <pre className="flex-1 leading-relaxed break-words whitespace-pre-wrap">
+              <span
+                className="flex-1 leading-relaxed break-words"
+                style={{ paddingLeft: `${line.indent}ch` }}
+              >
                 <span
                   className={`-mx-1 rounded px-1 transition-colors duration-500 ${
                     isFlashed
@@ -164,7 +182,7 @@ export function APIPreview({
                 >
                   {line.content}
                 </span>
-              </pre>
+              </span>
             </div>
           )
         })}
@@ -213,13 +231,20 @@ export function APIPreview({
   )
 }
 
-function buildLines(obj: Record<string, unknown>): Line[] {
+function buildLines(
+  obj: Record<string, unknown>,
+  prefix = '',
+  indent = 2,
+): Line[] {
   const entries = Object.entries(obj)
-  if (entries.length === 0) {
+  const keyPrefix = prefix ? `${prefix}.` : ''
+
+  if (entries.length === 0 && indent === 2) {
     return [
       {
         key: 'empty',
         fingerprint: '{}',
+        indent: 0,
         content: (
           <span className="text-gray-400 dark:text-gray-500">{'{ }'}</span>
         ),
@@ -228,21 +253,53 @@ function buildLines(obj: Record<string, unknown>): Line[] {
   }
 
   const lines: Line[] = []
-  lines.push({
-    key: '__open',
-    fingerprint: '{',
-    content: <span className="text-gray-400">{'{'}</span>,
-  })
+
+  if (indent === 2) {
+    lines.push({
+      key: '__open',
+      fingerprint: '{',
+      indent: 0,
+      content: <span className="text-gray-400">{'{'}</span>,
+    })
+  }
 
   entries.forEach(([key, value], i) => {
     const comma = i < entries.length - 1
-    if (Array.isArray(value) && value.length > 0) {
+    const fullKey = `${keyPrefix}${key}`
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       lines.push({
-        key: `${key}-open`,
-        fingerprint: `${key}:[`,
+        key: `${fullKey}-open`,
+        fingerprint: `${fullKey}:{`,
+        indent,
         content: (
           <span>
-            {'  '}
+            <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
+            <span className="text-gray-400">{': {'}</span>
+          </span>
+        ),
+      })
+      lines.push(
+        ...buildLines(value as Record<string, unknown>, fullKey, indent + 2),
+      )
+      lines.push({
+        key: `${fullKey}-close`,
+        fingerprint: `${fullKey}:}${comma ? ',' : ''}`,
+        indent,
+        content: (
+          <span className="text-gray-400">
+            {'}'}
+            {comma && ','}
+          </span>
+        ),
+      })
+    } else if (Array.isArray(value) && value.length > 0) {
+      lines.push({
+        key: `${fullKey}-open`,
+        fingerprint: `${fullKey}:[`,
+        indent,
+        content: (
+          <span>
             <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
             <span className="text-gray-400">{': ['}</span>
           </span>
@@ -251,11 +308,11 @@ function buildLines(obj: Record<string, unknown>): Line[] {
       value.forEach((item, j) => {
         const itemStr = JSON.stringify(item)
         lines.push({
-          key: `${key}-${j}`,
-          fingerprint: `${key}-${j}:${itemStr}`,
+          key: `${fullKey}-${j}`,
+          fingerprint: `${fullKey}-${j}:${itemStr}`,
+          indent: indent + 2,
           content: (
             <span>
-              {'    '}
               <JsonValue value={item} />
               {j < value.length - 1 && <span className="text-gray-400">,</span>}
             </span>
@@ -263,26 +320,24 @@ function buildLines(obj: Record<string, unknown>): Line[] {
         })
       })
       lines.push({
-        key: `${key}-close`,
-        fingerprint: `${key}:]${comma ? ',' : ''}`,
+        key: `${fullKey}-close`,
+        fingerprint: `${fullKey}:]${comma ? ',' : ''}`,
+        indent,
         content: (
-          <span>
-            {'  '}
-            <span className="text-gray-400">
-              {']'}
-              {comma && ','}
-            </span>
+          <span className="text-gray-400">
+            {']'}
+            {comma && ','}
           </span>
         ),
       })
     } else {
       const valStr = JSON.stringify(value)
       lines.push({
-        key,
-        fingerprint: `${key}:${valStr}`,
+        key: fullKey,
+        fingerprint: `${fullKey}:${valStr}`,
+        indent,
         content: (
           <span>
-            {'  '}
             <span className="text-blue-600 dark:text-blue-400">{`"${key}"`}</span>
             <span className="text-gray-400">: </span>
             <JsonValue value={value} />
@@ -293,11 +348,15 @@ function buildLines(obj: Record<string, unknown>): Line[] {
     }
   })
 
-  lines.push({
-    key: '__close',
-    fingerprint: '}',
-    content: <span className="text-gray-400">{'}'}</span>,
-  })
+  if (indent === 2) {
+    lines.push({
+      key: '__close',
+      fingerprint: '}',
+      indent: 0,
+      content: <span className="text-gray-400">{'}'}</span>,
+    })
+  }
+
   return lines
 }
 

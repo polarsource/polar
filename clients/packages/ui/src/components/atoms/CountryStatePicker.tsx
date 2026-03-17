@@ -148,4 +148,6 @@ const CountryStatePicker = ({
   )
 }
 
+export const COUNTRIES_WITH_STATE_SELECT = ['US', 'CA'] as const
+
 export default CountryStatePicker

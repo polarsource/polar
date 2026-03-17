@@ -124,7 +124,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setTimeout(() => {
         setApiResponse(null)
         resolve()
-      }, 2500)
+      }, 1000)
     })
   }, [])
 
@@ -158,7 +158,6 @@ export function useOnboardingData() {
     clearData: ctx.clearData,
     showApiResponse: ctx.showApiResponse,
     apiResponse: ctx.apiResponse,
-    apiPending: false,
   }
 }
 

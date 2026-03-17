@@ -23,8 +23,8 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -52,11 +52,32 @@ interface FormSchema {
   dobDay: string
 }
 
+function FormSync() {
+  const { updateData } = useOnboardingData()
+  const values = useWatch<FormSchema>()
+
+  useEffect(() => {
+    const dateOfBirth =
+      values.dobYear && values.dobMonth && values.dobDay
+        ? `${values.dobYear}-${values.dobMonth}-${String(values.dobDay).padStart(2, '0')}`
+        : undefined
+    updateData({
+      firstName: values.firstName,
+      lastName: values.lastName,
+      country: values.country,
+      dateOfBirth,
+    })
+  }, [values, updateData])
+
+  return null
+}
+
 export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
   const { data, updateData, showApiResponse } = useOnboardingData()
   const updateUser = useUpdateUser()
+  const [submitting, setSubmitting] = useState(false)
 
   const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
   const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
@@ -68,25 +89,11 @@ export function PersonalDetailsStep() {
       country: data.country || currentUser?.country || '',
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
-      dobDay: parsedDob[2] || '',
+      dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
     },
   })
 
-  const { control, handleSubmit, watch } = form
-
-  const firstName = watch('firstName')
-  const lastName = watch('lastName')
-  const country = watch('country')
-  const dobYear = watch('dobYear')
-  const dobMonth = watch('dobMonth')
-  const dobDay = watch('dobDay')
-  useEffect(() => {
-    const dateOfBirth =
-      dobYear && dobMonth && dobDay
-        ? `${dobYear}-${dobMonth}-${dobDay.padStart(2, '0')}`
-        : undefined
-    updateData({ firstName, lastName, country, dateOfBirth })
-  }, [firstName, lastName, country, dobYear, dobMonth, dobDay, updateData])
+  const { control, handleSubmit } = form
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 100 }, (_, i) =>
@@ -99,6 +106,7 @@ export function PersonalDetailsStep() {
   const days = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
   const onSubmit = async (formData: FormSchema) => {
+    setSubmitting(true)
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
       firstName: formData.firstName,
@@ -115,6 +123,7 @@ export function PersonalDetailsStep() {
     })
 
     if (error) {
+      setSubmitting(false)
       await showApiResponse(400, 'Failed to save personal details')
       return
     }
@@ -134,6 +143,7 @@ export function PersonalDetailsStep() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
+          <FormSync />
           <Box
             display="grid"
             gridTemplateColumns="repeat(2, minmax(0, 1fr))"
@@ -276,7 +286,7 @@ export function PersonalDetailsStep() {
             </Box>
           </Box>
 
-          <Button type="submit" fullWidth>
+          <Button type="submit" loading={submitting} fullWidth>
             Continue
           </Button>
         </form>

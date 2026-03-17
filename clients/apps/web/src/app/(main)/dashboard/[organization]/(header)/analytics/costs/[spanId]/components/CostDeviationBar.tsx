@@ -1,16 +1,23 @@
 'use client'
 
+import Circle from '@mui/icons-material/Circle'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
+import { twMerge } from 'tailwind-merge'
 
-const COLORS = {
-  emerald: 'hsl(142, 69%, 58%)',
-  amber: 'hsl(44, 100%, 50%)',
-  red: 'hsl(0, 84%, 60%)',
+const indicatorColor = {
+  positive:
+    'bg-emerald-50 dark:bg-emerald-950 text-emerald-500 dark:text-emerald-500 dark:group-hover:bg-emerald-950 group-hover:bg-emerald-100',
+  warning:
+    'bg-amber-50 dark:bg-amber-950 text-amber-500 dark:text-amber-500 dark:group-hover:bg-amber-950 group-hover:bg-amber-100',
+  negative:
+    'bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-500 dark:group-hover:bg-red-950 group-hover:bg-red-100',
+  neutral:
+    'bg-gray-100 dark:bg-polar-700 text-gray-500 dark:text-polar-500 dark:group-hover:bg-white/5 group-hover:bg-black/5',
 }
 
 function getEventCostDeviation(
@@ -30,12 +37,12 @@ function getEventCostDeviation(
     const range = p90Cost - averageCost
     const position = range > 0 ? (eventCost - averageCost) / range : 0
     barFillPercent = Math.min(100, position * 100)
-    barColor = position < 0.7 ? COLORS.amber : COLORS.red
+    barColor = position < 0.7 ? indicatorColor.warning : indicatorColor.negative
   } else {
     const range = averageCost - p10Cost
     const position = range > 0 ? (averageCost - eventCost) / range : 0
     barFillPercent = Math.min(100, position * 100)
-    barColor = COLORS.emerald
+    barColor = indicatorColor.positive
   }
 
   const deviationFormatted = `${deviation > 0 ? '+' : ''}${deviation.toFixed(1)}%`
@@ -69,38 +76,23 @@ export function CostDeviationBar({
     <Tooltip>
       <TooltipTrigger asChild>
         <div className="flex cursor-help flex-row items-center gap-x-4">
-          <span className="font-mono text-xs tabular-nums">
+          <span className="font-mono text-sm tabular-nums">
             {formatCurrency('subcent')(eventCost, currency)}
           </span>
-          <div className="flex h-1 w-8 items-center">
-            <div className="dark:bg-polar-600 flex h-full w-1/2 justify-end overflow-hidden rounded-l-full bg-gray-200">
-              {!deviation.isAboveAverage && (
-                <div
-                  className="h-full rounded-l-full transition-all duration-300"
-                  style={{
-                    width: `${deviation.barFillPercent}%`,
-                    backgroundColor: deviation.barColor,
-                  }}
-                />
-              )}
-            </div>
-            <div className="dark:bg-polar-700 h-full w-1/2 overflow-hidden rounded-r-full bg-gray-200">
-              {deviation.isAboveAverage && (
-                <div
-                  className="h-full rounded-r-full transition-all duration-300"
-                  style={{
-                    width: `${deviation.barFillPercent}%`,
-                    backgroundColor: deviation.barColor,
-                  }}
-                />
-              )}
-            </div>
+          <div
+            className={twMerge(
+              'flex h-6 w-6 items-center justify-center rounded-sm text-[6px] transition-colors duration-150',
+              deviation.barColor,
+            )}
+          >
+            <Circle fontSize="inherit" />
           </div>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="top" align="end" className="max-w-xs">
-        <p className="dark:text-polar-400 text-xs text-gray-400">
-          vs. average cost for this event type
+      <TooltipContent side="top" align="end">
+        <p className="text-xs">
+          {deviation.deviationFormatted} compared to the average cost for this
+          event type
         </p>
       </TooltipContent>
     </Tooltip>

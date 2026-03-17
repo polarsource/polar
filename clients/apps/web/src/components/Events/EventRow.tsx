@@ -260,7 +260,6 @@ export const EventRow = ({
               renderEventLink={false}
               renderChildren={renderChildren}
               expanded={expandChildren}
-              costBadge={costBadge}
             />
           ))}
           {hasNextPage && (

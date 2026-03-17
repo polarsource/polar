@@ -36,8 +36,14 @@ export const ProductInfoSection = ({
           name="name"
           rules={{
             required: 'This field is required',
-            minLength: 3,
-            maxLength: 64,
+            minLength: {
+              value: 3,
+              message: 'Name must be at least 3 characters',
+            },
+            maxLength: {
+              value: 64,
+              message: 'Name must be at most 64 characters',
+            },
           }}
           defaultValue=""
           render={({ field }) => (

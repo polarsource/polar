@@ -1,5 +1,11 @@
 'use client'
 
+import {
+  DEFAULT_INTERVAL,
+  getCostsSearchParams,
+  getDefaultEndDate,
+  getDefaultStartDate,
+} from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { endOfDay, subMonths } from 'date-fns'
@@ -10,12 +16,6 @@ import {
   useQueryState,
 } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
-import {
-  DEFAULT_INTERVAL,
-  getCostsSearchParams,
-  getDefaultEndDate,
-  getDefaultStartDate,
-} from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
@@ -23,13 +23,13 @@ import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 
 import { formatCurrency } from '@polar-sh/currency'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   BadgeDollarSignIcon,
   CircleUserRound,
   MousePointerClickIcon,
 } from 'lucide-react'
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 export default function CostsSidebarFilters({
@@ -144,7 +144,7 @@ export default function CostsSidebarFilters({
       </div>
       <div className="flex flex-col gap-y-2">
         <h3 className="text-sm">Events</h3>
-        <div className="flex flex-col gap-y-2">
+        <List className="rounded-lg">
           {(costData?.totals ?? []).map((totals) => (
             <EventStatisticsCard
               key={totals.name}
@@ -158,7 +158,7 @@ export default function CostsSidebarFilters({
               isSelected={totals.event_type_id === params.spanId}
             />
           ))}
-        </div>
+        </List>
       </div>
       <div className="flex flex-col gap-y-2">
         <CustomerSelector
@@ -171,31 +171,7 @@ export default function CostsSidebarFilters({
   )
 }
 
-type TimeSeriesField = 'average' | 'p10' | 'p90' | 'p99'
-const getTimeSeriesValues = (
-  periods: schemas['StatisticsPeriod'][],
-  eventName: schemas['EventStatistics']['name'],
-  field: TimeSeriesField,
-): number[] => {
-  return periods.map((period) => {
-    const eventStats = period.stats.find((stat) => stat.name === eventName)
-    if (!eventStats) return 0
-
-    if (field === 'average') {
-      return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
-    } else if (field === 'p10') {
-      return parseFloat(eventStats.p10?.['_cost_amount'] || '0')
-    } else if (field === 'p90') {
-      return parseFloat(eventStats.p90?.['_cost_amount'] || '0')
-    } else if (field === 'p99') {
-      return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
-    }
-    return 0
-  })
-}
-
 function EventStatisticsCard({
-  periods,
   eventStatistics,
   organization,
   startDate,
@@ -220,20 +196,16 @@ function EventStatisticsCard({
     customerIds,
   )
 
+  const router = useRouter()
+
+  const onSelect = () => {
+    router.push(
+      `/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`,
+    )
+  }
+
   return (
-    <Link
-      href={
-        isSelected
-          ? `/dashboard/${organization.slug}/analytics/costs${searchString ? `?${searchString}` : ''}`
-          : `/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`
-      }
-      className={twMerge(
-        'dark:bg-polar-700 flex cursor-pointer flex-col justify-between gap-5 rounded-2xl px-3 pt-2 pb-3 transition-colors',
-        isSelected
-          ? 'border-gray-300 bg-gray-50'
-          : 'dark:border-polar-700 dark:hover:border-polar-600 border-gray-200 hover:border-gray-300',
-      )}
-    >
+    <ListItem size="small" selected={isSelected} onSelect={onSelect}>
       <div className="flex flex-col justify-between gap-1.5">
         <h2 className="text-sm font-medium">
           {eventStatistics.label ?? eventStatistics.name}
@@ -268,6 +240,6 @@ function EventStatisticsCard({
           </div>
         </dl>
       </div>
-    </Link>
+    </ListItem>
   )
 }

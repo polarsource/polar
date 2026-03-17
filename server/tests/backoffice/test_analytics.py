@@ -128,6 +128,111 @@ class TestGetRefundStats:
         assert count == 1
         assert refund_amount == 1000  # USD, not 900 EUR
 
+    async def test_multiple_refunds_on_same_order_counts_as_one(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """
+        When an order has multiple refunds (e.g. partial + remainder),
+        the count should reflect one refunded order, not the number of
+        refund records. The total amount should still sum all refunds.
+        """
+        org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture, organization=org, stripe_customer_id="STRIPE_CUST_SPLIT"
+        )
+        order = await create_order(save_fixture, customer=customer)
+        payment = await create_payment(
+            save_fixture,
+            org,
+            amount=1100,
+            currency="usd",
+            status=PaymentStatus.succeeded,
+        )
+        # First partial refund
+        refund1 = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=999,
+            currency="usd",
+            processor_id="STRIPE_REFUND_1",
+        )
+        await create_refund_transaction(save_fixture, amount=-999, refund=refund1)
+        # Second refund (remainder) on the same order
+        refund2 = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=101,
+            currency="usd",
+            processor_id="STRIPE_REFUND_2",
+        )
+        await create_refund_transaction(save_fixture, amount=-101, refund=refund2)
+
+        service = PaymentAnalyticsService(session)
+        count, refund_amount = await service.get_refund_stats(org.id)
+
+        assert count == 1  # One order, not two refund records
+        assert refund_amount == 1100  # Total amount across both refunds
+
+    async def test_refunds_on_different_orders_counted_separately(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """
+        Refunds on different orders should each be counted.
+        """
+        org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture, organization=org, stripe_customer_id="STRIPE_CUST_MULTI"
+        )
+        order1 = await create_order(save_fixture, customer=customer)
+        payment1 = await create_payment(
+            save_fixture,
+            org,
+            amount=500,
+            currency="usd",
+            status=PaymentStatus.succeeded,
+            processor_id="STRIPE_PAY_1",
+        )
+        refund1 = await create_refund(
+            save_fixture,
+            order1,
+            payment1,
+            amount=500,
+            currency="usd",
+            processor_id="STRIPE_REFUND_A",
+        )
+        await create_refund_transaction(save_fixture, amount=-500, refund=refund1)
+
+        order2 = await create_order(save_fixture, customer=customer)
+        payment2 = await create_payment(
+            save_fixture,
+            org,
+            amount=300,
+            currency="usd",
+            status=PaymentStatus.succeeded,
+            processor_id="STRIPE_PAY_2",
+        )
+        refund2 = await create_refund(
+            save_fixture,
+            order2,
+            payment2,
+            amount=300,
+            currency="usd",
+            processor_id="STRIPE_REFUND_B",
+        )
+        await create_refund_transaction(save_fixture, amount=-300, refund=refund2)
+
+        service = PaymentAnalyticsService(session)
+        count, refund_amount = await service.get_refund_stats(org.id)
+
+        assert count == 2  # Two distinct orders
+        assert refund_amount == 800
+
     async def test_no_refunds(
         self,
         session: AsyncSession,

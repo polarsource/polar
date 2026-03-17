@@ -166,9 +166,9 @@ class OrganizationReviewRepository(
         return p50, p90
 
     async def get_refund_stats(self, organization_id: UUID) -> tuple[int, int]:
-        """Returns (refund_count, refund_amount_cents)."""
+        """Returns (refunded_orders_count, refund_amount_cents)."""
         statement = select(
-            func.count(Refund.id),
+            func.count(func.distinct(Refund.order_id)),
             func.coalesce(func.sum(Refund.amount), 0),
         ).where(
             Refund.organization_id == organization_id,

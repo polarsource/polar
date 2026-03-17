@@ -72,10 +72,10 @@ class PaymentAnalyticsService:
         return count, total_amount, risk_scores
 
     async def get_refund_stats(self, organization_id: UUID4) -> tuple[int, int]:
-        """Get refund count and total amount in USD cents for organization."""
+        """Get count of orders with refunds and total refund amount in USD cents."""
         result = await self.session.execute(
             select(
-                func.count(Refund.id),
+                func.count(func.distinct(Refund.order_id)),
                 func.coalesce(-func.sum(Transaction.amount), 0),
             )
             .join(Order, Refund.order_id == Order.id)

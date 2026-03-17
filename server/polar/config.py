@@ -254,8 +254,6 @@ class Settings(BaseSettings):
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None
     TINYBIRD_WORKSPACE: str | None = None
-    TINYBIRD_EVENTS_WRITE: bool = False
-    TINYBIRD_EVENTS_READ: bool = False
 
     # Logo.dev (for company logo avatars)
     LOGO_DEV_PUBLISHABLE_KEY: str | None = None

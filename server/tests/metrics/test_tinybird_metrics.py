@@ -1468,11 +1468,6 @@ async def _seed_organization_scenario(
     events: list[Event],
 ) -> OrganizationContext:
     organization = await create_organization(save_fixture)
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "tinybird_read": True,
-        "tinybird_compare": False,
-    }
     await save_fixture(organization)
 
     products: dict[str, Product] = {}
@@ -1605,7 +1600,6 @@ async def metrics_harness(
         with (
             patch.object(tinybird_service, "client", tinybird_client),
             patch.object(queries_tinybird, "tinybird_client", tinybird_client),
-            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
         ):
             for scenario in ORGANIZATION_SCENARIOS:
                 organizations[scenario.key] = await _seed_organization_scenario(

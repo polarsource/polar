@@ -2125,7 +2125,6 @@ async def metrics_harness(
         with (
             patch.object(tinybird_service, "client", tinybird_client),
             patch.object(queries_tinybird, "tinybird_client", tinybird_client),
-            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
         ):
             user = await create_user(save_fixture)
             unauthorized_user = await create_user(save_fixture)

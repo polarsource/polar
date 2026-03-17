@@ -13,7 +13,7 @@ import {
   getCostsSearchParams,
   getDefaultEndDate,
   getDefaultStartDate,
-} from '../utils'
+} from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 
 export function SpansTitle({
   organization,

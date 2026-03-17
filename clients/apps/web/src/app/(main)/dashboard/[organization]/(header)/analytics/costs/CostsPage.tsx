@@ -78,7 +78,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
       <CostsEventsTable
         organization={organization}
-        spanId={''}
         events={events}
         eventTypes={eventTypes}
         hasNextPage={hasNextPage}

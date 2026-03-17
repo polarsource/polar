@@ -7,18 +7,11 @@ import {
   differenceInYears,
   parse,
   startOfDay,
-  startOfMonth,
-  startOfYear,
-  startOfYesterday,
   subDays,
   subMonths,
   subYears,
 } from 'date-fns'
-import {
-  formatHumanFriendlyScalar,
-  formatPercentage,
-  formatScalar,
-} from './formatters'
+import { formatPercentage, formatScalar } from './formatters'
 
 /**
  * Converts a Date object to an ISO date string (YYYY-MM-DD) in local timezone.
@@ -37,21 +30,6 @@ export const toISODate = (date: Date) => {
  */
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date(1970, 0, 1, 0, 0, 0))
-
-export const getTickFormatter = (
-  metric: schemas['Metric'],
-): ((value: number) => string) => {
-  switch (metric.type) {
-    case 'scalar':
-      return formatHumanFriendlyScalar
-    case 'currency':
-      return (value: number) => formatCurrency('statistics')(value, 'usd')
-    case 'percentage':
-      return formatPercentage
-    case 'currency_sub_cent':
-      return (value: number) => formatCurrency('subcent')(value, 'usd')
-  }
-}
 
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],
@@ -161,24 +139,6 @@ export const getChartRangeParams = (
   const startDate = _getStartDate(range)
   const interval = dateRangeToInterval(startDate, endDate)
   return [startDate, endDate, interval]
-}
-
-export const getPreviousParams = (
-  startDate: Date,
-  range: ChartRange,
-): [Date, Date] | null => {
-  switch (range) {
-    case 'all_time':
-      return null
-    case '12m':
-      return [startOfYear(subYears(startDate, 1)), startDate]
-    case '3m':
-      return [startOfMonth(subMonths(startDate, 3)), startDate]
-    case '30d':
-      return [startOfDay(subMonths(startDate, 1)), startDate]
-    case 'today':
-      return [startOfYesterday(), startDate]
-  }
 }
 
 export const getPreviousDateRange = (

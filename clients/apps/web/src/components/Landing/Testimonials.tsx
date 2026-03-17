@@ -40,7 +40,7 @@ export const companyTestimonials = [
   },
 ]
 
-export const userTestimonials = [
+const userTestimonials = [
   {
     link: 'https://x.com/rauchg/status/1909810055622672851',
     name: 'Guillermo Rauch',

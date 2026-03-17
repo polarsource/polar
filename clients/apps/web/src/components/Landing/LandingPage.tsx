@@ -25,7 +25,7 @@ export default function Page() {
   )
 }
 
-export const PageContent = () => {
+const PageContent = () => {
   const { isMobile } = useIsMobile()
   return (
     <>

@@ -117,10 +117,7 @@ export const InlineModalHeader = (props: {
   )
 }
 
-export const CloseButton = (props: {
-  className?: string
-  hide: () => void
-}) => {
+const CloseButton = (props: { className?: string; hide: () => void }) => {
   return (
     <button
       type="button"

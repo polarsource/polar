@@ -93,5 +93,3 @@ export const WebhookFilter: React.FC<WebhookFilterProps> = ({
     </div>
   )
 }
-
-export default WebhookFilter

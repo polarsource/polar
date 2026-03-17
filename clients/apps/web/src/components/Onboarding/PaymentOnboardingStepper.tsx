@@ -52,7 +52,7 @@ const integrationOptions = [
   },
 ] as const
 
-export const PaymentOnboardingStepper = ({
+const PaymentOnboardingStepper = ({
   organization,
   className,
 }: PaymentOnboardingStepperProps) => {

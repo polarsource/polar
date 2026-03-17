@@ -2,40 +2,6 @@
 
 import { ProductGrantsFeed } from './products/ProductGrantsFeed'
 
-// ── Feature flag definitions ───────────────────────────────────────────────
-export const FLAG_DEFS = [
-  {
-    key: 'advanced_analytics',
-    label: 'advanced_analytics',
-    description: 'Grant detailed usage insights to Pro subscribers',
-    plan: 'Pro+',
-  },
-  {
-    key: 'api_unlimited',
-    label: 'api.unlimited',
-    description: 'Remove rate limits for Business subscribers',
-    plan: 'Business+',
-  },
-  {
-    key: 'priority_support',
-    label: 'priority_support',
-    description: 'Route support tickets to the fast-track queue',
-    plan: 'Pro+',
-  },
-  {
-    key: 'custom_branding',
-    label: 'custom_branding',
-    description: 'Enable white-label and custom domain features',
-    plan: 'Business+',
-  },
-  {
-    key: 'audit_logs',
-    label: 'audit_logs',
-    description: 'Expose the full audit trail for Enterprise customers',
-    plan: 'Enterprise',
-  },
-] as const
-
 // ── Main export ────────────────────────────────────────────────────────────
 export const Products = () => {
   return (

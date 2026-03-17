@@ -7,7 +7,7 @@ interface UseIsMobileReturn {
   isLoading: boolean
 }
 
-export const useIsMobile = (): UseIsMobileReturn => {
+const useIsMobile = (): UseIsMobileReturn => {
   const [isMobile, setIsMobile] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 

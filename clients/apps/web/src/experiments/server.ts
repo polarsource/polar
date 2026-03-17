@@ -7,7 +7,7 @@ import {
   getDefaultVariant,
 } from './index'
 
-export interface GetExperimentOptions {
+interface GetExperimentOptions {
   distinctId?: string
   /**
    * Whether to track exposure in PostHog. Defaults to true.
@@ -16,7 +16,7 @@ export interface GetExperimentOptions {
   trackExposure?: boolean
 }
 
-export async function getExperiment<T extends ExperimentName>(
+async function getExperiment<T extends ExperimentName>(
   experimentName: T,
   options?: GetExperimentOptions,
 ): Promise<ExperimentVariant<T>> {

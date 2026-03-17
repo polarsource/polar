@@ -1,7 +1,7 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useCheckoutLinks = (
@@ -37,19 +37,6 @@ export const useCheckoutLinks = (
       return lastPageParam + 1
     },
     retry: defaultRetry,
-  })
-
-export const useCheckoutLink = (id?: string | null) =>
-  useQuery({
-    queryKey: ['checkout_link', id],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/checkout-links/{id}', {
-          params: { path: { id: id! } },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled: !!id,
   })
 
 export const useCreateCheckoutLink = () =>

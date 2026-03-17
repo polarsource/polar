@@ -107,7 +107,7 @@ interface TransactionsListProps {
   isLoading: boolean | ReactQueryLoading
 }
 
-export const isTransaction = (
+const isTransaction = (
   t: schemas['Transaction'] | schemas['TransactionEmbedded'],
 ): t is schemas['Transaction'] =>
   // eslint-disable-next-line no-prototype-builtins

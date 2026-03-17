@@ -21,8 +21,6 @@ import {
   useMetricSelectorModal,
 } from './MetricSelectorModal'
 
-export { DEFAULT_OVERVIEW_METRICS }
-
 interface OverviewSectionProps {
   organization: schemas['Organization']
 }

@@ -102,34 +102,11 @@ export const useCustomerPortalSession = (api: Client) =>
     retry: defaultRetry,
   })
 
-export const useAuthenticatedCustomer = (api: Client) =>
-  useQuery({
-    queryKey: ['customer'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/customers/me')),
-    retry: defaultRetry,
-  })
-
 export const usePortalAuthenticatedUser = (api: Client) =>
   useQuery({
     queryKey: ['portal_authenticated_user'],
     queryFn: () => unwrap(api.GET('/v1/customer-portal/customer-session/user')),
     retry: defaultRetry,
-  })
-
-export const useUpdateCustomerPortal = (api: Client) =>
-  useMutation({
-    mutationFn: async (body: schemas['CustomerPortalCustomerUpdate']) =>
-      api.PATCH('/v1/customer-portal/customers/me', {
-        body,
-      }),
-    onSuccess: async (result) => {
-      if (result.error) {
-        return
-      }
-      getQueryClient().invalidateQueries({
-        queryKey: ['customer'],
-      })
-    },
   })
 
 export const useCustomerPaymentMethods = (api: Client) =>
@@ -232,21 +209,6 @@ export const useCustomerBenefitGrantUpdate = (api: Client) =>
     },
   })
 
-export const useCustomerLicenseKeys = (
-  api: Client,
-  parameters: operations['customer_portal:license_keys:list']['parameters']['query'],
-) =>
-  useQuery({
-    queryKey: ['customer_license_keys', { parameters }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/license-keys/', {
-          params: { query: parameters },
-        }),
-      ),
-    retry: defaultRetry,
-  })
-
 export const useCustomerLicenseKey = (api: Client, id: string) =>
   useQuery({
     queryKey: ['customer_license_keys', { id }],
@@ -298,23 +260,6 @@ export const useCustomerDownloadables = (
     retry: defaultRetry,
   })
 
-export const useCustomerOrder = (
-  api: Client,
-  id: string,
-  initialData?: schemas['CustomerOrder'],
-) =>
-  useQuery({
-    queryKey: ['customer_order', { id }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/orders/{id}', {
-          params: { path: { id } },
-        }),
-      ),
-    retry: defaultRetry,
-    initialData,
-  })
-
 export const useCustomerOrders = (
   api: Client,
   parameters?: operations['customer_portal:orders:list']['parameters']['query'],
@@ -324,21 +269,6 @@ export const useCustomerOrders = (
     queryFn: () =>
       unwrap(
         api.GET('/v1/customer-portal/orders/', {
-          params: { query: parameters },
-        }),
-      ),
-    retry: defaultRetry,
-  })
-
-export const useCustomerSubscriptions = (
-  api: Client,
-  parameters?: operations['customer_portal:subscriptions:list']['parameters']['query'],
-) =>
-  useQuery({
-    queryKey: ['customer_subscriptions', { ...(parameters || {}) }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/subscriptions/', {
           params: { query: parameters },
         }),
       ),
@@ -576,25 +506,6 @@ export const useResendSeatInvitation = (api: Client) =>
       }
       return result
     },
-  })
-
-export const useCustomerClaimedSubscriptions = (api: Client) =>
-  useQuery({
-    queryKey: ['customer_claimed_subscriptions'],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/seats/subscriptions', {
-          params: { query: { limit: 100 } },
-        }),
-      ),
-    retry: defaultRetry,
-  })
-
-export const useCustomerWallets = (api: Client) =>
-  useQuery({
-    queryKey: ['customer_wallets'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/wallets/')),
-    retry: defaultRetry,
   })
 
 // Member management hooks

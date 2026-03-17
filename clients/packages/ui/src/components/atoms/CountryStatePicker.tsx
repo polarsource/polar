@@ -9,75 +9,78 @@ import {
   SelectValue,
 } from './Select'
 
-const US_STATES: Record<string, string> = {
-  'US-AL': 'Alabama',
-  'US-AK': 'Alaska',
-  'US-AZ': 'Arizona',
-  'US-AR': 'Arkansas',
-  'US-CA': 'California',
-  'US-CO': 'Colorado',
-  'US-CT': 'Connecticut',
-  'US-DE': 'Delaware',
-  'US-FL': 'Florida',
-  'US-GA': 'Georgia',
-  'US-HI': 'Hawaii',
-  'US-ID': 'Idaho',
-  'US-IL': 'Illinois',
-  'US-IN': 'Indiana',
-  'US-IA': 'Iowa',
-  'US-KS': 'Kansas',
-  'US-KY': 'Kentucky',
-  'US-LA': 'Louisiana',
-  'US-ME': 'Maine',
-  'US-MD': 'Maryland',
-  'US-MA': 'Massachusetts',
-  'US-MI': 'Michigan',
-  'US-MN': 'Minnesota',
-  'US-MS': 'Mississippi',
-  'US-MO': 'Missouri',
-  'US-MT': 'Montana',
-  'US-NE': 'Nebraska',
-  'US-NV': 'Nevada',
-  'US-NH': 'New Hampshire',
-  'US-NJ': 'New Jersey',
-  'US-NM': 'New Mexico',
-  'US-NY': 'New York',
-  'US-NC': 'North Carolina',
-  'US-ND': 'North Dakota',
-  'US-OH': 'Ohio',
-  'US-OK': 'Oklahoma',
-  'US-OR': 'Oregon',
-  'US-PA': 'Pennsylvania',
-  'US-RI': 'Rhode Island',
-  'US-SC': 'South Carolina',
-  'US-SD': 'South Dakota',
-  'US-TN': 'Tennessee',
-  'US-TX': 'Texas',
-  'US-UT': 'Utah',
-  'US-VT': 'Vermont',
-  'US-VA': 'Virginia',
-  'US-WA': 'Washington',
-  'US-WV': 'West Virginia',
-  'US-WI': 'Wisconsin',
-  'US-WY': 'Wyoming',
-  'US-DC': 'District of Columbia',
+export const FIXED_STATE_OPTIONS: Record<string, Record<string, string>> = {
+  US: {
+    'US-AL': 'Alabama',
+    'US-AK': 'Alaska',
+    'US-AZ': 'Arizona',
+    'US-AR': 'Arkansas',
+    'US-CA': 'California',
+    'US-CO': 'Colorado',
+    'US-CT': 'Connecticut',
+    'US-DE': 'Delaware',
+    'US-FL': 'Florida',
+    'US-GA': 'Georgia',
+    'US-HI': 'Hawaii',
+    'US-ID': 'Idaho',
+    'US-IL': 'Illinois',
+    'US-IN': 'Indiana',
+    'US-IA': 'Iowa',
+    'US-KS': 'Kansas',
+    'US-KY': 'Kentucky',
+    'US-LA': 'Louisiana',
+    'US-ME': 'Maine',
+    'US-MD': 'Maryland',
+    'US-MA': 'Massachusetts',
+    'US-MI': 'Michigan',
+    'US-MN': 'Minnesota',
+    'US-MS': 'Mississippi',
+    'US-MO': 'Missouri',
+    'US-MT': 'Montana',
+    'US-NE': 'Nebraska',
+    'US-NV': 'Nevada',
+    'US-NH': 'New Hampshire',
+    'US-NJ': 'New Jersey',
+    'US-NM': 'New Mexico',
+    'US-NY': 'New York',
+    'US-NC': 'North Carolina',
+    'US-ND': 'North Dakota',
+    'US-OH': 'Ohio',
+    'US-OK': 'Oklahoma',
+    'US-OR': 'Oregon',
+    'US-PA': 'Pennsylvania',
+    'US-RI': 'Rhode Island',
+    'US-SC': 'South Carolina',
+    'US-SD': 'South Dakota',
+    'US-TN': 'Tennessee',
+    'US-TX': 'Texas',
+    'US-UT': 'Utah',
+    'US-VT': 'Vermont',
+    'US-VA': 'Virginia',
+    'US-WA': 'Washington',
+    'US-WV': 'West Virginia',
+    'US-WI': 'Wisconsin',
+    'US-WY': 'Wyoming',
+    'US-DC': 'District of Columbia',
+  },
+  CA: {
+    'CA-AB': 'Alberta',
+    'CA-BC': 'British Columbia',
+    'CA-MB': 'Manitoba',
+    'CA-NB': 'New Brunswick',
+    'CA-NL': 'Newfoundland and Labrador',
+    'CA-NS': 'Nova Scotia',
+    'CA-NT': 'Northwest Territories',
+    'CA-NU': 'Nunavut',
+    'CA-ON': 'Ontario',
+    'CA-PE': 'Prince Edward Island',
+    'CA-QC': 'Quebec',
+    'CA-SK': 'Saskatchewan',
+    'CA-YT': 'Yukon',
+  },
 }
 
-const CA_SUBDIVISIONS: Record<string, string> = {
-  'CA-AB': 'Alberta',
-  'CA-BC': 'British Columbia',
-  'CA-MB': 'Manitoba',
-  'CA-NB': 'New Brunswick',
-  'CA-NL': 'Newfoundland and Labrador',
-  'CA-NS': 'Nova Scotia',
-  'CA-NT': 'Northwest Territories',
-  'CA-NU': 'Nunavut',
-  'CA-ON': 'Ontario',
-  'CA-PE': 'Prince Edward Island',
-  'CA-QC': 'Quebec',
-  'CA-SK': 'Saskatchewan',
-  'CA-YT': 'Yukon',
-}
+export const COUNTRIES_WITH_FIXED_STATE_OPTIONS = Object.keys(FIXED_STATE_OPTIONS)
 
 const CountryStatePicker = ({
   className,
@@ -102,8 +105,8 @@ const CountryStatePicker = ({
   placeholder?: string
   fallbackPlaceholder?: string
 }) => {
-  if (country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country as typeof COUNTRIES_WITH_FIXED_STATE_OPTIONS[number])) {
-    const states = country === 'US' ? US_STATES : CA_SUBDIVISIONS
+  const states = country ? FIXED_STATE_OPTIONS[country] : undefined
+  if (states) {
     return (
       <Select
         onValueChange={onChange}
@@ -147,7 +150,5 @@ const CountryStatePicker = ({
     />
   )
 }
-
-export const COUNTRIES_WITH_FIXED_STATE_OPTIONS = ['US', 'CA'] as const
 
 export default CountryStatePicker

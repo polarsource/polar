@@ -244,7 +244,7 @@ class TestPreviewCLI:
             return connection
 
         monkeypatch.setenv(
-            "PREVIEW_POSTGRES_ADMIN_DSN",
+            "POLAR_PREVIEW_POSTGRES_ADMIN_DSN",
             "postgresql://admin:secret@db.internal:5432/postgres",
         )
         monkeypatch.setattr(
@@ -322,7 +322,7 @@ class TestPreviewCLI:
             return connection
 
         monkeypatch.setenv(
-            "PREVIEW_POSTGRES_ADMIN_DSN",
+            "POLAR_PREVIEW_POSTGRES_ADMIN_DSN",
             "postgresql://admin:secret@db.internal:5432/postgres",
         )
         monkeypatch.setattr(
@@ -399,7 +399,7 @@ class TestPreviewCLI:
             return connection
 
         monkeypatch.setenv(
-            "PREVIEW_POSTGRES_ADMIN_DSN",
+            "POLAR_PREVIEW_POSTGRES_ADMIN_DSN",
             "postgresql://admin:secret@db.internal:5432/postgres",
         )
         monkeypatch.setattr(
@@ -515,10 +515,10 @@ class TestPreviewCLI:
             )
             return info_responses.pop(0)
 
-        monkeypatch.setenv("PREVIEW_TINYBIRD_API_URL", "https://api.tinybird.co")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_ADMIN_TOKEN", "tb-admin-token")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_WORKSPACE", "polar")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_LAST_PARTITION", "true")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_API_URL", "https://api.tinybird.co")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN", "tb-admin-token")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_WORKSPACE", "polar")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_LAST_PARTITION", "true")
         monkeypatch.setattr(
             preview_script,
             "run_tinybird_cli_command",
@@ -611,9 +611,9 @@ class TestPreviewCLI:
                 },
             }
 
-        monkeypatch.setenv("PREVIEW_TINYBIRD_API_URL", "https://api.tinybird.co")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_ADMIN_TOKEN", "tb-admin-token")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_WORKSPACE", "polar")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_API_URL", "https://api.tinybird.co")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN", "tb-admin-token")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_WORKSPACE", "polar")
         monkeypatch.setattr(
             preview_script,
             "run_tinybird_cli_command",
@@ -658,9 +658,9 @@ class TestPreviewCLI:
     ) -> None:
         github_output = tmp_path / "github-output.txt"
 
-        monkeypatch.setenv("PREVIEW_TINYBIRD_API_URL", "https://api.tinybird.co")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_ADMIN_TOKEN", "tb-admin-token")
-        monkeypatch.setenv("PREVIEW_TINYBIRD_WORKSPACE", "polar")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_API_URL", "https://api.tinybird.co")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_ADMIN_TOKEN", "tb-admin-token")
+        monkeypatch.setenv("POLAR_PREVIEW_TINYBIRD_WORKSPACE", "polar")
         monkeypatch.setattr(
             preview_script,
             "get_tinybird_info",
@@ -739,7 +739,7 @@ class TestPreviewCLI:
 
         assert result.exit_code == 1
         assert isinstance(result.exception, RuntimeError)
-        assert str(result.exception) == "PREVIEW_TINYBIRD_API_URL is required"
+        assert str(result.exception) == "POLAR_PREVIEW_TINYBIRD_API_URL is required"
         assert postgres_provision_called is False
         assert github_output.exists() is False
 

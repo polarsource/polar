@@ -339,7 +339,9 @@ export const OrganizationDetailsForm: React.FC<
               <div>
                 <CountryPicker
                   allowedCountries={enums.addressInputCountryValues}
-                  value={field.value as schemas['CountryAlpha2Input'] ?? undefined}
+                  value={
+                    (field.value as schemas['CountryAlpha2Input']) ?? undefined
+                  }
                   onChange={field.onChange as (value: string) => void}
                   placeholder="Select country"
                 />
@@ -708,6 +710,7 @@ const OrganizationProfileSettings: React.FC<
 > = ({ organization: _organization, kyc, onSubmitted }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
+    country?: schemas['CountryAlpha2Input']
   }
   const router = useRouter()
   const form = useForm<schemas['OrganizationUpdate']>({
@@ -764,6 +767,7 @@ const OrganizationProfileSettings: React.FC<
       ...data,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
+      country: data.country as schemas['CountryAlpha2Input'] | undefined,
       socials: [...(data.socials || []), ...emptySocials],
     })
 

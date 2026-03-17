@@ -40,7 +40,10 @@ const PRICING_MODELS = [
   'Usage-based',
 ] as const
 
-const SELLING_PLATFORMS: [NonNullable<schemas['OrganizationDetails']['switching_from']>, string][] = [
+const SELLING_PLATFORMS: [
+  NonNullable<schemas['OrganizationDetails']['switching_from']>,
+  string,
+][] = [
   ['paddle', 'Paddle'],
   ['lemon_squeezy', 'Lemon Squeezy'],
   ['gumroad', 'Gumroad'],
@@ -123,9 +126,9 @@ export function ProductDetailsStep() {
 
     if (data.organizationId) {
       const switching = formData.currentlySellingOn.length > 0
-      const switchingFrom = switching
-        ? formData.currentlySellingOn[0]
-        : null
+      const switchingFrom = (
+        switching ? formData.currentlySellingOn[0] : null
+      ) as schemas['OrganizationDetails']['switching_from']
 
       const productDescriptionParts = [
         formData.sellingCategories.length > 0 &&

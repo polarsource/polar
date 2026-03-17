@@ -2,7 +2,10 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 
-type ChipOption = string | [value: string, label: string] | { value: string; label: string }
+type ChipOption =
+  | string
+  | [value: string, label: string]
+  | { value: string; label: string }
 
 function normalizeOption(option: ChipOption): { value: string; label: string } {
   if (typeof option === 'string') return { value: option, label: option }

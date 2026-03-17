@@ -129,7 +129,7 @@ const BaseCheckoutForm = ({
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
           const newCountry = customerBillingAddress.country
-          const prevIsSelect = COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
+          const prevIsSelect = !!country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
           const nextIsSelect = COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(newCountry)
           if (prevIsSelect !== nextIsSelect || (prevIsSelect && nextIsSelect && country !== newCountry)) {
             resetField('customer_billing_address.state', { defaultValue: '' })

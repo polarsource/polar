@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
 
 import stripe as stripe_lib
 from sqlalchemy.orm.strategy_options import joinedload
@@ -14,7 +13,6 @@ from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe
-from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
 from polar.models.user import IdentityVerificationStatus
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -51,24 +49,6 @@ class UserNotOrganizationMemberError(AccountServiceError):
 
 
 class AccountService:
-    async def search(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User],
-        *,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[Account], int]:
-        repository = AccountRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).options(
-            joinedload(Account.users),
-            joinedload(Account.organizations),
-        )
-        accounts, count = await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
-        )
-
-        return accounts, count
-
     async def get(
         self,
         session: AsyncReadSession,

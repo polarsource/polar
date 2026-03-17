@@ -31,7 +31,6 @@ from polar.models import (
     User,
 )
 from polar.models.customer_seat import SeatStatus
-from polar.models.member import MemberRole
 from polar.models.order import OrderStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository

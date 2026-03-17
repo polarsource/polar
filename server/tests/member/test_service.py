@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -965,7 +966,7 @@ class TestGetOrCreateByEmail:
 
         call_count = 0
 
-        async def mock_create(self, model, flush=False):
+        async def mock_create(self: Any, model: Any, flush: bool = False) -> None:
             nonlocal call_count
             call_count += 1
             raise IntegrityError(
@@ -979,16 +980,18 @@ class TestGetOrCreateByEmail:
 
         get_call_count = 0
 
-        async def mock_get(self, customer_id, email, *, include_deleted=False):
+        async def mock_get(
+            self: Any, customer_id: Any, email: Any, *, include_deleted: bool = False
+        ) -> Member | None:
             nonlocal get_call_count
             get_call_count += 1
             if get_call_count == 1:
                 return None  # First call: no existing member found
-            return await original_get(self, customer_id, email, include_deleted=include_deleted)
+            return await original_get(
+                self, customer_id, email, include_deleted=include_deleted
+            )
 
-        mocker.patch.object(
-            MemberRepository, "get_by_customer_id_and_email", mock_get
-        )
+        mocker.patch.object(MemberRepository, "get_by_customer_id_and_email", mock_get)
 
         member = await member_service.get_or_create_by_email(
             session,

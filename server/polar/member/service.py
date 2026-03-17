@@ -421,9 +421,7 @@ class MemberService:
                 customer_id=customer_id,
                 email=email,
             )
-            existing = await repository.get_by_customer_id_and_email(
-                customer_id, email
-            )
+            existing = await repository.get_by_customer_id_and_email(customer_id, email)
             if existing:
                 return existing
             raise

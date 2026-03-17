@@ -4,8 +4,8 @@
 # Runs on the preview VM via SSH from GitHub Actions.
 #
 # Usage:
-#   deploy.sh deploy  <pr_num> <branch> <sha> [env_json_base64]
-#   deploy.sh destroy <pr_num>
+#   echo '{"pr_num":"123","branch":"...","sha":"...","env_b64":"..."}' | deploy.sh deploy
+#   echo '{"pr_num":"123"}' | deploy.sh destroy
 #
 set -euo pipefail
 
@@ -15,13 +15,20 @@ CADDY_PREVIEWS_DIR="/etc/caddy/previews"
 REPO_URL="${POLAR_PREVIEW_REPO_URL:-https://github.com/polarsource/polar.git}"
 VERCEL_PROJECT="${POLAR_PREVIEW_VERCEL_PROJECT:-polar-sandbox}"
 VERCEL_SCOPE="${POLAR_PREVIEW_VERCEL_SCOPE:-polar-sh}"
-VERCEL_BYPASS_SECRET="" # set per-deploy via argument
 
 # Get the Tailscale hostname for URLs
 TS_HOSTNAME="$(tailscale status --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["Self"]["DNSName"].rstrip("."))')"
 
-ACTION="${1:?Usage: deploy.sh <deploy|destroy> <pr_num> ...}"
-PR_NUM="${2:?PR number required}"
+ACTION="${1:?Usage: deploy.sh <deploy|destroy>}"
+
+# Read arguments from stdin JSON to avoid shell injection via branch names
+INPUT=$(cat)
+
+PR_NUM=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin)['pr_num'])")
+if ! [[ "$PR_NUM" =~ ^[0-9]+$ ]]; then
+    echo "Invalid PR number: ${PR_NUM}" >&2
+    exit 1
+fi
 
 API_PORT=$((10000 + PR_NUM))
 REDIS_PORT=$((16000 + PR_NUM))
@@ -31,13 +38,19 @@ PREVIEW_PATH_PREFIX="pr-${PR_NUM}"
 log() { echo "[preview:pr-${PR_NUM}] $*"; }
 
 deploy() {
-    local BRANCH="${3:?Branch required}"
-    local SHA="${4:?SHA required}"
-    local ENV_B64="${5:-}"
-    VERCEL_BYPASS_SECRET="${6:-}"
-    local ENV_JSON=""
+    local BRANCH SHA ENV_B64 ENV_JSON
+    BRANCH=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin)['branch'])")
+    SHA=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin)['sha'])")
+    ENV_B64=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('env_b64',''))")
+    ENV_JSON=""
     if [[ -n "$ENV_B64" ]]; then
         ENV_JSON=$(echo "$ENV_B64" | base64 -d)
+    fi
+
+    # Validate SHA is hex only
+    if ! [[ "$SHA" =~ ^[0-9a-f]+$ ]]; then
+        echo "Invalid SHA: ${SHA}" >&2
+        exit 1
     fi
 
     local BRANCH_SLUG
@@ -186,7 +199,6 @@ for k, v in json.loads(sys.stdin.read()).items():
         -e "s/__PR_NUM__/${PR_NUM}/g" \
         -e "s|__VERCEL_PREVIEW_URL__|https://${VERCEL_PREVIEW_HOST}|g" \
         -e "s/__VERCEL_PREVIEW_HOST__/${VERCEL_PREVIEW_HOST}/g" \
-        -e "s/__VERCEL_BYPASS_SECRET__/${VERCEL_BYPASS_SECRET}/g" \
         -e "s/__TS_HOSTNAME__/${TS_HOSTNAME}/g" \
         "${PREVIEW_TOOLS_DIR}/caddy-preview.template" \
         > "${CADDY_PREVIEWS_DIR}/pr-${PR_NUM}.caddy"
@@ -225,7 +237,7 @@ destroy() {
 }
 
 case "$ACTION" in
-    deploy)  deploy "$@" ;;
+    deploy)  deploy ;;
     destroy) destroy ;;
     *)       echo "Unknown action: $ACTION" >&2; exit 1 ;;
 esac

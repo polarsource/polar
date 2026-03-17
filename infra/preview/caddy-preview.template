@@ -20,6 +20,6 @@ handle @vercel__PR_NUM__ {
 		header_up Host __VERCEL_PREVIEW_HOST__
 		header_up X-Forwarded-Host __TS_HOSTNAME__
 		header_up X-Forwarded-Proto https
-		header_up x-vercel-protection-bypass __VERCEL_BYPASS_SECRET__
+		header_up x-vercel-protection-bypass {$VERCEL_BYPASS_SECRET}
 	}
 }

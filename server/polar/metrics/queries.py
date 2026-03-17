@@ -220,6 +220,16 @@ def get_active_subscriptions_cte(
         .scalar_subquery()
     )
 
+    bucketed_fx_rate = (
+        select(bucketed_fx.c.avg_exchange_rate)
+        .where(
+            bucketed_fx.c.timestamp == timestamp_column,
+            bucketed_fx.c.presentment_currency == func.lower(Subscription.currency),
+        )
+        .correlate(Subscription, timestamp_series)
+        .scalar_subquery()
+    )
+
     # TODO: Change this to look at the organization settlement currency
     # when it can be something else than USD
     converted_amount = case(
@@ -230,7 +240,7 @@ def get_active_subscriptions_cte(
         else_=func.round(
             Subscription.amount
             * func.coalesce(
-                bucketed_fx.c.avg_exchange_rate,
+                bucketed_fx_rate,
                 closest_global_fx_rate,
                 1,
             )
@@ -334,13 +344,6 @@ def get_active_subscriptions_cte(
                 func.coalesce(Subscription.ended_at, Subscription.ends_at)
                 >= start_timestamp,
             ),
-        ),
-    ).join(
-        bucketed_fx,
-        isouter=True,
-        onclause=and_(
-            bucketed_fx.c.timestamp == timestamp_column,
-            bucketed_fx.c.presentment_currency == func.lower(Subscription.currency),
         ),
     )
 

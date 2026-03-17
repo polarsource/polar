@@ -64,6 +64,7 @@ class BillingEntryService:
                 id=uuid.uuid4(),
                 label=line_item.label,
                 amount=line_item.amount,
+                net_amount=line_item.amount,
                 tax_amount=0,
                 proration=line_item.proration,
                 product_price=line_item.price,

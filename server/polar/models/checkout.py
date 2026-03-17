@@ -140,6 +140,9 @@ class Checkout(
     min_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     max_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
+    _net_amount: Mapped[int | None] = mapped_column(
+        "net_amount", Integer, nullable=True, default=None
+    )
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True
@@ -303,6 +306,8 @@ class Checkout(
 
     @property
     def net_amount(self) -> int:
+        if self._net_amount is not None:
+            return self._net_amount
         return self.amount - self.discount_amount
 
     @property
@@ -475,6 +480,14 @@ class Checkout(
         if self.product_id is None:
             return None
         return self.prices[self.product_id]
+
+    def update_net_amount(self) -> None:
+        discount_amount = (
+            self.discount.get_discount_amount(self.amount, self.currency)
+            if self.discount
+            else 0
+        )
+        self._net_amount = self.amount - discount_amount
 
 
 @event.listens_for(Checkout, "before_update")

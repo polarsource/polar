@@ -121,6 +121,7 @@ async def create_metered_event_billing_entry(
         order_item = OrderItem(
             label="",
             amount=100,
+            net_amount=100,
             tax_amount=0,
             product_price=price,
         )
@@ -166,6 +167,7 @@ async def create_credit_billing_entry(
         order_item = OrderItem(
             label="",
             amount=100,
+            net_amount=100,
             tax_amount=0,
             product_price=price,
         )
@@ -220,6 +222,7 @@ async def create_static_price_billing_entry(
         order_item = OrderItem(
             label="",
             amount=amount,
+            net_amount=amount,
             tax_amount=0,
             product_price=price,
         )

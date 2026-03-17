@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Self, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -150,6 +150,18 @@ class OrganizationCheckoutSettings(TypedDict):
 _default_checkout_settings: OrganizationCheckoutSettings = {
     "require_3ds": True,
 }
+
+
+class IndividualLegalEntity(TypedDict):
+    type: Literal["individual"]
+
+
+class CompanyLegalEntity(TypedDict):
+    type: Literal["company"]
+    registered_name: str
+
+
+LegalEntity = IndividualLegalEntity | CompanyLegalEntity
 
 
 class OrganizationStatus(StrEnum):
@@ -302,7 +314,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=_default_checkout_settings
     )
 
-    legal_entity: Mapped[dict[str, Any] | None] = mapped_column(
+    legal_entity: Mapped[LegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None
     )
 

@@ -174,7 +174,7 @@ const OrganizationSocialLinks = ({
             variant="ghost"
             size="icon"
             onClick={() => handleRemoveSocial(index)}
-            className="text-gray-400 hover:text-gray-600"
+            className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
           >
             <CloseOutlined fontSize="small" />
           </Button>
@@ -287,7 +287,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                       className="h-10 w-10 transition-opacity hover:opacity-75"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                      <AddPhotoAlternateOutlined className="text-gray-600" />
+                      <AddPhotoAlternateOutlined className="dark:text-polar-400 text-gray-600" />
                     </div>
                   </div>
                   <FormMessage className="mt-2 text-xs/snug" />
@@ -437,7 +437,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             <label className="block text-sm font-medium">
               Social Media {inKYCMode && '*'}
             </label>
-            <p className="mt-2 text-xs text-gray-600">
+            <p className="dark:text-polar-400 mt-2 text-xs text-gray-600">
               Your personal social media links are used for identity
               verification. They will never be shown publicly.
             </p>
@@ -451,7 +451,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
         <div className="border-t pt-8">
           <div className="mb-6">
             <h3 className="mb-2 text-lg font-medium">Business Details</h3>
-            <p className="text-sm text-gray-600">
+            <p className="dark:text-polar-400 text-sm text-gray-600">
               Help us understand your business for compliance and payment setup.
             </p>
           </div>
@@ -459,11 +459,12 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
           <div className="space-y-6">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                What do you sell? Include type and features that are granted *
+                Describe your product *
               </label>
-              <p className="mb-2 text-xs text-gray-600">
-                Tell us: product type (SaaS, course, service, etc.) and main
-                features (advanced reporting, team collaboration, etc.)
+              <p className="dark:text-polar-400 mb-2 text-xs text-gray-600">
+                Describe what your product is and does, and who it&rsquo;s for,
+                including your pricing model (e.g. subscription, one-time
+                payment).
               </p>
               <FormField
                 control={control}
@@ -639,7 +640,7 @@ const OrganizationProfileSettings: React.FC<
         onSubmit={(e) => {
           e.preventDefault()
         }}
-        className="max-w-2xl"
+        className="mx-auto max-w-2xl"
       >
         <SettingsGroup>
           {!inKYCMode && (

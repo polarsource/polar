@@ -20,8 +20,8 @@ import {
   useQueryState,
 } from 'nuqs'
 import { useMemo } from 'react'
-import { Chart } from '../components/Chart/Chart'
-import { CostsBandedChart } from '../components/CostsBandedChart'
+import { Chart } from '@/components/Costs/Chart'
+import { CostsBandedChart } from '@/components/Costs/CostsBandedChart'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,

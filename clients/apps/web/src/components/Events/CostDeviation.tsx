@@ -50,7 +50,7 @@ function getEventCostDeviation(
   return { isAboveAverage, barFillPercent, barColor, deviationFormatted }
 }
 
-interface CostDeviationBarProps {
+interface CostDeviationProps {
   eventCost: number
   currency: string
   averageCost: number
@@ -58,13 +58,13 @@ interface CostDeviationBarProps {
   p90Cost: number
 }
 
-export function CostDeviationBar({
+export function CostDeviation({
   eventCost,
   currency,
   averageCost,
   p10Cost,
   p90Cost,
-}: CostDeviationBarProps) {
+}: CostDeviationProps) {
   const deviation = getEventCostDeviation(
     eventCost,
     averageCost,

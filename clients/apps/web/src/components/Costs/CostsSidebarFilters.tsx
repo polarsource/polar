@@ -12,9 +12,10 @@ import {
 import { useCallback, useMemo, useState } from 'react'
 import {
   DEFAULT_INTERVAL,
+  getCostsSearchParams,
   getDefaultEndDate,
   getDefaultStartDate,
-} from '../utils'
+} from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
@@ -30,7 +31,6 @@ import {
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-import { getCostsSearchParams } from '../utils'
 
 export default function CostsSidebarFilters({
   organization,

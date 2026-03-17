@@ -110,7 +110,8 @@ function SlugPreview({
             onEditSlug()
           }}
           onBlur={() => setEditingSlug(false)}
-          className="dark:text-polar-300 w-32 border-none bg-transparent p-0 text-xs text-gray-600 outline-none"
+          className="dark:text-polar-300 rounded border-none bg-transparent p-0 text-xs text-gray-600 outline-none"
+          style={{ width: `${Math.max(orgSlug.length, 8)}ch` }}
           autoFocus
         />
       ) : (

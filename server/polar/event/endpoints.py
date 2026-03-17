@@ -37,6 +37,7 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventTypeAdapter,
+    ListPropertyGroupStats,
     ListStatisticsTimeseries,
 )
 from .service import event as event_service
@@ -191,6 +192,58 @@ async def list(
         [EventTypeAdapter.validate_python(r) for r in results],
         count,
         pagination,
+    )
+
+
+@router.get(
+    "/statistics/by-property",
+    summary="Get statistics grouped by property",
+    tags=[APITag.private],
+    response_model=ListPropertyGroupStats,
+)
+async def get_statistics_by_property(
+    auth_subject: auth.EventRead,
+    property: AggregateField = Query(
+        ...,
+        description="Metadata property path to group by (e.g., _llm.model, _llm.vendor).",
+    ),
+    start_date: date = Query(..., description="Start date."),
+    end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+    aggregate_fields: Sequence[AggregateField] = Query(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate.",
+    ),
+    limit: int = Query(default=200, le=1000),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListPropertyGroupStats:
+    """
+    Get aggregate statistics grouped by distinct values of a metadata property.
+
+    Useful for ranking LLM models, vendors, or other metadata dimensions by cost.
+    """
+    return await event_service.list_property_group_stats(
+        session,
+        auth_subject,
+        property=property,
+        start_date=start_date,
+        end_date=end_date,
+        timezone=ZoneInfo(timezone),
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+        aggregate_fields=tuple(aggregate_fields),
+        limit=limit,
     )
 
 

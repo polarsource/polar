@@ -104,6 +104,14 @@ class TinybirdTimeseriesStats:
     p99: dict[str, float]
 
 
+@dataclass
+class TinybirdPropertyGroupStats:
+    value: str
+    occurrences: int
+    customers: int
+    totals: dict[str, float]
+
+
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
     v = m.pop(key, None) if is_system else None
     if isinstance(v, float) and v.is_integer():
@@ -943,6 +951,82 @@ class TinybirdEventsQuery:
             result[aid] = (total, sums)
 
         return result
+
+    async def get_property_group_stats(
+        self,
+        property: str,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 200,
+    ) -> list[TinybirdPropertyGroupStats]:
+        base_filter = self._get_organization_filter()
+
+        denorm_col = DENORMALIZED_COLUMNS.get(property)
+        if denorm_col is not None:
+            group_col = denorm_col
+        else:
+            parts = property.split(".")
+            group_col = func.JSONExtractString(events_table.c.user_metadata, *parts)
+
+        agg_columns: list[Any] = []
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            agg_denorm = DENORMALIZED_COLUMNS.get(field_path)
+            if agg_denorm is not None:
+                agg_columns.append(func.sum(agg_denorm).label(f"{label}_sum"))
+            else:
+                parts = field_path.split(".")
+                agg_columns.append(
+                    func.sum(
+                        func.JSONExtractFloat(events_table.c.user_metadata, *parts)
+                    ).label(f"{label}_sum")
+                )
+
+        statement = (
+            sqlalchemy.select(
+                group_col.label("value"),
+                func.count().label("occurrences"),
+                literal_column(
+                    "uniqExact(if(customer_id IS NOT NULL,"
+                    " toString(customer_id),"
+                    " external_customer_id))"
+                ).label("customers"),
+                *agg_columns,
+            )
+            .select_from(events_table)
+            .where(base_filter)
+            .where(group_col != "")
+            .group_by(group_col)
+        )
+
+        for f in self._filters:
+            statement = statement.where(f)
+
+        if aggregate_fields:
+            first_label = aggregate_fields[0].replace(".", "_")
+            statement = statement.order_by(literal_column(f"{first_label}_sum").desc())
+
+        statement = statement.limit(limit)
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        results = []
+        for row in rows:
+            totals = {
+                f.replace(".", "_"): float(
+                    row.get(f"{f.replace('.', '_')}_sum", 0) or 0
+                )
+                for f in aggregate_fields
+            }
+            results.append(
+                TinybirdPropertyGroupStats(
+                    value=str(row["value"]),
+                    occurrences=int(row.get("occurrences", 0) or 0),
+                    customers=int(row.get("customers", 0) or 0),
+                    totals=totals,
+                )
+            )
+        return results
 
 
 class TinybirdEventTypesQuery:

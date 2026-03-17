@@ -55,7 +55,9 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventStatistics,
+    ListPropertyGroupStats,
     ListStatisticsTimeseries,
+    PropertyGroupStat,
     StatisticsPeriod,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
@@ -511,6 +513,56 @@ class EventService:
         totals = _sort_stats([_row_to_stats(b) for b in tb_totals])
 
         return ListStatisticsTimeseries(periods=periods, totals=totals)
+
+    async def list_property_group_stats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        property: str,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 200,
+    ) -> ListPropertyGroupStats:
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
+
+        organization_ids = await self._get_readable_organization_ids(
+            session, auth_subject, None
+        )
+        if not organization_ids:
+            return ListPropertyGroupStats(items=[])
+
+        tinybird_event_repository = TinybirdEventRepository()
+        rows = await tinybird_event_repository.get_property_group_stats(
+            organization_id=organization_ids,
+            property=property,
+            aggregate_fields=tuple(aggregate_fields),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=list(customer_id or []),
+            external_customer_id=list(external_customer_id or []),
+            limit=limit,
+        )
+
+        items = [
+            PropertyGroupStat(
+                value=row.value,
+                occurrences=row.occurrences,
+                customers=row.customers,
+                totals={k: Decimal(str(v)) for k, v in row.totals.items()},
+            )
+            for row in rows
+        ]
+        return ListPropertyGroupStats(items=items)
 
     async def list_names(
         self,

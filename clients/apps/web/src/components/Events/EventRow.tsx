@@ -1,5 +1,4 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
-import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
@@ -12,9 +11,9 @@ import {
 } from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { AnonymousCustomerAvatar } from '../Customer/AnonymousCustomerAvatar'
 import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
 import { useEventCard, useEventCostBadge } from './utils'
@@ -28,6 +27,8 @@ export const EventRow = ({
   depth = 0,
   renderChildren = true,
   renderEventLink = true,
+  expandChildren = false,
+  costBadge,
 }: {
   event: schemas['Event']
   organization: schemas['Organization']
@@ -35,6 +36,8 @@ export const EventRow = ({
   depth?: number
   renderChildren?: boolean
   renderEventLink?: boolean
+  expandChildren?: boolean
+  costBadge?: ReactNode
 }) => {
   const [isExpanded, setIsExpanded] = useState(expanded)
   const hasChildren = event.child_count > 0
@@ -105,21 +108,20 @@ export const EventRow = ({
     <div
       className={twMerge(
         'group flex cursor-pointer flex-col',
-        isExpanded && 'mb-4',
+        isExpanded && depth === 0 && 'mb-4',
       )}
       onClick={depth === 0 ? handleToggleExpand : handleNavigateToEvent}
     >
       <div
         className={twMerge(
-          'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-150 hover:bg-gray-50',
+          'dark:bg-polar-800 dark:border-polar-700 dark:group-hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-150 group-hover:bg-gray-50',
           isExpanded &&
-            hasChildren &&
             renderChildren &&
-            'rounded-b-none! border-b-4',
-          depth > 0 && !isExpanded && renderChildren
-            ? 'rounded-t-none! rounded-b-none! group-last:rounded-b-xl!'
-            : '',
-          depth > 0 && isExpanded && renderChildren ? 'rounded-t-none!' : '',
+            'dark:border-polar-700 dark:group-hover:border-polar-600 border-b-2 border-gray-100',
+          isExpanded &&
+            (hasChildren || depth > 0) &&
+            'rounded-none group-last:rounded-b-xl!',
+          depth === 0 && 'rounded-t-xl!',
         )}
       >
         <div className="flex flex-row items-center justify-between p-3 select-none">
@@ -134,7 +136,7 @@ export const EventRow = ({
               </div>
             ) : (
               <div className="flex w-6 flex-col items-center justify-center">
-                <div className="dark:bg-polar-600 size-1.5 rounded-full bg-gray-200" />
+                <div className="dark:bg-polar-500 size-1.5 rounded-full bg-gray-300" />
               </div>
             )}
             <div className="flex flex-row items-center gap-x-4">
@@ -152,7 +154,11 @@ export const EventRow = ({
             </span>
           </div>
           <div className="flex flex-row items-center gap-x-6">
-            {isExpanded ? null : eventCostBadge}
+            {isExpanded
+              ? null
+              : costBadge !== undefined
+                ? costBadge
+                : eventCostBadge}
             {isExpanded ? (
               renderEventLink ? (
                 <Link
@@ -214,25 +220,17 @@ export const EventRow = ({
             ) : event.external_customer_id ? (
               <Tooltip>
                 <TooltipTrigger>
-                  <AnonymousCustomerAvatar
-                    externalId={event.external_customer_id}
-                    className="size-6"
-                  />
+                  <Avatar name={event.external_customer_id} avatar_url={null} />
                 </TooltipTrigger>
                 <TooltipContent side="top" align="end">
                   <div className="flex flex-row items-center gap-x-2 font-sans">
-                    <AnonymousCustomerAvatar
+                    <Avatar
                       className="text-xxs size-8"
-                      externalId={event.external_customer_id}
+                      name={event.external_customer_id}
+                      avatar_url={null}
                     />
                     <div className="flex flex-col">
-                      <span className="text-xs">
-                        {
-                          getAnonymousCustomerName(
-                            event.external_customer_id,
-                          )[0]
-                        }
-                      </span>
+                      <span className="text-xs">Anonymous</span>
                       <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
                         {event.external_customer_id}
                       </span>
@@ -247,7 +245,7 @@ export const EventRow = ({
         {isExpanded ? (
           <div className="flex flex-row items-center justify-between gap-x-2 px-3 py-2">
             <EventCustomer event={event} />
-            {eventCostBadge}
+            {costBadge !== undefined ? costBadge : eventCostBadge}
           </div>
         ) : null}
       </div>
@@ -260,6 +258,9 @@ export const EventRow = ({
               organization={organization}
               depth={depth + 1}
               renderEventLink={false}
+              renderChildren={renderChildren}
+              expanded={expandChildren}
+              costBadge={costBadge}
             />
           ))}
           {hasNextPage && (

@@ -2,28 +2,19 @@
 
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
-import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle,
-  Info,
-  Loader2,
-} from 'lucide-react'
+import { AlertTriangle, CheckCircle, Info, Loader2 } from 'lucide-react'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
   organization: schemas['Organization']
-  onValidationCompleted?: () => void
   onAppealApproved?: () => void
   onAppealSubmitted?: () => void
 }
 
 const AIValidationResult: React.FC<AIValidationResultProps> = ({
   organization,
-  onValidationCompleted,
   onAppealApproved,
   onAppealSubmitted,
 }) => {
@@ -142,36 +133,19 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
           </div>
         </Card>
 
-        {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
-        {((reviewStatus.data && reviewStatus.data.verdict) || timedOut) && (
-          <>
-            {status.type === 'review_required' ? (
-              <div className="pt-6">
-                <AppealForm
-                  organization={organization}
-                  disabled={false} // Set to true to disable appeals
-                  onAppealApproved={onAppealApproved}
-                  onContinueAfterSubmission={onAppealSubmitted}
-                  existingReviewStatus={reviewStatus.data}
-                />
-              </div>
-            ) : (
-              <div className="flex justify-center pt-6">
-                <Button
-                  onClick={() => {
-                    if (onValidationCompleted) {
-                      onValidationCompleted()
-                    }
-                  }}
-                  className="w-auto"
-                >
-                  Continue to Account Setup
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+        {/* Appeal Form for FAIL/UNCERTAIN */}
+        {((reviewStatus.data && reviewStatus.data.verdict) || timedOut) &&
+          status.type === 'review_required' && (
+            <div className="pt-6">
+              <AppealForm
+                organization={organization}
+                disabled={false}
+                onAppealApproved={onAppealApproved}
+                onContinueAfterSubmission={onAppealSubmitted}
+                existingReviewStatus={reviewStatus.data}
+              />
+            </div>
+          )}
       </div>
     </Card>
   )

@@ -40,10 +40,10 @@ export function OnboardingShell({
         flex={1}
         flexDirection="column"
         alignItems="center"
-        justifyContent="center"
         overflowY="auto"
-        paddingHorizontal={{ base: '2xl', md: '4xl', lg: '5xl' }}
-        paddingVertical="3xl"
+        paddingHorizontal={{ base: '2xl', md: '4xl', lg: '3xl' }}
+        paddingTop="5xl"
+        paddingBottom="3xl"
       >
         <motion.div
           key={step}
@@ -108,11 +108,11 @@ export function OnboardingShell({
         maxWidth="36rem"
         flexDirection="column"
         alignItems="center"
-        justifyContent="center"
-        paddingHorizontal="3xl"
-        paddingVertical="3xl"
+        paddingHorizontal="2xl"
+        paddingTop="5xl"
+        paddingBottom="3xl"
       >
-        <Box width="100%" maxWidth="24rem">
+        <Box width="100%" maxWidth="24rem" position="sticky" top={80}>
           <APIPreview step={step} />
         </Box>
       </Box>

@@ -1,5 +1,6 @@
 'use client'
 
+import { EventRow } from '@/components/Events/EventRow'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
@@ -8,7 +9,7 @@ import { endOfDay, subMonths } from 'date-fns'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import { getDefaultEndDate, getDefaultStartDate } from '../utils'
-import { EventRow } from './components/EventRow'
+import { CostDeviationBar } from './components/CostDeviationBar'
 import {
   generateDateRange,
   groupEmptyDates,
@@ -62,12 +63,17 @@ export default function CostsEventsTable({
     !!spanId,
   )
 
-  const eventTypesMap = eventTypes.reduce<
-    Record<string, schemas['EventTypeWithStats']>
-  >((acc, curr) => {
-    acc[curr.name] = curr
-    return acc
-  }, {})
+  const costDeviationMetadata = useMemo(() => {
+    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
+      return undefined
+    }
+    const stat = hierarchyStats.totals[0]
+    return {
+      average: parseFloat(stat.averages?.['_cost_amount'] || '0'),
+      p10: parseFloat(stat.p10?.['_cost_amount'] || '0'),
+      p90: parseFloat(stat.p90?.['_cost_amount'] || '0'),
+    }
+  }, [hierarchyStats])
 
   const dayGroups = useMemo(() => {
     const eventsMap = groupEventsByDay(events)
@@ -82,129 +88,82 @@ export default function CostsEventsTable({
     return groups
   }, [events, startDate, endDate])
 
-  const showEventTypes = !spanId
-
-  const costDeviationMetadata = useMemo(() => {
-    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
-      return undefined
-    }
-
-    const stat = hierarchyStats.totals[0]
-    const average = parseFloat(stat.averages?.['_cost_amount'] || '0')
-    const p10 = parseFloat(stat.p10?.['_cost_amount'] || '0')
-    const p90 = parseFloat(stat.p90?.['_cost_amount'] || '0')
-
-    return {
-      average,
-      p10,
-      p90,
-    }
-  }, [hierarchyStats])
-
   return events.length > 0 && eventTypes.length > 0 ? (
-    <div>
-      <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
-        <table className="w-full table-fixed border-collapse rounded-lg">
-          <thead>
-            <tr>
-              {showEventTypes && (
-                <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                  Event Type
-                </th>
-              )}
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                Event
-              </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                Customer
-              </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                Timestamp
-              </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-right text-sm font-medium whitespace-nowrap text-gray-600">
-                Cost
-              </th>
-            </tr>
-          </thead>
-          {dayGroups.map((group, groupIndex) => {
-            return (
-              <tbody
-                key={
-                  group.type === 'empty-range'
-                    ? `empty-${groupIndex}`
-                    : `day-${group.date.toISOString()}`
-                }
-                className="dark:divide-polar-700 group divide-y divide-gray-200"
-              >
-                <tr className="dark:bg-polar-800 bg-gray-50 not-group-first-of-type:border-t">
-                  <th
-                    colSpan={showEventTypes ? 5 : 4}
-                    className="dark:text-polar-400 p-2 text-left text-sm font-normal text-gray-400"
-                  >
-                    {group.type === 'empty-range' ? (
-                      <FormattedInterval
-                        startDatetime={group.endDate}
-                        endDatetime={group.startDate}
-                      />
-                    ) : (
-                      <FormattedInterval
-                        startDatetime={group.date}
-                        endDatetime={group.date}
-                      />
-                    )}
-                  </th>
-                </tr>
-                {group.type === 'empty-range' ? (
-                  <tr>
-                    <td
-                      colSpan={showEventTypes ? 5 : 4}
-                      className="dark:text-polar-600 p-2 text-center text-sm text-gray-400 italic"
-                    >
-                      No events
-                    </td>
-                  </tr>
-                ) : (
-                  group.events.map((event) => (
-                    <EventRow
-                      key={event.id}
-                      event={event}
-                      organization={organization}
-                      eventType={eventTypesMap[event.name]}
-                      showEventType={showEventTypes}
-                      costDeviationMetadata={costDeviationMetadata}
-                    />
-                  ))
-                )}
-              </tbody>
-            )
-          })}
-          <tfoot>
-            <tr>
-              <td
-                colSpan={showEventTypes ? 5 : 4}
-                className="dark:border-polar-700 border-t border-gray-200"
-              >
-                {hasNextPage ? (
-                  <button
-                    className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
-                    onClick={() => fetchNextPage()}
-                  >
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
-                      Showing first {events.length} events
-                    </span>
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
-                      Load more
-                    </span>
-                  </button>
-                ) : (
-                  <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
-                    Showing all {events.length} events
-                  </span>
-                )}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+    <div className="flex flex-col gap-y-4">
+      {dayGroups.map((group, groupIndex) => (
+        <div
+          key={
+            group.type === 'empty-range'
+              ? `empty-${groupIndex}`
+              : `day-${group.date.toISOString()}`
+          }
+          className="flex flex-col gap-y-2"
+        >
+          <span className="dark:text-polar-400 p-1 text-sm text-gray-400">
+            {group.type === 'empty-range' ? (
+              <FormattedInterval
+                startDatetime={group.endDate}
+                endDatetime={group.startDate}
+              />
+            ) : (
+              <FormattedInterval
+                startDatetime={group.date}
+                endDatetime={group.date}
+              />
+            )}
+          </span>
+          {group.type === 'empty-range' ? (
+            <p className="dark:text-polar-600 p-2 text-sm text-gray-400 italic">
+              No events
+            </p>
+          ) : (
+            <div className="flex flex-col gap-y-2">
+              {group.events.map((event) => {
+                const eventCost = Number(
+                  (event.metadata as { _cost?: { amount?: string } })._cost
+                    ?.amount ?? 0,
+                )
+                return (
+                  <EventRow
+                    key={event.id}
+                    event={event}
+                    organization={organization}
+                    expandChildren
+                    costBadge={
+                      costDeviationMetadata ? (
+                        <CostDeviationBar
+                          eventCost={eventCost}
+                          averageCost={costDeviationMetadata.average}
+                          p10Cost={costDeviationMetadata.p10}
+                          p90Cost={costDeviationMetadata.p90}
+                        />
+                      ) : null
+                    }
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+      <div className="dark:border-polar-700 border-t border-gray-200">
+        {hasNextPage ? (
+          <button
+            className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+            onClick={() => fetchNextPage()}
+          >
+            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
+              Showing first {events.length} events
+            </span>
+            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
+              Load more
+            </span>
+          </button>
+        ) : (
+          <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
+            Showing all {events.length} events
+          </span>
+        )}
       </div>
     </div>
   ) : (

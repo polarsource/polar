@@ -31,7 +31,6 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import { getCostsSearchParams } from '../utils'
-import { CostsBandedSparkline } from './CostsBandedSparkline'
 
 export default function CostsSidebarFilters({
   organization,
@@ -214,22 +213,6 @@ function EventStatisticsCard({
   customerIds?: string[]
   isSelected?: boolean
 }) {
-  const averageCostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'average')
-  }, [periods, eventStatistics.name])
-
-  const p10CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p10')
-  }, [periods, eventStatistics.name])
-
-  const p90CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p90')
-  }, [periods, eventStatistics.name])
-
-  const p99CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
-  }, [periods, eventStatistics.name])
-
   const searchString = getCostsSearchParams(
     startDate,
     endDate,
@@ -245,7 +228,7 @@ function EventStatisticsCard({
           : `/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`
       }
       className={twMerge(
-        'dark:bg-polar-700 flex cursor-pointer flex-col justify-between gap-5 rounded-2xl border px-3 pt-2 pb-3 transition-colors',
+        'dark:bg-polar-700 flex cursor-pointer flex-col justify-between gap-5 rounded-2xl px-3 pt-2 pb-3 transition-colors',
         isSelected
           ? 'border-gray-300 bg-gray-50'
           : 'dark:border-polar-700 dark:hover:border-polar-600 border-gray-200 hover:border-gray-300',
@@ -284,17 +267,6 @@ function EventStatisticsCard({
             )}
           </div>
         </dl>
-      </div>
-      <div className="dark:bg-polar-800 -m-2 flex flex-1 flex-col rounded-xl bg-gray-50 p-1">
-        <CostsBandedSparkline
-          average={averageCostValues}
-          p10={p10CostValues}
-          p90={p90CostValues}
-          p99={p99CostValues}
-          trendUpIsBad={true}
-          height={60}
-          className="pointer-events-none"
-        />
       </div>
     </Link>
   )

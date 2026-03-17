@@ -109,9 +109,13 @@ class DiscountService(ResourceServiceReader[Discount]):
             session, auth_subject, discount_create
         )
 
+        repository = DiscountRepository.from_session(session)
+
         if discount_create.code is not None:
-            existing_discount = await self.get_by_code_and_organization(
-                session, discount_create.code, organization, redeemable=False
+            existing_discount = (
+                await repository.get_by_code_and_organization_for_update(
+                    discount_create.code, organization.id
+                )
             )
             if existing_discount is not None:
                 raise PolarRequestValidationError(
@@ -168,7 +172,6 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        repository = DiscountRepository.from_session(session)
         return await repository.create(discount)
 
     async def update(

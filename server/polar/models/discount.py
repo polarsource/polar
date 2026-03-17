@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -9,7 +9,6 @@ from alembic_utils.replaceable_entity import register_entities
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     TIMESTAMP,
-    Column,
     ForeignKey,
     Index,
     Integer,
@@ -53,27 +52,6 @@ class DiscountDuration(StrEnum):
 
 class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
-
-    @declared_attr.directive
-    def __table_args__(cls) -> tuple[Index]:
-        # During tests this function is called multiple times which ends up adding the index
-        # multiple times -- leading to errors. We memoize this function to ensure we end up with
-        # the index just once.
-        if not hasattr(cls, "_memoized_indexes"):
-            _deleted_at_column = cast(
-                Column[datetime | None], cls.deleted_at
-            )  # cast to satisfy mypy
-            cls._memoized_indexes = (
-                Index(
-                    "ix_discounts_code_uniqueness",
-                    "organization_id",
-                    func.lower(cls.code),
-                    unique=True,
-                    # partial index
-                    postgresql_where=(_deleted_at_column.is_(None)),
-                ),
-            )
-        return cls._memoized_indexes
 
     name: Mapped[str] = mapped_column(CITEXT, nullable=False)
     type: Mapped[DiscountType] = mapped_column(String, nullable=False)
@@ -156,6 +134,16 @@ class Discount(MetadataMixin, RecordModel):
         # -1 because the first month counts as a first repetition
         end_at = discount_applied_at + relativedelta(months=self.duration_in_months - 1)
         return current_period_start > end_at
+
+    __table_args__ = (
+        Index(
+            "ix_discounts_code_uniqueness",
+            "organization_id",
+            func.lower(code),
+            unique=True,
+            postgresql_where="deleted_at IS NULL",
+        ),
+    )
 
     __mapper_args__ = {
         "polymorphic_on": "type",

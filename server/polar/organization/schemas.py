@@ -113,8 +113,8 @@ class OrganizationFeatureSettings(Schema):
 
 
 class OrganizationDetails(Schema):
-    about: str = Field(
-        ..., description="Brief information about you and your business."
+    about: str | None = Field(
+        None, description="Brief information about you and your business."
     )
     product_description: str = Field(
         ..., description="Description of digital products being sold."

@@ -114,9 +114,16 @@ export function OnboardingShell({
           paddingHorizontal="2xl"
           paddingTop="5xl"
           paddingBottom="3xl"
-          className="before:dark:bg-polar-900 before:absolute before:inset-0 before:-right-[100vw] before:-z-0 before:bg-gray-50"
         >
-          <Box position="sticky" top={150} className="z-10">
+          <Box
+            position="absolute"
+            top={0}
+            bottom={0}
+            left={0}
+            right={-10000}
+            backgroundColor="background-secondary"
+          />
+          <Box position="sticky" top={150} zIndex={1}>
             <APIPreview step={step} />
           </Box>
         </Box>

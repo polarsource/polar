@@ -39,7 +39,7 @@ const GoogleLoginButton = ({ returnTo, signup }: GoogleLoginButtonProps) => {
         fullWidth
       >
         <Google />
-        <div>Continue with Google</div>
+        <div>{signup ? 'Sign up with Google' : 'Sign in with Google'}</div>
       </Button>
     </Link>
   )

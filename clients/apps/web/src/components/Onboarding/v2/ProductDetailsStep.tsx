@@ -5,6 +5,7 @@ import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   Form,
   FormControl,
@@ -22,15 +23,15 @@ import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
 const SELLING_CATEGORIES = [
-  'Software / SaaS',
-  'Digital downloads',
-  'E-books or courses',
-  'Physical products',
-  'Services',
-  'Financial Trading',
-  'Advertising',
-  'Marketplace',
-  'Other',
+  { name: 'Software / SaaS', prohibited: false },
+  { name: 'Digital downloads', prohibited: false },
+  { name: 'E-books or courses', prohibited: false },
+  { name: 'Physical products', prohibited: true },
+  { name: 'Services', prohibited: true },
+  { name: 'Financial Trading', prohibited: true },
+  { name: 'Advertising', prohibited: true },
+  { name: 'Marketplace', prohibited: true },
+  { name: 'Other', prohibited: false },
 ] as const
 
 const PRICING_MODELS = [
@@ -104,13 +105,11 @@ export function ProductDetailsStep() {
     updateData,
   ])
 
-  const hasBlockedCategory = useMemo(
+  const blockedSelected = useMemo(
     () =>
-      sellingCategories.includes('Physical products') ||
-      sellingCategories.includes('Services') ||
-      sellingCategories.includes('Financial Trading') ||
-      sellingCategories.includes('Advertising') ||
-      sellingCategories.includes('Marketplace'),
+      sellingCategories.filter((name) =>
+        SELLING_CATEGORIES.some((c) => c.name === name && c.prohibited),
+      ),
     [sellingCategories],
   )
 
@@ -179,13 +178,15 @@ export function ProductDetailsStep() {
           <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>What are you selling?</FormLabel>
             <ChipSelect
-              options={SELLING_CATEGORIES}
+              options={SELLING_CATEGORIES.map((c) => c.name)}
               selected={sellingCategories}
               onChange={(val) => setValue('sellingCategories', val)}
             />
           </Box>
 
-          {hasBlockedCategory && <AUPBlocker />}
+          {blockedSelected.length > 0 && (
+            <AUPBlocker categories={blockedSelected} />
+          )}
 
           <FormField
             control={control}
@@ -195,9 +196,12 @@ export function ProductDetailsStep() {
               <FormItem className="w-full">
                 <FormLabel>Describe your product</FormLabel>
                 <FormControl>
-                  <Input
+                  <TextArea
                     {...field}
+                    resizable={false}
                     placeholder="Tell us about what you're selling..."
+                    className="min-h-10 rounded-xl px-3 py-2.5"
+                    style={{ fieldSizing: 'content' } as React.CSSProperties}
                   />
                 </FormControl>
                 <FormMessage />
@@ -282,7 +286,9 @@ export function ProductDetailsStep() {
 
           <Button
             type="submit"
-            disabled={hasBlockedCategory || sellingCategories.length === 0}
+            disabled={
+              blockedSelected.length > 0 || sellingCategories.length === 0
+            }
             fullWidth
           >
             Launch Dashboard

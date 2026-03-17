@@ -4,9 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
+  useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react'
 
@@ -44,18 +45,6 @@ export interface OnboardingData {
   productUrl?: string
 }
 
-interface OnboardingContextValue {
-  data: OnboardingData
-  updateData: (partial: Partial<OnboardingData>) => void
-  clearData: () => void
-  /** Show a mock API response in the preview, auto-clears after duration */
-  showApiResponse: (status: number, message: string) => Promise<void>
-  apiResponse: { status: number; message: string } | null
-  apiPending: boolean
-}
-
-const OnboardingContext = createContext<OnboardingContextValue | null>(null)
-
 function loadFromSession(): OnboardingData {
   if (typeof window === 'undefined') return {}
   try {
@@ -75,28 +64,59 @@ function saveToSession(data: OnboardingData): void {
   }
 }
 
+interface OnboardingStore {
+  getData: () => OnboardingData
+  updateData: (partial: Partial<OnboardingData>) => void
+  clearData: () => void
+  subscribe: (listener: () => void) => () => void
+  showApiResponse: (status: number, message: string) => Promise<void>
+}
+
+interface OnboardingContextValue extends OnboardingStore {
+  apiResponse: { status: number; message: string } | null
+}
+
+const OnboardingContext = createContext<OnboardingContextValue | null>(null)
+
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<OnboardingData>(loadFromSession)
+  const dataRef = useRef<OnboardingData>(loadFromSession())
+  const listenersRef = useRef(new Set<() => void>())
   const [apiResponse, setApiResponse] = useState<{
     status: number
     message: string
   } | null>(null)
-  const [apiPending, setApiPending] = useState(false)
 
-  useEffect(() => {
-    saveToSession(data)
-  }, [data])
-
-  const updateData = useCallback((partial: Partial<OnboardingData>) => {
-    setData((prev) => ({ ...prev, ...partial }))
+  const subscribe = useCallback((listener: () => void) => {
+    listenersRef.current.add(listener)
+    return () => {
+      listenersRef.current.delete(listener)
+    }
   }, [])
 
+  const notify = useCallback(() => {
+    for (const listener of listenersRef.current) {
+      listener()
+    }
+  }, [])
+
+  const getData = useCallback(() => dataRef.current, [])
+
+  const updateData = useCallback(
+    (partial: Partial<OnboardingData>) => {
+      dataRef.current = { ...dataRef.current, ...partial }
+      saveToSession(dataRef.current)
+      notify()
+    },
+    [notify],
+  )
+
   const clearData = useCallback(() => {
-    setData({})
+    dataRef.current = {}
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(STORAGE_KEY)
     }
-  }, [])
+    notify()
+  }, [notify])
 
   const showApiResponse = useCallback((status: number, message: string) => {
     setApiResponse({ status, message })
@@ -108,16 +128,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const value = useMemo(
+  const value = useMemo<OnboardingContextValue>(
     () => ({
-      data,
+      getData,
       updateData,
       clearData,
+      subscribe,
       showApiResponse,
       apiResponse,
-      apiPending,
     }),
-    [data, updateData, clearData, showApiResponse, apiResponse, apiPending],
+    [getData, updateData, clearData, subscribe, showApiResponse, apiResponse],
   )
 
   return (
@@ -127,10 +147,27 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useOnboardingData(): OnboardingContextValue {
+export function useOnboardingData() {
   const ctx = useContext(OnboardingContext)
   if (!ctx) {
     throw new Error('useOnboardingData must be used within OnboardingProvider')
   }
-  return ctx
+  return {
+    data: ctx.getData(),
+    updateData: ctx.updateData,
+    clearData: ctx.clearData,
+    showApiResponse: ctx.showApiResponse,
+    apiResponse: ctx.apiResponse,
+    apiPending: false,
+  }
+}
+
+export function useOnboardingDataLive(): OnboardingData {
+  const ctx = useContext(OnboardingContext)
+  if (!ctx) {
+    throw new Error(
+      'useOnboardingDataLive must be used within OnboardingProvider',
+    )
+  }
+  return useSyncExternalStore(ctx.subscribe, ctx.getData, ctx.getData)
 }

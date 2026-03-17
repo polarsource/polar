@@ -83,7 +83,7 @@ export function PersonalDetailsStep() {
   useEffect(() => {
     const dateOfBirth =
       dobYear && dobMonth && dobDay
-        ? `${dobYear}-${dobMonth}-${dobDay}`
+        ? `${dobYear}-${dobMonth}-${dobDay.padStart(2, '0')}`
         : undefined
     updateData({ firstName, lastName, country, dateOfBirth })
   }, [firstName, lastName, country, dobYear, dobMonth, dobDay, updateData])
@@ -96,12 +96,10 @@ export function PersonalDetailsStep() {
     value: String(i + 1).padStart(2, '0'),
     label: MONTH_NAMES[i],
   }))
-  const days = Array.from({ length: 31 }, (_, i) =>
-    String(i + 1).padStart(2, '0'),
-  )
+  const days = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
   const onSubmit = async (formData: FormSchema) => {
-    const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay}`
+    const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
       firstName: formData.firstName,
       lastName: formData.lastName,

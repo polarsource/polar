@@ -9,12 +9,6 @@ import LogoIcon from '../../Brand/logos/LogoIcon'
 import { APIPreview } from './APIPreview'
 
 const STEPS = ['personal', 'business', 'product'] as const
-const STEP_ENDPOINTS = [
-  { method: 'POST', path: '/v1/organizations' },
-  { method: 'PATCH', path: '/v1/organizations/:id' },
-  { method: 'PATCH', path: '/v1/organizations/:id' },
-] as const
-
 const STEP_ROUTES = [
   '/onboarding/personal',
   '/onboarding/business',

@@ -21,14 +21,20 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { endOfDay, format, subMonths } from 'date-fns'
+import { endOfDay, format, subDays, subMonths } from 'date-fns'
 import {
   parseAsArrayOf,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { useMemo } from 'react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,
@@ -65,6 +71,13 @@ export default function SpanDetailPage({
       : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
+
+  const [prevStart, prevEnd] = useMemo(() => {
+    const durationMs = endDate.getTime() - startDate.getTime()
+    const prevEnd = subDays(startDate, 1)
+    const prevStart = new Date(prevEnd.getTime() - durationMs)
+    return [prevStart, prevEnd]
+  }, [startDate, endDate])
 
   const [interval] = useQueryState(
     'interval',
@@ -113,6 +126,15 @@ export default function SpanDetailPage({
       true,
     )
 
+  const { data: prevHierarchyStats } = useEventHierarchyStats(organization.id, {
+    event_type_id: spanId,
+    start_date: prevStart.toISOString().split('T')[0],
+    end_date: prevEnd.toISOString().split('T')[0],
+    interval,
+    aggregate_fields: ['_cost.amount'],
+    customer_id: customerIds,
+  })
+
   const { data: eventTypesData } = useEventTypes(organization.id, {
     sorting: ['-last_seen'],
     root_events: true,
@@ -129,14 +151,20 @@ export default function SpanDetailPage({
   }, [eventsData])
 
   const costMetrics = useMemo(() => {
-    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
-      return {
-        totalOccurrences: 0,
-        totalCost: 0,
-        averageCost: 0,
-        p99Cost: 0,
-      }
+    const zero = {
+      totalOccurrences: 0,
+      totalCost: 0,
+      averageCost: 0,
+      p99Cost: 0,
+      totalCustomers: 0,
+      costPerCustomer: 0,
+      prevTotalOccurrences: 0,
+      prevTotalCost: 0,
+      prevAverageCost: 0,
+      prevCostPerCustomer: 0,
     }
+
+    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) return zero
 
     const stat = hierarchyStats.totals[0]
     const totalOccurrences = stat.occurrences || 0
@@ -146,6 +174,13 @@ export default function SpanDetailPage({
     const totalCustomers = stat.customers || 0
     const costPerCustomer = totalCustomers > 0 ? totalCost / totalCustomers : 0
 
+    const prevStat = prevHierarchyStats?.totals?.[0]
+    const prevTotalOccurrences = prevStat?.occurrences || 0
+    const prevTotalCost = parseFloat(prevStat?.totals?.['_cost_amount'] || '0')
+    const prevAverageCost = parseFloat(prevStat?.averages?.['_cost_amount'] || '0')
+    const prevCustomers = prevStat?.customers || 0
+    const prevCostPerCustomer = prevCustomers > 0 ? prevTotalCost / prevCustomers : 0
+
     return {
       totalOccurrences,
       totalCost,
@@ -153,8 +188,12 @@ export default function SpanDetailPage({
       p99Cost,
       totalCustomers,
       costPerCustomer,
+      prevTotalOccurrences,
+      prevTotalCost,
+      prevAverageCost,
+      prevCostPerCustomer,
     }
-  }, [hierarchyStats])
+  }, [hierarchyStats, prevHierarchyStats])
 
   const chartData = useMemo(() => {
     if (!hierarchyStats?.periods || hierarchyStats.periods.length === 0)
@@ -232,15 +271,19 @@ export default function SpanDetailPage({
             <div className="grid grid-cols-4 gap-8">
               <StatisticCard title="Occurrences" size="lg">
                 {costMetrics.totalOccurrences.toLocaleString()}
+                <Trend current={costMetrics.totalOccurrences} prev={costMetrics.prevTotalOccurrences} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
               </StatisticCard>
               <StatisticCard title="Total Cost" size="lg">
                 {formatCurrency('subcent')(costMetrics.totalCost, 'usd')}
+                <Trend current={costMetrics.totalCost} prev={costMetrics.prevTotalCost} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
               </StatisticCard>
               <StatisticCard title="Average Cost" size="lg">
                 {formatCurrency('subcent')(costMetrics.averageCost, 'usd')}
+                <Trend current={costMetrics.averageCost} prev={costMetrics.prevAverageCost} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
               </StatisticCard>
               <StatisticCard title="Cost per Customer" size="lg">
                 {formatCurrency('subcent')(costMetrics.costPerCustomer, 'usd')}
+                <Trend current={costMetrics.costPerCustomer} prev={costMetrics.prevCostPerCustomer} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
               </StatisticCard>
             </div>
 
@@ -341,5 +384,59 @@ export default function SpanDetailPage({
         }
       />
     </div>
+  )
+}
+
+function Trend({
+  current,
+  prev,
+  currentStart,
+  currentEnd,
+  prevStart,
+  prevEnd,
+}: {
+  current: number
+  prev: number
+  currentStart: Date
+  currentEnd: Date
+  prevStart: Date
+  prevEnd: Date
+}) {
+  if (prev === 0) return null
+  const delta = current - prev
+  const pct = (delta / prev) * 100
+  const isUp = delta > 0
+  const isDown = delta < 0
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={`mt-1 flex w-fit cursor-default items-center gap-1 text-xs font-normal ${
+            isUp
+              ? 'text-red-500'
+              : isDown
+                ? 'text-emerald-500'
+                : 'dark:text-polar-500 text-gray-400'
+          }`}
+        >
+          {isUp ? (
+            <ArrowUpRight className="size-3" />
+          ) : isDown ? (
+            <ArrowDownRight className="size-3" />
+          ) : null}
+          {Math.abs(pct).toLocaleString(undefined, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          })}
+          %
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="flex flex-col gap-1">
+        <span>{fmt(currentStart)} – {fmt(currentEnd)}</span>
+        <span className="dark:text-polar-400 text-gray-400">vs {fmt(prevStart)} – {fmt(prevEnd)}</span>
+      </TooltipContent>
+    </Tooltip>
   )
 }

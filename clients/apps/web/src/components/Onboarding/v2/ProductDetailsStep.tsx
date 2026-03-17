@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { AUPBlocker } from './AUPBlocker'
 import { ChipSelect } from './ChipSelect'
@@ -65,6 +65,7 @@ export function ProductDetailsStep() {
   const router = useRouter()
   const { data, updateData, showApiResponse } = useOnboardingData()
   const updateOrganization = useUpdateOrganization()
+  const [submitting, setSubmitting] = useState(false)
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -114,6 +115,7 @@ export function ProductDetailsStep() {
   )
 
   const onSubmit = async (formData: FormSchema) => {
+    setSubmitting(true)
     updateData({
       sellingCategories: formData.sellingCategories,
       productDescription: formData.productDescription,
@@ -141,7 +143,7 @@ export function ProductDetailsStep() {
         .join('\n')
         .trim()
 
-      await updateOrganization.mutateAsync({
+      const { error } = await updateOrganization.mutateAsync({
         id: data.organizationId,
         body: {
           ...(formData.supportEmail && { email: formData.supportEmail }),
@@ -158,6 +160,11 @@ export function ProductDetailsStep() {
           } satisfies schemas['OrganizationDetails'],
         },
       })
+
+      if (error) {
+        setSubmitting(false)
+        return
+      }
     }
 
     await showApiResponse(200, 'OK')
@@ -234,7 +241,10 @@ export function ProductDetailsStep() {
 
           <Box
             display="grid"
-            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gridTemplateColumns={{
+              base: 'repeat(1, minmax(0, 1fr))',
+              md: 'repeat(2, minmax(0, 1fr))',
+            }}
             gap="m"
           >
             <FormField
@@ -286,6 +296,7 @@ export function ProductDetailsStep() {
 
           <Button
             type="submit"
+            loading={submitting}
             disabled={
               blockedSelected.length > 0 ||
               sellingCategories.length === 0 ||

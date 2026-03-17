@@ -8,12 +8,12 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { redirect, useRouter } from 'next/navigation'
 
 export default function Page() {
+  const router = useRouter()
+  const { updateData } = useOnboardingData()
+
   if (CONFIG.IS_SANDBOX) {
     redirect('/onboarding/personal')
   }
-
-  const router = useRouter()
-  const { updateData } = useOnboardingData()
 
   const handleSandbox = () => {
     window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/personal&from=onboarding`

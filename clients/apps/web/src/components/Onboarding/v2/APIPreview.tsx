@@ -12,8 +12,8 @@ function toSnakeCase(str: string): string {
 }
 
 const STEP_CONFIG = {
-  personal: { method: 'POST', path: '/v1/organizations' },
-  business: { method: 'PATCH', path: '/v1/organizations/:id' },
+  personal: { method: 'PATCH', path: '/v1/users/me' },
+  business: { method: 'POST', path: '/v1/organizations' },
   product: { method: 'PATCH', path: '/v1/organizations/:id' },
 } as const
 
@@ -173,7 +173,13 @@ export function APIPreview({
       {apiResponse && (
         <div className="mt-3 flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                apiResponse.status >= 400
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              }`}
+            >
               {apiResponse.status}
             </span>
             <span className="text-[10px] text-gray-500 dark:text-gray-500">

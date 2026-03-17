@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
@@ -57,6 +57,7 @@ export function PersonalDetailsStep() {
   const { currentUser } = useAuth()
   const { data, updateData, showApiResponse } = useOnboardingData()
   const updateUser = useUpdateUser()
+  const [submitting, setSubmitting] = useState(false)
 
   const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
   const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
@@ -68,7 +69,7 @@ export function PersonalDetailsStep() {
       country: data.country || currentUser?.country || '',
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
-      dobDay: parsedDob[2] || '',
+      dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
     },
   })
 
@@ -99,6 +100,7 @@ export function PersonalDetailsStep() {
   const days = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
   const onSubmit = async (formData: FormSchema) => {
+    setSubmitting(true)
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
       firstName: formData.firstName,
@@ -115,6 +117,7 @@ export function PersonalDetailsStep() {
     })
 
     if (error) {
+      setSubmitting(false)
       await showApiResponse(400, 'Failed to save personal details')
       return
     }
@@ -276,7 +279,7 @@ export function PersonalDetailsStep() {
             </Box>
           </Box>
 
-          <Button type="submit" fullWidth>
+          <Button type="submit" loading={submitting} fullWidth>
             Continue
           </Button>
         </form>

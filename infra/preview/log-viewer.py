@@ -67,9 +67,9 @@ class LogHandler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         query = self.path.split("?")[1] if "?" in self.path else ""
 
-        wake_match = re.match(r"/wake/pr-(\d+)", path)
+        wake_match = re.match(r"/wake/pr-(\d+)$", path)
         if wake_match:
-            pr_num = wake_match.group(1)
+            pr_num = int(wake_match.group(1))
             trigger = os.path.join(TRIGGER_DIR, f"pr-{pr_num}.wake")
             try:
                 open(trigger, "w").close()

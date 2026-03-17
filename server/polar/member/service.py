@@ -232,7 +232,7 @@ class MemberService:
 
         repository = MemberRepository.from_session(session)
 
-        email = owner_email or customer.email
+        email = (owner_email or customer.email).strip().lower()
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id
 
@@ -321,15 +321,8 @@ class MemberService:
         if not member_model and not seat_based:
             return None
 
-        repository = MemberRepository.from_session(session)
-
-        existing_member = await repository.get_by_customer_and_email(
-            session, customer, email=customer.email
-        )
-        if existing_member:
-            return existing_member
-
-        member = Member(
+        return await self.get_or_create_by_email(
+            session,
             customer_id=customer.id,
             organization_id=organization.id,
             email=customer.email,
@@ -337,14 +330,61 @@ class MemberService:
             role=MemberRole.member,
         )
 
+    async def get_or_create_by_email(
+        self,
+        session: AsyncSession,
+        *,
+        customer_id: UUID,
+        organization_id: UUID,
+        email: str,
+        name: str | None = None,
+        external_id: str | None = None,
+        role: MemberRole = MemberRole.member,
+    ) -> Member:
+        """
+        Get or create a member by email under a customer.
+
+        Consolidated get-or-create pattern that handles:
+        - Returning existing active members
+        - Race condition retries on IntegrityError
+        - Email normalization (strip + lowercase)
+        """
+        email = email.strip().lower()
+
+        repository = MemberRepository.from_session(session)
+
+        existing = await repository.get_by_customer_id_and_email(customer_id, email)
+        if existing:
+            return existing
+        member = Member(
+            customer_id=customer_id,
+            organization_id=organization_id,
+            email=email,
+            name=name,
+            external_id=external_id,
+            role=role,
+        )
+
         try:
-            return await repository.create(member)
-        except IntegrityError:
-            existing_member = await repository.get_by_customer_and_email(
-                session, customer, email=customer.email
+            created = await repository.create(member, flush=True)
+            log.info(
+                "member.get_or_create_by_email.created",
+                member_id=created.id,
+                customer_id=customer_id,
+                organization_id=organization_id,
+                email=email,
             )
-            if existing_member:
-                return existing_member
+            return created
+        except IntegrityError:
+            # 4. Race condition: another transaction created the member concurrently
+            log.info(
+                "member.get_or_create_by_email.integrity_error_retry",
+                customer_id=customer_id,
+                email=email,
+            )
+            existing = await repository.get_by_customer_id_and_email(customer_id, email)
+            if existing:
+                return existing
             raise
 
     async def list_by_customer(
@@ -387,41 +427,14 @@ class MemberService:
         Returns:
             Created or existing Member
         """
-        repository = MemberRepository.from_session(session)
-
-        # Check if member already exists
-        existing_member = await repository.get_by_customer_id_and_email(
-            customer.id, email
-        )
-        if existing_member:
-            log.debug(
-                "member.add_to_customer.already_exists",
-                customer_id=customer.id,
-                email=email,
-                existing_member_id=existing_member.id,
-            )
-            return existing_member
-
-        # Create the new member
-        member = Member(
+        return await self.get_or_create_by_email(
+            session,
             customer_id=customer.id,
             organization_id=customer.organization_id,
             email=email,
             name=name,
             role=role,
         )
-
-        created_member = await repository.create(member, flush=True)
-
-        log.info(
-            "member.add_to_customer.success",
-            customer_id=customer.id,
-            member_id=created_member.id,
-            email=email,
-            role=role,
-        )
-
-        return created_member
 
     async def list_by_customers(
         self,
@@ -480,6 +493,8 @@ class MemberService:
         )
         if not member_model and not seat_based:
             raise NotPermitted("Member management is not enabled for this organization")
+
+        email = email.strip().lower()
 
         repository = MemberRepository.from_session(session)
 

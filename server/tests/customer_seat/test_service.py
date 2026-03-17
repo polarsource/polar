@@ -1050,6 +1050,117 @@ class TestAssignSeat:
         assert seat.member.customer_id == billing_customer.id
 
     @pytest.mark.asyncio
+    async def test_assign_seat_with_external_member_id_links_to_existing_member_by_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When a member with the same email already exists (without external_id),
+        assigning a seat with external_member_id should link the external_id to
+        the existing member instead of creating a duplicate.
+
+        Regression test for SERVER-3XN: IntegrityError on
+        members_customer_id_email_active_key."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        # Create a member with the same email but NO external_id
+        existing_member = await create_member(
+            save_fixture,
+            customer=billing_customer,
+            organization=organization,
+            email="member@example.com",
+        )
+        assert existing_member.external_id is None
+
+        # Assign seat with external_member_id + same email
+        seat = await seat_service.assign_seat(
+            session,
+            subscription,
+            external_member_id="ext_new_id",
+            email="member@example.com",
+        )
+
+        # Should reuse the existing member, not create a new one
+        assert seat.member_id == existing_member.id
+        assert seat.email == "member@example.com"
+
+        # Verify the external_id was linked to the existing member
+        await session.refresh(existing_member)
+        assert existing_member.external_id == "ext_new_id"
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_with_external_member_id_rejects_conflicting_external_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """When a member exists with the same email but a different external_id,
+        assigning a seat with a new external_member_id should raise
+        MemberEmailMismatch to prevent silently overwriting the identity link.
+
+        Regression test for SERVER-3XN."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        # Create a member with the same email and a different external_id
+        existing_member = await create_member(
+            save_fixture,
+            customer=billing_customer,
+            organization=organization,
+            email="member@example.com",
+        )
+        existing_member.external_id = "old_ext_id"
+        await save_fixture(existing_member)
+
+        # Assign seat with a conflicting external_member_id should raise
+        with pytest.raises(MemberEmailMismatch):
+            await seat_service.assign_seat(
+                session,
+                subscription,
+                external_member_id="new_ext_id",
+                email="member@example.com",
+            )
+
+    @pytest.mark.asyncio
     async def test_assign_seat_with_external_member_id_and_email_existing_member(
         self,
         session: AsyncSession,

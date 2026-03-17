@@ -176,6 +176,10 @@ resource "tfe_variable" "slo_report_slack_channel" {
   description     = "Slack channel ID for SLO weekly reports"
   sensitive       = false
   variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "cloudflare_api_token" {

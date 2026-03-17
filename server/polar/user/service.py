@@ -21,6 +21,7 @@ from .schemas import (
     UserDeletionResponse,
     UserIdentityVerification,
     UserSignupAttribution,
+    UserUpdate,
 )
 
 log = structlog.get_logger()
@@ -98,6 +99,17 @@ class UserService:
         )
         enqueue_job("user.on_after_signup", user_id=user.id)
         return user
+
+    async def update(
+        self,
+        session: AsyncSession,
+        user: User,
+        update_schema: UserUpdate,
+    ) -> User:
+        repository = UserRepository.from_session(session)
+        return await repository.update(
+            user, update_dict=update_schema.model_dump(exclude_unset=True)
+        )
 
     async def create_identity_verification(
         self, session: AsyncSession, user: User

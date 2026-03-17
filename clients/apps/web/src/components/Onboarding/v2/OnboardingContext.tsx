@@ -20,7 +20,7 @@ export interface OnboardingData {
   dateOfBirth?: string
 
   // Screen 2 — Business
-  organizationType?: 'individual' | 'business'
+  organizationType?: 'individual' | 'company'
   orgName?: string
   orgSlug?: string
   website?: string

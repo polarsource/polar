@@ -20,6 +20,7 @@ from .schemas import (
     UserIdentityVerification,
     UserRead,
     UserScopes,
+    UserUpdate,
 )
 
 router = APIRouter(prefix="/users", tags=["users", APITag.private])
@@ -34,6 +35,15 @@ router.include_router(license_keys_router, deprecated=True, include_in_schema=Fa
 @router.get("/me", response_model=UserRead)
 async def get_authenticated(auth_subject: WebUserRead) -> User:
     return auth_subject.subject
+
+
+@router.patch("/me", response_model=UserRead)
+async def update_authenticated(
+    user_update: UserUpdate,
+    auth_subject: WebUserWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> User:
+    return await user_service.update(session, auth_subject.subject, user_update)
 
 
 @router.get("/me/scopes", response_model=UserScopes)

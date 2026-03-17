@@ -13,10 +13,11 @@ import LinkedIn from '@mui/icons-material/LinkedIn'
 import Public from '@mui/icons-material/Public'
 import X from '@mui/icons-material/X'
 import YouTube from '@mui/icons-material/YouTube'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { enums, isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -293,7 +294,7 @@ export const OrganizationDetailsForm: React.FC<
                     <Avatar
                       avatar_url={avatarURL ?? ''}
                       name={name ?? ''}
-                      className="h-16 w-16 transition-opacity hover:opacity-75"
+                      className="h-10 w-10 transition-opacity hover:opacity-75"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
                       <AddPhotoAlternateOutlined className="text-gray-600" />
@@ -326,95 +327,118 @@ export const OrganizationDetailsForm: React.FC<
                 )}
               />
             </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Support Email *
-              </label>
-              <FormField
-                control={control}
-                name="email"
-                rules={{ required: 'Support email is required' }}
-                render={({ field }) => (
-                  <div>
-                    <Input
-                      type="email"
-                      {...field}
-                      value={field.value || ''}
-                      placeholder="support@acme.com"
-                    />
-                    <FormMessage />
-                  </div>
-                )}
-              />
-            </div>
           </div>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Website *</label>
+          <label className="mb-2 block text-sm font-medium">Country</label>
           <FormField
             control={control}
-            name="website"
-            rules={{
-              required: 'Website is required',
-              validate: (value) => {
-                if (!value) return 'Website is required'
-                if (!value.startsWith('https://')) {
-                  return 'Website must start with https://'
-                }
-                try {
-                  new URL(value)
-                  return true
-                } catch {
-                  return 'Please enter a valid URL'
-                }
-              },
-            }}
+            name="country"
             render={({ field }) => (
               <div>
-                <Input
-                  type="url"
-                  {...field}
-                  value={field.value || ''}
-                  placeholder="https://acme.com"
-                  onChange={(e) => {
-                    let value = e.target.value
-                    if (value.startsWith('http://')) {
-                      value = value.replace('http://', 'https://')
-                    }
-                    const hasProtocol = value.startsWith('https://')
-                    const isTypingProtocol =
-                      'https://'.startsWith(value) ||
-                      'http://'.startsWith(value)
-                    if (!hasProtocol && !isTypingProtocol) {
-                      value = 'https://' + value
-                    }
-                    field.onChange(value)
-                  }}
-                  onBlur={(e) => {
-                    field.onBlur()
-                    validateURL(e.target.value)
-                  }}
-                  postSlot={
-                    urlStatus === 'validating' ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                    ) : urlStatus === 'valid' ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : urlStatus === 'invalid' ? (
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    ) : null
+                <CountryPicker
+                  allowedCountries={enums.addressInputCountryValues}
+                  value={
+                    (field.value as schemas['CountryAlpha2Input']) ?? undefined
                   }
+                  onChange={field.onChange as (value: string) => void}
+                  placeholder="Select country"
                 />
                 <FormMessage />
-                {urlStatus === 'invalid' && (
-                  <p className="mt-1 text-xs text-amber-600">
-                    Website appears to be unreachable
-                  </p>
-                )}
               </div>
             )}
           />
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium">Website *</label>
+            <FormField
+              control={control}
+              name="website"
+              rules={{
+                required: 'Website is required',
+                validate: (value) => {
+                  if (!value) return 'Website is required'
+                  if (!value.startsWith('https://')) {
+                    return 'Website must start with https://'
+                  }
+                  try {
+                    new URL(value)
+                    return true
+                  } catch {
+                    return 'Please enter a valid URL'
+                  }
+                },
+              }}
+              render={({ field }) => (
+                <div>
+                  <Input
+                    type="url"
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="https://acme.com"
+                    onChange={(e) => {
+                      let value = e.target.value
+                      if (value.startsWith('http://')) {
+                        value = value.replace('http://', 'https://')
+                      }
+                      const hasProtocol = value.startsWith('https://')
+                      const isTypingProtocol =
+                        'https://'.startsWith(value) ||
+                        'http://'.startsWith(value)
+                      if (!hasProtocol && !isTypingProtocol) {
+                        value = 'https://' + value
+                      }
+                      field.onChange(value)
+                    }}
+                    onBlur={(e) => {
+                      field.onBlur()
+                      validateURL(e.target.value)
+                    }}
+                    postSlot={
+                      urlStatus === 'validating' ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      ) : urlStatus === 'valid' ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : urlStatus === 'invalid' ? (
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      ) : null
+                    }
+                  />
+                  <FormMessage />
+                  {urlStatus === 'invalid' && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      Website appears to be unreachable
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Support Email *
+            </label>
+            <FormField
+              control={control}
+              name="email"
+              rules={{ required: 'Support email is required' }}
+              render={({ field }) => (
+                <div>
+                  <Input
+                    type="email"
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="support@acme.com"
+                  />
+                  <FormMessage />
+                </div>
+              )}
+            />
+          </div>
         </div>
 
         {/* Social Links - Progressive Disclosure */}
@@ -686,6 +710,7 @@ const OrganizationProfileSettings: React.FC<
 > = ({ organization: _organization, kyc, onSubmitted }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
+    country?: schemas['CountryAlpha2Input']
   }
   const router = useRouter()
   const form = useForm<schemas['OrganizationUpdate']>({
@@ -742,6 +767,7 @@ const OrganizationProfileSettings: React.FC<
       ...data,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
+      country: data.country as schemas['CountryAlpha2Input'] | undefined,
       socials: [...(data.socials || []), ...emptySocials],
     })
 

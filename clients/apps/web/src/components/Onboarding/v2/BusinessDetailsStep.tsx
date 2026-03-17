@@ -28,7 +28,7 @@ import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
 interface FormSchema {
-  organizationType: 'individual' | 'business'
+  organizationType: 'individual' | 'company'
   orgName: string
   orgSlug: string
   defaultCurrency: string
@@ -128,6 +128,40 @@ export function BusinessDetailsStep() {
       registeredBusinessName: formData.registeredBusinessName,
     })
 
+    const { data: org, error } = await createOrganization.mutateAsync({
+      name: formData.orgName,
+      slug: formData.orgSlug,
+      default_presentment_currency:
+        formData.defaultCurrency as schemas['PresentmentCurrency'],
+      country: (formData.businessCountry || undefined) as
+        | schemas['CountryAlpha2Input']
+        | undefined,
+      legal_entity:
+        formData.organizationType === 'company'
+          ? {
+              type: 'company' as const,
+              registered_name: formData.registeredBusinessName,
+            }
+          : { type: 'individual' as const },
+    })
+
+    if (error) {
+      if (Array.isArray(error.detail)) {
+        setError('root', {
+          message: error.detail[0]?.msg || 'Failed to create organization',
+        })
+      } else if (typeof error.detail === 'string') {
+        setError('root', { message: error.detail })
+      } else {
+        setError('root', { message: 'Failed to create organization' })
+      }
+      return
+    }
+
+    setUserOrganizations((prev) => [...prev, org])
+    updateData({ organizationId: org.id })
+
+    trackStepCompleted('business')
     await showApiResponse(200, 'OK')
     router.push('/onboarding/product')
   }
@@ -170,7 +204,7 @@ export function BusinessDetailsStep() {
                         Individual
                       </TabsTrigger>
                       <TabsTrigger
-                        value="business"
+                        value="company"
                         className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
                       >
                         Business
@@ -182,7 +216,7 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          {organizationType === 'business' && (
+          {organizationType === 'company' && (
             <FormField
               control={control}
               name="registeredBusinessName"
@@ -240,7 +274,7 @@ export function BusinessDetailsStep() {
             display="grid"
             gap="m"
             gridTemplateColumns={
-              organizationType === 'business'
+              organizationType === 'company'
                 ? 'repeat(2, minmax(0, 1fr))'
                 : 'repeat(1, minmax(0, 1fr))'
             }
@@ -263,13 +297,13 @@ export function BusinessDetailsStep() {
               )}
             />
 
-            {organizationType === 'business' && (
+            {organizationType === 'company' && (
               <FormField
                 control={control}
                 name="businessCountry"
                 rules={{
                   required:
-                    organizationType === 'business'
+                    organizationType === 'company'
                       ? 'Business country is required'
                       : false,
                 }}
@@ -291,7 +325,7 @@ export function BusinessDetailsStep() {
             )}
           </Box>
 
-          {organizationType === 'business' && (
+          {organizationType === 'company' && (
             <>
               <Box display="flex" alignItems="center" justifyContent="between">
                 <FormField

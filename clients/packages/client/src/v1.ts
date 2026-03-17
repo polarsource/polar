@@ -57,7 +57,8 @@ export interface paths {
     delete: operations['users:delete_authenticated_user']
     options?: never
     head?: never
-    patch?: never
+    /** Update Authenticated */
+    patch: operations['users:update_authenticated']
     trace?: never
   }
   '/v1/users/me/scopes': {
@@ -21110,6 +21111,260 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Two-letter country code (ISO 3166-1 alpha-2). */
+      country?:
+        | (
+            | 'AD'
+            | 'AE'
+            | 'AF'
+            | 'AG'
+            | 'AI'
+            | 'AL'
+            | 'AM'
+            | 'AO'
+            | 'AQ'
+            | 'AR'
+            | 'AS'
+            | 'AT'
+            | 'AU'
+            | 'AW'
+            | 'AX'
+            | 'AZ'
+            | 'BA'
+            | 'BB'
+            | 'BD'
+            | 'BE'
+            | 'BF'
+            | 'BG'
+            | 'BH'
+            | 'BI'
+            | 'BJ'
+            | 'BL'
+            | 'BM'
+            | 'BN'
+            | 'BO'
+            | 'BQ'
+            | 'BR'
+            | 'BS'
+            | 'BT'
+            | 'BV'
+            | 'BW'
+            | 'BY'
+            | 'BZ'
+            | 'CA'
+            | 'CC'
+            | 'CD'
+            | 'CF'
+            | 'CG'
+            | 'CH'
+            | 'CI'
+            | 'CK'
+            | 'CL'
+            | 'CM'
+            | 'CN'
+            | 'CO'
+            | 'CR'
+            | 'CU'
+            | 'CV'
+            | 'CW'
+            | 'CX'
+            | 'CY'
+            | 'CZ'
+            | 'DE'
+            | 'DJ'
+            | 'DK'
+            | 'DM'
+            | 'DO'
+            | 'DZ'
+            | 'EC'
+            | 'EE'
+            | 'EG'
+            | 'EH'
+            | 'ER'
+            | 'ES'
+            | 'ET'
+            | 'FI'
+            | 'FJ'
+            | 'FK'
+            | 'FM'
+            | 'FO'
+            | 'FR'
+            | 'GA'
+            | 'GB'
+            | 'GD'
+            | 'GE'
+            | 'GF'
+            | 'GG'
+            | 'GH'
+            | 'GI'
+            | 'GL'
+            | 'GM'
+            | 'GN'
+            | 'GP'
+            | 'GQ'
+            | 'GR'
+            | 'GS'
+            | 'GT'
+            | 'GU'
+            | 'GW'
+            | 'GY'
+            | 'HK'
+            | 'HM'
+            | 'HN'
+            | 'HR'
+            | 'HT'
+            | 'HU'
+            | 'ID'
+            | 'IE'
+            | 'IL'
+            | 'IM'
+            | 'IN'
+            | 'IO'
+            | 'IQ'
+            | 'IR'
+            | 'IS'
+            | 'IT'
+            | 'JE'
+            | 'JM'
+            | 'JO'
+            | 'JP'
+            | 'KE'
+            | 'KG'
+            | 'KH'
+            | 'KI'
+            | 'KM'
+            | 'KN'
+            | 'KP'
+            | 'KR'
+            | 'KW'
+            | 'KY'
+            | 'KZ'
+            | 'LA'
+            | 'LB'
+            | 'LC'
+            | 'LI'
+            | 'LK'
+            | 'LR'
+            | 'LS'
+            | 'LT'
+            | 'LU'
+            | 'LV'
+            | 'LY'
+            | 'MA'
+            | 'MC'
+            | 'MD'
+            | 'ME'
+            | 'MF'
+            | 'MG'
+            | 'MH'
+            | 'MK'
+            | 'ML'
+            | 'MM'
+            | 'MN'
+            | 'MO'
+            | 'MP'
+            | 'MQ'
+            | 'MR'
+            | 'MS'
+            | 'MT'
+            | 'MU'
+            | 'MV'
+            | 'MW'
+            | 'MX'
+            | 'MY'
+            | 'MZ'
+            | 'NA'
+            | 'NC'
+            | 'NE'
+            | 'NF'
+            | 'NG'
+            | 'NI'
+            | 'NL'
+            | 'NO'
+            | 'NP'
+            | 'NR'
+            | 'NU'
+            | 'NZ'
+            | 'OM'
+            | 'PA'
+            | 'PE'
+            | 'PF'
+            | 'PG'
+            | 'PH'
+            | 'PK'
+            | 'PL'
+            | 'PM'
+            | 'PN'
+            | 'PR'
+            | 'PS'
+            | 'PT'
+            | 'PW'
+            | 'PY'
+            | 'QA'
+            | 'RE'
+            | 'RO'
+            | 'RS'
+            | 'RU'
+            | 'RW'
+            | 'SA'
+            | 'SB'
+            | 'SC'
+            | 'SD'
+            | 'SE'
+            | 'SG'
+            | 'SH'
+            | 'SI'
+            | 'SJ'
+            | 'SK'
+            | 'SL'
+            | 'SM'
+            | 'SN'
+            | 'SO'
+            | 'SR'
+            | 'SS'
+            | 'ST'
+            | 'SV'
+            | 'SX'
+            | 'SY'
+            | 'SZ'
+            | 'TC'
+            | 'TD'
+            | 'TF'
+            | 'TG'
+            | 'TH'
+            | 'TJ'
+            | 'TK'
+            | 'TL'
+            | 'TM'
+            | 'TN'
+            | 'TO'
+            | 'TR'
+            | 'TT'
+            | 'TV'
+            | 'TW'
+            | 'TZ'
+            | 'UA'
+            | 'UG'
+            | 'UM'
+            | 'US'
+            | 'UY'
+            | 'UZ'
+            | 'VA'
+            | 'VC'
+            | 'VE'
+            | 'VG'
+            | 'VI'
+            | 'VN'
+            | 'VU'
+            | 'WF'
+            | 'WS'
+            | 'YE'
+            | 'YT'
+            | 'ZA'
+            | 'ZM'
+            | 'ZW'
+          )
+        | null
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -21292,6 +21547,16 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** OrganizationCompanyLegalEntitySchema */
+    OrganizationCompanyLegalEntitySchema: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'company'
+      /** Registered Name */
+      registered_name: string
+    }
     /** OrganizationCreate */
     OrganizationCreate: {
       /** Name */
@@ -21300,6 +21565,13 @@ export interface components {
       slug: string
       /** Avatar Url */
       avatar_url?: string | null
+      /** Legal Entity */
+      legal_entity?:
+        | (
+            | components['schemas']['OrganizationIndividualLegalEntitySchema']
+            | components['schemas']['OrganizationCompanyLegalEntitySchema']
+          )
+        | null
       /**
        * Email
        * @description Public support email.
@@ -21317,6 +21589,255 @@ export interface components {
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
       details?: components['schemas']['OrganizationDetails'] | null
+      /** @description Two-letter country code (ISO 3166-1 alpha-2). */
+      country?:
+        | (
+            | 'AD'
+            | 'AE'
+            | 'AF'
+            | 'AG'
+            | 'AI'
+            | 'AL'
+            | 'AM'
+            | 'AO'
+            | 'AQ'
+            | 'AR'
+            | 'AS'
+            | 'AT'
+            | 'AU'
+            | 'AW'
+            | 'AX'
+            | 'AZ'
+            | 'BA'
+            | 'BB'
+            | 'BD'
+            | 'BE'
+            | 'BF'
+            | 'BG'
+            | 'BH'
+            | 'BI'
+            | 'BJ'
+            | 'BL'
+            | 'BM'
+            | 'BN'
+            | 'BO'
+            | 'BQ'
+            | 'BR'
+            | 'BS'
+            | 'BT'
+            | 'BV'
+            | 'BW'
+            | 'BY'
+            | 'BZ'
+            | 'CA'
+            | 'CC'
+            | 'CD'
+            | 'CF'
+            | 'CG'
+            | 'CH'
+            | 'CI'
+            | 'CK'
+            | 'CL'
+            | 'CM'
+            | 'CN'
+            | 'CO'
+            | 'CR'
+            | 'CV'
+            | 'CW'
+            | 'CX'
+            | 'CY'
+            | 'CZ'
+            | 'DE'
+            | 'DJ'
+            | 'DK'
+            | 'DM'
+            | 'DO'
+            | 'DZ'
+            | 'EC'
+            | 'EE'
+            | 'EG'
+            | 'EH'
+            | 'ER'
+            | 'ES'
+            | 'ET'
+            | 'FI'
+            | 'FJ'
+            | 'FK'
+            | 'FM'
+            | 'FO'
+            | 'FR'
+            | 'GA'
+            | 'GB'
+            | 'GD'
+            | 'GE'
+            | 'GF'
+            | 'GG'
+            | 'GH'
+            | 'GI'
+            | 'GL'
+            | 'GM'
+            | 'GN'
+            | 'GP'
+            | 'GQ'
+            | 'GR'
+            | 'GS'
+            | 'GT'
+            | 'GU'
+            | 'GW'
+            | 'GY'
+            | 'HK'
+            | 'HM'
+            | 'HN'
+            | 'HR'
+            | 'HT'
+            | 'HU'
+            | 'ID'
+            | 'IE'
+            | 'IL'
+            | 'IM'
+            | 'IN'
+            | 'IO'
+            | 'IQ'
+            | 'IS'
+            | 'IT'
+            | 'JE'
+            | 'JM'
+            | 'JO'
+            | 'JP'
+            | 'KE'
+            | 'KG'
+            | 'KH'
+            | 'KI'
+            | 'KM'
+            | 'KN'
+            | 'KR'
+            | 'KW'
+            | 'KY'
+            | 'KZ'
+            | 'LA'
+            | 'LB'
+            | 'LC'
+            | 'LI'
+            | 'LK'
+            | 'LR'
+            | 'LS'
+            | 'LT'
+            | 'LU'
+            | 'LV'
+            | 'LY'
+            | 'MA'
+            | 'MC'
+            | 'MD'
+            | 'ME'
+            | 'MF'
+            | 'MG'
+            | 'MH'
+            | 'MK'
+            | 'ML'
+            | 'MM'
+            | 'MN'
+            | 'MO'
+            | 'MP'
+            | 'MQ'
+            | 'MR'
+            | 'MS'
+            | 'MT'
+            | 'MU'
+            | 'MV'
+            | 'MW'
+            | 'MX'
+            | 'MY'
+            | 'MZ'
+            | 'NA'
+            | 'NC'
+            | 'NE'
+            | 'NF'
+            | 'NG'
+            | 'NI'
+            | 'NL'
+            | 'NO'
+            | 'NP'
+            | 'NR'
+            | 'NU'
+            | 'NZ'
+            | 'OM'
+            | 'PA'
+            | 'PE'
+            | 'PF'
+            | 'PG'
+            | 'PH'
+            | 'PK'
+            | 'PL'
+            | 'PM'
+            | 'PN'
+            | 'PR'
+            | 'PS'
+            | 'PT'
+            | 'PW'
+            | 'PY'
+            | 'QA'
+            | 'RE'
+            | 'RO'
+            | 'RS'
+            | 'RW'
+            | 'SA'
+            | 'SB'
+            | 'SC'
+            | 'SD'
+            | 'SE'
+            | 'SG'
+            | 'SH'
+            | 'SI'
+            | 'SJ'
+            | 'SK'
+            | 'SL'
+            | 'SM'
+            | 'SN'
+            | 'SO'
+            | 'SR'
+            | 'SS'
+            | 'ST'
+            | 'SV'
+            | 'SX'
+            | 'SZ'
+            | 'TC'
+            | 'TD'
+            | 'TF'
+            | 'TG'
+            | 'TH'
+            | 'TJ'
+            | 'TK'
+            | 'TL'
+            | 'TM'
+            | 'TN'
+            | 'TO'
+            | 'TR'
+            | 'TT'
+            | 'TV'
+            | 'TW'
+            | 'TZ'
+            | 'UA'
+            | 'UG'
+            | 'UM'
+            | 'US'
+            | 'UY'
+            | 'UZ'
+            | 'VA'
+            | 'VC'
+            | 'VE'
+            | 'VG'
+            | 'VI'
+            | 'VN'
+            | 'VU'
+            | 'WF'
+            | 'WS'
+            | 'YE'
+            | 'YT'
+            | 'ZA'
+            | 'ZM'
+            | 'ZW'
+          )
+        | null
       feature_settings?:
         | components['schemas']['OrganizationFeatureSettings']
         | null
@@ -21500,6 +22021,14 @@ export interface components {
        * @description Ordered list of metric slugs shown on the dashboard overview.
        */
       overview_metrics?: string[] | null
+    }
+    /** OrganizationIndividualLegalEntitySchema */
+    OrganizationIndividualLegalEntitySchema: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'individual'
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -21697,6 +22226,255 @@ export interface components {
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
       details?: components['schemas']['OrganizationDetails'] | null
+      /** @description Two-letter country code (ISO 3166-1 alpha-2). */
+      country?:
+        | (
+            | 'AD'
+            | 'AE'
+            | 'AF'
+            | 'AG'
+            | 'AI'
+            | 'AL'
+            | 'AM'
+            | 'AO'
+            | 'AQ'
+            | 'AR'
+            | 'AS'
+            | 'AT'
+            | 'AU'
+            | 'AW'
+            | 'AX'
+            | 'AZ'
+            | 'BA'
+            | 'BB'
+            | 'BD'
+            | 'BE'
+            | 'BF'
+            | 'BG'
+            | 'BH'
+            | 'BI'
+            | 'BJ'
+            | 'BL'
+            | 'BM'
+            | 'BN'
+            | 'BO'
+            | 'BQ'
+            | 'BR'
+            | 'BS'
+            | 'BT'
+            | 'BV'
+            | 'BW'
+            | 'BY'
+            | 'BZ'
+            | 'CA'
+            | 'CC'
+            | 'CD'
+            | 'CF'
+            | 'CG'
+            | 'CH'
+            | 'CI'
+            | 'CK'
+            | 'CL'
+            | 'CM'
+            | 'CN'
+            | 'CO'
+            | 'CR'
+            | 'CV'
+            | 'CW'
+            | 'CX'
+            | 'CY'
+            | 'CZ'
+            | 'DE'
+            | 'DJ'
+            | 'DK'
+            | 'DM'
+            | 'DO'
+            | 'DZ'
+            | 'EC'
+            | 'EE'
+            | 'EG'
+            | 'EH'
+            | 'ER'
+            | 'ES'
+            | 'ET'
+            | 'FI'
+            | 'FJ'
+            | 'FK'
+            | 'FM'
+            | 'FO'
+            | 'FR'
+            | 'GA'
+            | 'GB'
+            | 'GD'
+            | 'GE'
+            | 'GF'
+            | 'GG'
+            | 'GH'
+            | 'GI'
+            | 'GL'
+            | 'GM'
+            | 'GN'
+            | 'GP'
+            | 'GQ'
+            | 'GR'
+            | 'GS'
+            | 'GT'
+            | 'GU'
+            | 'GW'
+            | 'GY'
+            | 'HK'
+            | 'HM'
+            | 'HN'
+            | 'HR'
+            | 'HT'
+            | 'HU'
+            | 'ID'
+            | 'IE'
+            | 'IL'
+            | 'IM'
+            | 'IN'
+            | 'IO'
+            | 'IQ'
+            | 'IS'
+            | 'IT'
+            | 'JE'
+            | 'JM'
+            | 'JO'
+            | 'JP'
+            | 'KE'
+            | 'KG'
+            | 'KH'
+            | 'KI'
+            | 'KM'
+            | 'KN'
+            | 'KR'
+            | 'KW'
+            | 'KY'
+            | 'KZ'
+            | 'LA'
+            | 'LB'
+            | 'LC'
+            | 'LI'
+            | 'LK'
+            | 'LR'
+            | 'LS'
+            | 'LT'
+            | 'LU'
+            | 'LV'
+            | 'LY'
+            | 'MA'
+            | 'MC'
+            | 'MD'
+            | 'ME'
+            | 'MF'
+            | 'MG'
+            | 'MH'
+            | 'MK'
+            | 'ML'
+            | 'MM'
+            | 'MN'
+            | 'MO'
+            | 'MP'
+            | 'MQ'
+            | 'MR'
+            | 'MS'
+            | 'MT'
+            | 'MU'
+            | 'MV'
+            | 'MW'
+            | 'MX'
+            | 'MY'
+            | 'MZ'
+            | 'NA'
+            | 'NC'
+            | 'NE'
+            | 'NF'
+            | 'NG'
+            | 'NI'
+            | 'NL'
+            | 'NO'
+            | 'NP'
+            | 'NR'
+            | 'NU'
+            | 'NZ'
+            | 'OM'
+            | 'PA'
+            | 'PE'
+            | 'PF'
+            | 'PG'
+            | 'PH'
+            | 'PK'
+            | 'PL'
+            | 'PM'
+            | 'PN'
+            | 'PR'
+            | 'PS'
+            | 'PT'
+            | 'PW'
+            | 'PY'
+            | 'QA'
+            | 'RE'
+            | 'RO'
+            | 'RS'
+            | 'RW'
+            | 'SA'
+            | 'SB'
+            | 'SC'
+            | 'SD'
+            | 'SE'
+            | 'SG'
+            | 'SH'
+            | 'SI'
+            | 'SJ'
+            | 'SK'
+            | 'SL'
+            | 'SM'
+            | 'SN'
+            | 'SO'
+            | 'SR'
+            | 'SS'
+            | 'ST'
+            | 'SV'
+            | 'SX'
+            | 'SZ'
+            | 'TC'
+            | 'TD'
+            | 'TF'
+            | 'TG'
+            | 'TH'
+            | 'TJ'
+            | 'TK'
+            | 'TL'
+            | 'TM'
+            | 'TN'
+            | 'TO'
+            | 'TR'
+            | 'TT'
+            | 'TV'
+            | 'TW'
+            | 'TZ'
+            | 'UA'
+            | 'UG'
+            | 'UM'
+            | 'US'
+            | 'UY'
+            | 'UZ'
+            | 'VA'
+            | 'VC'
+            | 'VE'
+            | 'VG'
+            | 'VI'
+            | 'VN'
+            | 'VU'
+            | 'WF'
+            | 'WS'
+            | 'YE'
+            | 'YT'
+            | 'ZA'
+            | 'ZM'
+            | 'ZW'
+          )
+        | null
       feature_settings?:
         | components['schemas']['OrganizationFeatureSettings']
         | null
@@ -22743,6 +23521,38 @@ export interface components {
       /**
        * Price Amount
        * @description The price in cents.
+       *     Minimum amounts per currency:
+       *     - USD: $0.50
+       *     - AED: AED2.00
+       *     - ARS: ARS0.50
+       *     - AUD: A$0.50
+       *     - BRL: R$0.50
+       *     - CAD: CA$0.50
+       *     - CHF: CHF0.50
+       *     - COP: COP0.50
+       *     - CZK: CZK15.00
+       *     - DKK: DKK2.50
+       *     - EUR: €0.50
+       *     - GBP: £0.30
+       *     - HKD: HK$4.00
+       *     - HUF: HUF175.00
+       *     - IDR: IDR0.50
+       *     - ILS: ₪0.50
+       *     - INR: ₹60.00
+       *     - JPY: ¥50
+       *     - KRW: ₩50
+       *     - MXN: MX$0.10
+       *     - MYR: MYR2.00
+       *     - NOK: NOK3.00
+       *     - NZD: NZ$0.50
+       *     - PHP: ₱0.50
+       *     - PLN: PLN2.00
+       *     - RON: RON2.00
+       *     - RUB: RUB0.50
+       *     - SEK: SEK3.00
+       *     - SGD: SGD0.50
+       *     - THB: THB0.10
+       *     - ZAR: ZAR0.50
        */
       price_amount: number
     }
@@ -23650,12 +24460,12 @@ export interface components {
       customer_id?: string | null
       /**
        * External Member Id
-       * @description External member ID for the seat assignment. Only supported when member_model_enabled is true. Can be used alone (lookup existing member) or with email (create/validate member).
+       * @description External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member).
        */
       external_member_id?: string | null
       /**
        * Member Id
-       * @description Member ID for the seat assignment. Only supported when member_model_enabled is true.
+       * @description Member ID for the seat assignment.
        */
       member_id?: string | null
       /**
@@ -26014,6 +26824,14 @@ export interface components {
       /** Identity Verified */
       identity_verified: boolean
       identity_verification_status: components['schemas']['IdentityVerificationStatus']
+      /** First Name */
+      first_name: string | null
+      /** Last Name */
+      last_name: string | null
+      /** Country */
+      country: string | null
+      /** Date Of Birth */
+      date_of_birth: string | null
       /** Oauth Accounts */
       oauth_accounts: components['schemas']['OAuthAccountRead'][]
       /** Email Hash */
@@ -26054,6 +26872,263 @@ export interface components {
       utm_campaign?: string | null
       /** Campaign */
       campaign?: string | null
+    }
+    /** UserUpdate */
+    UserUpdate: {
+      /** First Name */
+      first_name?: string | null
+      /** Last Name */
+      last_name?: string | null
+      country?:
+        | (
+            | 'AD'
+            | 'AE'
+            | 'AF'
+            | 'AG'
+            | 'AI'
+            | 'AL'
+            | 'AM'
+            | 'AO'
+            | 'AQ'
+            | 'AR'
+            | 'AS'
+            | 'AT'
+            | 'AU'
+            | 'AW'
+            | 'AX'
+            | 'AZ'
+            | 'BA'
+            | 'BB'
+            | 'BD'
+            | 'BE'
+            | 'BF'
+            | 'BG'
+            | 'BH'
+            | 'BI'
+            | 'BJ'
+            | 'BL'
+            | 'BM'
+            | 'BN'
+            | 'BO'
+            | 'BQ'
+            | 'BR'
+            | 'BS'
+            | 'BT'
+            | 'BV'
+            | 'BW'
+            | 'BY'
+            | 'BZ'
+            | 'CA'
+            | 'CC'
+            | 'CD'
+            | 'CF'
+            | 'CG'
+            | 'CH'
+            | 'CI'
+            | 'CK'
+            | 'CL'
+            | 'CM'
+            | 'CN'
+            | 'CO'
+            | 'CR'
+            | 'CV'
+            | 'CW'
+            | 'CX'
+            | 'CY'
+            | 'CZ'
+            | 'DE'
+            | 'DJ'
+            | 'DK'
+            | 'DM'
+            | 'DO'
+            | 'DZ'
+            | 'EC'
+            | 'EE'
+            | 'EG'
+            | 'EH'
+            | 'ER'
+            | 'ES'
+            | 'ET'
+            | 'FI'
+            | 'FJ'
+            | 'FK'
+            | 'FM'
+            | 'FO'
+            | 'FR'
+            | 'GA'
+            | 'GB'
+            | 'GD'
+            | 'GE'
+            | 'GF'
+            | 'GG'
+            | 'GH'
+            | 'GI'
+            | 'GL'
+            | 'GM'
+            | 'GN'
+            | 'GP'
+            | 'GQ'
+            | 'GR'
+            | 'GS'
+            | 'GT'
+            | 'GU'
+            | 'GW'
+            | 'GY'
+            | 'HK'
+            | 'HM'
+            | 'HN'
+            | 'HR'
+            | 'HT'
+            | 'HU'
+            | 'ID'
+            | 'IE'
+            | 'IL'
+            | 'IM'
+            | 'IN'
+            | 'IO'
+            | 'IQ'
+            | 'IS'
+            | 'IT'
+            | 'JE'
+            | 'JM'
+            | 'JO'
+            | 'JP'
+            | 'KE'
+            | 'KG'
+            | 'KH'
+            | 'KI'
+            | 'KM'
+            | 'KN'
+            | 'KR'
+            | 'KW'
+            | 'KY'
+            | 'KZ'
+            | 'LA'
+            | 'LB'
+            | 'LC'
+            | 'LI'
+            | 'LK'
+            | 'LR'
+            | 'LS'
+            | 'LT'
+            | 'LU'
+            | 'LV'
+            | 'LY'
+            | 'MA'
+            | 'MC'
+            | 'MD'
+            | 'ME'
+            | 'MF'
+            | 'MG'
+            | 'MH'
+            | 'MK'
+            | 'ML'
+            | 'MM'
+            | 'MN'
+            | 'MO'
+            | 'MP'
+            | 'MQ'
+            | 'MR'
+            | 'MS'
+            | 'MT'
+            | 'MU'
+            | 'MV'
+            | 'MW'
+            | 'MX'
+            | 'MY'
+            | 'MZ'
+            | 'NA'
+            | 'NC'
+            | 'NE'
+            | 'NF'
+            | 'NG'
+            | 'NI'
+            | 'NL'
+            | 'NO'
+            | 'NP'
+            | 'NR'
+            | 'NU'
+            | 'NZ'
+            | 'OM'
+            | 'PA'
+            | 'PE'
+            | 'PF'
+            | 'PG'
+            | 'PH'
+            | 'PK'
+            | 'PL'
+            | 'PM'
+            | 'PN'
+            | 'PR'
+            | 'PS'
+            | 'PT'
+            | 'PW'
+            | 'PY'
+            | 'QA'
+            | 'RE'
+            | 'RO'
+            | 'RS'
+            | 'RW'
+            | 'SA'
+            | 'SB'
+            | 'SC'
+            | 'SD'
+            | 'SE'
+            | 'SG'
+            | 'SH'
+            | 'SI'
+            | 'SJ'
+            | 'SK'
+            | 'SL'
+            | 'SM'
+            | 'SN'
+            | 'SO'
+            | 'SR'
+            | 'SS'
+            | 'ST'
+            | 'SV'
+            | 'SX'
+            | 'SZ'
+            | 'TC'
+            | 'TD'
+            | 'TF'
+            | 'TG'
+            | 'TH'
+            | 'TJ'
+            | 'TK'
+            | 'TL'
+            | 'TM'
+            | 'TN'
+            | 'TO'
+            | 'TR'
+            | 'TT'
+            | 'TV'
+            | 'TW'
+            | 'TZ'
+            | 'UA'
+            | 'UG'
+            | 'UM'
+            | 'US'
+            | 'UY'
+            | 'UZ'
+            | 'VA'
+            | 'VC'
+            | 'VE'
+            | 'VG'
+            | 'VI'
+            | 'VN'
+            | 'VU'
+            | 'WF'
+            | 'WS'
+            | 'YE'
+            | 'YT'
+            | 'ZA'
+            | 'ZM'
+            | 'ZW'
+          )
+        | null
+      /** Date Of Birth */
+      date_of_birth?: string | null
     }
     /** ValidatedLicenseKey */
     ValidatedLicenseKey: {
@@ -27406,6 +28481,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['UserDeletionResponse']
+        }
+      }
+    }
+  }
+  'users:update_authenticated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserRead']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -43809,6 +44917,259 @@ export const orderSortPropertyValues: ReadonlyArray<
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
 > = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
+export const organizationCountryAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['Organization']['country']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CU',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IR',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KP',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RU',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SY',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationAccessTokenSortProperty']
 > = [
@@ -43827,12 +45188,266 @@ export const organizationAvatarFileCreateServiceValues: ReadonlyArray<
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationAvatarFileRead']['service']
 > = ['organization_avatar']
+export const organizationCompanyLegalEntitySchemaTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationCompanyLegalEntitySchema']['type']
+> = ['company']
+export const organizationCreateCountryAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationCreate']['country']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const organizationDeletionBlockedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationDeletionBlockedReason']
 > = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
 export const organizationDetailsSwitching_fromAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationDetails']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
+export const organizationIndividualLegalEntitySchemaTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationIndividualLegalEntitySchema']['type']
+> = ['individual']
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
@@ -43873,6 +45488,254 @@ export const organizationStatusValues: ReadonlyArray<
   'ongoing_review',
   'denied',
   'active',
+]
+export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationUpdate']['country']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
 ]
 export const paymentProcessorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentProcessor']
@@ -44450,6 +46313,254 @@ export const userEventSourceValues: ReadonlyArray<
 export const userSignupAttributionIntentAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UserSignupAttribution']['intent']
 > = ['creator', 'pledge', 'purchase', 'subscription', 'newsletter_subscription']
+export const userUpdateCountryAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['UserUpdate']['country']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const walletSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']

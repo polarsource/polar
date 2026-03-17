@@ -1,5 +1,7 @@
 'use client'
 
+import { useUpdateOrganization } from '@/hooks/queries'
+import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -38,13 +40,16 @@ const PRICING_MODELS = [
   'Usage-based',
 ] as const
 
-const SELLING_PLATFORMS = [
-  'Paddle',
-  'Lemon Squeezy',
-  'Gumroad',
-  'Stripe',
-  'Other',
-] as const
+const SELLING_PLATFORMS: [
+  NonNullable<schemas['OrganizationDetails']['switching_from']>,
+  string,
+][] = [
+  ['paddle', 'Paddle'],
+  ['lemon_squeezy', 'Lemon Squeezy'],
+  ['gumroad', 'Gumroad'],
+  ['stripe', 'Stripe'],
+  ['other', 'Other'],
+]
 
 interface FormSchema {
   sellingCategories: string[]
@@ -58,6 +63,7 @@ interface FormSchema {
 export function ProductDetailsStep() {
   const router = useRouter()
   const { data, updateData, showApiResponse } = useOnboardingData()
+  const updateOrganization = useUpdateOrganization()
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -117,6 +123,44 @@ export function ProductDetailsStep() {
       productUrl: formData.productUrl,
       currentlySellingOn: formData.currentlySellingOn,
     })
+
+    if (data.organizationId) {
+      const switching = formData.currentlySellingOn.length > 0
+      const switchingFrom = (
+        switching ? formData.currentlySellingOn[0] : null
+      ) as schemas['OrganizationDetails']['switching_from']
+
+      const productDescriptionParts = [
+        formData.sellingCategories.length > 0 &&
+          `Product type: ${formData.sellingCategories.join(', ')}`,
+        formData.pricingModel.length > 0 &&
+          `Pricing model: ${formData.pricingModel.join(', ')}`,
+        '',
+        formData.productDescription,
+      ]
+        .filter((part) => part !== false)
+        .join('\n')
+        .trim()
+
+      await updateOrganization.mutateAsync({
+        id: data.organizationId,
+        body: {
+          ...(formData.supportEmail && { email: formData.supportEmail }),
+          ...(formData.productUrl && { website: formData.productUrl }),
+          details: {
+            about: '-',
+            intended_use: '-',
+            customer_acquisition: [],
+            future_annual_revenue: 0,
+            previous_annual_revenue: 0,
+            product_description: productDescriptionParts,
+            switching,
+            switching_from: switchingFrom,
+          } satisfies schemas['OrganizationDetails'],
+        },
+      })
+    }
+
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
   }

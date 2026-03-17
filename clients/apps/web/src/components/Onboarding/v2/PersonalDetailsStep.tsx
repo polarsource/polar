@@ -1,7 +1,8 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { enums } from '@polar-sh/client'
+import { useUpdateUser } from '@/hooks/queries'
+import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
@@ -55,14 +56,16 @@ export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
   const { data, updateData, showApiResponse } = useOnboardingData()
+  const updateUser = useUpdateUser()
 
-  const parsedDob = data.dateOfBirth ? data.dateOfBirth.split('-') : []
+  const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
+  const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
 
   const form = useForm<FormSchema>({
     defaultValues: {
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
-      country: data.country || '',
+      firstName: data.firstName || currentUser?.first_name || '',
+      lastName: data.lastName || currentUser?.last_name || '',
+      country: data.country || currentUser?.country || '',
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] || '',
@@ -105,6 +108,19 @@ export function PersonalDetailsStep() {
       country: formData.country,
       dateOfBirth,
     })
+
+    const { error } = await updateUser.mutateAsync({
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      country: formData.country as schemas['CountryAlpha2Input'],
+      date_of_birth: dateOfBirth,
+    })
+
+    if (error) {
+      await showApiResponse(400, 'Failed to save personal details')
+      return
+    }
+
     await showApiResponse(201, 'Created')
     router.push('/onboarding/business')
   }

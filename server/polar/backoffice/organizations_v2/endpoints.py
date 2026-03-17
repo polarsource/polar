@@ -1672,7 +1672,7 @@ async def edit_details(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit organization details (about, product description, intended use)."""
+    """Edit organization details (product description, intended use)."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1714,9 +1714,7 @@ async def edit_details(
 
     with modal("Edit Organization Details", open=True):
         with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text(
-                "Update organization details (about, product description, intended use)"
-            )
+            text("Update organization details (product description, intended use)")
 
         with UpdateOrganizationDetailsForm.render(
             data=form_data,

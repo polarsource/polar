@@ -10,7 +10,6 @@ def collect_organization_data(organization: Organization) -> OrganizationData:
         slug=organization.slug,
         website=organization.website,
         email=organization.email,
-        about=details.get("about"),
         product_description=details.get("product_description"),
         switching_from=details.get("switching_from"),
         previous_annual_revenue=details.get("previous_annual_revenue"),

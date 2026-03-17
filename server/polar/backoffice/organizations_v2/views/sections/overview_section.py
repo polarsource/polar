@@ -528,19 +528,9 @@ class OverviewSection(ChecklistMixin):
                         ):
                             text(str(self.org.website))
 
-            # Details: about, product description, intended use
+            # Details: product description, intended use
             if hasattr(self.org, "details") and self.org.details:
                 details = self.org.details
-
-                if details.get("about"):
-                    has_content = True
-                    with tag.div(classes="mb-4"):
-                        with tag.div(classes="text-sm font-semibold mb-2"):
-                            text("About")
-                        with tag.div(
-                            classes="text-sm text-base-content/80 whitespace-pre-wrap"
-                        ):
-                            text(details["about"])
 
                 if details.get("product_description"):
                     has_content = True

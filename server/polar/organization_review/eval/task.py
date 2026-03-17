@@ -35,7 +35,6 @@ def build_snapshot(review_input: ReviewInput) -> DataSnapshot:
         name=review_input.name,
         slug=review_input.name.lower().replace(" ", "-"),
         website=review_input.website,
-        about=details.get("about"),
         product_description=details.get("product_description"),
         switching_from=details.get("switching_from"),
         previous_annual_revenue=details.get("previous_annual_revenue"),

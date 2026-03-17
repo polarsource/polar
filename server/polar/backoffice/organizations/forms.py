@@ -120,15 +120,6 @@ class UpdateOrganizationForm(forms.BaseForm):
 
 
 class UpdateOrganizationDetailsDataForm(forms.BaseForm):
-    about: Annotated[
-        str,
-        forms.TextAreaField(rows=4),
-        Field(
-            min_length=1,
-            title="About",
-            description="Brief information about you and your business",
-        ),
-    ]
     product_description: Annotated[
         str,
         forms.TextAreaField(rows=4),

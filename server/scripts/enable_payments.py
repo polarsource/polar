@@ -11,7 +11,11 @@ from polar.enums import AccountType
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.models.account import Account
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import (
+    Organization,
+    OrganizationDetails,
+    OrganizationStatus,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import UserOrganization
@@ -85,13 +89,9 @@ def enable_payments(slug: str) -> None:
                     typer.echo(f"Created account {account.stripe_id}")
 
                 if not organization.details:
-                    organization.details = {
-                        "about": "Dev organization",
-                        "product_description": "Development and testing products.",
-                        "previous_annual_revenue": 0,
-                        "switching": False,
-                        "switching_from": None,
-                    }
+                    organization.details = OrganizationDetails(
+                        product_description="Development and testing products.",
+                    )
                     typer.echo("Set organization details.")
 
                 organization.details_submitted_at = utc_now()

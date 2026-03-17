@@ -21,6 +21,7 @@ from polar.logfire import instrument_httpx
 from polar.logging import CorrelationID, Logger
 from polar.operational_errors import handle_operational_error
 
+from ._asyncio import MonitoredAsyncIO
 from ._debounce import DebounceMiddleware
 from ._encoder import JSONEncoder
 from ._health import HealthMiddleware
@@ -186,7 +187,7 @@ def get_broker() -> dramatiq.Broker:
     middleware_list = [
         # Infrastructure & async support
         middleware.ShutdownNotifications(),
-        middleware.AsyncIO(),
+        MonitoredAsyncIO(),
         # Results backend for pipeline/group support
         Results(backend=result_backend, result_ttl=60_000),
         # Group completion callbacks for orchestrating task sequences

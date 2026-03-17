@@ -356,7 +356,9 @@ class OrganizationService:
 
         # Only store details once to avoid API overrides later w/o review
         if not previous_details and update_schema.details:
-            organization.details = cast(OrganizationDetails, update_schema.details.model_dump())
+            organization.details = cast(
+                OrganizationDetails, update_schema.details.model_dump()
+            )
             organization.details_submitted_at = datetime.now(UTC)
             enqueue_job(
                 "organization_review.run_agent",

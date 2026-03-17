@@ -24,7 +24,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -52,6 +52,26 @@ interface FormSchema {
   dobDay: string
 }
 
+function FormSync() {
+  const { updateData } = useOnboardingData()
+  const values = useWatch<FormSchema>()
+
+  useEffect(() => {
+    const dateOfBirth =
+      values.dobYear && values.dobMonth && values.dobDay
+        ? `${values.dobYear}-${values.dobMonth}-${String(values.dobDay).padStart(2, '0')}`
+        : undefined
+    updateData({
+      firstName: values.firstName,
+      lastName: values.lastName,
+      country: values.country,
+      dateOfBirth,
+    })
+  }, [values, updateData])
+
+  return null
+}
+
 export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
@@ -73,21 +93,7 @@ export function PersonalDetailsStep() {
     },
   })
 
-  const { control, handleSubmit, watch } = form
-
-  const firstName = watch('firstName')
-  const lastName = watch('lastName')
-  const country = watch('country')
-  const dobYear = watch('dobYear')
-  const dobMonth = watch('dobMonth')
-  const dobDay = watch('dobDay')
-  useEffect(() => {
-    const dateOfBirth =
-      dobYear && dobMonth && dobDay
-        ? `${dobYear}-${dobMonth}-${dobDay.padStart(2, '0')}`
-        : undefined
-    updateData({ firstName, lastName, country, dateOfBirth })
-  }, [firstName, lastName, country, dobYear, dobMonth, dobDay, updateData])
+  const { control, handleSubmit } = form
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 100 }, (_, i) =>
@@ -137,6 +143,7 @@ export function PersonalDetailsStep() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
+          <FormSync />
           <Box
             display="grid"
             gridTemplateColumns="repeat(2, minmax(0, 1fr))"

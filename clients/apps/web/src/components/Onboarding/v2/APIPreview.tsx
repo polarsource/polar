@@ -135,7 +135,7 @@ export function APIPreview({
           <span>Host: api.polar.sh</span>
           <span>Content-Type: application/json</span>
           <span>Content-Length: {contentLength}</span>
-          <span>Authorization: Bearer polar_sk_Ymlyaw==</span>
+          <span>Authorization: Bearer polar_sk_Yj1mbihldmVudHMp</span>
         </div>
       </div>
 

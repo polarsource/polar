@@ -3,7 +3,7 @@
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ArrowRight, ExternalLink, UserCheck } from 'lucide-react'
+import { ArrowRight, CheckIcon, ExternalLink, UserCheck } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
 interface AccountStepProps {
@@ -46,6 +46,9 @@ export default function AccountStep({
     if (isStripe) {
       return (
         <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
+          <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-polar-700">
+            <CheckIcon className="h-4 w-4 text-gray-500 dark:text-polar-400" />
+          </span>
           <h4 className="mb-2 font-medium">Account setup complete</h4>
           <p className="dark:text-polar-400 mx-auto mb-6 max-w-sm text-sm text-balance text-gray-600">
             Your Stripe payout account is configured and ready to receive

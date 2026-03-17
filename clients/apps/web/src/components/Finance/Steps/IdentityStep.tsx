@@ -1,7 +1,7 @@
 'use client'
 
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, CheckIcon } from 'lucide-react'
 
 interface IdentityStepProps {
   identityVerificationStatus?: string
@@ -27,6 +27,9 @@ export default function IdentityStep({
         </>
       ) : identityVerificationStatus === 'verified' ? (
         <>
+          <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-polar-700">
+            <CheckIcon className="h-4 w-4 text-gray-500 dark:text-polar-400" />
+          </span>
           <h4 className="mb-2 font-medium">Identity verified</h4>
           <p className="dark:text-polar-400 mx-auto text-sm text-gray-500">
             Your identity has been successfully verified.

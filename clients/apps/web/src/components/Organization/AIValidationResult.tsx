@@ -2,23 +2,17 @@
 
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
-import { Card } from '@polar-sh/ui/components/ui/card'
-import { AlertTriangle, CheckCircle, Info, Loader2 } from 'lucide-react'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
   organization: schemas['Organization']
-  onAppealApproved?: () => void
-  onAppealSubmitted?: () => void
 }
 
 const AIValidationResult: React.FC<AIValidationResultProps> = ({
   organization,
-  onAppealApproved,
-  onAppealSubmitted,
 }) => {
-  const startedAtRef = useRef<number>(Date.now())
   const [timedOut, setTimedOut] = useState(false)
   const [stopPolling, setStopPolling] = useState(false)
 
@@ -35,9 +29,10 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   // Timeout after 120s and stop polling
   useEffect(() => {
     if (timedOut) return
+    if (!shouldPoll) return
     const timeout = setTimeout(() => setTimedOut(true), 120_000)
     return () => clearTimeout(timeout)
-  }, [timedOut])
+  }, [timedOut, shouldPoll])
 
   // Stop polling once a verdict is present
   useEffect(() => {
@@ -52,10 +47,10 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     if (!verdict && !timedOut && !reviewStatus.isError) {
       return {
         type: 'loading',
-        title: 'Validating Organization Details...',
+        title: 'Reviewing organization…',
         message:
           'Our AI is reviewing your organization details against our acceptable use policy. This typically takes one to two minutes.',
-        icon: <Loader2 className="h-8 w-8 animate-spin" />,
+        icon: <Loader2 className="h-4 w-4 animate-spin" />,
       }
     }
 
@@ -63,15 +58,17 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     if (reviewStatus.isError || timedOut) {
       return {
         type: 'review_required',
-        title: 'Payment Access Denied',
+        title: 'Payment access denied',
         message:
-          'Technical error during validation. Manual review will be conducted.',
-        icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
-        severity: 'error',
+          'Technical error during validation. A manual review will be conducted.',
+        icon: (
+          <AlertTriangle className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+        ),
       }
     }
 
     const result = reviewStatus.data
+
     if (!result) {
       return null
     }
@@ -80,19 +77,31 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       case 'PASS':
         return {
           type: 'pass',
-          title: 'AI Validation Successful',
+          title: 'Approved!',
           message:
-            'Your organization details have been automatically validated against our acceptable use policy.',
-          icon: <CheckCircle className="h-8 w-8 text-gray-600" />,
+            'Your organization details have been automatically validated. You can accept payments immediately, but a manual review will still occur before your first payout.',
+          icon: (
+            <CheckCircle className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
+          ),
         }
       case 'FAIL':
+        return {
+          type: 'review_required',
+          title: 'Payment access denied',
+          message: 'Your organization does not meet our acceptable use policy.',
+          icon: (
+            <AlertTriangle className="dark:text-polar-400 -mt-0.5 h-4 w-4 text-gray-500" />
+          ),
+        }
       case 'UNCERTAIN':
         return {
           type: 'review_required',
-          title: 'Payment Access Denied',
-          message: result.reason,
-          icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
-          severity: 'error',
+          title: 'Additional review required',
+          message:
+            'We were unable to automatically verify your organization. You can submit an appeal to expedite the manual review process.',
+          icon: (
+            <AlertTriangle className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+          ),
         }
       default:
         return null
@@ -102,52 +111,32 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   const status = getValidationStatus()
   if (!status) return null
 
+  const showAppeal =
+    ((reviewStatus.data && reviewStatus.data.verdict) || timedOut) &&
+    status.type === 'review_required'
+
   return (
-    <Card className="p-6">
-      <div className="space-y-6">
-        {/* Status Header */}
-        <div className="flex items-center space-x-4">
-          <div className="shrink-0">{status.icon}</div>
-          <div className="flex-1">
-            <h3 className={`text-lg font-medium`}>{status.title}</h3>
-            <p className="dark:text-polar-400 mt-1 text-sm text-gray-600">
-              {status.message}
-            </p>
-          </div>
-        </div>
-
-        {/* Information Message */}
-        <Card className={`rounded-lg p-4`}>
-          <div className="flex items-start space-x-3">
-            <Info className={`dark:text-polar-400 h-5 w-5 text-gray-600`} />
-            <div className="flex-1">
-              <h4 className={`text-sm font-medium`}>What happens next?</h4>
-              <p className={`dark:text-polar-400 mt-1 text-sm text-gray-600`}>
-                {status.type === 'pass'
-                  ? 'Your organization details passed our automated compliance check. You can accept payments immediately, but a manual review will still occur before your first payout as part of our standard process.'
-                  : status.type === 'review_required'
-                    ? 'Payments are currently blocked for your organization due to our compliance review. You can submit an appeal below if you believe this decision is incorrect.'
-                    : 'Please wait while we validate your organization details.'}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Appeal Form for FAIL/UNCERTAIN */}
-        {((reviewStatus.data && reviewStatus.data.verdict) || timedOut) &&
-          status.type === 'review_required' && (
-            <div className="pt-6">
-              <AppealForm
-                organization={organization}
-                disabled={false}
-                onAppealApproved={onAppealApproved}
-                onContinueAfterSubmission={onAppealSubmitted}
-                existingReviewStatus={reviewStatus.data}
-              />
-            </div>
-          )}
+    <div className="dark:bg-polar-800 rounded-2xl border bg-white">
+      <div className="p-8 text-center">
+        <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+          {status.icon}
+        </span>
+        <h4 className="mb-2 font-medium">{status.title}</h4>
+        <p className="dark:text-polar-400 mx-auto max-w-2xs text-sm text-pretty text-gray-600">
+          {status.message}
+        </p>
       </div>
-    </Card>
+
+      {showAppeal && (
+        <div className="dark:border-polar-700 dark:bg-polar-900 rounded-b-2xl border-t bg-gray-50 p-8 text-left">
+          <AppealForm
+            organization={organization}
+            reason={reviewStatus.data?.reason}
+            existingReviewStatus={reviewStatus.data}
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

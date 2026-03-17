@@ -511,8 +511,15 @@ async def update_billing_period_end(
         except ValidationError as e:
             validation_error = e
 
+    prefill_data = (
+        {"new_period_end": subscription.current_period_end.strftime("%Y-%m-%dT%H:%M")}
+        if subscription.current_period_end is not None
+        else None
+    )
+
     with modal("Update billing period end", open=True):
         with UpdateBillingPeriodEndForm.render(
+            data=prefill_data,
             hx_post=str(
                 request.url_for("subscriptions:update_billing_period_end", id=id)
             ),

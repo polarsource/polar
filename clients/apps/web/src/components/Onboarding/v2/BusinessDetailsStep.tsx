@@ -28,7 +28,7 @@ import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
 interface FormSchema {
-  organizationType: 'individual' | 'business'
+  organizationType: 'individual' | 'company'
   orgName: string
   orgSlug: string
   defaultCurrency: string
@@ -136,6 +136,13 @@ export function BusinessDetailsStep() {
       country: (formData.businessCountry || undefined) as
         | schemas['CountryAlpha2Input']
         | undefined,
+      legal_entity:
+        formData.organizationType === 'company'
+          ? {
+              type: 'company' as const,
+              registered_name: formData.registeredBusinessName,
+            }
+          : { type: 'individual' as const },
     })
 
     if (error) {
@@ -197,7 +204,7 @@ export function BusinessDetailsStep() {
                         Individual
                       </TabsTrigger>
                       <TabsTrigger
-                        value="business"
+                        value="company"
                         className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
                       >
                         Business
@@ -209,7 +216,7 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          {organizationType === 'business' && (
+          {organizationType === 'company' && (
             <FormField
               control={control}
               name="registeredBusinessName"
@@ -267,7 +274,7 @@ export function BusinessDetailsStep() {
             display="grid"
             gap="m"
             gridTemplateColumns={
-              organizationType === 'business'
+              organizationType === 'company'
                 ? 'repeat(2, minmax(0, 1fr))'
                 : 'repeat(1, minmax(0, 1fr))'
             }
@@ -290,13 +297,13 @@ export function BusinessDetailsStep() {
               )}
             />
 
-            {organizationType === 'business' && (
+            {organizationType === 'company' && (
               <FormField
                 control={control}
                 name="businessCountry"
                 rules={{
                   required:
-                    organizationType === 'business'
+                    organizationType === 'company'
                       ? 'Business country is required'
                       : false,
                 }}
@@ -318,7 +325,7 @@ export function BusinessDetailsStep() {
             )}
           </Box>
 
-          {organizationType === 'business' && (
+          {organizationType === 'company' && (
             <>
               <Box display="flex" alignItems="center" justifyContent="between">
                 <FormField

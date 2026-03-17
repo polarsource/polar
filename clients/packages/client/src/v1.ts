@@ -21547,6 +21547,16 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** OrganizationCompanyLegalEntitySchema */
+    OrganizationCompanyLegalEntitySchema: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'company'
+      /** Registered Name */
+      registered_name: string
+    }
     /** OrganizationCreate */
     OrganizationCreate: {
       /** Name */
@@ -21555,6 +21565,13 @@ export interface components {
       slug: string
       /** Avatar Url */
       avatar_url?: string | null
+      /** Legal Entity */
+      legal_entity?:
+        | (
+            | components['schemas']['OrganizationIndividualLegalEntitySchema']
+            | components['schemas']['OrganizationCompanyLegalEntitySchema']
+          )
+        | null
       /**
        * Email
        * @description Public support email.
@@ -22004,6 +22021,14 @@ export interface components {
        * @description Ordered list of metric slugs shown on the dashboard overview.
        */
       overview_metrics?: string[] | null
+    }
+    /** OrganizationIndividualLegalEntitySchema */
+    OrganizationIndividualLegalEntitySchema: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'individual'
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -45163,6 +45188,9 @@ export const organizationAvatarFileCreateServiceValues: ReadonlyArray<
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationAvatarFileRead']['service']
 > = ['organization_avatar']
+export const organizationCompanyLegalEntitySchemaTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationCompanyLegalEntitySchema']['type']
+> = ['company']
 export const organizationCreateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationCreate']['country']
 > = [
@@ -45417,6 +45445,9 @@ export const organizationDeletionBlockedReasonValues: ReadonlyArray<
 export const organizationDetailsSwitching_fromAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationDetails']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
+export const organizationIndividualLegalEntitySchemaTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationIndividualLegalEntitySchema']['type']
+> = ['individual']
 export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']

@@ -333,10 +333,26 @@ class Organization(OrganizationBase):
     )
 
 
+class OrganizationIndividualLegalEntitySchema(Schema):
+    type: Literal["individual"]
+
+
+class OrganizationCompanyLegalEntitySchema(Schema):
+    type: Literal["company"]
+    registered_name: str
+
+
+OrganizationLegalEntitySchema = Annotated[
+    OrganizationIndividualLegalEntitySchema | OrganizationCompanyLegalEntitySchema,
+    Field(discriminator="type"),
+]
+
+
 class OrganizationCreate(Schema):
     name: NameInput
     slug: SlugInput
     avatar_url: AvatarUrl | None = None
+    legal_entity: OrganizationLegalEntitySchema | None = None
     email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."

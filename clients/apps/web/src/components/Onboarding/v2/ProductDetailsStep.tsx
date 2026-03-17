@@ -1,6 +1,7 @@
 'use client'
 
 import { useUpdateOrganization } from '@/hooks/queries'
+import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -39,13 +40,13 @@ const PRICING_MODELS = [
   'Usage-based',
 ] as const
 
-const SELLING_PLATFORMS = [
-  'Paddle',
-  'Lemon Squeezy',
-  'Gumroad',
-  'Stripe',
-  'Other',
-] as const
+const SELLING_PLATFORMS: [NonNullable<schemas['OrganizationDetails']['switching_from']>, string][] = [
+  ['paddle', 'Paddle'],
+  ['lemon_squeezy', 'Lemon Squeezy'],
+  ['gumroad', 'Gumroad'],
+  ['stripe', 'Stripe'],
+  ['other', 'Other'],
+]
 
 interface FormSchema {
   sellingCategories: string[]
@@ -121,16 +122,40 @@ export function ProductDetailsStep() {
     })
 
     if (data.organizationId) {
-      const body: Record<string, string | undefined> = {}
-      if (formData.supportEmail) body.email = formData.supportEmail
-      if (formData.productUrl) body.website = formData.productUrl
+      const switching = formData.currentlySellingOn.length > 0
+      const switchingFrom = switching
+        ? formData.currentlySellingOn[0]
+        : null
 
-      if (Object.keys(body).length > 0) {
-        await updateOrganization.mutateAsync({
-          id: data.organizationId,
-          body,
-        })
-      }
+      const productDescriptionParts = [
+        formData.sellingCategories.length > 0 &&
+          `Product type: ${formData.sellingCategories.join(', ')}`,
+        formData.pricingModel.length > 0 &&
+          `Pricing model: ${formData.pricingModel.join(', ')}`,
+        '',
+        formData.productDescription,
+      ]
+        .filter((part) => part !== false)
+        .join('\n')
+        .trim()
+
+      await updateOrganization.mutateAsync({
+        id: data.organizationId,
+        body: {
+          ...(formData.supportEmail && { email: formData.supportEmail }),
+          ...(formData.productUrl && { website: formData.productUrl }),
+          details: {
+            about: '-',
+            intended_use: '-',
+            customer_acquisition: [],
+            future_annual_revenue: 0,
+            previous_annual_revenue: 0,
+            product_description: productDescriptionParts,
+            switching,
+            switching_from: switchingFrom,
+          } satisfies schemas['OrganizationDetails'],
+        },
+      })
     }
 
     await showApiResponse(200, 'OK')

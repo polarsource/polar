@@ -145,8 +145,8 @@ export default function ClientPage({ organization }: ClientPageProps) {
       }))
       .filter((s) => s.total > 0)
       .sort((a, b) => b.total - a.total)
-    const max = rows[0]?.total ?? 1
-    return rows.map((r) => ({ ...r, share: r.total / max }))
+    const sum = rows.reduce((a, r) => a + r.total, 0) || 1
+    return rows.map((r) => ({ ...r, share: r.total / sum }))
   }, [currentTotals])
 
   // "What changed" — biggest movers vs previous period
@@ -232,13 +232,13 @@ export default function ClientPage({ organization }: ClientPageProps) {
       (prevModelStats?.items ?? []).map((r) => [r.value, getCost(r)]),
     )
     const rows = (modelStats?.items ?? []).filter((r) => getCost(r) > 0)
-    const max = getCost(rows[0] ?? {}) || 1
+    const sum = rows.reduce((a, r) => a + getCost(r), 0) || 1
     return rows.map((r) => {
       const total = getCost(r)
       const prev = prevMap.get(r.value) ?? 0
       const delta = total - prev
       const pct = prev > 0 ? (delta / prev) * 100 : null
-      return { ...r, total, share: total / max, prev, delta, pct }
+      return { ...r, total, share: total / sum, prev, delta, pct }
     })
   }, [modelStats, prevModelStats])
 
@@ -247,13 +247,13 @@ export default function ClientPage({ organization }: ClientPageProps) {
       (prevVendorStats?.items ?? []).map((r) => [r.value, getCost(r)]),
     )
     const rows = (vendorStats?.items ?? []).filter((r) => getCost(r) > 0)
-    const max = getCost(rows[0] ?? {}) || 1
+    const sum = rows.reduce((a, r) => a + getCost(r), 0) || 1
     return rows.map((r) => {
       const total = getCost(r)
       const prev = prevMap.get(r.value) ?? 0
       const delta = total - prev
       const pct = prev > 0 ? (delta / prev) * 100 : null
-      return { ...r, total, share: total / max, prev, delta, pct }
+      return { ...r, total, share: total / sum, prev, delta, pct }
     })
   }, [vendorStats, prevVendorStats])
 

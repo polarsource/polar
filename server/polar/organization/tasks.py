@@ -468,21 +468,12 @@ async def _get_or_create_member_for_backfill(
     email: str,
 ) -> Member:
     """Get or create a member under the billing customer for seat backfill."""
-    existing = await member_repository.get_by_customer_id_and_email(
-        billing_customer_id, email
-    )
-    if existing is not None:
-        return existing
-
-    member = Member(
+    return await member_service.get_or_create_by_email(
+        session,
         customer_id=billing_customer_id,
         organization_id=organization_id,
         email=email,
-        role=MemberRole.member,
     )
-    session.add(member)
-    await session.flush()
-    return member
 
 
 async def _transfer_benefit_records(

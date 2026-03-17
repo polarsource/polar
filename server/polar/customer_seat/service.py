@@ -18,6 +18,7 @@ from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     Customer,
@@ -487,15 +488,12 @@ class SeatService:
                 # Pending seat being claimed: create a member under billing customer
                 if not seat.email:
                     raise InvalidInvitationToken(invitation_token)
-                member_repository = MemberRepository.from_session(session)
-                member = Member(
+                member = await member_service.get_or_create_by_email(
+                    session,
                     customer_id=session_customer.id,
                     organization_id=organization_id,
                     email=seat.email,
-                    role=MemberRole.member,
                 )
-                session.add(member)
-                await session.flush()
                 seat.member_id = member.id
         else:
             # Use seat's customer relationship for legacy model
@@ -843,34 +841,12 @@ class SeatService:
         Returns:
             Member entity for the seat member
         """
-        member_repository = MemberRepository.from_session(session)
-
-        # Check if member already exists under this customer with this email
-        existing_member = await member_repository.get_by_customer_id_and_email(
-            billing_customer_id, email
-        )
-        if existing_member:
-            return existing_member
-
-        # Create new member under billing customer
-        member = Member(
-            customer_id=billing_customer_id,
-            organization_id=organization_id,
-            email=email,
-            role=MemberRole.member,
-        )
-        session.add(member)
-        await session.flush()
-
-        log.info(
-            "Created member for seat assignment",
-            member_id=member.id,
+        return await member_service.get_or_create_by_email(
+            session,
             customer_id=billing_customer_id,
             organization_id=organization_id,
             email=email,
         )
-
-        return member
 
     async def _resolve_member_model_target(
         self,
@@ -977,6 +953,7 @@ class SeatService:
         email: str | None,
         external_member_id: str,
     ) -> Member:
+        # 1. Look up by external_id
         member = await member_repository.get_by_customer_id_and_external_id(
             billing_customer_id, external_member_id
         )
@@ -989,24 +966,30 @@ class SeatService:
         if not email:
             raise MemberNotFound(external_member_id)
 
-        member = Member(
+        # 2. Get or create by email (no external_id — we control linking below)
+        member = await member_service.get_or_create_by_email(
+            session,
             customer_id=billing_customer_id,
             organization_id=organization_id,
             email=email,
-            external_id=external_member_id,
-            role=MemberRole.member,
         )
-        session.add(member)
-        await session.flush()
 
-        log.info(
-            "Created member for seat assignment with external_id",
-            member_id=member.id,
-            customer_id=billing_customer_id,
-            organization_id=organization_id,
-            email=email,
-            external_id=external_member_id,
-        )
+        # 3. Link external_id if needed
+        if member.external_id is None:
+            await member_repository.update(
+                member, update_dict={"external_id": external_member_id}
+            )
+            log.info(
+                "Linked external_id to existing member",
+                member_id=member.id,
+                customer_id=billing_customer_id,
+                organization_id=organization_id,
+                email=email,
+                external_id=external_member_id,
+            )
+        elif member.external_id != external_member_id:
+            raise MemberEmailMismatch(external_member_id, email)
+
         return member
 
     async def _resolve_legacy_target(

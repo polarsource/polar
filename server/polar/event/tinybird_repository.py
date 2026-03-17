@@ -6,6 +6,7 @@ from polar.integrations.tinybird.service import (
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     TinybirdEventTypeStats,
+    TinybirdPropertyGroupStats,
     TinybirdTimeseriesStats,
 )
 from polar.kit.metadata import MetadataQuery
@@ -287,6 +288,35 @@ class TinybirdEventRepository:
             numeric_metadata_property=numeric_metadata_property,
         )
         return await tinybird_query.get_totals_stats(aggregate_fields)
+
+    async def get_property_group_stats(
+        self,
+        *,
+        organization_id: UUID | Sequence[UUID],
+        property: str,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
+        limit: int = 200,
+    ) -> list[TinybirdPropertyGroupStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+
+        tinybird_query = TinybirdEventsQuery(organization_ids)
+        if start_timestamp is not None or end_timestamp is not None:
+            tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        if customer_id or external_customer_id:
+            tinybird_query.filter_customer(
+                customer_ids=customer_id,
+                external_customer_ids=external_customer_id,
+            )
+
+        return await tinybird_query.get_property_group_stats(
+            property, aggregate_fields, limit
+        )
 
     @staticmethod
     def _build_filtered_query(

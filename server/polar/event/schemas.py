@@ -691,4 +691,26 @@ class ListStatisticsTimeseries(Schema):
     )
 
 
+class PropertyGroupStat(Schema):
+    """Aggregate statistics for events grouped by a metadata property value."""
+
+    value: str = Field(description="The property value.")
+    occurrences: int = Field(description="Number of events with this property value.")
+    customers: int = Field(
+        description="Number of distinct customers associated with these events."
+    )
+    totals: dict[str, Decimal] = Field(
+        description="Sum of each aggregate field across all matching events.",
+        default_factory=dict,
+    )
+
+
+class ListPropertyGroupStats(Schema):
+    """Event statistics grouped by a metadata property."""
+
+    items: list[PropertyGroupStat] = Field(
+        description="Stats grouped by property value, ordered by first aggregate field descending."
+    )
+
+
 EventID = Annotated[UUID4, Path(description="The event ID.")]

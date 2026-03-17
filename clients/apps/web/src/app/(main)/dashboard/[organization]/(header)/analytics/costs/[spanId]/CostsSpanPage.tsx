@@ -21,20 +21,20 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { endOfDay, format, subDays, subMonths } from 'date-fns'
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import {
   parseAsArrayOf,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { useMemo } from 'react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,
@@ -164,7 +164,8 @@ export default function SpanDetailPage({
       prevCostPerCustomer: 0,
     }
 
-    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) return zero
+    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0)
+      return zero
 
     const stat = hierarchyStats.totals[0]
     const totalOccurrences = stat.occurrences || 0
@@ -177,9 +178,12 @@ export default function SpanDetailPage({
     const prevStat = prevHierarchyStats?.totals?.[0]
     const prevTotalOccurrences = prevStat?.occurrences || 0
     const prevTotalCost = parseFloat(prevStat?.totals?.['_cost_amount'] || '0')
-    const prevAverageCost = parseFloat(prevStat?.averages?.['_cost_amount'] || '0')
+    const prevAverageCost = parseFloat(
+      prevStat?.averages?.['_cost_amount'] || '0',
+    )
     const prevCustomers = prevStat?.customers || 0
-    const prevCostPerCustomer = prevCustomers > 0 ? prevTotalCost / prevCustomers : 0
+    const prevCostPerCustomer =
+      prevCustomers > 0 ? prevTotalCost / prevCustomers : 0
 
     return {
       totalOccurrences,
@@ -271,19 +275,47 @@ export default function SpanDetailPage({
             <div className="grid grid-cols-4 gap-8">
               <StatisticCard title="Occurrences" size="lg">
                 {costMetrics.totalOccurrences.toLocaleString()}
-                <Trend current={costMetrics.totalOccurrences} prev={costMetrics.prevTotalOccurrences} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
+                <Trend
+                  current={costMetrics.totalOccurrences}
+                  prev={costMetrics.prevTotalOccurrences}
+                  currentStart={startDate}
+                  currentEnd={endDate}
+                  prevStart={prevStart}
+                  prevEnd={prevEnd}
+                />
               </StatisticCard>
               <StatisticCard title="Total Cost" size="lg">
                 {formatCurrency('subcent')(costMetrics.totalCost, 'usd')}
-                <Trend current={costMetrics.totalCost} prev={costMetrics.prevTotalCost} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
+                <Trend
+                  current={costMetrics.totalCost}
+                  prev={costMetrics.prevTotalCost}
+                  currentStart={startDate}
+                  currentEnd={endDate}
+                  prevStart={prevStart}
+                  prevEnd={prevEnd}
+                />
               </StatisticCard>
               <StatisticCard title="Average Cost" size="lg">
                 {formatCurrency('subcent')(costMetrics.averageCost, 'usd')}
-                <Trend current={costMetrics.averageCost} prev={costMetrics.prevAverageCost} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
+                <Trend
+                  current={costMetrics.averageCost}
+                  prev={costMetrics.prevAverageCost}
+                  currentStart={startDate}
+                  currentEnd={endDate}
+                  prevStart={prevStart}
+                  prevEnd={prevEnd}
+                />
               </StatisticCard>
               <StatisticCard title="Cost per Customer" size="lg">
                 {formatCurrency('subcent')(costMetrics.costPerCustomer, 'usd')}
-                <Trend current={costMetrics.costPerCustomer} prev={costMetrics.prevCostPerCustomer} currentStart={startDate} currentEnd={endDate} prevStart={prevStart} prevEnd={prevEnd} />
+                <Trend
+                  current={costMetrics.costPerCustomer}
+                  prev={costMetrics.prevCostPerCustomer}
+                  currentStart={startDate}
+                  currentEnd={endDate}
+                  prevStart={prevStart}
+                  prevEnd={prevEnd}
+                />
               </StatisticCard>
             </div>
 
@@ -408,7 +440,11 @@ function Trend({
   const isUp = delta > 0
   const isDown = delta < 0
   const fmt = (d: Date) =>
-    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -434,8 +470,12 @@ function Trend({
         </span>
       </TooltipTrigger>
       <TooltipContent className="flex flex-col gap-1">
-        <span>{fmt(currentStart)} – {fmt(currentEnd)}</span>
-        <span className="dark:text-polar-400 text-gray-400">vs {fmt(prevStart)} – {fmt(prevEnd)}</span>
+        <span>
+          {fmt(currentStart)} – {fmt(currentEnd)}
+        </span>
+        <span className="dark:text-polar-400 text-gray-400">
+          vs {fmt(prevStart)} – {fmt(prevEnd)}
+        </span>
       </TooltipContent>
     </Tooltip>
   )

@@ -1,5 +1,11 @@
 'use client'
 
+import {
+  DEFAULT_INTERVAL,
+  getCostsSearchParams,
+  getDefaultEndDate,
+  getDefaultStartDate,
+} from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreationGuideModal'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
@@ -8,12 +14,6 @@ import { schemas } from '@polar-sh/client'
 import { ChevronRightIcon, CircleQuestionMarkIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import {
-  DEFAULT_INTERVAL,
-  getCostsSearchParams,
-  getDefaultEndDate,
-  getDefaultStartDate,
-} from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
 
 export function SpansTitle({
   organization,

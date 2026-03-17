@@ -30,7 +30,12 @@ from polar.organization_review.schemas import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_payment
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_order,
+    create_payment,
+    create_refund,
+)
 
 
 def _make_typed_report(
@@ -817,3 +822,118 @@ class TestGetRiskScorePercentiles:
         # [1,1,1,1,1,1,1,1,1,100]: p50=1, p90=int(10.9)=10
         assert p50 == 1
         assert p90 == 10
+
+
+@pytest.mark.asyncio
+class TestGetRefundStats:
+    async def test_multiple_refunds_on_same_order_counts_as_one(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """
+        Split refunds (partial + remainder) on the same order should count
+        as one refunded order, not inflate the refund rate.
+        """
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            stripe_customer_id="STRIPE_CUST_SPLIT_REVIEW",
+        )
+        order = await create_order(save_fixture, customer=customer)
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            amount=1100,
+            currency="usd",
+            status=PaymentStatus.succeeded,
+        )
+        # Partial refund
+        await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=999,
+            currency="usd",
+            processor_id="STRIPE_REFUND_SPLIT_1",
+        )
+        # Remainder refund on the same order
+        await create_refund(
+            save_fixture,
+            order,
+            payment,
+            amount=101,
+            currency="usd",
+            processor_id="STRIPE_REFUND_SPLIT_2",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        count, refund_amount = await repo.get_refund_stats(organization.id)
+
+        assert count == 1  # One order, not two refund records
+        assert refund_amount == 1100  # Total amount across both refunds
+
+    async def test_refunds_on_different_orders_counted_separately(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Refunds on different orders should each be counted."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            stripe_customer_id="STRIPE_CUST_MULTI_REVIEW",
+        )
+        order1 = await create_order(save_fixture, customer=customer)
+        payment1 = await create_payment(
+            save_fixture,
+            organization,
+            amount=500,
+            currency="usd",
+            status=PaymentStatus.succeeded,
+            processor_id="STRIPE_PAY_REVIEW_1",
+        )
+        await create_refund(
+            save_fixture,
+            order1,
+            payment1,
+            amount=500,
+            currency="usd",
+            processor_id="STRIPE_REFUND_REVIEW_A",
+        )
+
+        order2 = await create_order(save_fixture, customer=customer)
+        payment2 = await create_payment(
+            save_fixture,
+            organization,
+            amount=300,
+            currency="usd",
+            status=PaymentStatus.succeeded,
+            processor_id="STRIPE_PAY_REVIEW_2",
+        )
+        await create_refund(
+            save_fixture,
+            order2,
+            payment2,
+            amount=300,
+            currency="usd",
+            processor_id="STRIPE_REFUND_REVIEW_B",
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        count, refund_amount = await repo.get_refund_stats(organization.id)
+
+        assert count == 2  # Two distinct orders
+        assert refund_amount == 800
+
+    async def test_no_refunds(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        count, refund_amount = await repo.get_refund_stats(organization.id)
+        assert count == 0
+        assert refund_amount == 0

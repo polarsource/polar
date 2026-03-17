@@ -611,7 +611,7 @@ class ReviewAnalyzer:
             if metrics.p90_risk_score is not None:
                 parts.append(f"P90 Risk Score: {metrics.p90_risk_score}")
             parts.append(
-                f"Refunds: {metrics.refund_count} (${metrics.refund_amount_cents / 100:,.2f})"
+                f"Refunded Orders: {metrics.refund_count} (${metrics.refund_amount_cents / 100:,.2f})"
             )
             if metrics.succeeded_payments > 0:
                 refund_rate = metrics.refund_count / metrics.succeeded_payments * 100

@@ -152,16 +152,18 @@ _default_checkout_settings: OrganizationCheckoutSettings = {
 }
 
 
-class IndividualLegalEntity(TypedDict):
+class OrganizationIndividualLegalEntity(TypedDict):
     type: Literal["individual"]
 
 
-class CompanyLegalEntity(TypedDict):
+class OrganizationCompanyLegalEntity(TypedDict):
     type: Literal["company"]
     registered_name: str
 
 
-LegalEntity = IndividualLegalEntity | CompanyLegalEntity
+OrganizationLegalEntity = (
+    OrganizationIndividualLegalEntity | OrganizationCompanyLegalEntity
+)
 
 
 class OrganizationStatus(StrEnum):
@@ -314,7 +316,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=_default_checkout_settings
     )
 
-    legal_entity: Mapped[LegalEntity | None] = mapped_column(
+    legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None
     )
 

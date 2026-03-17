@@ -256,7 +256,7 @@ export const OrganizationStep = ({
                         <FormLabel htmlFor="default_presentment_currency">
                           Default payment currency
                         </FormLabel>
-                        <FormControl className="flex w-full flex-col gap-y-4">
+                        <FormControl>
                           <CurrencySelector
                             value={
                               field.value as schemas['PresentmentCurrency']

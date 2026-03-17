@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -64,12 +65,9 @@ function saveToSession(data: OnboardingData): void {
 }
 
 interface OnboardingStore {
-  /** Read current data without subscribing to changes (no re-renders) */
   getData: () => OnboardingData
-  /** Write data — notifies subscribers but does NOT re-render the caller */
   updateData: (partial: Partial<OnboardingData>) => void
   clearData: () => void
-  /** Subscribe to data changes (used by APIPreview) */
   subscribe: (listener: () => void) => () => void
   showApiResponse: (status: number, message: string) => Promise<void>
 }
@@ -130,26 +128,25 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // Stable ref — never changes, so provider never triggers consumer re-renders
-  const valueRef = useRef<OnboardingContextValue>({
-    getData,
-    updateData,
-    clearData,
-    subscribe,
-    showApiResponse,
-    apiResponse: null,
-  })
-  // Only apiResponse triggers a re-render (for the response animation)
-  valueRef.current.apiResponse = apiResponse
+  const value = useMemo<OnboardingContextValue>(
+    () => ({
+      getData,
+      updateData,
+      clearData,
+      subscribe,
+      showApiResponse,
+      apiResponse,
+    }),
+    [getData, updateData, clearData, subscribe, showApiResponse, apiResponse],
+  )
 
   return (
-    <OnboardingContext.Provider value={valueRef.current}>
+    <OnboardingContext.Provider value={value}>
       {children}
     </OnboardingContext.Provider>
   )
 }
 
-/** Use in form steps — reads data once, writes without re-rendering */
 export function useOnboardingData() {
   const ctx = useContext(OnboardingContext)
   if (!ctx) {
@@ -165,7 +162,6 @@ export function useOnboardingData() {
   }
 }
 
-/** Use in APIPreview — subscribes to data changes and re-renders on every update */
 export function useOnboardingDataLive(): OnboardingData {
   const ctx = useContext(OnboardingContext)
   if (!ctx) {

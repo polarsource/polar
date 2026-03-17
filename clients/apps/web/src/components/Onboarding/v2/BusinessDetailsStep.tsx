@@ -37,7 +37,6 @@ interface FormSchema {
   terms: boolean
 }
 
-/** Syncs all form values to onboarding context without re-rendering the parent */
 function FormSync() {
   const { updateData } = useOnboardingData()
   const values = useWatch<FormSchema>()
@@ -56,7 +55,6 @@ function FormSync() {
   return null
 }
 
-/** Auto-derives slug from org name, syncs business name */
 function OrgNameSync({
   editedSlug,
   editedBusinessName,
@@ -82,7 +80,6 @@ function OrgNameSync({
   return null
 }
 
-/** Slug preview — only this re-renders when slug changes */
 function SlugPreview({
   editingSlug,
   setEditingSlug,
@@ -129,7 +126,6 @@ function SlugPreview({
   )
 }
 
-/** Company fields — only renders when organizationType is 'company' */
 function CompanyFields({
   onEditBusinessName,
 }: {
@@ -165,7 +161,6 @@ function CompanyFields({
   )
 }
 
-/** Grid layout that adapts to org type */
 function CurrencyAndCountryFields() {
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
@@ -222,7 +217,6 @@ function CurrencyAndCountryFields() {
   )
 }
 
-/** Submit button — only re-renders when disabled state changes */
 function SubmitButton() {
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
@@ -242,7 +236,7 @@ function SubmitButton() {
 
 export function BusinessDetailsStep() {
   const router = useRouter()
-  const { currentUser, setUserOrganizations } = useAuth()
+  const { setUserOrganizations } = useAuth()
   const { trackStepCompleted } = useOnboardingTracking()
   const { data, updateData, showApiResponse } = useOnboardingData()
   const createOrganization = useCreateOrganization()

@@ -38,6 +38,7 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
                 Discount.is_deleted.is_(False),
             )
             .with_for_update(nowait=nowait)
+            .options(raiseload(Discount.organization))
         )
         return await self.get_one_or_none(statement)
 

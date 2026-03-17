@@ -1,7 +1,7 @@
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from functools import partial
 from typing import Any, Self
 from uuid import UUID
@@ -305,11 +305,13 @@ def _compile(statement: Select[Any]) -> tuple[str, str]:
     return literal, template
 
 
-def _parse_datetime(value: datetime | str) -> datetime:
+def _parse_datetime(value: datetime | date | str) -> datetime:
     if isinstance(value, datetime):
         if value.tzinfo is None:
             return value.replace(tzinfo=UTC)
         return value
+    if isinstance(value, date):
+        return datetime(value.year, value.month, value.day, tzinfo=UTC)
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 

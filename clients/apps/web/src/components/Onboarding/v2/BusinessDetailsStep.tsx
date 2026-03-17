@@ -21,7 +21,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
@@ -37,6 +37,209 @@ interface FormSchema {
   terms: boolean
 }
 
+/** Syncs all form values to onboarding context without re-rendering the parent */
+function FormSync() {
+  const { updateData } = useOnboardingData()
+  const values = useWatch<FormSchema>()
+
+  useEffect(() => {
+    updateData({
+      orgName: values.orgName,
+      orgSlug: values.orgSlug,
+      defaultCurrency: values.defaultCurrency,
+      organizationType: values.organizationType,
+      businessCountry: values.businessCountry,
+      registeredBusinessName: values.registeredBusinessName,
+    })
+  }, [values, updateData])
+
+  return null
+}
+
+/** Auto-derives slug from org name, syncs business name */
+function OrgNameSync({
+  editedSlug,
+  editedBusinessName,
+}: {
+  editedSlug: boolean
+  editedBusinessName: boolean
+}) {
+  const { setValue } = useFormContext<FormSchema>()
+  const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
+
+  useEffect(() => {
+    if (!editedSlug && orgName) {
+      setValue('orgSlug', slugify(orgName, { lower: true, strict: true }))
+    }
+  }, [orgName, editedSlug, setValue])
+
+  useEffect(() => {
+    if (!editedBusinessName && orgName) {
+      setValue('registeredBusinessName', orgName)
+    }
+  }, [orgName, editedBusinessName, setValue])
+
+  return null
+}
+
+/** Slug preview — only this re-renders when slug changes */
+function SlugPreview({
+  editingSlug,
+  setEditingSlug,
+  onEditSlug,
+}: {
+  editingSlug: boolean
+  setEditingSlug: (v: boolean) => void
+  onEditSlug: () => void
+}) {
+  const { setValue } = useFormContext<FormSchema>()
+  const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
+
+  return (
+    <span className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
+      <span>polar.sh/</span>
+      {editingSlug ? (
+        <input
+          value={orgSlug}
+          onChange={(e) => {
+            setValue(
+              'orgSlug',
+              slugify(e.target.value, {
+                lower: true,
+                trim: false,
+                strict: true,
+              }),
+            )
+            onEditSlug()
+          }}
+          onBlur={() => setEditingSlug(false)}
+          className="dark:text-polar-300 w-32 border-none bg-transparent p-0 text-xs text-gray-600 outline-none"
+          autoFocus
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditingSlug(true)}
+          className="dark:text-polar-300 dark:hover:text-polar-200 text-gray-600 underline decoration-dotted hover:text-gray-800"
+        >
+          {orgSlug || 'your-slug'}
+        </button>
+      )}
+    </span>
+  )
+}
+
+/** Company fields — only renders when organizationType is 'company' */
+function CompanyFields({
+  onEditBusinessName,
+}: {
+  onEditBusinessName: () => void
+}) {
+  const organizationType = useWatch<FormSchema, 'organizationType'>({
+    name: 'organizationType',
+  })
+
+  if (organizationType !== 'company') return null
+
+  return (
+    <FormField
+      name="registeredBusinessName"
+      rules={{ required: 'Registered business name is required' }}
+      render={({ field }) => (
+        <FormItem className="w-full">
+          <FormLabel>Registered Business Name</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              placeholder="Acme Corporation Ltd."
+              onChange={(e) => {
+                field.onChange(e)
+                onEditBusinessName()
+              }}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
+/** Grid layout that adapts to org type */
+function CurrencyAndCountryFields() {
+  const organizationType = useWatch<FormSchema, 'organizationType'>({
+    name: 'organizationType',
+  })
+
+  return (
+    <Box
+      display="grid"
+      gap="m"
+      gridTemplateColumns={
+        organizationType === 'company'
+          ? 'repeat(2, minmax(0, 1fr))'
+          : 'repeat(1, minmax(0, 1fr))'
+      }
+    >
+      <FormField
+        name="defaultCurrency"
+        rules={{ required: 'Currency is required' }}
+        render={({ field }) => (
+          <FormItem className="w-full">
+            <FormLabel>Default Payment Currency</FormLabel>
+            <FormControl>
+              <CurrencySelector
+                value={field.value as schemas['PresentmentCurrency']}
+                onChange={field.onChange}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {organizationType === 'company' && (
+        <FormField
+          name="businessCountry"
+          rules={{ required: 'Business country is required' }}
+          render={({ field }) => (
+            <FormItem className="w-full">
+              <FormLabel>Business Country</FormLabel>
+              <FormControl>
+                <CountryPicker
+                  allowedCountries={enums.addressInputCountryValues}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select country"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+    </Box>
+  )
+}
+
+/** Submit button — only re-renders when disabled state changes */
+function SubmitButton() {
+  const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
+  const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
+  const terms = useWatch<FormSchema, 'terms'>({ name: 'terms' })
+
+  return (
+    <Button
+      type="submit"
+      loading={false}
+      disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
+      fullWidth
+    >
+      Continue
+    </Button>
+  )
+}
+
 export function BusinessDetailsStep() {
   const router = useRouter()
   const { currentUser, setUserOrganizations } = useAuth()
@@ -44,6 +247,7 @@ export function BusinessDetailsStep() {
   const { data, updateData, showApiResponse } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [editingSlug, setEditingSlug] = useState(false)
+  const [editedSlug, setEditedSlug] = useState(false)
   const [editedBusinessName, setEditedBusinessName] = useState(false)
 
   const form = useForm<FormSchema>({
@@ -59,57 +263,11 @@ export function BusinessDetailsStep() {
   })
 
   const {
-    control,
     handleSubmit,
-    watch,
     setError,
     setValue,
     formState: { errors },
   } = form
-
-  const organizationType = watch('organizationType')
-  const orgName = watch('orgName')
-  const orgSlug = watch('orgSlug')
-  const defaultCurrency = watch('defaultCurrency')
-  const terms = watch('terms')
-  const registeredBusinessName = watch('registeredBusinessName')
-  const businessCountry = watch('businessCountry')
-
-  useEffect(() => {
-    if (!editedBusinessName && orgName) {
-      setValue('registeredBusinessName', orgName)
-    }
-  }, [orgName, editedBusinessName, setValue])
-
-  useEffect(() => {
-    if (!editingSlug && orgName) {
-      setValue('orgSlug', slugify(orgName, { lower: true, strict: true }))
-    } else if (orgSlug) {
-      setValue(
-        'orgSlug',
-        slugify(orgSlug, { lower: true, trim: false, strict: true }),
-      )
-    }
-  }, [orgName, editingSlug, orgSlug, setValue])
-
-  useEffect(() => {
-    updateData({
-      orgName,
-      orgSlug,
-      defaultCurrency,
-      organizationType,
-      businessCountry,
-      registeredBusinessName,
-    })
-  }, [
-    orgName,
-    orgSlug,
-    defaultCurrency,
-    organizationType,
-    businessCountry,
-    registeredBusinessName,
-    updateData,
-  ])
 
   const onSubmit = async (formData: FormSchema) => {
     if (!formData.terms) return
@@ -172,8 +330,14 @@ export function BusinessDetailsStep() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-6"
         >
+          <FormSync />
+          <OrgNameSync
+            editedSlug={editedSlug}
+            editedBusinessName={editedBusinessName}
+          />
+
           <FormField
-            control={control}
+            control={form.control}
             name="organizationType"
             render={({ field }) => (
               <FormItem className="w-full">
@@ -209,9 +373,8 @@ export function BusinessDetailsStep() {
             )}
           />
 
-          {/* Org name with inline slug */}
           <FormField
-            control={control}
+            control={form.control}
             name="orgName"
             rules={{ required: 'Organization name is required' }}
             render={({ field }) => (
@@ -221,112 +384,22 @@ export function BusinessDetailsStep() {
                   <Input {...field} placeholder="Acme Inc." />
                 </FormControl>
                 <FormMessage />
-                {/* Inline slug preview */}
-                <span className="dark:text-polar-500 flex items-center gap-1 text-xs text-gray-400">
-                  <span>polar.sh/</span>
-                  {editingSlug ? (
-                    <input
-                      value={orgSlug}
-                      onChange={(e) => setValue('orgSlug', e.target.value)}
-                      onBlur={() => setEditingSlug(false)}
-                      className="dark:text-polar-300 w-32 border-none bg-transparent p-0 text-xs text-gray-600 outline-none"
-                      autoFocus
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setEditingSlug(true)}
-                      className="dark:text-polar-300 dark:hover:text-polar-200 text-gray-600 underline decoration-dotted hover:text-gray-800"
-                    >
-                      {orgSlug || 'your-slug'}
-                    </button>
-                  )}
-                </span>
+                <SlugPreview
+                  editingSlug={editingSlug}
+                  setEditingSlug={setEditingSlug}
+                  onEditSlug={() => setEditedSlug(true)}
+                />
               </FormItem>
             )}
           />
 
-          {organizationType === 'company' && (
-            <FormField
-              control={control}
-              name="registeredBusinessName"
-              rules={{ required: 'Registered business name is required' }}
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Registered Business Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Acme Corporation Ltd."
-                      onChange={(e) => {
-                        field.onChange(e)
-                        setEditedBusinessName(true)
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <Box
-            display="grid"
-            gap="m"
-            gridTemplateColumns={
-              organizationType === 'company'
-                ? 'repeat(2, minmax(0, 1fr))'
-                : 'repeat(1, minmax(0, 1fr))'
-            }
-          >
-            <FormField
-              control={control}
-              name="defaultCurrency"
-              rules={{ required: 'Currency is required' }}
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Default Payment Currency</FormLabel>
-                  <FormControl>
-                    <CurrencySelector
-                      value={field.value as schemas['PresentmentCurrency']}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {organizationType === 'company' && (
-              <FormField
-                control={control}
-                name="businessCountry"
-                rules={{
-                  required:
-                    organizationType === 'company'
-                      ? 'Business country is required'
-                      : false,
-                }}
-                render={({ field }) => (
-                  <FormItem className="w-full">
-                    <FormLabel>Business Country</FormLabel>
-                    <FormControl>
-                      <CountryPicker
-                        allowedCountries={enums.addressInputCountryValues}
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select country"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </Box>
+          <CompanyFields
+            onEditBusinessName={() => setEditedBusinessName(true)}
+          />
+          <CurrencyAndCountryFields />
 
           <FormField
-            control={control}
+            control={form.control}
             name="terms"
             rules={{ required: 'You must accept the terms to continue' }}
             render={({ field }) => (
@@ -391,14 +464,7 @@ export function BusinessDetailsStep() {
             </p>
           )}
 
-          <Button
-            type="submit"
-            loading={false}
-            disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
-            fullWidth
-          >
-            Continue
-          </Button>
+          <SubmitButton />
         </form>
       </Form>
     </OnboardingShell>

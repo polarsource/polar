@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { useOnboardingData } from './OnboardingContext'
+import { useOnboardingData, useOnboardingDataLive } from './OnboardingContext'
 
 function toSnakeCase(str: string): string {
   return str
@@ -28,7 +28,8 @@ export function APIPreview({
 }: {
   step: 'personal' | 'business' | 'product'
 }) {
-  const { data, apiResponse } = useOnboardingData()
+  const data = useOnboardingDataLive()
+  const { apiResponse } = useOnboardingData()
 
   const body = useMemo(() => {
     switch (step) {

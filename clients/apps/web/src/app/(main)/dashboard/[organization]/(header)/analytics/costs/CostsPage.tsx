@@ -601,6 +601,16 @@ export default function ClientPage({ organization }: ClientPageProps) {
                             {r.value}
                           </span>
                           <div className="flex shrink-0 items-center gap-5">
+                            {r.pct !== null && (
+                              <TrendBadge
+                                delta={r.delta}
+                                pct={r.pct}
+                                currentStart={dateRange.from}
+                                currentEnd={dateRange.to}
+                                prevStart={prevStart}
+                                prevEnd={prevEnd}
+                              />
+                            )}
                             <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
                               {r.occurrences.toLocaleString()} events
                             </span>

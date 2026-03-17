@@ -595,12 +595,7 @@ const UpdateBillingPeriod = ({
 }) => {
   const updateSubscription = useUpdateSubscription(subscription.id)
 
-  const minDate = useMemo<Date | undefined>(() => {
-    if (subscription.current_period_end) {
-      return new Date(subscription.current_period_end)
-    }
-    return new Date()
-  }, [subscription])
+  const minDate = useMemo<Date>(() => new Date(), [])
 
   const form = useForm<schemas['SubscriptionUpdateBillingPeriod']>({
     defaultValues: {

@@ -197,8 +197,6 @@ resource "render_env_group" "tinybird" {
     POLAR_TINYBIRD_CLICKHOUSE_USERNAME = { value = var.tinybird_config.clickhouse_username }
     POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = { value = var.tinybird_config.clickhouse_token }
     POLAR_TINYBIRD_WORKSPACE           = { value = var.tinybird_config.workspace }
-    POLAR_TINYBIRD_EVENTS_WRITE        = { value = var.tinybird_config.events_write }
-    POLAR_TINYBIRD_EVENTS_READ         = { value = var.tinybird_config.events_read }
   }
 }
 

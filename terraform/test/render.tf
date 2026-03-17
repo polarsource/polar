@@ -275,8 +275,6 @@ module "test" {
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace
-    events_write        = var.tinybird_events_write
-    events_read         = var.tinybird_events_read
   }
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]

@@ -136,11 +136,7 @@ class AccountSection:
 
                             with tag.div(classes="grid grid-cols-2 gap-3"):
                                 # Charges enabled
-                                charges_enabled = (
-                                    account.is_charges_enabled
-                                    if hasattr(account, "charges_enabled")
-                                    else False
-                                )
+                                charges_enabled = account.is_charges_enabled
                                 with tag.div(classes="flex items-center gap-2"):
                                     icon = "Yes" if charges_enabled else "No"
                                     color = (
@@ -153,11 +149,7 @@ class AccountSection:
                                     text("Charges Enabled")
 
                                 # Payouts enabled
-                                payouts_enabled = (
-                                    account.is_payouts_enabled
-                                    if hasattr(account, "payouts_enabled")
-                                    else False
-                                )
+                                payouts_enabled = account.is_payouts_enabled
                                 with tag.div(classes="flex items-center gap-2"):
                                     icon = "Yes" if payouts_enabled else "No"
                                     color = (

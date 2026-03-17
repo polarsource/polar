@@ -108,6 +108,21 @@ export const CostsBandedChart = ({
               bottom: 12,
             }}
           >
+            <defs>
+              <pattern
+                id="bandStripes"
+                patternUnits="userSpaceOnUse"
+                width="6"
+                height="8"
+                patternTransform="rotate(45)"
+              >
+                <rect
+                  width="1"
+                  height="8"
+                  fill={isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}
+                />
+              </pattern>
+            </defs>
             <CartesianGrid
               horizontal={false}
               vertical={true}
@@ -218,12 +233,7 @@ export const CostsBandedChart = ({
                     Average
                   </div>
                   <div className="flex items-center gap-1.5 whitespace-nowrap">
-                    <div
-                      className="h-2 w-2 shrink-0 rounded-[2px]"
-                      style={{
-                        backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                      }}
-                    />
+                    <div className="dark:bg-polar-500 h-2 w-2 shrink-0 rounded-[2px] bg-gray-500" />
                     P10-P90
                   </div>
                   <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -240,7 +250,7 @@ export const CostsBandedChart = ({
               type="linear"
               dataKey="band"
               stroke="none"
-              fill={isDark ? '#374151' : '#e5e7eb'}
+              fill="url(#bandStripes)"
               connectNulls
               dot={false}
               activeDot={false}

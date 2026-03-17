@@ -1,5 +1,6 @@
 'use client'
 
+import { formatCurrency } from '@polar-sh/currency'
 import {
   Tooltip,
   TooltipContent,
@@ -44,6 +45,7 @@ function getEventCostDeviation(
 
 interface CostDeviationBarProps {
   eventCost: number
+  currency: string
   averageCost: number
   p10Cost: number
   p90Cost: number
@@ -51,62 +53,55 @@ interface CostDeviationBarProps {
 
 export function CostDeviationBar({
   eventCost,
+  currency,
   averageCost,
   p10Cost,
   p90Cost,
 }: CostDeviationBarProps) {
-  const deviation = getEventCostDeviation(eventCost, averageCost, p10Cost, p90Cost)
+  const deviation = getEventCostDeviation(
+    eventCost,
+    averageCost,
+    p10Cost,
+    p90Cost,
+  )
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className="box-content flex h-1.5 w-12 cursor-help items-center py-2">
-          <div className="dark:bg-polar-700 flex h-full w-1/2 justify-end overflow-hidden rounded-l-full bg-gray-200">
-            {!deviation.isAboveAverage && (
-              <div
-                className="h-full rounded-l-full transition-all"
-                style={{ width: `${deviation.barFillPercent}%`, backgroundColor: deviation.barColor }}
-              />
-            )}
-          </div>
-          <div className="dark:bg-polar-500 h-2.5 w-0.5 rounded-full bg-gray-400" />
-          <div className="dark:bg-polar-700 h-full w-1/2 overflow-hidden rounded-r-full bg-gray-200">
-            {deviation.isAboveAverage && (
-              <div
-                className="h-full rounded-r-full transition-all"
-                style={{ width: `${deviation.barFillPercent}%`, backgroundColor: deviation.barColor }}
-              />
-            )}
+        <div className="flex cursor-help flex-row items-center gap-x-4">
+          <span className="font-mono text-xs tabular-nums">
+            {formatCurrency('subcent')(eventCost, currency)}
+          </span>
+          <div className="flex h-1 w-8 items-center">
+            <div className="dark:bg-polar-600 flex h-full w-1/2 justify-end overflow-hidden rounded-l-full bg-gray-200">
+              {!deviation.isAboveAverage && (
+                <div
+                  className="h-full rounded-l-full transition-all duration-300"
+                  style={{
+                    width: `${deviation.barFillPercent}%`,
+                    backgroundColor: deviation.barColor,
+                  }}
+                />
+              )}
+            </div>
+            <div className="dark:bg-polar-700 h-full w-1/2 overflow-hidden rounded-r-full bg-gray-200">
+              {deviation.isAboveAverage && (
+                <div
+                  className="h-full rounded-r-full transition-all duration-300"
+                  style={{
+                    width: `${deviation.barFillPercent}%`,
+                    backgroundColor: deviation.barColor,
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="right" className="max-w-xs">
-        <div className="flex flex-col gap-y-2 p-1">
-          <div>
-            <p className="text-left text-sm font-medium">{deviation.deviationFormatted}</p>
-            <p className="dark:text-polar-400 text-xs text-gray-400">
-              compared to average cost for this event type
-            </p>
-          </div>
-          <div className="dark:border-polar-600 border-t border-gray-200 pt-2">
-            <div className="flex items-center gap-2 text-xs">
-              <div className="flex h-1.5 w-8 items-center">
-                <div className="h-full w-1/2 rounded-l-full" style={{ backgroundColor: COLORS.emerald }} />
-                <div className="dark:bg-polar-500 h-2 w-0.5 bg-gray-400" />
-                <div className="dark:bg-polar-600 h-full w-1/2 rounded-r-full bg-gray-300" />
-              </div>
-              <span className="dark:text-polar-400 text-gray-500">Below average</span>
-            </div>
-            <div className="mt-1 flex items-center gap-2 text-xs">
-              <div className="flex h-1.5 w-8 items-center">
-                <div className="dark:bg-polar-600 h-full w-1/2 rounded-l-full bg-gray-300" />
-                <div className="dark:bg-polar-500 h-2 w-0.5 bg-gray-400" />
-                <div className="h-full w-1/2 rounded-r-full" style={{ backgroundColor: COLORS.red }} />
-              </div>
-              <span className="dark:text-polar-400 text-gray-500">Above average</span>
-            </div>
-          </div>
-        </div>
+      <TooltipContent side="top" align="end" className="max-w-xs">
+        <p className="dark:text-polar-400 text-xs text-gray-400">
+          vs. average cost for this event type
+        </p>
       </TooltipContent>
     </Tooltip>
   )

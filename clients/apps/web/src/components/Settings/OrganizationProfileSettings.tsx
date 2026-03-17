@@ -536,44 +536,43 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             </div>
 
             <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Currently using
-                </label>
-                <FormField
-                  control={control}
-                  name="details.switching_from"
-                  render={({ field }) => (
-                    <div>
-                      <Select
-                        value={field.value || 'none'}
-                        onValueChange={(value) => {
-                          field.onChange(value === 'none' ? undefined : value)
-                          setValue('details.switching', value !== 'none', {
-                            shouldDirty: true,
-                          })
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            This is my first payment platform
-                          </SelectItem>
-                          {Object.entries(SwitchingFromOptions).map(
-                            ([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label}
-                              </SelectItem>
-                            ),
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  )}
-                />
-              </div>
+              <label className="mb-2 block text-sm font-medium">
+                Currently using
+              </label>
+              <FormField
+                control={control}
+                name="details.switching_from"
+                render={({ field }) => (
+                  <div>
+                    <Select
+                      value={field.value || 'none'}
+                      onValueChange={(value) => {
+                        field.onChange(value === 'none' ? undefined : value)
+                        setValue('details.switching', value !== 'none', {
+                          shouldDirty: true,
+                        })
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          This is my first payment platform
+                        </SelectItem>
+                        {Object.entries(SwitchingFromOptions).map(
+                          ([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </div>
+                )}
+              />
             </div>
           </div>
         </div>

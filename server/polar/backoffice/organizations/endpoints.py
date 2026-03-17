@@ -1873,12 +1873,17 @@ async def get(
                                             text(acquisition)
                         if organization.details.get("future_annual_revenue"):
                             with accordion.item(a, "Expected annual revenue"):
-                                text(format_currency(organization.details["future_annual_revenue"], "usd"))
-                        if organization.details.get("switching"):
-                                with accordion.item(a, "Switching from"):
-                                    text(
-                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
+                                text(
+                                    format_currency(
+                                        organization.details["future_annual_revenue"],
+                                        "usd",
                                     )
+                                )
+                        if organization.details.get("switching"):
+                            with accordion.item(a, "Switching from"):
+                                text(
+                                    f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
+                                )
 
             # Internal Notes Section
             with tag.div(classes="card card-border w-full shadow-sm"):

@@ -10,11 +10,27 @@ set -euo pipefail
 
 CADDY_PREVIEWS_DIR="/etc/caddy/previews"
 
+# Shared handle_errors block for hibernated backends
+HANDLE_ERRORS=$(cat <<'ERRORS'
+	handle_errors {
+		@hibernated {
+			expression {err.status_code} == 502
+			path_regexp pr ^/pr-(\d+)/(v1|backoffice|healthz)
+		}
+		handle @hibernated {
+			rewrite * /wake/pr-{re.pr.1}
+			reverse_proxy 127.0.0.1:9999
+		}
+	}
+ERRORS
+)
+
 {
     echo ':80 {'
     for f in "$CADDY_PREVIEWS_DIR"/*.caddy; do
         [[ -f "$f" ]] && sed 's/^/\t/' "$f"
     done
+    echo "$HANDLE_ERRORS"
     echo '}'
     echo ''
     echo ':8080 {'
@@ -27,5 +43,6 @@ AUTH
         [[ -f "$f" ]] && sed 's/^/\t\t/' "$f"
     done
     echo '	}'
+    echo "$HANDLE_ERRORS"
     echo '}'
 } > /etc/caddy/Caddyfile

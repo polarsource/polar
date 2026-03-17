@@ -14,7 +14,7 @@ RestartSec=5
 KillMode=control-group
 TimeoutStopSec=30
 
-MemoryMax=2G
+MemoryMax=1G
 CPUQuota=200%
 
 [Install]

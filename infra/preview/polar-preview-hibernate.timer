@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for idle preview backends every 5 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

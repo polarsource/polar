@@ -44,6 +44,7 @@ export function BusinessDetailsStep() {
   const { data, updateData, showApiResponse } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [editingSlug, setEditingSlug] = useState(false)
+  const [editedBusinessName, setEditedBusinessName] = useState(false)
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -73,6 +74,12 @@ export function BusinessDetailsStep() {
   const terms = watch('terms')
   const registeredBusinessName = watch('registeredBusinessName')
   const businessCountry = watch('businessCountry')
+
+  useEffect(() => {
+    if (!editedBusinessName && orgName) {
+      setValue('registeredBusinessName', orgName)
+    }
+  }, [orgName, editedBusinessName, setValue])
 
   useEffect(() => {
     if (!editingSlug && orgName) {
@@ -248,7 +255,14 @@ export function BusinessDetailsStep() {
                 <FormItem className="w-full">
                   <FormLabel>Registered Business Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Acme Corporation Ltd." />
+                    <Input
+                      {...field}
+                      placeholder="Acme Corporation Ltd."
+                      onChange={(e) => {
+                        field.onChange(e)
+                        setEditedBusinessName(true)
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

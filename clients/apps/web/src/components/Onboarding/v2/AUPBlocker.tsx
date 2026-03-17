@@ -2,7 +2,7 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 
-export function AUPBlocker() {
+export function AUPBlocker({ categories }: { categories: string[] }) {
   return (
     <Box
       display="flex"
@@ -16,7 +16,7 @@ export function AUPBlocker() {
       padding="l"
     >
       <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-        Physical products and services are not supported
+        Not supported: {categories.join(', ')}
       </p>
       <p className="text-sm text-yellow-700 dark:text-yellow-300">
         Polar is a Merchant of Record for digital products only. Physical goods,

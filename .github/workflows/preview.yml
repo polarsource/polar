@@ -138,7 +138,6 @@ jobs:
           SSH_KEY: ${{ secrets.POLAR_PREVIEW_SSH_KEY }}
           PREVIEW_HOST: ${{ secrets.POLAR_PREVIEW_HOST }}
           PREVIEW_USER: ${{ vars.POLAR_PREVIEW_USER || 'deploy' }}
-          VERCEL_BYPASS_SECRET: ${{ secrets.POLAR_PREVIEW_VERCEL_BYPASS_SECRET }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -146,9 +145,16 @@ jobs:
           chmod 600 ~/.ssh/preview_key
           ENV_B64=$(base64 -w0 < /tmp/env.json)
 
-          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
+          # Pass arguments as JSON on stdin to avoid shell injection via branch names
+          jq -n \
+            --arg pr_num "$PR_NUM" \
+            --arg branch "$BRANCH" \
+            --arg sha "$SHA" \
+            --arg env_b64 "$ENV_B64" \
+            '{pr_num: $pr_num, branch: $branch, sha: $sha, env_b64: $env_b64}' \
+          | ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
             "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "/srv/preview-tools/deploy.sh deploy $PR_NUM '$BRANCH' '$SHA' '$ENV_B64' '$VERCEL_BYPASS_SECRET'" \
+            "/srv/preview-tools/deploy.sh deploy" \
             | tee /tmp/deploy.log
 
           PREVIEW_URL=$(grep -oP 'Deployed at \K.*' /tmp/deploy.log || true)
@@ -167,9 +173,10 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/preview_key
           chmod 600 ~/.ssh/preview_key
 
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key \
+          jq -n --arg pr_num "$PR_NUM" '{pr_num: $pr_num}' \
+          | ssh -o StrictHostKeyChecking=no -i ~/.ssh/preview_key \
             "${PREVIEW_USER}@${PREVIEW_HOST}" \
-            "/srv/preview-tools/deploy.sh destroy $PR_NUM"
+            "/srv/preview-tools/deploy.sh destroy"
 
       - name: Teardown preview resources
         if: steps.action.outputs.action == 'destroy'

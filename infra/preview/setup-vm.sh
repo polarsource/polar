@@ -26,6 +26,7 @@ fi
 read -rp "Tailscale auth key (tskey-auth-...): " TAILSCALE_AUTH_KEY
 read -rp "Tailscale tags (e.g. tag:preview) [tag:preview]: " TAILSCALE_TAGS
 TAILSCALE_TAGS="${TAILSCALE_TAGS:-tag:preview}"
+read -rp "Vercel bypass secret (from Vercel project settings): " VERCEL_BYPASS_SECRET
 
 echo ""
 echo "=== Setting up preview VM ==="
@@ -84,13 +85,20 @@ mkdir -p /etc/caddy/previews
 # Vercel SSR reaches the API via tailscale funnel on :8443, gated by this token.
 if [[ ! -f /etc/caddy/env ]]; then
     PREVIEW_ACCESS_TOKEN=$(openssl rand -hex 32)
-    echo "POLAR_PREVIEW_ACCESS_TOKEN=${PREVIEW_ACCESS_TOKEN}" > /etc/caddy/env
+    cat > /etc/caddy/env <<ENVFILE
+POLAR_PREVIEW_ACCESS_TOKEN=${PREVIEW_ACCESS_TOKEN}
+VERCEL_BYPASS_SECRET=${VERCEL_BYPASS_SECRET}
+ENVFILE
     chmod 600 /etc/caddy/env
     echo ""
     echo "Generated preview access token: ${PREVIEW_ACCESS_TOKEN}"
     echo "Add to GitHub secrets: POLAR_PREVIEW_ACCESS_TOKEN"
     echo "Add to Vercel env vars: POLAR_PREVIEW_ACCESS_TOKEN"
     echo ""
+else
+    if ! grep -q VERCEL_BYPASS_SECRET /etc/caddy/env; then
+        echo "VERCEL_BYPASS_SECRET=${VERCEL_BYPASS_SECRET}" >> /etc/caddy/env
+    fi
 fi
 
 cat > /etc/caddy/Caddyfile <<'CADDYFILE'

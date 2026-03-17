@@ -7,7 +7,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 
@@ -34,8 +34,6 @@ interface FormSchema {
   defaultCurrency: string
   businessCountry: string
   registeredBusinessName: string
-  ventureBacked: boolean
-  mainInvestor: string
   terms: boolean
 }
 
@@ -55,8 +53,6 @@ export function BusinessDetailsStep() {
       defaultCurrency: data.defaultCurrency || 'usd',
       businessCountry: data.businessCountry || '',
       registeredBusinessName: data.registeredBusinessName || '',
-      ventureBacked: data.ventureBacked || false,
-      mainInvestor: data.mainInvestor || '',
       terms: false,
     },
   })
@@ -75,8 +71,6 @@ export function BusinessDetailsStep() {
   const orgSlug = watch('orgSlug')
   const defaultCurrency = watch('defaultCurrency')
   const terms = watch('terms')
-  const ventureBacked = watch('ventureBacked')
-  const mainInvestor = watch('mainInvestor')
   const registeredBusinessName = watch('registeredBusinessName')
   const businessCountry = watch('businessCountry')
 
@@ -98,8 +92,6 @@ export function BusinessDetailsStep() {
       defaultCurrency,
       organizationType,
       businessCountry,
-      ventureBacked,
-      mainInvestor,
       registeredBusinessName,
     })
   }, [
@@ -108,8 +100,6 @@ export function BusinessDetailsStep() {
     defaultCurrency,
     organizationType,
     businessCountry,
-    ventureBacked,
-    mainInvestor,
     registeredBusinessName,
     updateData,
   ])
@@ -123,8 +113,6 @@ export function BusinessDetailsStep() {
       orgSlug: formData.orgSlug,
       defaultCurrency: formData.defaultCurrency,
       businessCountry: formData.businessCountry,
-      ventureBacked: formData.ventureBacked,
-      mainInvestor: formData.mainInvestor,
       registeredBusinessName: formData.registeredBusinessName,
     })
 
@@ -190,8 +178,6 @@ export function BusinessDetailsStep() {
                       field.onChange(value)
                       if (value === 'individual') {
                         setValue('businessCountry', '')
-                        setValue('ventureBacked', false)
-                        setValue('mainInvestor', '')
                         setValue('registeredBusinessName', '')
                       }
                     }}
@@ -324,47 +310,6 @@ export function BusinessDetailsStep() {
               />
             )}
           </Box>
-
-          {organizationType === 'company' && (
-            <>
-              <Box display="flex" alignItems="center" justifyContent="between">
-                <FormField
-                  control={control}
-                  name="ventureBacked"
-                  render={({ field }) => (
-                    <FormItem className="flex w-full flex-row items-center justify-between">
-                      <FormLabel>Venture backed?</FormLabel>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormItem>
-                  )}
-                />
-              </Box>
-
-              {ventureBacked && (
-                <FormField
-                  control={control}
-                  name="mainInvestor"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormLabel>
-                        Main Investor{' '}
-                        <span className="dark:text-polar-500 text-gray-400">
-                          (optional)
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g. Sequoia Capital" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </>
-          )}
 
           <FormField
             control={control}

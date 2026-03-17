@@ -541,6 +541,7 @@ class CheckoutService:
                 by_alias=True,
             ),
         )
+        checkout.update_net_amount()
 
         if checkout.customer is not None:
             prefill_attributes = (
@@ -830,6 +831,8 @@ class CheckoutService:
                     checkout.locale = locale
         else:
             checkout.locale = "en-US"
+
+        checkout.update_net_amount()
 
         session.add(checkout)
 
@@ -2087,6 +2090,8 @@ class CheckoutService:
 
         await self._validate_subscription_uniqueness(session, checkout)
 
+        checkout.update_net_amount()
+
         return checkout
 
     async def _update_price(
@@ -2111,6 +2116,7 @@ class CheckoutService:
             checkout.seats = seats
             checkout.amount = price.calculate_amount(seats)
 
+        checkout.update_net_amount()
         return checkout
 
     async def _update_checkout_tax(

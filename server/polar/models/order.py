@@ -106,6 +106,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    _net_amount: Mapped[int | None] = mapped_column(
+        "net_amount", Integer, nullable=True, default=None
+    )
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     applied_balance_amount: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
@@ -265,12 +268,14 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @hybrid_property
     def net_amount(self) -> int:
+        if self._net_amount is not None:
+            return self._net_amount
         return self.subtotal_amount - self.discount_amount
 
     @net_amount.inplace.expression
     @classmethod
     def _net_amount_expression(cls) -> ColumnElement[int]:
-        return cls.subtotal_amount - cls.discount_amount
+        return func.coalesce(cls._net_amount, cls.subtotal_amount - cls.discount_amount)
 
     @hybrid_property
     def total_amount(self) -> int:
@@ -279,7 +284,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @total_amount.inplace.expression
     @classmethod
     def _total_amount_expression(cls) -> ColumnElement[int]:
-        return cls.net_amount + cls.tax_amount
+        return (
+            func.coalesce(cls._net_amount, cls.subtotal_amount - cls.discount_amount)
+            + cls.tax_amount
+        )
 
     @hybrid_property
     def due_amount(self) -> int:
@@ -297,7 +305,11 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @payout_amount.inplace.expression
     @classmethod
     def _payout_amount_expression(cls) -> ColumnElement[int]:
-        return cls.net_amount - cls.platform_fee_amount - cls.refunded_amount
+        return (
+            func.coalesce(cls._net_amount, cls.subtotal_amount - cls.discount_amount)
+            - cls.platform_fee_amount
+            - cls.refunded_amount
+        )
 
     @property
     def taxed(self) -> int:

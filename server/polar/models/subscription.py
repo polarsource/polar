@@ -110,6 +110,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    _net_amount: Mapped[int | None] = mapped_column(
+        "net_amount", Integer, nullable=True, default=None
+    )
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
@@ -400,6 +403,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if discount is not None:
             amount -= discount.get_discount_amount(amount, self.currency)
         self.amount = amount
+        self._net_amount = amount  # Same as amount while tax-exclusive
 
     def update_meters(self, prices: Sequence["SubscriptionProductPrice"]) -> None:
         subscription_meters = self.meters or []

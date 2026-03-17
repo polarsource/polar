@@ -28,6 +28,7 @@ class OrderItem(RecordModel):
 
     label: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    net_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     proration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     order_id: Mapped[UUID] = mapped_column(
@@ -49,7 +50,9 @@ class OrderItem(RecordModel):
 
     @property
     def total_amount(self) -> int:
-        return self.amount + self.tax_amount
+        return (
+            self.net_amount if self.net_amount is not None else self.amount
+        ) + self.tax_amount
 
     @property
     def discountable(self) -> bool:
@@ -78,6 +81,7 @@ class OrderItem(RecordModel):
             label=price.product.name,
             amount=amount,
             tax_amount=tax_amount,
+            net_amount=amount,
             proration=False,
             product_price=price,
         )
@@ -87,9 +91,15 @@ class OrderItem(RecordModel):
         formatted_start = format_date(start.date(), locale="en_US")
         formatted_end = format_date(end.date(), locale="en_US")
         label = f"Trial period for {product.name} ({formatted_start} - {formatted_end})"
-        return cls(label=label, amount=0, tax_amount=0, proration=False)
+        return cls(label=label, amount=0, tax_amount=0, net_amount=0, proration=False)
 
     @classmethod
     def from_wallet(cls, wallet: "Wallet", amount: int) -> Self:
         label = f"Wallet Top-Up for {wallet.organization.name}"
-        return cls(label=label, amount=amount, tax_amount=0, proration=False)
+        return cls(
+            label=label,
+            amount=amount,
+            tax_amount=0,
+            net_amount=amount,
+            proration=False,
+        )

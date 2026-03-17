@@ -182,7 +182,9 @@ def resolve_preview_id(
 
 
 def get_preview_base_domain() -> str:
-    return (os.getenv("PREVIEW_BASE_DOMAIN") or DEFAULT_PREVIEW_BASE_DOMAIN).strip()
+    return (
+        os.getenv("POLAR_PREVIEW_BASE_DOMAIN") or DEFAULT_PREVIEW_BASE_DOMAIN
+    ).strip()
 
 
 def build_preview_url(preview_id: str) -> str:
@@ -348,25 +350,25 @@ def load_preview_postgres_admin_config() -> PreviewPostgresAdminConfig:
             "POLAR_PREVIEW_POSTGRES_ADMIN_DSN must be a valid Postgres DSN"
         )
 
-    app_host_override = os.getenv("PREVIEW_POSTGRES_APP_HOST")
+    app_host_override = os.getenv("POLAR_PREVIEW_POSTGRES_APP_HOST")
     app_host = (app_host_override or parsed_admin_dsn.hostname or "").strip()
     if not app_host:
         raise RuntimeError("Could not resolve the preview Postgres host")
 
-    app_port_raw = (os.getenv("PREVIEW_POSTGRES_APP_PORT") or "").strip()
+    app_port_raw = (os.getenv("POLAR_PREVIEW_POSTGRES_APP_PORT") or "").strip()
     if not app_port_raw:
         app_port = parsed_admin_dsn.port or DEFAULT_POSTGRES_PORT
     else:
         app_port = int(app_port_raw)
 
     template_database_raw = (
-        os.getenv("PREVIEW_POSTGRES_TEMPLATE_DATABASE") or ""
+        os.getenv("POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE") or ""
     ).strip()
     template_database: str | None
     if template_database_raw:
         template_database = validate_safe_postgres_identifier(
             template_database_raw,
-            env_name="PREVIEW_POSTGRES_TEMPLATE_DATABASE",
+            env_name="POLAR_PREVIEW_POSTGRES_TEMPLATE_DATABASE",
         )
     else:
         template_database = None

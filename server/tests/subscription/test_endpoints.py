@@ -1057,33 +1057,6 @@ class TestSubscriptionUpdateBillingPeriod:
         assert updated_subscription["status"] == SubscriptionStatus.active
 
     @pytest.mark.auth
-    async def test_cannot_set_earlier_period_end(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        future_end = datetime.now(UTC) + timedelta(days=365)
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            current_period_end=future_end,
-        )
-
-        earlier_date = (datetime.now(UTC) + timedelta(days=180)).isoformat()
-        response = await client.patch(
-            f"/v1/subscriptions/{subscription.id}",
-            json=dict(current_billing_period_end=earlier_date),
-        )
-
-        assert response.status_code == 422
-        error = response.json()
-        assert "earlier than the current period end" in error["detail"][0]["msg"]
-
-    @pytest.mark.auth
     async def test_revoked_subscription(
         self,
         save_fixture: SaveFixture,

@@ -241,6 +241,16 @@ variable "slo_report_config" {
   sensitive = true
 }
 
+variable "memory_profile_config" {
+  description = "Memory profiling configuration (optional). When set, enables periodic tracemalloc snapshots uploaded to S3."
+  type = object({
+    s3_bucket_name = string
+    interval       = optional(number, 300)
+    nframes        = optional(number, 25)
+  })
+  default = null
+}
+
 variable "cron_jobs" {
   description = "Map of cron job configurations. image_url defaults to the API service image. Uses 'latest' tag so Render pulls the newest image before each run."
   type = map(object({

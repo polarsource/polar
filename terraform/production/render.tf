@@ -329,6 +329,10 @@ module "production" {
     slack_channel   = var.slo_report_slack_channel
   }
 
+  memory_profile_config = {
+    s3_bucket_name = "polar-production-logs"
+  }
+
   tinybird_config = {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"

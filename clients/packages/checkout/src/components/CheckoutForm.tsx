@@ -5,7 +5,9 @@ import { enums } from '@polar-sh/client'
 import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker, { COUNTRIES_WITH_FIXED_STATE_OPTIONS } from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  COUNTRIES_WITH_FIXED_STATE_OPTIONS,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -129,9 +131,14 @@ const BaseCheckoutForm = ({
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
           const newCountry = customerBillingAddress.country
-          const prevIsSelect = !!country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
-          const nextIsSelect = COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(newCountry)
-          if (prevIsSelect !== nextIsSelect || (prevIsSelect && nextIsSelect && country !== newCountry)) {
+          const prevIsSelect =
+            !!country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
+          const nextIsSelect =
+            COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(newCountry)
+          if (
+            prevIsSelect !== nextIsSelect ||
+            (prevIsSelect && nextIsSelect && country !== newCountry)
+          ) {
             resetField('customer_billing_address.state', { defaultValue: '' })
           }
           clearErrors('customer_billing_address')

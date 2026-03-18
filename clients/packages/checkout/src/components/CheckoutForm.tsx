@@ -140,6 +140,11 @@ const BaseCheckoutForm = ({
             (prevIsSelect && nextIsSelect && country !== newCountry)
           ) {
             resetField('customer_billing_address.state', { defaultValue: '' })
+            resetField('customer_billing_address.postal_code', {
+              defaultValue: '',
+            })
+            resetField('customer_billing_address.city', { defaultValue: '' })
+            resetField('customer_billing_address.line1', { defaultValue: '' })
           }
           clearErrors('customer_billing_address')
           payload = {

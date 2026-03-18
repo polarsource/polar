@@ -4,8 +4,6 @@ import {
   type ComponentType,
   type ImgHTMLAttributes,
   useCallback,
-  useEffect,
-  useRef,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -20,7 +18,7 @@ export type AvatarProps = {
   width?: number
   loading?: ImgHTMLAttributes<HTMLImageElement>['loading']
   /** Pass next/image or any other image component. Defaults to <img>. */
-  CustomImageComponent?: ComponentType<any>
+  CustomImageComponent?: ComponentType<ImgHTMLAttributes<HTMLImageElement>>
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,21 +62,19 @@ const AvatarInner = ({
     setShowInitials(false)
   }, [])
 
-  const imgRef = useRef<HTMLImageElement>(null)
-
   const onError = useCallback(() => {
     setShowInitials(true)
     setHasLoaded(true)
   }, [])
 
-  // We need to look at the `.complete`-property on the <img>
-  // in order to detect resources in the cache.
-  useEffect(() => {
-    if (imgRef.current && imgRef.current.complete) {
+  // Callback ref to detect images already in the browser cache.
+
+  const imgRef = useCallback((node: HTMLImageElement | null) => {
+    if (node && node.complete) {
       setHasLoaded(true)
       setShowInitials(false)
     }
-  }, [imgRef.current])
+  }, [])
 
   const ImageElement = CustomImageComponent || 'img'
 
@@ -96,7 +92,6 @@ const AvatarInner = ({
         </div>
       ) : (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <ImageElement
             ref={imgRef}
             alt={name}

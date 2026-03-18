@@ -4,7 +4,6 @@ import React, {
   ChangeEvent,
   FocusEvent,
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -154,12 +153,10 @@ function CurrencyInputField({
   const [prev, setPrev] = useState<number | null | undefined>(value)
   const [display, setDisplay] = useState<string | undefined>(toDisplay(value))
 
-  useEffect(() => {
-    if (value !== prev) {
-      setPrev(value)
-      setDisplay(toDisplay(value))
-    }
-  }, [value, prev, toDisplay])
+  if (value !== prev) {
+    setPrev(value)
+    setDisplay(toDisplay(value))
+  }
 
   const commit = useCallback(
     (raw: string) => {
@@ -294,13 +291,10 @@ export function Input(props: InputProps) {
   }
 
   if (props.type === 'textarea') {
-    const {
-      prefix,
-      suffix,
-      className,
-      type: _type,
-      ...rest
-    } = props as TextareaInputProps
+    const { prefix, suffix, className, ...rest } = props as Omit<
+      TextareaInputProps,
+      'type'
+    >
     return (
       <InputShell prefix={prefix} suffix={suffix}>
         <textarea

@@ -740,11 +740,12 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
-        billing_reason = (
-            OrderBillingReasonInternal.subscription_cycle_after_trial
-            if previous_status == SubscriptionStatus.trialing
-            else OrderBillingReasonInternal.subscription_cycle
-        )
+        if revoke:
+            billing_reason = OrderBillingReasonInternal.subscription_cancel
+        elif previous_status == SubscriptionStatus.trialing:
+            billing_reason = OrderBillingReasonInternal.subscription_cycle_after_trial
+        else:
+            billing_reason = OrderBillingReasonInternal.subscription_cycle
         enqueue_job(
             "order.create_subscription_order",
             subscription.id,

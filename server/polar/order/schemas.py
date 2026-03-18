@@ -83,7 +83,10 @@ class OrderBase(TimestampedSchema, IDSchema):
     def serialize_billing_reason(
         self, value: OrderBillingReasonInternal
     ) -> OrderBillingReason:
-        if value == OrderBillingReasonInternal.subscription_cycle_after_trial:
+        if value in (
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ):
             return OrderBillingReason.subscription_cycle
         return OrderBillingReason(value)
 

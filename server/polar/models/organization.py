@@ -97,6 +97,7 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_confirmation: bool
     subscription_cycled: bool
     subscription_cycled_after_trial: bool
+    subscription_final_invoice: bool
     subscription_past_due: bool
     subscription_renewal_reminder: bool
     subscription_revoked: bool
@@ -111,6 +112,7 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_confirmation": True,
     "subscription_cycled": True,
     "subscription_cycled_after_trial": True,
+    "subscription_final_invoice": True,
     "subscription_past_due": True,
     "subscription_renewal_reminder": True,
     "subscription_revoked": True,

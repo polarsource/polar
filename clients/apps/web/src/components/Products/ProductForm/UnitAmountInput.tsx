@@ -1,7 +1,13 @@
 import { getCurrencyDecimalFactor } from '@polar-sh/currency'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Big from 'big.js'
-import React, { ComponentProps, useCallback, useMemo } from 'react'
+import React, {
+  ComponentProps,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const UnitAmountInput = ({
@@ -20,30 +26,29 @@ const UnitAmountInput = ({
   )
   const isNonDecimalCurrency = decimalFactor === 1
 
-  const formatter = useMemo(
-    () =>
-      new Intl.NumberFormat('en-US', {
-        style: 'decimal',
-        minimumIntegerDigits: 1,
-        minimumSignificantDigits: 1,
-        maximumFractionDigits: isNonDecimalCurrency ? 0 : 14,
-      }),
-    [isNonDecimalCurrency],
+  const toDisplay = useCallback(
+    (v: unknown): string => {
+      if (typeof v !== 'string' && typeof v !== 'number') return ''
+      const parsed = typeof v === 'number' ? v : Number.parseFloat(v)
+      if (isNaN(parsed)) return ''
+      if (isNonDecimalCurrency) return String(Math.round(parsed))
+      return new Big(parsed).div(decimalFactor).toString()
+    },
+    [decimalFactor, isNonDecimalCurrency],
   )
 
-  const parsedValue: string | undefined = useMemo(() => {
-    if (typeof value !== 'string') {
-      return undefined
+  const [displayValue, setDisplayValue] = useState(() => toDisplay(value))
+  const lastEmittedRef = useRef<number | null>(null)
+
+  // Sync from external value changes (e.g. currency switch), but skip if
+  // the change originated from our own onChange to preserve user's typed text.
+  const [prevValue, setPrevValue] = useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
+    if (typeof value !== 'number' || value !== lastEmittedRef.current) {
+      setDisplayValue(toDisplay(value))
     }
-    const parsed = Number.parseFloat(value)
-    if (isNaN(parsed)) {
-      return undefined
-    }
-    if (isNonDecimalCurrency) {
-      return formatter.format(parsed)
-    }
-    return formatter.format(new Big(parsed).div(decimalFactor).toNumber())
-  }, [value, formatter, decimalFactor, isNonDecimalCurrency])
+  }
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -84,16 +89,22 @@ const UnitAmountInput = ({
 
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
-      const parsed = Number.parseFloat(value)
-      if (isNaN(parsed)) {
-        return
-      }
+      const input = e.target.value
+      setDisplayValue(input)
+
+      if (input === '' || input.endsWith('.')) return
+
+      const parsed = Number.parseFloat(input)
+      if (isNaN(parsed)) return
+
+      let units: number
       if (isNonDecimalCurrency) {
-        onValueChange(Math.round(parsed))
-        return
+        units = Math.round(parsed)
+      } else {
+        units = new Big(parsed).times(decimalFactor).toNumber()
       }
-      const units = new Big(parsed).times(decimalFactor).toNumber()
+
+      lastEmittedRef.current = units
       onValueChange(units)
     },
     [onValueChange, decimalFactor, isNonDecimalCurrency],
@@ -115,7 +126,7 @@ const UnitAmountInput = ({
       )}
       type="text"
       inputMode={isNonDecimalCurrency ? 'numeric' : 'decimal'}
-      value={parsedValue}
+      value={displayValue}
       onKeyDown={onKeyDown}
       onChange={onChange}
       preSlot={currencyLabel}

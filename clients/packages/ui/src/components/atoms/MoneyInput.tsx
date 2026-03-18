@@ -1,12 +1,5 @@
 import { getCurrencyDecimalFactor, isDecimalCurrency } from '@polar-sh/currency'
-import {
-  ChangeEvent,
-  FocusEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { ChangeEvent, FocusEvent, useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
 
@@ -27,7 +20,7 @@ interface Props {
 }
 
 const MoneyInput = (props: Props) => {
-  let {
+  const {
     id,
     name,
     value,
@@ -83,12 +76,10 @@ const MoneyInput = (props: Props) => {
     getInternalValue(value),
   )
 
-  useEffect(() => {
-    if (value !== previousValue) {
-      setPreviousValue(value)
-      setInternalValue(getInternalValue(value))
-    }
-  }, [value, previousValue, getInternalValue])
+  if (value !== previousValue) {
+    setPreviousValue(value)
+    setInternalValue(getInternalValue(value))
+  }
 
   const updateValue = useCallback(
     (newValue: string) => {

@@ -87,6 +87,8 @@ dev = [
   "locust>=2.20.0",
   "debugpy>=1.8.19",
   "pydantic-evals>=0.7.1",
+  "gepa>=0.1.0",
+  "litellm>=1.82.2",
 ]
 
 [tool.taskipy.tasks]

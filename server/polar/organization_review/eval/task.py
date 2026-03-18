@@ -1,71 +1,50 @@
-"""The eval task function — takes ReviewInput, returns a verdict string."""
+"""Eval task: wraps ReviewAnalyzer to produce a verdict from an EvalInput."""
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from typing import Any
 
-from polar.organization_review.schemas import (
-    AccountData,
-    DataSnapshot,
-    HistoryData,
-    IdentityData,
-    OrganizationData,
-    PaymentMetrics,
-    ProductsData,
-    ReviewContext,
-)
+from polar.organization_review.schemas import ReviewContext
 
-from .dataset import ReviewInput
+from .dataset import EvalInput
 
-# Map from ReviewVerdict (model output) to OrganizationReview.Verdict (ground truth)
+# Map from ReviewVerdict (model output) to eval expected output
 _VERDICT_MAP = {
     "APPROVE": "PASS",
     "DENY": "FAIL",
+    "NEEDS_HUMAN_REVIEW": "FAIL",
+}
+
+CONTEXT_MAP = {
+    "submission": ReviewContext.SUBMISSION,
+    "setup_complete": ReviewContext.SETUP_COMPLETE,
+    "threshold": ReviewContext.THRESHOLD,
+    "manual": ReviewContext.MANUAL,
 }
 
 
-def build_snapshot(review_input: ReviewInput) -> DataSnapshot:
-    """Reconstruct a DataSnapshot from the stored organization_details_snapshot.
+# Protocol for the task function returned by create_review_task.
+# The `costs` attribute tracks per-call USD cost for reporting.
+class ReviewTaskFn:
+    """Type stub — the actual object is an async function with a .costs list."""
 
-    For SUBMISSION context, products/account/identity/metrics are empty.
-    """
-    details = review_input.details
+    costs: list[float]
 
-    org_data = OrganizationData(
-        name=review_input.name,
-        slug=review_input.name.lower().replace(" ", "-"),
-        website=review_input.website,
-        about=details.get("about"),
-        product_description=details.get("product_description"),
-        switching_from=details.get("switching_from"),
-        previous_annual_revenue=details.get("previous_annual_revenue"),
-        socials=review_input.socials,
-    )
-
-    from datetime import UTC, datetime
-
-    return DataSnapshot(
-        context=ReviewContext.SUBMISSION,
-        organization=org_data,
-        products=ProductsData(),
-        identity=IdentityData(),
-        account=AccountData(),
-        metrics=PaymentMetrics(),
-        history=HistoryData(),
-        website=None,
-        collected_at=datetime.now(UTC),
-    )
+    async def __call__(self, eval_input: EvalInput) -> str:
+        raise NotImplementedError
 
 
 def create_review_task(
     model: str | None = None,
-    context: ReviewContext = ReviewContext.SUBMISSION,
-) -> Callable[[ReviewInput], Awaitable[str]]:
-    """Create a task function for the eval.
+) -> Any:
+    """Create an async task function for pydantic-evals.
+
+    The returned function has a ``.costs`` list that accumulates
+    the USD cost of each invocation, so you can ``sum(task.costs)``
+    after the eval run.
 
     Args:
-        model: Override the model (uses settings.OPENAI_MODEL if None)
-        context: Review context to use
+        model: Override the model (uses settings.OPENAI_MODEL if None).
     """
     from pydantic_ai import Agent
     from pydantic_ai.models.openai import OpenAIChatModel
@@ -76,24 +55,28 @@ def create_review_task(
     from polar.organization_review.schemas import ReviewAgentReport
 
     analyzer = ReviewAnalyzer()
+    model_name = model or settings.OPENAI_MODEL
 
     if model:
         provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        analyzer.model = OpenAIChatModel(model, provider=provider)
+        analyzer.model = OpenAIChatModel(model_name, provider=provider)
         analyzer.agent = Agent(
             analyzer.model,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
         )
 
-    async def review_task(review_input: ReviewInput) -> str:
-        snapshot = build_snapshot(review_input)
-        report, _usage = await analyzer.analyze(snapshot, context=context)
+    costs: list[float] = []
+
+    async def review_task(eval_input: EvalInput) -> str:
+        context = CONTEXT_MAP.get(eval_input.review_type, ReviewContext.THRESHOLD)
+        report, usage = await analyzer.analyze(
+            eval_input.data_snapshot, context=context
+        )
+        costs.append(usage.estimated_cost_usd or 0)
         return _VERDICT_MAP.get(report.verdict.value, report.verdict.value)
 
-    # Set the name for pydantic-evals reporting
-    model_name = model or settings.OPENAI_MODEL
     review_task.__name__ = f"review_{model_name}"
-    review_task.__qualname__ = f"review_{model_name}"
-
+    review_task.__qualname__ = review_task.__name__
+    review_task.costs = costs  # type: ignore[attr-defined]
     return review_task

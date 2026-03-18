@@ -1,74 +1,100 @@
-"""Extract eval datasets from organization_reviews table."""
+"""Extract eval datasets from organization review feedback.
+
+Pulls cases from organization_review_feedback joined with
+organization_agent_reviews to get the full DataSnapshot that was
+used during the original review.
+
+The dataset is composed of three categories:
+- False approvals (agent APPROVE, human DENY) — the dangerous case,
+  where the AI let a bad org through.  Targeted at 50% of the dataset.
+- Matches (agent and human agree) — baseline sanity checks.
+- False denials (agent DENY, human APPROVE) — overly cautious, safe
+  since denied orgs always get human review.
+"""
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 import structlog
-from pydantic import Field
 from pydantic_evals import Case, Dataset
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from polar.kit.schemas import Schema
-from polar.models.organization_review import OrganizationReview
+from polar.models.organization_agent_review import OrganizationAgentReview
+from polar.models.organization_review_feedback import OrganizationReviewFeedback
+from polar.organization_review.report import parse_agent_report
+from polar.organization_review.schemas import DataSnapshot
 
 log = structlog.get_logger(__name__)
 
+# Human decision -> eval expected output
+_DECISION_TO_EXPECTED = {
+    "APPROVE": "PASS",
+    "DENY": "FAIL",
+}
 
-class ReviewInput(Schema):
-    """Input to the review task — the organization snapshot stored at review time."""
-
-    name: str
-    website: str | None = None
-    details: dict[str, Any] = Field(default_factory=dict)
-    socials: list[dict[str, str]] = Field(default_factory=list)
+DEFAULT_DATASET_PATH = "cases.json"
+DEFAULT_TOTAL = 200
 
 
-class ReviewMetadata(Schema):
-    """Extra context about the eval case (not fed to the model)."""
+# ---------------------------------------------------------------------------
+# Schemas
+# ---------------------------------------------------------------------------
+
+
+class EvalInput(Schema):
+    """Input to the review eval task."""
+
+    data_snapshot: DataSnapshot
+    review_type: str = "threshold"
+
+
+class EvalMetadata(Schema):
+    """Metadata about the eval case (not fed to the model)."""
 
     organization_id: str
-    risk_score: float
-    reason: str
-    model_used: str
-    validated_at: datetime
-    appeal_decision: str | None = None
+    organization_name: str
+    agent_verdict: str | None = None
+    human_decision: str
+    human_reason: str | None = None
+    review_context: str | None = None
 
 
 # Type alias for our eval dataset
-ReviewDataset = Dataset[ReviewInput, str, ReviewMetadata]
+EvalDataset = Dataset[EvalInput, str, EvalMetadata]
 
 
-def _review_to_case(
-    review: OrganizationReview,
-) -> Case[ReviewInput, str, ReviewMetadata]:
-    snapshot = review.organization_details_snapshot
-    name = snapshot.get("name", str(review.organization_id))
+# ---------------------------------------------------------------------------
+# Extraction
+# ---------------------------------------------------------------------------
 
-    # If appeal was approved, the human override is the real ground truth
-    if review.appeal_decision == "approved":
-        expected_output = "PASS"
-        name = f"{name} [appeal-approved]"
-    else:
-        expected_output = review.verdict
+
+def _feedback_to_case(
+    fb: OrganizationReviewFeedback,
+    parsed: Any,
+) -> Case[EvalInput, str, EvalMetadata] | None:
+    """Convert a feedback row + parsed agent report into an eval case."""
+    org_name = parsed.data_snapshot.organization.name
+    expected = _DECISION_TO_EXPECTED.get(fb.decision or "")
+    if expected is None:
+        return None
 
     return Case(
-        name=name,
-        inputs=ReviewInput(
-            name=snapshot.get("name", "unknown"),
-            website=snapshot.get("website"),
-            details=snapshot.get("details", {}),
-            socials=snapshot.get("socials", []),
+        name=org_name,
+        inputs=EvalInput(
+            data_snapshot=parsed.data_snapshot,
+            review_type=parsed.review_type,
         ),
-        expected_output=expected_output,
-        metadata=ReviewMetadata(
-            organization_id=str(review.organization_id),
-            risk_score=review.risk_score,
-            reason=review.reason,
-            model_used=review.model_used,
-            validated_at=review.validated_at,
-            appeal_decision=review.appeal_decision,
+        expected_output=expected,
+        metadata=EvalMetadata(
+            organization_id=str(fb.organization_id),
+            organization_name=org_name,
+            agent_verdict=fb.verdict,
+            human_decision=fb.decision or "UNKNOWN",
+            human_reason=fb.reason,
+            review_context=fb.review_context,
         ),
     )
 
@@ -76,53 +102,99 @@ def _review_to_case(
 async def extract_dataset(
     session: Any,
     *,
-    verdict_filter: list[str] | None = None,
-    exclude_grandfathered: bool = True,
-    exclude_timed_out: bool = True,
-    limit: int | None = None,
-) -> ReviewDataset:
-    """Extract eval cases from organization_reviews.
+    total: int = DEFAULT_TOTAL,
+) -> EvalDataset:
+    """Extract a balanced eval dataset, ordered newest first.
+
+    Composition:
+    - 50% false approvals (agent APPROVE, human DENY) — dangerous
+    - 25% matches (agent and human agree)
+    - 25% false denials (agent DENY, human APPROVE)
+
+    If fewer false approvals exist than the 50% target, all of them
+    are included and the rest is filled from matches and false denials.
 
     Args:
-        session: SQLAlchemy async session
-        verdict_filter: Only include these verdicts (e.g. ["PASS", "FAIL"])
-        exclude_grandfathered: Skip reviews with model_used="grandfathered"
-        exclude_timed_out: Skip reviews that timed out
-        limit: Max number of cases to extract
+        session: SQLAlchemy async session.
+        total: Target number of cases to extract.
     """
-    stmt = select(OrganizationReview).where(
-        OrganizationReview.deleted_at.is_(None),
+    stmt = (
+        select(OrganizationReviewFeedback)
+        .where(
+            OrganizationReviewFeedback.deleted_at.is_(None),
+            OrganizationReviewFeedback.actor_type == "human",
+            OrganizationReviewFeedback.agent_review_id.is_not(None),
+            OrganizationReviewFeedback.decision.in_(["APPROVE", "DENY"]),
+        )
+        .options(selectinload(OrganizationReviewFeedback.agent_review))
+        .order_by(OrganizationReviewFeedback.created_at.desc())
     )
 
-    if exclude_grandfathered:
-        stmt = stmt.where(OrganizationReview.model_used != "grandfathered")
-
-    if exclude_timed_out:
-        stmt = stmt.where(OrganizationReview.timed_out.is_(False))
-
-    if verdict_filter:
-        stmt = stmt.where(OrganizationReview.verdict.in_(verdict_filter))
-
-    stmt = stmt.order_by(OrganizationReview.validated_at.desc())
-
-    if limit:
-        stmt = stmt.limit(limit)
-
     result = await session.execute(stmt)
-    reviews = result.scalars().all()
+    feedbacks = list(result.scalars().all())
 
-    cases = [_review_to_case(review) for review in reviews]
+    # Parse and categorize
+    false_approvals: list[Case[EvalInput, str, EvalMetadata]] = []
+    false_denials: list[Case[EvalInput, str, EvalMetadata]] = []
+    matches: list[Case[EvalInput, str, EvalMetadata]] = []
+    skipped = 0
+
+    for fb in feedbacks:
+        agent_review: OrganizationAgentReview | None = fb.agent_review
+        if agent_review is None or agent_review.report is None:
+            skipped += 1
+            continue
+
+        try:
+            parsed = parse_agent_report(agent_review.report)
+        except Exception:
+            log.warning(
+                "dataset.parse_failed",
+                feedback_id=str(fb.id),
+                agent_review_id=str(agent_review.id),
+            )
+            skipped += 1
+            continue
+
+        case = _feedback_to_case(fb, parsed)
+        if case is None:
+            skipped += 1
+            continue
+
+        if fb.verdict == "APPROVE" and fb.decision == "DENY":
+            false_approvals.append(case)
+        elif fb.verdict == "DENY" and fb.decision == "APPROVE":
+            false_denials.append(case)
+        else:
+            matches.append(case)
+
+    # Compose balanced dataset
+    n_fa = min(len(false_approvals), total // 2)
+    n_rest = total - n_fa
+    n_match = min(len(matches), n_rest // 2)
+    n_fd = min(len(false_denials), n_rest - n_match)
+
+    cases = false_approvals[:n_fa] + matches[:n_match] + false_denials[:n_fd]
+
+    # Fill shortfall from whatever's available
+    if len(cases) < total:
+        remaining = false_approvals[n_fa:] + matches[n_match:] + false_denials[n_fd:]
+        cases.extend(remaining[: total - len(cases)])
 
     # Deduplicate names (pydantic-evals requires unique case names)
     seen: dict[str, int] = {}
     for case in cases:
         name = case.name or "unknown"
-        if name in seen:
-            seen[name] += 1
-            org_id = str(case.metadata.organization_id)[:8] if case.metadata else ""
-            case.name = f"{name} ({org_id})"
-        else:
-            seen[name] = 1
+        seen[name] = seen.get(name, 0) + 1
+        if seen[name] > 1:
+            case.name = f"{name} #{seen[name]}"
 
-    log.info("dataset.extracted", total=len(cases))
+    log.info(
+        "dataset.extracted",
+        total=len(cases),
+        false_approvals=n_fa,
+        matches=n_match,
+        false_denials=n_fd,
+        skipped=skipped,
+    )
     return Dataset(cases=cases)

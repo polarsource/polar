@@ -154,3 +154,9 @@ server/.tinyb
 
 .turbo
 .claude/worktrees
+
+# Eval artifacts (generated, may contain PII)
+server/polar/organization_review/eval/fixtures/
+optimization_results/
+server/cases.json
+server/cases_schema.json

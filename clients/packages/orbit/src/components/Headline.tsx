@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -14,16 +13,6 @@ const defaultSizes: Record<HeadingTag, string> = {
   h5: 'text-xl md:text-2xl tracking-tight leading-tight!',
   h6: 'text-lg md:text-xl tracking-tight leading-tight!',
   span: 'font-medium leading-tight!',
-}
-
-const motionTags: Record<HeadingTag, React.ElementType> = {
-  h1: motion.h1,
-  h2: motion.h2,
-  h3: motion.h3,
-  h4: motion.h4,
-  h5: motion.h5,
-  h6: motion.h6,
-  span: motion.span,
 }
 
 type HeadlineProps<T extends HeadingTag = 'h2'> = {

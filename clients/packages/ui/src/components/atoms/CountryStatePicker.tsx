@@ -80,7 +80,8 @@ export const FIXED_STATE_OPTIONS: Record<string, Record<string, string>> = {
   },
 }
 
-export const COUNTRIES_WITH_FIXED_STATE_OPTIONS = Object.keys(FIXED_STATE_OPTIONS)
+export const COUNTRIES_WITH_FIXED_STATE_OPTIONS =
+  Object.keys(FIXED_STATE_OPTIONS)
 
 const CountryStatePicker = ({
   className,

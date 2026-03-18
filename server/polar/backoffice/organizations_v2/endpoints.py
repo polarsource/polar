@@ -1708,6 +1708,7 @@ async def edit_details(
 
     # Prepare data for form rendering
     form_data = {
+        "email": organization.email,
         "website": organization.website,
         "details": organization.details or {},
     }
@@ -1715,7 +1716,7 @@ async def edit_details(
     with modal("Edit Organization Details", open=True):
         with tag.p(classes="text-sm text-base-content/60 mb-4"):
             text(
-                "Update organization details (about, product description, intended use)"
+                "Update organization email, website, and details"
             )
 
         with UpdateOrganizationDetailsForm.render(

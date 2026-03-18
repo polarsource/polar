@@ -40,6 +40,7 @@ async def stream(
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
+    await session.commit()
     receivers = Receivers(customer_id=get_customer_id(auth_subject))
     channels = receivers.get_channels()
     return EventSourceResponse(subscribe(redis, channels, request))

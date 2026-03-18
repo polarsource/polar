@@ -12,25 +12,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | grep -E '/clients/.*\\.(ts|tsx)$' | { read -r f; if [ -z \"$f\" ]; then exit 0; fi; cd clients && pnpm exec prettier --write \"$f\"; } 2>/dev/null || true",
-            "timeout": 30,
-            "statusMessage": "Formatting..."
-          },
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | grep -qE '/clients/.*\\.(ts|tsx)$' && { cd clients && pnpm typecheck; } 2>/dev/null || true",
-            "timeout": 120,
-            "statusMessage": "Checking types..."
-          }
-        ]
-      }
     ]
   }
 }

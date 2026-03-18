@@ -610,7 +610,12 @@ def get_churn_rate_cte(
         customer_id=customer_id,
     )
 
-    window_start = timestamp_column - text("'30 days'::interval")
+    if interval == TimeInterval.year:
+        window_start = timestamp_column
+        window_end = timestamp_column + interval.sql_interval()
+    else:
+        window_start = timestamp_column - text("'30 days'::interval")
+        window_end = timestamp_column
 
     canceled_30d = func.count(
         case(
@@ -618,7 +623,7 @@ def get_churn_rate_cte(
                 and_(
                     Subscription.canceled_at.is_not(None),
                     Subscription.canceled_at >= window_start,
-                    Subscription.canceled_at < timestamp_column,
+                    Subscription.canceled_at < window_end,
                 ),
                 Subscription.id,
             ),
@@ -677,7 +682,7 @@ def get_churn_rate_cte(
                 and_(
                     Subscription.canceled_at.is_not(None),
                     Subscription.canceled_at >= window_start,
-                    Subscription.canceled_at < timestamp_column,
+                    Subscription.canceled_at < window_end,
                 ),
             ),
         ),

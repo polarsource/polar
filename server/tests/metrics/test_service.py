@@ -660,6 +660,14 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         auth_type="user",
     ),
     QueryCase(
+        label="churn_rate_yearly",
+        org_key="churn_rate_rolling",
+        start_date=date(2024, 1, 1),
+        end_date=date(2025, 12, 31),
+        interval=TimeInterval.year,
+        auth_type="user",
+    ),
+    QueryCase(
         label="customer_filter_external_c1",
         org_key="customer_filter_external",
         start_date=date(2024, 1, 1),
@@ -3975,6 +3983,44 @@ class TestGetMetrics:
 
         # Falls out: [Feb 2, Mar 3) does not include Feb 1
         assert periods_by_date[date(2024, 3, 3)].churn_rate == 0.0
+
+    async def test_churn_rate_yearly(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        """Test that yearly churn uses the full year, not a 30-day window.
+
+        Setup: 5 subs started Jan 1 2024, 1 canceled Feb 1 2024.
+        Yearly should count all cancellations in [t, t+1year) / active at t.
+        """
+        case = QUERY_CASES_BY_LABEL["churn_rate_yearly"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            metrics_session,
+            auth_subject,
+            start_date=case.start_date,
+            end_date=case.end_date,
+            timezone=ZoneInfo(case.timezone),
+            interval=case.interval,
+            organization_id=[org_ctx.organization.id],
+            now=case.now,
+        )
+
+        periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
+
+        # 2024: 1 canceled in [Jan 1, Jan 1 2025) / 5 active at Jan 1
+        assert periods_by_date[date(2024, 1, 1)].churn_rate == pytest.approx(0.2)
+
+        # 2025: 0 canceled in [Jan 1, Jan 1 2026) / 4 active at Jan 1
+        assert periods_by_date[date(2025, 1, 1)].churn_rate == 0.0
 
     async def test_customer_filter_with_external_customer_id(
         self,

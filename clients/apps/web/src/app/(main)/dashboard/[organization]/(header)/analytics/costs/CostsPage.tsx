@@ -1,5 +1,7 @@
 'use client'
 
+import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'
+import { getMetricsForType } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/metrics-config'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
@@ -7,6 +9,7 @@ import {
   useEventHierarchyStats,
   useEventPropertyGroupStats,
 } from '@/hooks/queries/events'
+import { useMetrics } from '@/hooks/queries/metrics'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -257,6 +260,16 @@ export default function ClientPage({ organization }: ClientPageProps) {
     })
   }, [vendorStats, prevVendorStats])
 
+  const costMetrics = getMetricsForType('costs')
+
+  const { data: metricsData, isLoading: isMetricsLoading } = useMetrics({
+    startDate: dateRange.from,
+    endDate: dateRange.to,
+    interval: 'day',
+    organization_id: organization.id,
+    metrics: costMetrics as string[],
+  })
+
   const router = useRouter()
 
   const spanHref = (s: { event_type_id: string }) =>
@@ -326,6 +339,13 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 {summary.totalCustomers.toLocaleString()}
               </StatisticCard>
             </div>
+
+            <MetricGroup
+              metricKeys={costMetrics}
+              data={metricsData}
+              interval="day"
+              loading={isMetricsLoading}
+            />
 
             {/* Where money is going */}
             <section>

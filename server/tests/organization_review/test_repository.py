@@ -1,10 +1,8 @@
 from datetime import UTC, datetime
-from typing import Any
 
 import pytest
 
 from polar.models.organization import Organization
-from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.payment import PaymentStatus
 from polar.models.user import User
 from polar.organization_review.report import (
@@ -78,23 +76,6 @@ def _make_typed_report(
         duration_seconds=1.0,
         usage=UsageInfo(),
     )
-
-
-def _make_legacy_report(
-    *,
-    context: str | None = None,
-) -> dict[str, Any]:
-    """Build a legacy (pre-versioning) report dict for backward-compat tests.
-
-    If context is given it is nested under data_snapshot (old format).
-    """
-    report: dict[str, Any] = {
-        "report": {"verdict": "APPROVE", "overall_risk_score": 10.0},
-        "model_used": "test-model",
-    }
-    if context is not None:
-        report.setdefault("data_snapshot", {})["context"] = context
-    return report
 
 
 @pytest.mark.asyncio
@@ -178,73 +159,6 @@ class TestSaveAgentReview:
 
 
 @pytest.mark.asyncio
-class TestHasSetupCompleteReview:
-    async def test_returns_true_for_new_format(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """New records with top-level review_type are found."""
-        repo = OrganizationReviewRepository.from_session(session)
-        typed_report = _make_typed_report(review_type="setup_complete")
-        await repo.save_agent_review(
-            organization_id=organization.id,
-            report=typed_report,
-            reviewed_at=datetime.now(UTC),
-        )
-        await session.flush()
-
-        assert await repo.has_setup_complete_review(organization.id) is True
-
-    async def test_returns_false_for_other_type(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        repo = OrganizationReviewRepository.from_session(session)
-        typed_report = _make_typed_report(review_type="submission")
-        await repo.save_agent_review(
-            organization_id=organization.id,
-            report=typed_report,
-            reviewed_at=datetime.now(UTC),
-        )
-        await session.flush()
-
-        assert await repo.has_setup_complete_review(organization.id) is False
-
-    async def test_returns_false_when_no_reviews(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        repo = OrganizationReviewRepository.from_session(session)
-        assert await repo.has_setup_complete_review(organization.id) is False
-
-    async def test_legacy_records_without_review_type(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Old records that only have data_snapshot.context are NOT matched.
-
-        This verifies we don't break on legacy data — they simply won't match
-        the new query, which is the expected behavior.
-        """
-        legacy_review = OrganizationAgentReview(
-            organization_id=organization.id,
-            report=_make_legacy_report(context="setup_complete"),
-            model_used="test-model",
-            reviewed_at=datetime.now(UTC),
-        )
-        await save_fixture(legacy_review)
-
-        repo = OrganizationReviewRepository.from_session(session)
-        # Legacy record without top-level review_type won't match
-        assert await repo.has_setup_complete_review(organization.id) is False
-
-
-@pytest.mark.asyncio
 class TestGetLatestAgentReview:
     async def test_returns_latest_by_reviewed_at(
         self,
@@ -262,7 +176,7 @@ class TestGetLatestAgentReview:
         await repo.save_agent_review(
             organization_id=organization.id,
             report=_make_typed_report(
-                review_type="setup_complete",
+                review_type="threshold",
                 model_used="model-b",
                 verdict=ReviewVerdict.DENY,
             ),
@@ -275,7 +189,7 @@ class TestGetLatestAgentReview:
         assert latest.model_used == "model-b"
         parsed = latest.parsed_report
         assert isinstance(parsed, AgentReportV2)
-        assert parsed.review_type == "setup_complete"
+        assert parsed.review_type == "threshold"
 
 
 @pytest.mark.asyncio

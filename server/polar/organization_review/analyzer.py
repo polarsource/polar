@@ -228,52 +228,6 @@ Examples for APPROVE:
 - "Your account has been verified and is ready to accept payments."
 """
 
-SETUP_COMPLETE_PREAMBLE = """\
-This is a SETUP_COMPLETE review. The user just has completed ALL setup steps \
-(product created, organization details submitted, payout account connected, identity verified) but has NOT yet \
-received any payments. You have access to products, account info, identity status, \
-and Stripe account metadata.
-
-Focus on:
-- **Product price anomalies**: Flag one-time products priced above $1,000 or recurring \
-products above $500/month.
-- **Product-business mismatch**: Cross-reference products listed on Polar against the \
-organization's stated business. Look for mismatches suggesting a disguised prohibited business.
-- **Identity & account signals**:
-  - Unverified identity is a red flag. Identity verification errors (e.g. "selfie_mismatch", \
-"document_expired") indicate potential fraud even if verification eventually succeeded.
-  - Compare the account country with the support address country and the verified address \
-country from identity verification — mismatches are yellow flags.
-  - Stripe capabilities that are not "active" (e.g. "restricted", "pending") mean Stripe \
-itself has concerns about this account.
-  - Outstanding requirements_currently_due items at SETUP_COMPLETE stage are unusual.
-  - **Stripe verification errors** (requirements.errors) are critical signals. Codes like \
-"verification_document_fraudulent", "verification_document_manipulated", or "rejected.fraud" \
-in disabled_reason are strong fraud indicators. "verification_failed_keyed_identity" means \
-Stripe could not verify the person's identity information.
-  - A non-null **disabled_reason** (especially "rejected.*" values) means Stripe itself has \
-flagged this account. "requirements.past_due" items are overdue and more concerning than \
-"currently_due".
-- **Identity cross-reference**: Compare the verified name (from identity document) with \
-the Stripe business name and the Polar organization name. For individual accounts, the \
-verified name should match the business name. Significant mismatches are yellow flags.
-- **Business profile cross-reference**: There are two types of Stripe business, \
-individual and business. Compare the Stripe business name and URL with the \
-Polar organization name and website. Significant mismatches are yellow flags.
-- **Prior history** (assess under IDENTITY_TRUST): Check for prior denials or blocked organizations.
-
-Set FINANCIAL_RISK to LOW risk with confidence 0 — no payments have occurred yet.
-Set SETUP_READINESS to LOW risk with confidence 0 — setup was just completed, integration is not expected yet.
-
-Website leniency: If the website is inaccessible, returns errors, or has minor discrepancies \
-with the stated business, do NOT treat this as a red flag. Many legitimate businesses have \
-websites that are under construction, temporarily down, or not yet updated. Only flag website \
-issues if there is a clear and obvious sign of a prohibited business.
-
-Return only APPROVE or DENY.
-"""
-
-
 THRESHOLD_PREAMBLE = f"""\
 This is a THRESHOLD review triggered when a payment threshold is hit. \
 Perform a comprehensive analysis across ALL five dimensions, including SETUP_READINESS. \
@@ -383,7 +337,6 @@ class ReviewAnalyzer:
 
         instructions = {
             ReviewContext.SUBMISSION: SUBMISSION_PREAMBLE,
-            ReviewContext.SETUP_COMPLETE: SETUP_COMPLETE_PREAMBLE,
             ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
             ReviewContext.MANUAL: MANUAL_PREAMBLE,
         }.get(context)

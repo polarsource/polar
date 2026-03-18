@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   Form,
   FormControl,
@@ -64,14 +65,21 @@ const CancelSubscriptionModal = ({
     defaultValues: {
       cancellation_action: 'cancel_at_period_end',
       customer_cancellation_reason: undefined,
+      customer_cancellation_comment: undefined,
     },
   })
-  const { control, handleSubmit, setError, setValue } = form
+  const { control, handleSubmit, setError, setValue, watch } = form
+
+  const selectedReason = watch('customer_cancellation_reason')
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
       const base = {
         customer_cancellation_reason: cancellation.customer_cancellation_reason,
+        customer_cancellation_comment:
+          cancellation.customer_cancellation_reason === 'other'
+            ? cancellation.customer_cancellation_comment
+            : undefined,
       }
       let body: schemas['SubscriptionRevoke'] | schemas['SubscriptionCancel']
       if (cancellation.cancellation_action === 'revoke') {
@@ -206,6 +214,26 @@ const CancelSubscriptionModal = ({
                   </FormItem>
                 )}
               />
+              {selectedReason === 'other' && (
+                <FormField
+                  control={control}
+                  name="customer_cancellation_comment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Comment</FormLabel>
+                      <FormControl>
+                        <TextArea
+                          {...field}
+                          value={field.value ?? ''}
+                          placeholder="Why is the customer cancelling?"
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
             <Button
               type="submit"

@@ -276,6 +276,12 @@ class Settings(BaseSettings):
         "qq.com",
     }
 
+    # Memory Profiling
+    MEMORY_PROFILE_ENABLED: bool = False
+    MEMORY_PROFILE_INTERVAL: int = 300  # seconds
+    MEMORY_PROFILE_S3_BUCKET_NAME: str | None = None
+    MEMORY_PROFILE_NFRAMES: int = 25
+
     # Logfire
     LOGFIRE_TOKEN: str | None = None
     LOGFIRE_IGNORED_ACTORS: set[str] = {

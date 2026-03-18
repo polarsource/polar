@@ -202,6 +202,18 @@ resource "render_env_group" "tinybird" {
   }
 }
 
+resource "render_env_group" "memory_profile" {
+  count          = var.memory_profile_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "memory-profile-${var.environment}"
+  env_vars = {
+    POLAR_MEMORY_PROFILE_ENABLED        = { value = "true" }
+    POLAR_MEMORY_PROFILE_S3_BUCKET_NAME = { value = var.memory_profile_config.s3_bucket_name }
+    POLAR_MEMORY_PROFILE_INTERVAL       = { value = var.memory_profile_config.interval }
+    POLAR_MEMORY_PROFILE_NFRAMES        = { value = var.memory_profile_config.nframes }
+  }
+}
+
 # Services
 
 
@@ -418,4 +430,10 @@ resource "render_env_group_link" "tinybird" {
   count        = var.tinybird_config != null ? 1 : 0
   env_group_id = render_env_group.tinybird[0].id
   service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "memory_profile" {
+  count        = var.memory_profile_config != null ? 1 : 0
+  env_group_id = render_env_group.memory_profile[0].id
+  service_ids  = [render_web_service.api.id]
 }

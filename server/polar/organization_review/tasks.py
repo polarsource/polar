@@ -200,25 +200,3 @@ async def run_review_agent(
                     slug=organization.slug,
                     verdict=report.verdict.value,
                 )
-
-        # For SETUP_COMPLETE context: log the flagged verdict.
-        # Do NOT set the org to INITIAL_REVIEW here — that must only happen
-        # when check_review_threshold fires (on the first sale), so the
-        # organization_under_review task creates the Plain thread.
-        if review_context == ReviewContext.SETUP_COMPLETE:
-            if report.verdict == ReviewVerdict.DENY:
-                await review_repository.record_agent_decision(
-                    organization_id=organization_id,
-                    agent_review_id=agent_review.id,
-                    decision="ESCALATE",
-                    review_context="setup_complete",
-                    verdict=report.verdict.value,
-                    risk_score=report.overall_risk_score,
-                )
-
-                log.info(
-                    "organization_review.setup_complete.flagged",
-                    organization_id=str(organization_id),
-                    slug=organization.slug,
-                    verdict=report.verdict.value,
-                )

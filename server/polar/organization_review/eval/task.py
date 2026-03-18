@@ -17,7 +17,6 @@ _VERDICT_MAP = {
 
 CONTEXT_MAP = {
     "submission": ReviewContext.SUBMISSION,
-    "setup_complete": ReviewContext.SETUP_COMPLETE,
     "threshold": ReviewContext.THRESHOLD,
     "manual": ReviewContext.MANUAL,
 }

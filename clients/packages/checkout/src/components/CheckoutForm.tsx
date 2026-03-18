@@ -5,7 +5,9 @@ import { enums } from '@polar-sh/client'
 import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  COUNTRIES_WITH_FIXED_STATE_OPTIONS,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -124,22 +126,26 @@ const BaseCheckoutForm = ({
       }
 
       let payload: schemas['CheckoutUpdatePublic'] = {}
-      // Update country, make sure to reset other address fields
+      // Update country, reset state when switching between select and free-text
       if (name === 'customer_billing_address.country') {
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
-          resetField('customer_billing_address.state', { defaultValue: '' })
-          resetField('customer_billing_address.postal_code', {
-            defaultValue: '',
-          })
-          resetField('customer_billing_address.city', { defaultValue: '' })
-          resetField('customer_billing_address.line1', { defaultValue: '' })
-          resetField('customer_billing_address.line2', { defaultValue: '' })
+          const newCountry = customerBillingAddress.country
+          const previousCountryHasFixedStates =
+            !!country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
+          const nextCountryHasFixedStates =
+            COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(newCountry)
+          if (
+            country !== newCountry &&
+            (previousCountryHasFixedStates || nextCountryHasFixedStates)
+          ) {
+            resetField('customer_billing_address.state', { defaultValue: '' })
+          }
           clearErrors('customer_billing_address')
           payload = {
             ...payload,
             customer_billing_address: {
-              country: customerBillingAddress.country,
+              country: newCountry,
             },
           }
         }
@@ -168,7 +174,7 @@ const BaseCheckoutForm = ({
         /* API errors handled by provider */
       }
     },
-    [clearErrors, resetField, update],
+    [clearErrors, country, resetField, update],
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 

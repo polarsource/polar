@@ -273,11 +273,13 @@ describe('CheckoutForm', () => {
       await new Promise((r) => setTimeout(r, 600))
     })
 
-    // All address fields should be reset
+    // Only state should be reset
     expect(form!.getValues('customer_billing_address.state')).toBe('')
-    expect(form!.getValues('customer_billing_address.postal_code')).toBe('')
-    expect(form!.getValues('customer_billing_address.city')).toBe('')
-    expect(form!.getValues('customer_billing_address.line1')).toBe('')
+    expect(form!.getValues('customer_billing_address.postal_code')).toBe(
+      '12391',
+    )
+    expect(form!.getValues('customer_billing_address.city')).toBe('Stockholm')
+    expect(form!.getValues('customer_billing_address.line1')).toBe('Foo St')
   })
 
   it('displays validation error on billing address state field', async () => {

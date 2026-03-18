@@ -32,7 +32,7 @@ const getPercentageBasisPoints = (value: string): number => {
 }
 
 const PercentageInput = (props: Props) => {
-  let {
+  const {
     id,
     name,
     value,
@@ -60,7 +60,7 @@ const PercentageInput = (props: Props) => {
 
   const onInput = (e: InputEvent<HTMLInputElement>) => {
     const value = e.currentTarget.value
-    const regex = /^\d+([\.,]\d{0,2})?$/
+    const regex = /^\d+([.,]\d{0,2})?$/
     if (!regex.test(value)) {
       e.currentTarget.value = Number.parseFloat(value).toFixed(2)
     }

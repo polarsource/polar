@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  type ComponentType,
-  type ImgHTMLAttributes,
-  useCallback,
-  useState,
-} from 'react'
+import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -16,9 +11,9 @@ export type AvatarProps = {
   className?: string
   height?: number
   width?: number
-  loading?: ImgHTMLAttributes<HTMLImageElement>['loading']
+  loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading']
   /** Pass next/image or any other image component. Defaults to <img>. */
-  CustomImageComponent?: ComponentType<ImgHTMLAttributes<HTMLImageElement>>
+  CustomImageComponent?: React.ElementType
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -429,25 +429,19 @@ class CashflowMetric(MetaMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-class ChurnRateMetric(MetaMetric):
+# TODO: Move churn rate to Tinybird — extend the metrics_cancellations pipe
+# to compute the rolling 30-day window in ClickHouse instead of PG.
+class ChurnRateMetric(SQLMetric):
     slug = "churn_rate"
     display_name = "Churn Rate"
     type = MetricType.percentage
-    dependencies: ClassVar[list[str]] = [
-        "active_subscriptions",
-        "new_subscriptions",
-        "churned_subscriptions",
-        "canceled_subscriptions",
-    ]
+    query = MetricQuery.churn_rate
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        active_during = period.active_subscriptions or 0
-        new = period.new_subscriptions or 0
-        churned = period.churned_subscriptions or 0
-        canceled = period.canceled_subscriptions or 0
-        active_at_start = active_during - new + churned
-        return canceled / active_at_start if active_at_start > 0 else 0.0
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[float]:
+        raise NotImplementedError("Computed directly in get_churn_rate_cte")
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
@@ -850,11 +844,11 @@ METRICS_POSTGRES: list[type[SQLMetric]] = [
     CheckoutsMetric,
     SucceededCheckoutsMetric,
     ChurnedSubscriptionsMetric,
+    ChurnRateMetric,
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
     CheckoutsConversionMetric,
-    ChurnRateMetric,
     LTVMetric,
     GrossMarginMetric,
     GrossMarginPercentageMetric,

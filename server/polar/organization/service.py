@@ -206,6 +206,7 @@ class OrganizationService:
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
         feature_settings = create_data.get("feature_settings", {})
         feature_settings["member_model_enabled"] = True
+        feature_settings["seat_based_pricing_enabled"] = True
         create_data["feature_settings"] = feature_settings
 
         organization = await repository.create(

@@ -23,7 +23,7 @@
     "build": "rm -rf dist/ && tsup",
     "format": "prettier --write ./src",
     "format:check": "prettier -c ./src",
-    "lint": "pnpm format:check",
+    "lint": "pnpm format:check && eslint .",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
@@ -33,6 +33,7 @@
     }
   },
   "devDependencies": {
+    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "latest",

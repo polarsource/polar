@@ -242,11 +242,10 @@ variable "slo_report_config" {
 }
 
 variable "memory_profile_config" {
-  description = "Memory profiling configuration (optional). When set, enables periodic tracemalloc snapshots uploaded to S3."
+  description = "Memory profiling configuration (optional). When set, enables periodic gc-based heap snapshots uploaded to S3 as JSON."
   type = object({
     s3_bucket_name = string
     interval       = optional(number, 300)
-    nframes        = optional(number, 25)
   })
   default = null
 }

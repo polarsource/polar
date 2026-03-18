@@ -54,7 +54,7 @@ def create_async_engine(
     command_timeout: float | None = None,
     debug: bool = False,
 ) -> AsyncEngine:
-    connect_args: dict[str, Any] = {}
+    connect_args: dict[str, Any] = {"prepared_statement_cache_size": 0}
     if application_name is not None:
         connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:

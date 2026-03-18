@@ -10,11 +10,19 @@ import { CANCELLATION_CHART_METRICS } from './metrics-config'
 interface CancellationsContentProps {
   data: ParsedMetricsResponse
   interval: schemas['TimeInterval']
+  organizationId: string
+  startDate: Date
+  endDate: Date
+  productId?: string[]
 }
 
 export function CancellationsContent({
   data,
   interval,
+  organizationId,
+  startDate,
+  endDate,
+  productId,
 }: CancellationsContentProps) {
   return (
     <div className="flex flex-col gap-y-6">
@@ -25,6 +33,10 @@ export function CancellationsContent({
               data={data}
               interval={interval}
               height={400}
+              organizationId={organizationId}
+              startDate={startDate}
+              endDate={endDate}
+              productId={productId}
             />
           </div>
           <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
@@ -32,6 +44,10 @@ export function CancellationsContent({
               data={data}
               interval={interval}
               height={20}
+              organizationId={organizationId}
+              startDate={startDate}
+              endDate={endDate}
+              productId={productId}
             />
           </div>
           {CANCELLATION_CHART_METRICS.map((metricKey) => (

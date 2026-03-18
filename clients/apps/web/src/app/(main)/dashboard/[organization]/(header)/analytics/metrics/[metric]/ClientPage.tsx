@@ -90,7 +90,14 @@ export default function ClientPage({
   return (
     <div className="flex flex-col gap-12">
       {metric === 'cancellations' ? (
-        <CancellationsContent data={data} interval={interval} />
+        <CancellationsContent
+          data={data}
+          interval={interval}
+          organizationId={organizationId}
+          startDate={startDate}
+          endDate={endDate}
+          productId={productId ?? undefined}
+        />
       ) : (
         <MetricGroup metricKeys={metrics} data={data} interval={interval} />
       )}

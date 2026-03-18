@@ -15,10 +15,13 @@ import {
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
+import { addDays, addHours, addMonths, addWeeks, addYears } from 'date-fns'
 import { useTheme } from 'next-themes'
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { CancellationReasonModal } from './cancellations/CancellationReasonModal'
 import {
   CANCELLATION_REASONS,
+  type CancellationReason,
   REASON_COLORS,
   REASON_LABELS,
 } from './cancellations/constants'
@@ -27,12 +30,38 @@ interface CancellationsStackedChartProps {
   data: ParsedMetricsResponse
   interval: schemas['TimeInterval']
   height?: number
+  organizationId: string
+  startDate: Date
+  endDate: Date
+  productId?: string[]
+}
+
+function getPeriodEnd(
+  timestamp: Date,
+  interval: schemas['TimeInterval'],
+): Date {
+  switch (interval) {
+    case 'hour':
+      return addHours(timestamp, 1)
+    case 'day':
+      return addDays(timestamp, 1)
+    case 'week':
+      return addWeeks(timestamp, 1)
+    case 'month':
+      return addMonths(timestamp, 1)
+    case 'year':
+      return addYears(timestamp, 1)
+  }
 }
 
 export default function CancellationsStackedChart({
   data,
   interval,
   height = 300,
+  organizationId,
+  startDate,
+  endDate,
+  productId,
 }: CancellationsStackedChartProps) {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -74,6 +103,39 @@ export default function CancellationsStackedChart({
       ),
     )
   }, [chartData])
+
+  const [selectedReason, setSelectedReason] =
+    useState<CancellationReason | null>(null)
+  const [modalStartDate, setModalStartDate] = useState<Date>(startDate)
+  const [modalEndDate, setModalEndDate] = useState<Date>(endDate)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleBarClick = useCallback(
+    (reason: CancellationReason) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data: any) => {
+        if (!data?.payload?.timestamp) return
+        const timestamp = new Date(data.payload.timestamp)
+        setSelectedReason(reason)
+        setModalStartDate(timestamp)
+        setModalEndDate(getPeriodEnd(timestamp, interval))
+        setIsModalOpen(true)
+      },
+    [interval],
+  )
+
+  const handleLegendClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (entry: any) => {
+      const reason = entry?.dataKey as CancellationReason
+      if (!reason || !CANCELLATION_REASONS.includes(reason)) return
+      setSelectedReason(reason)
+      setModalStartDate(startDate)
+      setModalEndDate(endDate)
+      setIsModalOpen(true)
+    },
+    [startDate, endDate],
+  )
 
   return (
     <div className="">
@@ -120,7 +182,10 @@ export default function CancellationsStackedChart({
             )}
           />
           <ChartLegend
-            content={<ChartLegendContent className="justify-start" />}
+            content={
+              <ChartLegendContent className="cursor-pointer justify-start" />
+            }
+            onClick={handleLegendClick}
           />
           {CANCELLATION_REASONS.map((reason) => (
             <Bar
@@ -128,10 +193,24 @@ export default function CancellationsStackedChart({
               dataKey={reason}
               stackId="cancellations"
               fill={`var(--color-${reason})`}
+              className="cursor-pointer"
+              onClick={handleBarClick(reason)}
             />
           ))}
         </BarChart>
       </ChartContainer>
+
+      {selectedReason && (
+        <CancellationReasonModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          reason={selectedReason}
+          organizationId={organizationId}
+          startDate={modalStartDate}
+          endDate={modalEndDate}
+          productId={productId}
+        />
+      )}
     </div>
   )
 }

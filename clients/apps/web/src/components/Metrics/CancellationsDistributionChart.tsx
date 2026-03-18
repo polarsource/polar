@@ -3,9 +3,10 @@
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { useMemo, useState } from 'react'
+import { CancellationReasonModal } from './cancellations/CancellationReasonModal'
 import {
   CANCELLATION_REASONS,
-  CancellationReason,
+  type CancellationReason,
   REASON_COLORS,
   REASON_LABELS,
 } from './cancellations/constants'
@@ -14,6 +15,10 @@ interface CancellationsDistributionChartProps {
   data: ParsedMetricsResponse
   interval: schemas['TimeInterval']
   height?: number
+  organizationId: string
+  startDate: Date
+  endDate: Date
+  productId?: string[]
 }
 
 interface ReasonData {
@@ -27,6 +32,10 @@ interface ReasonData {
 export default function CancellationsDistributionChart({
   data,
   height = 20,
+  organizationId,
+  startDate,
+  endDate,
+  productId,
 }: CancellationsDistributionChartProps) {
   const { chartData, legendData } = useMemo(() => {
     const totals: Record<CancellationReason, number> = {} as Record<
@@ -79,6 +88,15 @@ export default function CancellationsDistributionChart({
     'count',
   )
 
+  const [selectedReason, setSelectedReason] =
+    useState<CancellationReason | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleReasonClick = (reason: CancellationReason) => {
+    setSelectedReason(reason)
+    setIsModalOpen(true)
+  }
+
   return (
     <div className="relative">
       <div className="p-4">
@@ -93,11 +111,12 @@ export default function CancellationsDistributionChart({
           {chartData.map((item) => (
             <div
               key={item.reason}
-              className="relative transition-opacity"
+              className="relative cursor-pointer transition-opacity hover:opacity-80"
               style={{
                 width: `${item.percentage}%`,
                 backgroundColor: item.color,
               }}
+              onClick={() => handleReasonClick(item.reason)}
             />
           ))}
         </div>
@@ -106,7 +125,8 @@ export default function CancellationsDistributionChart({
           {legendData.map((item) => (
             <div
               key={item.reason}
-              className="flex items-center justify-start gap-2"
+              className="flex cursor-pointer items-center justify-start gap-2 hover:opacity-80"
+              onClick={() => handleReasonClick(item.reason)}
             >
               <div
                 className="h-2.5 w-2.5 rounded-full"
@@ -115,11 +135,12 @@ export default function CancellationsDistributionChart({
               <span className="font-normal">{item.label}</span>
               <span
                 className="dark:text-polar-400 -m-1 ml-auto p-1 text-right font-medium text-gray-500 tabular-nums"
-                onClick={() =>
+                onClick={(e) => {
+                  e.stopPropagation()
                   setDisplayMode((previousValue) =>
                     previousValue === 'count' ? 'percentage' : 'count',
                   )
-                }
+                }}
               >
                 {displayMode === 'count'
                   ? item.total
@@ -137,6 +158,18 @@ export default function CancellationsDistributionChart({
           </div>
         </div>
       </div>
+
+      {selectedReason && (
+        <CancellationReasonModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          reason={selectedReason}
+          organizationId={organizationId}
+          startDate={startDate}
+          endDate={endDate}
+          productId={productId}
+        />
+      )}
     </div>
   )
 }

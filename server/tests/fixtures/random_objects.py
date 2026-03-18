@@ -881,7 +881,7 @@ async def create_order(
         created_at=created_at or utc_now(),
         status=status,
         subtotal_amount=subtotal_amount,
-        _net_amount=subtotal_amount - discount_amount,
+        net_amount=subtotal_amount - discount_amount,
         tax_amount=tax_amount,
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
@@ -1474,6 +1474,7 @@ async def create_checkout(
         customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
         amount=amount,
+        net_amount=amount,
         tax_amount=tax_amount,
         currency=currency,
         organization=product.organization,
@@ -1496,6 +1497,7 @@ async def create_checkout(
         customer_billing_address=customer_billing_address,
         tax_processor=TaxProcessor.stripe,
     )
+    checkout.net_amount = checkout.amount - checkout.discount_amount
     if analytics_metadata is not None:
         checkout.analytics_metadata = analytics_metadata
     if created_at is not None:

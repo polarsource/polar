@@ -28,7 +28,7 @@ class OrderItem(RecordModel):
 
     label: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    net_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     proration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     order_id: Mapped[UUID] = mapped_column(

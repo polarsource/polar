@@ -39,11 +39,11 @@ async def backfill_orders(
     await run_batched_update(
         (
             update(Order)
-            .values(_net_amount=Order.subtotal_amount - Order.discount_amount)
+            .values(net_amount=Order.subtotal_amount - Order.discount_amount)
             .where(
                 Order.id.in_(
                     select(Order.id)
-                    .where(Order._net_amount.is_(None))
+                    .where(Order.net_amount.is_(None))
                     .limit(limit_bindparam())
                 ),
             )
@@ -124,13 +124,13 @@ async def backfill_checkouts(
         (
             update(Checkout)
             .values(
-                _net_amount=Checkout.amount - discount_subquery.c.discount_amount,
+                net_amount=Checkout.amount - discount_subquery.c.discount_amount,
             )
             .where(
                 Checkout.id == discount_subquery.c.checkout_id,
                 Checkout.id.in_(
                     select(Checkout.id)
-                    .where(Checkout._net_amount.is_(None))
+                    .where(Checkout.net_amount.is_(None))
                     .limit(limit_bindparam())
                 ),
             )
@@ -148,11 +148,11 @@ async def backfill_subscriptions(
     await run_batched_update(
         (
             update(Subscription)
-            .values(_net_amount=Subscription.amount)
+            .values(net_amount=Subscription.amount)
             .where(
                 Subscription.id.in_(
                     select(Subscription.id)
-                    .where(Subscription._net_amount.is_(None))
+                    .where(Subscription.net_amount.is_(None))
                     .limit(limit_bindparam())
                 ),
             )

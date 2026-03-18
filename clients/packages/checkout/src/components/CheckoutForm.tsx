@@ -135,10 +135,7 @@ const BaseCheckoutForm = ({
             !!country && COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(country)
           const nextIsSelect =
             COUNTRIES_WITH_FIXED_STATE_OPTIONS.includes(newCountry)
-          if (
-            prevIsSelect !== nextIsSelect ||
-            (prevIsSelect && nextIsSelect && country !== newCountry)
-          ) {
+          if (country !== newCountry && (prevIsSelect || nextIsSelect)) {
             resetField('customer_billing_address.state', { defaultValue: '' })
           }
           clearErrors('customer_billing_address')

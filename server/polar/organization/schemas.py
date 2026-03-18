@@ -113,20 +113,20 @@ class OrganizationFeatureSettings(Schema):
 
 
 class OrganizationDetails(Schema):
-    about: str = Field(
-        ..., description="Brief information about you and your business."
+    about: str | None = Field(
+        None, description="Brief information about you and your business."
     )
     product_description: str = Field(
         ..., description="Description of digital products being sold."
     )
-    intended_use: str = Field(
-        ..., description="How the organization will integrate and use Polar."
+    intended_use: str | None = Field(
+        None, description="How the organization will integrate and use Polar."
     )
     customer_acquisition: list[str] = Field(
-        ..., description="Main customer acquisition channels."
+        default_factory=list, description="Main customer acquisition channels."
     )
     future_annual_revenue: int = Field(
-        ..., ge=0, description="Estimated revenue in the next 12 months"
+        0, ge=0, description="Estimated revenue in the next 12 months"
     )
     switching: bool = Field(True, description="Switching from another platform?")
     switching_from: (

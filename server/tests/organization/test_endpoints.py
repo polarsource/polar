@@ -150,8 +150,6 @@ class TestUpdateOrganization:
                 "details": {
                     "about": "Test company",
                     "product_description": "SaaS product",
-                    "intended_use": "API integration",
-                    "customer_acquisition": ["website"],
                     "future_annual_revenue": -1000,
                     "switching": False,
                     "previous_annual_revenue": 25000,
@@ -177,8 +175,6 @@ class TestUpdateOrganization:
                 "details": {
                     "about": "Test company",
                     "product_description": "SaaS product",
-                    "intended_use": "API integration",
-                    "customer_acquisition": ["website"],
                     "future_annual_revenue": 50000,
                     "switching": False,
                     "previous_annual_revenue": -5000,
@@ -562,7 +558,7 @@ class TestGetPaymentStatus:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
 
         # Set up user verification
         user.identity_verification_status = IdentityVerificationStatus.verified

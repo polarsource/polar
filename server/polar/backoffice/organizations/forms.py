@@ -139,10 +139,10 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
         ),
     ]
     intended_use: Annotated[
-        str,
+        str | None,
         forms.TextAreaField(rows=3),
         Field(
-            min_length=1,
+            None,
             title="Intended Use",
             description="How the organization will integrate and use Polar",
         ),

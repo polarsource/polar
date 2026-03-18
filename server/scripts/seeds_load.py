@@ -169,12 +169,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We provide business intelligence dashboard",
-                "intended_use": "Well have a checkout on our website granting.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Our business intellignce dashboard are mostly monthly subscriptions, but our mobile app is accessible after a one-time payment.",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -252,12 +249,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We make beautiful SQL management products for macOS.",
-                "intended_use": "Well have a checkout on our website granting a download link and license key.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "The desktop apps that we create allows connecting to SQL databases, and performing queries on those databases.",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "benefits": {
@@ -338,12 +332,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We're a hottest cloud provider since sliced bread",
-                "intended_use": "We'll be selling various plans allowing access to our cloud storage and cloud document services.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "We sell ColdMail which provides an email inbox plus file storage. We also sell TemperateDocs which allows creating and editing documents online.",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -426,12 +417,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We provide news in various formats",
-                "intended_use": "We'll have a checkout on our website where you buy subscriptions to our various news products.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "We send out our news products as emails daily and weekly",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -465,12 +453,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "is_admin": True,
             "details": {
                 "about": "Polar is an open source payment infrastructure platform for developers",
-                "intended_use": "We provide payment processing and subscription management for developers and creators.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "SaaS platform for payment infrastructure",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 1000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -491,12 +476,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "Testing seat-based pricing with members model",
-                "intended_use": "We sell seat-based licenses for our software",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Team software licenses with per-seat billing",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 500000,
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
@@ -530,12 +512,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "Testing seat-based pricing without members model",
-                "intended_use": "We sell seat-based licenses without member tracking",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Team software licenses with simple seat billing",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 500000,
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
@@ -632,7 +611,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.email = org_data["email"]
         organization.website = org_data["website"]
         organization.bio = org_data["bio"]
-        organization.details = org_data.get("details", {})  # type: ignore
+        organization.details = org_data.get("details", {})
         organization.details_submitted_at = utc_now()
         organization.status = org_data.get("status", OrganizationStatus.CREATED)
         organization.feature_settings = org_data.get("feature_settings", {})

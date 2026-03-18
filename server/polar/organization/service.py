@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import structlog
@@ -33,7 +33,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import OrganizationDetails, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -356,7 +356,9 @@ class OrganizationService:
 
         # Only store details once to avoid API overrides later w/o review
         if not previous_details and update_schema.details:
-            organization.details = update_schema.details.model_dump()
+            organization.details = cast(
+                OrganizationDetails, update_schema.details.model_dump()
+            )
             organization.details_submitted_at = datetime.now(UTC)
             enqueue_job(
                 "organization_review.run_agent",

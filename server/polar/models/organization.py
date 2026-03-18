@@ -42,7 +42,7 @@ class OrganizationSocials(TypedDict):
     url: str
 
 
-class OrganizationDetails(TypedDict):
+class OrganizationDetails(TypedDict, total=False):
     about: str
     product_description: str
     intended_use: str

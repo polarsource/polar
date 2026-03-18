@@ -102,7 +102,7 @@ export const unwrap = async <
 }
 
 export const isValidationError = (
-  detail: any,
+  detail: unknown,
 ): detail is {
   loc: (string | number)[]
   msg: string

@@ -480,6 +480,11 @@ const OrganizationAccessTokensSettings = ({
     hideCreateModal()
     setCreatedToken(token)
     onTokenCreated?.(token.token)
+    toast({
+      title: 'Access token created',
+      description:
+        "Your new organization access token has been created. Copy it now — you won't be able to see it again.",
+    })
   }
 
   const hasTokens =

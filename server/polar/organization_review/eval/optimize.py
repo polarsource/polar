@@ -57,9 +57,7 @@ def _score(predicted: str, expected: str) -> float:
     not_false_approval = (
         0.0 if (expected in ("FAIL", "UNCERTAIN") and predicted == "PASS") else 1.0
     )
-    not_false_denial = (
-        0.0 if (expected == "PASS" and predicted == "FAIL") else 1.0
-    )
+    not_false_denial = 0.0 if (expected == "PASS" and predicted == "FAIL") else 1.0
     # If the AI approved a bad org, score is 0 regardless of other components
     if not not_false_approval:
         return 0.0
@@ -135,14 +133,14 @@ class ReviewAdapter:
         analyzer = self._get_analyzer(prompt)
         sem = asyncio.Semaphore(self._concurrency)
 
-        async def _run_one(item: dict[str, Any]) -> tuple[dict, Any, Any]:
+        async def _run_one(item: dict[str, Any]) -> tuple[dict[str, Any], Any, Any]:
             async with sem:
                 snapshot = DataSnapshot.model_validate(item["data_snapshot"])
                 context = CONTEXT_MAP.get(item["review_type"], ReviewContext.THRESHOLD)
                 report, usage = await analyzer.analyze(snapshot, context=context)
                 return item, report, usage
 
-        async def _run_batch() -> list[tuple[dict, Any, Any]]:
+        async def _run_batch() -> list[tuple[dict[str, Any], Any, Any]]:
             return await asyncio.gather(*[_run_one(item) for item in batch])
 
         results = asyncio.run(_run_batch())
@@ -287,7 +285,6 @@ def run_optimization(
         output_dir: Directory to save optimized prompt and report.
     """
     import gepa
-    from gepa.core.adapter import GEPAAdapter
 
     from polar.config import settings
     from polar.organization_review.analyzer import SYSTEM_PROMPT
@@ -313,7 +310,7 @@ def run_optimization(
     os.environ.setdefault("OPENAI_API_KEY", settings.OPENAI_API_KEY)
 
     # 3. Run GEPA
-    adapter: GEPAAdapter = ReviewAdapter(model=model, concurrency=concurrency)  # type: ignore[assignment]
+    adapter = ReviewAdapter(model=model, concurrency=concurrency)
 
     log.info(
         "optimize.starting",
@@ -327,11 +324,11 @@ def run_optimization(
     out_dir.mkdir(parents=True, exist_ok=True)
     run_dir = str(out_dir / "gepa_checkpoints")
 
-    result = gepa.optimize(
+    result: Any = gepa.optimize(  # type: ignore[attr-defined]
         seed_candidate={"system_prompt": SYSTEM_PROMPT},
         trainset=train,
         valset=val,
-        adapter=adapter,
+        adapter=adapter,  # type: ignore[arg-type]
         reflection_lm=effective_reflection_lm,
         max_metric_calls=max_metric_calls,
         display_progress_bar=True,
@@ -341,7 +338,7 @@ def run_optimization(
     elapsed = time.monotonic() - start
     best_prompt = result.best_candidate.get("system_prompt", "")
     best_score = result.val_aggregate_scores[result.best_idx]
-    eval_cost = adapter.total_cost  # type: ignore[union-attr]
+    eval_cost = adapter.total_cost
 
     # 4. Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

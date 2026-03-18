@@ -2,7 +2,7 @@ import asyncio
 from functools import wraps
 
 import typer
-from sqlalchemy import Case, Integer, func, select, update
+from sqlalchemy import BigInteger, Case, Integer, func, select, update
 
 from polar.models import (
     Checkout,
@@ -92,8 +92,13 @@ async def backfill_checkouts(
                     ),
                     (
                         Discount.type == DiscountType.percentage,
-                        func.round(
-                            Checkout.amount * DiscountPercentage.basis_points / 10000.0
+                        func.cast(
+                            func.round(
+                                func.cast(Checkout.amount, BigInteger)
+                                * DiscountPercentage.basis_points
+                                / 10000.0
+                            ),
+                            Integer,
                         ),
                     ),
                     (

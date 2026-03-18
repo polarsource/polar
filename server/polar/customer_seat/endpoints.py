@@ -375,6 +375,8 @@ async def claim_stream(
     if not seat or not seat.customer_id or seat.status != SeatStatus.pending:
         raise ResourceNotFound("Invalid or expired invitation token")
 
+    # Release the DB session before entering the long-lived SSE stream.
+    # The session is no longer needed after the seat lookup.
     await session.commit()
     receivers = Receivers(customer_id=seat.customer_id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

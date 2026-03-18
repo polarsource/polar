@@ -28,6 +28,10 @@ const useSSE = (streamURL: string, token?: string): EventEmitter => {
     const controller = eventSource.listen({
       onMessage: async (message) => {
         const data = JSON.parse(message.data)
+
+        // Server-initiated reconnect — EventSourcePlus handles the actual reconnection
+        if (data.type === 'reconnect') return
+
         const key = data.key
 
         if (typeof key === 'string' && isSupportedKey(key)) {

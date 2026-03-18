@@ -298,7 +298,8 @@ async def client_stream(
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
-
+    # Release the DB session before entering the long-lived SSE stream.
+    # The session is no longer needed after the checkout lookup.
     await session.commit()
     receivers = Receivers(checkout_client_secret=checkout.client_secret)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

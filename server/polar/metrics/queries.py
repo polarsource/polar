@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    text,
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 
@@ -49,6 +50,7 @@ class MetricQuery(StrEnum):
     checkouts = "checkouts"
     canceled_subscriptions = "canceled_subscriptions"
     churned_subscriptions = "churned_subscriptions"
+    churn_rate = "churn_rate"
     events = "events"
 
 
@@ -585,14 +587,123 @@ def get_churned_subscriptions_cte(
     )
 
 
+def get_churn_rate_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[SQLMetric]"],
+    now: datetime,
+    *,
+    bounds: tuple[datetime, datetime],
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_subscriptions_statement = _get_readable_subscriptions_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
+    window_start = timestamp_column - text("'30 days'::interval")
+
+    canceled_30d = func.count(
+        case(
+            (
+                and_(
+                    Subscription.canceled_at.is_not(None),
+                    Subscription.canceled_at >= window_start,
+                    Subscription.canceled_at < timestamp_column,
+                ),
+                Subscription.id,
+            ),
+        )
+    )
+
+    active_at_window_start = func.count(
+        case(
+            (
+                and_(
+                    or_(
+                        Subscription.started_at.is_(None),
+                        Subscription.started_at <= window_start,
+                    ),
+                    or_(
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
+                            None
+                        ),
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                        > window_start,
+                    ),
+                ),
+                Subscription.id,
+            ),
+        )
+    )
+
+    churn_rate = case(
+        (
+            active_at_window_start > 0,
+            func.cast(canceled_30d, Numeric)
+            / func.cast(active_at_window_start, Numeric),
+        ),
+        else_=0,
+    )
+
+    from_clause = timestamp_series.join(
+        Subscription,
+        isouter=True,
+        onclause=and_(
+            Subscription.id.in_(readable_subscriptions_statement),
+            or_(
+                and_(
+                    or_(
+                        Subscription.started_at.is_(None),
+                        Subscription.started_at <= window_start,
+                    ),
+                    or_(
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
+                            None
+                        ),
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                        > window_start,
+                    ),
+                ),
+                and_(
+                    Subscription.canceled_at.is_not(None),
+                    Subscription.canceled_at >= window_start,
+                    Subscription.canceled_at < timestamp_column,
+                ),
+            ),
+        ),
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            churn_rate.label("churn_rate"),
+        )
+        .select_from(from_clause)
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
 QUERIES: list[QueryCallable] = [
     get_active_subscriptions_cte,
     get_checkouts_cte,
     get_churned_subscriptions_cte,
+    get_churn_rate_cte,
 ]
 
 QUERY_TO_FUNCTION: dict[MetricQuery, QueryCallable] = {
     MetricQuery.active_subscriptions: get_active_subscriptions_cte,
     MetricQuery.checkouts: get_checkouts_cte,
     MetricQuery.churned_subscriptions: get_churned_subscriptions_cte,
+    MetricQuery.churn_rate: get_churn_rate_cte,
 }

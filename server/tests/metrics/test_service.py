@@ -652,6 +652,14 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         auth_type="user",
     ),
     QueryCase(
+        label="churn_rate_rolling",
+        org_key="churn_rate_rolling",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 3, 15),
+        interval=TimeInterval.day,
+        auth_type="user",
+    ),
+    QueryCase(
         label="customer_filter_external_c1",
         org_key="customer_filter_external",
         start_date=date(2024, 1, 1),
@@ -1624,6 +1632,54 @@ async def _seed_churn_rate(
     return {k: v.id for k, v in products.items()}, {"customer": customer.id}
 
 
+async def _seed_churn_rate_rolling(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    events: list[Event],
+) -> tuple[dict[str, UUID], dict[str, UUID]]:
+    customer = await create_customer(save_fixture, organization=organization)
+    sub_fixtures: dict[str, SubscriptionFixture] = {
+        "subscription_1": {
+            "started_at": date(2024, 1, 1),
+            "product": "monthly_subscription",
+        },
+        "subscription_2": {
+            "started_at": date(2024, 1, 1),
+            "product": "monthly_subscription",
+        },
+        "subscription_3": {
+            "started_at": date(2024, 1, 1),
+            "product": "monthly_subscription",
+        },
+        "subscription_4": {
+            "started_at": date(2024, 1, 1),
+            "product": "monthly_subscription",
+        },
+        "subscription_5": {
+            "started_at": date(2024, 1, 1),
+            "product": "monthly_subscription",
+        },
+    }
+    products, subs, orders = await _create_fixtures(
+        save_fixture, customer, organization, PRODUCTS, sub_fixtures, {}
+    )
+    subscription_1 = subs["subscription_1"]
+    subscription_1.canceled_at = _date_to_datetime(date(2024, 2, 1))
+    subscription_1.ends_at = _date_to_datetime(date(2024, 3, 1))
+    subscription_1.ended_at = _date_to_datetime(date(2024, 3, 1))
+    await save_fixture(subscription_1)
+    await _append_fixture_events(
+        save_fixture,
+        organization,
+        customer,
+        products,
+        subs,
+        orders,
+        events=events,
+    )
+    return {k: v.id for k, v in products.items()}, {"customer": customer.id}
+
+
 async def _seed_customer_filter_external(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -2292,6 +2348,13 @@ async def metrics_harness(
             p, c = await _seed_churn_rate(save_fixture, cr_org, events)
             organizations["churn_rate"] = OrganizationContext(
                 organization=cr_org, product_ids=p, customer_ids=c
+            )
+
+            # --- churn_rate_rolling ---
+            crr_org = await make_org("churn_rate_rolling")
+            p, c = await _seed_churn_rate_rolling(save_fixture, crr_org, events)
+            organizations["churn_rate_rolling"] = OrganizationContext(
+                organization=crr_org, product_ids=p, customer_ids=c
             )
 
             # --- customer_filter_external ---
@@ -3854,14 +3917,64 @@ class TestGetMetrics:
         assert feb.new_subscriptions == 0
         assert feb.canceled_subscriptions == 1
         assert feb.churned_subscriptions == 0
-        assert feb.churn_rate == 0.5
+        assert feb.churn_rate == 0.0
 
         mar = metrics.periods[2]
         assert mar.active_subscriptions == 1
         assert mar.new_subscriptions == 0
         assert mar.canceled_subscriptions == 0
         assert mar.churned_subscriptions == 1
-        assert mar.churn_rate == 0.0
+        assert mar.churn_rate == 0.5
+
+    async def test_churn_rate_rolling_window(
+        self,
+        metrics_harness: MetricsHarness,
+        metrics_session: AsyncSession,
+    ) -> None:
+        """Test that churn rate uses a rolling 30-day window.
+
+        Setup: 5 subs started Jan 1, 1 canceled on Feb 1.
+        The cancellation should affect churn_rate for exactly 30 days,
+        then fall out of the window.
+        """
+        case = QUERY_CASES_BY_LABEL["churn_rate_rolling"]
+        org_ctx = metrics_harness.organizations[case.org_key]
+        auth_subject = _metrics_auth_subject(
+            metrics_harness.user,
+            metrics_harness.unauthorized_user,
+            org_ctx.organization,
+            case.auth_type,
+        )
+
+        metrics = await metrics_service.get_metrics(
+            metrics_session,
+            auth_subject,
+            start_date=case.start_date,
+            end_date=case.end_date,
+            timezone=ZoneInfo(case.timezone),
+            interval=case.interval,
+            organization_id=[org_ctx.organization.id],
+            now=case.now,
+        )
+
+        periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
+
+        periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
+
+        # Before cancellation: window [t-30d, t) has no cancellations
+        assert periods_by_date[date(2024, 2, 1)].churn_rate == 0.0
+
+        # Next day: canceled_at (Feb 1) is now in [Jan 3, Feb 2)
+        assert periods_by_date[date(2024, 2, 2)].churn_rate == pytest.approx(0.2)
+
+        # Still in window: [Jan 31, Mar 1) includes Feb 1
+        assert periods_by_date[date(2024, 3, 1)].churn_rate == pytest.approx(0.2)
+
+        # Last day in window: [Feb 1, Mar 2) includes Feb 1 (>= Feb 1)
+        assert periods_by_date[date(2024, 3, 2)].churn_rate == pytest.approx(0.2)
+
+        # Falls out: [Feb 2, Mar 3) does not include Feb 1
+        assert periods_by_date[date(2024, 3, 3)].churn_rate == 0.0
 
     async def test_customer_filter_with_external_customer_id(
         self,

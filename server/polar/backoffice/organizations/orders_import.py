@@ -235,7 +235,7 @@ async def orders_import(
                 status=OrderStatus.paid,
                 subtotal_amount=0,
                 discount_amount=0,
-                _net_amount=0,
+                net_amount=0,
                 tax_amount=0,  # Don't import tax to avoid perturbing our own tax reports
                 applied_balance_amount=0,
                 currency="usd",

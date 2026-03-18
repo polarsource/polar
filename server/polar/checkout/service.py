@@ -541,7 +541,6 @@ class CheckoutService:
                 by_alias=True,
             ),
         )
-        checkout.update_net_amount()
 
         if checkout.customer is not None:
             prefill_attributes = (
@@ -832,8 +831,6 @@ class CheckoutService:
         else:
             checkout.locale = "en-US"
 
-        checkout.update_net_amount()
-
         session.add(checkout)
 
         checkout = await self._update_ip_country(session, checkout, ip_country)
@@ -866,6 +863,15 @@ class CheckoutService:
             # Swallow incomplete tax calculation error: require it only on confirm
             except TaxCalculationLogicalError:
                 pass
+
+            # Reset is_business_customer if payment form is no longer required
+            # This handles the case where a 100% discount is applied and the
+            # billing address section disappears from the frontend
+            if (
+                not checkout.is_payment_form_required
+                and not checkout.require_billing_address
+            ):
+                checkout.is_business_customer = False
 
             await self._after_checkout_updated(session, checkout)
             return checkout
@@ -2075,22 +2081,11 @@ class CheckoutService:
         ):
             checkout.locale = "en-US"
 
-        # Reset is_business_customer if payment form is no longer required
-        # This handles the case where a 100% discount is applied and the
-        # billing address section disappears from the frontend
-        if (
-            not checkout.is_payment_form_required
-            and not checkout.require_billing_address
-        ):
-            checkout.is_business_customer = False
-
         checkout = await self._update_trial_end(checkout)
 
         session.add(checkout)
 
         await self._validate_subscription_uniqueness(session, checkout)
-
-        checkout.update_net_amount()
 
         return checkout
 
@@ -2116,7 +2111,6 @@ class CheckoutService:
             checkout.seats = seats
             checkout.amount = price.calculate_amount(seats)
 
-        checkout.update_net_amount()
         return checkout
 
     async def _update_checkout_tax(
@@ -2127,6 +2121,8 @@ class CheckoutService:
         if has_product_checkout(checkout):
             is_tax_applicable = checkout.product.is_tax_applicable
             tax_code = checkout.product.tax_code
+
+        checkout.net_amount = checkout.amount - checkout.discount_amount
 
         if not (checkout.is_payment_form_required and is_tax_applicable):
             checkout.tax_amount = 0

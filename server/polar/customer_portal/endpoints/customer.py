@@ -37,6 +37,7 @@ router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
 async def stream(
     request: Request,
     auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
     await session.commit()

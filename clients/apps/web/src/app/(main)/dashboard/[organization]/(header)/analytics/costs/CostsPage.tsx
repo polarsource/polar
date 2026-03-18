@@ -351,7 +351,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       >
                         {/* Top row */}
                         <div className="flex items-center gap-4">
-                          <span className="dark:text-polar-600 w-5 shrink-0 text-right text-xs text-gray-300 tabular-nums">
+                          <span className="dark:text-polar-500 w-5 shrink-0 text-right text-xs text-gray-500 tabular-nums">
                             {i + 1}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
@@ -384,7 +384,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         <div className="flex items-center gap-3 pl-9">
                           <div className="dark:bg-polar-700 relative h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                             <div
-                              className="absolute inset-y-0 left-0 rounded-full bg-blue-500 transition-all"
+                              className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
                               style={{ width: `${sharePct}%` }}
                             />
                           </div>
@@ -531,7 +531,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         className="flex-col items-stretch gap-3 py-4"
                       >
                         <div className="flex items-center gap-4">
-                          <span className="dark:text-polar-600 w-5 shrink-0 text-right text-xs text-gray-300 tabular-nums">
+                          <span className="dark:text-polar-500 w-5 shrink-0 text-right text-xs text-gray-500 tabular-nums">
                             {i + 1}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
@@ -562,7 +562,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         <div className="flex items-center gap-3 pl-9">
                           <div className="dark:bg-polar-700 relative h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                             <div
-                              className="absolute inset-y-0 left-0 rounded-full bg-blue-500 transition-all"
+                              className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
                               style={{ width: `${sharePct}%` }}
                             />
                           </div>
@@ -594,7 +594,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         className="flex-col items-stretch gap-3 py-4"
                       >
                         <div className="flex items-center gap-4">
-                          <span className="dark:text-polar-600 w-5 shrink-0 text-right text-xs text-gray-300 tabular-nums">
+                          <span className="dark:text-polar-500 w-5 shrink-0 text-right text-xs text-gray-500 tabular-nums">
                             {i + 1}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
@@ -625,7 +625,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         <div className="flex items-center gap-3 pl-9">
                           <div className="dark:bg-polar-700 relative h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                             <div
-                              className="absolute inset-y-0 left-0 rounded-full bg-blue-500 transition-all"
+                              className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
                               style={{ width: `${sharePct}%` }}
                             />
                           </div>

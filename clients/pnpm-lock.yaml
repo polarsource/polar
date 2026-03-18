@@ -685,6 +685,9 @@ importers:
 
   packages/currency:
     devDependencies:
+      '@polar-sh/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

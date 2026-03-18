@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { AUPBlocker } from './AUPBlocker'
@@ -64,9 +64,14 @@ interface FormSchema {
 
 export function ProductDetailsStep() {
   const router = useRouter()
+  const params = useParams<{ organization: string }>()
   const { data, updateData, showApiResponse } = useOnboardingData()
   const updateOrganization = useUpdateOrganization()
-  const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState<
+    'validating' | 'submitting' | 'submitting-anyway' | null
+  >(null)
+  const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
+  const [aupMessage, setAupMessage] = useState<string | null>(null)
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -116,8 +121,7 @@ export function ProductDetailsStep() {
     [sellingCategories],
   )
 
-  const onSubmit = async (formData: FormSchema) => {
-    setSubmitting(true)
+  const submitOrg = async (formData: FormSchema) => {
     updateData({
       sellingCategories: formData.sellingCategories,
       productDescription: formData.productDescription,
@@ -164,13 +168,60 @@ export function ProductDetailsStep() {
       })
 
       if (error) {
-        setSubmitting(false)
-        return
+        return false
       }
     }
 
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
+    return true
+  }
+
+  const onSubmit = async (formData: FormSchema) => {
+    setLoading('validating')
+
+    const res = await fetch(
+      `/dashboard/${params.organization}/onboarding/validate-description`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_description: formData.productDescription,
+          selling_categories: formData.sellingCategories,
+          pricing_models: formData.pricingModel,
+        }),
+      },
+    )
+
+    const validation: {
+      verdict: 'APPROVE' | 'DENY' | 'CLARIFY'
+      confidence: number
+      message?: string
+    } = await res.json()
+
+    if (validation.verdict === 'DENY' || validation.verdict === 'CLARIFY') {
+      setAupVerdict(validation.verdict)
+      setAupMessage(validation.message ?? null)
+      setLoading(null)
+      return
+    }
+
+    setAupVerdict(null)
+    setAupMessage(null)
+    setLoading('submitting')
+    const success = await submitOrg(formData)
+    if (!success) {
+      setLoading(null)
+    }
+  }
+
+  const onContinueAnyway = async () => {
+    setLoading('submitting-anyway')
+    const formData = form.getValues()
+    const success = await submitOrg(formData)
+    if (!success) {
+      setLoading(null)
+    }
   }
 
   return (
@@ -217,6 +268,48 @@ export function ProductDetailsStep() {
               </FormItem>
             )}
           />
+
+          {aupVerdict === 'CLARIFY' && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              rowGap="m"
+              borderRadius="md"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-warning"
+              backgroundColor="background-warning"
+              padding="l"
+            >
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                Please clarify
+              </p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                {aupMessage}
+              </p>
+            </Box>
+          )}
+
+          {aupVerdict === 'DENY' && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              rowGap="m"
+              borderRadius="md"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-error"
+              backgroundColor="background-error"
+              padding="l"
+            >
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                Use case not supported
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-300">
+                {aupMessage}
+              </p>
+            </Box>
+          )}
 
           <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>Pricing model</FormLabel>
@@ -296,19 +389,37 @@ export function ProductDetailsStep() {
             />
           </Box>
 
-          <Button
-            type="submit"
-            loading={submitting}
-            disabled={
-              blockedSelected.length > 0 ||
-              sellingCategories.length === 0 ||
-              pricingModel.length === 0 ||
-              productDescription.trim().length === 0
-            }
-            fullWidth
-          >
-            Launch Dashboard
-          </Button>
+          <div className="flex flex-col gap-y-2">
+            {aupVerdict !== 'DENY' && (
+              <Button
+                type="submit"
+                loading={loading === 'validating' || loading === 'submitting'}
+                disabled={
+                  loading === 'submitting-anyway' ||
+                  blockedSelected.length > 0 ||
+                  sellingCategories.length === 0 ||
+                  pricingModel.length === 0 ||
+                  productDescription.trim().length === 0
+                }
+                fullWidth
+              >
+                {aupVerdict === 'CLARIFY' ? 'Review again' : 'Launch Dashboard'}
+              </Button>
+            )}
+
+            {aupVerdict === 'CLARIFY' && loading !== 'validating' && (
+              <Button
+                variant="ghost"
+                type="button"
+                fullWidth
+                onClick={onContinueAnyway}
+                disabled={loading === 'submitting'}
+                loading={loading === 'submitting-anyway'}
+              >
+                Continue without review
+              </Button>
+            )}
+          </div>
         </form>
       </Form>
     </OnboardingShell>

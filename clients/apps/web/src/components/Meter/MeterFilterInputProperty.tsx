@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { useEffect, useState } from 'react'
 import { ControllerRenderProps } from 'react-hook-form'
 
 const STANDARD_FIELDS = ['name', 'timestamp'] as const
@@ -47,39 +46,18 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
     return { type: 'metadata', metadataPath }
   }
 
-  const [propertyType, setPropertyType] = useState<PropertyType>(
-    () => parseValue(field.value).type,
-  )
-  const [metadataPath, setMetadataPath] = useState<string>(
-    () => parseValue(field.value).metadataPath,
-  )
+  const { type: propertyType, metadataPath } = parseValue(field.value)
 
-  // Sync state when field value changes externally
-  useEffect(() => {
-    const parsed = parseValue(field.value)
-    setPropertyType(parsed.type)
-    setMetadataPath(parsed.metadataPath)
-  }, [field.value])
-
-  // Update form value when property type or metadata path changes
-  const updateFieldValue = (type: PropertyType, path: string) => {
-    if (type === 'metadata') {
-      // Format as metadata.{path}
-      field.onChange(path ? `metadata.${path}` : '')
+  const handleTypeChange = (newType: PropertyType) => {
+    if (newType === 'metadata') {
+      field.onChange(metadataPath ? `metadata.${metadataPath}` : '')
     } else {
-      // Use the standard field name directly
-      field.onChange(type)
+      field.onChange(newType)
     }
   }
 
-  const handleTypeChange = (newType: PropertyType) => {
-    setPropertyType(newType)
-    updateFieldValue(newType, metadataPath)
-  }
-
   const handleMetadataPathChange = (path: string) => {
-    setMetadataPath(path)
-    updateFieldValue('metadata', path)
+    field.onChange(path ? `metadata.${path}` : '')
   }
 
   if (propertyType === 'metadata') {

@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
@@ -40,12 +40,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
   } = form
 
   const country = watch('billing_address.country')
-
-  useEffect(() => {
-    if (country !== 'US' && country !== 'CA') {
-      setValue('billing_address.state', null)
-    }
-  }, [country, setValue])
 
   const onSubmit = useCallback(
     async (data: CustomerPortalCustomerUpdate) => {
@@ -219,7 +213,12 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   <CountryPicker
                     autoComplete="billing country"
                     value={field.value || undefined}
-                    onChange={field.onChange}
+                    onChange={(value) => {
+                      field.onChange(value)
+                      if (value !== 'US' && value !== 'CA') {
+                        setValue('billing_address.state', null)
+                      }
+                    }}
                     allowedCountries={enums.addressInputCountryValues}
                   />
                   <FormMessage />

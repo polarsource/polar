@@ -9,7 +9,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 interface AppealFormProps {
   organization: schemas['Organization']
@@ -23,7 +23,6 @@ const AppealForm: React.FC<AppealFormProps> = ({
   existingReviewStatus,
 }) => {
   const [appealReason, setAppealReason] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
   const appealMutation = useOrganizationAppeal(organization.id)
@@ -32,15 +31,10 @@ const AppealForm: React.FC<AppealFormProps> = ({
   // Use existing review status if provided, otherwise use fetched data
   const currentReviewStatus = existingReviewStatus || reviewStatus.data
 
-  // Update state based on existing review status
-  useEffect(() => {
-    if (currentReviewStatus?.appeal_submitted_at) {
-      setIsSubmitted(true)
-      if (currentReviewStatus.appeal_reason) {
-        setAppealReason(currentReviewStatus.appeal_reason)
-      }
-    }
-  }, [currentReviewStatus])
+  const isSubmitted =
+    !!currentReviewStatus?.appeal_submitted_at || appealMutation.isSuccess
+  const displayedAppealReason =
+    currentReviewStatus?.appeal_reason || appealReason
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +45,6 @@ const AppealForm: React.FC<AppealFormProps> = ({
 
     try {
       await appealMutation.mutateAsync({ reason: appealReason })
-      setIsSubmitted(true)
 
       // Invalidate the review status query to refresh the data
       getQueryClient().invalidateQueries({
@@ -96,11 +89,11 @@ const AppealForm: React.FC<AppealFormProps> = ({
           )}
         </div>
 
-        {appealReason && (
+        {displayedAppealReason && (
           <>
             <div className="dark:bg-polar-800 rounded-lg bg-white p-3">
               <p className="dark:text-polar-300 text-sm text-gray-700">
-                {appealReason}
+                {displayedAppealReason}
               </p>
             </div>
           </>

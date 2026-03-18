@@ -26,9 +26,8 @@ import {
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -45,8 +44,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   productId,
   metadata,
 }) => {
-  const [selectedOrderState, setSelectedOrderState] =
-    useState<RowSelectionState>({})
+  const selectedOrderState = {}
 
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -230,14 +228,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
       : []),
   ]
 
-  const selectedOrder = orders.find((order) => selectedOrderState[order.id])
-
-  useEffect(() => {
-    if (selectedOrder) {
-      router.push(`/dashboard/${organization.slug}/sales/${selectedOrder.id}`)
-    }
-  }, [selectedOrder, router, organization])
-
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',
     organization.created_at,
@@ -320,8 +310,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={ordersHook.isLoading}
-            onRowSelectionChange={(row) => {
-              setSelectedOrderState(row)
+            onRowSelectionChange={(updater) => {
+              const row =
+                typeof updater === 'function' ? updater({}) : updater
+              const selected = orders.find((order) => row[order.id])
+              if (selected) {
+                router.push(
+                  `/dashboard/${organization.slug}/sales/${selected.id}`,
+                )
+              }
             }}
             rowSelection={selectedOrderState}
             getRowId={(row) => row.id.toString()}

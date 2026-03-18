@@ -24,9 +24,9 @@ import {
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { RowSelectionState } from '@tanstack/react-table'
+import type { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -49,8 +49,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   cancelAtPeriodEnd,
   metadata,
 }) => {
-  const [selectedSubscriptionState, setSelectedSubscriptionState] =
-    useState<RowSelectionState>({})
+  const selectedSubscriptionState: RowSelectionState = {}
 
   const subscriptionTiers = useProducts(organization.id, { is_recurring: true })
 
@@ -193,18 +192,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const subscriptions = subscriptionsHook.data?.items || []
   const rowCount = subscriptionsHook.data?.pagination.total_count ?? 0
   const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
-
-  const selectedSubscription = subscriptions.find(
-    (subscription) => selectedSubscriptionState[subscription.id],
-  )
-
-  useEffect(() => {
-    if (selectedSubscription) {
-      router.push(
-        `/dashboard/${organization.slug}/sales/subscriptions/${selectedSubscription.id}`,
-      )
-    }
-  }, [selectedSubscription, organization, router])
 
   const columns: DataTableColumnDef<schemas['Subscription']>[] = [
     {
@@ -365,8 +352,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={subscriptionsHook}
-            onRowSelectionChange={(row) => {
-              setSelectedSubscriptionState(row)
+            onRowSelectionChange={(updater) => {
+              const row =
+                typeof updater === 'function' ? updater({}) : updater
+              const selected = subscriptions.find((sub) => row[sub.id])
+              if (selected) {
+                router.push(
+                  `/dashboard/${organization.slug}/sales/subscriptions/${selected.id}`,
+                )
+              }
             }}
             rowSelection={selectedSubscriptionState}
             getRowId={(row) => row.id.toString()}

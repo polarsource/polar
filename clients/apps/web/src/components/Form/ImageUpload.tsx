@@ -3,7 +3,7 @@
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { upload } from '@vercel/blob/client'
 import { ImageIcon } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ImageUpload = ({
@@ -21,11 +21,9 @@ const ImageUpload = ({
 }) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
 
-  const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>()
-
-  useEffect(() => {
-    setImagePreviewSrc(defaultValue)
-  }, [defaultValue])
+  const [uploadedPreviewSrc, setUploadedPreviewSrc] = useState<
+    string | undefined
+  >()
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -63,12 +61,7 @@ const ImageUpload = ({
 
   const imageRef = useRef<HTMLImageElement>(null)
 
-  useEffect(() => {
-    if (validate && imageRef.current) {
-      const res = validate(imageRef.current)
-      setErrorMessage(res)
-    }
-  }, [height, width, validate, imageRef])
+  const imagePreviewSrc = uploadedPreviewSrc ?? defaultValue
 
   return (
     <>
@@ -93,13 +86,13 @@ const ImageUpload = ({
                   readerLoad.target &&
                   typeof readerLoad.target.result === 'string'
                 ) {
-                  setImagePreviewSrc(readerLoad.target.result)
+                  setUploadedPreviewSrc(readerLoad.target.result)
                 }
               }
               reader.readAsDataURL(e.target.files[0])
               await handleUpload()
             } else {
-              setImagePreviewSrc(undefined)
+              setUploadedPreviewSrc(undefined)
             }
           }}
         />

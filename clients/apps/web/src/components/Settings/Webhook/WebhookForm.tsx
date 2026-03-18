@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, type MouseEvent } from 'react'
+import { useCallback, useMemo, type MouseEvent } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 type CreateOrUpdate =
@@ -67,7 +67,7 @@ export const FieldName = () => {
 }
 
 export const FieldUrl = () => {
-  const { control } = useFormContext<CreateOrUpdate>()
+  const { control, setValue } = useFormContext<CreateOrUpdate>()
 
   return (
     <FormField
@@ -113,7 +113,17 @@ export const FieldUrl = () => {
               {...field}
               value={field.value || ''}
               placeholder="https://..."
-              onBlur={(e) => field.onChange(e.target.value.trim())}
+              onBlur={(e) => {
+                const trimmed = e.target.value.trim()
+                field.onChange(trimmed)
+                if (trimmed.startsWith('https://discord.com/api/webhooks')) {
+                  setValue('format', 'discord')
+                } else if (
+                  trimmed.startsWith('https://hooks.slack.com/services/')
+                ) {
+                  setValue('format', 'slack')
+                }
+              }}
             />
           </FormControl>
           <FormMessage />
@@ -124,19 +134,7 @@ export const FieldUrl = () => {
 }
 
 export const FieldFormat = () => {
-  const { control, watch, setValue } = useFormContext<CreateOrUpdate>()
-
-  const url = watch('url')
-  useEffect(() => {
-    if (!url) {
-      return
-    }
-    if (url.startsWith('https://discord.com/api/webhooks')) {
-      setValue('format', 'discord')
-    } else if (url.startsWith('https://hooks.slack.com/services/')) {
-      setValue('format', 'slack')
-    }
-  }, [url, setValue])
+  const { control } = useFormContext<CreateOrUpdate>()
 
   return (
     <FormField

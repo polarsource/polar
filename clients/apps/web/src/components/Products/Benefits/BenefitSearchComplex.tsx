@@ -40,13 +40,10 @@ export const BenefitSearchComplex = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery)
+      setIsDropdownOpen(searchQuery.trim().length > 0)
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery])
-
-  useEffect(() => {
-    setIsDropdownOpen(debouncedQuery.trim().length > 0)
-  }, [debouncedQuery])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,6 +89,8 @@ export const BenefitSearchComplex = ({
       } else {
         onRemoveBenefit(benefit)
       }
+      setEnabledPage(1)
+      setAvailablePage(1)
     },
     [onSelectBenefit, onRemoveBenefit],
   )
@@ -102,11 +101,6 @@ export const BenefitSearchComplex = ({
   const availableBenefits = availableBenefitsQuery.data?.items ?? []
   const availablePagination = availableBenefitsQuery.data?.pagination
   const searchResults = searchResultsQuery.data?.items ?? []
-
-  useEffect(() => {
-    setEnabledPage(1)
-    setAvailablePage(1)
-  }, [selectedBenefitIds.length])
 
   const {
     sensors,

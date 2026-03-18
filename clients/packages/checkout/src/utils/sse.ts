@@ -15,6 +15,8 @@ export const createSSEListener = (
   const hooks: EventSourceHooks = {
     onMessage: async (message) => {
       const data = JSON.parse(message.data)
+      // Server-initiated reconnect — EventSourcePlus handles the actual reconnection
+      if (data.type === 'reconnect') return
       events.emit(data.key, data.payload)
     },
   }

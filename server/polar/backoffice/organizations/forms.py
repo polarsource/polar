@@ -150,6 +150,15 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
 
 
 class UpdateOrganizationDetailsForm(forms.BaseForm):
+    email: Annotated[
+        str | None,
+        forms.InputField(type="email", placeholder="contact@example.com"),
+        Field(
+            None,
+            title="Email",
+            description="Support or contact email for the organization",
+        ),
+    ]
     website: Annotated[
         HttpUrlToStr | None,
         forms.InputField(type="url", placeholder="https://example.com"),

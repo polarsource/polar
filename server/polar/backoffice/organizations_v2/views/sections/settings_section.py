@@ -56,12 +56,6 @@ class SettingsSection:
 
                     with tag.div():
                         with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                            text("Email")
-                        with tag.div(classes="text-sm"):
-                            text(self.org.email or "Not set")
-
-                    with tag.div():
-                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
                             text("Customer Invoice Prefix")
                         with tag.div(classes="font-mono text-sm"):
                             text(self.org.customer_invoice_prefix)
@@ -220,6 +214,13 @@ class SettingsSection:
                                     classes="link link-primary",
                                 ):
                                     text(str(self.org.website))
+
+                    # Email
+                    with tag.div():
+                        with tag.div(classes="text-sm font-semibold mb-2"):
+                            text("Email")
+                        with tag.div(classes="text-sm text-base-content/80"):
+                            text(self.org.email or "Not set")
 
                     if hasattr(self.org, "details") and self.org.details:
                         details = self.org.details

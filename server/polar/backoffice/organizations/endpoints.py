@@ -1853,16 +1853,19 @@ async def get(
                         a = "organization-details-accordion"
                         with accordion.item(a, "About"):
                             with tag.p(classes="whitespace-pre-line"):
-                                text(organization.details.get("about", "—"))
+                                text(organization.details.get("about") or "—")
                         with accordion.item(a, "Product Description"):
                             with tag.p(classes="whitespace-pre-line"):
                                 text(
-                                    organization.details.get("product_description", "—")
+                                    organization.details.get("product_description")
+                                    or "—"
                                 )
                         if organization.details.get("intended_use"):
                             with accordion.item(a, "Intended Use"):
                                 with tag.p(classes="whitespace-pre-line"):
-                                    text(organization.details.get("intended_use", "—"))
+                                    text(
+                                        organization.details.get("intended_use") or "—"
+                                    )
                         if organization.details.get("customer_acquisition"):
                             with accordion.item(a, "Acquisition"):
                                 with tag.ul(classes="list-disc list-inside"):

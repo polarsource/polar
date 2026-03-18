@@ -1,8 +1,11 @@
+import gc
+import json
 import os
+import resource
 import socket
-import tempfile
+import sys
 import threading
-import tracemalloc
+from collections import Counter
 
 import structlog
 
@@ -22,41 +25,110 @@ _GIT_SHA = os.environ.get("RENDER_GIT_COMMIT", "unknown")[:8]
 _profiler_thread: threading.Thread | None = None
 _shutdown_event: threading.Event | None = None
 _start_lock = threading.Lock()
+_previous_counts: dict[str, int] | None = None
+
+
+def _get_rss_bytes() -> int:
+    try:
+        with open("/proc/self/statm") as f:
+            pages = int(f.read().split()[1])
+            return pages * os.sysconf("SC_PAGE_SIZE")
+    except (FileNotFoundError, OSError):
+        rusage = resource.getrusage(resource.RUSAGE_SELF)
+        if sys.platform == "darwin":
+            return rusage.ru_maxrss
+        return rusage.ru_maxrss * 1024
+
+
+def _type_name(t: type) -> str:
+    module = getattr(t, "__module__", "")
+    name = t.__qualname__
+    if module and module != "builtins":
+        return f"{module}.{name}"
+    return name
+
+
+def _collect_snapshot() -> dict[str, object]:
+    global _previous_counts
+
+    objects = gc.get_objects()
+
+    type_counts: Counter[type] = Counter()
+    type_sizes: dict[type, int] = {}
+    for obj in objects:
+        t = type(obj)
+        type_counts[t] += 1
+        try:
+            type_sizes[t] = type_sizes.get(t, 0) + sys.getsizeof(obj)
+        except (TypeError, ValueError):
+            pass
+
+    named_counts = {_type_name(t): c for t, c in type_counts.items()}
+
+    top_by_count = [
+        {"type": _type_name(t), "count": c} for t, c in type_counts.most_common(50)
+    ]
+
+    size_entries: list[tuple[float, str]] = [
+        (round(s / 1024 / 1024, 2), _type_name(t)) for t, s in type_sizes.items()
+    ]
+    size_entries.sort(key=lambda x: -x[0])
+    top_by_size = [{"type": name, "size_mb": size} for size, name in size_entries[:50]]
+
+    growth: list[dict[str, str | int]] = []
+    if _previous_counts is not None:
+        delta_entries: list[tuple[int, str]] = []
+        all_types = set(named_counts) | set(_previous_counts)
+        for type_name in all_types:
+            delta = named_counts.get(type_name, 0) - _previous_counts.get(type_name, 0)
+            if delta != 0:
+                delta_entries.append((delta, type_name))
+        delta_entries.sort(key=lambda x: -x[0])
+        growth = [{"type": name, "delta": d} for d, name in delta_entries[:50]]
+
+    _previous_counts = named_counts
+
+    return {
+        "timestamp": utc_now().isoformat(),
+        "instance_id": _INSTANCE_ID,
+        "git_sha": _GIT_SHA,
+        "pid": os.getpid(),
+        "rss_mb": round(_get_rss_bytes() / 1024 / 1024, 1),
+        "total_gc_objects": len(objects),
+        "gc_stats": gc.get_stats(),
+        "top_by_count": top_by_count,
+        "top_by_size_mb": top_by_size,
+        "growth": growth,
+    }
 
 
 def _take_and_upload_snapshot(bucket: str) -> None:
-    snapshot = tracemalloc.take_snapshot()
+    snapshot = _collect_snapshot()
 
     now = utc_now()
     date_str = now.strftime("%Y-%m-%d")
     time_str = now.strftime("%H-%M-%S")
-    pid = os.getpid()
 
     key = (
         f"memory-profiles/"
         f"{date_str}-{_GIT_SHA}-{_INSTANCE_ID}/"
-        f"{time_str}_pid{pid}.snapshot"
+        f"{time_str}_pid{snapshot['pid']}.json"
     )
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        path = os.path.join(tmpdir, "snapshot")
-        snapshot.dump(path)
-        with open(path, "rb") as f:
-            data = f.read()
+    data = json.dumps(snapshot, indent=2, default=str).encode()
 
     s3_client.put_object(
         Bucket=bucket,
         Key=key,
         Body=data,
-        ContentType="application/octet-stream",
+        ContentType="application/json",
     )
 
-    current, peak = tracemalloc.get_traced_memory()
     log.info(
         "memory_profile_snapshot_uploaded",
         s3_key=key,
-        current_mb=round(current / 1024 / 1024, 1),
-        peak_mb=round(peak / 1024 / 1024, 1),
+        rss_mb=snapshot["rss_mb"],
+        total_gc_objects=snapshot["total_gc_objects"],
         size_bytes=len(data),
     )
 
@@ -64,29 +136,21 @@ def _take_and_upload_snapshot(bucket: str) -> None:
 def _run_profile_loop(
     bucket: str,
     interval: int,
-    nframes: int,
     shutdown_event: threading.Event,
 ) -> None:
-    tracemalloc.start(nframes)
-    log.info("memory_profile_tracemalloc_started", nframes=nframes)
+    while not shutdown_event.is_set():
+        shutdown_event.wait(interval)
+        if shutdown_event.is_set():
+            break
 
-    try:
-        while not shutdown_event.is_set():
-            shutdown_event.wait(interval)
-            if shutdown_event.is_set():
-                break
-
-            try:
-                _take_and_upload_snapshot(bucket)
-            except Exception as e:
-                log.error(
-                    "memory_profile_snapshot_failed",
-                    error=str(e),
-                    error_type=type(e).__name__,
-                )
-    finally:
-        tracemalloc.stop()
-        log.info("memory_profile_tracemalloc_stopped")
+        try:
+            _take_and_upload_snapshot(bucket)
+        except Exception as e:
+            log.error(
+                "memory_profile_snapshot_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+            )
 
 
 def start_memory_profiler() -> bool:
@@ -113,7 +177,6 @@ def start_memory_profiler() -> bool:
             args=(
                 bucket,
                 settings.MEMORY_PROFILE_INTERVAL,
-                settings.MEMORY_PROFILE_NFRAMES,
                 _shutdown_event,
             ),
             daemon=True,
@@ -125,7 +188,6 @@ def start_memory_profiler() -> bool:
             "memory_profile_started",
             bucket=bucket,
             interval=settings.MEMORY_PROFILE_INTERVAL,
-            nframes=settings.MEMORY_PROFILE_NFRAMES,
             instance_id=_INSTANCE_ID,
             git_sha=_GIT_SHA,
         )

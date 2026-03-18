@@ -208,7 +208,6 @@ resource "render_env_group" "memory_profile" {
     POLAR_MEMORY_PROFILE_ENABLED        = { value = "true" }
     POLAR_MEMORY_PROFILE_S3_BUCKET_NAME = { value = var.memory_profile_config.s3_bucket_name }
     POLAR_MEMORY_PROFILE_INTERVAL       = { value = var.memory_profile_config.interval }
-    POLAR_MEMORY_PROFILE_NFRAMES        = { value = var.memory_profile_config.nframes }
   }
 }
 

@@ -177,17 +177,17 @@ export const CheckoutProvider = ({
   const client = useMemo(() => {
     const baseUrl = (() => {
       if (serverURL) {
-        return serverURL
+        return serverURL.replace(/\/v1\/?$/, '')
       }
 
       switch (server) {
         case 'sandbox': {
-          return 'https://sandbox-api.polar.sh/v1/'
+          return 'https://sandbox-api.polar.sh'
         }
 
         case 'production':
         case undefined: {
-          return 'https://api.polar.sh/v1/'
+          return 'https://api.polar.sh'
         }
 
         default:

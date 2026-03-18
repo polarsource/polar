@@ -375,6 +375,7 @@ async def claim_stream(
     if not seat or not seat.customer_id or seat.status != SeatStatus.pending:
         raise ResourceNotFound("Invalid or expired invitation token")
 
+    await session.commit()
     receivers = Receivers(customer_id=seat.customer_id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 

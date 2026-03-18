@@ -299,6 +299,7 @@ async def client_stream(
 ) -> EventSourceResponse:
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
 
+    await session.commit()
     receivers = Receivers(checkout_client_secret=checkout.client_secret)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 

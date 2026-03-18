@@ -1715,9 +1715,7 @@ async def edit_details(
 
     with modal("Edit Organization Details", open=True):
         with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text(
-                "Update organization email, website, and details"
-            )
+            text("Update organization email, website, and details")
 
         with UpdateOrganizationDetailsForm.render(
             data=form_data,

@@ -15,7 +15,7 @@ export const useCheckoutFulfillmentListener = (
 
   const fulfillmentListener = useCallback(async () => {
     return await new Promise<void>((resolve, reject) => {
-      const url = `${client.baseUrl}v1/checkouts/client/${checkout.client_secret}/stream`
+      const url = `${client.baseUrl}/v1/checkouts/client/${checkout.client_secret}/stream`
       const [checkoutEvents, listen] = createSSEListener(url)
       const controller = listen()
 

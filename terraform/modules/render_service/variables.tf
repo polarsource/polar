@@ -263,8 +263,6 @@ variable "tinybird_config" {
     clickhouse_username = string
     clickhouse_token    = string
     workspace           = string
-    events_write        = bool
-    events_read         = bool
   })
   default   = null
   sensitive = true

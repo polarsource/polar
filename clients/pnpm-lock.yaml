@@ -670,6 +670,9 @@ importers:
         specifier: ^0.0.15
         version: 0.0.15
     devDependencies:
+      '@polar-sh/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

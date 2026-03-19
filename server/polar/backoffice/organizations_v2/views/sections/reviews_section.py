@@ -180,15 +180,6 @@ class ReviewsSection:
                                 for dim in report.dimensions:
                                     render_dimension(dim)
 
-                    # Recommended action
-                    if report.recommended_action:
-                        with tag.div(
-                            classes="p-3 bg-info/10 border border-info/30 rounded text-sm mb-4"
-                        ):
-                            with tag.span(classes="font-medium"):
-                                text("Recommended action: ")
-                            text(report.recommended_action)
-
                     # Data snapshot
                     with tag.details(classes="mt-3"):
                         with tag.summary(

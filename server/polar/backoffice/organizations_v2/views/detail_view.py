@@ -19,7 +19,6 @@ from ...components import (
     status_badge,
     tab_nav,
 )
-from ...components._alert import alert
 from ...components._clipboard_button import clipboard_button
 
 
@@ -105,27 +104,6 @@ class OrganizationDetailView:
         with tab_nav(tabs):
             pass
         yield
-
-    def _render_risk_flags(self) -> None:
-        """Render account-level risk flags visible across all sections."""
-        account = self.org.account
-        if not account:
-            return
-
-        flags: list[str] = []
-        if account.country == "MA":
-            flags.append("Account country: MA (Morocco)")
-        if account.currency == "mad":
-            flags.append("Payout currency: MAD (Moroccan Dirham)")
-
-        if not flags:
-            return
-
-        with alert(variant="warning", soft=True, classes="mb-6"):
-            with tag.div(classes="space-y-1"):
-                for flag in flags:
-                    with tag.div(classes="text-sm font-medium"):
-                        text(flag)
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
@@ -570,9 +548,6 @@ class OrganizationDetailView:
         with tag.div(classes="mb-6 overflow-x-auto"):
             with self.section_tabs(request, section):
                 pass
-
-        # Risk flags (Morocco, MAD, etc.) — visible on all sections
-        self._render_risk_flags()
 
         # Two-column layout: main content + right sidebar (stacks on mobile)
         with tag.div(classes="flex flex-col lg:flex-row gap-6"):

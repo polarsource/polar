@@ -1161,7 +1161,7 @@ class TestCycle:
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cancel,
         )
 
         enqueue_email_mock.assert_called_once()

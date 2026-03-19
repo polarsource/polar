@@ -38,7 +38,6 @@ export default function ClientPage({
     !organization.details_submitted_at,
   )
   const identityVerificationStatus = currentUser?.identity_verification_status
-  const identityVerified = identityVerificationStatus === 'verified'
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingInitialStatusRef = useRef<string | undefined | null>(null)
 

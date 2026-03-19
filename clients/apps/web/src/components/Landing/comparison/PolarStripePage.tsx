@@ -3,11 +3,9 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import { useState } from 'react'
 import { ResourceLayout, ResourceSection } from '../resources/ResourceLayout'
 
 export const PolarVsStripePage = () => {
-  const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const tocItems = [
     { id: 'overview', title: 'Overview' },
     { id: 'comparison', title: 'Feature Comparison' },

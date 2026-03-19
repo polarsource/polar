@@ -73,7 +73,7 @@ export const ProductListItem = ({
         title: 'Product archived',
         description: 'The product has been archived',
       })
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'An error occurred while archiving the product',

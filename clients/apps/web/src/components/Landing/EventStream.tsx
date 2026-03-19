@@ -38,7 +38,7 @@ export const EventStream = () => {
   const [events, setEvents] = useState(() =>
     Array.from({ length: 8 }, nextEvent),
   )
-  const [bars, setBars] = useState(initBars)
+  const [, setBars] = useState(initBars)
   const totalRef = useRef(38_471)
   const [total, setTotal] = useState(38_471)
 

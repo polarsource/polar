@@ -74,7 +74,6 @@ export const OrganizationStep = ({
   const {
     control,
     handleSubmit,
-    watch,
     setError,
     clearErrors,
     setValue,

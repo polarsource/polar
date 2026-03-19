@@ -15,7 +15,7 @@
   "scripts": {
     "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi | openapi-typescript --enum-values -o ./src/v1.ts && oxfmt ./src && pnpm run build",
     "build": "rm -rf dist/ && tsup",
-    "lint": "oxfmt --check . && eslint .",
+    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
     "typecheck": "tsc --noEmit"
   },
   "exports": {

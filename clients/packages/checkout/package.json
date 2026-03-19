@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "lint": "oxfmt --check . && eslint .",
+    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

@@ -28,7 +28,7 @@
     "build": "rm -rf dist && tsup",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint": "pnpm format:check && eslint .",
+    "lint": "pnpm format:check && eslint --max-warnings 0 .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

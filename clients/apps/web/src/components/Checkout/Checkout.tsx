@@ -99,6 +99,33 @@ const TruncatedDescription = ({
   )
 }
 
+const PaymentNotReadyBanner = ({
+  shouldBlockCheckout,
+  organizationStatus,
+  organizationName,
+}: {
+  shouldBlockCheckout: boolean
+  organizationStatus: string | undefined
+  organizationName: string
+}) => {
+  if (!shouldBlockCheckout) return null
+
+  const isDenied = organizationStatus === 'denied'
+
+  return (
+    <Alert color="red">
+      <div className="flex flex-col gap-y-2 p-2">
+        <div className="font-medium">Payments are currently unavailable</div>
+        <div className="text-sm">
+          {isDenied
+            ? `${organizationName} doesn't allow payments.`
+            : `${organizationName} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
+        </div>
+      </div>
+    </Alert>
+  )
+}
+
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
@@ -183,25 +210,6 @@ const Checkout = ({
     posthog,
   ])
 
-  const PaymentNotReadyBanner = () => {
-    if (!shouldBlockCheckout) return null
-
-    const isDenied = paymentStatus?.organization_status === 'denied'
-
-    return (
-      <Alert color="red">
-        <div className="flex flex-col gap-y-2 p-2">
-          <div className="font-medium">Payments are currently unavailable</div>
-          <div className="text-sm">
-            {isDenied
-              ? `${checkout.organization.name} doesn't allow payments.`
-              : `${checkout.organization.name} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
-          </div>
-        </div>
-      </Alert>
-    )
-  }
-
   const [fullLoading, setFullLoading] = useState(false)
   const loading = useMemo(
     () => confirmLoading || fullLoading,
@@ -272,7 +280,11 @@ const Checkout = ({
   if (embed) {
     return (
       <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
-        <PaymentNotReadyBanner />
+        <PaymentNotReadyBanner
+          shouldBlockCheckout={shouldBlockCheckout}
+          organizationStatus={paymentStatus?.organization_status}
+          organizationName={checkout.organization.name}
+        />
         {hasProductCheckout(checkout) && (
           <>
             <CheckoutProductSwitcher
@@ -487,7 +499,11 @@ const Checkout = ({
       </div>
       <div className="dark:md:bg-polar-900 md:bg-white">
         <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
-          <PaymentNotReadyBanner />
+          <PaymentNotReadyBanner
+            shouldBlockCheckout={shouldBlockCheckout}
+            organizationStatus={paymentStatus?.organization_status}
+            organizationName={checkout.organization.name}
+          />
           <CheckoutForm
             form={form}
             checkout={checkout}

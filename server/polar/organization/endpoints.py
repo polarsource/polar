@@ -42,7 +42,6 @@ from .schemas import (
     OrganizationDeletionResponse,
     OrganizationID,
     OrganizationPaymentStatus,
-    OrganizationPaymentStep,
     OrganizationReviewStatus,
     OrganizationUpdate,
 )
@@ -256,7 +255,7 @@ async def get_payment_status(
         description="Only perform account verification checks, skip product and integration checks",
     ),
 ) -> OrganizationPaymentStatus:
-    """Get payment status and onboarding steps for an organization."""
+    """Get payment status for an organization."""
     # Handle authentication based on account_verification_only flag
     if is_anonymous(auth_subject) and not account_verification_only:
         raise Unauthorized()
@@ -292,10 +291,6 @@ async def get_payment_status(
 
     return OrganizationPaymentStatus(
         payment_ready=payment_status.payment_ready,
-        steps=[
-            OrganizationPaymentStep(**step.model_dump())
-            for step in payment_status.steps
-        ],
         organization_status=payment_status.organization_status,
     )
 

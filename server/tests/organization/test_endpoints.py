@@ -414,16 +414,8 @@ class TestGetPaymentStatus:
         assert response.status_code == 200
 
         json = response.json()
-        # When account_verification_only=true, we should get minimal response
-        # focusing only on account setup (no product/integration steps)
         assert "payment_ready" in json
-        assert "steps" in json
         assert "organization_status" in json
-
-        # With account_verification_only=true, only account setup step should be present
-        step_ids = [step["id"] for step in json["steps"]]
-        assert "setup_account" in step_ids
-        assert len(step_ids) == 1
         assert json["payment_ready"] is False
 
     @pytest.mark.auth
@@ -436,7 +428,7 @@ class TestGetPaymentStatus:
         assert response.status_code == 404
 
     @pytest.mark.auth
-    async def test_valid_no_steps_complete(
+    async def test_valid_not_payment_ready(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -454,73 +446,8 @@ class TestGetPaymentStatus:
 
         json = response.json()
         assert json["payment_ready"] is False
-        assert len(json["steps"]) == 3
-
-        # All steps should be incomplete
-        for step in json["steps"]:
-            assert step["completed"] is False
-
-        # Check specific steps exist
-        step_ids = [step["id"] for step in json["steps"]]
-        assert "create_product" in step_ids
-        assert "integrate_checkout" in step_ids
-        assert "setup_account" in step_ids
-
-    @pytest.mark.auth
-    async def test_valid_with_product(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        product: Product,
-    ) -> None:
-        # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        await save_fixture(organization)
-
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/payment-status"
-        )
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["payment_ready"] is False
-
-        # Product step should be complete
-        product_step = next(s for s in json["steps"] if s["id"] == "create_product")
-        assert product_step["completed"] is True
-
-    @pytest.mark.auth
-    async def test_valid_with_api_key(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        mocker: MockerFixture,
-    ) -> None:
-        # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        await save_fixture(organization)
-
-        # Mock the API key count
-        mocker.patch(
-            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
-            return_value=1,  # Has 1 API key
-        )
-
-        response = await client.get(
-            f"/v1/organizations/{organization.id}/payment-status"
-        )
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["payment_ready"] is False
-
-        # API integration step should be complete
-        api_step = next(s for s in json["steps"] if s["id"] == "integrate_checkout")
-        assert api_step["completed"] is True
+        assert "organization_status" in json
+        assert "steps" not in json
 
     @pytest.mark.auth
     async def test_valid_grandfathered_organization(
@@ -540,18 +467,15 @@ class TestGetPaymentStatus:
         assert response.status_code == 200
 
         json = response.json()
-        # Should be payment ready even without completing steps
         assert json["payment_ready"] is True
 
     @pytest.mark.auth
-    async def test_valid_all_steps_complete(
+    async def test_valid_payment_ready(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
-        product: Product,
-        mocker: MockerFixture,
         user: User,
     ) -> None:
         # Set up as new organization
@@ -564,15 +488,15 @@ class TestGetPaymentStatus:
         user.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user)
 
-        # Set up account (only checking is_details_submitted now)
+        # Set up account
         account = Account(
             account_type=AccountType.stripe,
             admin_id=user.id,
             country="US",
             currency="USD",
             is_details_submitted=True,
-            is_charges_enabled=False,  # Can be false
-            is_payouts_enabled=False,  # Can be false
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
             stripe_id="STRIPE_ACCOUNT_ID",
         )
         await save_fixture(account)
@@ -581,12 +505,6 @@ class TestGetPaymentStatus:
         organization.account_id = account.id
         await save_fixture(organization)
 
-        # Mock the API key count
-        mocker.patch(
-            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
-            return_value=1,  # Has 1 API key
-        )
-
         response = await client.get(
             f"/v1/organizations/{organization.id}/payment-status"
         )
@@ -594,10 +512,6 @@ class TestGetPaymentStatus:
 
         json = response.json()
         assert json["payment_ready"] is True
-
-        # All steps should be complete
-        for step in json["steps"]:
-            assert step["completed"] is True
 
 
 @pytest.mark.asyncio

@@ -204,15 +204,13 @@ export function ProductDetailsStep() {
       return
     }
 
-    console.log(validation)
-
     setAupVerdict(null)
     setAupMessage(null)
     setLoading('submitting')
-    // const success = await submitOrg(formData)
-    // if (!success) {
-    setLoading(null)
-    // }
+    const success = await submitOrg(formData)
+    if (!success) {
+      setLoading(null)
+    }
   }
 
   const onContinueAnyway = async () => {

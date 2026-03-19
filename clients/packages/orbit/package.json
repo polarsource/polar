@@ -29,7 +29,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "lint": "oxfmt --check . && eslint .",
+    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit"
   },

@@ -8,9 +8,9 @@
     "start": "next start",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "lint:only": "eslint .",
+    "lint:only": "eslint --max-warnings 0 .",
     "lint": "pnpm format:check && pnpm lint:only",
-    "lint:changed": "eslint $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(js|jsx|ts|tsx)$')",
+    "lint:changed": "eslint --max-warnings 0 $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(js|jsx|ts|tsx)$')",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"

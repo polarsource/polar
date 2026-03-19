@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'

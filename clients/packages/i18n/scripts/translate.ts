@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { google } from '@ai-sdk/google'
 import { generateText } from 'ai'
 import dotenv from 'dotenv'

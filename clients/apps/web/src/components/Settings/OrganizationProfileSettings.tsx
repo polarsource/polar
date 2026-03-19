@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'

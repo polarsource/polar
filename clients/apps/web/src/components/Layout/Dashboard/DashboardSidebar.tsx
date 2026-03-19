@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'

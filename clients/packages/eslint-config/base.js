@@ -16,6 +16,10 @@ export const config = [
     rules: {
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'max-lines': [
+        'warn',
+        { max: 250, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
   {
@@ -24,6 +28,17 @@ export const config = [
     },
     rules: {
       'turbo/no-undeclared-env-vars': 'warn',
+    },
+  },
+  {
+    files: [
+      '**/locales/**',
+      '**/next.config.*',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+    ],
+    rules: {
+      'max-lines': 'off',
     },
   },
   {

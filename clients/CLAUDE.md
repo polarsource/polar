@@ -17,6 +17,10 @@ pnpm typecheck    # Type checking (in apps/web)
 
 After finishing a feature, always run `pnpm lint` and check for any new errors or warnings introduced by your changes. Fix them before considering the feature complete.
 
+## File Size Limit
+
+Files are limited to 250 lines of code (excluding blanks and comments) via the `max-lines` ESLint rule. If you hit this limit, refactor the file into smaller pieces — extract sub-components, split hooks into separate files, or move helpers into their own modules. Do not add `eslint-disable max-lines` to new files.
+
 ## Project Structure
 
 ```

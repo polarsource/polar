@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useOnboardingTracking } from '@/hooks'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'

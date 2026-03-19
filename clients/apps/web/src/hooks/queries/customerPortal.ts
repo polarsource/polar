@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useCustomerPortalContext } from '@/components/CustomerPortal/CustomerPortalProvider'
 import { getQueryClient } from '@/utils/api/query'
 import { Client, operations, schemas, unwrap } from '@polar-sh/client'

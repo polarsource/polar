@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as stylex from '@stylexjs/stylex'
 import type React from 'react'
 import type {

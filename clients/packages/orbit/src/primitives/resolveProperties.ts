@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 // ─── Layout types ─────────────────────────────────────────────────────────────
 
 export type Breakpoint = 'default' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'

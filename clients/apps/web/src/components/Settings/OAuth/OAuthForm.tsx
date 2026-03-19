@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'

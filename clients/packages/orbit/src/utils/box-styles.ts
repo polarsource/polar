@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as stylex from '@stylexjs/stylex'
 import { borderRadii, colors, shadows, spacing } from '../tokens/tokens.stylex'
 

@@ -59,19 +59,11 @@ def _external_event_already_handled_error_matcher(exc: BaseException) -> bool:
     return isinstance(exc, ExternalEventAlreadyHandled)
 
 
-def _loops_client_operational_error_matcher(exc: BaseException) -> bool:
-    # Import deferred to avoid circular dependency with polar.worker
-    from polar.integrations.loops.client import LoopsClientOperationalError
-
-    return isinstance(exc, LoopsClientOperationalError)
-
-
 _operation_error_matchers: dict[str, OperationalErrorMatcher] = {
     "sql_timeout_error": _sql_timeout_error_matcher,
     "sql_lock_not_available_error": _sql_lock_not_available_error_matcher,
     "timeout_lock_error": _timeout_lock_error_matcher,
     "external_event_already_handled": _external_event_already_handled_error_matcher,
-    "loops_client_operational_error": _loops_client_operational_error_matcher,
 }
 
 

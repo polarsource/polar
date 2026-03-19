@@ -12,7 +12,6 @@ from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.exceptions import NotPermitted
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
     OAuthCallbackError,
@@ -137,10 +136,8 @@ async def login_callback(
 
     if is_signup:
         posthog.user_signup(user, "github")
-        await loops_service.user_signup(user, githubLogin=True)
     else:
         posthog.user_login(user, "github")
-        await loops_service.user_update(session, user, githubLogin=True)
 
     response = await auth_service.get_login_response(
         session, request, user, return_to=return_to

@@ -243,9 +243,6 @@ class Settings(BaseSettings):
     # Posthog
     POSTHOG_PROJECT_API_KEY: str = ""
 
-    # Loops
-    LOOPS_API_KEY: str | None = None
-
     # Tinybird
     TINYBIRD_API_URL: str = "http://localhost:7181"
     TINYBIRD_API_TOKEN: str | None = None

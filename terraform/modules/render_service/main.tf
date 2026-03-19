@@ -80,7 +80,6 @@ resource "render_env_group" "backend_production" {
     POLAR_BACKOFFICE_HOST                = { value = var.backend_config.backoffice_host }
     POLAR_CHECKOUT_LINK_HOST             = { value = var.backend_config.checkout_link_host }
     POLAR_DISCORD_WEBHOOK_URL            = { value = var.backend_secrets.discord_webhook_url }
-    POLAR_LOOPS_API_KEY                  = { value = var.backend_secrets.loops_api_key }
     POLAR_POSTHOG_PROJECT_API_KEY        = { value = var.backend_secrets.posthog_project_api_key }
     POLAR_PLAIN_REQUEST_SIGNING_SECRET   = { value = var.backend_secrets.plain_request_signing_secret }
     POLAR_PLAIN_TOKEN                    = { value = var.backend_secrets.plain_token }

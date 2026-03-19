@@ -6,7 +6,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
 
-from polar.auth.models import AuthSubject, Organization, is_user
+from polar.auth.models import AuthSubject, Organization
 from polar.config import settings
 from polar.email.schemas import (
     OrganizationAccessTokenLeakedEmail,
@@ -14,7 +14,6 @@ from polar.email.schemas import (
 )
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -128,11 +127,6 @@ class OrganizationAccessTokenService:
         organization_access_token = await repository.create(
             organization_access_token, flush=True
         )
-
-        if is_user(auth_subject):
-            await loops_service.user_created_personal_access_token(
-                session, auth_subject.subject
-            )
 
         return organization_access_token, token
 

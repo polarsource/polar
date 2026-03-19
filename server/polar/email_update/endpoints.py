@@ -4,7 +4,6 @@ from fastapi.responses import RedirectResponse
 from polar.auth.dependencies import WebUserWrite
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.openapi import APITag
@@ -55,8 +54,6 @@ async def verify_email_update(
         raise PolarRedirectionError(
             e.message, e.status_code, return_to=return_to
         ) from e
-
-    await loops_service.user_update(session, user)
 
     return_url = get_safe_return_url(return_to)
     response = RedirectResponse(return_url, 303)

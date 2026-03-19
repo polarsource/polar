@@ -19,7 +19,6 @@ from polar.config import Environment, settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
@@ -650,8 +649,6 @@ class OrganizationService:
             )
             await session.execute(stmt)
             await session.flush()
-        finally:
-            await loops_service.user_organization_added(session, user)
 
     async def set_account(
         self,

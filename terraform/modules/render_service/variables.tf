@@ -133,7 +133,6 @@ variable "backend_secrets" {
     discord_client_secret          = string
     discord_proxy_url              = optional(string, "")
     discord_webhook_url            = optional(string, "")
-    loops_api_key                  = optional(string, "")
     posthog_project_api_key        = optional(string, "")
     resend_api_key                 = string
     logo_dev_publishable_key       = optional(string, "")

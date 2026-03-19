@@ -18,7 +18,6 @@ from polar.customer.schemas.state import CustomerState
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
@@ -142,15 +141,6 @@ class WebhookService:
                 organization=organization,
             )
         )
-
-        # Store it in Loops in case we need to announce technical things regarding webhooks
-        user_organizations = await user_organization_service.list_by_org(
-            session, organization.id
-        )
-        for user_organization in user_organizations:
-            await loops_service.user_update(
-                session, user_organization.user, webhooksCreated=True
-            )
 
         return endpoint
 

@@ -12,7 +12,6 @@ from polar.event import tasks as event
 from polar.eventstream import tasks as eventstream
 from polar.external_event import tasks as external_event
 from polar.integrations.chargeback_stop import tasks as chargeback_stop
-from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
@@ -44,7 +43,6 @@ __all__ = [
     "event",
     "eventstream",
     "external_event",
-    "loops",
     "meter",
     "notifications",
     "order",

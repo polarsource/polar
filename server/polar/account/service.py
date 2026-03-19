@@ -11,7 +11,6 @@ from polar.auth.models import AuthSubject
 from polar.campaign.service import campaign as campaign_service
 from polar.enums import AccountType
 from polar.exceptions import PolarError
-from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe
 from polar.models import Account, Organization, User
 from polar.models.user import IdentityVerificationStatus
@@ -172,9 +171,6 @@ class AccountService:
     ) -> Account:
         assert account_create.account_type == AccountType.stripe
         account = await self._create_stripe_account(session, admin, account_create)
-        await loops_service.user_created_account(
-            session, admin, accountType=account.account_type
-        )
         return account
 
     async def get_or_create_account_for_organization(
@@ -232,10 +228,6 @@ class AccountService:
                 account.data = stripe_account.to_dict()
 
                 session.add(account)
-
-                await loops_service.user_created_account(
-                    session, admin, accountType=account.account_type
-                )
 
                 return account
             elif account:

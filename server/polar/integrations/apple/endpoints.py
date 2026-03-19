@@ -11,7 +11,6 @@ from httpx_oauth.oauth2 import GetAccessTokenError
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
-from polar.integrations.loops.service import loops as loops_service
 from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
     OAuthCallbackError,
@@ -124,10 +123,8 @@ async def apple_callback(
 
     if is_signup:
         posthog.user_signup(user, "apple")
-        await loops_service.user_signup(user)
     else:
         posthog.user_login(user, "apple")
-        await loops_service.user_update(session, user)
 
     response = await auth_service.get_login_response(
         session, request, user, return_to=return_to

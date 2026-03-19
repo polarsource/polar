@@ -84,14 +84,6 @@ resource "tfe_variable" "backend_discord_webhook_url_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
-resource "tfe_variable" "backend_loops_api_key_production" {
-  key             = "backend_loops_api_key_production"
-  category        = "terraform"
-  description     = "Loops API Key for production"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-}
-
 resource "tfe_variable" "backend_posthog_project_api_key_production" {
   key             = "backend_posthog_project_api_key_production"
   category        = "terraform"

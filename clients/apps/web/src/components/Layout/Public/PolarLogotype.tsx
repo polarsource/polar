@@ -30,9 +30,9 @@ export const PolarLogotype = ({
 }) => {
   const PolarLogotypeRef = useRef<HTMLDivElement>(null)
 
-  useOutsideClick([PolarLogotypeRef], () => setPolarLogotypeOpen(false))
-
   const [PolarLogotypeOpen, setPolarLogotypeOpen] = useState(false)
+
+  useOutsideClick([PolarLogotypeRef], () => setPolarLogotypeOpen(false))
 
   const handleTriggerClick: MouseEventHandler<HTMLElement> = useCallback(
     (e) => {

@@ -528,17 +528,16 @@ async def get_organization_detail(
         }
 
         # Get payment metrics
-        (
-            payment_count,
-            total_amount,
-            risk_scores,
-        ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
+        payment_count, total_amount = (
+            await payment_analytics.get_succeeded_payments_stats(organization_id)
+        )
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
         )
         failed_count = await payment_analytics.get_failed_payments_count(
             organization_id
         )
+        risk_scores = await payment_analytics.get_risk_scores(organization_id)
         (
             dispute_count,
             dispute_amount,

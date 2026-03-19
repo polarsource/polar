@@ -1549,7 +1549,13 @@ class OrderService:
                     "email": "{email}",
                 }
 
-        if not organization.customer_email_settings[template_name]:
+        # Final invoice uses the same email setting as subscription_cycled
+        email_setting_name = (
+            "subscription_cycled"
+            if template_name == "subscription_final_invoice"
+            else template_name
+        )
+        if not organization.customer_email_settings[email_setting_name]:
             return
 
         # Skip subscription cycle emails for completely free subscriptions

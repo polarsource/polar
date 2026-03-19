@@ -68,6 +68,7 @@ def create_async_engine(
         pool_recycle=pool_recycle,
         pool_logging_name=pool_logging_name,
         json_serializer=json_serializer,
+        query_cache_size=128,
     )
 
 

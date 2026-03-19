@@ -11,6 +11,7 @@ from sqlalchemy import (
     ColumnExpressionArgument,
     Numeric,
     Select,
+    String,
     UnaryExpression,
     and_,
     asc,
@@ -23,6 +24,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import aliased, joinedload
@@ -69,35 +71,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not events:
             return [], 0
 
-        events_needing_parent_lookup = []
-
-        # Set root_id for root events before insertion
         for event in events:
-            if event.get("root_id") is not None:
-                continue
-            elif event.get("parent_id") is None:
-                if event.get("id") is None:
-                    event["id"] = generate_uuid()
+            if event.get("id") is None:
+                event["id"] = generate_uuid()
+            if event.get("pending_parent_external_id") is None:
                 event["root_id"] = event["id"]
-            else:
-                # Child event without root_id - needs to be looked up from parent
-                # This is a fail-safe in the event that we did not set this before calling
-                # insert_batch
-                events_needing_parent_lookup.append(event)
-
-        # Look up root_id from parents for events that need it
-        if events_needing_parent_lookup:
-            parent_ids = {event["parent_id"] for event in events_needing_parent_lookup}
-            result = await self.session.execute(
-                select(Event.id, Event.root_id).where(Event.id.in_(parent_ids))
-            )
-            parent_root_map = {
-                parent_id: root_id or parent_id for parent_id, root_id in result
-            }
-
-            for event in events_needing_parent_lookup:
-                parent_id = event["parent_id"]
-                event["root_id"] = parent_root_map.get(parent_id, parent_id)
 
         statement = (
             insert(Event)
@@ -110,6 +88,141 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         duplicates_count = len(events) - len(inserted_ids)
 
         return inserted_ids, duplicates_count
+
+    async def find_resolvable_parents(
+        self, inserted_ids: Sequence[UUID]
+    ) -> Sequence[tuple[UUID, UUID, UUID]]:
+        """
+        Find pending events that can now be resolved, scoped to a batch
+        of just-inserted events.
+
+        Uses a recursive CTE that walks DOWN from resolved parents through the
+        pending chain. Handles both directions:
+        - Newly inserted orphans whose parent already exists in the DB
+        - Existing orphans whose parent was just inserted in this batch
+
+        Events whose chain doesn't reach a resolved root are excluded.
+
+        Returns a list of (event_id, parent_id, root_id) tuples.
+        """
+        if not inserted_ids:
+            return []
+
+        events = Event.__table__
+        p = events.alias("p")
+        c = events.alias("c")
+
+        def _parent_match(
+            parent_external_id: ColumnElement[str | None],
+            parent_id: ColumnElement[UUID],
+            child_pending: ColumnElement[str | None],
+        ) -> ColumnElement[bool]:
+            return or_(
+                parent_external_id == child_pending,
+                cast(parent_id, String) == child_pending,
+            )
+
+        # Seed: resolved events that are parents of pending events,
+        # scoped to this batch on either side
+        seeds = (
+            select(
+                p.c.id,
+                p.c.external_id,
+                func.coalesce(p.c.root_id, p.c.id).label("root_id"),
+                p.c.organization_id,
+            )
+            .join(
+                c,
+                and_(
+                    c.c.organization_id == p.c.organization_id,
+                    _parent_match(
+                        p.c.external_id, p.c.id, c.c.pending_parent_external_id
+                    ),
+                ),
+            )
+            .where(
+                p.c.pending_parent_external_id.is_(None),
+                c.c.pending_parent_external_id.is_not(None),
+                or_(p.c.id.in_(inserted_ids), c.c.id.in_(inserted_ids)),
+            )
+            .distinct()
+            .cte("seeds")
+        )
+
+        # Walk down from seeds through pending children
+        child = events.alias("child")
+        base = (
+            select(
+                child.c.id,
+                seeds.c.id.label("parent_id"),
+                seeds.c.root_id,
+                child.c.external_id,
+                child.c.organization_id,
+            )
+            .join(
+                seeds,
+                and_(
+                    child.c.organization_id == seeds.c.organization_id,
+                    _parent_match(
+                        seeds.c.external_id,
+                        seeds.c.id,
+                        child.c.pending_parent_external_id,
+                    ),
+                ),
+            )
+            .where(child.c.pending_parent_external_id.is_not(None))
+        )
+
+        chain = base.cte("chain", recursive=True)
+
+        next_child = events.alias("next_child")
+        recursive = (
+            select(
+                next_child.c.id,
+                chain.c.id.label("parent_id"),
+                chain.c.root_id,
+                next_child.c.external_id,
+                next_child.c.organization_id,
+            )
+            .join(
+                chain,
+                and_(
+                    next_child.c.organization_id == chain.c.organization_id,
+                    _parent_match(
+                        chain.c.external_id,
+                        chain.c.id,
+                        next_child.c.pending_parent_external_id,
+                    ),
+                ),
+            )
+            .where(next_child.c.pending_parent_external_id.is_not(None))
+        )
+        chain = chain.union_all(recursive)
+
+        statement = select(chain.c.id, chain.c.parent_id, chain.c.root_id)
+        result = await self.session.execute(statement)
+        return [(row[0], row[1], row[2]) for row in result.all()]
+
+    async def resolve_parents(
+        self, resolvable: Sequence[tuple[UUID, UUID, UUID]]
+    ) -> None:
+        """
+        Apply parent resolutions. Takes a list of (event_id, parent_id, root_id)
+        tuples as returned by find_resolvable_parents.
+        """
+        if not resolvable:
+            return
+
+        for event_id, parent_id, root_id in resolvable:
+            await self.session.execute(
+                update(Event)
+                .where(Event.id == event_id)
+                .values(
+                    parent_id=parent_id,
+                    root_id=root_id,
+                    pending_parent_external_id=None,
+                )
+            )
 
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID

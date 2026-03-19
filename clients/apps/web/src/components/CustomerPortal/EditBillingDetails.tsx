@@ -39,6 +39,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     formState: { errors, isDirty },
   } = form
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('billing_address.country')
 
   useEffect(() => {

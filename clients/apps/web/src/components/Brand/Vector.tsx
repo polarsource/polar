@@ -1,6 +1,13 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 type PathCommand =
   | { type: 'M'; x: number; y: number }
@@ -223,13 +230,19 @@ export function VectorEditor({
   onChange,
 }: VectorProps) {
   const svgRef = useRef<SVGSVGElement>(null)
-  const [paths, setPaths] = useState<ParsedPath[]>([])
-  const [viewBox, setViewBox] = useState('0 0 100 100')
+  const { paths: parsedPaths, viewBox: parsedViewBox } = useMemo(
+    () => parseSVG(svg),
+    [svg],
+  )
+  const [paths, setPaths] = useState<ParsedPath[]>(parsedPaths)
+  const [viewBox, setViewBox] = useState(parsedViewBox)
   const [dragging, setDragging] = useState<DragState | null>(null)
   // Set of "pi:ci" keys for multi-selected vertices
   const [selection, setSelection] = useState<Set<string>>(new Set())
   const selectionRef = useRef<Set<string>>(selection)
-  selectionRef.current = selection
+  useLayoutEffect(() => {
+    selectionRef.current = selection
+  }, [selection])
   // The last-clicked vertex, used to show control handles
   const [focused, setFocused] = useState<{
     pathIndex: number
@@ -243,11 +256,13 @@ export function VectorEditor({
     currentY: number
   } | null>(null)
 
+  // Sync local state when svg prop changes — paths are also mutated locally during drag
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const { paths: parsed, viewBox: vb } = parseSVG(svg)
-    setPaths(parsed)
-    setViewBox(vb)
-  }, [svg])
+    setPaths(parsedPaths)
+    setViewBox(parsedViewBox)
+  }, [parsedPaths, parsedViewBox])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const getSVGPoint = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } => {
@@ -322,13 +337,15 @@ export function VectorEditor({
 
   const skipNextClick = useRef(false)
   const draggingRef = useRef(dragging)
-  draggingRef.current = dragging
   const marqueeRef = useRef(marquee)
-  marqueeRef.current = marquee
   const pathsRef = useRef(paths)
-  pathsRef.current = paths
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  useLayoutEffect(() => {
+    draggingRef.current = dragging
+    marqueeRef.current = marquee
+    pathsRef.current = paths
+    onChangeRef.current = onChange
+  }, [dragging, marquee, paths, onChange])
 
   // Window-level mousemove/mouseup for drag and marquee so they work outside the SVG
   useEffect(() => {
@@ -521,13 +538,16 @@ export function VectorEditor({
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [getSVGPoint])
+  }, [getSVGPoint, svg, viewBox])
 
   // Detect dark mode
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(
+    () =>
+      document.documentElement.classList.contains('dark') ||
+      window.matchMedia('(prefers-color-scheme: dark)').matches,
+  )
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    setIsDark(document.documentElement.classList.contains('dark') || mq.matches)
     const onClassChange = () => {
       setIsDark(
         document.documentElement.classList.contains('dark') || mq.matches,
@@ -558,7 +578,6 @@ export function VectorEditor({
   const handleSize = vbSize * 0.012
   const handleHalf = handleSize / 2
   const strokeW = vbSize * 0.0025
-  const dashLen = vbSize * 0.015
 
   const selectedFill = isDark ? '#ffffff' : '#000000'
 

@@ -107,6 +107,7 @@ const UpdateProduct = ({
     [allProducts, activePriceIds, subscription],
   )
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = watch('product_id')
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId),

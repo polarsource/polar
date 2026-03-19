@@ -130,7 +130,7 @@ const CustomerChangePlanModal = ({
     const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
 
     return [willTrigger, chargeOrCredit]
-  }, [selectedProduct, subscription])
+  }, [selectedProduct, prorationBehavior, subscription])
 
   const invoicingMessage = useMemo(() => {
     if (!selectedProduct) return null

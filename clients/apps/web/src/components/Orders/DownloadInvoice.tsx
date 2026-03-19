@@ -84,6 +84,7 @@ const DownloadInvoice = ({
     setError,
     formState: { errors },
   } = form
+  // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('billing_address.country')
 
   const downloadInvoice = useCallback(async () => {
@@ -434,7 +435,6 @@ export const DownloadInvoiceDashboard = ({
 }
 
 export const DownloadInvoicePortal = ({
-  customerSessionToken,
   order,
   onInvoiceGenerated,
   dropdown = false,
@@ -442,7 +442,7 @@ export const DownloadInvoicePortal = ({
   size,
   className,
 }: {
-  customerSessionToken: string
+  customerSessionToken?: string
   order: schemas['CustomerOrder']
   onInvoiceGenerated: () => void
   variant?: Variant

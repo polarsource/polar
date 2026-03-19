@@ -288,7 +288,7 @@ export const OrderPaymentRetry = ({
         if (result) {
           await handlePaymentStatus(result)
         }
-      } catch (err) {
+      } catch {
         handlePaymentCompletion(
           false,
           'Network error occurred. Please check your connection and try again.',
@@ -332,7 +332,7 @@ export const OrderPaymentRetry = ({
       if (result) {
         await handlePaymentStatus(result)
       }
-    } catch (err) {
+    } catch {
       handlePaymentCompletion(
         false,
         'Network error occurred. Please check your connection and try again.',

@@ -5,7 +5,7 @@ readme = "README.md"
 requires-python = ">=3.14.0"
 dependencies = [
   "fastapi>=0.120.2",
-  "uvicorn[standard]>=0.31.1",
+  "uvicorn[standard]>=0.42.0",
   "asyncpg>=0.29.0",
   "alembic>=1.9.2",
   "sqlalchemy[asyncio]>=2.0.34",

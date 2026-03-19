@@ -713,12 +713,17 @@ class OrganizationService:
     async def check_review_threshold(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        if organization.is_under_review:
-            return organization
-
         transfers_sum = await transaction_service.get_transactions_sum(
             session, organization.account_id, type=TransactionType.balance
         )
+
+        # Always keep total_balance in sync
+        organization.total_balance = transfers_sum
+        session.add(organization)
+
+        if organization.is_under_review:
+            return organization
+
         if (
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold

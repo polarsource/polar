@@ -58,7 +58,7 @@ export default function Notifications() {
 
       setBadgeCountAsync(0)
     }
-  }, [notifications])
+  }, [notifications, markNotificationAsRead])
 
   return (
     <React.Fragment>

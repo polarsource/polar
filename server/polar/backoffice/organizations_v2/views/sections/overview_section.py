@@ -22,6 +22,7 @@ from polar.organization_review.thresholds import (
 )
 
 from ....components import card
+from ....components._alert import alert
 from ....components._metric_card import Variant
 from ._shared import (
     RISK_LEVEL_BADGE,
@@ -97,10 +98,6 @@ class OverviewSection(ChecklistMixin):
                     for finding in dim.findings:
                         with tag.li():
                             text(finding)
-
-            if dim.recommendation:
-                with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
-                    text(dim.recommendation)
 
     @contextlib.contextmanager
     def organization_review_card(self, request: Request) -> Generator[None]:
@@ -260,18 +257,8 @@ class OverviewSection(ChecklistMixin):
                     with tag.span(classes="text-sm"):
                         text(", ".join(review_report.violated_sections))
 
-            # Recommended action
-            if review_report.recommended_action:
-                with tag.div(
-                    classes="p-3 bg-base-200 border border-base-300 rounded text-sm mb-4"
-                ):
-                    with tag.span(classes="font-medium"):
-                        text("Recommended action: ")
-                    text(review_report.recommended_action)
-
-            # Dimensions — sorted by risk (HIGH first), in a 2-column grid
+            # Dimensions — sorted by risk (HIGH first), 1 per row
             if review_report.dimensions:
-                # Sort: HIGH → MEDIUM → LOW
                 risk_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
                 sorted_dims = sorted(
                     review_report.dimensions,
@@ -287,15 +274,11 @@ class OverviewSection(ChecklistMixin):
                     with tag.h3(classes="text-sm font-bold mb-3"):
                         text("Dimension Breakdown")
 
-                    # Elevated risk dimensions — always visible, 2-col grid
                     if elevated:
-                        with tag.div(
-                            classes="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3"
-                        ):
+                        with tag.div(classes="space-y-3 mb-3"):
                             for dim in elevated:
                                 self._render_dimension_card(dim)
 
-                    # Low risk dimensions — collapsed if there are elevated ones
                     if low:
                         if elevated:
                             with tag.details():
@@ -305,16 +288,11 @@ class OverviewSection(ChecklistMixin):
                                     text(
                                         f"{len(low)} low-risk dimension{'s' if len(low) != 1 else ''}"
                                     )
-                                with tag.div(
-                                    classes="grid grid-cols-1 lg:grid-cols-2 gap-3"
-                                ):
+                                with tag.div(classes="space-y-3"):
                                     for dim in low:
                                         self._render_dimension_card(dim)
                         else:
-                            # All dimensions are LOW — show them all in the grid
-                            with tag.div(
-                                classes="grid grid-cols-1 lg:grid-cols-2 gap-3"
-                            ):
+                            with tag.div(classes="space-y-3"):
                                 for dim in low:
                                     self._render_dimension_card(dim)
 
@@ -369,6 +347,31 @@ class OverviewSection(ChecklistMixin):
                     text(json.dumps(snapshot_data, indent=2, default=str))
 
             yield
+
+    # ------------------------------------------------------------------
+    # Account-level risk flags (e.g. Morocco, MAD currency)
+    # ------------------------------------------------------------------
+
+    def _render_risk_flags(self) -> None:
+        """Render account-level risk flags above metrics."""
+        account = self.org.account
+        if not account:
+            return
+
+        flags: list[str] = []
+        if account.country == "MA":
+            flags.append("Account country: MA (Morocco)")
+        if account.currency == "mad":
+            flags.append("Payout currency: MAD (Moroccan Dirham)")
+
+        if not flags:
+            return
+
+        with alert(variant="warning", soft=True):
+            with tag.div(classes="space-y-1"):
+                for flag in flags:
+                    with tag.div(classes="text-sm font-medium"):
+                        text(flag)
 
     # ------------------------------------------------------------------
     # Payment Metrics card
@@ -752,6 +755,8 @@ class OverviewSection(ChecklistMixin):
 
             # Right: supporting evidence stacked (~40%)
             with tag.div(classes="lg:w-2/5 space-y-6"):
+                self._render_risk_flags()
+
                 with self.payment_card(payment_stats):
                     pass
 

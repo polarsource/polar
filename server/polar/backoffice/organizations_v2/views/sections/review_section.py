@@ -136,15 +136,6 @@ class ReviewSection(ChecklistMixin):
                         for dim in review_report.dimensions:
                             render_dimension(dim)
 
-            # Recommended action
-            if review_report.recommended_action:
-                with tag.div(
-                    classes="p-3 bg-info/10 border border-info/30 rounded text-sm mb-4"
-                ):
-                    with tag.span(classes="font-medium"):
-                        text("Recommended action: ")
-                    text(review_report.recommended_action)
-
             # Account checklist (always shown)
             self._render_checklist()
 

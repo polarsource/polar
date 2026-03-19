@@ -64,10 +64,6 @@ def render_dimension(dim: DimensionAssessment) -> None:
                     with tag.li():
                         text(finding)
 
-        if dim.recommendation:
-            with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
-                text(dim.recommendation)
-
 
 class ChecklistMixin:
     """Mixin providing checklist properties for sections that have self.org."""

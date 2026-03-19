@@ -9,7 +9,7 @@
     "./react-internal": "./react-internal.js"
   },
   "scripts": {
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "lint": "prettier -c . && eslint .",
+    "lint": "oxfmt --check . && eslint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

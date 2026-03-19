@@ -1,6 +1,6 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ["src/index.tsx"],
-  format: ["iife"],
-});
+  entry: ['src/index.tsx'],
+  format: ['iife'],
+})

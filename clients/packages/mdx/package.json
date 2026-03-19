@@ -5,7 +5,7 @@
   "main": "mdx-metadata.js",
   "private": true,
   "scripts": {
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check"
   },
   "dependencies": {
     "estree-util-is-identifier-name": "^3.0.0",

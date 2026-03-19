@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check"
   },
   "publishConfig": {
     "access": "public"

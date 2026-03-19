@@ -29,8 +29,8 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "lint": "prettier -c . && eslint .",
-    "format": "prettier . --write",
+    "lint": "oxfmt --check . && eslint .",
+    "format": "oxfmt",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

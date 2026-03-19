@@ -23,9 +23,9 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve, relative } from 'node:path'
-import { createRequire } from 'node:module'
 import { glob } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { resolve, relative } from 'node:path'
 
 // ─── Load TypeScript from the web app's node_modules ─────────────────────────
 

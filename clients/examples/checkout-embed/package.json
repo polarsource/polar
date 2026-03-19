@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "http-server . -p 3030",
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check"
   },
   "dependencies": {
     "@polar-sh/checkout": "workspace:*",

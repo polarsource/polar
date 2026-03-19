@@ -13,9 +13,9 @@
     "dist"
   ],
   "scripts": {
-    "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi | openapi-typescript --enum-values -o ./src/v1.ts && prettier --write ./src && pnpm run build",
+    "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi | openapi-typescript --enum-values -o ./src/v1.ts && oxfmt ./src && pnpm run build",
     "build": "rm -rf dist/ && tsup",
-    "lint": "prettier -c . && eslint .",
+    "lint": "oxfmt --check . && eslint .",
     "typecheck": "tsc --noEmit"
   },
   "exports": {

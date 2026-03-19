@@ -14,7 +14,7 @@
   "scripts": {
     "translate": "tsx scripts/translate.ts",
     "validate": "tsx scripts/validate.ts",
-    "lint": "prettier -c . && eslint .",
+    "lint": "oxfmt --check . && eslint .",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && tsup",
     "test": "vitest run",
@@ -45,7 +45,6 @@
     "@types/react": "^19.2.14",
     "ai": "^5.0.154",
     "dotenv": "^16.6.1",
-    "prettier": "^3.8.1",
     "react": "^19.2.4",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",

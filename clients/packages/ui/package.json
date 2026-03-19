@@ -26,8 +26,8 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "format": "prettier --write ./src",
-    "format:check": "prettier -c ./src",
+    "format": "oxfmt ./src",
+    "format:check": "oxfmt --check ./src",
     "lint": "pnpm format:check && eslint .",
     "typecheck": "tsc --noEmit"
   },
@@ -66,7 +66,6 @@
     "@stripe/stripe-js": "^7.9.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tsup": "^8.5.1",

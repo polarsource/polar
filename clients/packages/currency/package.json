@@ -21,8 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "build": "rm -rf dist/ && tsup",
-    "format": "prettier --write ./src",
-    "format:check": "prettier -c ./src",
+    "format": "oxfmt ./src",
+    "format:check": "oxfmt --check ./src",
     "lint": "pnpm format:check && eslint .",
     "typecheck": "tsc --noEmit"
   },

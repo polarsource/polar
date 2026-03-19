@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import domtoimage from 'dom-to-image'
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/logos/LogoType'
 import { toast } from '../Toast/use-toast'
@@ -29,7 +29,7 @@ export const ShareChartModal = ({
   const chartRef = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState<MetricTheme>('mono')
 
-  const getParams = useCallback(() => {
+  const getParams = () => {
     const scale = 3
 
     if (!chartRef.current) return null
@@ -51,9 +51,9 @@ export const ShareChartModal = ({
     }
 
     return params
-  }, [])
+  }
 
-  const downloadImage = useCallback(() => {
+  const downloadImage = () => {
     const params = getParams()
 
     if (!params || !chartRef.current) return
@@ -71,9 +71,9 @@ export const ShareChartModal = ({
         description: 'Chart image downloaded',
       })
     })
-  }, [])
+  }
 
-  const copyToClipboard = useCallback(() => {
+  const copyToClipboard = () => {
     const params = getParams()
 
     if (!chartRef.current || !params) return
@@ -92,7 +92,7 @@ export const ShareChartModal = ({
         description: 'Chart image copied to clipboard',
       })
     })
-  }, [getParams])
+  }
 
   return (
     <div className="relative flex w-full max-w-4xl flex-col items-center justify-center overflow-y-auto p-16">

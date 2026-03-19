@@ -45,6 +45,7 @@ const UnitAmountInput = ({
   const [prevValue, setPrevValue] = useState(value)
   if (value !== prevValue) {
     setPrevValue(value)
+    // eslint-disable-next-line react-hooks/refs -- comparing against last emitted value to avoid overwriting user input
     if (typeof value !== 'number' || value !== lastEmittedRef.current) {
       setDisplayValue(toDisplay(value))
     }

@@ -24,8 +24,8 @@ import CheckoutSeatInvitations from './CheckoutSeatInvitations'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isIntegrationError = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   err: any,
 ): err is { name: 'IntegrationError'; message: string } =>
   err.name === 'IntegrationError'

@@ -27,7 +27,9 @@ export const CustomerCard = () => {
   const tokensRef = useRef(INITIAL_TOKENS)
   const overageRef = useRef(calcOverageCents(INITIAL_TOKENS))
   const [tokens, setTokens] = useState(INITIAL_TOKENS)
-  const [overageCents, setOverageCents] = useState(overageRef.current)
+  const [overageCents, setOverageCents] = useState(() =>
+    calcOverageCents(INITIAL_TOKENS),
+  )
 
   useEffect(() => {
     const interval = setInterval(() => {

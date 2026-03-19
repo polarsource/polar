@@ -11,12 +11,13 @@ interface CheckoutEmbedLoadedProps {
 const CheckoutEmbedLoaded: React.FC<
   React.PropsWithChildren<CheckoutEmbedLoadedProps>
 > = ({ checkout }) => {
+  const embedOrigin = checkout.embed_origin
   useEffect(() => {
-    if (!checkout.embed_origin) {
+    if (!embedOrigin) {
       return
     }
-    PolarEmbedCheckout.postMessage({ event: 'loaded' }, checkout.embed_origin)
-  }, [])
+    PolarEmbedCheckout.postMessage({ event: 'loaded' }, embedOrigin)
+  }, [embedOrigin])
 
   return null
 }

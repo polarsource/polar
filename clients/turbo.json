@@ -48,7 +48,8 @@
     "GRAM_API_KEY",
     "GRAM_API_URL",
     "MCP_OAUTH2_CLIENT_ID",
-    "MCP_OAUTH2_CLIENT_SECRET"
+    "MCP_OAUTH2_CLIENT_SECRET",
+    "CI"
   ],
   "tasks": {
     "test": {

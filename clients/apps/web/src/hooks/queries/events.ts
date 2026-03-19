@@ -167,6 +167,41 @@ export const useEventPropertyGroupStats = (
   })
 }
 
+export const useEventCustomerStats = (
+  organizationId: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:get_statistics_by_customer']['parameters']['query']
+    >,
+    'organization_id' | 'timezone'
+  >,
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:get_statistics_by_customer']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'eventCustomerStats',
+      organizationId,
+      { timezone, ...parameters },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-customer', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              timezone,
+              ...parameters,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
 export const useEventNames = (
   organizationId: string,
   parameters?: operations['event-types:list']['parameters']['query'],

@@ -713,4 +713,30 @@ class ListPropertyGroupStats(Schema):
     )
 
 
+class CustomerCostStat(Schema):
+    """Aggregate cost statistics for a single customer."""
+
+    customer_id: UUID4 | None = Field(
+        default=None, description="Polar customer ID, if available."
+    )
+    external_customer_id: str | None = Field(
+        default=None, description="External customer ID, if available."
+    )
+    name: str | None = Field(default=None, description="Customer name.")
+    email: str | None = Field(default=None, description="Customer email.")
+    occurrences: int = Field(description="Number of events for this customer.")
+    totals: dict[str, Decimal] = Field(
+        description="Sum of each aggregate field across all matching events.",
+        default_factory=dict,
+    )
+
+
+class ListCustomerCostStats(Schema):
+    """Event cost statistics grouped by customer."""
+
+    items: list[CustomerCostStat] = Field(
+        description="Stats per customer, ordered by first aggregate field descending."
+    )
+
+
 EventID = Annotated[UUID4, Path(description="The event ID.")]

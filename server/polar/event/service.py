@@ -50,11 +50,13 @@ from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
 from .schemas import (
+    CustomerCostStat,
     EventCreateCustomer,
     EventName,
     EventsIngest,
     EventsIngestResponse,
     EventStatistics,
+    ListCustomerCostStats,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
     PropertyGroupStat,
@@ -1246,6 +1248,92 @@ class EventService:
 
         result = await session.execute(statement)
         return list(dict.fromkeys(result.scalars().all()))
+
+    async def list_customer_cost_stats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        event_type_id: uuid.UUID | None = None,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 20,
+    ) -> ListCustomerCostStats:
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
+
+        organization_ids = await self._get_readable_organization_ids(
+            session, auth_subject, None
+        )
+        if not organization_ids:
+            return ListCustomerCostStats(items=[])
+
+        tinybird_event_repository = TinybirdEventRepository()
+        rows = await tinybird_event_repository.get_customer_stats(
+            organization_id=organization_ids,
+            aggregate_fields=tuple(aggregate_fields),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            event_type_id=event_type_id,
+            limit=limit,
+        )
+
+        # Batch-resolve customer names/emails from Postgres
+        customer_repository = CustomerRepository.from_session(session)
+        polar_ids = [
+            uuid.UUID(row.customer_id) for row in rows if row.customer_id is not None
+        ]
+        external_ids = [
+            row.external_customer_id
+            for row in rows
+            if row.customer_id is None and row.external_customer_id is not None
+        ]
+        customers_by_id: dict[uuid.UUID, Customer] = {}
+        customers_by_external_id: dict[str, Customer] = {}
+        if polar_ids:
+            stmt = (
+                select(Customer)
+                .where(Customer.id.in_(polar_ids))
+                .where(Customer.deleted_at.is_(None))
+            )
+            customers = await customer_repository.get_all(stmt)
+            customers_by_id = {c.id: c for c in customers}
+        if external_ids:
+            stmt = (
+                select(Customer)
+                .where(Customer.external_id.in_(external_ids))
+                .where(Customer.deleted_at.is_(None))
+            )
+            customers = await customer_repository.get_all(stmt)
+            customers_by_external_id = {
+                c.external_id: c for c in customers if c.external_id is not None
+            }
+
+        items: list[CustomerCostStat] = []
+        for row in rows:
+            polar_id = uuid.UUID(row.customer_id) if row.customer_id else None
+            ext_id = row.external_customer_id or None
+            customer = customers_by_id.get(polar_id) if polar_id else None
+            if customer is None and ext_id is not None:
+                customer = customers_by_external_id.get(ext_id)
+            items.append(
+                CustomerCostStat(
+                    customer_id=customer.id if customer else polar_id,
+                    external_customer_id=ext_id,
+                    name=customer.name if customer else None,
+                    email=customer.email if customer else None,
+                    occurrences=row.occurrences,
+                    totals={k: Decimal(str(v)) for k, v in row.totals.items()},
+                )
+            )
+
+        return ListCustomerCostStats(items=items)
 
 
 event = EventService()

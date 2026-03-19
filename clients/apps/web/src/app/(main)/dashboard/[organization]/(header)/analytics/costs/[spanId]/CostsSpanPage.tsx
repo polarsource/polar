@@ -8,12 +8,14 @@ import Spinner from '@/components/Shared/Spinner'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import {
+  useEventCustomerStats,
   useEventHierarchyStats,
   useInfiniteEvents,
 } from '@/hooks/queries/events'
 import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { CustomerList } from '@/components/Costs/CustomerList'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
@@ -145,6 +147,27 @@ export default function SpanDetailPage({
 
   const eventType = eventTypes.find((item) => item.id === spanId)
 
+  const { data: customerStatsData } = useEventCustomerStats(organization.id, {
+    start_date: startDateISOString,
+    end_date: endDateISOString,
+    event_type_id: spanId,
+    aggregate_fields: ['_cost.amount'],
+    limit: 200,
+  })
+
+  const customerRows = useMemo(() => {
+    const getCost = (r: { totals?: { [key: string]: string } }) =>
+      parseFloat(r.totals?.['_cost_amount'] ?? '0') || 0
+    const rows = (customerStatsData?.items ?? []).filter((r) => getCost(r) > 0)
+    const sum = rows.reduce((a, r) => a + getCost(r), 0) || 1
+    return rows.map((r) => {
+      const total = getCost(r)
+      const label =
+        r.name ?? r.external_customer_id ?? r.customer_id ?? '—'
+      return { ...r, total, share: total / sum, label }
+    })
+  }, [customerStatsData])
+
   const events = useMemo(() => {
     if (!eventsData) return []
     return eventsData.pages.flatMap((page) => page.items)
@@ -268,6 +291,7 @@ export default function SpanDetailPage({
         <TabsList className="mb-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -339,6 +363,27 @@ export default function SpanDetailPage({
               </div>
             )}
 
+            {customerRows.length > 0 && (
+              <div className="flex flex-col gap-y-3">
+                <h3 className="text-base font-medium dark:text-white">
+                  Top Customers
+                </h3>
+                <CustomerList
+                  rows={customerRows.slice(0, 5)}
+                  organizationSlug={organization.slug}
+                />
+                {customerRows.length > 5 && (
+                  <p className="dark:text-polar-500 text-sm text-gray-400">
+                    +{customerRows.length - 5} more — see the{' '}
+                    <span className="cursor-pointer font-medium underline underline-offset-2">
+                      Customers
+                    </span>{' '}
+                    tab for the full list.
+                  </p>
+                )}
+              </div>
+            )}
+
             <CostsEventsTable
               organization={organization}
               spanId={spanId}
@@ -392,6 +437,23 @@ export default function SpanDetailPage({
                 No metrics available for this period
               </p>
             </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="customers">
+          {customerRows.length === 0 ? (
+            <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
+              <h1 className="text-2xl font-normal">No customers</h1>
+              <p className="dark:text-polar-500 text-gray-500">
+                No customer cost events were recorded in this period
+              </p>
+            </div>
+          ) : (
+            <CustomerList
+              rows={customerRows}
+              organizationSlug={organization.slug}
+              paginate
+            />
           )}
         </TabsContent>
       </Tabs>

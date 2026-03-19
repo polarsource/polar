@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from polar.integrations.tinybird.service import (
+    TinybirdCustomerStats,
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     TinybirdEventTypeStats,
@@ -317,6 +318,26 @@ class TinybirdEventRepository:
         return await tinybird_query.get_property_group_stats(
             property, aggregate_fields, limit
         )
+
+    async def get_customer_stats(
+        self,
+        *,
+        organization_id: UUID | Sequence[UUID],
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        event_type_id: UUID | None = None,
+        limit: int = 20,
+    ) -> list[TinybirdCustomerStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+        tinybird_query = TinybirdEventsQuery(organization_ids)
+        if start_timestamp is not None or end_timestamp is not None:
+            tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        if event_type_id is not None:
+            tinybird_query.filter_event_type_id(event_type_id)
+        return await tinybird_query.get_customer_stats(aggregate_fields, limit)
 
     @staticmethod
     def _build_filtered_query(

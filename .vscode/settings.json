@@ -1,4 +1,7 @@
 {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file", // tell oxfmt to format the whole file, not only the modified lines
     "files.exclude": {
         "**/.git": true,
         /*

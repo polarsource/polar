@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import {
+  useEventCustomerStats,
   useEventHierarchyStats,
   useEventPropertyGroupStats,
 } from '@/hooks/queries/events'
@@ -13,6 +14,7 @@ import { useMetrics } from '@/hooks/queries/metrics'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { CustomerList } from '@/components/Costs/CustomerList'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   Tabs,
@@ -34,6 +36,7 @@ import {
   Bot,
   Minus,
   TrendingUp,
+  Users,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -130,8 +133,8 @@ export default function ClientPage({ organization }: ClientPageProps) {
           const pct = previous > 0 ? (delta / previous) * 100 : null
           return { ...s, current, previous, delta, pct }
         })
-        .filter((s) => Math.abs(s.delta) > 0)
-        .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+        .filter((s) => s.pct !== null)
+        .sort((a, b) => Math.abs(b.pct ?? 0) - Math.abs(a.pct ?? 0))
         .slice(0, 6),
     [currentTotals, previousTotalsMap],
   )
@@ -147,7 +150,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
           return { ...s, avg, p99, ratio }
         })
         .filter((s) => s.ratio >= 3 && s.p99 > 0)
-        .sort((a, b) => b.ratio - a.ratio)
+        .sort((a, b) => b.ratio - a.ratio || b.p99 - a.p99)
         .slice(0, 6),
     [currentTotals],
   )
@@ -227,6 +230,34 @@ export default function ClientPage({ organization }: ClientPageProps) {
     })
   }, [vendorStats, prevVendorStats])
 
+  const customerDateParams = useMemo(
+    () => ({
+      start_date: startDateISOString,
+      end_date: endDateISOString,
+      aggregate_fields: ['_cost.amount'] as ['_cost.amount'],
+      limit: 200,
+    }),
+    [startDateISOString, endDateISOString],
+  )
+
+  const { data: customerStatsData } = useEventCustomerStats(
+    organization.id,
+    customerDateParams,
+  )
+
+  const customerRows = useMemo(() => {
+    const getCost = (r: { totals?: { [key: string]: string } }) =>
+      parseFloat(r.totals?.['_cost_amount'] ?? '0') || 0
+    const rows = (customerStatsData?.items ?? []).filter((r) => getCost(r) > 0)
+    const sum = rows.reduce((a, r) => a + getCost(r), 0) || 1
+    return rows.map((r) => {
+      const total = getCost(r)
+      const label =
+        r.name ?? r.external_customer_id ?? r.customer_id ?? '—'
+      return { ...r, total, share: total / sum, label }
+    })
+  }, [customerStatsData])
+
   const costMetrics = getMetricsForType('costs')
 
   const { data: metricsData, isLoading: isMetricsLoading } = useMetrics({
@@ -267,6 +298,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
         <TabsList className="mb-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="llm">LLM</TabsTrigger>
+          <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -415,6 +447,38 @@ export default function ClientPage({ organization }: ClientPageProps) {
                     )
                   })}
                 </div>
+              )}
+            </section>
+
+            {/* Top Customers */}
+            <section>
+              <SectionHeader
+                title="Top Customers"
+                description="Customers ranked by total spend in this period."
+              />
+              {customerRows.length === 0 ? (
+                <EmptyState
+                  icon={<Users />}
+                  title="No customer data"
+                  description="No customer cost events were recorded in this period."
+                />
+              ) : (
+                <>
+                  <CustomerList
+                    rows={customerRows.slice(0, 5)}
+                    fmt={fmt}
+                    organizationSlug={organization.slug}
+                  />
+                  {customerRows.length > 5 && (
+                    <p className="dark:text-polar-500 mt-3 text-sm text-gray-400">
+                      +{customerRows.length - 5} more — see the{' '}
+                      <span className="cursor-pointer font-medium underline underline-offset-2">
+                        Customers
+                      </span>{' '}
+                      tab for the full list.
+                    </p>
+                  )}
+                </>
               )}
             </section>
 
@@ -611,6 +675,23 @@ export default function ClientPage({ organization }: ClientPageProps) {
               )}
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="customers">
+          {customerRows.length === 0 ? (
+            <EmptyState
+              icon={<Users />}
+              title="No customer data"
+              description="No customer cost events were recorded in this period."
+            />
+          ) : (
+            <CustomerList
+              rows={customerRows}
+              fmt={fmt}
+              organizationSlug={organization.slug}
+              paginate
+            />
+          )}
         </TabsContent>
       </Tabs>
     </DashboardBody>

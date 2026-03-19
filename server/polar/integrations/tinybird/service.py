@@ -112,6 +112,14 @@ class TinybirdPropertyGroupStats:
     totals: dict[str, float]
 
 
+@dataclass
+class TinybirdCustomerStats:
+    customer_id: str | None
+    external_customer_id: str | None
+    occurrences: int
+    totals: dict[str, float]
+
+
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
     v = m.pop(key, None) if is_system else None
     if isinstance(v, float) and v.is_integer():
@@ -357,6 +365,7 @@ class TinybirdEventsQuery:
         self._organization_ids = [str(org_id) for org_id in organization_ids]
         self._filters: list[Any] = []
         self._order_by_clauses: list[Any] = []
+        self._has_event_type_id_filter = False
 
     def _get_organization_filter(self) -> Any:
         if not self._organization_ids:
@@ -427,6 +436,7 @@ class TinybirdEventsQuery:
 
     def filter_event_type_id(self, event_type_id: UUID) -> Self:
         self._filters.append(events_table.c.event_type_id == str(event_type_id))
+        self._has_event_type_id_filter = True
         return self
 
     def filter_by_filter(self, f: Filter) -> Self:
@@ -1023,6 +1033,132 @@ class TinybirdEventsQuery:
                     value=str(row["value"]),
                     occurrences=int(row.get("occurrences", 0) or 0),
                     customers=int(row.get("customers", 0) or 0),
+                    totals=totals,
+                )
+            )
+        return results
+
+    async def get_customer_stats(
+        self,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 20,
+    ) -> list[TinybirdCustomerStats]:
+        if self._has_event_type_id_filter:
+            return await self._get_customer_stats_per_root(aggregate_fields, limit)
+        base_filter = self._get_organization_filter()
+        has_customer = or_(
+            events_table.c.customer_id.isnot(None),
+            events_table.c.external_customer_id != "",
+        )
+        agg_columns: list[Any] = []
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            agg_denorm = DENORMALIZED_COLUMNS.get(field_path)
+            if agg_denorm is not None:
+                agg_columns.append(func.sum(agg_denorm).label(f"{label}_sum"))
+            else:
+                parts = field_path.split(".")
+                agg_columns.append(
+                    func.sum(
+                        func.JSONExtractFloat(events_table.c.user_metadata, *parts)
+                    ).label(f"{label}_sum")
+                )
+        statement = (
+            sqlalchemy.select(
+                events_table.c.customer_id.label("customer_id"),
+                events_table.c.external_customer_id.label("external_customer_id"),
+                func.count().label("occurrences"),
+                *agg_columns,
+            )
+            .select_from(events_table)
+            .where(base_filter)
+            .where(has_customer)
+            .group_by(events_table.c.customer_id, events_table.c.external_customer_id)
+        )
+        for f in self._filters:
+            statement = statement.where(f)
+        if aggregate_fields:
+            first_label = aggregate_fields[0].replace(".", "_")
+            statement = statement.order_by(literal_column(f"{first_label}_sum").desc())
+        statement = statement.limit(limit)
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+        results: list[TinybirdCustomerStats] = []
+        for row in rows:
+            totals = {
+                f.replace(".", "_"): float(
+                    row.get(f"{f.replace('.', '_')}_sum", 0) or 0
+                )
+                for f in aggregate_fields
+            }
+            results.append(
+                TinybirdCustomerStats(
+                    customer_id=str(row.get("customer_id"))
+                    if row.get("customer_id") is not None
+                    else None,
+                    external_customer_id=row.get("external_customer_id") or None,
+                    occurrences=int(row.get("occurrences", 0) or 0),
+                    totals=totals,
+                )
+            )
+        return results
+
+    async def _get_customer_stats_per_root(
+        self,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        limit: int = 20,
+    ) -> list[TinybirdCustomerStats]:
+        """
+        Aggregate customer costs using the per-root subquery, so descendant event
+        costs are correctly attributed to the root span's customer.
+        """
+        per_root = self._build_per_root_subquery(aggregate_fields)
+
+        has_customer = or_(
+            per_root.c.customer_id.isnot(None),
+            per_root.c.external_customer_id != "",
+        )
+
+        agg_columns: list[Any] = []
+        for field_path in aggregate_fields:
+            label = field_path.replace(".", "_")
+            total_col = per_root.c[f"{label}_total"]
+            agg_columns.append(func.sum(total_col).label(f"{label}_sum"))
+
+        statement = (
+            sqlalchemy.select(
+                per_root.c.customer_id.label("customer_id"),
+                per_root.c.external_customer_id.label("external_customer_id"),
+                func.count().label("occurrences"),
+                *agg_columns,
+            )
+            .select_from(per_root)
+            .where(has_customer)
+            .group_by(per_root.c.customer_id, per_root.c.external_customer_id)
+        )
+        if aggregate_fields:
+            first_label = aggregate_fields[0].replace(".", "_")
+            statement = statement.order_by(literal_column(f"{first_label}_sum").desc())
+        statement = statement.limit(limit)
+
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        results: list[TinybirdCustomerStats] = []
+        for row in rows:
+            totals = {
+                f.replace(".", "_"): float(
+                    row.get(f"{f.replace('.', '_')}_sum", 0) or 0
+                )
+                for f in aggregate_fields
+            }
+            results.append(
+                TinybirdCustomerStats(
+                    customer_id=str(row.get("customer_id"))
+                    if row.get("customer_id") is not None
+                    else None,
+                    external_customer_id=row.get("external_customer_id") or None,
+                    occurrences=int(row.get("occurrences", 0) or 0),
                     totals=totals,
                 )
             )

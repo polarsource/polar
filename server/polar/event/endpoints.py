@@ -37,6 +37,7 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventTypeAdapter,
+    ListCustomerCostStats,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
 )
@@ -242,6 +243,43 @@ async def get_statistics_by_property(
         timezone=ZoneInfo(timezone),
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        aggregate_fields=tuple(aggregate_fields),
+        limit=limit,
+    )
+
+
+@router.get(
+    "/statistics/by-customer",
+    summary="Get statistics grouped by customer",
+    tags=[APITag.private],
+    response_model=ListCustomerCostStats,
+)
+async def get_statistics_by_customer(
+    auth_subject: auth.EventRead,
+    start_date: date = Query(..., description="Start date."),
+    end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    event_type_id: UUID4 | None = Query(None, description="Filter by event type ID."),
+    aggregate_fields: Sequence[AggregateField] = Query(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate.",
+    ),
+    limit: int = Query(default=20, le=1000),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListCustomerCostStats:
+    """
+    Get aggregate statistics grouped by customer, ordered by highest cost first.
+    """
+    return await event_service.list_customer_cost_stats(
+        session,
+        auth_subject,
+        start_date=start_date,
+        end_date=end_date,
+        timezone=ZoneInfo(timezone),
+        event_type_id=event_type_id,
         aggregate_fields=tuple(aggregate_fields),
         limit=limit,
     )

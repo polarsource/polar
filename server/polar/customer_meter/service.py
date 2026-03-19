@@ -201,7 +201,11 @@ class CustomerMeterService:
         #         new_usage=new_usage_units,
         #     )
 
-        customer_meter.consumed_units = Decimal(usage_units)
+        customer_meter.consumed_units = (
+            usage_units
+            if isinstance(usage_units, Decimal)
+            else Decimal(str(usage_units))
+        )
 
         with logfire.span("get_credits.old"):
             credit_events = await self._get_credit_events(

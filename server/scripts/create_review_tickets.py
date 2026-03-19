@@ -294,9 +294,7 @@ def main() -> None:
 
     try:
         asyncio.run(
-            process_organizations(
-                dry_run=dry_run, limit=args.limit, org_id=args.org_id
-            )
+            process_organizations(dry_run=dry_run, limit=args.limit, org_id=args.org_id)
         )
     except KeyboardInterrupt:
         log.info("Interrupted by user")

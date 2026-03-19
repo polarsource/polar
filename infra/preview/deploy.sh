@@ -53,9 +53,14 @@ deploy() {
         exit 1
     fi
 
-    local BRANCH_SLUG
-    BRANCH_SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
-    local VERCEL_PREVIEW_URL="https://${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
+    local VERCEL_PREVIEW_URL
+    VERCEL_PREVIEW_URL=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('vercel_url',''))")
+    if [[ -z "$VERCEL_PREVIEW_URL" ]]; then
+        local BRANCH_SLUG
+        BRANCH_SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+        VERCEL_PREVIEW_URL="https://${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
+        log "Warning: No vercel_url provided, using computed URL: ${VERCEL_PREVIEW_URL}"
+    fi
 
     log "Deploying branch=${BRANCH} sha=${SHA}"
 
@@ -193,7 +198,8 @@ for k, v in json.loads(sys.stdin.read()).items():
 
     # --- Caddy config ---
     log "Configuring Caddy"
-    local VERCEL_PREVIEW_HOST="${VERCEL_PROJECT}-git-${BRANCH_SLUG}-${VERCEL_SCOPE}.vercel.app"
+    local VERCEL_PREVIEW_HOST
+    VERCEL_PREVIEW_HOST=$(echo "$VERCEL_PREVIEW_URL" | sed 's|https://||')
     sed \
         -e "s/__API_PORT__/${API_PORT}/g" \
         -e "s/__PR_NUM__/${PR_NUM}/g" \

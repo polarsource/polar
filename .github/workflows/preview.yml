@@ -130,6 +130,40 @@ jobs:
             }')
           echo "$ENV_JSON" > /tmp/env.json
 
+      - name: Resolve Vercel preview URL
+        if: steps.action.outputs.action == 'deploy'
+        id: vercel_url
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT: polar-sandbox
+          VERCEL_TEAM: polar-sh
+        run: |
+          set -euo pipefail
+          DEPLOY_UID=""
+          for i in $(seq 1 30); do
+            DEPLOY_UID=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              "https://api.vercel.com/v6/deployments?teamSlug=${VERCEL_TEAM}&projectId=${VERCEL_PROJECT}&meta-githubCommitSha=${SHA}&limit=1" \
+              | jq -r '.deployments[0].uid // empty')
+            if [[ -n "$DEPLOY_UID" ]]; then
+              break
+            fi
+            echo "Waiting for Vercel deployment... (attempt $i/30)"
+            sleep 10
+          done
+          if [[ -z "$DEPLOY_UID" ]]; then
+            echo "::warning::Vercel deployment not found, deploy.sh will compute URL"
+            exit 0
+          fi
+          BRANCH_ALIAS=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            "https://api.vercel.com/v13/deployments/${DEPLOY_UID}?teamSlug=${VERCEL_TEAM}" \
+            | jq -r '[.alias[] | select(contains("-git-"))][0] // empty')
+          if [[ -n "$BRANCH_ALIAS" ]]; then
+            echo "vercel_url=https://${BRANCH_ALIAS}" >> "$GITHUB_OUTPUT"
+            echo "Resolved Vercel branch alias: https://${BRANCH_ALIAS}"
+          else
+            echo "::warning::No branch alias found on deployment ${DEPLOY_UID}, deploy.sh will compute URL"
+          fi
+
       # --- SSH deploy ---
       - name: Deploy to preview VM
         id: deploy
@@ -151,7 +185,8 @@ jobs:
             --arg branch "$BRANCH" \
             --arg sha "$SHA" \
             --arg env_b64 "$ENV_B64" \
-            '{pr_num: $pr_num, branch: $branch, sha: $sha, env_b64: $env_b64}' \
+            --arg vercel_url "${{ steps.vercel_url.outputs.vercel_url }}" \
+            '{pr_num: $pr_num, branch: $branch, sha: $sha, env_b64: $env_b64, vercel_url: $vercel_url}' \
           | ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -i ~/.ssh/preview_key \
             "${PREVIEW_USER}@${PREVIEW_HOST}" \
             "/srv/preview-tools/deploy.sh deploy" \

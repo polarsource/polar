@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -260,6 +261,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
     initially_reviewed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+
+    total_balance: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, server_default="0"
     )
 
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)

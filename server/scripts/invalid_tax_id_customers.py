@@ -45,14 +45,13 @@ async def invalid_tax_id_customers() -> None:
     sessionmaker = create_async_sessionmaker(engine)
 
     async with sessionmaker() as session:
-        statement = select(Customer).where(
-            Customer.deleted_at.is_(None),
-            Customer.tax_id.isnot(None),
-        )
+        statement = select(Customer).where(Customer.deleted_at.is_(None))
 
         customers = await session.stream_scalars(statement)
         async for customer in customers:
-            tax_id_value, _tax_id_format = customer.tax_id  # type: ignore[misc]
+            if customer.tax_id is None:
+                continue
+            tax_id_value, _tax_id_format = customer.tax_id
             billing_address = customer.billing_address
 
             if billing_address is None:

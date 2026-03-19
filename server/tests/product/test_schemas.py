@@ -204,9 +204,7 @@ class TestProductPriceFixedCurrencyMinimums:
         ("currency", "amount", "expected_min"),
         [
             pytest.param(PresentmentCurrency.usd, 49, "$0.50", id="usd-below-min"),
-            pytest.param(
-                PresentmentCurrency.inr, 5999, "₹60.00", id="inr-below-min"
-            ),
+            pytest.param(PresentmentCurrency.inr, 5999, "₹60.00", id="inr-below-min"),
             pytest.param(PresentmentCurrency.gbp, 29, "£0.30", id="gbp-below-min"),
             pytest.param(
                 PresentmentCurrency.huf, 17499, "Ft17,500.00", id="huf-below-min"

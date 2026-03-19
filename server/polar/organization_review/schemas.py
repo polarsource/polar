@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class ReviewContext(StrEnum):
     SUBMISSION = "submission"  # First review at details submission time
+    SETUP_COMPLETE = "setup_complete"  # Review when account setup is complete
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
     MANUAL = "manual"  # Full manual review triggered from backoffice
 

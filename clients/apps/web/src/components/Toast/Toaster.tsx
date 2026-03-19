@@ -52,6 +52,7 @@ export function Toaster() {
       const redirectPath = `${pathname}?${newSearchParams.toString()}`
       router.replace(redirectPath, { scroll: false })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only re-run on searchParams changes
   }, [searchParams])
 
   return (

@@ -80,6 +80,7 @@ export function ProductDetailsStep() {
 
   const { control, handleSubmit, watch, setValue } = form
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const sellingCategories = watch('sellingCategories')
   const pricingModel = watch('pricingModel')
   const productDescription = watch('productDescription')

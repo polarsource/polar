@@ -113,6 +113,7 @@ export const CheckoutLinkForm = ({
   })
 
   // Watch for selected product IDs to determine if we should show trial configuration
+  // eslint-disable-next-line react-hooks/incompatible-library
   const selectedProductIds = watch('products') || []
   const { data: selectedProducts } = useSelectedProducts(selectedProductIds)
 

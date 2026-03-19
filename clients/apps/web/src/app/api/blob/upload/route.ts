@@ -9,10 +9,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (
-        _pathname: string,
-        /* clientPayload?: string, */
-      ) => {
+      onBeforeGenerateToken: async () => {
         const user = await getAuthenticatedUser()
         if (!user) {
           throw new Error('Unauthenticated')

@@ -42,6 +42,7 @@ export const ConfirmModal = ({
     },
   })
   const { control, handleSubmit, reset, watch } = form
+  // eslint-disable-next-line react-hooks/incompatible-library
   const prompt = watch('prompt')
 
   const handleConfirm = useCallback(() => {

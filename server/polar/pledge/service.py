@@ -427,7 +427,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             .values(
                 state=PledgeState.disputed,
                 dispute_reason=reason,
-                disputed_at=datetime.datetime.now(),
+                disputed_at=utc_now(),
                 disputed_by_user_id=by_user_id,
             )
         )

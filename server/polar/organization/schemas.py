@@ -119,21 +119,37 @@ class OrganizationDetails(Schema):
     product_description: str = Field(
         ..., description="Description of digital products being sold."
     )
+    selling_categories: list[str] = Field(
+        default_factory=list, description="Categories of products being sold."
+    )
+    pricing_models: list[str] = Field(
+        default_factory=list, description="Pricing models used by the organization."
+    )
     intended_use: str | None = Field(
-        None, description="How the organization will integrate and use Polar."
+        None,
+        deprecated=True,
+        description="How the organization will integrate and use Polar.",
     )
     customer_acquisition: list[str] = Field(
-        default_factory=list, description="Main customer acquisition channels."
+        default_factory=list,
+        deprecated=True,
+        description="Main customer acquisition channels.",
     )
-    future_annual_revenue: int = Field(
-        0, ge=0, description="Estimated revenue in the next 12 months"
+    future_annual_revenue: int | None = Field(
+        None,
+        ge=0,
+        deprecated=True,
+        description="Estimated revenue in the next 12 months",
     )
     switching: bool = Field(True, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")
-    previous_annual_revenue: int = Field(
-        0, ge=0, description="Revenue from last year if applicable."
+    previous_annual_revenue: int | None = Field(
+        None,
+        ge=0,
+        deprecated=True,
+        description="Revenue from last year if applicable.",
     )
 
 

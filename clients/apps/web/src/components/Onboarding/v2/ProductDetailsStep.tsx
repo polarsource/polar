@@ -140,18 +140,6 @@ export function ProductDetailsStep() {
         switching ? formData.currentlySellingOn[0] : null
       ) as schemas['OrganizationDetails']['switching_from']
 
-      const productDescriptionParts = [
-        formData.sellingCategories.length > 0 &&
-          `Product type: ${formData.sellingCategories.join(', ')}`,
-        formData.pricingModel.length > 0 &&
-          `Pricing model: ${formData.pricingModel.join(', ')}`,
-        '',
-        formData.productDescription,
-      ]
-        .filter((part) => part !== false)
-        .join('\n')
-        .trim()
-
       const { error } = await updateOrganization.mutateAsync({
         id: data.organizationId,
         body: {
@@ -159,11 +147,9 @@ export function ProductDetailsStep() {
           ...(formData.productUrl && { website: formData.productUrl }),
           details: {
             about: '-',
-            intended_use: '-',
-            customer_acquisition: [],
-            future_annual_revenue: 0,
-            previous_annual_revenue: 0,
-            product_description: productDescriptionParts,
+            product_description: formData.productDescription,
+            selling_categories: formData.sellingCategories,
+            pricing_models: formData.pricingModel,
             switching,
             switching_from: switchingFrom,
           } satisfies schemas['OrganizationDetails'],
@@ -419,18 +405,21 @@ export function ProductDetailsStep() {
               {aupVerdict ? 'Review again' : 'Launch Dashboard'}
             </Button>
 
-            {aupVerdict === 'CLARIFY' && aupHistory.length >= 3 && productDescription.trim().length > 30 && loading !== 'validating' && (
-              <Button
-                variant="ghost"
-                type="button"
-                fullWidth
-                onClick={onContinueAnyway}
-                disabled={loading === 'submitting'}
-                loading={loading === 'submitting-anyway'}
-              >
-                Continue without review
-              </Button>
-            )}
+            {aupVerdict === 'CLARIFY' &&
+              aupHistory.length >= 3 &&
+              productDescription.trim().length > 30 &&
+              loading !== 'validating' && (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  fullWidth
+                  onClick={onContinueAnyway}
+                  disabled={loading === 'submitting'}
+                  loading={loading === 'submitting-anyway'}
+                >
+                  Continue without review
+                </Button>
+              )}
           </div>
         </form>
       </Form>

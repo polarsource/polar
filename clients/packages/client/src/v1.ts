@@ -21946,21 +21946,34 @@ export interface components {
        */
       product_description: string
       /**
+       * Selling Categories
+       * @description Categories of products being sold.
+       */
+      selling_categories?: string[]
+      /**
+       * Pricing Models
+       * @description Pricing models used by the organization.
+       */
+      pricing_models?: string[]
+      /**
        * Intended Use
+       * @deprecated
        * @description How the organization will integrate and use Polar.
        */
       intended_use?: string | null
       /**
        * Customer Acquisition
+       * @deprecated
        * @description Main customer acquisition channels.
        */
       customer_acquisition?: string[]
       /**
        * Future Annual Revenue
+       * @deprecated
        * @description Estimated revenue in the next 12 months
        * @default 0
        */
-      future_annual_revenue: number
+      future_annual_revenue?: number | null
       /**
        * Switching
        * @description Switching from another platform?
@@ -21976,10 +21989,10 @@ export interface components {
         | null
       /**
        * Previous Annual Revenue
+       * @deprecated
        * @description Revenue from last year if applicable.
-       * @default 0
        */
-      previous_annual_revenue: number
+      previous_annual_revenue?: number | null
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {

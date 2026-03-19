@@ -928,8 +928,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 seats_allocated = customer_data["seats_allocated"]
 
                 # Create subscription with seats
+                amount = seat_based_price.calculate_amount(seats_purchased)
                 subscription = Subscription(
-                    amount=seat_based_price.calculate_amount(seats_purchased),
+                    amount=amount,
+                    net_amount=amount,
                     currency=seat_based_price.price_currency,
                     recurring_interval=seat_based_product.recurring_interval,
                     recurring_interval_count=1,
@@ -949,7 +951,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 spp = SubscriptionProductPrice(
                     subscription_id=subscription.id,
                     product_price_id=seat_based_price.id,
-                    amount=seat_based_price.calculate_amount(seats_purchased),
+                    amount=amount,
                 )
                 session.add(spp)
                 await session.flush()

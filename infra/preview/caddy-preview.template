@@ -2,7 +2,8 @@ handle /pr-__PR_NUM__/v1/* {
 	uri strip_prefix /pr-__PR_NUM__
 	reverse_proxy 127.0.0.1:__API_PORT__
 }
-handle /pr-__PR_NUM__/backoffice/* {
+@backoffice__PR_NUM__ path /pr-__PR_NUM__/backoffice /pr-__PR_NUM__/backoffice/*
+handle @backoffice__PR_NUM__ {
 	uri strip_prefix /pr-__PR_NUM__
 	reverse_proxy 127.0.0.1:__API_PORT__
 }

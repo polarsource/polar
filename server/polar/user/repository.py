@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -33,6 +33,29 @@ class UserRepository(
     ) -> User | None:
         statement = self.get_base_statement(include_deleted=include_deleted).where(
             func.lower(User.email) == email.lower()
+        )
+        if not included_blocked:
+            statement = statement.where(User.blocked_at.is_(None))
+        return await self.get_one_or_none(statement)
+
+    async def get_by_any_email(
+        self,
+        email: str,
+        *,
+        include_deleted: bool = False,
+        included_blocked: bool = False,
+    ) -> User | None:
+        """Look up a user by their primary email or any linked OAuth account email."""
+        statement = (
+            self.get_base_statement(include_deleted=include_deleted)
+            .outerjoin(User.oauth_accounts)
+            .where(
+                or_(
+                    func.lower(User.email) == email.lower(),
+                    func.lower(OAuthAccount.account_email) == email.lower(),
+                )
+            )
+            .distinct()
         )
         if not included_blocked:
             statement = statement.where(User.blocked_at.is_(None))

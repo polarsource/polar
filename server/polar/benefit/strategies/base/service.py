@@ -47,8 +47,13 @@ class BenefitRetriableError(BenefitServiceError):
     def defer_milliseconds(self) -> int | None:
         """
         Number of milliseconds to wait before retrying.
+
+        Uses explicit None check instead of truthiness to handle defer_seconds=0.
+        Ensures a minimum delay of 1 second (1000ms) to avoid overly aggressive retries.
         """
-        return self.defer_seconds * 1000 if self.defer_seconds else None
+        if self.defer_seconds is not None:
+            return max(1000, self.defer_seconds * 1000)
+        return None
 
 
 class BenefitActionRequiredError(BenefitServiceError):

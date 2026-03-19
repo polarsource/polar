@@ -7,7 +7,9 @@ const _getOrganizationBySlug = async (
   slug: string,
   bypassCache: boolean = false,
 ): Promise<schemas['Organization'] | undefined> => {
-  const requestOptions: any = {
+  const requestOptions: Record<string, unknown> & {
+    params: { query: { slug: string } }
+  } = {
     params: {
       query: {
         slug,

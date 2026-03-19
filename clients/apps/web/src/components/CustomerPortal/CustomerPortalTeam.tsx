@@ -9,7 +9,7 @@ import {
 } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { Client } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DropdownMenu,
@@ -115,7 +115,7 @@ export const CustomerPortalTeamSection = ({
     try {
       await updateMember.mutateAsync({
         id: memberId,
-        body: { role: newRole as any },
+        body: { role: newRole as schemas['MemberRole'] },
       })
       toast({
         title: 'Role updated',

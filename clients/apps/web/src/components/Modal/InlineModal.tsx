@@ -100,7 +100,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
 }
 
 export const InlineModalHeader = (props: {
-  children: React.ReactElement<any>
+  children: React.ReactElement
   className?: string
   hide: () => void
 }) => {

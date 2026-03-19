@@ -1,7 +1,12 @@
 import revalidate from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { operations, schemas, unwrap } from '@polar-sh/client'
+import {
+  ClientResponseError,
+  operations,
+  schemas,
+  unwrap,
+} from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -137,11 +142,14 @@ export const useOrganizationAccount = (id?: string) =>
           params: { path: { id: id ?? '' } },
         }),
       ),
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 403 || error?.response?.status === 404) {
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ClientResponseError &&
+        (error.response.status === 403 || error.response.status === 404)
+      ) {
         return false
       }
-      return defaultRetry(failureCount, error)
+      return defaultRetry(failureCount, error as ClientResponseError)
     },
     enabled: !!id,
   })

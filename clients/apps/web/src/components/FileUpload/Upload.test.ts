@@ -84,6 +84,20 @@ function createUpload(
   })
 }
 
+interface MockXHRInstance {
+  open: ReturnType<typeof vi.fn>
+  send: ReturnType<typeof vi.fn>
+  setRequestHeader: ReturnType<typeof vi.fn>
+  getResponseHeader: ReturnType<typeof vi.fn>
+  readyState: number
+  status: number
+  statusText: string
+  onreadystatechange: ((this: XMLHttpRequest, ev: Event) => void) | null
+  upload: {
+    onprogress: ((this: XMLHttpRequestUpload, ev: ProgressEvent) => void) | null
+  }
+}
+
 function mockXHR(options: { status?: number; etag?: string | null } = {}) {
   const { status = 200, etag = '"abc123"' } = options
 
@@ -91,14 +105,17 @@ function mockXHR(options: { status?: number; etag?: string | null } = {}) {
     'XMLHttpRequest',
     vi.fn().mockImplementation(() => ({
       open: vi.fn(),
-      send: vi.fn().mockImplementation(function (this: any) {
+      send: vi.fn().mockImplementation(function (this: MockXHRInstance) {
         if (this.upload?.onprogress) {
-          this.upload.onprogress({ lengthComputable: true, loaded: 50 })
+          this.upload.onprogress.call(
+            {} as XMLHttpRequestUpload,
+            { lengthComputable: true, loaded: 50 } as ProgressEvent,
+          )
         }
         this.readyState = 4
         this.status = status
         this.statusText = status === 200 ? 'OK' : 'Error'
-        this.onreadystatechange?.()
+        this.onreadystatechange?.call({} as XMLHttpRequest, {} as Event)
       }),
       setRequestHeader: vi.fn(),
       getResponseHeader: vi.fn().mockImplementation((header: string) => {
@@ -108,11 +125,20 @@ function mockXHR(options: { status?: number; etag?: string | null } = {}) {
       readyState: 0,
       status: 0,
       statusText: '',
-      onreadystatechange: null as any,
-      upload: { onprogress: null as any },
+      onreadystatechange: null as
+        | ((this: XMLHttpRequest, ev: Event) => void)
+        | null,
+      upload: {
+        onprogress: null as
+          | ((this: XMLHttpRequestUpload, ev: ProgressEvent) => void)
+          | null,
+      },
     })),
   )
 }
+
+type CreateResult = Awaited<ReturnType<Upload['create']>>
+type PostResult = Awaited<ReturnType<typeof api.POST>>
 
 describe('Upload', () => {
   beforeEach(() => {
@@ -142,7 +168,7 @@ describe('Upload', () => {
         data: mockFileUpload,
         error: undefined,
         response: new Response(),
-      } as any)
+      } as unknown as CreateResult)
 
       mockXHR()
 
@@ -150,7 +176,7 @@ describe('Upload', () => {
         data: mockFileRead,
         error: undefined,
         response: new Response(),
-      } as any)
+      } as unknown as PostResult)
 
       await upload.run()
 
@@ -177,7 +203,7 @@ describe('Upload', () => {
         data: undefined,
         error: { detail: 'Bad request' },
         response: new Response(null, { status: 422 }),
-      } as any)
+      } as unknown as CreateResult)
 
       await upload.run()
 
@@ -206,7 +232,7 @@ describe('Upload', () => {
         data: mockFileUpload,
         error: undefined,
         response: new Response(),
-      } as any)
+      } as unknown as CreateResult)
 
       mockXHR({ status: 403 })
 
@@ -233,7 +259,7 @@ describe('Upload', () => {
         data: mockFileUpload,
         error: undefined,
         response: new Response(),
-      } as any)
+      } as unknown as CreateResult)
 
       mockXHR({ status: 0 })
 
@@ -259,7 +285,7 @@ describe('Upload', () => {
         data: mockFileUpload,
         error: undefined,
         response: new Response(),
-      } as any)
+      } as unknown as CreateResult)
 
       mockXHR()
 
@@ -267,7 +293,7 @@ describe('Upload', () => {
         data: undefined,
         error: { detail: 'NoSuchUpload' },
         response: new Response(null, { status: 500 }),
-      } as any)
+      } as unknown as PostResult)
 
       await upload.run()
 

@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -115,6 +115,14 @@ const MetricChartBox = ({
     hoveredPeriodIndexProp !== undefined
       ? hoveredPeriodIndexProp
       : hoveredPeriodIndexLocal
+
+  const handleDataIndexHover = useCallback(
+    (period: number | null) => {
+      setHoveredPeriodIndexLocal(period)
+      onHoverPeriodChange?.(period)
+    },
+    [onHoverPeriodChange],
+  )
 
   const hoveredPeriod = useMemo(() => {
     if (!data || !hoveredPeriodIndex) return null
@@ -345,10 +353,7 @@ const MetricChartBox = ({
             previousData={previousData?.periods}
             interval={interval}
             metric={selectedMetric}
-            onDataIndexHover={(period) => {
-              setHoveredPeriodIndexLocal(period)
-              onHoverPeriodChange?.(period)
-            }}
+            onDataIndexHover={handleDataIndexHover}
             simple={simple}
             chartType={chartType}
             activeCursorIndex={hoveredPeriodIndex}

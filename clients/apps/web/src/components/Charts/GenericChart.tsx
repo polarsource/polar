@@ -16,8 +16,9 @@ import {
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
-import { useCallback, useId, useMemo, useState } from 'react'
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { ReferenceLine } from 'recharts'
+import type { CategoricalChartState } from 'recharts/types/chart/generateCategoricalChart'
 import type { ExternalMouseEvents } from 'recharts/types/chart/types'
 import type { AxisTick } from 'recharts/types/util/types'
 
@@ -109,6 +110,27 @@ export const GenericChart = <T extends Record<string, unknown>>({
 
   const handleLegendClick = useCallback((key: string) => {
     setActiveSeries((currentValue) => (currentValue === key ? null : key))
+  }, [])
+
+  // Use a ref so mouse handlers are stable and don't invalidate chartBase memo
+  const onDataIndexHoverRef = useRef(onDataIndexHover)
+  onDataIndexHoverRef.current = onDataIndexHover
+
+  const handleMouseMove = useCallback((state: CategoricalChartState) => {
+    const index = state.activeTooltipIndex
+    const parsedIndex =
+      typeof index === 'number'
+        ? index
+        : typeof index === 'string'
+          ? parseInt(index, 10)
+          : null
+    onDataIndexHoverRef.current?.(
+      Number.isNaN(parsedIndex) ? null : parsedIndex,
+    )
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    onDataIndexHoverRef.current?.(null)
   }, [])
 
   const config = useMemo(
@@ -215,16 +237,9 @@ export const GenericChart = <T extends Record<string, unknown>>({
     }
   }, [data, primarySeries])
 
-  const chartContent = useMemo(() => {
-    const cursorLine =
-      activeCursorIndex != null && data[activeCursorIndex] ? (
-        <ReferenceLine
-          x={data[activeCursorIndex][xAxisKey as string] as string | number}
-          stroke={isDark ? '#27282A' : '#E5E7EB'}
-          strokeWidth={1}
-        />
-      ) : null
-
+  // Stable chart base — no dependency on activeCursorIndex or onDataIndexHover,
+  // so it won't rebuild on every hover frame.
+  const chartBase = useMemo(() => {
     const commonProps = {
       accessibilityLayer: true,
       data: data,
@@ -234,24 +249,8 @@ export const GenericChart = <T extends Record<string, unknown>>({
         top: 24,
         bottom: showLegend ? 12 : undefined,
       },
-      onMouseMove: ((state) => {
-        if (onDataIndexHover) {
-          const index = state.activeTooltipIndex
-          const parsedIndex =
-            typeof index === 'number'
-              ? index
-              : typeof index === 'string'
-                ? parseInt(index, 10)
-                : null
-
-          onDataIndexHover(Number.isNaN(parsedIndex) ? null : parsedIndex)
-        }
-      }) satisfies ExternalMouseEvents['onMouseMove'],
-      onMouseLeave: (() => {
-        if (onDataIndexHover) {
-          onDataIndexHover(null)
-        }
-      }) satisfies ExternalMouseEvents['onMouseLeave'],
+      onMouseMove: handleMouseMove,
+      onMouseLeave: handleMouseLeave,
     }
 
     const grid =
@@ -356,7 +355,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {cursorLine}
           {series
             .slice()
             .reverse()
@@ -385,7 +383,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {cursorLine}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -449,7 +446,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
         {yAxis}
         {tooltip}
         {legend}
-        {cursorLine}
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
@@ -471,16 +467,43 @@ export const GenericChart = <T extends Record<string, unknown>>({
     formatter,
     series,
     primarySeries,
-    onDataIndexHover,
     showYAxis,
     showLegend,
     hasDecimalValues,
     gradientInfo,
     activeSeries,
     handleLegendClick,
+    handleMouseMove,
+    handleMouseLeave,
     id,
-    activeCursorIndex,
   ])
+
+  // Cursor line is cheap and only depends on the active index.
+  // Injected via cloneElement so chartBase stays stable on hover.
+  const chartContent = useMemo(() => {
+    if (!chartBase) return null
+    const cursorLine =
+      activeCursorIndex != null && data[activeCursorIndex] ? (
+        <ReferenceLine
+          key="cursor"
+          x={data[activeCursorIndex][xAxisKey as string] as string | number}
+          stroke={isDark ? '#27282A' : '#E5E7EB'}
+          strokeWidth={1}
+        />
+      ) : null
+    if (!cursorLine) return chartBase
+    // Spread the original children without React.Children.toArray so that
+    // existing keys are preserved and Recharts doesn't remount/re-animate.
+    const originalChildren: React.ReactNode = chartBase.props.children
+    return React.cloneElement(
+      chartBase,
+      {},
+      ...(Array.isArray(originalChildren)
+        ? originalChildren
+        : [originalChildren]),
+      cursorLine,
+    )
+  }, [chartBase, activeCursorIndex, data, xAxisKey, isDark])
 
   return (
     <ChartContainer

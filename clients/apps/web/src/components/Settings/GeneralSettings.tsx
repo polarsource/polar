@@ -9,8 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import Spinner from '../Shared/Spinner'
+import { useCallback, useState } from 'react'
+
 export type Theme = 'system' | 'light' | 'dark'
 
 interface GeneralSettingsProps {
@@ -18,26 +18,13 @@ interface GeneralSettingsProps {
 }
 
 const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
-  const [theme, setTheme] = useState<Theme | undefined>()
-  const didSetTheme = useRef(false)
-
-  const onInitialLoad = () => {
-    if (didSetTheme.current) {
-      return
-    }
+  const [theme, setTheme] = useState<Theme>(() => {
     if (typeof localStorage === 'undefined') {
-      return
+      return 'system'
     }
-
-    didSetTheme.current = true
     const t = localStorage.getItem('theme')
-    if (t) {
-      setTheme(t as Theme)
-    } else {
-      setTheme('system')
-    }
-  }
-  useEffect(onInitialLoad, [])
+    return t ? (t as Theme) : 'system'
+  })
 
   const handleThemeChange = useCallback((theme: Theme) => {
     return () => {
@@ -76,32 +63,28 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
               Override your browser&apos;s preferred theme settings
             </p>
           </div>
-          {theme === undefined ? (
-            <Spinner />
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="justify-between" variant="secondary">
-                  <span className="capitalize">{theme}</span>
-                  <ExpandMoreOutlined className="ml-2" fontSize="small" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="dark:bg-polar-800 bg-gray-50 shadow-lg"
-                align="end"
-              >
-                <DropdownMenuItem onClick={handleThemeChange('system')}>
-                  <span>System</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleThemeChange('light')}>
-                  <span>Light</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleThemeChange('dark')}>
-                  <span>Dark</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="justify-between" variant="secondary">
+                <span className="capitalize">{theme}</span>
+                <ExpandMoreOutlined className="ml-2" fontSize="small" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+              align="end"
+            >
+              <DropdownMenuItem onClick={handleThemeChange('system')}>
+                <span>System</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleThemeChange('light')}>
+                <span>Light</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleThemeChange('dark')}>
+                <span>Dark</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </ListGroup.Item>
     </ListGroup>

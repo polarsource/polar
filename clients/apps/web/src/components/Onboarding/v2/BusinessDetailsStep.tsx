@@ -423,7 +423,7 @@ export function BusinessDetailsStep() {
                     >
                       I agree to Polar&apos;s{' '}
                       <a
-                        href="https://polar.sh/legal/terms"
+                        href="https://polar.sh/legal/master-services-terms"
                         className="text-gray-900 underline dark:text-white"
                         target="_blank"
                         rel="noreferrer"
@@ -432,7 +432,7 @@ export function BusinessDetailsStep() {
                       </a>
                       ,{' '}
                       <a
-                        href="https://polar.sh/legal/privacy"
+                        href="https://polar.sh/legal/privacy-policy"
                         className="text-gray-900 underline dark:text-white"
                         target="_blank"
                         rel="noreferrer"

@@ -4,7 +4,13 @@ import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { AlertCircle, Building2, Code2, Package } from 'lucide-react'
+import {
+  AlertCircle,
+  Building2,
+  Code2,
+  ConstructionIcon,
+  Package,
+} from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -84,23 +90,31 @@ const PaymentOnboardingStepper = ({
     <div className={twMerge('flex flex-col gap-6', className)}>
       {/* Status Warning */}
       {!paymentStatus.payment_ready && (
-        <div className="dark:bg-polar-800 flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-100 p-4 dark:border-white/5">
-          <AlertCircle className="h-5 w-5 shrink-0" />
-          <div className="flex flex-col gap-y-1 text-sm">
-            <p className="font-medium">
-              Payment processing is not yet available
-            </p>
-            <p className="dark:text-polar-500 text-gray-500">
-              Complete all steps below to start accepting payments from
-              customers
-            </p>
+        <div className="rounded-2xl bg-yellow-100 p-4 dark:bg-yellow-950">
+          <div className="flex items-start gap-3">
+            <ConstructionIcon className="h-5 w-5 shrink-0 text-yellow-800 dark:text-yellow-500" />
+            <div className="flex flex-col gap-y-1 text-sm">
+              <p className="font-medium text-yellow-800 dark:text-yellow-500">
+                Your account is in test mode
+              </p>
+              <p className="max-w-md text-yellow-700 dark:text-yellow-600">
+                Set up your products and integrate into your app. Test the full
+                flow with 100% discount codes. When you&rsquo;re ready, go live
+                to start accepting payments from your customers.
+              </p>
+              <div className="pt-2">
+                <Link href={`/dashboard/${organization.slug}/finance/account`}>
+                  <Button>Go live</Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       )}
       <div className="space-y-4 md:space-y-6">
         {/* Steps */}
-        <div className="relative grid grid-cols-1 divide-x-0 divide-y divide-gray-100 rounded-3xl border border-gray-100 lg:grid-cols-3 lg:divide-x lg:divide-y-0 dark:divide-white/5 dark:border-white/5">
-          {paymentStatus.steps.map((step) => {
+        <div className="relative grid grid-cols-1 divide-x-0 divide-y divide-gray-100 rounded-3xl border border-gray-100 lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-white/5 dark:border-white/5">
+          {[paymentStatus.steps[0], paymentStatus.steps[1]].map((step) => {
             const action = stepActions[step.id as keyof typeof stepActions]
             const icon = stepIcons[step.id as keyof typeof stepIcons] || (
               <Package className="h-5 w-5" />

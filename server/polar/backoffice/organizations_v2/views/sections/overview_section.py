@@ -6,10 +6,11 @@ from collections.abc import Generator
 from datetime import datetime
 
 from fastapi import Request
-from tagflow import attr, tag, text
+from tagflow import tag, text
 
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
+from polar.organization_review.schemas import DimensionAssessment
 from polar.organization_review.thresholds import (
     AUTH_RATE,
     CHARGEBACK_RATE,
@@ -26,12 +27,11 @@ from ._shared import (
     RISK_LEVEL_BADGE,
     ChecklistMixin,
     render_checklist_row,
-    render_dimension,
 )
 
 
 class OverviewSection(ChecklistMixin):
-    """Render the overview section as a 2x2 grid of cards."""
+    """Render the overview section with AI review as the primary content."""
 
     def __init__(
         self,
@@ -48,7 +48,7 @@ class OverviewSection(ChecklistMixin):
         self.agent_reviewed_at = agent_reviewed_at
 
     # ------------------------------------------------------------------
-    # Top-left: Organization Review card
+    # Full-width: Organization Review card (primary content)
     # ------------------------------------------------------------------
 
     _REVIEW_CONTEXT_LABELS: dict[str, str] = {
@@ -68,14 +68,47 @@ class OverviewSection(ChecklistMixin):
         with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
             text(label)
 
+    @staticmethod
+    def _render_dimension_card(dim: DimensionAssessment) -> None:
+        """Render a single dimension with risk-level visual accent."""
+        name = dim.dimension.value.replace("_", " ").title()
+        risk = dim.risk_level.value
+        badge_class = RISK_LEVEL_BADGE.get(risk, "badge-ghost")
+
+        # Left border accent: red for HIGH, yellow for MEDIUM, none for LOW
+        border_accent = {
+            "HIGH": "border-l-4 border-l-error",
+            "MEDIUM": "border-l-4 border-l-warning",
+            "LOW": "",
+        }.get(risk, "")
+
+        with tag.div(classes=f"border border-base-200 rounded p-3 {border_accent}"):
+            with tag.div(classes="flex items-center justify-between mb-1"):
+                with tag.span(classes="text-sm font-medium"):
+                    text(name)
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.div(classes=f"badge badge-sm {badge_class}"):
+                        text(risk)
+                    with tag.span(classes="text-xs text-base-content/60"):
+                        text(f"{dim.confidence:.0%}")
+
+            if dim.findings:
+                with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
+                    for finding in dim.findings:
+                        with tag.li():
+                            text(finding)
+
+            if dim.recommendation:
+                with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
+                    text(dim.recommendation)
+
     @contextlib.contextmanager
     def organization_review_card(self, request: Request) -> Generator[None]:
-        """Merged agent report + org.review fallback card."""
+        """Full-width AI review card — the primary decision content."""
 
         with card(bordered=True):
             # --- No agent report: show fallback from org.review ---
             if self.agent_report is None:
-                # Fallback: show org.review data if available
                 if self.org.review:
                     review = self.org.review
 
@@ -187,7 +220,7 @@ class OverviewSection(ChecklistMixin):
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
 
-            # Verdict badge + risk score
+            # Verdict + risk level — prominent inline
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = review_report.verdict.value
@@ -236,17 +269,54 @@ class OverviewSection(ChecklistMixin):
                         text("Recommended action: ")
                     text(review_report.recommended_action)
 
-            # Per-dimension breakdown (collapsible)
+            # Dimensions — sorted by risk (HIGH first), in a 2-column grid
             if review_report.dimensions:
-                with tag.details(classes="mb-4"):
-                    attr("open", True)
-                    with tag.summary(
-                        classes="text-sm font-bold cursor-pointer hover:text-base-content"
-                    ):
+                # Sort: HIGH → MEDIUM → LOW
+                risk_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+                sorted_dims = sorted(
+                    review_report.dimensions,
+                    key=lambda d: risk_order.get(d.risk_level.value, 3),
+                )
+
+                elevated = [
+                    d for d in sorted_dims if d.risk_level.value in ("HIGH", "MEDIUM")
+                ]
+                low = [d for d in sorted_dims if d.risk_level.value == "LOW"]
+
+                with tag.div(classes="mb-4"):
+                    with tag.h3(classes="text-sm font-bold mb-3"):
                         text("Dimension Breakdown")
-                    with tag.div(classes="space-y-3 mt-2"):
-                        for dim in review_report.dimensions:
-                            render_dimension(dim)
+
+                    # Elevated risk dimensions — always visible, 2-col grid
+                    if elevated:
+                        with tag.div(
+                            classes="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3"
+                        ):
+                            for dim in elevated:
+                                self._render_dimension_card(dim)
+
+                    # Low risk dimensions — collapsed if there are elevated ones
+                    if low:
+                        if elevated:
+                            with tag.details():
+                                with tag.summary(
+                                    classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content mb-2"
+                                ):
+                                    text(
+                                        f"{len(low)} low-risk dimension{'s' if len(low) != 1 else ''}"
+                                    )
+                                with tag.div(
+                                    classes="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                                ):
+                                    for dim in low:
+                                        self._render_dimension_card(dim)
+                        else:
+                            # All dimensions are LOW — show them all in the grid
+                            with tag.div(
+                                classes="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                            ):
+                                for dim in low:
+                                    self._render_dimension_card(dim)
 
             # Appeal information
             if self.org.review and self.org.review.appeal_submitted_at:
@@ -301,7 +371,7 @@ class OverviewSection(ChecklistMixin):
             yield
 
     # ------------------------------------------------------------------
-    # Top-right: Payment Metrics card (unchanged)
+    # Payment Metrics card
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -453,7 +523,7 @@ class OverviewSection(ChecklistMixin):
                 text(value)
 
     # ------------------------------------------------------------------
-    # Bottom-left: Setup & Checklist card
+    # Setup & Checklist card
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
@@ -501,7 +571,7 @@ class OverviewSection(ChecklistMixin):
             yield
 
     # ------------------------------------------------------------------
-    # Bottom-right: Organization Profile card
+    # Organization Profile card
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
@@ -661,7 +731,7 @@ class OverviewSection(ChecklistMixin):
                         )
 
     # ------------------------------------------------------------------
-    # Main render: 2x2 grid
+    # Main render: AI review first, then supporting evidence
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
@@ -671,19 +741,20 @@ class OverviewSection(ChecklistMixin):
         setup_data: dict[str, int | bool] | None = None,
         payment_stats: dict[str, int | float] | None = None,
     ) -> Generator[None]:
-        """Render the complete overview section as a 2x2 grid."""
+        """Render the overview section with AI review as primary content."""
 
-        with tag.div(classes="space-y-6"):
-            # Top row: Organization Review + Payment Metrics
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-6"):
+        # Two-column: AI review (primary, wider) + supporting evidence stacked
+        with tag.div(classes="flex flex-col lg:flex-row gap-6"):
+            # Left: AI Organization Review (~60%)
+            with tag.div(classes="lg:w-3/5 min-w-0"):
                 with self.organization_review_card(request):
                     pass
 
+            # Right: supporting evidence stacked (~40%)
+            with tag.div(classes="lg:w-2/5 space-y-6"):
                 with self.payment_card(payment_stats):
                     pass
 
-            # Bottom row: Setup & Checklist + Organization Profile
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-6"):
                 with self.setup_checklist_card(setup_data):
                     pass
 

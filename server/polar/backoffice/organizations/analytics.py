@@ -69,9 +69,7 @@ class PaymentAnalyticsService:
             self.payment_repo.get_base_statement()
             .where(
                 Payment.organization_id == organization_id,
-                Payment.status.in_(
-                    [PaymentStatus.succeeded, PaymentStatus.failed]
-                ),
+                Payment.status.in_([PaymentStatus.succeeded, PaymentStatus.failed]),
                 Payment.risk_score.isnot(None),
             )
             .with_only_columns(Payment.risk_score)

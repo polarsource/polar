@@ -528,9 +528,10 @@ async def get_organization_detail(
         }
 
         # Get payment metrics
-        payment_count, total_amount = (
-            await payment_analytics.get_succeeded_payments_stats(organization_id)
-        )
+        (
+            payment_count,
+            total_amount,
+        ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
         )

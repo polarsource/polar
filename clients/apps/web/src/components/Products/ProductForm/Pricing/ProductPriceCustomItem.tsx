@@ -31,11 +31,13 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
       return 'This field is required'
     }
 
-    if (value === 0 || value >= 50) {
+    // 0 is valid (free), positive values are validated by the backend
+    // for currency-specific minimums
+    if (value >= 0) {
       return true
     }
 
-    return 'Must be 0 (for free) or at least 0.50'
+    return 'Must be 0 (for free) or a positive amount'
   }
 
   return (

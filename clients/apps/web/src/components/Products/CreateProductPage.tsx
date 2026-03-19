@@ -5,9 +5,12 @@ import {
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { setProductValidationErrors } from '@/utils/api/errors'
+import {
+  findFirstErrorMessage,
+  setProductValidationErrors,
+} from '@/utils/api/errors'
 import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
-import { schemas } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -105,11 +108,8 @@ export const CreateProductPage = ({
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
-      const firstError = Object.values(errors).find(Boolean)
       const message =
-        firstError && 'message' in firstError && firstError.message
-          ? String(firstError.message)
-          : 'Please check the form for errors'
+        findFirstErrorMessage(errors) ?? 'Please check the form for errors'
       toast({ title: 'Validation Error', description: message })
     },
     [toast],
@@ -143,7 +143,7 @@ export const CreateProductPage = ({
         } as schemas['ProductCreate'])
 
         if (error) {
-          if (Array.isArray(error.detail)) {
+          if (isValidationError(error.detail)) {
             setProductValidationErrors(error.detail, setError)
             toast({
               title: 'Error',

@@ -57,8 +57,8 @@ export const GitHubRepositoryBenefitForm = ({
   useEffect(() => {
     if (repositoriesError) {
       setError('properties.repository_owner', {
-        message: repositoriesError.error['detail'],
-        type: repositoriesError.error['type'],
+        message: repositoriesError.error['detail'] as string | undefined,
+        type: repositoriesError.error['type'] as string | undefined,
       })
     } else {
       clearErrors('properties.repository_owner')

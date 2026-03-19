@@ -82,7 +82,7 @@ export default function Index() {
         router.back()
       })
     },
-    [updateSubscription, subscription],
+    [updateSubscription, subscription, router],
   )
 
   // Set default proration behavior from organization settings

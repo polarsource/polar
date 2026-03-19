@@ -90,7 +90,7 @@ export default function CreateCheckoutLink() {
       }
 
       try {
-        const result = await createCheckoutLink.mutateAsync({
+        await createCheckoutLink.mutateAsync({
           payment_processor: 'stripe',
           label: data.label || null,
           success_url: data.success_url || null,

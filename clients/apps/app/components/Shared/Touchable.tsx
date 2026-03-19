@@ -1,4 +1,3 @@
-/* eslint-disable @polar/no-touchable */
 import { Theme } from '@/design-system/theme'
 import { BoxProps } from '@shopify/restyle'
 import * as Haptics from 'expo-haptics'

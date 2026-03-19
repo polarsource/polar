@@ -13,8 +13,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useCallback, useEffect, useRef } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
 
 export interface CheckoutPWYWFormProps {
@@ -36,7 +36,7 @@ export const CheckoutPWYWForm = ({
   const form = useForm<{ amount: number }>({
     defaultValues: { amount: amount || 0 },
   })
-  const { control, trigger, reset, watch } = form
+  const { control, trigger, reset } = form
 
   const minimumAmount = productPrice.minimum_amount ?? 50 // should be set, but fallback to 50 for type safety
 
@@ -64,25 +64,31 @@ export const CheckoutPWYWForm = ({
     [minimumAmount, checkout.currency, locale, t],
   )
 
+  const checkoutAmountRef = useRef(amount)
+
+  useEffect(() => {
+    checkoutAmountRef.current = amount
+  }, [amount])
+
   const debouncedAmountUpdate = useDebouncedCallback(
-    async (amount: number) => {
+    async (newAmount: number) => {
+      if (newAmount === checkoutAmountRef.current) return
       const isValid = await trigger('amount')
       if (isValid) {
-        update?.({ amount })
+        update?.({ amount: newAmount })
       }
     },
     600,
     [update, trigger],
   )
 
+  const watchedAmount = useWatch({ control, name: 'amount' })
+
   useEffect(() => {
-    const subscription = watch(async (value, { name }) => {
-      if (name === 'amount' && value.amount !== undefined) {
-        debouncedAmountUpdate(value.amount)
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [watch, debouncedAmountUpdate])
+    if (watchedAmount !== undefined) {
+      debouncedAmountUpdate(watchedAmount)
+    }
+  }, [watchedAmount, debouncedAmountUpdate])
 
   useEffect(() => {
     reset({ amount: amount || 0 })

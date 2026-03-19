@@ -95,7 +95,7 @@ export default function Index() {
         router.back()
       })
     },
-    [subscription, cancelSubscription],
+    [subscription, cancelSubscription, router],
   )
 
   const reasons = Object.keys(

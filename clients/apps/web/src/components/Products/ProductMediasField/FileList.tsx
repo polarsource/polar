@@ -34,7 +34,7 @@ export const FileList = ({
       // convert our setFiles to one without callback
       setFiles(() => updated)
     },
-    (_: ProductMediaFileObject[]) => {},
+    () => {},
   )
 
   if (files.length === 0) {

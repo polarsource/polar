@@ -111,7 +111,7 @@ const DownloadablesForm = ({
     })
   }
 
-  const onFileUploadError = useCallback((fileName: string, error: Error) => {
+  const onFileUploadError = useCallback((fileName: string) => {
     toast({
       title: 'Upload Failed',
       description: `Failed to upload ${fileName}. Please try again.`,
@@ -181,7 +181,7 @@ export const DownloadablesBenefitForm = ({
   update = false,
   onUploadingChange,
 }: DownloadablesBenefitFormProps) => {
-  const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
+  useFormContext<schemas['BenefitDownloadablesCreate']>()
 
   if (!update) {
     return (

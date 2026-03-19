@@ -17,13 +17,10 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 import { useFormContext } from 'react-hook-form'
 
-const AGGREGATION_FUNCTIONS = [
-  ...enums.countAggregationFuncValues,
-  ...enums.propertyAggregationFuncValues,
-  ...enums.uniqueAggregationFuncValues,
-]
-
-type AggregationFunction = (typeof AGGREGATION_FUNCTIONS)[number]
+type AggregationFunction =
+  | (typeof enums.countAggregationFuncValues)[number]
+  | (typeof enums.propertyAggregationFuncValues)[number]
+  | (typeof enums.uniqueAggregationFuncValues)[number]
 
 interface AggregationOption {
   value: AggregationFunction

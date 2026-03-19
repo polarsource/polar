@@ -52,8 +52,7 @@ const roleToDisplayName = (role: string): string => {
 export const CustomerPortalTeamSection = ({
   api,
 }: CustomerPortalTeamSectionProps) => {
-  const { data: members, isLoading: isLoadingMembers } =
-    useCustomerPortalMembers(api)
+  const { data: members } = useCustomerPortalMembers(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const updateMember = useUpdateCustomerPortalMember(api)
   const removeMember = useRemoveCustomerPortalMember(api)

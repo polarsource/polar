@@ -47,7 +47,7 @@ const ImageUpload = ({
         handleUploadUrl: '/api/blob/upload',
       })
       onUploaded(newBlob.url)
-    } catch (e) {
+    } catch {
       setErrorMessage('Failed to upload image')
     } finally {
       setIsLoading(false)

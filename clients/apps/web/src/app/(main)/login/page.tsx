@@ -15,7 +15,7 @@ export default async function Page(props: {
 }) {
   const searchParams = await props.searchParams
 
-  const { return_to, from, ...rest } = searchParams
+  const { return_to, ...rest } = searchParams
 
   return (
     <div className="flex h-screen w-full grow items-center justify-center">

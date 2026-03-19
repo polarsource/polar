@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (
-        _: string, // pathname
+        _pathname: string,
         /* clientPayload?: string, */
       ) => {
         const user = await getAuthenticatedUser()
@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           // Run any logic after the file upload completed
           // const { userId } = JSON.parse(tokenPayload);
           // await db.update({ avatar: blob.url, userId });
-        } catch (error) {
+        } catch {
           throw new Error('Could not update user')
         }
       },

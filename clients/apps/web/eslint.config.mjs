@@ -1,17 +1,17 @@
 import { nextJsConfig } from '@polar-sh/eslint-config/next-js'
 
 // Elements replaced by Orbit primitives — ban raw JSX usage as a warning.
-const orbitElementRule = (element, replacement) => ({
-  selector: `JSXOpeningElement[name.name="${element}"]`,
-  message: `Use ${replacement} from @polar-sh/orbit instead of <${element}>.`,
-})
+// const orbitElementRule = (element, replacement) => ({
+//   selector: `JSXOpeningElement[name.name="${element}"]`,
+//   message: `Use ${replacement} from @polar-sh/orbit instead of <${element}>.`,
+// })
 
 // Ban specific Tailwind utility groups on <Text> className — consumers must use
 // the dedicated prop (variant, color, align, wrap) instead of raw classes.
-const textClassRule = (pattern, message) => ({
-  selector: `JSXOpeningElement[name.name="Text"]:has(JSXAttribute[name.name="className"][value.value=/${pattern}/])`,
-  message,
-})
+// const textClassRule = (pattern, message) => ({
+//   selector: `JSXOpeningElement[name.name="Text"]:has(JSXAttribute[name.name="className"][value.value=/${pattern}/])`,
+//   message,
+// })
 
 /** @type {import("eslint").Linter.Config} */
 export default [

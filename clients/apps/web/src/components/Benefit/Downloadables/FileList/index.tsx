@@ -50,7 +50,7 @@ export const FileList = ({
     (updated) => {
       setFiles(() => updated)
     },
-    (_: FileObject[]) => {},
+    () => {},
   )
 
   if (files.length === 0) {

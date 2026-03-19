@@ -1,18 +1,12 @@
-'use client'
+import { ArticleLayout } from '@/components/Layout/Public/ArticleLayout'
 
-import { PropsWithChildren } from 'react'
+export const dynamic = 'force-static'
+export const dynamicParams = false
 
-export default function Layout({
+export default function BlogLayout({
   children,
-}: PropsWithChildren<{
+}: {
   children: React.ReactNode
-}>) {
-  return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col px-2 md:px-0">
-      {/* Content Card */}
-      <div className="dark:md:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24">
-        <div className="flex flex-col text-lg">{children}</div>
-      </div>
-    </main>
-  )
+}) {
+  return <ArticleLayout>{children}</ArticleLayout>
 }

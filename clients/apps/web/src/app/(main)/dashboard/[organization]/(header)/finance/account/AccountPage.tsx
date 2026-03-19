@@ -173,7 +173,7 @@ export default function ClientPage({
             title="Account Review"
             description={
               requireDetails
-                ? "Tell us about your organization so we can review if it's an acceptable use case for Polar."
+                ? 'Tell us about your organization so we can review the usecase.'
                 : 'Your submitted organization details and compliance status.'
             }
           />

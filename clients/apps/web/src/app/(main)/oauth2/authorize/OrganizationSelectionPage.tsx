@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import revalidate from '@/app/actions'

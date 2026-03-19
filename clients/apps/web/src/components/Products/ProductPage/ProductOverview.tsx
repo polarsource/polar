@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'

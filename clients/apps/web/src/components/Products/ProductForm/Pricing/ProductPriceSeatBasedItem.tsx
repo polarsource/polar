@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import CloseOutlined from '@mui/icons-material/CloseOutlined'

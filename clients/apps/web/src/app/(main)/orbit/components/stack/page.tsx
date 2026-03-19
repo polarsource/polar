@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { Stack, Text } from '@polar-sh/orbit'
 import { OrbitPageHeader, OrbitSectionHeader } from '../../OrbitPageHeader'
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import {

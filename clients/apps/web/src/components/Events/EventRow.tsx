@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'

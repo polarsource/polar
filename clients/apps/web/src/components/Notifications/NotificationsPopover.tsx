@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'

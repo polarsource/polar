@@ -114,13 +114,17 @@ const PaymentNotReadyBanner = ({
   const isDenied = organizationStatus === 'denied'
 
   return (
-    <Alert color="red">
+    <Alert color={isDenied ? 'red' : 'yellow'}>
       <div className="flex flex-col gap-y-2 p-2">
-        <div className="font-medium">Payments are currently unavailable</div>
+        <div className="font-medium">
+          {isDenied
+            ? 'Payments are currently unavailable'
+            : `${organizationName} is in test mode`}
+        </div>
         <div className="text-sm">
           {isDenied
             ? `${organizationName} doesn't allow payments.`
-            : `${organizationName} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
+            : `You can test checkout with free products or 100% discount orders.`}
         </div>
       </div>
     </Alert>

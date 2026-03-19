@@ -3,7 +3,7 @@
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
@@ -14,12 +14,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   organization,
 }) => {
   const [timedOut, setTimedOut] = useState(false)
-  const [stopPolling, setStopPolling] = useState(false)
+  const [hasVerdict, setHasVerdict] = useState(false)
 
-  const shouldPoll = useMemo(
-    () => !timedOut && !stopPolling,
-    [timedOut, stopPolling],
-  )
+  const shouldPoll = !timedOut && !hasVerdict
   const reviewStatus = useOrganizationReviewStatus(
     organization.id,
     true,
@@ -28,18 +25,15 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
 
   // Timeout after 120s and stop polling
   useEffect(() => {
-    if (timedOut) return
-    if (!shouldPoll) return
+    if (timedOut || !shouldPoll) return
     const timeout = setTimeout(() => setTimedOut(true), 120_000)
     return () => clearTimeout(timeout)
   }, [timedOut, shouldPoll])
 
-  // Stop polling once a verdict is present
-  useEffect(() => {
-    if (reviewStatus.data?.verdict) {
-      setStopPolling(true)
-    }
-  }, [reviewStatus.data?.verdict])
+  // Stop polling once a verdict is present (render-time state sync)
+  if (reviewStatus.data?.verdict && !hasVerdict) {
+    setHasVerdict(true)
+  }
 
   const getValidationStatus = () => {
     // If we don't have a verdict yet, show loading while polling

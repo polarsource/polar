@@ -52,11 +52,10 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   }, [setConsentGiven])
 
   useEffect(() => {
-    // We want this to only run once the client loads
-    // or else it causes a hydration error
     const currentConsent = cookieConsentGiven()
 
     if (doNotTrackParameter && currentConsent === 'undecided') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only localStorage read to avoid hydration mismatch
       declineCookies()
     } else {
       setConsentGiven(currentConsent)

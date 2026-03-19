@@ -146,6 +146,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   // Set selected on load
   const didSetOnLoad = useRef(false)
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time form init when repositories load */
   useEffect(() => {
     if (didSetOnLoad.current || isFetchingRepositories) {
       return
@@ -175,6 +176,7 @@ export const GitHubRepositoryBenefitForm = ({
     repos,
     setValue,
   ])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()

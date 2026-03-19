@@ -9,7 +9,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 interface AppealFormProps {
   organization: schemas['Organization']
@@ -22,8 +22,12 @@ const AppealForm: React.FC<AppealFormProps> = ({
   reason,
   existingReviewStatus,
 }) => {
-  const [appealReason, setAppealReason] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [appealReason, setAppealReason] = useState(
+    () => existingReviewStatus?.appeal_reason ?? '',
+  )
+  const [isSubmitted, setIsSubmitted] = useState(
+    () => !!existingReviewStatus?.appeal_submitted_at,
+  )
   const [showForm, setShowForm] = useState(false)
 
   const appealMutation = useOrganizationAppeal(organization.id)
@@ -33,14 +37,16 @@ const AppealForm: React.FC<AppealFormProps> = ({
   const currentReviewStatus = existingReviewStatus || reviewStatus.data
 
   // Update state based on existing review status
-  useEffect(() => {
+  const [prevReviewStatus, setPrevReviewStatus] = useState(currentReviewStatus)
+  if (currentReviewStatus !== prevReviewStatus) {
+    setPrevReviewStatus(currentReviewStatus)
     if (currentReviewStatus?.appeal_submitted_at) {
       setIsSubmitted(true)
       if (currentReviewStatus.appeal_reason) {
         setAppealReason(currentReviewStatus.appeal_reason)
       }
     }
-  }, [currentReviewStatus])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

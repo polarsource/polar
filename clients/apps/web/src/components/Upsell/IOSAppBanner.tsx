@@ -3,7 +3,7 @@
 import { StaticImage } from '@/components/Image/StaticImage'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 export enum LocalStorageKey {
   IOS_APP_BANNER_DISMISSED = 'ios_app_banner_dismissed',
@@ -21,10 +21,6 @@ const getIsDismissed = (): boolean => {
 
 export const IOSAppBanner = () => {
   const [isDismissed, setIsDismissed] = useState(() => getIsDismissed())
-
-  useEffect(() => {
-    setIsDismissed(getIsDismissed())
-  }, [])
 
   const dismiss = useCallback(() => {
     if (typeof window === 'undefined') {

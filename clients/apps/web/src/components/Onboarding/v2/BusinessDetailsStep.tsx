@@ -1,8 +1,7 @@
 /* eslint-disable max-lines */
 'use client'
 
-import { useAuth, useOnboardingTracking } from '@/hooks'
-import { useCreateOrganization, useUpdateOrganization } from '@/hooks/queries'
+import { useOnboardingTracking } from '@/hooks'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -238,11 +237,8 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function BusinessDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
   const { trackStepCompleted } = useOnboardingTracking()
   const { data, updateData, showApiResponse } = useOnboardingData()
-  const createOrganization = useCreateOrganization()
-  const updateOrganization = useUpdateOrganization()
   const [submitting, setSubmitting] = useState(false)
   const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(false)
@@ -260,12 +256,7 @@ export function BusinessDetailsStep() {
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors },
-  } = form
+  const { handleSubmit, setValue } = form
 
   const onSubmit = async (formData: FormSchema) => {
     if (!formData.terms) return
@@ -279,55 +270,6 @@ export function BusinessDetailsStep() {
       businessCountry: formData.businessCountry,
       registeredBusinessName: formData.registeredBusinessName,
     })
-
-    const orgBody = {
-      name: formData.orgName,
-      slug: formData.orgSlug,
-      default_presentment_currency:
-        formData.defaultCurrency as schemas['PresentmentCurrency'],
-      country: (formData.businessCountry || undefined) as
-        | schemas['CountryAlpha2Input']
-        | undefined,
-      legal_entity:
-        formData.organizationType === 'company'
-          ? {
-              type: 'company' as const,
-              registered_name: formData.registeredBusinessName,
-            }
-          : { type: 'individual' as const },
-    }
-
-    if (data.organizationId) {
-      const { error } = await updateOrganization.mutateAsync({
-        id: data.organizationId,
-        body: orgBody,
-      })
-
-      if (error) {
-        setSubmitting(false)
-        setError('root', { message: 'Failed to update organization' })
-        return
-      }
-    } else {
-      const { data: org, error } = await createOrganization.mutateAsync(orgBody)
-
-      if (error) {
-        setSubmitting(false)
-        if (Array.isArray(error.detail)) {
-          setError('root', {
-            message: error.detail[0]?.msg || 'Failed to create organization',
-          })
-        } else if (typeof error.detail === 'string') {
-          setError('root', { message: error.detail })
-        } else {
-          setError('root', { message: 'Failed to create organization' })
-        }
-        return
-      }
-
-      setUserOrganizations((prev) => [...prev, org])
-      updateData({ organizationId: org.id })
-    }
 
     trackStepCompleted('business')
     await showApiResponse(200, 'OK')
@@ -472,12 +414,6 @@ export function BusinessDetailsStep() {
               </FormItem>
             )}
           />
-
-          {errors.root && (
-            <p className="text-destructive-foreground text-sm">
-              {errors.root.message}
-            </p>
-          )}
 
           <SubmitButton loading={submitting} />
         </form>

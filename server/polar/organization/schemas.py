@@ -318,7 +318,7 @@ class Organization(OrganizationBase):
     )
     status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
-        description="When the business details were submitted.",
+        description="When the business details were submitted for review.",
     )
 
     default_presentment_currency: str = Field(

@@ -16,7 +16,7 @@ function toSnakeCase(str: string): string {
 const STEP_CONFIG = {
   personal: { method: 'PATCH', path: '/v1/users/me' },
   business: { method: 'POST', path: '/v1/organizations' },
-  product: { method: 'PATCH', path: '/v1/organizations/:id' },
+  product: { method: 'POST', path: '/v1/organizations' },
 } as const
 
 interface Line {
@@ -66,7 +66,20 @@ export function APIPreview({
         return obj
       }
       case 'product': {
-        const obj: Record<string, unknown> = {}
+        const obj: Record<string, unknown> = {
+          default_presentment_currency: data.defaultCurrency || 'usd',
+        }
+        if (data.orgName) obj.name = data.orgName
+        if (data.orgSlug) obj.slug = data.orgSlug
+        if (data.businessCountry) obj.country = data.businessCountry
+        const legalEntity =
+          data.organizationType === 'company' && data.registeredBusinessName
+            ? {
+                type: 'company' as const,
+                registered_name: data.registeredBusinessName,
+              }
+            : { type: 'individual' as const }
+        obj.legal_entity = legalEntity
         if (data.supportEmail) obj.email = data.supportEmail
         if (data.productUrl) obj.website = data.productUrl
 

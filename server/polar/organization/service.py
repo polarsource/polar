@@ -343,7 +343,6 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
-        previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -356,7 +355,11 @@ class OrganizationService:
         )
 
         # Only store details once to avoid API overrides later w/o review
-        if not previous_details and update_schema.details:
+        # We do allow initial details being set upon creation that will still require review,
+        # so upon creation we set details but not details_submitted_at
+        # so details_submitted_at effectively doubles as a "submit for review"
+        # timestamp, for now. We'll revisit this soon enough. @pieterbeulque
+        if not organization.details_submitted_at and update_schema.details:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )

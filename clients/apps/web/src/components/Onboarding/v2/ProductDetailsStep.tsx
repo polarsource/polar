@@ -1,7 +1,8 @@
 /* eslint-disable max-lines */
 'use client'
 
-import { useUpdateOrganization } from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -15,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { AUPBlocker } from './AUPBlocker'
@@ -64,9 +65,9 @@ interface FormSchema {
 
 export function ProductDetailsStep() {
   const router = useRouter()
-  const params = useParams<{ organization: string }>()
+  const { setUserOrganizations } = useAuth()
   const { data, updateData, showApiResponse } = useOnboardingData()
-  const updateOrganization = useUpdateOrganization()
+  const createOrganization = useCreateOrganization()
   const [loading, setLoading] = useState<
     'validating' | 'submitting' | 'submitting-anyway' | null
   >(null)
@@ -134,32 +135,44 @@ export function ProductDetailsStep() {
       currentlySellingOn: formData.currentlySellingOn,
     })
 
-    if (data.organizationId) {
-      const switching = formData.currentlySellingOn.length > 0
-      const switchingFrom = (
-        switching ? formData.currentlySellingOn[0] : null
-      ) as schemas['OrganizationDetails']['switching_from']
+    const switching = formData.currentlySellingOn.length > 0
+    const switchingFrom = (
+      switching ? formData.currentlySellingOn[0] : null
+    ) as schemas['OrganizationDetails']['switching_from']
 
-      const { error } = await updateOrganization.mutateAsync({
-        id: data.organizationId,
-        body: {
-          ...(formData.supportEmail && { email: formData.supportEmail }),
-          ...(formData.productUrl && { website: formData.productUrl }),
-          details: {
-            about: '-',
-            product_description: formData.productDescription,
-            selling_categories: formData.sellingCategories,
-            pricing_models: formData.pricingModel,
-            switching,
-            switching_from: switchingFrom,
-          } satisfies schemas['OrganizationDetails'],
-        },
-      })
+    const { data: org, error } = await createOrganization.mutateAsync({
+      name: data.orgName!,
+      slug: data.orgSlug!,
+      default_presentment_currency:
+        (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
+      country: (data.businessCountry || undefined) as
+        | schemas['OrganizationCreate']['country']
+        | undefined,
+      legal_entity:
+        data.organizationType === 'company'
+          ? {
+              type: 'company' as const,
+              registered_name: data.registeredBusinessName!,
+            }
+          : { type: 'individual' as const },
+      ...(formData.supportEmail && { email: formData.supportEmail }),
+      ...(formData.productUrl && { website: formData.productUrl }),
+      details: {
+        about: '-',
+        product_description: formData.productDescription,
+        selling_categories: formData.sellingCategories,
+        pricing_models: formData.pricingModel,
+        switching,
+        switching_from: switchingFrom,
+      } satisfies schemas['OrganizationDetails'],
+    })
 
-      if (error) {
-        return false
-      }
+    if (error) {
+      return false
     }
+
+    setUserOrganizations((prev) => [...prev, org])
+    updateData({ organizationId: org.id, orgSlug: org.slug })
 
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
@@ -169,19 +182,16 @@ export function ProductDetailsStep() {
   const onSubmit = async (formData: FormSchema) => {
     setLoading('validating')
 
-    const res = await fetch(
-      `/dashboard/${params.organization}/onboarding/validate-description`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_description: formData.productDescription,
-          selling_categories: formData.sellingCategories,
-          pricing_models: formData.pricingModel,
-          history: aupHistory,
-        }),
-      },
-    )
+    const res = await fetch(`/onboarding/validate-description`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_description: formData.productDescription,
+        selling_categories: formData.sellingCategories,
+        pricing_models: formData.pricingModel,
+        history: aupHistory,
+      }),
+    })
 
     const validation: {
       verdict: 'APPROVE' | 'DENY' | 'CLARIFY'

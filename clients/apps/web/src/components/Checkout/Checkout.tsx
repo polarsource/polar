@@ -46,6 +46,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
+import { twMerge } from 'tailwind-merge'
 
 const TruncatedDescription = ({
   description,
@@ -114,9 +115,14 @@ const PaymentNotReadyBanner = ({
   const isDenied = organizationStatus === 'denied'
 
   return (
-    <Alert color={isDenied ? 'red' : 'yellow'}>
-      <div className="flex flex-col gap-y-2 p-2">
-        <div className="font-medium">
+    <Alert color={isDenied ? 'red' : 'gray'}>
+      <div className="flex flex-col gap-y-1 p-2">
+        <div
+          className={twMerge(
+            'text-sm font-medium',
+            isDenied ? '' : 'text-black dark:text-white',
+          )}
+        >
           {isDenied
             ? 'Payments are currently unavailable'
             : `${organizationName} is in test mode`}

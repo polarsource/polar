@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 interface AlertProps {
-  color: 'blue' | 'gray' | 'red' | 'green'
+  color: 'blue' | 'gray' | 'red' | 'green' | 'yellow'
 }
 
 const Alert: React.FC<React.PropsWithChildren<AlertProps>> = ({
@@ -18,6 +18,8 @@ const Alert: React.FC<React.PropsWithChildren<AlertProps>> = ({
         return 'bg-red-50 border border-red-100 text-red-600 dark:bg-red-950 dark:border-red-900 dark:text-red-400'
       case 'green':
         return 'bg-green-50 border border-green-100 text-green-600 dark:bg-green-950 dark:border-green-900 dark:text-green-400'
+      case 'yellow':
+        return 'bg-yellow-50 border border-yellow-100 text-yellow-600 dark:bg-yellow-950 dark:border-yellow-900 dark:text-yellow-400'
     }
   }, [color])
 

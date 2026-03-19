@@ -17,6 +17,10 @@ from polar.worker import enqueue_job
 from .notification import Notification as NotificationSchema
 from .notification import NotificationPayload, NotificationType
 
+_notification_type_adapter: TypeAdapter[NotificationSchema] = TypeAdapter(
+    NotificationSchema
+)
+
 
 class PartialNotification(BaseModel):
     type: NotificationType
@@ -80,10 +84,7 @@ class NotificationsService:
             )
 
     def parse_payload(self, n: Notification) -> NotificationPayload:
-        NotificationTypeAdapter: TypeAdapter[NotificationSchema] = TypeAdapter(
-            NotificationSchema
-        )
-        notification = NotificationTypeAdapter.validate_python(n)
+        notification = _notification_type_adapter.validate_python(n)
         return notification.payload
 
     async def get_user_last_read(

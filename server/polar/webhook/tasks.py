@@ -179,7 +179,8 @@ async def _webhook_event_send(
 
         # Permanent failure
         if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
-            event.succeeded = False
+            if event.succeeded is not True:
+                event.succeeded = False
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
         # Retry – compute backoff from delivery attempts only, so that
         # unrelated NotLatestEvent retries don't inflate the delay.

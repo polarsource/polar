@@ -18,7 +18,7 @@ import {
 import { useTheme } from 'next-themes'
 import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { ReferenceLine } from 'recharts'
-import type { CategoricalChartState } from 'recharts/types/chart/generateCategoricalChart'
+import type { MouseHandlerDataParam } from 'recharts'
 import type { AxisTick } from 'recharts/types/util/types'
 
 const MinHeightBar = (props: {
@@ -115,7 +115,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
   const onDataIndexHoverRef = useRef(onDataIndexHover)
   onDataIndexHoverRef.current = onDataIndexHover
 
-  const handleMouseMove = useCallback((state: CategoricalChartState) => {
+  const handleMouseMove = useCallback((state: MouseHandlerDataParam) => {
     const index = state.activeTooltipIndex
     const parsedIndex =
       typeof index === 'number'

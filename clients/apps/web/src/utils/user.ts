@@ -1,7 +1,11 @@
 import { Client, schemas } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
-import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { cache } from 'react'
+import { getServerSideAPI } from './client/serverside'
+
+const POLAR_AUTH_COOKIE_KEY =
+  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
 async function retryWithBackoff<T>(
   fn: () => Promise<{ data?: T; error?: any }>,
@@ -33,12 +37,21 @@ async function retryWithBackoff<T>(
 const _getAuthenticatedUser = async (): Promise<
   schemas['UserRead'] | undefined
 > => {
-  // Middleware set this header for authenticated requests
-  const userData = (await headers()).get('x-polar-user')
-  if (userData) {
-    return JSON.parse(userData)
+  const cookieStore = await cookies()
+  if (!cookieStore.has(POLAR_AUTH_COOKIE_KEY)) {
+    return undefined
   }
-  return undefined
+
+  const api = await getServerSideAPI()
+  const { data, error } = await api.GET('/v1/users/me', {
+    cache: 'no-cache',
+  })
+
+  if (error) {
+    return undefined
+  }
+
+  return data
 }
 
 // ...but tell React to memoize it for the duration of the request

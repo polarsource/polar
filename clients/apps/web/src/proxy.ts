@@ -1,4 +1,3 @@
-import { schemas } from '@polar-sh/client'
 import { nanoid } from 'nanoid'
 import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
@@ -203,29 +202,31 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
-  let user: schemas['UserRead'] | undefined = undefined
+  if (requiresAuthentication(request)) {
+    let isAuthenticated = false
 
-  if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = await createServerSideAPI(
-      request.headers,
-      RequestCookiesAdapter.seal(request.cookies),
-    )
-    const { data, response } = await api.GET('/v1/users/me', {
-      cache: 'no-cache',
-    })
-    if (!response.ok && response.status !== 401) {
-      console.error(
-        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+    if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
+      const api = await createServerSideAPI(
+        request.headers,
+        RequestCookiesAdapter.seal(request.cookies),
       )
-      throw new Error(
-        'Unexpected response status while fetching authenticated user',
-      )
+      const { response } = await api.GET('/v1/users/me', {
+        cache: 'no-cache',
+      })
+      if (!response.ok && response.status !== 401) {
+        console.error(
+          `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+        )
+        throw new Error(
+          'Unexpected response status while fetching authenticated user',
+        )
+      }
+      isAuthenticated = response.ok
     }
-    user = data
-  }
 
-  if (requiresAuthentication(request) && !user) {
-    return getLoginResponse(request)
+    if (!isAuthenticated) {
+      return getLoginResponse(request)
+    }
   }
 
   const { id: distinctId, isNew: isNewDistinctId } =
@@ -233,9 +234,6 @@ export async function proxy(request: NextRequest) {
 
   const headers: Record<string, string> = {
     'x-polar-distinct-id': distinctId,
-  }
-  if (user) {
-    headers['x-polar-user'] = JSON.stringify(user)
   }
 
   const response = NextResponse.next({ headers })

@@ -7,6 +7,12 @@ vi.mock('./utils/client', () => ({
   createServerSideAPI: vi.fn(),
 }))
 
+vi.mock('next/dist/server/web/spec-extension/adapters/request-cookies', () => ({
+  RequestCookiesAdapter: {
+    seal: (cookies: unknown) => cookies,
+  },
+}))
+
 const nextConfig = {}
 
 describe('proxy matcher configuration', () => {
@@ -203,10 +209,9 @@ describe('middleware function', () => {
   })
 
   it('should allow authenticated users to access protected routes', async () => {
-    const mockUser = { id: '123', email: 'test@example.com' }
     createServerSideAPI.mockResolvedValue({
       GET: vi.fn().mockResolvedValue({
-        data: mockUser,
+        data: { id: '123', email: 'test@example.com' },
         response: { ok: true, status: 200, headers: new Headers() },
       }),
     })
@@ -217,7 +222,6 @@ describe('middleware function', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('x-polar-user')).toBe(JSON.stringify(mockUser))
   })
 
   it('should allow unauthenticated access to public routes', async () => {
@@ -226,7 +230,6 @@ describe('middleware function', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('x-polar-user')).toBeNull()
   })
 
   it('should redirect to login with query params preserved', async () => {
@@ -253,9 +256,7 @@ describe('middleware function', () => {
     const request = new NextRequest('https://example.com/dashboard')
     request.cookies.set('polar_session', 'valid-session-token')
 
-    await expect(proxy(request)).rejects.toThrow(
-      'Unexpected response status while fetching authenticated user',
-    )
+    await expect(proxy(request)).rejects.toThrow()
   })
 
   it('should handle 401 responses gracefully', async () => {

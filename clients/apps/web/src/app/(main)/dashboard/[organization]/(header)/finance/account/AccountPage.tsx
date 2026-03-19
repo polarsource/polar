@@ -58,9 +58,14 @@ export default function ClientPage({
   const startIdentityVerification = useCallback(async () => {
     const { data, error } = await createIdentityVerification.mutateAsync()
     if (error) {
-      const errorDetail = (error as any).detail
+      const errorBody = error as Record<string, unknown>
+      const errorDetail = errorBody.detail as
+        | string
+        | { error?: string; detail?: string }
+        | undefined
       if (
-        errorDetail?.error === 'IdentityVerificationProcessing' ||
+        (typeof errorDetail === 'object' &&
+          errorDetail?.error === 'IdentityVerificationProcessing') ||
         errorDetail === 'Your identity verification is still processing.'
       ) {
         toast({
@@ -74,7 +79,7 @@ export default function ClientPage({
           description:
             typeof errorDetail === 'string'
               ? errorDetail
-              : errorDetail?.detail ||
+              : (typeof errorDetail === 'object' && errorDetail?.detail) ||
                 'Unable to start identity verification. Please try again.',
         })
       }

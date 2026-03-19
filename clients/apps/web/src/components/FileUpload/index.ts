@@ -103,7 +103,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
         size: file.size,
         mime_type: file.type || 'application/octet-stream',
         is_uploaded: false,
-      } as any),
+      } as unknown as T),
       isProcessing: true,
     }
     setFiles((prev) => [...prev, processingFile])

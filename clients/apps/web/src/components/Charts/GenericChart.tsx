@@ -291,9 +291,21 @@ export const GenericChart = <T extends Record<string, unknown>>({
     const tooltip = (
       <ChartTooltip
         cursor={false}
-        content={(props) => (
+        content={({
+          active,
+          payload,
+          label,
+          coordinate,
+          accessibilityLayer,
+          activeIndex,
+        }) => (
           <ChartTooltipContent
-            {...(props as any)}
+            active={active}
+            payload={payload}
+            label={label}
+            coordinate={coordinate}
+            accessibilityLayer={accessibilityLayer}
+            activeIndex={activeIndex}
             className="text-black dark:text-white"
             indicator="dot"
             labelKey={primarySeries?.key}

@@ -1,6 +1,7 @@
 import datetime
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from pydantic import BaseModel, Field, ValidationError, create_model
 from sqlalchemy import event
@@ -50,14 +51,33 @@ class CustomFieldDataOutputMixin(BaseModel):
     )
 
 
+_custom_field_schema_cache: dict[
+    tuple[tuple[UUID, datetime.datetime | None, bool], ...], type[BaseModel]
+] = {}
+_empty_custom_field_schema: type[BaseModel] = create_model("CustomFieldDataInput")
+
+
 def build_custom_field_data_schema(
     custom_fields: Sequence[tuple["CustomField", bool]],
 ) -> type[BaseModel]:
+    if not custom_fields:
+        return _empty_custom_field_schema
+
+    cache_key = tuple(
+        (custom_field.id, custom_field.modified_at, required)
+        for custom_field, required in custom_fields
+    )
+    cached = _custom_field_schema_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     fields_definitions: Any = {
         custom_field.slug: custom_field.get_field_definition(required)
         for custom_field, required in custom_fields
     }
-    return create_model("CustomFieldDataInput", **fields_definitions)
+    schema = create_model("CustomFieldDataInput", **fields_definitions)
+    _custom_field_schema_cache[cache_key] = schema
+    return schema
 
 
 def validate_custom_field_data(

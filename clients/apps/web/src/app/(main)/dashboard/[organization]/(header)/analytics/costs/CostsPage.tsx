@@ -2,9 +2,9 @@
 
 import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'
 import { getMetricsForType } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/metrics-config'
+import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import { StatisticCard } from '@/components/Shared/StatisticCard'
 import {
   useEventHierarchyStats,
   useEventPropertyGroupStats,
@@ -26,7 +26,15 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import { endOfDay, subDays } from 'date-fns'
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart2,
+  Bot,
+  Minus,
+  TrendingUp,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
@@ -96,47 +104,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
     }
     return map
   }, [previousStats])
-
-  // Summary metrics
-  const summary = useMemo(() => {
-    let totalCost = 0
-    let totalOccurrences = 0
-    let totalCustomers = 0
-    for (const s of currentTotals) {
-      totalCost += parseFloat(String(s.totals?.['_cost_amount'] ?? '0'))
-      totalOccurrences += s.occurrences
-      totalCustomers = Math.max(totalCustomers, s.customers)
-    }
-    const prevTotal = Array.from(previousTotalsMap.values()).reduce(
-      (a, b) => a + b,
-      0,
-    )
-    const delta = totalCost - prevTotal
-    const pct = prevTotal > 0 ? (delta / prevTotal) * 100 : null
-
-    const costPerCustomer = totalCustomers > 0 ? totalCost / totalCustomers : 0
-
-    let prevCustomers = 0
-    for (const s of previousStats?.totals ?? []) {
-      prevCustomers = Math.max(prevCustomers, s.customers)
-    }
-    const prevCostPerCustomer =
-      prevCustomers > 0 ? prevTotal / prevCustomers : 0
-    const cpcDelta = costPerCustomer - prevCostPerCustomer
-    const cpcPct =
-      prevCostPerCustomer > 0 ? (cpcDelta / prevCostPerCustomer) * 100 : null
-
-    return {
-      totalCost,
-      totalOccurrences,
-      totalCustomers,
-      delta,
-      pct,
-      costPerCustomer,
-      cpcDelta,
-      cpcPct,
-    }
-  }, [currentTotals, previousTotalsMap, previousStats])
 
   // "Where money is going" — ranked by total cost with share bars
   const byTotal = useMemo(() => {
@@ -304,42 +271,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
         <TabsContent value="overview">
           <div className="flex flex-col gap-y-10">
-            <div className="grid grid-cols-3 gap-4">
-              <StatisticCard title="Total Spend" size="lg">
-                <span className="tabular-nums">
-                  {fmt(summary.totalCost, 'usd')}
-                </span>
-                {summary.pct !== null && (
-                  <TrendBadge
-                    delta={summary.delta}
-                    pct={summary.pct}
-                    currentStart={dateRange.from}
-                    currentEnd={dateRange.to}
-                    prevStart={prevStart}
-                    prevEnd={prevEnd}
-                  />
-                )}
-              </StatisticCard>
-              <StatisticCard title="Cost per Customer" size="lg">
-                <span className="tabular-nums">
-                  {fmt(summary.costPerCustomer, 'usd')}
-                </span>
-                {summary.cpcPct !== null && (
-                  <TrendBadge
-                    delta={summary.cpcDelta}
-                    pct={summary.cpcPct}
-                    currentStart={dateRange.from}
-                    currentEnd={dateRange.to}
-                    prevStart={prevStart}
-                    prevEnd={prevEnd}
-                  />
-                )}
-              </StatisticCard>
-              <StatisticCard title="Customers" size="lg">
-                {summary.totalCustomers.toLocaleString()}
-              </StatisticCard>
-            </div>
-
             <MetricGroup
               metricKeys={costMetrics}
               data={metricsData}
@@ -354,7 +285,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 description="Ranked by total spend in this period."
               />
               {byTotal.length === 0 ? (
-                <EmptySection message="No cost data for this period." />
+                <EmptyState
+                  icon={<BarChart2 />}
+                  title="No cost data"
+                  description="No cost events were recorded in this period."
+                />
               ) : (
                 <List size="small">
                   {byTotal.map((s, i) => {
@@ -426,7 +361,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 description="Biggest cost movers compared to the previous period."
               />
               {byChange.length === 0 ? (
-                <EmptySection message="No changes compared to the previous period." />
+                <EmptyState
+                  icon={<TrendingUp />}
+                  title="No changes"
+                  description="No cost movements detected compared to the previous period."
+                />
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {byChange.map((s) => {
@@ -486,7 +425,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 description="Spans where p99 cost is 3× or more above the average — a sign of runaway or unpredictable events."
               />
               {byVariance.length === 0 ? (
-                <EmptySection message="No unusual cost patterns detected." />
+                <EmptyState
+                  icon={<AlertTriangle />}
+                  title="No anomalies"
+                  description="No unusual cost spikes detected in this period."
+                />
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {byVariance.map((s) => (
@@ -540,7 +483,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 description="LLM models ranked by total cost in this period."
               />
               {modelRows.length === 0 ? (
-                <EmptySection message="No LLM model cost data for this period." />
+                <EmptyState
+                  icon={<Bot />}
+                  title="No model data"
+                  description="No LLM model cost events were recorded in this period."
+                />
               ) : (
                 <List size="small">
                   {modelRows.map((r, i) => {
@@ -603,7 +550,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 description="LLM vendors ranked by total cost in this period."
               />
               {vendorRows.length === 0 ? (
-                <EmptySection message="No LLM vendor cost data for this period." />
+                <EmptyState
+                  icon={<Bot />}
+                  title="No vendor data"
+                  description="No LLM vendor cost events were recorded in this period."
+                />
               ) : (
                 <List size="small">
                   {vendorRows.map((r, i) => {
@@ -742,11 +693,5 @@ function SectionHeader({
         {description}
       </p>
     </div>
-  )
-}
-
-function EmptySection({ message }: { message: string }) {
-  return (
-    <p className="dark:text-polar-500 py-4 text-sm text-gray-400">{message}</p>
   )
 }

@@ -34,6 +34,7 @@ from uuid import UUID
 
 import httpx
 import structlog
+from pydantic import model_validator
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -77,6 +78,14 @@ class AppealReviewResult(Schema):
     action: AppealAction
     reasoning: str
     draft_email: str
+
+    @model_validator(mode="after")
+    def _normalize_escaped_newlines(self) -> AppealReviewResult:
+        """LLMs sometimes produce literal '\\n' instead of real newlines in
+        structured output.  Replace them so Plain threads render correctly."""
+        self.reasoning = self.reasoning.replace("\\n", "\n")
+        self.draft_email = self.draft_email.replace("\\n", "\n")
+        return self
 
 
 # ---------------------------------------------------------------------------

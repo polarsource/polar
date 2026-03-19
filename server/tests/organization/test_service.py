@@ -301,22 +301,30 @@ async def test_get_next_invoice_number_multiple_customers(
 
 @pytest.mark.asyncio
 class TestCheckReviewThreshold:
-    async def test_already_under_review(
+    async def test_already_under_review_still_updates_total_balance(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         # Given organization already under review
         organization.status = OrganizationStatus.INITIAL_REVIEW
         organization.next_review_threshold = 1000
+        organization.total_balance = None
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=7500,
+        )
 
         # When
         result = await organization_service.check_review_threshold(
             session, organization
         )
 
-        # Then
+        # Then - status unchanged but total_balance is updated
         assert result.status == OrganizationStatus.INITIAL_REVIEW
+        assert result.total_balance == 7500
 
     async def test_below_review_threshold(
         self,
@@ -340,6 +348,7 @@ class TestCheckReviewThreshold:
 
         # Then
         assert result.status == OrganizationStatus.ACTIVE
+        assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
 
     async def test_initial_review(
@@ -365,6 +374,7 @@ class TestCheckReviewThreshold:
 
         # Then
         assert result.status == OrganizationStatus.INITIAL_REVIEW
+        assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
 
     async def test_ongoing_review(
@@ -391,10 +401,36 @@ class TestCheckReviewThreshold:
 
         # Then
         assert result.status == OrganizationStatus.ONGOING_REVIEW
+        assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+
+    async def test_total_balance_zero(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization with no transactions
+        organization.status = OrganizationStatus.ACTIVE
+        organization.next_review_threshold = 10000
+        organization.total_balance = None
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=0,
+        )
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.total_balance == 0
 
 
 @pytest.mark.asyncio

@@ -309,13 +309,13 @@ async def list_organizations(
             else OrganizationReview.risk_score.desc().nullslast()
         )
         stmt = stmt.join(Organization.review).order_by(risk_order)
-    elif sort == "next_review":
-        threshold_order = (
-            Organization.next_review_threshold.asc().nullsfirst()
+    elif sort == "total_balance":
+        balance_order = (
+            Organization.total_balance.desc().nullslast()
             if is_desc
-            else Organization.next_review_threshold.desc().nullslast()
+            else Organization.total_balance.asc().nullsfirst()
         )
-        stmt = stmt.order_by(threshold_order)
+        stmt = stmt.order_by(balance_order)
     elif sort == "priority":
         # Priority: Under Review > Denied > Others, then by days in status
         stmt = stmt.order_by(

@@ -219,10 +219,10 @@ class OrganizationListView:
                     with tag.span(classes="text-base-content/40"):
                         text("—")
 
-            # Next review
+            # Total balance
             with tag.td(classes="text-sm text-right"):
-                if org.next_review_threshold:
-                    text(f"${org.next_review_threshold / 100:,.0f}")
+                if org.total_balance is not None:
+                    text(f"${org.total_balance / 100:,.2f}")
                 else:
                     with tag.span(classes="text-base-content/40"):
                         text("—")
@@ -563,8 +563,8 @@ class OrganizationListView:
 
                                     with self.sortable_header(
                                         request,
-                                        "Next Review",
-                                        "next_review",
+                                        "Balance",
+                                        "total_balance",
                                         current_sort,
                                         current_direction,
                                         "right",
@@ -646,8 +646,8 @@ class OrganizationListView:
 
                                 with self.sortable_header(
                                     request,
-                                    "Next Review",
-                                    "next_review",
+                                    "Balance",
+                                    "total_balance",
                                     current_sort,
                                     current_direction,
                                     "right",
@@ -781,8 +781,8 @@ class OrganizationListView:
 
                                     with self.sortable_header(
                                         request,
-                                        "Next Review",
-                                        "next_review",
+                                        "Balance",
+                                        "total_balance",
                                         current_sort,
                                         current_direction,
                                         "right",
@@ -864,8 +864,8 @@ class OrganizationListView:
 
                                 with self.sortable_header(
                                     request,
-                                    "Next Review",
-                                    "next_review",
+                                    "Balance",
+                                    "total_balance",
                                     current_sort,
                                     current_direction,
                                     "right",

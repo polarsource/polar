@@ -199,10 +199,10 @@ async def get_payment_statistics(
     (
         payment_count,
         total_payment_amount,
-        risk_scores,
     ) = await analytics_service.get_succeeded_payments_stats(organization_id)
 
     # Calculate risk percentiles and level
+    risk_scores = await analytics_service.get_risk_scores(organization_id)
     p50_risk, p90_risk = analytics_service.calculate_risk_percentiles(risk_scores)
 
     # Get refund statistics

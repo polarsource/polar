@@ -54,7 +54,7 @@ class TestGetSucceededPaymentsStats:
         )
 
         service = PaymentAnalyticsService(session)
-        count, total_amount, _ = await service.get_succeeded_payments_stats(org.id)
+        count, total_amount = await service.get_succeeded_payments_stats(org.id)
 
         assert count == 1
         assert total_amount == 1000  # USD, not 900 EUR
@@ -66,12 +66,9 @@ class TestGetSucceededPaymentsStats:
     ) -> None:
         org = await create_organization(save_fixture)
         service = PaymentAnalyticsService(session)
-        count, total_amount, risk_scores = await service.get_succeeded_payments_stats(
-            org.id
-        )
+        count, total_amount = await service.get_succeeded_payments_stats(org.id)
         assert count == 0
         assert total_amount == 0
-        assert risk_scores == []
 
     async def test_only_counts_succeeded_payments(
         self,
@@ -86,9 +83,59 @@ class TestGetSucceededPaymentsStats:
             save_fixture, amount=1000, charge_id=failed_payment.processor_id
         )
         service = PaymentAnalyticsService(session)
-        count, total_amount, _ = await service.get_succeeded_payments_stats(org.id)
+        count, total_amount = await service.get_succeeded_payments_stats(org.id)
         assert count == 0
         assert total_amount == 0
+
+
+@pytest.mark.asyncio
+class TestGetRiskScores:
+    async def test_includes_succeeded_and_failed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Risk scores should include both succeeded and failed payments."""
+        org = await create_organization(save_fixture)
+        await create_payment(
+            save_fixture, org, status=PaymentStatus.succeeded, risk_score=5
+        )
+        await create_payment(
+            save_fixture, org, status=PaymentStatus.failed, risk_score=20
+        )
+
+        service = PaymentAnalyticsService(session)
+        risk_scores = await service.get_risk_scores(org.id)
+
+        assert sorted(risk_scores) == [5, 20]
+
+    async def test_excludes_null_risk_scores(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        org = await create_organization(save_fixture)
+        await create_payment(
+            save_fixture, org, status=PaymentStatus.succeeded, risk_score=3
+        )
+        await create_payment(
+            save_fixture, org, status=PaymentStatus.failed, risk_score=None
+        )
+
+        service = PaymentAnalyticsService(session)
+        risk_scores = await service.get_risk_scores(org.id)
+
+        assert risk_scores == [3]
+
+    async def test_no_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        org = await create_organization(save_fixture)
+        service = PaymentAnalyticsService(session)
+        risk_scores = await service.get_risk_scores(org.id)
+        assert risk_scores == []
 
 
 @pytest.mark.asyncio

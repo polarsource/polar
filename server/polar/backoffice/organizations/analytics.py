@@ -42,20 +42,12 @@ class PaymentAnalyticsService:
 
     async def get_succeeded_payments_stats(
         self, organization_id: UUID4
-    ) -> tuple[int, int, list[float]]:
-        """Get succeeded payments count, total amount in USD cents, and risk scores."""
+    ) -> tuple[int, int]:
+        """Get succeeded payments count and total amount in USD cents."""
         statement = self.payment_repo.get_base_statement().where(
             Payment.organization_id == organization_id,
             Payment.status == PaymentStatus.succeeded,
         )
-
-        # Get risk scores
-        risk_scores_result = await self.session.execute(
-            statement.where(Payment.risk_score.isnot(None)).with_only_columns(
-                Payment.risk_score
-            )
-        )
-        risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
 
         # Get count and total amount in USD via Transaction (avoids mixing currencies)
         stats_result = await self.session.execute(
@@ -69,7 +61,20 @@ class PaymentAnalyticsService:
         )
         count, total_amount = stats_result.first() or (0, 0)
 
-        return count, total_amount, risk_scores
+        return count, total_amount
+
+    async def get_risk_scores(self, organization_id: UUID4) -> list[float]:
+        """Get risk scores from all payment attempts (succeeded and failed)."""
+        result = await self.session.execute(
+            self.payment_repo.get_base_statement()
+            .where(
+                Payment.organization_id == organization_id,
+                Payment.status.in_([PaymentStatus.succeeded, PaymentStatus.failed]),
+                Payment.risk_score.isnot(None),
+            )
+            .with_only_columns(Payment.risk_score)
+        )
+        return [row[0] for row in result if row[0] is not None]
 
     async def get_refund_stats(self, organization_id: UUID4) -> tuple[int, int]:
         """Get count of orders with refunds and total refund amount in USD cents."""

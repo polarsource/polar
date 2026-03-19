@@ -36,7 +36,7 @@ const _getAuthenticatedUser = async (): Promise<
   // Middleware set this header for authenticated requests
   const userData = (await headers()).get('x-polar-user')
   if (userData) {
-    return JSON.parse(userData)
+    return JSON.parse(Buffer.from(userData, 'base64').toString('utf-8'))
   }
   return undefined
 }

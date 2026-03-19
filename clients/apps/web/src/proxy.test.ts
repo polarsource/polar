@@ -217,7 +217,9 @@ describe('middleware function', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('x-polar-user')).toBe(JSON.stringify(mockUser))
+    expect(response.headers.get('x-polar-user')).toBe(
+      Buffer.from(JSON.stringify(mockUser)).toString('base64'),
+    )
   })
 
   it('should allow unauthenticated access to public routes', async () => {

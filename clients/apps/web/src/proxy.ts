@@ -235,7 +235,9 @@ export async function proxy(request: NextRequest) {
     'x-polar-distinct-id': distinctId,
   }
   if (user) {
-    headers['x-polar-user'] = JSON.stringify(user)
+    headers['x-polar-user'] = Buffer.from(JSON.stringify(user)).toString(
+      'base64',
+    )
   }
 
   const response = NextResponse.next({ headers })

@@ -347,6 +347,10 @@ class Organization(OrganizationBase):
     country: CountryAlpha2 | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
+    details: OrganizationDetails | None = Field(
+        None,
+        description="Organization compliance details. Only visible to organization members.",
+    )
 
 
 class OrganizationIndividualLegalEntitySchema(Schema):

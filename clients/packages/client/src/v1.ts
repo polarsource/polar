@@ -21105,7 +21105,7 @@ export interface components {
       status: components['schemas']['OrganizationStatus']
       /**
        * Details Submitted At
-       * @description When the business details were submitted.
+       * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
       /**
@@ -21379,6 +21379,8 @@ export interface components {
             | 'ZW'
           )
         | null
+      /** @description Organization compliance details. Only visible to organization members. */
+      details?: components['schemas']['OrganizationDetails'] | null
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {

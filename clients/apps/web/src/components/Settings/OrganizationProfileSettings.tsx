@@ -479,8 +479,8 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                 rules={{
                   required: 'Please describe what you sell',
                   minLength: {
-                    value: 50,
-                    message: 'Please provide at least 50 characters',
+                    value: 30,
+                    message: 'Please provide at least 30 characters',
                   },
                   maxLength: {
                     value: 3000,
@@ -496,7 +496,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/3000 characters (min 50)
+                        {field.value?.length || 0}/3000 characters (min 30)
                       </span>
                     </div>
                   </div>

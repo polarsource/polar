@@ -145,7 +145,7 @@ export function ProductDetailsStep() {
       slug: data.orgSlug!,
       default_presentment_currency:
         (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
-      country: (data.businessCountry || undefined) as
+      country: (data.businessCountry || data.country || undefined) as
         | schemas['OrganizationCreate']['country']
         | undefined,
       legal_entity:

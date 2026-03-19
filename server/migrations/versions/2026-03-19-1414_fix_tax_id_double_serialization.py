@@ -19,27 +19,27 @@ depends_on: tuple[str] | None = None
 
 def upgrade() -> None:
     # Fix JSON null → SQL NULL for tax_id columns
-    op.execute(
-        """
-        UPDATE customers
-        SET tax_id = NULL
-        WHERE tax_id = 'null'::jsonb
-        """
-    )
-    op.execute(
-        """
-        UPDATE orders
-        SET tax_id = NULL
-        WHERE tax_id = 'null'::jsonb
-        """
-    )
-    op.execute(
-        """
-        UPDATE checkouts
-        SET customer_tax_id = NULL
-        WHERE customer_tax_id = 'null'::jsonb
-        """
-    )
+    # op.execute(
+    #     """
+    #     UPDATE customers
+    #     SET tax_id = NULL
+    #     WHERE tax_id = 'null'::jsonb
+    #     """
+    # )
+    # op.execute(
+    #     """
+    #     UPDATE orders
+    #     SET tax_id = NULL
+    #     WHERE tax_id = 'null'::jsonb
+    #     """
+    # )
+    # op.execute(
+    #     """
+    #     UPDATE checkouts
+    #     SET customer_tax_id = NULL
+    #     WHERE customer_tax_id = 'null'::jsonb
+    #     """
+    # )
 
     # Fix double-serialized tax_id values.
     # Double-serialized values are stored as a JSON string containing escaped JSON,

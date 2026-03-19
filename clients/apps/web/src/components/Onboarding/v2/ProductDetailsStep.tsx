@@ -72,6 +72,9 @@ export function ProductDetailsStep() {
   >(null)
   const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
   const [aupMessage, setAupMessage] = useState<string | null>(null)
+  const [aupHistory, setAupHistory] = useState<
+    Array<{ product_description: string; verdict: string; message?: string }>
+  >([])
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -189,6 +192,7 @@ export function ProductDetailsStep() {
           product_description: formData.productDescription,
           selling_categories: formData.sellingCategories,
           pricing_models: formData.pricingModel,
+          history: aupHistory,
         }),
       },
     )
@@ -200,19 +204,29 @@ export function ProductDetailsStep() {
     } = await res.json()
 
     if (validation.verdict === 'DENY' || validation.verdict === 'CLARIFY') {
+      setAupHistory((prev) => [
+        ...prev,
+        {
+          product_description: formData.productDescription,
+          verdict: validation.verdict,
+          message: validation.message,
+        },
+      ])
       setAupVerdict(validation.verdict)
       setAupMessage(validation.message ?? null)
       setLoading(null)
       return
     }
 
+    console.log(validation)
+
     setAupVerdict(null)
     setAupMessage(null)
     setLoading('submitting')
-    const success = await submitOrg(formData)
-    if (!success) {
-      setLoading(null)
-    }
+    // const success = await submitOrg(formData)
+    // if (!success) {
+    setLoading(null)
+    // }
   }
 
   const onContinueAnyway = async () => {
@@ -282,7 +296,7 @@ export function ProductDetailsStep() {
               padding="l"
             >
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                Please clarify
+                Please clarify your use case
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 {aupMessage}
@@ -298,14 +312,14 @@ export function ProductDetailsStep() {
               borderRadius="md"
               borderWidth={1}
               borderStyle="solid"
-              borderColor="border-error"
-              backgroundColor="background-error"
+              borderColor="border-warning"
+              backgroundColor="background-warning"
               padding="l"
             >
-              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                 Use case not supported
               </p>
-              <p className="text-sm text-red-700 dark:text-red-300">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 {aupMessage}
               </p>
             </Box>
@@ -390,24 +404,22 @@ export function ProductDetailsStep() {
           </Box>
 
           <div className="flex flex-col gap-y-2">
-            {aupVerdict !== 'DENY' && (
-              <Button
-                type="submit"
-                loading={loading === 'validating' || loading === 'submitting'}
-                disabled={
-                  loading === 'submitting-anyway' ||
-                  blockedSelected.length > 0 ||
-                  sellingCategories.length === 0 ||
-                  pricingModel.length === 0 ||
-                  productDescription.trim().length === 0
-                }
-                fullWidth
-              >
-                {aupVerdict === 'CLARIFY' ? 'Review again' : 'Launch Dashboard'}
-              </Button>
-            )}
+            <Button
+              type="submit"
+              loading={loading === 'validating' || loading === 'submitting'}
+              disabled={
+                loading === 'submitting-anyway' ||
+                blockedSelected.length > 0 ||
+                sellingCategories.length === 0 ||
+                pricingModel.length === 0 ||
+                productDescription.trim().length === 0
+              }
+              fullWidth
+            >
+              {aupVerdict ? 'Review again' : 'Launch Dashboard'}
+            </Button>
 
-            {aupVerdict === 'CLARIFY' && loading !== 'validating' && (
+            {aupVerdict === 'CLARIFY' && aupHistory.length >= 3 && productDescription.trim().length > 30 && loading !== 'validating' && (
               <Button
                 variant="ghost"
                 type="button"

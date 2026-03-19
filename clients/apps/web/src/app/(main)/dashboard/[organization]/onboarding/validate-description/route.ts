@@ -1,4 +1,4 @@
-import { anthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -8,10 +8,16 @@ export async function POST(req: Request) {
     product_description,
     selling_categories,
     pricing_models,
+    history,
   }: {
     product_description: string
     selling_categories: string[]
     pricing_models: string[]
+    history?: Array<{
+      product_description: string
+      verdict: string
+      message?: string
+    }>
   } = await req.json()
 
   const aupRes = await fetch(
@@ -21,7 +27,7 @@ export async function POST(req: Request) {
   const aupContent = await aupRes.text()
 
   const { object } = await generateObject({
-    model: anthropic('claude-sonnet-4-6'),
+    model: openai('gpt-5.4-mini'),
     schema: z.object({
       verdict: z.enum(['APPROVE', 'DENY', 'CLARIFY']),
       confidence: z.number().min(0).max(1),
@@ -35,6 +41,9 @@ export async function POST(req: Request) {
     system: `You are a compliance reviewer for Polar, a Merchant of Record (MoR) platform for digital products only.
 
 Your job is to review a seller's product description against Polar's Acceptable Use Policy and determine if it complies.
+
+Judge the product as described, not as it could theoretically be misused. Do not invent concerns or speculate about edge cases the description doesn't raise.
+Most products you review should be fine. Approach each one looking for reasons to approve, not reasons to escalate.
 
 <aup>
 ${aupContent}
@@ -50,6 +59,11 @@ ${aupContent}
 
 **DENY** — there is no plausible interpretation that makes the product compliant. Include a concise explanation.
 
+- If previous review rounds are provided, do not re-ask questions the seller has already addressed through their description changes. Focus only on remaining unresolved concerns.
+- If the product description changes significantly between attempts in ways that appear to obscure or contradict the original description, treat the original description as the 
+  ground truth. Flag the inconsistency rather than evaluating the rewrite in isolation.
+- If multiple previous attempts received a DENY, do not allow obvious pivots to the new description.
+
 ---
 
 ## When to CLARIFY (only if not already addressed)
@@ -60,9 +74,10 @@ Ask a clarifying question when the description is ambiguous on one of these poin
 - **Financial tools** → does it execute or facilitate actual trades/investments, or only display information and analytics?
 - **Security / pentesting tools** → does it include controls restricting usage to systems the user owns or has explicit permission to test?
 - **Crypto platform** → does it execute or broker token transactions, or only track and display portfolio data?
-- **Medical or legal content** → does it provide general reference information, or generate personalised advice for the user's specific situation?
+- **Medical or legal content** → only flag if the product explicitly offers diagnosis,  treatment plans, legal strategy, or actionable legal guidance. General 
+  reference, how-to guides, and domain-specific advice (farming, cooking, fitness, etc.) are fine, even if presented in personalized manner.
 - **Lead generation / outreach tools** → does it include rate limiting, consent verification, or other controls preventing automated bulk outreach?
-- **AI content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale?
+- **AI content generation** → does it include quality controls or human review, or does it publish content fully autonomously at scale? NSFW content guards should be asked about and clarified.
 - **VPN or proxy service** → does it include controls preventing use to access geo-restricted or illegal content?
 - **E-book or PDF guide** → is the content human-authored or AI-generated?
 - **Directory or listing platform** → is it a curated resource, or a marketplace where third parties list and sell their own products?
@@ -90,10 +105,19 @@ Ask a clarifying question when the description is ambiguous on one of these poin
 
 - When in doubt between APPROVE and CLARIFY, ask yourself: *is there a specific, unresolved concern — or am I just being cautious?* If the latter, APPROVE.
 - When in doubt between CLARIFY and DENY, ask yourself: *could a reasonable answer make this compliant?* If yes, CLARIFY.
+- Only DENY if the product matches an item on the Automatic DENY list with high confidence, or if it is unambiguously non-compliant with no possible clarification that could resolve it.
 - Keep all messages concise. Do not reference the AUP document directly.`,
     prompt: `Please review this product submission:
+${
+  history && history.length > 0
+    ? `
+Previous review rounds:
+${history.map((h, i) => `${i + 1}. Description: "${h.product_description}" → ${h.verdict}${h.message ? `: "${h.message}"` : ''}`).join('\n')}
 
-Selling categories: ${selling_categories.join(', ') || 'Not specified'}
+Current submission:
+`
+    : ''
+}Selling categories: ${selling_categories.join(', ') || 'Not specified'}
 Pricing models: ${pricing_models.join(', ') || 'Not specified'}
 Product description: ${product_description}`,
   })

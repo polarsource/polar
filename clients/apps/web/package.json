@@ -22,6 +22,7 @@
     "@ai-sdk/anthropic": "^2.0.70",
     "@ai-sdk/google": "^2.0.62",
     "@ai-sdk/mcp": "^0.0.15",
+    "@ai-sdk/openai": "^2.0.100",
     "@ai-sdk/react": "^2.0.158",
     "@cloudflare/stream-react": "^1.9.3",
     "@date-fns/utc": "^2.1.1",

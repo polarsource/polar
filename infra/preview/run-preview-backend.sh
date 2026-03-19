@@ -29,9 +29,11 @@ uv run dramatiq \
     polar.worker.run &
 worker_pid=$!
 
+ROOT_PATH="${POLAR_ROOT_PATH:-}"
 uv run uvicorn polar.app:app \
     --host 127.0.0.1 \
     --port "$API_PORT" \
+    --root-path "$ROOT_PATH" \
     --workers 1 &
 api_pid=$!
 

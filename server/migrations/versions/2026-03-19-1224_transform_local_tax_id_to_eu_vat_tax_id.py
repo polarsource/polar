@@ -47,6 +47,44 @@ def upgrade() -> None:
                 country=country,
             )
         )
+        op.execute(
+            sa.text(
+                """
+                UPDATE orders
+                SET tax_id = to_jsonb(
+                    json_build_array(
+                        :country || ((tax_id#>>'{}')::jsonb->>0),
+                        :eu_vat_format
+                    )::text
+                )
+                WHERE tax_id != 'null'
+                AND (tax_id#>>'{}')::jsonb->>1 = :removed_format
+                """
+            ).bindparams(
+                eu_vat_format="eu_vat",
+                removed_format=removed_format,
+                country=country,
+            )
+        )
+        op.execute(
+            sa.text(
+                """
+                UPDATE checkouts
+                SET customer_tax_id = to_jsonb(
+                    json_build_array(
+                        :country || ((customer_tax_id#>>'{}')::jsonb->>0),
+                        :eu_vat_format
+                    )::text
+                )
+                WHERE customer_tax_id != 'null'
+                AND (customer_tax_id#>>'{}')::jsonb->>1 = :removed_format
+                """
+            ).bindparams(
+                eu_vat_format="eu_vat",
+                removed_format=removed_format,
+                country=country,
+            )
+        )
 
 
 def downgrade() -> None:

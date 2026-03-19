@@ -1694,19 +1694,20 @@ async def get(
                                                 # Actions
                                                 with tag.td():
                                                     with tag.div(classes="flex gap-2"):
-                                                        # Impersonate button (always visible)
-                                                        with tag.button(
-                                                            classes="btn btn-primary btn-sm",
-                                                            name="user_id",
-                                                            value=str(user.id),
-                                                            hx_post=str(
-                                                                request.url_for(
-                                                                    "backoffice:start_impersonation",
-                                                                )
-                                                            ),
-                                                            hx_confirm="Are you sure you want to impersonate this user?",
-                                                        ):
-                                                            text("Impersonate")
+                                                        # Impersonate button (hidden on soft-deleted organizations)
+                                                        if not organization.is_deleted:
+                                                            with tag.button(
+                                                                classes="btn btn-primary btn-sm",
+                                                                name="user_id",
+                                                                value=str(user.id),
+                                                                hx_post=str(
+                                                                    request.url_for(
+                                                                        "backoffice:start_impersonation",
+                                                                    )
+                                                                ),
+                                                                hx_confirm="Are you sure you want to impersonate this user?",
+                                                            ):
+                                                                text("Impersonate")
 
                                                         # More actions dropdown menu
                                                         if not is_admin:

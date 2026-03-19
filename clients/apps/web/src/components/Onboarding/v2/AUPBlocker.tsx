@@ -22,7 +22,7 @@ export function AUPBlocker({ categories }: { categories: string[] }) {
         Polar is a Merchant of Record for digital products only. Physical goods,
         human services, and marketplaces are not permitted under our{' '}
         <a
-          href="https://polar.sh/docs/merchant-of-record/acceptable-use"
+          href="https://polar.sh/legal/acceptable-use-policy"
           className="underline"
           target="_blank"
           rel="noreferrer"

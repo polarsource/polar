@@ -393,19 +393,22 @@ def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
 
 
 class TaxIDType(TypeDecorator[Any]):
-    impl = JSONB
+    impl = JSONB(none_as_null=True)
     cache_ok = True
 
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
             if not isinstance(value, tuple | list) or len(value) != 2:
                 raise TypeError("Invalid tax ID value.")
-            return json.dumps(value)
+            return list(value)
         return value
 
-    def process_result_value(self, value: str | None, dialect: Dialect) -> Any:
+    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
-            return json.loads(value)
+            # Handle legacy double-serialized values (stored as JSON strings)
+            if isinstance(value, str):
+                value = json.loads(value)
+            return tuple(value)
         return value
 
 

@@ -225,6 +225,12 @@ class Event(Model, MetadataMixin):
             literal_column("ingested_at DESC"),
             postgresql_where="customer_id IS NOT NULL",
         ),
+        Index(
+            "ix_events_org_pending_parent",
+            "organization_id",
+            "pending_parent_external_id",
+            postgresql_where="pending_parent_external_id IS NOT NULL",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
@@ -263,6 +269,10 @@ class Event(Model, MetadataMixin):
 
     root_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True
+    )
+
+    pending_parent_external_id: Mapped[str | None] = mapped_column(
+        String, nullable=True
     )
 
     @declared_attr

@@ -227,7 +227,12 @@ const CustomerChangePlanModal = ({
   ])
 
   const availableProducts = useMemo(
-    () => products.filter((product) => product.id !== subscription.product_id),
+    () =>
+      products
+        .filter((product) => product.id !== subscription.product_id)
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, 'en-US', { numeric: true }),
+        ),
     [products, subscription],
   )
 

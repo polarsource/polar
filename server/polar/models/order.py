@@ -55,6 +55,7 @@ class OrderBillingReasonInternal(StrEnum):
     subscription_create = "subscription_create"
     subscription_cycle = "subscription_cycle"
     subscription_cycle_after_trial = "subscription_cycle_after_trial"
+    subscription_cancel = "subscription_cancel"
     subscription_update = "subscription_update"
 
 

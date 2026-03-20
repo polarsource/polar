@@ -129,6 +129,8 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
                 return "Subscription renewal"
             case OrderBillingReasonInternal.subscription_cycle_after_trial:
                 return "Subscription started after trial"
+            case OrderBillingReasonInternal.subscription_cancel:
+                return "Subscription cancellation"
             case OrderBillingReasonInternal.subscription_update:
                 return "Subscription update"
 

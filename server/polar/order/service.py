@@ -760,6 +760,7 @@ class OrderService:
             if billing_reason in {
                 OrderBillingReasonInternal.subscription_cycle,
                 OrderBillingReasonInternal.subscription_cycle_after_trial,
+                OrderBillingReasonInternal.subscription_cancel,
             }:
                 await subscription_service.reset_meters(session, subscription)
 
@@ -1486,6 +1487,7 @@ class OrderService:
             "subscription_confirmation",
             "subscription_cycled",
             "subscription_cycled_after_trial",
+            "subscription_final_invoice",
             "subscription_updated",
         ]
         subject_template: str
@@ -1528,6 +1530,15 @@ class OrderService:
                     "id": "{subscription}",
                     "email": "{email}",
                 }
+            case OrderBillingReasonInternal.subscription_cancel:
+                template_name = "subscription_final_invoice"
+                subject_template = "Your {description} final invoice"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
             case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {description}"
@@ -1538,13 +1549,20 @@ class OrderService:
                     "email": "{email}",
                 }
 
-        if not organization.customer_email_settings[template_name]:
+        # Final invoice uses the same email setting as subscription_cycled
+        email_setting_name = (
+            "subscription_cycled"
+            if template_name == "subscription_final_invoice"
+            else template_name
+        )
+        if not organization.customer_email_settings[email_setting_name]:
             return
 
         # Skip subscription cycle emails for completely free subscriptions
         if order.billing_reason in (
             OrderBillingReasonInternal.subscription_cycle,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
         ):
             subscription = order.subscription
             if subscription is not None:

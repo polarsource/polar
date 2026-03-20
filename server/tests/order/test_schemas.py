@@ -18,6 +18,7 @@ BILLING_REASON_SERIALIZATION_MAP = {
     OrderBillingReasonInternal.subscription_create: OrderBillingReason.subscription_create,
     OrderBillingReasonInternal.subscription_cycle: OrderBillingReason.subscription_cycle,
     OrderBillingReasonInternal.subscription_cycle_after_trial: OrderBillingReason.subscription_cycle,
+    OrderBillingReasonInternal.subscription_cancel: OrderBillingReason.subscription_cycle,
     OrderBillingReasonInternal.subscription_update: OrderBillingReason.subscription_update,
 }
 

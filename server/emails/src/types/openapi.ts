@@ -1662,6 +1662,27 @@ export interface components {
       url: string
       order: components['schemas']['OrderEmail']
     }
+    /** SubscriptionFinalInvoiceEmail */
+    SubscriptionFinalInvoiceEmail: {
+      /**
+       * Template
+       * @default subscription_final_invoice
+       * @constant
+       */
+      template: 'subscription_final_invoice'
+      props: components['schemas']['SubscriptionFinalInvoiceProps']
+    }
+    /** SubscriptionFinalInvoiceProps */
+    SubscriptionFinalInvoiceProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      order: components['schemas']['OrderEmail']
+    }
     /** SubscriptionEmail */
     SubscriptionEmail: {
       /**

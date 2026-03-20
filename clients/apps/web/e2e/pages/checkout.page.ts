@@ -28,6 +28,12 @@ export class CheckoutPage {
   }
 
   async fillCardholderName(name: string) {
+    await this.cardholderNameInput.waitFor({
+      state: 'visible',
+      timeout: 10_000,
+    })
+    // Click first to move focus out of the Stripe iframe (away from Link)
+    await this.cardholderNameInput.click()
     await this.cardholderNameInput.fill(name)
   }
 
@@ -43,6 +49,25 @@ export class CheckoutPage {
     await this.page.getByPlaceholder(/discount code/i).fill(code)
     await this.page.getByRole('button', { name: /apply/i }).click()
     await expect(this.page.getByPlaceholder(/discount code/i)).toBeDisabled()
+  }
+
+  async fillStripeCard({
+    number = '4242424242424242',
+    expiry = '12/30',
+    cvc = '123',
+  } = {}) {
+    const stripeFrame = this.page
+      .frameLocator('iframe[title="Secure payment input frame"]')
+      .first()
+
+    const cardInput = stripeFrame.getByPlaceholder('1234 1234 1234 1234')
+    await cardInput.waitFor({ state: 'visible', timeout: 15_000 })
+    await cardInput.fill(number)
+    await stripeFrame.getByPlaceholder('MM / YY').fill(expiry)
+    await stripeFrame.getByPlaceholder('CVC').fill(cvc)
+
+    // Wait for Stripe Link to settle before moving focus away
+    await this.page.waitForTimeout(1000)
   }
 
   async submit() {

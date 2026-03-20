@@ -5,7 +5,7 @@ from typing import overload
 import structlog
 
 from polar.config import settings
-from polar.enums import TaxProcessor
+from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
 from polar.kit.address import Address
 from polar.logging import Logger
 from polar.observability import TAX_CALCULATION_TOTAL
@@ -36,12 +36,36 @@ def _get_tax_service(processor: TaxProcessor) -> TaxServiceProtocol:
             return numeral_tax_service
 
 
+TAX_EXCLUSIVE_COUNTRIES = {
+    "CA",
+    "IN",
+    "US",
+}
+
+
+def get_tax_behavior_from_option(
+    tax_behavior: TaxBehaviorOption, address: Address
+) -> TaxBehavior:
+    match tax_behavior:
+        case TaxBehaviorOption.inclusive:
+            return TaxBehavior.inclusive
+        case TaxBehaviorOption.exclusive:
+            return TaxBehavior.exclusive
+        case TaxBehaviorOption.location:
+            return (
+                TaxBehavior.exclusive
+                if address.country in TAX_EXCLUSIVE_COUNTRIES
+                else TaxBehavior.inclusive
+            )
+
+
 class TaxCalculationService:
     async def calculate(
         self,
         identifier: uuid.UUID | str,
         currency: str,
         amount: int,
+        tax_behavior: TaxBehaviorOption,
         tax_code: TaxCode,
         address: Address,
         tax_ids: list[TaxID],
@@ -57,6 +81,7 @@ class TaxCalculationService:
             identifier: Unique identifier for this tax calculation.
             currency: The currency code.
             amount: The amount in cents to calculate tax on.
+            tax_behavior: The tax behavior option to determine if tax is inclusive, exclusive or location-based.
             tax_code: The tax code for the product/service.
             address: The address for tax calculation.
             tax_ids: List of tax IDs for the customer.
@@ -76,6 +101,7 @@ class TaxCalculationService:
                     identifier=identifier,
                     currency=currency,
                     amount=amount,
+                    tax_behavior=get_tax_behavior_from_option(tax_behavior, address),
                     tax_code=tax_code,
                     address=address,
                     tax_ids=tax_ids,

@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal, Protocol, TypedDict, overload
 
+from polar.enums import TaxBehavior
 from polar.exceptions import PolarError
 from polar.kit.address import Address
 
@@ -125,6 +126,7 @@ class TaxCalculation(TypedDict):
     processor_id: str | None
     amount: int
     currency: str
+    tax_behavior: TaxBehavior
     taxability_reason: TaxabilityReason | None
     tax_rate: TaxRate | None
 
@@ -135,6 +137,7 @@ class TaxServiceProtocol(Protocol):
         identifier: uuid.UUID | str,
         currency: str,
         amount: int,
+        tax_behavior: TaxBehavior,
         tax_code: TaxCode,
         address: Address,
         tax_ids: list[TaxID],

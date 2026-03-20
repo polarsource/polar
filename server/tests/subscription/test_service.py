@@ -21,6 +21,7 @@ from polar.enums import (
     PaymentProcessor,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
+    TaxBehavior,
 )
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
@@ -534,6 +535,7 @@ class TestCreateOrUpdateFromCheckout:
             products=[product],
             status=CheckoutStatus.confirmed,
             customer=customer,
+            tax_behavior=TaxBehavior.exclusive,
         )
 
         (
@@ -549,6 +551,7 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.prices == product.prices
         assert subscription.amount == checkout.total_amount
         assert subscription.payment_method == payment_method
+        assert subscription.tax_behavior == TaxBehavior.exclusive
 
         assert subscription.started_at is not None
         assert subscription.current_period_start is not None
@@ -737,6 +740,7 @@ class TestCreateOrUpdateFromCheckout:
             product=product_recurring_free_price,
             customer=customer,
             status=SubscriptionStatus.active,
+            tax_behavior=TaxBehavior.inclusive,
         )
         checkout = await create_checkout(
             save_fixture,
@@ -744,6 +748,7 @@ class TestCreateOrUpdateFromCheckout:
             status=CheckoutStatus.confirmed,
             customer=customer,
             subscription=subscription,
+            tax_behavior=TaxBehavior.exclusive,
         )
         previous_current_period_start = subscription.current_period_start
         previous_current_period_end = subscription.current_period_end
@@ -763,6 +768,7 @@ class TestCreateOrUpdateFromCheckout:
         assert updated_subscription.amount == checkout.total_amount
         assert updated_subscription.currency == checkout.currency
         assert updated_subscription.payment_method == payment_method
+        assert updated_subscription.tax_behavior == TaxBehavior.exclusive
 
         # Started at doesn't change, but current period does
         assert updated_subscription.started_at == previous_started_at

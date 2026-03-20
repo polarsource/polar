@@ -71,6 +71,7 @@ class Invoice(BaseModel):
     taxability_reason: TaxabilityReason | None
     tax_amount: int
     tax_rate: TaxRate | None
+    net_amount: int
     currency: str
     items: list[InvoiceItem]
     notes: str | None = None
@@ -134,13 +135,20 @@ class Invoice(BaseModel):
         if self.tax_displayed:
             items.append(
                 InvoiceTotalsItem(
+                    label="Total excluding tax",
+                    amount=self.net_amount,
+                    currency=self.currency,
+                )
+            )
+            items.append(
+                InvoiceTotalsItem(
                     label=self.tax_label,
                     amount=self.tax_amount,
                     currency=self.currency,
                 )
             )
 
-        total = self.subtotal_amount - self.discount_amount + self.tax_amount
+        total = self.net_amount + self.tax_amount
         items.append(
             InvoiceTotalsItem(
                 label="Total",
@@ -189,6 +197,7 @@ class Invoice(BaseModel):
             taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
             tax_rate=order.tax_rate,
+            net_amount=order.net_amount,
             currency=order.currency,
             items=[
                 InvoiceItem(

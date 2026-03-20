@@ -7,6 +7,7 @@ import stripe as stripe_lib
 import structlog
 
 from polar.config import settings
+from polar.enums import TaxBehavior
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.address import Address
 from polar.logging import Logger
@@ -114,6 +115,7 @@ class StripeTaxService(TaxServiceProtocol):
         identifier: uuid.UUID | str,
         currency: str,
         amount: int,
+        tax_behavior: TaxBehavior,
         tax_code: TaxCode,
         address: Address,
         tax_ids: list[TaxID],
@@ -125,7 +127,7 @@ class StripeTaxService(TaxServiceProtocol):
         taxability_override: Literal["customer_exempt", "none"] = (
             "customer_exempt" if customer_exempt else "none"
         )
-        idempotency_key_str = f"{identifier}:{currency}:{amount}:{tax_code}:{address_str}:{tax_ids_str}:{taxability_override}"
+        idempotency_key_str = f"{identifier}:{currency}:{amount}:{tax_code}:{address_str}:{tax_ids_str}:{taxability_override}:{tax_behavior}"
         idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
 
         try:
@@ -134,6 +136,7 @@ class StripeTaxService(TaxServiceProtocol):
                 line_items=[
                     {
                         "amount": amount,
+                        "tax_behavior": tax_behavior.to_stripe(),
                         "tax_code": tax_code.to_stripe(),
                         "quantity": 1,
                         "reference": str(identifier),
@@ -159,6 +162,7 @@ class StripeTaxService(TaxServiceProtocol):
                     "processor_id": f"taxcalc_sandbox_{uuid.uuid4().hex}",
                     "amount": 0,
                     "currency": currency,
+                    "tax_behavior": tax_behavior,
                     "taxability_reason": None,
                     "tax_rate": None,
                 }
@@ -177,12 +181,13 @@ class StripeTaxService(TaxServiceProtocol):
             raise InvalidTaxLocation(e) from e
         else:
             assert calculation.id is not None
-            amount = calculation.tax_amount_exclusive
+            amount = calculation.tax_amount_exclusive + calculation.tax_amount_inclusive
             breakdown = calculation.tax_breakdown[0]
             return {
                 "processor_id": calculation.id,
                 "amount": amount,
                 "currency": currency,
+                "tax_behavior": tax_behavior,
                 "taxability_reason": TaxabilityReason.from_stripe(
                     breakdown.taxability_reason, amount
                 ),

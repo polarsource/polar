@@ -45,6 +45,7 @@ def invoice() -> Invoice:
             "amount_currency": None,
             "state": None,
         },
+        net_amount=90_00,
         currency="usd",
         items=[
             InvoiceItem(

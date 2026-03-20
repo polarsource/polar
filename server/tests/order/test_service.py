@@ -19,6 +19,8 @@ from polar.enums import (
     PaymentMode,
     PaymentProcessor,
     SubscriptionRecurringInterval,
+    TaxBehavior,
+    TaxBehaviorOption,
     TaxProcessor,
 )
 from polar.event.repository import EventRepository
@@ -81,6 +83,7 @@ from polar.tax.calculation import (
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationService,
+    get_tax_behavior_from_option,
 )
 from polar.tax.tax_id import TaxID
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -185,6 +188,7 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
         identifier: uuid.UUID,
         currency: str,
         amount: int,
+        tax_behavior: TaxBehaviorOption,
         stripe_product_id: str,
         address: Address,
         tax_ids: list[TaxID],
@@ -196,6 +200,7 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
                 "amount": polar_round(amount * 0.20),
                 "currency": currency,
                 "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_behavior": get_tax_behavior_from_option(tax_behavior, address),
                 "tax_rate": None,
             },
             TaxProcessor.numeral,
@@ -879,8 +884,19 @@ class TestCreateSubscriptionOrder:
                 session, subscription, OrderBillingReasonInternal.subscription_cycle
             )
 
+    @pytest.mark.parametrize(
+        ("tax_behavior", "amount", "tax_amount", "expected_net_amount"),
+        [
+            (TaxBehavior.exclusive, 1000, 200, 1000),
+            (TaxBehavior.inclusive, 1000, 200, 800),
+        ],
+    )
     async def test_cycle_fixed_price(
         self,
+        tax_behavior: TaxBehavior,
+        amount: int,
+        tax_amount: int,
+        expected_net_amount: int,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
@@ -889,6 +905,17 @@ class TestCreateSubscriptionOrder:
         organization: Organization,
         payment_method: PaymentMethod,
     ) -> None:
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": tax_amount,
+                "currency": product.prices[0].price_currency,
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_behavior": tax_behavior,
+                "tax_rate": None,
+            },
+            TaxProcessor.numeral,
+        )
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -899,6 +926,7 @@ class TestCreateSubscriptionOrder:
             product=product,
             customer=customer,
             payment_method=payment_method,
+            tax_behavior=tax_behavior,
         )
         price = product.prices[0]
         assert is_fixed_price(price)
@@ -907,7 +935,7 @@ class TestCreateSubscriptionOrder:
             type=BillingEntryType.cycle,
             customer=subscription.customer,
             product_price=price,
-            amount=price.price_amount,
+            amount=amount,
             currency=price.price_currency,
             subscription=subscription,
         )
@@ -923,6 +951,9 @@ class TestCreateSubscriptionOrder:
         assert order_item.order == order
 
         assert order.subtotal_amount == billing_entry.amount
+        assert order.net_amount == expected_net_amount
+        assert order.tax_amount == tax_amount
+        assert order.total_amount == expected_net_amount + tax_amount
         assert order.status == OrderStatus.pending
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
@@ -930,7 +961,8 @@ class TestCreateSubscriptionOrder:
         calculate_tax_mock.assert_called_once_with(
             str(order.id),
             subscription.currency,
-            order.net_amount,
+            order.subtotal_amount - order.discount_amount,
+            tax_behavior.to_option(),
             product.tax_code,
             customer.billing_address,
             [],
@@ -938,11 +970,11 @@ class TestCreateSubscriptionOrder:
         )
 
         assert billing_entry.amount is not None
-        assert order.tax_amount == polar_round(billing_entry.amount * 0.20)
         assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
         assert order.taxability_reason == TaxabilityReason.standard_rated
         assert order.tax_rate is None
         assert order.tax_transaction_processor_id is None
+        assert order.tax_behavior == tax_behavior
 
         await session.refresh(billing_entry)
         assert billing_entry.order_item is not None
@@ -1006,6 +1038,7 @@ class TestCreateSubscriptionOrder:
             str(order.id),
             subscription.currency,
             order.net_amount,
+            TaxBehaviorOption.exclusive,
             product.tax_code,
             customer.billing_address,
             [],
@@ -1109,6 +1142,7 @@ class TestCreateSubscriptionOrder:
             str(order.id),
             subscription.currency,
             order.subtotal_amount,
+            TaxBehaviorOption.exclusive,
             product.tax_code,
             customer.billing_address,
             [],
@@ -1541,6 +1575,7 @@ class TestCreateSubscriptionOrder:
             str(order.id),
             subscription.currency,
             abs(order.net_amount),
+            TaxBehaviorOption.exclusive,
             subscription.product.tax_code,
             customer.billing_address,
             [],
@@ -2281,6 +2316,7 @@ class TestHandlePayment:
         # Set tax_calculation_processor_id
         order.tax_processor = TaxProcessor.stripe
         order.tax_calculation_processor_id = "tax_calc_123"
+        order.tax_behavior = TaxBehavior.exclusive
         await save_fixture(order)
 
         # Create a payment
@@ -2337,6 +2373,7 @@ class TestHandlePayment:
 
         order.tax_processor = TaxProcessor.stripe
         order.tax_calculation_processor_id = "tax_calc_expired_123"
+        order.tax_behavior = TaxBehavior.exclusive
         await save_fixture(order)
 
         payment = await create_payment(

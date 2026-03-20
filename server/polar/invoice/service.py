@@ -134,6 +134,7 @@ class InvoiceService:
             taxability_reason=TaxabilityReason.product_exempt,
             tax_amount=0,
             tax_rate=None,
+            net_amount=payout.amount,
             currency=payout.currency,
             items=items,
             notes=(f"{account.billing_notes}\n\n" if account.billing_notes else "")

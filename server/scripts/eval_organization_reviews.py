@@ -138,6 +138,12 @@ async def run(
         "-m",
         help="Model override (default: settings.OPENAI_MODEL)",
     ),
+    policy: str | None = typer.Option(
+        None,
+        "--policy",
+        "-p",
+        help="Policy source: 'fallback' (old hardcoded), 'live' (fetch from URL), or path to a .txt file",
+    ),
     concurrency: int = typer.Option(
         5, "--concurrency", "-c", help="Max parallel API calls"
     ),
@@ -150,11 +156,24 @@ async def run(
     Re-runs the analyzer on each case and checks whether the
     verdict matches the expected output.
     """
+    from polar.organization_review.policy import FALLBACK_POLICY, fetch_policy_content
+
+    policy_override: str | None = None
+    if policy == "fallback":
+        policy_override = FALLBACK_POLICY
+        typer.echo("Using FALLBACK (old) policy")
+    elif policy == "live":
+        policy_override = await fetch_policy_content()
+        typer.echo("Using LIVE (fetched) policy")
+    elif policy is not None:
+        policy_override = Path(policy).read_text()
+        typer.echo(f"Using policy from file: {policy}")
+
     dataset: EvalDataset = EvalDataset.from_file(dataset_path)
     typer.echo(f"Loaded {len(dataset.cases)} cases from {dataset_path}")
 
     dataset.evaluators = [VerdictMatch(), NotFalseNegative(), NotFalsePositive()]
-    task = create_review_task(model=model)
+    task = create_review_task(model=model, policy_override=policy_override)
 
     report = await dataset.evaluate(task, max_concurrency=concurrency)
 

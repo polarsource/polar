@@ -1,124 +1,163 @@
 import httpx
 import structlog
+import trafilatura
 
 log = structlog.get_logger(__name__)
 
-FALLBACK_POLICY = """
-    As your Merchant of Record (MoR), we are the reseller of all digital goods and
-    services and focus exclusively on digital products. Therefore we cannot support
-    physical goods or entirely human services, e.g consultation or support. In
-    addition to not accepting the sale of anything illegal, harmful, abusive,
-    deceptive or sketchy.
+FALLBACK_POLICY = """\
+# Polar Acceptable Use Policy
 
-    ## Acceptable Products & Businesses
+Effective Date — March 20, 2026
 
-    * Software & SaaS
-    * Digital products: Templates, eBooks, PDFs, code, icons, fonts, design assets, photos, videos, audio etc
-    * Premium content & access: Discord server, GitHub repositories, courses and content requiring a subscription.
+**This Acceptable Use Policy applies to all services (the "Services") provided directly or indirectly by Polar Software, Inc. and its affiliates ("Polar") and all Products sold by you using the Services. You are independently responsible for complying with all applicable laws in all of your actions related to your use of any such Services regardless of the purpose of the use. In addition, you must adhere to the terms of this Acceptable Use Policy. Failure to comply with this Acceptable Use Policy may result in immediate termination of your right to use any and all Services provided by Polar. Capitalized terms used but not defined herein shall have the respective meanings given to them in the Polar Master Services Agreement (the "Agreement").**
 
-    **General rule of acceptable services**
+**Prohibited Activities**
 
-    Digital goods, software or services that can be fulfilled by…
+You may not use any Service for activities that:
 
-    1. Polar on your behalf (License Keys, File Downloads, GitHub- or Discord invites or private links, e.g premium YouTube videos etc)
-    2. Your site/service using our APIs to grant immediate access to digital assets
-    or services for customers with a one-time purchase or subscriptions
+- violate any law, statute, ordinance or regulation;
+- relate to transactions involving (a) items that encourage, promote, facilitate or instruct others to engage in illegal activity, (b) stolen goods including digital and virtual goods, (c) the promotion of hate, violence, racial or other forms of intolerance that is discriminatory or the financial exploitation of a crime, (d) items that infringe or violate any copyright, trademark, right of publicity or privacy or any other proprietary right under the laws of any jurisdiction;
+- relate to transactions that show the personal information of third parties in violation of applicable law; or
+- relate to transactions involving any activity that requires pre-approval without having obtained said approval.
 
-    Combined with being something you'd proudly boast about in public, i.e nothing illegal, unfair, deceptive, abusive, harmful or shady.
+You may not:
 
-    Don't hesitate to [reach out to us](/support) in advance in case you're unsure if your use case would be approved.
+- copy, modify, or create derivative works or improvements of the Services or materials therein or transferred thereby, including, without limitation, software, images, text, graphics, illustrations, logos, patents, trademarks, service marks, copyrights, photographs, audio, videos, music, and user content belonging to other users (the "Polar IP");
+- rent, lease, lend, sell, sublicense, assign, distribute, publish, transfer, or otherwise make available any Services or Polar IP to any person; including on or in connection with the internet or any time-sharing, service bureau, software as a service, cloud, or other technology or service;
+- reverse engineer, disassemble, decompile, decode, adapt, or otherwise attempt to derive or gain access to the source code of the Services or Polar IP, in whole or in part;
+- bypass or breach any security device or protection used by the Services or Polar IP or access or use the Services or Polar IP other than by an authorized user through the use of his or her own then-valid access credentials;
+- input, upload, transmit, or otherwise provide to or through the Services any information or materials that are unlawful or injurious, including without limitation harmful content, or contain, transmit, or activate any harmful code;
+- damage, destroy, disrupt, disable, impair, interfere with, or otherwise impede or harm in any manner the Services, Polar's systems, or Polar's provision of Services to any third party, in whole or in part;
+- remove, delete, alter, or obscure any trademarks, warranties, or disclaimers, or any copyright, trademark, patent, or other intellectual property or proprietary rights notices from any Services or Polar IP, including any copy thereof;
+- access or use the Services or Polar IP in any manner or for any purpose that infringes, misappropriates, or otherwise violates any intellectual property right or other right of any third party (including by any unauthorized access to, misappropriation, use, alteration, destruction, or disclosure of the data of any other Polar user), or that violates any applicable law;
+- access or use the Services or Polar IP for purposes of competitive analysis of the Services or Polar IP, the development, provision, or use of a competing software service or product or any other purpose that is to Polar's detriment or commercial disadvantage;
+- access or use the Services or Polar IP in, or in association with, the design, construction, maintenance, or operation of any hazardous environments, systems, or applications, any safety response systems or other safety-critical applications, or any other use or application in which the use or failure of the Services could lead to personal injury or severe physical or property damage;
+- use the Services or Polar IP for any personal, family, household, or other use not related to your business;
+- use Polar Services or Polar IP for the benefit of an individual, organization, or country identified on the United States Office of Foreign Assets Control's Specially Designated Nationals List, or for any third parties unaffiliated with your business; or
+- otherwise access or use the Services or Polar IP beyond the scope of the authorization granted under the Agreement.
 
-    ## Prohibited Businesses
+**Acceptable Products**
 
-    <Note>
-    **Not an exhaustive list**
+You may use the Services to sell:
 
-    We reserve the right to add to it at any time. Combined with placing your
-    account under further review or suspend it in case we consider the usage
-    deceptive, fraudulent, high-risk or of low quality for consumers with high
-    refund/chargeback risks.
-    </Note>
+- Software & SaaS;
+- Digital products: Templates, eBooks, PDFs, code, icons, fonts, design assets, photos, videos, audio, and similar digital assets;
+- Premium content & access: Discord server access, GitHub repository access, courses, and content requiring a subscription.
 
-    * Illegal or age restricted, e.g drugs, alcohol, tobacco or vaping products
-    * Violates laws in the jurisdictions where your business is located or to which your business is targeted
-    * Violates any rules or regulations from payment processors & credit card networks, e.g [Stripe](https://stripe.com/en-se/legal/restricted-businesses)
-    * Reselling or distributing customer data to other parties for commercial, promotional or any other reason (disclosed service providers are accepted).
-    * Threatens reputation of Polar or any of our partners and payment providers
-    * Causes or has a significant risk of refunds, chargebacks, fines, damages, or harm and liability
-    * Services used by-, intended for or advertised towards minors
-    * Physical goods of any kind. Including SaaS services offering or requiring fulfilment via physical delivery or human services.
-    * Human services, e.g marketing, design, web development and consulting in general.
-    * Donations or charity, i.e price is greater than product value or there is no exchange at all (pure money transfer). Open source maintainers with sponsorship can be supported - reach out.
-    * Marketplaces. Selling others' products or services using Polar against an upfront payment or with an agreed upon revenue share.
-    * Adult services or content. Including by AI or proxy, e.g
-    * AI Girlfriend/Boyfriend services.
-    * OnlyFans related services.
-    * Explicit/NSFW content generated with AI
-    * Low-quality products, services or sites, e.g
-    * E-books generated with AI or 4 pages sold for \\$50
-    * Quickly & poorly executed websites, products or services
-    * Services with a lot of bugs and issues
-    * Products, services or websites we determine to have a low trust score
-    * Fake testimonials, reviews, and social proof. It's deceptive to consumers which is behaviour we do not tolerate.
-    * Trademark violations
-    * "Get rich" schemes or content
-    * Gambling & betting services
-    * Regulated services or products
-    * Counterfeit goods
-    * Job boards
-    * NFT & Crypto assets.
-    * Cheating: Utilizing cheat codes, hacks, or any unauthorized modifications that alter gameplay or provide an unfair advantage.
-    * Reselling Licenses: Selling, distributing, or otherwise transferring software licenses at reduced prices or without proper authorization.
-    * Services to circumvent rules or terms of other services: Attempting to bypass, manipulate, or undermine any established rules, gameplay mechanics, or pricing structures of other vendors/games.
-    * Financial services, e.g facilitating transactions, investments or balances for customers.
-    * Financial advice, e.g content or services related to tax guidance, wealth management, investment strategies etc.
-    * IPTV services
-    * Virus & Spyware
-    * Telecommunication & eSIM Services
-    * Products you don't own the IP of or have the required licenses to resell
-    * Advertising & unsolicited marketing services. Including services to:
-    * Generate, scrape or sell leads
-    * Send SMS/WhatsApp messages in bulk
-    * Automate outreach (spam risks)
-    * Automate mass content generation & submission across sites
-    * API & IP cloaking services, e.g services to circumvent IP bans, API rate limits etc.
-    * Products or services associated with pseudo-science; clairvoyance, horoscopes, fortune-telling etc.
-    * Travel services, reservation services, travel clubs and timeshares
-    * Medical advice services or products, e.g. pharmaceutical, weight loss, muscle building.
+Generally, acceptable services are digital goods, software, or services that can be fulfilled by (1) Polar on your behalf (License Keys, File Downloads, GitHub or Discord invites, or private links) or (2) your site/service using our APIs to grant immediate access to digital assets or services for customers with a one-time purchase or subscription. If you are unsure whether your use case would be approved, please contact Polar in advance.
 
-    ## Restricted Businesses
+**Prohibited Products**
 
-    Requires closer review and a higher bar of quality, execution, trust and compliance
-    standards to be accepted.
+Polar serves software companies (including B2B SaaS, Consumer Software, and Games). If your company's primary offering is human services or the sale of physical goods, the Services are not designed for and should not be used by you.
 
-    * Directories & boards
-    * Marketing services
-    * Pre-orders & Paid waitlist
-    * Ticket sales
-"""
+You may not use the Services to sell any Product which:
+
+- violates any rules or regulations of Card Brand Networks;
+- violates any law or government regulation;
+- involves fraudulent, deceptive, unfair, abusive or predatory practices;
+- is marketed through the use of outbound telemarketing;
+- threatens reputational damage to Polar or any Card Brand Network;
+- results in or causes a significant risk of chargebacks, fines, damages, or harm and liability; or
+- engages in, encourages, promotes, or celebrates violence or physical harm to persons or property, or toward any group based on race, religion, disability, gender, sexual orientation, national origin, or any other immutable characteristic.
+
+Polar reserves the right to refuse Services to sell any Product in its sole discretion.
+
+By using the Services, you confirm that you will not accept payments with any connection to the following business categories and practices. The following list is not exhaustive. Polar reserves the right to add to it at any time, combined with placing your account under further review or suspending it in case we consider the usage deceptive, fraudulent, high-risk, or of low quality for consumers with high refund or chargeback risks. This list is determined and interpreted by Polar in its sole discretion and is subject to change:
+
+- Physical products;
+- Human services;
+- Donations, crowdfunding, community access, advertising, and sponsorship;
+- Any product or service that infringes upon, or enables the infringement of, the intellectual property rights of another party or that you do not own or do not have a license to;
+- Any product or service that enables unauthorized access to data belonging to another party;
+- Any product or service that enables non-Polar Sellers to sell products and services to customers;
+- Advertising and unsolicited marketing services, including, but not limited to, lead generation, bulk SMS and automated outreach;
+- Adult content and services including, but not limited to, OnlyFans-related and similar services, adult AI-generated content and AI relationship services;
+- Services used by, intended for, or advertised towards minors;
+- Gambling and betting services, including, but not limited to loot boxes and mystery boxes;
+- Illegal or age-restricted products, including, but not limited to, drugs, alcohol, tobacco and vaping;
+- Reselling or distributing customer data;
+- Low-quality or counterfeit products or services;
+- Fake testimonials, reviews, social proof, and review inflation platforms;
+- Regulated services or products;
+- Reselling software licenses without authorization;
+- Services to circumvent the rules, paywalls or terms of other services;
+- Trading and Financial Services, including (a) services facilitating transactions, investments, or balances for customers; (b) financial trading, trading bots, brokerage, or investment advisory services (including insights platforms); (c) financial advice content or services related to tax guidance, wealth management, trading signals, or investment strategies; and (d) NFTs and Crypto assets;
+- "Get Rich" schemes or content;
+- Government Services;
+- Certifications and exam preparation services;
+- Cheating, including but not limited to macros, cheat codes and hacks;
+- Job boards;
+- Travel Services;
+- IPTV services, including software or platforms that enable IPTV service delivery;
+- Viruses and Spyware;
+- API and IP cloaking services;
+- Third-party trademark removal services;
+- Telecommunication and eSIM Services;
+- Third-party content downloaders, including, but not limited to YouTube, Instagram and Snapchat;
+- Digital services associated with pseudo-science including, but not limited to, clairvoyance, horoscopes, fortune-telling;
+- Medical and Health advice;
+- Content generation;
+- Technical support and repair services; or
+- Standardized test prep platforms reselling real or past exam questions (e.g. IELTS, SAT, GMAT). Due to the high risk of copyright infringement and illegal distribution of proprietary exam content, we disallow this category entirely.
+
+Due to the increased risk on certain offerings, Polar must do enhanced due diligence on certain product offerings. Polar will reach out to you for additional information if it is needed.
+
+**Restricted Businesses**
+
+The following categories require closer review and may not be accepted:
+
+- Directories and boards;
+- Marketing services;
+- Pre-orders and paid waitlists;
+- VPN services;
+- Ticket sales; and
+- eBooks.
+
+**Categories That Require Close Review**
+
+- AI Content Generation tools (text, image, video, voice);
+- Marketing & outreach tools;
+- Resume, hiring, or exam tools;
+- Spiritual & Astrology services;
+- Audio / music / chatbot generators (no voice cloning, NSFW, IP infringements or fake claims); and
+- VPS & VDS services."""
+
+POLICY_URL = "https://polar.sh/legal/acceptable-use-policy"
 
 # Cached policy content - will be fetched once and cached
 _cached_policy_content: str | None = None
 
 
 async def fetch_policy_content() -> str:
-    """Fetch and cache the acceptable use policy content."""
+    """Fetch and cache the acceptable use policy content.
+
+    Fetches the HTML page and extracts the main content using trafilatura
+    to produce clean markdown for the LLM agent.
+    """
     global _cached_policy_content
 
     if _cached_policy_content is not None:
         return _cached_policy_content
 
     try:
-        # Fetch the actual policy from the documentation URL
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                "https://polar.sh/legal/acceptable-use-policy",
+                POLICY_URL,
                 timeout=10.0,
                 follow_redirects=True,
             )
             if response.status_code == 200:
-                _cached_policy_content = response.text
-                log.info("Successfully fetched acceptable use policy from docs")
+                content = trafilatura.extract(
+                    response.text, output_format="markdown"
+                )
+                if content:
+                    _cached_policy_content = content
+                    log.info("Successfully fetched acceptable use policy")
+                else:
+                    log.warning(
+                        "trafilatura extracted empty content, using fallback"
+                    )
+                    _cached_policy_content = FALLBACK_POLICY
             else:
                 log.warning(
                     "Failed to fetch policy, using fallback",

@@ -23,6 +23,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -102,6 +103,7 @@ class CustomerType(StrEnum):
 class Customer(MetadataMixin, RecordModel):
     __tablename__ = "customers"
     __table_args__ = (
+        # Old indexes (kept until PR 2 contract migration drops them)
         Index(
             "ix_customers_email_case_insensitive",
             func.lower(Column("email")),
@@ -114,6 +116,23 @@ class Customer(MetadataMixin, RecordModel):
             func.lower(Column("email")),
             "deleted_at",
             unique=True,
+            postgresql_nulls_not_distinct=True,
+        ),
+        # New partial indexes (only rows where email IS NOT NULL)
+        Index(
+            "ix_customers_email_not_null",
+            func.lower(Column("email")),
+            "deleted_at",
+            postgresql_where=text("email IS NOT NULL"),
+            postgresql_nulls_not_distinct=True,
+        ),
+        Index(
+            "ix_customers_organization_id_email_not_null",
+            "organization_id",
+            func.lower(Column("email")),
+            "deleted_at",
+            unique=True,
+            postgresql_where=text("email IS NOT NULL"),
             postgresql_nulls_not_distinct=True,
         ),
         Index(
@@ -140,7 +159,7 @@ class Customer(MetadataMixin, RecordModel):
         index=True,
         server_default=sa.text("generate_customer_short_id()"),
     )
-    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email: Mapped[str] = mapped_column(String(320), nullable=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=False

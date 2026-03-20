@@ -42,7 +42,7 @@ from .customer import Customer
 from .discount import Discount, DiscountDuration, DiscountPercentage
 from .organization import Organization
 from .product import Product
-from .product_price import ProductPrice, ProductPriceSeatUnit
+from .product_price import ProductPrice
 from .subscription import Subscription
 
 if TYPE_CHECKING:
@@ -443,16 +443,6 @@ class Checkout(
         if self.product is None:
             return None
         return self.trial_interval_count or self.product.trial_interval_count
-
-    @property
-    def price_per_seat(self) -> int | None:
-        if not isinstance(self.product_price, ProductPriceSeatUnit):
-            return None
-
-        if self.seats is None:
-            return None
-
-        return self.product_price.get_price_per_seat(self.seats)
 
     @property
     def description(self) -> str:

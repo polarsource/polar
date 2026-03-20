@@ -69,7 +69,13 @@ const CheckoutSeatSelector = ({
 
   const netAmount = checkout.net_amount || 0
   const currency = checkout.currency ?? 'usd'
-  const pricePerSeat = checkout.price_per_seat || 0
+  const pricePerSeat = isSeatBased
+    ? (sortedTiers.find(
+        (t) =>
+          displaySeats >= t.min_seats &&
+          (t.max_seats == null || displaySeats <= t.max_seats),
+      )?.price_per_seat ?? 0)
+    : 0
 
   const graduatedBreakdown = useMemo(() => {
     if (!isSeatBased) return null

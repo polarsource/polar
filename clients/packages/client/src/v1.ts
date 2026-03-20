@@ -9524,11 +9524,6 @@ export interface components {
        */
       max_seats?: number | null
       /**
-       * Price Per Seat
-       * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
-       */
-      price_per_seat?: number | null
-      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -11203,11 +11198,6 @@ export interface components {
        */
       max_seats?: number | null
       /**
-       * Price Per Seat
-       * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
-       */
-      price_per_seat?: number | null
-      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -11471,11 +11461,6 @@ export interface components {
        * @description Maximum number of seats (works with seat-based pricing only)
        */
       max_seats?: number | null
-      /**
-       * Price Per Seat
-       * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
-       */
-      price_per_seat?: number | null
       /**
        * Discount Amount
        * @description Discount amount in cents.

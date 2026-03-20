@@ -385,16 +385,6 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
                 return tier
         raise ValueError(f"No tier found for {seats} seats")
 
-    def get_price_per_seat(self, seats: int) -> int:
-        seat_tier_type = self.seat_tiers.get("seat_tier_type", SeatTierType.volume)
-        match seat_tier_type:
-            case SeatTierType.volume:
-                tier = self.get_tier_for_seats(seats)
-                return tier["price_per_seat"]
-            case SeatTierType.graduated:
-                # Price per seat varies across tiers, so we return the average
-                return self.calculate_amount(seats) // seats
-
     def calculate_amount(self, seats: int) -> int:
         seat_tier_type = self.seat_tiers.get("seat_tier_type", SeatTierType.volume)
         match seat_tier_type:
@@ -404,7 +394,8 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
                 return self._calculate_graduated(seats)
 
     def _calculate_volume(self, seats: int) -> int:
-        return self.get_price_per_seat(seats) * seats
+        tier = self.get_tier_for_seats(seats)
+        return tier["price_per_seat"] * seats
 
     def _calculate_graduated(self, seats: int) -> int:
         total = 0

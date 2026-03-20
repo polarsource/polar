@@ -16,7 +16,6 @@ const seatDefaults: Partial<ProductCheckoutPublic> = {
   seats: 3,
   min_seats: null,
   max_seats: null,
-  price_per_seat: 1049,
   product_price: createSeatBasedPrice({
     seat_tiers: {
       seat_tier_type: 'volume',
@@ -330,7 +329,6 @@ describe('CheckoutSeatSelector', () => {
       seats: 15,
       min_seats: null,
       max_seats: null,
-      price_per_seat: 800,
       product_price: createSeatBasedPrice({
         seat_tiers: {
           seat_tier_type: 'graduated',
@@ -403,7 +401,6 @@ describe('CheckoutSeatSelector', () => {
         net_amount: 5000,
         amount: 5000,
         total_amount: 5000,
-        price_per_seat: 1000,
       })
 
       render(

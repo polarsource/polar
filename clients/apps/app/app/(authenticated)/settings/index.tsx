@@ -104,16 +104,12 @@ export default function Index() {
           <SettingsItem
             title="Privacy Policy"
             variant="link"
-            onPress={() =>
-              Linking.openURL('https://polar.sh/legal/privacy-policy')
-            }
+            onPress={() => Linking.openURL('https://polar.sh/legal/privacy')}
           />
           <SettingsItem
             title="Terms of Service"
             variant="link"
-            onPress={() =>
-              Linking.openURL('https://polar.sh/legal/master-services-terms')
-            }
+            onPress={() => Linking.openURL('https://polar.sh/legal/terms')}
           />
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem

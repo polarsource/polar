@@ -321,7 +321,7 @@ export const OrganizationStep = ({
                                 </li>
                                 <li>
                                   <a
-                                    href="https://polar.sh/legal/master-services-terms"
+                                    href="https://polar.sh/legal/terms"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
                                     rel="noreferrer"
@@ -331,7 +331,7 @@ export const OrganizationStep = ({
                                 </li>
                                 <li>
                                   <a
-                                    href="https://polar.sh/legal/privacy-policy"
+                                    href="https://polar.sh/legal/privacy"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
                                     rel="noreferrer"

@@ -1,4 +1,5 @@
 import { getPublicServerURL, getServerURL } from '@/utils/api'
+import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
 import {
   CheckoutFormProvider,
@@ -20,7 +21,7 @@ export async function generateMetadata(props: {
   const params = await props.params
   const { clientSecret } = params
 
-  const client = createClient(getServerURL())
+  const client = createClient(getServerURL(), undefined, getSSRHeaders())
   const { data: checkout } = await client.GET(
     '/v1/checkouts/client/{client_secret}',
     { params: { path: { client_secret: clientSecret } } },
@@ -52,7 +53,7 @@ export default async function Page(props: {
   const { clientSecret } = params
 
   const embed = _embed === 'true'
-  const client = createClient(getServerURL())
+  const client = createClient(getServerURL(), undefined, getSSRHeaders())
 
   let checkout
   try {

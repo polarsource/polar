@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 'use client'
 
+import { type schemas } from '@polar-sh/client'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -12,6 +13,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@polar-sh/ui/components/ui/radio-group'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import { InfoIcon } from 'lucide-react'
 import React, { useCallback } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -100,8 +112,104 @@ export const ProductPriceSeatBasedItem: React.FC<
     return `Buying ${range}`
   }
 
+  const pricingType =
+    watch(`prices.${index}.seat_tiers.seat_tier_type`) ?? 'volume'
+
+  const pricingTypeLabel =
+    pricingType === 'graduated'
+      ? 'Add tier'
+      : hasSingleTier
+        ? 'Add volume discount'
+        : 'Add volume discount threshold'
+
   return (
     <div className="flex flex-col gap-6">
+      <FormField
+        control={control}
+        name={`prices.${index}.seat_tiers.seat_tier_type` as const}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              <span className="flex items-center gap-x-1.5">
+                Pricing model
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="dark:text-polar-400 h-3.5 w-3.5 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent className="flex max-w-xs flex-col gap-2 text-xs">
+                    <p>
+                      Example: Tier 1 is 1-10 seats at $10, Tier 2 is 11+ at $8.
+                    </p>
+                    <div>
+                      <p className="font-medium">Volume</p>
+                      <p>5 seats = 5 × $10 = $50</p>
+                      <p>15 seats = 15 × $8 = $120</p>
+                      <p className="dark:text-polar-400 text-gray-400">
+                        All seats use the single matching tier.
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Graduated</p>
+                      <p>5 seats = 5 × $10 = $50</p>
+                      <p>15 seats = 10 × $10 + 5 × $8 = $140</p>
+                      <p className="dark:text-polar-400 text-gray-400">
+                        Each tier range is priced independently.
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </span>
+            </FormLabel>
+            <FormControl>
+              <RadioGroup
+                value={field.value ?? 'volume'}
+                onValueChange={(v) => {
+                  field.onChange(v as schemas['SeatTierType'])
+                  setValue(`prices.${index}.id`, '')
+                }}
+                className="grid grid-cols-2 gap-3"
+              >
+                {(
+                  [
+                    {
+                      value: 'volume',
+                      label: 'Volume',
+                      description: 'All seats priced at the matching tier rate',
+                    },
+                    {
+                      value: 'graduated',
+                      label: 'Graduated',
+                      description: 'Each tier range priced independently',
+                    },
+                  ] as const
+                ).map((option) => (
+                  <Label
+                    key={option.value}
+                    htmlFor={`pricing-type-${index}-${option.value}`}
+                    className={`flex cursor-pointer flex-col gap-1 rounded-2xl border p-4 font-normal transition-colors ${
+                      (field.value ?? 'volume') === option.value
+                        ? 'dark:bg-polar-800 bg-gray-50'
+                        : 'dark:border-polar-700 dark:hover:border-polar-700 dark:text-polar-500 dark:hover:bg-polar-700 dark:bg-polar-900 border-gray-100 text-gray-500 hover:border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 font-medium">
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`pricing-type-${index}-${option.value}`}
+                      />
+                      {option.label}
+                    </div>
+                    <span className="dark:text-polar-500 text-xs text-gray-400">
+                      {option.description}
+                    </span>
+                  </Label>
+                ))}
+              </RadioGroup>
+            </FormControl>
+          </FormItem>
+        )}
+      />
+
       {!hasSingleTier &&
         tiers?.[0]?.min_seats != null &&
         tiers[0].min_seats > 1 && (
@@ -275,9 +383,7 @@ export const ProductPriceSeatBasedItem: React.FC<
         onClick={addTier}
         className="self-start"
       >
-        {hasSingleTier
-          ? 'Add volume discount'
-          : 'Add volume discount threshold'}
+        {pricingTypeLabel}
       </Button>
     </div>
   )

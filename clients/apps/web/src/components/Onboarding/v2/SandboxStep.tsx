@@ -77,6 +77,7 @@ export function SandboxStep() {
         slug: formData.orgSlug,
         default_presentment_currency:
           formData.defaultCurrency as schemas['PresentmentCurrency'],
+        default_tax_behavior: 'location',
         legal_entity: { type: 'individual' as const },
       })
 

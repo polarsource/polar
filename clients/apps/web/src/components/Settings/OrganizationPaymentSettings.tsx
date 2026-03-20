@@ -3,7 +3,14 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { enums, isValidationError, schemas } from '@polar-sh/client'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import {
   Form,
   FormControl,
@@ -16,17 +23,26 @@ import { useForm } from 'react-hook-form'
 import { CurrencySelector } from '../CurrencySelector'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-interface OrganizationCurrencySettingsProps {
+interface OrganizationPaymentSettingsProps {
   organization: schemas['Organization']
 }
 
 type FormSchema = Pick<
   schemas['OrganizationUpdate'],
-  'default_presentment_currency'
+  'default_presentment_currency' | 'default_tax_behavior'
 >
 
-const OrganizationCurrencySettings: React.FC<
-  OrganizationCurrencySettingsProps
+const taxBehaviorOptionDisplayNames: Record<
+  schemas['TaxBehaviorOption'],
+  string
+> = {
+  exclusive: 'Exclusive',
+  inclusive: 'Inclusive',
+  location: 'Location based',
+}
+
+const OrganizationPaymentSettings: React.FC<
+  OrganizationPaymentSettingsProps
 > = ({ organization: _organization }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
@@ -34,6 +50,7 @@ const OrganizationCurrencySettings: React.FC<
   const form = useForm<FormSchema>({
     defaultValues: {
       default_presentment_currency: organization.default_presentment_currency,
+      default_tax_behavior: organization.default_tax_behavior,
     },
   })
   const { control, setError, reset } = form
@@ -95,10 +112,41 @@ const OrganizationCurrencySettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+          <SettingsGroupItem
+            title="Default tax behavior"
+            description="The default tax behavior applied on products."
+          >
+            <FormField
+              control={control}
+              name="default_tax_behavior"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || undefined}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a benefit type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {enums.taxBehaviorOptionValues.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {taxBehaviorOptionDisplayNames[value]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
         </SettingsGroup>
       </form>
     </Form>
   )
 }
 
-export default OrganizationCurrencySettings
+export default OrganizationPaymentSettings

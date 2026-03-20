@@ -30,7 +30,7 @@ import SharedLayout from './components/SharedLayout'
 
 type FormSchema = Pick<
   schemas['OrganizationCreate'],
-  'name' | 'slug' | 'default_presentment_currency'
+  'name' | 'slug' | 'default_presentment_currency' | 'default_tax_behavior'
 > & {
   terms: boolean
 }

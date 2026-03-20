@@ -1,4 +1,3 @@
-import { BlogHero } from '@/components/Blog/BlogHero'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { Metadata } from 'next'
 import Link from 'next/link'
@@ -73,9 +72,9 @@ const resourceLinks = [
 export default function Legal() {
   return (
     <div className="not-prose mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-16">
-      <BlogHero
-        title="Legal"
-      />
+      <div className="flex flex-col gap-y-8">
+        <h3 className="text-3xl md:text-5xl">Legal</h3>
+      </div>
       <div className="flex flex-col gap-y-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {resourceLinks.map((link) => (

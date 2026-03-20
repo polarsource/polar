@@ -211,7 +211,8 @@ jobs:
 
           if [ -f analysis-result.json ]; then
             CLASSIFICATION=$(jq -r '.classification' analysis-result.json)
-            SUMMARY=$(jq -r '.summary' analysis-result.json)
+            # JSON-escape the summary so it's safe to embed in the Slack payload
+            SUMMARY=$(jq -r '.summary' analysis-result.json | jq -Rs '.' | sed 's/^"//;s/"$//')
             echo "classification=$CLASSIFICATION" >> $GITHUB_OUTPUT
             {
               echo "summary<<GHEOF"

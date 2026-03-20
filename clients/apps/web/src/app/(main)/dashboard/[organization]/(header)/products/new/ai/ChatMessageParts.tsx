@@ -58,10 +58,12 @@ export const ChatMessagePartRenderer = ({
   item,
   messageId,
   organization,
+  onReset,
 }: {
   item: RenderableItem
   messageId: string
   organization: schemas['Organization']
+  onReset?: () => void
 }) => {
   const router = useRouter()
 
@@ -80,10 +82,9 @@ export const ChatMessagePartRenderer = ({
 
   if (part.type === 'text') {
     return (
-      <MemoizedMarkdown
-        key={`${messageId}-${index}`}
-        content={part.text as string}
-      />
+      <div className="prose prose-sm" key={`${messageId}-${index}`}>
+        <MemoizedMarkdown content={part.text as string} />
+      </div>
     )
   }
 
@@ -108,6 +109,7 @@ export const ChatMessagePartRenderer = ({
         messageId={messageId}
         index={index}
         organization={organization}
+        onReset={onReset}
       />
     )
   }
@@ -122,6 +124,7 @@ export const ChatMessagePartRenderer = ({
         onNavigate={(id) =>
           router.push(`/dashboard/${organization.slug}/products/${id}`)
         }
+        onReset={onReset}
       />
     )
   }
@@ -134,11 +137,13 @@ const ManualSetupCard = ({
   messageId,
   index,
   organization,
+  onReset,
 }: {
   part: MessagePart
   messageId: string
   index: number
   organization: schemas['Organization']
+  onReset?: () => void
 }) => {
   if (part.state !== 'input-available' && part.state !== 'output-available') {
     return null
@@ -158,14 +163,20 @@ const ManualSetupCard = ({
         : reason === 'tool_call_error'
           ? 'Sorry, something went wrong.'
           : "This configuration requires manual setup. Let's continue there."}
-      <Link href={`/dashboard/${organization.slug}/products/new`}>
-        <Button
-          variant="secondary"
-          className="dark:bg-polar-700 dark:hover:bg-polar-600 rounded-full border-transparent bg-white hover:bg-white dark:border-transparent"
-        >
-          Configure Manually
-        </Button>
-      </Link>
+      <div className="flex gap-2">
+        {onReset && (
+          <Button
+            variant="secondary"
+            className="dark:bg-polar-700 dark:hover:bg-polar-600 rounded-full border-transparent bg-white hover:bg-white dark:border-transparent"
+            onClick={onReset}
+          >
+            Start again
+          </Button>
+        )}
+        <Link href={`/dashboard/${organization.slug}/products/new`}>
+          <Button>Configure manually</Button>
+        </Link>
+      </div>
     </div>
   )
 }
@@ -174,14 +185,15 @@ const DoneCard = ({
   part,
   messageId,
   index,
-  organization,
   onNavigate,
+  onReset,
 }: {
   part: MessagePart
   messageId: string
   index: number
   organization: schemas['Organization']
   onNavigate: (productId: string) => void
+  onReset?: () => void
 }) => {
   if (part.state !== 'input-available' && part.state !== 'output-available') {
     return null
@@ -196,14 +208,22 @@ const DoneCard = ({
       className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-4 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
     >
       Your product{productIds.length > 1 ? 's have' : ' has'} been created!
-      {firstProductId && (
-        <Button
-          className="dark:hover:bg-polar-50 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black"
-          onClick={() => onNavigate(firstProductId)}
-        >
-          View Product
-        </Button>
-      )}
+      <div className="flex gap-2">
+        {firstProductId && (
+          <Button onClick={() => onNavigate(firstProductId)}>
+            View product
+          </Button>
+        )}
+        {onReset && (
+          <Button
+            variant="secondary"
+            className="dark:bg-polar-700 dark:hover:bg-polar-600 rounded-full border-transparent bg-white hover:bg-white dark:border-transparent"
+            onClick={onReset}
+          >
+            Add another
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

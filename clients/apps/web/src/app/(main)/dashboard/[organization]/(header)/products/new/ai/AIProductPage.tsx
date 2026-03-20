@@ -3,6 +3,9 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { schemas } from '@polar-sh/client'
 import { AIProductChat } from './AIProductChat'
+import Link from 'next/link'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { ArrowLeftIcon } from 'lucide-react'
 
 export default function AIProductPage({
   organization,
@@ -11,14 +14,20 @@ export default function AIProductPage({
 }) {
   return (
     <DashboardBody
-      title="Create Product with AI"
+      title="Create Product"
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-8"
+      header={
+        <>
+          <Link href={`/dashboard/${organization.slug}/products/new`}>
+            <Button variant="secondary">
+              <ArrowLeftIcon className="mr-2" />
+              Configure manually
+            </Button>
+          </Link>
+        </>
+      }
     >
-      <p className="dark:text-polar-400 text-gray-500">
-        Describe your product and how you want to sell it. The AI assistant will
-        configure it for you.
-      </p>
       <AIProductChat organization={organization} />
     </DashboardBody>
   )

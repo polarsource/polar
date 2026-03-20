@@ -21,9 +21,9 @@ export const AIProductChat = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const conversationId = useMemo(() => nanoid(), [])
+  const [conversationId, setConversationId] = useState(() => nanoid())
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, setMessages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: `/dashboard/${organization.slug}/products/new/ai/chat`,
       credentials: 'include',
@@ -87,6 +87,12 @@ export const AIProductChat = ({
     }
   }
 
+  const handleReset = () => {
+    setMessages([])
+    setConversationId(nanoid())
+    setInput('')
+  }
+
   const isChatDone = hasRedirectedToManualSetup || isFinished
 
   return (
@@ -123,6 +129,7 @@ export const AIProductChat = ({
                       item={item}
                       messageId={message.id}
                       organization={organization}
+                      onReset={handleReset}
                     />
                   ))}
                 </div>

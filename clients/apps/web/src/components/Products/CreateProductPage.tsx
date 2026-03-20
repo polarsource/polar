@@ -10,7 +10,6 @@ import {
   setProductValidationErrors,
 } from '@/utils/api/errors'
 import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
-import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -23,6 +22,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import ProductForm from './ProductForm/ProductForm'
+import { Wand2Icon } from 'lucide-react'
 
 const reuploadMedia = async (
   media: schemas['ProductMediaFileRead'],
@@ -215,24 +215,19 @@ export const CreateProductPage = ({
       title={sourceProduct ? 'Duplicate Product' : 'Create Product'}
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
+      header={
+        <>
+          {!sourceProduct && (
+            <Link href={`/dashboard/${organization.slug}/products/new/ai`}>
+              <Button variant="secondary">
+                <Wand2Icon className="mr-2" />
+                Create with AI
+              </Button>
+            </Link>
+          )}
+        </>
+      }
     >
-      {!sourceProduct && (
-        <Link
-          href={`/dashboard/${organization.slug}/products/new/ai`}
-          className="dark:border-polar-700 dark:bg-polar-800 dark:hover:bg-polar-700 flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100"
-        >
-          <AutoAwesomeOutlined
-            className="dark:text-polar-400 text-gray-500"
-            fontSize="small"
-          />
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Create with AI</span>
-            <span className="dark:text-polar-500 text-xs text-gray-500">
-              Describe your product and let AI configure it for you
-            </span>
-          </div>
-        </Link>
-      )}
       <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">
         <Form {...form}>
           <form

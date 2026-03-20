@@ -29,6 +29,7 @@ from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
+    TaxBehavior,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -563,6 +564,7 @@ class SubscriptionService:
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.currency = currency
+        subscription.tax_behavior = checkout.tax_behavior
         subscription.discount = checkout.discount
         # For non-trial checkouts with a discount, the discount is applied immediately
         # (the first payment at checkout includes the discount)
@@ -1733,20 +1735,22 @@ class SubscriptionService:
                 subtotal_amount, subscription.currency
             )
 
-        taxable_amount = subtotal_amount - discount_amount
-
+        net_amount = subtotal_amount - discount_amount
         tax_amount = 0
 
         if (
-            taxable_amount > 0
+            net_amount > 0
             and subscription.product.is_tax_applicable
+            and subscription.tax_behavior
             and subscription.customer.billing_address is not None
         ):
+            tax_behavior = subscription.tax_behavior.to_option()
             try:
                 tax, _ = await tax_calculation_service.calculate(
                     subscription.id,
                     subscription.currency,
-                    taxable_amount,
+                    net_amount,
+                    tax_behavior,
                     subscription.product.tax_code,
                     subscription.customer.billing_address,
                     [subscription.customer.tax_id]
@@ -1763,8 +1767,10 @@ class SubscriptionService:
                 tax_amount = 0
             else:
                 tax_amount = tax["amount"]
+                if subscription.tax_behavior == TaxBehavior.inclusive:
+                    net_amount -= tax_amount
 
-        total = taxable_amount + tax_amount
+        total = net_amount + tax_amount
 
         # Make sure nothing is saved to DB
         await session.rollback()
@@ -1774,6 +1780,7 @@ class SubscriptionService:
             metered_amount=metered_amount,
             subtotal_amount=subtotal_amount,
             discount_amount=discount_amount,
+            net_amount=net_amount,
             tax_amount=tax_amount,
             total_amount=total,
         )

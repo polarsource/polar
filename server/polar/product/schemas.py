@@ -20,7 +20,7 @@ from polar.custom_field.schemas import (
     AttachedCustomField,
     AttachedCustomFieldListCreate,
 )
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.db.models import Model
@@ -184,6 +184,13 @@ ProductDescription = Annotated[
 class ProductPriceCreateBase(Schema):
     amount_type: ProductPriceAmountType
     price_currency: PriceCurrency = PresentmentCurrency.usd
+    tax_behavior: TaxBehaviorOption | None = Field(
+        default=None,
+        description=(
+            "The tax behavior of the price. "
+            "If not set, it will default to the organization's default tax behavior."
+        ),
+    )
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()
@@ -606,6 +613,12 @@ class ProductPriceBase(TimestampedSchema):
     )
     price_currency: str = Field(
         description="The currency in which the customer will be charged."
+    )
+    tax_behavior: TaxBehaviorOption | None = Field(
+        description=(
+            "The tax behavior of the price. "
+            "If null, it defaults to the organization's default tax behavior."
+        )
     )
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."

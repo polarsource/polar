@@ -6,6 +6,7 @@ import httpx
 import structlog
 
 from polar.config import settings
+from polar.enums import TaxBehavior
 from polar.kit.address import Address
 from polar.logging import Logger
 
@@ -144,6 +145,7 @@ class NumeralTaxService(TaxServiceProtocol):
         identifier: uuid.UUID | str,
         currency: str,
         amount: int,
+        tax_behavior: TaxBehavior,
         tax_code: TaxCode,
         address: Address,
         tax_ids: list[TaxID],
@@ -184,7 +186,7 @@ class NumeralTaxService(TaxServiceProtocol):
                         "quantity": 1,
                     }
                 ],
-                "tax_included_in_amount": False,
+                "tax_included_in_amount": tax_behavior == TaxBehavior.inclusive,
             },
         }
 
@@ -211,6 +213,7 @@ class NumeralTaxService(TaxServiceProtocol):
                     processor_id=None,
                     amount=0,
                     currency=currency,
+                    tax_behavior=tax_behavior,
                     taxability_reason=TaxabilityReason.not_supported,
                     tax_rate=TaxRate(
                         rate_type="percentage",
@@ -254,6 +257,7 @@ class NumeralTaxService(TaxServiceProtocol):
             processor_id=calculation["id"],
             amount=calculation["total_tax_amount"],
             currency=currency,
+            tax_behavior=tax_behavior,
             taxability_reason=taxability_reason,
             tax_rate=tax_rate,
         )

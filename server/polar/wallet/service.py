@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxBehaviorOption
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams
@@ -128,6 +128,7 @@ class WalletService:
                 f"top_up:{wallet.id}:{uuid.uuid4()}",
                 wallet.currency,
                 amount,
+                TaxBehaviorOption.exclusive,  # TODO: add tax behavior to wallet top-up
                 TaxCode.general_electronically_supplied_services,
                 billing_address,
                 [tax_id] if tax_id is not None else [],

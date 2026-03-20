@@ -145,6 +145,7 @@ export function ProductDetailsStep() {
       country: (data.businessCountry || data.country || undefined) as
         | schemas['OrganizationCreate']['country']
         | undefined,
+      default_tax_behavior: 'location',
       legal_entity:
         data.organizationType === 'company'
           ? {

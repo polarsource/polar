@@ -7,6 +7,7 @@ const priceDefaults = {
   id: 'price_1',
   source: 'catalog' as const,
   price_currency: 'usd',
+  tax_behavior: null,
   is_archived: false,
   product_id: 'prod_1',
   created_at: now.toISOString(),

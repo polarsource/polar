@@ -136,7 +136,7 @@ export const useOrganization = (id: string, enabled: boolean = true) =>
 
 export const useOrganizationKYC = (id: string, enabled: boolean = true) =>
   useQuery({
-    queryKey: ['organizations', 'kyc', id],
+    queryKey: ['organizations', id, 'kyc'],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/kyc', {

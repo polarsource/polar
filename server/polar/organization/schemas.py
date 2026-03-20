@@ -114,7 +114,9 @@ class OrganizationFeatureSettings(Schema):
 
 class OrganizationDetails(Schema):
     about: str | None = Field(
-        None, description="Brief information about you and your business."
+        None,
+        deprecated=True,
+        description="Brief information about you and your business.",
     )
     product_description: str = Field(
         ..., description="Description of digital products being sold."
@@ -141,7 +143,7 @@ class OrganizationDetails(Schema):
         deprecated=True,
         description="Estimated revenue in the next 12 months",
     )
-    switching: bool = Field(True, description="Switching from another platform?")
+    switching: bool = Field(False, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")

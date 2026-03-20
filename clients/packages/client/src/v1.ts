@@ -21959,6 +21959,7 @@ export interface components {
     OrganizationDetails: {
       /**
        * About
+       * @deprecated
        * @description Brief information about you and your business.
        */
       about?: string | null
@@ -21999,7 +22000,7 @@ export interface components {
       /**
        * Switching
        * @description Switching from another platform?
-       * @default true
+       * @default false
        */
       switching: boolean
       /**

@@ -126,15 +126,6 @@ export function ProductDetailsStep() {
   )
 
   const submitOrg = async (formData: FormSchema) => {
-    updateData({
-      sellingCategories: formData.sellingCategories,
-      productDescription: formData.productDescription,
-      pricingModel: formData.pricingModel,
-      supportEmail: formData.supportEmail,
-      productUrl: formData.productUrl,
-      currentlySellingOn: formData.currentlySellingOn,
-    })
-
     const switching = formData.currentlySellingOn.length > 0
     const switchingFrom = (
       switching ? formData.currentlySellingOn[0] : null
@@ -158,7 +149,6 @@ export function ProductDetailsStep() {
       ...(formData.supportEmail && { email: formData.supportEmail }),
       ...(formData.productUrl && { website: formData.productUrl }),
       details: {
-        about: '-',
         product_description: formData.productDescription,
         selling_categories: formData.sellingCategories,
         pricing_models: formData.pricingModel,
@@ -277,7 +267,7 @@ export function ProductDetailsStep() {
             )}
           />
 
-          {aupVerdict === 'CLARIFY' && (
+          {aupVerdict && (
             <Box
               display="flex"
               flexDirection="column"
@@ -290,28 +280,9 @@ export function ProductDetailsStep() {
               padding="l"
             >
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                Please clarify your use case
-              </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                {aupMessage}
-              </p>
-            </Box>
-          )}
-
-          {aupVerdict === 'DENY' && (
-            <Box
-              display="flex"
-              flexDirection="column"
-              rowGap="m"
-              borderRadius="md"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-warning"
-              backgroundColor="background-warning"
-              padding="l"
-            >
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                Use case not supported
+                {aupVerdict === 'CLARIFY'
+                  ? 'Please clarify your use case'
+                  : 'Use case not supported'}
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 {aupMessage}

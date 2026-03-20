@@ -23,7 +23,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.enums import TaxProcessor
+from polar.enums import TaxBehavior, TaxProcessor
 from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
@@ -132,6 +132,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
         String, nullable=True, default=None
+    )
+    tax_behavior: Mapped[TaxBehavior | None] = mapped_column(
+        StringEnum(TaxBehavior), nullable=True, default=None
     )
     tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
     tax_rate: Mapped[TaxRate | None] = mapped_column(

@@ -26,7 +26,7 @@ from sqlalchemy.orm.attributes import OP_BULK_REPLACE, Event
 
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
@@ -127,6 +127,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     but has been migrated to be managed by Polar.
     """
 
+    tax_behavior: Mapped[TaxBehavior | None] = mapped_column(
+        StringEnum(TaxBehavior), nullable=True, default=None
+    )
+    """
+    Store the tax behavior of the subscription so we remain consistent in case of
+    product or organization default changes.
+    """
     tax_exempted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     """
     Whether the subscription is tax exempted.

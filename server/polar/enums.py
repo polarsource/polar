@@ -18,6 +18,31 @@ class TaxProcessor(StrEnum):
     numeral = "numeral"
 
 
+class TaxBehavior(StrEnum):
+    inclusive = "inclusive"
+    exclusive = "exclusive"
+
+    def to_option(self) -> "TaxBehaviorOption":
+        match self:
+            case TaxBehavior.inclusive:
+                return TaxBehaviorOption.inclusive
+            case TaxBehavior.exclusive:
+                return TaxBehaviorOption.exclusive
+
+    def to_stripe(self) -> Literal["inclusive", "exclusive"]:
+        match self:
+            case TaxBehavior.inclusive:
+                return "inclusive"
+            case TaxBehavior.exclusive:
+                return "exclusive"
+
+
+class TaxBehaviorOption(StrEnum):
+    location = "location"
+    inclusive = "inclusive"
+    exclusive = "exclusive"
+
+
 class AccountType(StrEnum):
     stripe = "stripe"
     manual = "manual"

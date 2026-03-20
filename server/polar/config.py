@@ -218,6 +218,11 @@ class Settings(BaseSettings):
     APPLE_KEY_ID: str = ""
     APPLE_KEY_VALUE: str = ""
 
+    # Risk review — comma-separated codes that trigger visual warning flags
+    # in the backoffice overview.
+    RISK_COUNTRY_CODES: list[str] = []
+    RISK_CURRENCY_CODES: list[str] = []
+
     # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-5.2-2025-12-11"

@@ -5,9 +5,11 @@ import json
 from collections.abc import Generator
 from datetime import datetime
 
+import pycountry
 from fastapi import Request
 from tagflow import tag, text
 
+from polar.config import settings
 from polar.models import Organization
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment
@@ -359,10 +361,15 @@ class OverviewSection(ChecklistMixin):
             return
 
         flags: list[str] = []
-        if account.country == "MA":
-            flags.append("Account country: MA (Morocco)")
-        if account.currency == "mad":
-            flags.append("Payout currency: MAD (Moroccan Dirham)")
+        risk_countries = settings.RISK_COUNTRY_CODES
+        if account.country and account.country in risk_countries:
+            country_obj = pycountry.countries.get(alpha_2=account.country)
+            country_name = country_obj.name if country_obj else account.country
+            flags.append(f"Account country: {account.country} ({country_name})")
+        if account.currency and account.currency.lower() in {
+            c.lower() for c in settings.RISK_CURRENCY_CODES
+        }:
+            flags.append(f"Payout currency: {account.currency.upper()}")
 
         if not flags:
             return

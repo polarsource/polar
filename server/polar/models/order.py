@@ -381,7 +381,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if not self.taxed:
             return total_refund_amount, 0
 
-        # Reverse engineer taxes from Stripe amount (always inclusive)
+        # Reverse engineer taxes from Stripe amount
         refunded_tax_amount = abs(
             round((self.tax_amount * total_refund_amount) / self.total_amount)
         )

@@ -868,6 +868,7 @@ async def create_order(
     refunded_tax_amount: int = 0,
     applied_balance_amount: int = 0,
     currency: str = "usd",
+    tax_behavior: TaxBehavior | None = None,
     order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     billing_reason: OrderBillingReasonInternal = OrderBillingReasonInternal.purchase,
@@ -897,7 +898,9 @@ async def create_order(
         created_at=created_at or utc_now(),
         status=status,
         subtotal_amount=subtotal_amount,
-        net_amount=subtotal_amount - discount_amount,
+        net_amount=subtotal_amount
+        - discount_amount
+        - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0),
         tax_amount=tax_amount,
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
@@ -905,6 +908,7 @@ async def create_order(
         applied_balance_amount=applied_balance_amount,
         items=order_items,
         currency=currency,
+        tax_behavior=tax_behavior,
         billing_reason=billing_reason,
         billing_name=billing_name,
         billing_address=billing_address,

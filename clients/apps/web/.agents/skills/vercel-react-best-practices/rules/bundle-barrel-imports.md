@@ -43,8 +43,8 @@ import TextField from '@mui/material/TextField'
 // next.config.js - use optimizePackageImports
 module.exports = {
   experimental: {
-    optimizePackageImports: ['lucide-react', '@mui/material']
-  }
+    optimizePackageImports: ['lucide-react', '@mui/material'],
+  },
 }
 
 // Then you can keep the ergonomic barrel imports:

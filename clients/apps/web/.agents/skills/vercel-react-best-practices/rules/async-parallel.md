@@ -23,6 +23,6 @@ const comments = await fetchComments()
 const [user, posts, comments] = await Promise.all([
   fetchUser(),
   fetchPosts(),
-  fetchComments()
+  fetchComments(),
 ])
 ```

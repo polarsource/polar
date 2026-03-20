@@ -76,6 +76,7 @@ function UserProfile({ user, theme }) {
 ```
 
 **Symptoms of this bug:**
+
 - Input fields lose focus on every keystroke
 - Animations restart unexpectedly
 - `useEffect` cleanup/setup runs on every parent render

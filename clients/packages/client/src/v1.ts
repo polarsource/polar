@@ -23884,6 +23884,11 @@ export interface components {
      */
     'ProductPriceSeatTiers-Input': {
       /**
+       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
+       * @default volume
+       */
+      seat_tier_type: components['schemas']['SeatTierType']
+      /**
        * Tiers
        * @description List of pricing tiers
        */
@@ -23898,6 +23903,11 @@ export interface components {
      *     - maximum_seats = last tier's max_seats (None for unlimited)
      */
     'ProductPriceSeatTiers-Output': {
+      /**
+       * @description How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.
+       * @default volume
+       */
+      seat_tier_type: components['schemas']['SeatTierType']
       /**
        * Tiers
        * @description List of pricing tiers
@@ -24617,6 +24627,11 @@ export interface components {
      * @enum {string}
      */
     SeatStatus: 'pending' | 'claimed' | 'revoked'
+    /**
+     * SeatTierType
+     * @enum {string}
+     */
+    SeatTierType: 'volume' | 'graduated'
     /** SeatsList */
     SeatsList: {
       /**
@@ -47340,6 +47355,9 @@ export const searchResultSubscriptionTypeValues: ReadonlyArray<
 export const seatStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
+export const seatTierTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SeatTierType']
+> = ['volume', 'graduated']
 export const statusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Status']
 > = ['created', 'onboarding_started', 'under_review', 'denied', 'active']

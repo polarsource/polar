@@ -24,7 +24,7 @@ while true; do
                     "$PREVIEW_TOOLS_DIR/regenerate-caddyfile.sh"
                     systemctl reload caddy
                     systemctl enable "polar-preview-backend@${PR_NUM}"
-                    systemctl restart "polar-preview-backend@${PR_NUM}"
+                    systemctl restart "polar-preview-backend@${PR_NUM}" || echo "[trigger] Failed to restart pr-${PR_NUM}"
                 fi
                 ;;
             pr-*.destroy)
@@ -43,8 +43,10 @@ while true; do
                 PR_NUM="${filename#pr-}"
                 PR_NUM="${PR_NUM%.wake}"
                 if [[ "$PR_NUM" =~ ^[0-9]+$ ]]; then
-                    if ! systemctl is-active --quiet "polar-preview-backend@${PR_NUM}"; then
-                        systemctl start "polar-preview-backend@${PR_NUM}"
+                    if [[ ! -d "/srv/previews/pr-${PR_NUM}/server" ]]; then
+                        echo "[trigger] No deployment for pr-${PR_NUM}, skipping wake"
+                    elif ! systemctl is-active --quiet "polar-preview-backend@${PR_NUM}"; then
+                        systemctl start "polar-preview-backend@${PR_NUM}" || echo "[trigger] Failed to start pr-${PR_NUM}"
                     fi
                 fi
                 ;;

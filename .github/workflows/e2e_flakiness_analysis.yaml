@@ -2,7 +2,7 @@ name: "E2E Flakiness Analysis"
 
 on:
   workflow_run:
-    workflows: ["E2E Tests"]
+    workflows: ["E2E Tests", "Preview Environments"]
     types: [completed]
   workflow_dispatch:
     inputs:

@@ -172,6 +172,7 @@ export const ProductPricingSection = ({
             ...base,
             amount_type: 'seat_based',
             seat_tiers: {
+              pricing_type: 'volume',
               tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
             },
           }
@@ -249,7 +250,7 @@ export const ProductPricingSection = ({
           newPrice = {
             ...baseCurrency,
             amount_type: 'seat_based',
-            seat_tiers: { tiers: seatTiers },
+            seat_tiers: { pricing_type: 'volume', tiers: seatTiers },
           }
         } else if (price.amount_type === 'metered_unit') {
           const meterId = 'meter_id' in price ? price.meter_id : ''

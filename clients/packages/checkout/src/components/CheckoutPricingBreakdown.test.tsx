@@ -5,6 +5,7 @@ import {
   createBaseCheckout,
   createCheckout,
   createMeteredPrice,
+  createSeatBasedPrice,
 } from '../test-utils/makeCheckout'
 import CheckoutPricingBreakdown from './CheckoutPricingBreakdown'
 
@@ -404,6 +405,93 @@ describe('CheckoutPricingBreakdown', () => {
 
       expect(screen.getByText(/additional metered usage/i)).toBeInTheDocument()
       expect(screen.getByTestId('detail-row-API Calls')).toBeInTheDocument()
+    })
+  })
+
+  describe('volume seat pricing', () => {
+    it('shows single seat row above subtotal', () => {
+      const checkout = createCheckout({
+        amount: 5000,
+        net_amount: 5000,
+        tax_amount: null,
+        total_amount: 5000,
+        seats: 10,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            seat_tier_type: 'volume',
+            tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 500 }],
+            minimum_seats: 1,
+            maximum_seats: null,
+          },
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const row = screen.getByTestId('detail-row-10 seats')
+      expect(row).toHaveTextContent('$5 per seat')
+      expect(row).toHaveTextContent('$50')
+    })
+  })
+
+  describe('graduated seat pricing', () => {
+    it('shows a row per tier', () => {
+      const checkout = createCheckout({
+        amount: 14000,
+        net_amount: 14000,
+        tax_amount: null,
+        total_amount: 14000,
+        seats: 15,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            seat_tier_type: 'graduated',
+            tiers: [
+              { min_seats: 1, max_seats: 10, price_per_seat: 1000 },
+              { min_seats: 11, max_seats: null, price_per_seat: 800 },
+            ],
+            minimum_seats: 1,
+            maximum_seats: null,
+          },
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const tier1 = screen.getByTestId('detail-row-10 seats')
+      expect(tier1).toHaveTextContent('$10 per seat')
+      expect(tier1).toHaveTextContent('$100')
+
+      const tier2 = screen.getByTestId('detail-row-5 seats')
+      expect(tier2).toHaveTextContent('$8 per seat')
+      expect(tier2).toHaveTextContent('$40')
+    })
+
+    it('shows single tier when seats fit in first tier', () => {
+      const checkout = createCheckout({
+        amount: 5000,
+        net_amount: 5000,
+        tax_amount: null,
+        total_amount: 5000,
+        seats: 5,
+        product_price: createSeatBasedPrice({
+          seat_tiers: {
+            seat_tier_type: 'graduated',
+            tiers: [
+              { min_seats: 1, max_seats: 10, price_per_seat: 1000 },
+              { min_seats: 11, max_seats: null, price_per_seat: 800 },
+            ],
+            minimum_seats: 1,
+            maximum_seats: null,
+          },
+        }),
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      const tier1 = screen.getByTestId('detail-row-5 seats')
+      expect(tier1).toHaveTextContent('$10 per seat')
+      expect(tier1).toHaveTextContent('$50')
+      expect(screen.queryByTestId('detail-row-0 seats')).not.toBeInTheDocument()
     })
   })
 

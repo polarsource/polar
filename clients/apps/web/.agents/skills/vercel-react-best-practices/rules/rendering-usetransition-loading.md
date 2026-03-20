@@ -47,7 +47,7 @@ function SearchResults() {
 
   const handleSearch = (value: string) => {
     setQuery(value) // Update input immediately
-    
+
     startTransition(async () => {
       // Fetch and update results
       const data = await fetchResults(value)

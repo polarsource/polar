@@ -42,29 +42,29 @@ Still sorts unnecessarily when only min/max are needed.
 ```typescript
 function getLatestProject(projects: Project[]) {
   if (projects.length === 0) return null
-  
+
   let latest = projects[0]
-  
+
   for (let i = 1; i < projects.length; i++) {
     if (projects[i].updatedAt > latest.updatedAt) {
       latest = projects[i]
     }
   }
-  
+
   return latest
 }
 
 function getOldestAndNewest(projects: Project[]) {
   if (projects.length === 0) return { oldest: null, newest: null }
-  
+
   let oldest = projects[0]
   let newest = projects[0]
-  
+
   for (let i = 1; i < projects.length; i++) {
     if (projects[i].updatedAt < oldest.updatedAt) oldest = projects[i]
     if (projects[i].updatedAt > newest.updatedAt) newest = projects[i]
   }
-  
+
   return { oldest, newest }
 }
 ```

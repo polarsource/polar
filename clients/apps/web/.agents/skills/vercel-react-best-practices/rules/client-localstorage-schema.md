@@ -58,10 +58,13 @@ function migrate() {
 // User object has 20+ fields, only store what UI needs
 function cachePrefs(user: FullUser) {
   try {
-    localStorage.setItem('prefs:v1', JSON.stringify({
-      theme: user.preferences.theme,
-      notifications: user.preferences.notifications
-    }))
+    localStorage.setItem(
+      'prefs:v1',
+      JSON.stringify({
+        theme: user.preferences.theme,
+        notifications: user.preferences.notifications,
+      }),
+    )
   } catch {}
 }
 ```

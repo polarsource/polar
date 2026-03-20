@@ -40,6 +40,6 @@ Global regex (`/g`) has mutable `lastIndex` state:
 
 ```typescript
 const regex = /foo/g
-regex.test('foo')  // true, lastIndex = 3
-regex.test('foo')  // false, lastIndex = 0
+regex.test('foo') // true, lastIndex = 3
+regex.test('foo') // false, lastIndex = 0
 ```

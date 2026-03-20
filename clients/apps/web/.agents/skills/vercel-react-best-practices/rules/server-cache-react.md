@@ -18,7 +18,7 @@ export const getCurrentUser = cache(async () => {
   const session = await auth()
   if (!session?.user?.id) return null
   return await db.user.findUnique({
-    where: { id: session.user.id }
+    where: { id: session.user.id },
   })
 })
 ```
@@ -38,7 +38,7 @@ const getUser = cache(async (params: { uid: number }) => {
 
 // Each call creates new object, never hits cache
 getUser({ uid: 1 })
-getUser({ uid: 1 })  // Cache miss, runs query again
+getUser({ uid: 1 }) // Cache miss, runs query again
 ```
 
 **Correct (cache hit):**
@@ -50,15 +50,15 @@ const getUser = cache(async (uid: number) => {
 
 // Primitive args use value equality
 getUser(1)
-getUser(1)  // Cache hit, returns cached result
+getUser(1) // Cache hit, returns cached result
 ```
 
 If you must pass objects, pass the same reference:
 
 ```typescript
 const params = { uid: 1 }
-getUser(params)  // Query runs
-getUser(params)  // Cache hit (same reference)
+getUser(params) // Query runs
+getUser(params) // Cache hit (same reference)
 ```
 
 **Next.js-Specific Note:**

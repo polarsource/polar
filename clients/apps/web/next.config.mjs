@@ -28,7 +28,6 @@ const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
 
-
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
   ? `${process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https'}://${process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME}${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT ? `:${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT}` : ''}`

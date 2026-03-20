@@ -31,6 +31,7 @@ from .account import Account
 
 if TYPE_CHECKING:
     from polar.email.sender import EmailFromReply
+    from polar.organization.risks import OrganizationRisks
 
     from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
@@ -324,6 +325,16 @@ class Organization(RateLimitGroupMixin, RecordModel):
     legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None
     )
+
+    risks: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
+
+    @property
+    def parsed_risks(self) -> "OrganizationRisks":
+        from polar.organization.risks import OrganizationRisks, parse_risks
+
+        return parse_risks(self.risks)
 
     @property
     def allow_customer_updates(self) -> bool:

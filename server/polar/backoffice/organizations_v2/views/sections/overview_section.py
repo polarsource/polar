@@ -349,29 +349,57 @@ class OverviewSection(ChecklistMixin):
             yield
 
     # ------------------------------------------------------------------
-    # Account-level risk flags (e.g. Morocco, MAD currency)
+    # Persisted risk flags
     # ------------------------------------------------------------------
 
+    _RISK_LEVEL_ALERT_VARIANT: dict[str, str] = {
+        "LOW": "info",
+        "MEDIUM": "warning",
+        "HIGH": "error",
+        "CRITICAL": "error",
+    }
+
     def _render_risk_flags(self) -> None:
-        """Render account-level risk flags above metrics."""
-        account = self.org.account
-        if not account:
+        """Render persisted risk flags from Organization.risks."""
+        parsed = self.org.parsed_risks
+        if not parsed.entries:
             return
 
-        flags: list[str] = []
-        if account.country == "MA":
-            flags.append("Account country: MA (Morocco)")
-        if account.currency == "mad":
-            flags.append("Payout currency: MAD (Moroccan Dirham)")
+        from polar.organization.risks import RiskLevel
 
-        if not flags:
-            return
+        # Group by level for visual ordering (CRITICAL/HIGH first)
+        severity = {
+            RiskLevel.CRITICAL: 0,
+            RiskLevel.HIGH: 1,
+            RiskLevel.MEDIUM: 2,
+            RiskLevel.LOW: 3,
+        }
+        sorted_risks = sorted(
+            parsed.entries, key=lambda r: severity.get(r.level, 99)
+        )
 
-        with alert(variant="warning", soft=True):
-            with tag.div(classes="space-y-1"):
-                for flag in flags:
-                    with tag.div(classes="text-sm font-medium"):
-                        text(flag)
+        for risk in sorted_risks:
+            variant = self._RISK_LEVEL_ALERT_VARIANT.get(risk.level.value, "warning")
+            with alert(variant=variant, soft=True):
+                with tag.div(classes="flex items-center justify-between"):
+                    with tag.div(classes="flex items-center gap-2"):
+                        badge_class = {
+                            "LOW": "badge-ghost",
+                            "MEDIUM": "badge-warning",
+                            "HIGH": "badge-error",
+                            "CRITICAL": "badge-error",
+                        }.get(risk.level.value, "badge-ghost")
+                        with tag.div(classes=f"badge badge-xs {badge_class}"):
+                            text(risk.level.value)
+                        with tag.span(classes="text-sm font-medium"):
+                            text(risk.title)
+                    with tag.span(
+                        classes="badge badge-ghost badge-xs"
+                    ):
+                        text(risk.type)
+                if risk.description:
+                    with tag.div(classes="text-xs text-base-content/70 mt-1"):
+                        text(risk.description)
 
     # ------------------------------------------------------------------
     # Payment Metrics card

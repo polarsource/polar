@@ -210,10 +210,25 @@ In this example:
 
 ## Rate Limits
 
-Polar API has rate limits to ensure fair usage and maintain performance. The limits are as follows:
+Polar API has rate limits to ensure fair usage and maintain performance. Limits differ between the **Sandbox** and **Production** environments.
 
-- **300 requests per minute** per organization/customer or OAuth2 Client.
-- **3 requests per second** for unauthenticated license key [validation](/api-reference/customer-portal/license-keys/validate), [activation](/api-reference/customer-portal/license-keys/activate), and [deactivation](/api-reference/customer-portal/license-keys/deactivate) endpoints.
+### Authenticated Requests
+
+| Environment | Limit            |
+| ----------- | ---------------- |
+| Production  | 500 requests/min |
+| Sandbox     | 100 requests/min |
+
+### Unauthenticated Requests
+
+| Environment | Limit           |
+| ----------- | --------------- |
+| Production  | 60 requests/min |
+| Sandbox     | 10 requests/min |
+
+### License Key Endpoints
+
+Unauthenticated [validation](/api-reference/customer-portal/license-keys/validate), [activation](/api-reference/customer-portal/license-keys/activate), and [deactivation](/api-reference/customer-portal/license-keys/deactivate) endpoints are limited to **3 requests per second** in both environments.
 
 If you exceed the rate limit, you will receive a `429 Too Many Requests` response. The response will include a `Retry-After` header indicating how long you should wait before making another request.
 

@@ -238,7 +238,8 @@ function SubmitButton({ loading }: { loading: boolean }) {
 export function BusinessDetailsStep() {
   const router = useRouter()
   const { trackStepCompleted } = useOnboardingTracking()
-  const { data, updateData, showApiResponse } = useOnboardingData()
+  const { data, updateData, setApiLoading, showApiResponse } =
+    useOnboardingData()
   const [submitting, setSubmitting] = useState(false)
   const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(false)
@@ -261,6 +262,7 @@ export function BusinessDetailsStep() {
   const onSubmit = async (formData: FormSchema) => {
     if (!formData.terms) return
     setSubmitting(true)
+    setApiLoading(true)
 
     updateData({
       organizationType: formData.organizationType,

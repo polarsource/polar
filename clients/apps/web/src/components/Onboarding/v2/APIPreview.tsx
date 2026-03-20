@@ -32,7 +32,7 @@ export function APIPreview({
   step: 'personal' | 'business' | 'product'
 }) {
   const data = useOnboardingDataLive()
-  const { apiResponse } = useOnboardingData()
+  const { apiLoading, apiResponse } = useOnboardingData()
 
   const body = useMemo(() => {
     switch (step) {
@@ -202,6 +202,15 @@ export function APIPreview({
         })}
       </div>
 
+      {apiLoading && (
+        <div className="mt-3 flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-gray-800">
+          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />
+          <span className="text-[10px] text-gray-400 dark:text-gray-500">
+            Sending request...
+          </span>
+        </div>
+      )}
+
       {apiResponse && (
         <div className="mt-3 flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
           <div className="flex items-center gap-2">
@@ -219,26 +228,32 @@ export function APIPreview({
             </span>
           </div>
 
-          <div className="pb-2 text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
-            Response Body
-          </div>
-          <pre className="leading-relaxed text-gray-500 dark:text-gray-500">
-            {'{\n'}
-            {'  '}
-            <span className="text-blue-600 dark:text-blue-400">{'"id"'}</span>
-            <span className="text-gray-400">: </span>
-            <span className="text-green-600 dark:text-green-400">
-              {'"org_•••"'}
-            </span>
-            {',\n'}
-            {'  '}
-            <span className="text-blue-600 dark:text-blue-400">
-              {'"created_at"'}
-            </span>
-            <span className="text-gray-400">: </span>
-            <span className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</span>
-            {'\n}'}
-          </pre>
+          {apiResponse.status < 400 && (
+            <>
+              <div className="pb-2 text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
+                Response Body
+              </div>
+              <pre className="leading-relaxed text-gray-500 dark:text-gray-500">
+                {'{\n'}
+                {'  '}
+                <span className="text-blue-600 dark:text-blue-400">
+                  {'"id"'}
+                </span>
+                <span className="text-gray-400">: </span>
+                <span className="text-green-600 dark:text-green-400">
+                  {'"org_•••"'}
+                </span>
+                {',\n'}
+                {'  '}
+                <span className="text-blue-600 dark:text-blue-400">
+                  {'"created_at"'}
+                </span>
+                <span className="text-gray-400">: </span>
+                <span className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</span>
+                {'\n}'}
+              </pre>
+            </>
+          )}
         </div>
       )}
     </div>

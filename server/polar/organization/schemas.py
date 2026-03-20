@@ -118,8 +118,8 @@ class OrganizationDetails(Schema):
         deprecated=True,
         description="Brief information about you and your business.",
     )
-    product_description: str = Field(
-        ..., description="Description of digital products being sold."
+    product_description: str | None = Field(
+        None, description="Description of digital products being sold."
     )
     selling_categories: list[str] = Field(
         default_factory=list, description="Categories of products being sold."

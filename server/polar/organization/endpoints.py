@@ -41,6 +41,7 @@ from .schemas import (
     OrganizationCreate,
     OrganizationDeletionResponse,
     OrganizationID,
+    OrganizationKYC,
     OrganizationPaymentStatus,
     OrganizationPaymentStep,
     OrganizationReviewStatus,
@@ -98,6 +99,27 @@ async def get(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Organization:
     """Get an organization by ID."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return organization
+
+
+@router.get(
+    "/{id}/kyc",
+    summary="Get Organization KYC Details",
+    response_model=OrganizationKYC,
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def get_kyc(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Organization:
+    """Get an organization's KYC/compliance details."""
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:

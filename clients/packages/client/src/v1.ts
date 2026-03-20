@@ -684,6 +684,28 @@ export interface paths {
     patch: operations['organizations:update']
     trace?: never
   }
+  '/v1/organizations/{id}/kyc': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization KYC Details
+     * @description Get an organization's KYC/compliance details.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_kyc']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/account': {
     parameters: {
       query?: never
@@ -21379,8 +21401,6 @@ export interface components {
             | 'ZW'
           )
         | null
-      /** @description Organization compliance details. Only visible to organization members. */
-      details?: components['schemas']['OrganizationDetails'] | null
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -21995,6 +22015,11 @@ export interface components {
        * @description Revenue from last year if applicable.
        */
       previous_annual_revenue?: number | null
+    }
+    /** OrganizationKYC */
+    OrganizationKYC: components['schemas']['Organization'] & {
+      /** @description Organization compliance details. Only visible to organization members. */
+      details?: components['schemas']['OrganizationDetails'] | null
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -29754,6 +29779,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_kyc': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationKYC']
         }
       }
       /** @description Organization not found. */

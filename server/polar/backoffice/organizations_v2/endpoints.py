@@ -853,7 +853,6 @@ async def approve_dialog(
                     classes="textarea textarea-bordered w-full",
                     placeholder="Why are you overriding the AI recommendation?",
                     rows="3",
-                    required=True,
                 ):
                     pass
 
@@ -969,11 +968,17 @@ async def deny_dialog(
         "placeholder": reason_placeholder,
         "rows": "3",
     }
-    if is_override:
-        textarea_attrs["required"] = True
-
     with modal("Deny Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:deny_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
             with tag.p(classes="font-semibold text-error"):
                 text("⚠️ Warning: Payments will be blocked")
 
@@ -991,28 +996,19 @@ async def deny_dialog(
                         "This action can be reversed, but the organization will need to be reviewed again."
                     )
 
-            with tag.form(
-                hx_post=str(
-                    request.url_for(
-                        "organizations:deny_dialog",
-                        organization_id=organization_id,
-                    )
-                ),
-                classes="flex flex-col gap-4",
-            ):
-                with tag.div(classes="form-control"):
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text(reason_label)
-                    with tag.textarea(**textarea_attrs):
-                        pass
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text(reason_label)
+                with tag.textarea(**textarea_attrs):
+                    pass
 
-                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
-                    with button(variant="error", type="submit"):
-                        text("Deny Organization")
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="error", type="submit"):
+                    text("Deny Organization")
 
     return None
 
@@ -1097,8 +1093,6 @@ async def approve_denied_dialog(
         "placeholder": reason_placeholder,
         "rows": "3",
     }
-    if is_override:
-        textarea_attrs["required"] = True
 
     with modal("Approve Denied Organization", open=True):
         with tag.form(
@@ -1360,8 +1354,6 @@ async def unblock_approve_dialog(
         "placeholder": reason_placeholder,
         "rows": "3",
     }
-    if is_override:
-        textarea_attrs["required"] = True
 
     with modal("Unblock & Approve Organization", open=True):
         with tag.form(

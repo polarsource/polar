@@ -176,9 +176,7 @@ export default function Onboarding() {
               <Box>
                 <Touchable
                   onPress={() =>
-                    Linking.openURL(
-                      'https://polar.sh/legal/master-services-terms',
-                    )
+                    Linking.openURL('https://polar.sh/legal/terms')
                   }
                 >
                   <Text color="primary">Terms of Service</Text>
@@ -188,7 +186,7 @@ export default function Onboarding() {
               <Box>
                 <Touchable
                   onPress={() =>
-                    Linking.openURL('https://polar.sh/legal/privacy-policy')
+                    Linking.openURL('https://polar.sh/legal/privacy')
                   }
                 >
                   <Text color="primary">Privacy Policy</Text>

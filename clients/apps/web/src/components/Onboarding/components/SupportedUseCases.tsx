@@ -18,7 +18,7 @@ export default function SupportedUseCases() {
           <li>
             • Anything in our list of{' '}
             <a
-              href="https://polar.sh/legal/acceptable-use-policy"
+              href="https://polar.sh/docs/merchant-of-record/acceptable-use"
               className="text-blue-500 underline dark:text-blue-400"
               target="_blank"
               rel="noreferrer"

@@ -54,15 +54,14 @@ const resourceLinks = [
     href: '/legal/data-processing-addendum',
   },
   {
-    title: 'Sub-processors',
-    description:
-      'Third-party service providers and affiliates supporting the delivery and operation of the Polar platform.',
-    href: '/legal/sub-processors',
+    title: 'DPA Vendors',
+    description: 'List of vendors involved in data processing activities.',
+    href: '/legal/dpa-vendors',
   },
   {
     title: 'Payment Processor Partners',
     description: 'Information about payment partners used by Polar.',
-    href: '/legal/payment-processor-partners',
+    href: '/legal/payments-partners',
   },
   {
     title: 'Privacy Policy',
@@ -74,7 +73,9 @@ const resourceLinks = [
 export default function Legal() {
   return (
     <div className="not-prose mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-16">
-      <BlogHero title="Legal" />
+      <BlogHero
+        title="Legal"
+      />
       <div className="flex flex-col gap-y-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {resourceLinks.map((link) => (

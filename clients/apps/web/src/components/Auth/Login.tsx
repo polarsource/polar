@@ -98,14 +98,14 @@ const Login = ({
         By using Polar, you agree to our{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
-          href="https://polar.sh/legal/master-services-terms"
+          href="https://polar.sh/legal/terms"
         >
           Terms of Service
         </a>{' '}
         &amp;{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
-          href="https://polar.sh/legal/privacy-policy"
+          href="https://polar.sh/legal/privacy"
         >
           Privacy Policy
         </a>

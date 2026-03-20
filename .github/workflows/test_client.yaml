@@ -63,7 +63,10 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install
 
-      - name: 💅Lint
+      - name: 💅 Format check
+        run: pnpm run format:check
+
+      - name: 💅 Lint
         run: pnpm run lint
 
       - name: 👀 Typecheck

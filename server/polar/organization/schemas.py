@@ -114,26 +114,44 @@ class OrganizationFeatureSettings(Schema):
 
 class OrganizationDetails(Schema):
     about: str | None = Field(
-        None, description="Brief information about you and your business."
+        None,
+        deprecated=True,
+        description="Brief information about you and your business.",
     )
-    product_description: str = Field(
-        ..., description="Description of digital products being sold."
+    product_description: str | None = Field(
+        None, description="Description of digital products being sold."
+    )
+    selling_categories: list[str] = Field(
+        default_factory=list, description="Categories of products being sold."
+    )
+    pricing_models: list[str] = Field(
+        default_factory=list, description="Pricing models used by the organization."
     )
     intended_use: str | None = Field(
-        None, description="How the organization will integrate and use Polar."
+        None,
+        deprecated=True,
+        description="How the organization will integrate and use Polar.",
     )
     customer_acquisition: list[str] = Field(
-        default_factory=list, description="Main customer acquisition channels."
+        default_factory=list,
+        deprecated=True,
+        description="Main customer acquisition channels.",
     )
-    future_annual_revenue: int = Field(
-        0, ge=0, description="Estimated revenue in the next 12 months"
+    future_annual_revenue: int | None = Field(
+        None,
+        ge=0,
+        deprecated=True,
+        description="Estimated revenue in the next 12 months",
     )
-    switching: bool = Field(True, description="Switching from another platform?")
+    switching: bool = Field(False, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")
-    previous_annual_revenue: int = Field(
-        0, ge=0, description="Revenue from last year if applicable."
+    previous_annual_revenue: int | None = Field(
+        None,
+        ge=0,
+        deprecated=True,
+        description="Revenue from last year if applicable.",
     )
 
 
@@ -302,7 +320,7 @@ class Organization(OrganizationBase):
     )
     status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
-        description="When the business details were submitted.",
+        description="When the business details were submitted for review.",
     )
 
     default_presentment_currency: str = Field(
@@ -330,6 +348,15 @@ class Organization(OrganizationBase):
     )
     country: CountryAlpha2 | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
+    )
+
+
+class OrganizationKYC(Organization):
+    """Organization with compliance/KYC details. Only returned from the dedicated KYC endpoint."""
+
+    details: OrganizationDetails | None = Field(
+        None,
+        description="Organization compliance details. Only visible to organization members.",
     )
 
 

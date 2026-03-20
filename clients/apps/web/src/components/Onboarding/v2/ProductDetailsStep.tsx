@@ -1,7 +1,8 @@
 /* eslint-disable max-lines */
 'use client'
 
-import { useUpdateOrganization } from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -64,9 +65,17 @@ interface FormSchema {
 
 export function ProductDetailsStep() {
   const router = useRouter()
+  const { setUserOrganizations } = useAuth()
   const { data, updateData, showApiResponse } = useOnboardingData()
-  const updateOrganization = useUpdateOrganization()
-  const [submitting, setSubmitting] = useState(false)
+  const createOrganization = useCreateOrganization()
+  const [loading, setLoading] = useState<
+    'validating' | 'submitting' | 'submitting-anyway' | null
+  >(null)
+  const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
+  const [aupMessage, setAupMessage] = useState<string | null>(null)
+  const [aupHistory, setAupHistory] = useState<
+    Array<{ product_description: string; verdict: string; message?: string }>
+  >([])
 
   const form = useForm<FormSchema>({
     defaultValues: {
@@ -116,61 +125,101 @@ export function ProductDetailsStep() {
     [sellingCategories],
   )
 
-  const onSubmit = async (formData: FormSchema) => {
-    setSubmitting(true)
-    updateData({
-      sellingCategories: formData.sellingCategories,
-      productDescription: formData.productDescription,
-      pricingModel: formData.pricingModel,
-      supportEmail: formData.supportEmail,
-      productUrl: formData.productUrl,
-      currentlySellingOn: formData.currentlySellingOn,
+  const submitOrg = async (formData: FormSchema) => {
+    const switching = formData.currentlySellingOn.length > 0
+    const switchingFrom = (
+      switching ? formData.currentlySellingOn[0] : null
+    ) as schemas['OrganizationDetails']['switching_from']
+
+    const { data: org, error } = await createOrganization.mutateAsync({
+      name: data.orgName!,
+      slug: data.orgSlug!,
+      default_presentment_currency:
+        (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
+      country: (data.businessCountry || data.country || undefined) as
+        | schemas['OrganizationCreate']['country']
+        | undefined,
+      legal_entity:
+        data.organizationType === 'company'
+          ? {
+              type: 'company' as const,
+              registered_name: data.registeredBusinessName!,
+            }
+          : { type: 'individual' as const },
+      ...(formData.supportEmail && { email: formData.supportEmail }),
+      ...(formData.productUrl && { website: formData.productUrl }),
+      details: {
+        product_description: formData.productDescription,
+        selling_categories: formData.sellingCategories,
+        pricing_models: formData.pricingModel,
+        switching,
+        switching_from: switchingFrom,
+      } satisfies schemas['OrganizationDetails'],
     })
 
-    if (data.organizationId) {
-      const switching = formData.currentlySellingOn.length > 0
-      const switchingFrom = (
-        switching ? formData.currentlySellingOn[0] : null
-      ) as schemas['OrganizationDetails']['switching_from']
-
-      const productDescriptionParts = [
-        formData.sellingCategories.length > 0 &&
-          `Product type: ${formData.sellingCategories.join(', ')}`,
-        formData.pricingModel.length > 0 &&
-          `Pricing model: ${formData.pricingModel.join(', ')}`,
-        '',
-        formData.productDescription,
-      ]
-        .filter((part) => part !== false)
-        .join('\n')
-        .trim()
-
-      const { error } = await updateOrganization.mutateAsync({
-        id: data.organizationId,
-        body: {
-          ...(formData.supportEmail && { email: formData.supportEmail }),
-          ...(formData.productUrl && { website: formData.productUrl }),
-          details: {
-            about: '-',
-            intended_use: '-',
-            customer_acquisition: [],
-            future_annual_revenue: 0,
-            previous_annual_revenue: 0,
-            product_description: productDescriptionParts,
-            switching,
-            switching_from: switchingFrom,
-          } satisfies schemas['OrganizationDetails'],
-        },
-      })
-
-      if (error) {
-        setSubmitting(false)
-        return
-      }
+    if (error) {
+      return false
     }
+
+    setUserOrganizations((prev) => [...prev, org])
+    updateData({ organizationId: org.id, orgSlug: org.slug })
 
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
+    return true
+  }
+
+  const onSubmit = async (formData: FormSchema) => {
+    setLoading('validating')
+
+    const res = await fetch(`/onboarding/validate-description`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_description: formData.productDescription,
+        selling_categories: formData.sellingCategories,
+        pricing_models: formData.pricingModel,
+        history: aupHistory,
+      }),
+    })
+
+    const validation: {
+      verdict: 'APPROVE' | 'DENY' | 'CLARIFY'
+      confidence: number
+      message?: string
+    } = await res.json()
+
+    if (validation.verdict === 'DENY' || validation.verdict === 'CLARIFY') {
+      setAupHistory((prev) => [
+        ...prev,
+        {
+          product_description: formData.productDescription,
+          verdict: validation.verdict,
+          message: validation.message,
+        },
+      ])
+      setAupVerdict(validation.verdict)
+      setAupMessage(validation.message ?? null)
+      setLoading(null)
+      return
+    }
+
+    setAupVerdict(null)
+    setAupMessage(null)
+    setLoading('submitting')
+    const success = await submitOrg(formData)
+    if (!success) {
+      setLoading(null)
+    }
+  }
+
+  const onContinueAnyway = async () => {
+    setLoading('submitting-anyway')
+    const formData = form.getValues()
+    const success = await submitOrg(formData)
+    if (!success) {
+      setLoading(null)
+    }
   }
 
   return (
@@ -217,6 +266,29 @@ export function ProductDetailsStep() {
               </FormItem>
             )}
           />
+
+          {aupVerdict && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              rowGap="m"
+              borderRadius="md"
+              borderWidth={1}
+              borderStyle="solid"
+              borderColor="border-warning"
+              backgroundColor="background-warning"
+              padding="l"
+            >
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                {aupVerdict === 'CLARIFY'
+                  ? 'Please clarify your use case'
+                  : 'Use case not supported'}
+              </p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                {aupMessage}
+              </p>
+            </Box>
+          )}
 
           <Box display="flex" flexDirection="column" rowGap="m">
             <FormLabel>Pricing model</FormLabel>
@@ -296,19 +368,38 @@ export function ProductDetailsStep() {
             />
           </Box>
 
-          <Button
-            type="submit"
-            loading={submitting}
-            disabled={
-              blockedSelected.length > 0 ||
-              sellingCategories.length === 0 ||
-              pricingModel.length === 0 ||
-              productDescription.trim().length === 0
-            }
-            fullWidth
-          >
-            Launch Dashboard
-          </Button>
+          <div className="flex flex-col gap-y-2">
+            <Button
+              type="submit"
+              loading={loading === 'validating' || loading === 'submitting'}
+              disabled={
+                loading === 'submitting-anyway' ||
+                blockedSelected.length > 0 ||
+                sellingCategories.length === 0 ||
+                pricingModel.length === 0 ||
+                productDescription.trim().length === 0
+              }
+              fullWidth
+            >
+              {aupVerdict ? 'Review again' : 'Launch Dashboard'}
+            </Button>
+
+            {aupVerdict === 'CLARIFY' &&
+              aupHistory.length >= 3 &&
+              productDescription.trim().length > 30 &&
+              loading !== 'validating' && (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  fullWidth
+                  onClick={onContinueAnyway}
+                  disabled={loading === 'submitting'}
+                  loading={loading === 'submitting-anyway'}
+                >
+                  Continue without review
+                </Button>
+              )}
+          </div>
         </form>
       </Form>
     </OnboardingShell>

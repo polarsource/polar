@@ -243,6 +243,30 @@ class SettingsSection:
                                 ):
                                     text(details["product_description"])
 
+                        if details.get("selling_categories"):
+                            with tag.div():
+                                with tag.div(classes="text-sm font-semibold mb-2"):
+                                    text("Selling Categories")
+                                with tag.ul(
+                                    classes="text-sm text-base-content/80 list-disc list-inside"
+                                ):
+                                    for category in details.get(
+                                        "selling_categories", []
+                                    ):
+                                        with tag.li():
+                                            text(category)
+
+                        if details.get("pricing_models"):
+                            with tag.div():
+                                with tag.div(classes="text-sm font-semibold mb-2"):
+                                    text("Pricing Models")
+                                with tag.ul(
+                                    classes="text-sm text-base-content/80 list-disc list-inside"
+                                ):
+                                    for model in details.get("pricing_models", []):
+                                        with tag.li():
+                                            text(model)
+
                         if details.get("intended_use"):
                             with tag.div():
                                 with tag.div(classes="text-sm font-semibold mb-2"):

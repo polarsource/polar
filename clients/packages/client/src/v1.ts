@@ -684,6 +684,28 @@ export interface paths {
     patch: operations['organizations:update']
     trace?: never
   }
+  '/v1/organizations/{id}/kyc': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization KYC Details
+     * @description Get an organization's KYC/compliance details.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_kyc']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/account': {
     parameters: {
       query?: never
@@ -21105,7 +21127,7 @@ export interface components {
       status: components['schemas']['OrganizationStatus']
       /**
        * Details Submitted At
-       * @description When the business details were submitted.
+       * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
       /**
@@ -21937,6 +21959,7 @@ export interface components {
     OrganizationDetails: {
       /**
        * About
+       * @deprecated
        * @description Brief information about you and your business.
        */
       about?: string | null
@@ -21946,25 +21969,38 @@ export interface components {
        */
       product_description: string
       /**
+       * Selling Categories
+       * @description Categories of products being sold.
+       */
+      selling_categories?: string[]
+      /**
+       * Pricing Models
+       * @description Pricing models used by the organization.
+       */
+      pricing_models?: string[]
+      /**
        * Intended Use
+       * @deprecated
        * @description How the organization will integrate and use Polar.
        */
       intended_use?: string | null
       /**
        * Customer Acquisition
+       * @deprecated
        * @description Main customer acquisition channels.
        */
       customer_acquisition?: string[]
       /**
        * Future Annual Revenue
+       * @deprecated
        * @description Estimated revenue in the next 12 months
        * @default 0
        */
-      future_annual_revenue: number
+      future_annual_revenue?: number | null
       /**
        * Switching
        * @description Switching from another platform?
-       * @default true
+       * @default false
        */
       switching: boolean
       /**
@@ -21976,10 +22012,15 @@ export interface components {
         | null
       /**
        * Previous Annual Revenue
+       * @deprecated
        * @description Revenue from last year if applicable.
-       * @default 0
        */
-      previous_annual_revenue: number
+      previous_annual_revenue?: number | null
+    }
+    /** OrganizationKYC */
+    OrganizationKYC: components['schemas']['Organization'] & {
+      /** @description Organization compliance details. Only visible to organization members. */
+      details?: components['schemas']['OrganizationDetails'] | null
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -29739,6 +29780,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_kyc': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationKYC']
         }
       }
       /** @description Organization not found. */

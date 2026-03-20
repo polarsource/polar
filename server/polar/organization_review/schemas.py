@@ -71,6 +71,8 @@ class OrganizationData(Schema):
     email: str | None = None
     about: str | None = None
     product_description: str | None = None
+    selling_categories: list[str] = Field(default_factory=list)
+    pricing_models: list[str] = Field(default_factory=list)
     switching_from: str | None = None
     previous_annual_revenue: int | None = None
     socials: list[dict[str, str]] = Field(default_factory=list)

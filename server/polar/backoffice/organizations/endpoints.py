@@ -1861,6 +1861,22 @@ async def get(
                                     organization.details.get("product_description")
                                     or "—"
                                 )
+                        if organization.details.get("selling_categories"):
+                            with accordion.item(a, "Selling Categories"):
+                                with tag.ul(classes="list-disc list-inside"):
+                                    for category in organization.details.get(
+                                        "selling_categories", []
+                                    ):
+                                        with tag.li():
+                                            text(category)
+                        if organization.details.get("pricing_models"):
+                            with accordion.item(a, "Pricing Models"):
+                                with tag.ul(classes="list-disc list-inside"):
+                                    for model in organization.details.get(
+                                        "pricing_models", []
+                                    ):
+                                        with tag.li():
+                                            text(model)
                         if organization.details.get("intended_use"):
                             with accordion.item(a, "Intended Use"):
                                 with tag.p(classes="whitespace-pre-line"):

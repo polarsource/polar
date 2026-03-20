@@ -18196,6 +18196,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -18272,6 +18274,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -18338,6 +18342,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -21121,6 +21127,8 @@ export interface components {
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
        */
       default_presentment_currency: string
+      /** @description Default tax behavior applied on products. */
+      default_tax_behavior: components['schemas']['TaxBehaviorOption']
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -21880,6 +21888,11 @@ export interface components {
        * @default usd
        */
       default_presentment_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * @description Default tax behavior applied on products.
+       * @default location
+       */
+      default_tax_behavior: components['schemas']['TaxBehaviorOption']
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
@@ -22137,6 +22150,8 @@ export interface components {
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
        */
       default_presentment_currency: string
+      /** @description Default tax behavior applied on products. */
+      default_tax_behavior: components['schemas']['TaxBehaviorOption']
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -22870,6 +22885,8 @@ export interface components {
       default_presentment_currency?:
         | components['schemas']['PresentmentCurrency']
         | null
+      /** @description Default tax behavior applied on products. */
+      default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
     }
     /**
      * OwnerCreate
@@ -23769,6 +23786,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -23811,6 +23830,8 @@ export interface components {
        * @default usd
        */
       price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.
@@ -23862,6 +23883,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -23894,6 +23917,8 @@ export interface components {
        * @default usd
        */
       price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Price Amount
        * @description The price in cents.
@@ -23966,6 +23991,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -23993,6 +24020,8 @@ export interface components {
        * @default usd
        */
       price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
     }
     /**
      * ProductPriceMeter
@@ -24045,6 +24074,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -24090,6 +24121,8 @@ export interface components {
        * @default usd
        */
       price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Meter Id
        * Format: uuid4
@@ -24141,6 +24174,8 @@ export interface components {
        * @description The currency in which the customer will be charged.
        */
       price_currency: string
+      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -24170,6 +24205,8 @@ export interface components {
        * @default usd
        */
       price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
     }
@@ -25549,6 +25586,11 @@ export interface components {
        */
       discount_amount: number
       /**
+       * Net Amount
+       * @description Net amount in cents before taxes
+       */
+      net_amount: number
+      /**
        * Tax Amount
        * @description Tax amount in cents
        */
@@ -26609,6 +26651,11 @@ export interface components {
       | components['schemas']['BalanceRefundReversalEvent']
       | components['schemas']['BalanceDisputeEvent']
       | components['schemas']['BalanceDisputeReversalEvent']
+    /**
+     * TaxBehaviorOption
+     * @enum {string}
+     */
+    TaxBehaviorOption: 'location' | 'inclusive' | 'exclusive'
     /**
      * TaxIDFormat
      * @description List of supported tax ID formats.
@@ -48081,6 +48128,9 @@ export const subscriptionUncanceledEventNameValues: ReadonlyArray<
 export const subscriptionUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUpdatedEvent']['name']
 > = ['subscription.updated']
+export const taxBehaviorOptionValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TaxBehaviorOption']
+> = ['location', 'inclusive', 'exclusive']
 export const taxIDFormatValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TaxIDFormat']
 > = [

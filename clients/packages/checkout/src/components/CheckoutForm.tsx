@@ -675,16 +675,6 @@ const BaseCheckoutForm = ({
             </div>
             {beforeSubmit}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
-              <Button
-                type="submit"
-                size="lg"
-                wrapperClassNames="text-base"
-                className="w-full"
-                disabled={disabled || isUpdatePending}
-                loading={loading}
-              >
-                {checkoutLabel}
-              </Button>
               {loading && loadingLabel && (
                 <p className="dark:text-polar-500 text-sm text-gray-500">
                   {loadingLabel}

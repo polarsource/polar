@@ -34,6 +34,7 @@
     "@mui/icons-material": "^7.3.8",
     "@next/mdx": "^16.2.0",
     "@next/third-parties": "^16.2.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/currency": "workspace:^",

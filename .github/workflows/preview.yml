@@ -142,7 +142,7 @@ jobs:
           DEPLOY_UID=""
           for i in $(seq 1 30); do
             DEPLOY_UID=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-              "https://api.vercel.com/v6/deployments?teamSlug=${VERCEL_TEAM}&projectId=${VERCEL_PROJECT}&meta-githubCommitSha=${SHA}&limit=1" \
+              "https://api.vercel.com/v6/deployments?teamSlug=${VERCEL_TEAM}&project=${VERCEL_PROJECT}&meta-githubCommitSha=${SHA}&limit=1" \
               | jq -r '.deployments[0].uid // empty')
             if [[ -n "$DEPLOY_UID" ]]; then
               break

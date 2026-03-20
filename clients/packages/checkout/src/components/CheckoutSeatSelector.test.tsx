@@ -71,22 +71,6 @@ describe('CheckoutSeatSelector', () => {
 
       expect(screen.getByTestId('headline-price')).toHaveTextContent('$31.47')
     })
-
-    it('shows per-seat price', () => {
-      const checkout = createSeatCheckout()
-
-      const { container } = render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      const perSeatText = container.querySelector('p')
-      expect(perSeatText?.textContent).toContain('$10.49')
-      expect(perSeatText?.textContent).toContain('per seat')
-    })
   })
 
   describe('returns null for non-seat-based pricing', () => {
@@ -166,7 +150,7 @@ describe('CheckoutSeatSelector', () => {
   })
 
   describe('compact layout', () => {
-    it('shows "Seats" label and per-seat price', () => {
+    it('shows "Seats" label', () => {
       const checkout = createSeatCheckout()
 
       render(
@@ -179,7 +163,6 @@ describe('CheckoutSeatSelector', () => {
       )
 
       expect(screen.getByText('Seats')).toBeInTheDocument()
-      expect(screen.getByText(/\$10\.49.*per seat/)).toBeInTheDocument()
     })
 
     it('shows stepper buttons', () => {
@@ -360,60 +343,6 @@ describe('CheckoutSeatSelector', () => {
       )
 
       expect(screen.getByTestId('headline-price')).toHaveTextContent('$140')
-    })
-
-    it('shows tier breakdown in default layout', () => {
-      const checkout = createGraduatedCheckout()
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      const breakdown = screen.getByTestId('tier-breakdown')
-      expect(breakdown).toHaveTextContent('10 seats × $10')
-      expect(breakdown).toHaveTextContent('5 seats × $8')
-    })
-
-    it('shows tier breakdown in compact layout', () => {
-      const checkout = createGraduatedCheckout()
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-          compact
-        />,
-      )
-
-      const breakdown = screen.getByTestId('compact-tier-breakdown')
-      expect(breakdown).toHaveTextContent('10 seats × $10')
-      expect(breakdown).toHaveTextContent('5 seats × $8')
-    })
-
-    it('shows single tier when seats fit in first tier', () => {
-      const checkout = createGraduatedCheckout({
-        seats: 5,
-        net_amount: 5000,
-        amount: 5000,
-        total_amount: 5000,
-      })
-
-      render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      const breakdown = screen.getByTestId('tier-breakdown')
-      expect(breakdown).toHaveTextContent('5 seats × $10')
-      expect(breakdown).not.toHaveTextContent('$8')
     })
 
     it('renders stepper buttons for graduated pricing', () => {

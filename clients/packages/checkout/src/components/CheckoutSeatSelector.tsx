@@ -6,7 +6,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import { ErrorResponse } from '../providers/CheckoutProvider'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
@@ -69,35 +69,6 @@ const CheckoutSeatSelector = ({
 
   const netAmount = checkout.net_amount || 0
   const currency = checkout.currency ?? 'usd'
-  const pricePerSeat = isSeatBased
-    ? (sortedTiers.find(
-        (t) =>
-          displaySeats >= t.min_seats &&
-          (t.max_seats == null || displaySeats <= t.max_seats),
-      )?.price_per_seat ?? 0)
-    : 0
-
-  const graduatedBreakdown = useMemo(() => {
-    if (!isSeatBased) return null
-    if (productPrice.seat_tiers.seat_tier_type !== 'graduated') return null
-    if (sortedTiers.length === 0) return null
-    const breakdown: { seats: number; pricePerSeat: number }[] = []
-    let allocated = 0
-    for (const tier of sortedTiers) {
-      if (allocated >= displaySeats) break
-      const tierEnd = tier.max_seats ?? displaySeats
-      const seatsInTier = Math.min(displaySeats, tierEnd) - allocated
-      if (seatsInTier > 0) {
-        breakdown.push({
-          seats: seatsInTier,
-          pricePerSeat: tier.price_per_seat,
-        })
-      }
-      allocated += seatsInTier
-    }
-    return breakdown
-  }, [isSeatBased, productPrice, sortedTiers, displaySeats])
-
   // Auto-correct seat count if it's below the minimum (only attempt once)
   useEffect(() => {
     if (
@@ -202,27 +173,6 @@ const CheckoutSeatSelector = ({
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium dark:text-white">Seats</span>
-            {graduatedBreakdown ? (
-              <span
-                className="dark:text-polar-500 flex flex-col text-xs text-gray-500"
-                data-testid="compact-tier-breakdown"
-              >
-                {graduatedBreakdown.map((tier, i) => (
-                  <span key={i}>
-                    {tier.seats} {tier.seats === 1 ? 'seat' : 'seats'} ×{' '}
-                    {formatCurrency('compact', locale)(
-                      tier.pricePerSeat,
-                      currency,
-                    )}
-                  </span>
-                ))}
-              </span>
-            ) : (
-              <span className="dark:text-polar-500 text-xs text-gray-500">
-                {formatCurrency('compact', locale)(pricePerSeat, currency)} per
-                seat
-              </span>
-            )}
           </div>
           {isFixedSeats ? (
             <span className="text-sm font-medium dark:text-white">
@@ -322,23 +272,6 @@ const CheckoutSeatSelector = ({
         >
           {formatCurrency('compact', locale)(netAmount, currency)}
         </h1>
-        {graduatedBreakdown ? (
-          <div
-            className="dark:text-polar-400 flex flex-col gap-0.5 text-sm text-gray-500"
-            data-testid="tier-breakdown"
-          >
-            {graduatedBreakdown.map((tier, i) => (
-              <p key={i}>
-                {tier.seats} {tier.seats === 1 ? 'seat' : 'seats'} ×{' '}
-                {formatCurrency('compact', locale)(tier.pricePerSeat, currency)}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <p className="dark:text-polar-400 text-sm text-gray-500">
-            {formatCurrency('compact', locale)(pricePerSeat, currency)} per seat
-          </p>
-        )}
       </div>
 
       {/* Seat Selector */}

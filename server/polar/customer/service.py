@@ -226,10 +226,7 @@ class CustomerService:
                 return customer
         except IntegrityError as e:
             error_str = str(e)
-            if (
-                "ix_customers_organization_id_email_case_insensitive" in error_str
-                or "ix_customers_organization_id_email_not_null" in error_str
-            ):
+            if "ix_customers_organization_id_email_not_null" in error_str:
                 raise PolarRequestValidationError(
                     [
                         {

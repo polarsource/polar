@@ -13,6 +13,15 @@ for unit in $(systemctl list-units --type=service --state=running --plain --no-l
     PR_NUM="${PR_NUM%.service}"
     [[ "$PR_NUM" =~ ^[0-9]+$ ]] || continue
 
+    STARTED_AT=$(systemctl show "$unit" -p ActiveEnterTimestamp --value)
+    if [[ -n "$STARTED_AT" ]]; then
+        STARTED_EPOCH=$(date -d "$STARTED_AT" +%s 2>/dev/null || echo 0)
+        NOW_EPOCH=$(date +%s)
+        if (( NOW_EPOCH - STARTED_EPOCH < IDLE_TIMEOUT )); then
+            continue
+        fi
+    fi
+
     if journalctl -u "$unit" --since "-${IDLE_TIMEOUT}s" --no-pager -q --grep='HTTP/1\.[01]"' -n 1 2>/dev/null | grep -q .; then
         continue
     fi

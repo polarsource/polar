@@ -675,6 +675,7 @@ const BaseCheckoutForm = ({
             </div>
             {beforeSubmit}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
+              <p>This is not a Pay Now button......</p>
               {loading && loadingLabel && (
                 <p className="dark:text-polar-500 text-sm text-gray-500">
                   {loadingLabel}

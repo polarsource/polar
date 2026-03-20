@@ -866,7 +866,6 @@ class OrganizationService:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
-            became_active = False
             if all(
                 (
                     not organization.is_under_review,
@@ -878,18 +877,6 @@ class OrganizationService:
                 )
             ):
                 organization.status = OrganizationStatus.ACTIVE
-                organization.status_updated_at = datetime.now(UTC)
-                became_active = True
-
-            # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
-            if any(
-                (
-                    not account.is_details_submitted,
-                    not account.is_charges_enabled,
-                    not account.is_payouts_enabled,
-                )
-            ):
-                organization.status = OrganizationStatus.ONBOARDING_STARTED
                 organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)

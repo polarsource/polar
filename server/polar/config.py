@@ -221,7 +221,7 @@ class Settings(BaseSettings):
     # Risk review — comma-separated codes that trigger visual warning flags
     # in the backoffice overview.
     RISK_COUNTRY_CODES: list[str] = ["MA"]
-    RISK_CURRENCY_CODES: list[str] = ["mad"]
+    RISK_CURRENCY_CODES: list[str] = []
 
     # OpenAI
     OPENAI_API_KEY: str = ""

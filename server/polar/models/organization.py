@@ -350,7 +350,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         String(3), nullable=False, default="usd"
     )
     default_tax_behavior: Mapped[TaxBehaviorOption] = mapped_column(
-        StringEnum(TaxBehaviorOption), nullable=True
+        StringEnum(TaxBehaviorOption), nullable=True, default=TaxBehaviorOption.location
     )
 
     #

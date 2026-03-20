@@ -16,7 +16,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
 from polar.config import settings
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
@@ -330,7 +330,9 @@ class Organization(OrganizationBase):
             "if the customer's local currency is not available."
         )
     )
-
+    default_tax_behavior: TaxBehaviorOption = Field(
+        description="Default tax behavior applied on products."
+    )
     feature_settings: OrganizationFeatureSettings | None = Field(
         description="Organization feature settings",
     )
@@ -404,6 +406,10 @@ class OrganizationCreate(Schema):
         PresentmentCurrency.usd,
         description="Default presentment currency for the organization",
     )
+    default_tax_behavior: TaxBehaviorOption = Field(
+        default=TaxBehaviorOption.location,
+        description="Default tax behavior applied on products.",
+    )
 
 
 class OrganizationUpdate(Schema):
@@ -432,6 +438,9 @@ class OrganizationUpdate(Schema):
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"
+    )
+    default_tax_behavior: TaxBehaviorOption | None = Field(
+        None, description="Default tax behavior applied on products."
     )
 
 

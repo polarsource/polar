@@ -529,23 +529,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/accounts/search': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Search */
-    get: operations['accounts:search']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/accounts/{id}': {
     parameters: {
       query?: never
@@ -18755,12 +18738,6 @@ export interface components {
       items: components['schemas']['Event'][]
       pagination: components['schemas']['CursorPagination']
     }
-    /** ListResource[Account] */
-    ListResource_Account_: {
-      /** Items */
-      items: components['schemas']['Account'][]
-      pagination: components['schemas']['Pagination']
-    }
     /** ListResource[BenefitGrant] */
     ListResource_BenefitGrant_: {
       /** Items */
@@ -19680,6 +19657,8 @@ export interface components {
       succeeded_checkouts?: number | null
       /** Churned Subscriptions */
       churned_subscriptions?: number | null
+      /** Churn Rate */
+      churn_rate?: number | null
       /** Orders */
       orders?: number | null
       /** Revenue */
@@ -19740,8 +19719,6 @@ export interface components {
       canceled_subscriptions_other?: number | null
       /** Checkouts Conversion */
       checkouts_conversion?: number | null
-      /** Churn Rate */
-      churn_rate?: number | null
       /** Ltv */
       ltv?: number | null
       /** Gross Margin */
@@ -19768,6 +19745,7 @@ export interface components {
       checkouts?: components['schemas']['Metric'] | null
       succeeded_checkouts?: components['schemas']['Metric'] | null
       churned_subscriptions?: components['schemas']['Metric'] | null
+      churn_rate?: components['schemas']['Metric'] | null
       orders?: components['schemas']['Metric'] | null
       revenue?: components['schemas']['Metric'] | null
       net_revenue?: components['schemas']['Metric'] | null
@@ -19810,7 +19788,6 @@ export interface components {
       canceled_subscriptions_unused?: components['schemas']['Metric'] | null
       canceled_subscriptions_other?: components['schemas']['Metric'] | null
       checkouts_conversion?: components['schemas']['Metric'] | null
-      churn_rate?: components['schemas']['Metric'] | null
       ltv?: components['schemas']['Metric'] | null
       gross_margin?: components['schemas']['Metric'] | null
       gross_margin_percentage?: components['schemas']['Metric'] | null
@@ -19895,6 +19872,8 @@ export interface components {
       succeeded_checkouts?: number | null
       /** Churned Subscriptions */
       churned_subscriptions?: number | null
+      /** Churn Rate */
+      churn_rate?: number | null
       /** Orders */
       orders?: number | null
       /** Revenue */
@@ -19955,8 +19934,6 @@ export interface components {
       canceled_subscriptions_other?: number | null
       /** Checkouts Conversion */
       checkouts_conversion?: number | null
-      /** Churn Rate */
-      churn_rate?: number | null
       /** Ltv */
       ltv?: number | null
       /** Gross Margin */
@@ -20483,6 +20460,7 @@ export interface components {
       | 'subscription_create'
       | 'subscription_cycle'
       | 'subscription_cycle_after_trial'
+      | 'subscription_cancel'
       | 'subscription_update'
     /** OrderCustomer */
     OrderCustomer: {
@@ -21961,7 +21939,7 @@ export interface components {
        * About
        * @description Brief information about you and your business.
        */
-      about: string
+      about?: string | null
       /**
        * Product Description
        * @description Description of digital products being sold.
@@ -21971,15 +21949,16 @@ export interface components {
        * Intended Use
        * @description How the organization will integrate and use Polar.
        */
-      intended_use: string
+      intended_use?: string | null
       /**
        * Customer Acquisition
        * @description Main customer acquisition channels.
        */
-      customer_acquisition: string[]
+      customer_acquisition?: string[]
       /**
        * Future Annual Revenue
        * @description Estimated revenue in the next 12 months
+       * @default 0
        */
       future_annual_revenue: number
       /**
@@ -24690,7 +24669,6 @@ export interface components {
       | 'FR'
       | 'GM'
       | 'DE'
-      | 'GH'
       | 'GR'
       | 'GT'
       | 'GY'
@@ -29364,40 +29342,6 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'accounts:search': {
-    parameters: {
-      query?: {
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_Account_']
-        }
       }
       /** @description Validation Error */
       422: {
@@ -46193,6 +46137,7 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_create',
   'subscription_cycle',
   'subscription_cycle_after_trial',
+  'subscription_cancel',
   'subscription_update',
 ]
 export const orderPaidEventNameValues: ReadonlyArray<
@@ -47351,7 +47296,6 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'FR',
   'GM',
   'DE',
-  'GH',
   'GR',
   'GT',
   'GY',

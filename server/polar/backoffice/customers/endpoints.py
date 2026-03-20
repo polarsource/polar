@@ -1,17 +1,21 @@
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
-from pydantic import UUID4
+from pydantic import UUID4, EmailStr, Field, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import document, tag, text
 
+from polar.backoffice import forms
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.schemas.customer import CustomerUpdate
+from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import (
     BenefitGrant,
@@ -32,8 +36,18 @@ from ..components import button, datatable, description_list, modal
 from ..formatters import currency
 from ..layout import layout
 from ..orders.components import orders_datatable
+from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .components import customers_datatable, email_verified_badge
+
+
+class UpdateCustomerEmailForm(forms.BaseForm):
+    email: Annotated[
+        EmailStr,
+        forms.InputField(type="email", placeholder="customer@example.com"),
+        Field(title="Email"),
+    ]
+
 
 router = APIRouter()
 
@@ -183,8 +197,22 @@ async def get(
                 # Customer Details
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Customer Details")
+                        with tag.div(classes="flex justify-between items-center"):
+                            with tag.h2(classes="card-title"):
+                                text("Customer Details")
+                            with button(
+                                hx_get=str(
+                                    request.url_for(
+                                        "customers:edit_email",
+                                        id=customer.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                                variant="secondary",
+                                size="sm",
+                                ghost=True,
+                            ):
+                                text("Edit Email")
                         with description_list.DescriptionList[Customer](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -517,3 +545,69 @@ async def revoke_benefits(
                         hx_target="#modal",
                     ):
                         text("Revoke")
+
+
+@router.api_route(
+    "/{id}/edit_email", name="customers:edit_email", methods=["GET", "POST"]
+)
+async def edit_email(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id)
+
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        try:
+            form = UpdateCustomerEmailForm.model_validate_form(form_data)
+            customer_update = CustomerUpdate(email=form.email)
+            await customer_service.update(session, customer, customer_update)
+
+            await add_toast(
+                request,
+                f"Customer email updated to {form.email}.",
+                "success",
+            )
+
+            return HXRedirectResponse(
+                request, str(request.url_for("customers:get", id=customer.id))
+            )
+        except ValidationError as e:
+            validation_error = e
+        except PolarRequestValidationError as e:
+            error_message = "; ".join(err["msg"] for err in e.errors())
+
+    # GET or failed POST - show the form modal
+    with document() as doc:
+        with tag.div(id="modal"):
+            with modal("Edit Customer Email", open=True):
+                if error_message:
+                    with tag.div(classes="alert alert-error mb-4"):
+                        with tag.p(classes="text-sm"):
+                            text(error_message)
+
+                with UpdateCustomerEmailForm.render(
+                    data={"email": customer.email},
+                    validation_error=validation_error,
+                    method="POST",
+                    hx_post=str(
+                        request.url_for("customers:edit_email", id=customer.id)
+                    ),
+                    hx_target="#modal",
+                ):
+                    with tag.div(classes="modal-action"):
+                        with tag.form(method="dialog"):
+                            with button(ghost=True):
+                                text("Cancel")
+                        with button(type="submit", variant="primary"):
+                            text("Update Email")
+
+    return HTMLResponse(str(doc))

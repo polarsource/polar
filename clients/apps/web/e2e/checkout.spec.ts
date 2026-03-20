@@ -5,11 +5,6 @@ test.describe('Checkout', () => {
   const checkoutLink = process.env.E2E_CHECKOUT_LINK_SUBSCRIPTION ?? ''
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'
 
-  console.log('E2E env vars:', {
-    E2E_CHECKOUT_LINK_SUBSCRIPTION: checkoutLink || '(not set)',
-    NEXT_PUBLIC_API_URL: apiUrl,
-  })
-
   test('Subscription with discount', async ({ page }) => {
     if (!checkoutLink) {
       console.log('Skipping: E2E_CHECKOUT_LINK_SUBSCRIPTION is not set')

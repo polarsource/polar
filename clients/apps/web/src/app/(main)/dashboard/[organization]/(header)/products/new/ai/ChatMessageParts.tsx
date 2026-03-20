@@ -187,8 +187,7 @@ const DoneCard = ({
     return null
   }
 
-  const productIds =
-    (part.input as { productIds: string[] }).productIds || []
+  const productIds = (part.input as { productIds: string[] }).productIds || []
   const firstProductId = productIds[0]
 
   return (

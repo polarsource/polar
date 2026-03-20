@@ -12,6 +12,7 @@ export default {
         'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.',
     },
     form: {
+      test: 'This is a test',
       email: 'Email',
       cardholderName: 'Cardholder name',
       purchasingAsBusiness: "I'm purchasing as a business",

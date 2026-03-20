@@ -76,7 +76,8 @@ function FormSync() {
 export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
-  const { data, updateData, showApiResponse } = useOnboardingData()
+  const { data, updateData, setApiLoading, showApiResponse } =
+    useOnboardingData()
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
 
@@ -108,6 +109,7 @@ export function PersonalDetailsStep() {
 
   const onSubmit = async (formData: FormSchema) => {
     setSubmitting(true)
+    setApiLoading(true)
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
       firstName: formData.firstName,

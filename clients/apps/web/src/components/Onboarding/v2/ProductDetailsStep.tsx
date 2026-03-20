@@ -66,7 +66,8 @@ interface FormSchema {
 export function ProductDetailsStep() {
   const router = useRouter()
   const { setUserOrganizations } = useAuth()
-  const { data, updateData, showApiResponse } = useOnboardingData()
+  const { data, updateData, setApiLoading, showApiResponse } =
+    useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [loading, setLoading] = useState<
     'validating' | 'submitting' | 'submitting-anyway' | null
@@ -126,6 +127,8 @@ export function ProductDetailsStep() {
   )
 
   const submitOrg = async (formData: FormSchema) => {
+    setApiLoading(true)
+
     const switching = formData.currentlySellingOn.length > 0
     const switchingFrom = (
       switching ? formData.currentlySellingOn[0] : null
@@ -158,6 +161,7 @@ export function ProductDetailsStep() {
     })
 
     if (error) {
+      showApiResponse(400, 'Failed to create organization')
       return false
     }
 

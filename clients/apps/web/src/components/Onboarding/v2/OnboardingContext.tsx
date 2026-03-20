@@ -69,10 +69,12 @@ interface OnboardingStore {
   updateData: (partial: Partial<OnboardingData>) => void
   clearData: () => void
   subscribe: (listener: () => void) => () => void
+  setApiLoading: (loading: boolean) => void
   showApiResponse: (status: number, message: string) => Promise<void>
 }
 
 interface OnboardingContextValue extends OnboardingStore {
+  apiLoading: boolean
   apiResponse: { status: number; message: string } | null
 }
 
@@ -81,6 +83,7 @@ const OnboardingContext = createContext<OnboardingContextValue | null>(null)
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const dataRef = useRef<OnboardingData>(loadFromSession())
   const listenersRef = useRef(new Set<() => void>())
+  const [apiLoading, setApiLoadingState] = useState(false)
   const [apiResponse, setApiResponse] = useState<{
     status: number
     message: string
@@ -118,13 +121,25 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     notify()
   }, [notify])
 
+  const setApiLoading = useCallback((loading: boolean) => {
+    setApiLoadingState(loading)
+    if (loading) {
+      setApiResponse(null)
+    }
+  }, [])
+
   const showApiResponse = useCallback((status: number, message: string) => {
+    setApiLoadingState(false)
     setApiResponse({ status, message })
+    if (status >= 400) {
+      // Errors stay visible until the next action clears them
+      return Promise.resolve()
+    }
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         setApiResponse(null)
         resolve()
-      }, 1000)
+      }, 2500)
     })
   }, [])
 
@@ -134,10 +149,21 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       updateData,
       clearData,
       subscribe,
+      setApiLoading,
       showApiResponse,
+      apiLoading,
       apiResponse,
     }),
-    [getData, updateData, clearData, subscribe, showApiResponse, apiResponse],
+    [
+      getData,
+      updateData,
+      clearData,
+      subscribe,
+      setApiLoading,
+      showApiResponse,
+      apiLoading,
+      apiResponse,
+    ],
   )
 
   return (
@@ -156,7 +182,9 @@ export function useOnboardingData() {
     data: ctx.getData(),
     updateData: ctx.updateData,
     clearData: ctx.clearData,
+    setApiLoading: ctx.setApiLoading,
     showApiResponse: ctx.showApiResponse,
+    apiLoading: ctx.apiLoading,
     apiResponse: ctx.apiResponse,
   }
 }

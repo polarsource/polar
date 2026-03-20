@@ -220,16 +220,6 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/legal/terms',
-        destination: 'https://polar.sh/legal/master-services-terms',
-        permanent: false,
-      },
-      {
-        source: '/legal/privacy',
-        destination: 'https://polar.sh/legal/privacy-policy',
-        permanent: false,
-      },
-      {
         source: '/llms.txt',
         destination: 'https://polar.sh/docs/llms.txt',
         permanent: true,

@@ -12,7 +12,7 @@ export default function Page() {
   const { updateData } = useOnboardingData()
 
   if (CONFIG.IS_SANDBOX) {
-    redirect('/onboarding/personal')
+    redirect('/dashboard/create')
   }
 
   const handleSandbox = () => {

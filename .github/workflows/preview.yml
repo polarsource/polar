@@ -140,18 +140,21 @@ jobs:
         run: |
           set -euo pipefail
           DEPLOY_UID=""
-          for i in $(seq 1 30); do
-            DEPLOY_UID=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-              "https://api.vercel.com/v6/deployments?teamSlug=${VERCEL_TEAM}&project=${VERCEL_PROJECT}&meta-githubCommitSha=${SHA}&limit=1" \
-              | jq -r '.deployments[0].uid // empty')
-            if [[ -n "$DEPLOY_UID" ]]; then
+          for i in $(seq 1 60); do
+            RESPONSE=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              "https://api.vercel.com/v6/deployments?teamSlug=${VERCEL_TEAM}&project=${VERCEL_PROJECT}&meta-githubCommitSha=${SHA}&limit=1")
+            DEPLOY_UID=$(echo "$RESPONSE" | jq -r '.deployments[0].uid // empty')
+            DEPLOY_STATE=$(echo "$RESPONSE" | jq -r '.deployments[0].state // empty')
+            if [[ -n "$DEPLOY_UID" && "$DEPLOY_STATE" == "READY" ]]; then
+              echo "Vercel deployment ${DEPLOY_UID} is READY"
               break
             fi
-            echo "Waiting for Vercel deployment... (attempt $i/30)"
+            echo "Waiting for Vercel deployment to be READY... (attempt $i/60, uid=${DEPLOY_UID:-none}, state=${DEPLOY_STATE:-none})"
+            DEPLOY_UID=""
             sleep 10
           done
           if [[ -z "$DEPLOY_UID" ]]; then
-            echo "::warning::Vercel deployment not found, deploy.sh will compute URL"
+            echo "::warning::Vercel deployment not found or not ready, deploy.sh will compute URL"
             exit 0
           fi
           BRANCH_ALIAS=$(curl -sf -H "Authorization: Bearer ${VERCEL_TOKEN}" \

@@ -212,21 +212,13 @@ In this example:
 
 Polar API has rate limits to ensure fair usage and maintain performance. Limits differ between the **Sandbox** and **Production** environments.
 
-### Authenticated Requests
+### Production
 
-| Environment | Limit            |
-| ----------- | ---------------- |
-| Production  | 500 requests/min |
-| Sandbox     | 100 requests/min |
+- **500 requests per minute** per organization/customer or OAuth2 Client.
 
-### Unauthenticated Requests
+### Sandbox
 
-| Environment | Limit           |
-| ----------- | --------------- |
-| Production  | 60 requests/min |
-| Sandbox     | 10 requests/min |
-
-### License Key Endpoints
+- **100 requests per minute** per organization/customer or OAuth2 Client.
 
 Unauthenticated [validation](/api-reference/customer-portal/license-keys/validate), [activation](/api-reference/customer-portal/license-keys/activate), and [deactivation](/api-reference/customer-portal/license-keys/deactivate) endpoints are limited to **3 requests per second** in both environments.
 

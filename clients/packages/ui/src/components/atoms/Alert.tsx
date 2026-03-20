@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface AlertProps {
   color: 'blue' | 'gray' | 'red' | 'green' | 'yellow'
+  className?: string
 }
 
 const Alert: React.FC<React.PropsWithChildren<AlertProps>> = ({
   children,
   color,
+  className,
 }) => {
   const colorClasses = useMemo(() => {
     switch (color) {
@@ -23,7 +26,11 @@ const Alert: React.FC<React.PropsWithChildren<AlertProps>> = ({
     }
   }, [color])
 
-  return <div className={`rounded-lg p-2 ${colorClasses}`}>{children}</div>
+  return (
+    <div className={twMerge('rounded-lg p-2', colorClasses, className)}>
+      {children}
+    </div>
+  )
 }
 
 export default Alert

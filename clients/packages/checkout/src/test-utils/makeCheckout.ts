@@ -54,6 +54,7 @@ export function createSeatBasedPrice(
     ...priceDefaults,
     amount_type: 'seat_based',
     seat_tiers: {
+      seat_tier_type: 'volume',
       tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
       minimum_seats: 1,
       maximum_seats: null,

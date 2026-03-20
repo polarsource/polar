@@ -705,19 +705,33 @@ const BaseCheckoutForm = ({
         </Form>
         <div>
           <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-            {checkout.is_payment_form_required
-              ? checkout.active_trial_interval
-                ? t('checkout.footer.mandateSubscriptionTrial', {
-                    buttonLabel: checkoutLabel,
-                  })
-                : interval
-                  ? t('checkout.footer.mandateSubscription', {
+            {checkout.is_payment_form_required ? (
+              <>
+                {checkout.active_trial_interval
+                  ? t('checkout.footer.mandateSubscriptionTrial', {
                       buttonLabel: checkoutLabel,
                     })
-                  : t('checkout.footer.mandateOneTime', {
-                      buttonLabel: checkoutLabel,
-                    })
-              : t('checkout.footer.merchantOfRecord')}
+                  : interval
+                    ? t('checkout.footer.mandateSubscription', {
+                        buttonLabel: checkoutLabel,
+                      })
+                    : t('checkout.footer.mandateOneTime', {
+                        buttonLabel: checkoutLabel,
+                      })}{' '}
+                {t('checkout.footer.buyerTermsAgreement')}{' '}
+                <a
+                  href="https://polar.sh/legal/checkout-buyer-terms"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  {t('checkout.footer.buyerTermsLink')}
+                </a>
+                .
+              </>
+            ) : (
+              t('checkout.footer.merchantOfRecord')
+            )}
           </p>
         </div>
       </div>

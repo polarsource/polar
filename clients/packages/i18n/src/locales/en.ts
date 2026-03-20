@@ -10,6 +10,8 @@ export default {
         'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to immediately charge your selected payment method in the amount shown above and to charge the same amount on each subsequent billing date until you cancel.',
       mandateOneTime:
         'By clicking "{buttonLabel}," you authorize Polar Software, Inc., our online reseller and merchant of record, to charge your selected payment method the amount shown above. This is a one-time charge.',
+      buyerTermsAgreement: 'You also agree to the',
+      buyerTermsLink: 'Buyer Terms',
     },
     form: {
       email: 'Email',

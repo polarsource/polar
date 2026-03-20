@@ -918,8 +918,6 @@ async def deny_dialog(
     review_repo = OrganizationReviewRepository.from_session(session)
     agent_review = await review_repo.get_latest_agent_review(organization_id)
     review_report = _get_review_report(agent_review)
-    verdict = review_report.verdict.value if review_report else ""
-    is_override = verdict == "APPROVE"
 
     error_message: str | None = None
 
@@ -927,10 +925,8 @@ async def deny_dialog(
         form_data = await request.form()
         override_reason = str(form_data.get("override_reason", "")).strip() or None
 
-        if is_override and not override_reason:
-            error_message = (
-                "A reason is required when overriding the AI recommendation."
-            )
+        if not override_reason:
+            error_message = "A reason is required when denying an organization."
         else:
             # Record review decision before denying
             await review_repo.record_human_decision(
@@ -953,33 +949,31 @@ async def deny_dialog(
                 303,
             )
 
-    reason_label = (
-        "Reason for override (required)"
-        if is_override
-        else "Reason for denial (optional)"
-    )
-    reason_placeholder = (
-        "Why are you overriding the AI recommendation?"
-        if is_override
-        else "Why are you denying this organization?"
-    )
     textarea_attrs: dict[str, Any] = {
         "name": "override_reason",
         "classes": "textarea textarea-bordered w-full",
-        "placeholder": reason_placeholder,
+        "placeholder": "Why are you denying this organization?",
         "rows": "3",
+        "required": True,
     }
-    if is_override:
-        textarea_attrs["required"] = True
 
     with modal("Deny Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p(classes="font-semibold text-error"):
-                text("⚠️ Warning: Payments will be blocked")
-
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:deny_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
             if error_message:
                 with tag.div(classes="alert alert-error"):
                     text(error_message)
+
+            with tag.p(classes="font-semibold text-error"):
+                text("⚠️ Warning: Payments will be blocked")
 
             if review_report:
                 _render_ai_review_summary(review_report)
@@ -991,28 +985,19 @@ async def deny_dialog(
                         "This action can be reversed, but the organization will need to be reviewed again."
                     )
 
-            with tag.form(
-                hx_post=str(
-                    request.url_for(
-                        "organizations:deny_dialog",
-                        organization_id=organization_id,
-                    )
-                ),
-                classes="flex flex-col gap-4",
-            ):
-                with tag.div(classes="form-control"):
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text(reason_label)
-                    with tag.textarea(**textarea_attrs):
-                        pass
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for denial (required)")
+                with tag.textarea(**textarea_attrs):
+                    pass
 
-                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
-                    with button(variant="error", type="submit"):
-                        text("Deny Organization")
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="error", type="submit"):
+                    text("Deny Organization")
 
     return None
 

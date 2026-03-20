@@ -61,13 +61,21 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
         return false
       }
 
-      // Skip union discriminator types (PascalCase ending with "Create" or "Update")
-      // These are FastAPI/Pydantic discriminated union field names
+      // Skip union discriminator types (PascalCase containing "Create", "Update", or "Base")
+      // These are FastAPI/Pydantic discriminated union field names like ProductCreateOneTime
       if (
-        /^[A-Z][a-zA-Z]+(Create|Update|Base)$/.test(segmentStr) &&
+        /^[A-Z][a-zA-Z]*(?:Create|Update|Base)[a-zA-Z]*$/.test(segmentStr) &&
         !segmentStr.match(/^[A-Z]{2,}/) // Allow acronyms like "ID"
       ) {
         return false
+      }
+
+      // Skip ProductCreate discriminator tags (from callable Discriminator)
+      if (segmentStr === 'one_time' || segmentStr === 'recurring') {
+        // Only filter at the top level (index 0 after slice)
+        if (index === 0) {
+          return false
+        }
       }
 
       // Skip discriminator values for ProductPriceCreate union, but ONLY in the specific context
@@ -130,6 +138,28 @@ export const apiErrorToast = (
     })
     return
   }
+}
+
+/**
+ * Recursively searches a react-hook-form FieldErrors object for the first
+ * error message string. Handles nested fields like `prices.0.price_amount`.
+ */
+export const findFirstErrorMessage = (
+  obj: unknown,
+  depth: number = 0,
+): string | undefined => {
+  if (depth > 10 || !obj || typeof obj !== 'object') return undefined
+  if (
+    'message' in obj &&
+    typeof (obj as Record<string, unknown>).message === 'string'
+  ) {
+    return (obj as Record<string, unknown>).message as string
+  }
+  for (const value of Object.values(obj)) {
+    const msg = findFirstErrorMessage(value, depth + 1)
+    if (msg) return msg
+  }
+  return undefined
 }
 
 export const normalizeValidationErrors = (

@@ -29,7 +29,7 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
         name={`prices.${index}.price_amount`}
         rules={{
           required: 'This field is required',
-          min: { value: 50, message: 'Price must be greater than 0.5' },
+          min: { value: 1, message: 'Price must be greater than 0' },
         }}
         render={({ field }) => {
           return (

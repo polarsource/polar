@@ -6,7 +6,10 @@ import {
   useUpdateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { setProductValidationErrors } from '@/utils/api/errors'
+import {
+  findFirstErrorMessage,
+  setProductValidationErrors,
+} from '@/utils/api/errors'
 import { ProductEditOrCreateForm } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -70,11 +73,8 @@ export const EditProductPage = ({
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
-      const firstError = Object.values(errors).find(Boolean)
       const message =
-        firstError && 'message' in firstError && firstError.message
-          ? String(firstError.message)
-          : 'Please check the form for errors'
+        findFirstErrorMessage(errors) ?? 'Please check the form for errors'
       toast({ title: 'Validation Error', description: message })
     },
     [toast],
@@ -177,7 +177,6 @@ export const EditProductPage = ({
   )
 
   const onSelectBenefit = useCallback((benefit: schemas['Benefit']) => {
-    console.log({ benefit })
     setEnabledBenefits((benefits) => [...benefits, benefit])
   }, [])
 

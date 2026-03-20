@@ -1,8 +1,10 @@
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
 from polar.models import Meter, Product
+from polar.models.product_price import ProductPriceSeatUnit, SeatPricingType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product_price_metered_unit
 
@@ -76,3 +78,122 @@ async def test_get_amount_and_label(
     amount, label = price.get_amount_and_label(units)
     assert amount == expected_amount
     assert label == expected_label
+
+
+def _make_seat_price(
+    tiers: list[dict[str, Any]],
+    pricing_type: SeatPricingType = SeatPricingType.volume,
+) -> ProductPriceSeatUnit:
+    return ProductPriceSeatUnit(
+        seat_tiers={"pricing_type": pricing_type, "tiers": tiers},
+        price_currency="usd",
+    )
+
+
+MULTI_TIER: list[dict[str, Any]] = [
+    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+    {"min_seats": 11, "max_seats": 50, "price_per_seat": 800},
+    {"min_seats": 51, "max_seats": None, "price_per_seat": 600},
+]
+
+
+class TestVolumePricing:
+    def test_single_tier(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
+            SeatPricingType.volume,
+        )
+        assert price.calculate_amount(1) == 500
+        assert price.calculate_amount(10) == 5000
+        assert price.calculate_amount(100) == 50_000
+
+    def test_multi_tier_first(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.volume)
+        assert price.calculate_amount(1) == 1000
+        assert price.calculate_amount(10) == 10_000
+
+    def test_multi_tier_second(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.volume)
+        assert price.calculate_amount(11) == 11 * 800
+        assert price.calculate_amount(50) == 50 * 800
+
+    def test_multi_tier_third(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.volume)
+        assert price.calculate_amount(51) == 51 * 600
+        assert price.calculate_amount(100) == 100 * 600
+
+    def test_no_pricing_type_defaults_to_volume(self) -> None:
+        price = ProductPriceSeatUnit(
+            seat_tiers={
+                "tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}]
+            },
+            price_currency="usd",
+        )
+        assert price.calculate_amount(10) == 5000
+
+    def test_single_seat(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.volume)
+        assert price.calculate_amount(1) == 1000
+
+    def test_free_tier(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 0}],
+            SeatPricingType.volume,
+        )
+        assert price.calculate_amount(100) == 0
+
+
+class TestGraduatedPricing:
+    def test_single_tier(self) -> None:
+        price = _make_seat_price(
+            [{"min_seats": 1, "max_seats": None, "price_per_seat": 500}],
+            SeatPricingType.graduated,
+        )
+        assert price.calculate_amount(1) == 500
+        assert price.calculate_amount(10) == 5000
+
+    def test_multi_tier_within_first(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        assert price.calculate_amount(5) == 5 * 1000
+
+    def test_multi_tier_spans_two(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        # 10 seats at 1000 + 5 seats at 800
+        assert price.calculate_amount(15) == 10 * 1000 + 5 * 800
+
+    def test_multi_tier_exact_boundary(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        # Exactly 10 seats fills first tier
+        assert price.calculate_amount(10) == 10 * 1000
+
+    def test_multi_tier_exact_second_boundary(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        # 10 at 1000 + 40 at 800
+        assert price.calculate_amount(50) == 10 * 1000 + 40 * 800
+
+    def test_multi_tier_spans_all(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        # 10 at 1000 + 40 at 800 + 50 at 600
+        assert price.calculate_amount(100) == 10 * 1000 + 40 * 800 + 50 * 600
+
+    def test_multi_tier_one_seat_into_last(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        # 10 at 1000 + 40 at 800 + 1 at 600
+        assert price.calculate_amount(51) == 10 * 1000 + 40 * 800 + 1 * 600
+
+    def test_single_seat(self) -> None:
+        price = _make_seat_price(MULTI_TIER, SeatPricingType.graduated)
+        assert price.calculate_amount(1) == 1000
+
+    def test_free_first_tier_then_paid(self) -> None:
+        price = _make_seat_price(
+            [
+                {"min_seats": 1, "max_seats": 5, "price_per_seat": 0},
+                {"min_seats": 6, "max_seats": None, "price_per_seat": 1000},
+            ],
+            SeatPricingType.graduated,
+        )
+        assert price.calculate_amount(3) == 0
+        assert price.calculate_amount(5) == 0
+        assert price.calculate_amount(8) == 3 * 1000
+        assert price.calculate_amount(15) == 10 * 1000

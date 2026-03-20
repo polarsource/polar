@@ -762,10 +762,14 @@ class OrganizationService:
         await self._sync_account_status(session, organization)
         session.add(organization)
 
-        # If there's a pending appeal, mark it as approved
+        # If there's an appeal, mark it as approved (handles both pending and previously rejected appeals)
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if review and review.appeal_submitted_at and review.appeal_decision is None:
+        if (
+            review
+            and review.appeal_submitted_at
+            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+        ):
             review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)

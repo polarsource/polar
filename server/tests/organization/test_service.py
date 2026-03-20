@@ -489,6 +489,43 @@ class TestConfirmOrganizationReviewed:
             initial_review=False,
         )
 
+    async def test_overrides_rejected_appeal(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org denied with a rejected appeal
+        organization.status = OrganizationStatus.DENIED
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=80.0,
+            violated_sections=["tos"],
+            reason="Violation",
+            model_used="test",
+            appeal_submitted_at=datetime(2025, 2, 1, tzinfo=UTC),
+            appeal_reason="Please reconsider",
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+            appeal_reviewed_at=datetime(2025, 2, 2, tzinfo=UTC),
+        )
+        session.add(review)
+        await session.flush()
+
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        # When: operator manually approves the org
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        # Then: appeal decision is overridden to approved
+        assert result.status == OrganizationStatus.ACTIVE
+        assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
+        assert review.appeal_reviewed_at is not None
+
 
 @pytest.mark.asyncio
 class TestHandleOngoingReviewVerdict:

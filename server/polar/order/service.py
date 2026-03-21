@@ -774,13 +774,16 @@ class OrderService:
                 )
             # Sync mode, attempt payment immediately and raise if it fails
             elif payment_mode == PaymentMode.sync:
-                if subscription.payment_method_id is None:
+                payment_method_id = (
+                    subscription.payment_method_id or customer.default_payment_method_id
+                )
+                if payment_method_id is None:
                     raise PaymentFailed(PaymentFailedReason.missing_payment_method)
                 payment_method_repository = PaymentMethodRepository.from_session(
                     session
                 )
                 payment_method = await payment_method_repository.get_by_id(
-                    subscription.payment_method_id
+                    payment_method_id
                 )
                 assert payment_method is not None
                 await self.trigger_payment(
@@ -788,13 +791,16 @@ class OrderService:
                 )
             # Async mode, allow payment to fail and be retried later
             else:
-                if subscription.payment_method_id is None:
+                payment_method_id = (
+                    subscription.payment_method_id or customer.default_payment_method_id
+                )
+                if payment_method_id is None:
                     order = await self.handle_payment_failure(session, order)
                 else:
                     enqueue_job(
                         "order.trigger_payment",
                         order_id=order.id,
-                        payment_method_id=subscription.payment_method_id,
+                        payment_method_id=payment_method_id,
                     )
 
             await self._on_order_created(session, order)

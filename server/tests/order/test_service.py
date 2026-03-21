@@ -16,6 +16,7 @@ from polar.checkout.eventstream import CheckoutEvent
 from polar.email.schemas import OrderConfirmationEmail
 from polar.enums import (
     InvoiceNumbering,
+    PaymentMode,
     PaymentProcessor,
     SubscriptionRecurringInterval,
     TaxProcessor,
@@ -1895,6 +1896,60 @@ class TestCreateSubscriptionOrder:
             session, customer, subscription.currency
         )
         assert new_balance == 49_50
+
+    async def test_sync_mode_null_payment_method_fallback_to_customer_default(
+        self,
+        mocker: MockerFixture,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """When subscription.payment_method_id is None but customer has a default PM,
+        sync mode should use the customer's default PM and succeed."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        default_pm = await create_payment_method(save_fixture, customer=customer)
+        customer.default_payment_method = default_pm
+        await save_fixture(customer)
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        assert subscription.payment_method is None
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
+        )
+
+        order = await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_cycle,
+            payment_mode=PaymentMode.sync,
+        )
+
+        trigger_payment_mock.assert_called_once()
+        call_args = trigger_payment_mock.call_args
+        assert call_args.args[2].id == default_pm.id
 
 
 @pytest.mark.asyncio

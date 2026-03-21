@@ -219,6 +219,7 @@ resource "render_web_service" "api" {
   name               = "api${local.env_suffix}"
   plan               = var.api_service_config.plan
   region             = "ohio"
+  num_instances      = var.api_service_config.num_instances
   health_check_path  = "/healthz"
   pre_deploy_command = "uv run task pre_deploy"
 

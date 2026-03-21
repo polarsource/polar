@@ -37,6 +37,7 @@ variable "api_service_config" {
     postgres_read_database = optional(string, "polar_cpit")
     redis_db               = optional(string, "0")
     plan                   = optional(string, "standard")
+    num_instances          = optional(number, 1)
   })
 }
 

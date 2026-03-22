@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -45,16 +45,24 @@ class UserRepository(
         include_deleted: bool = False,
         included_blocked: bool = False,
     ) -> User | None:
-        """Look up a user by their primary email or any linked OAuth account email."""
+        """Look up a user by their primary email or any linked OAuth account email.
+
+        Priority: primary email match first, OAuth account email as fallback.
+        This avoids MultipleResultsFound when the same email appears as both
+        a User.email and an OAuthAccount.account_email on different users.
+        """
+        # Priority 1: primary email match
+        user = await self.get_by_email(
+            email, include_deleted=include_deleted, included_blocked=included_blocked
+        )
+        if user is not None:
+            return user
+
+        # Fallback: OAuth account email match
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
-            .outerjoin(User.oauth_accounts)
-            .where(
-                or_(
-                    func.lower(User.email) == email.lower(),
-                    func.lower(OAuthAccount.account_email) == email.lower(),
-                )
-            )
+            .join(User.oauth_accounts)
+            .where(func.lower(OAuthAccount.account_email) == email.lower())
             .distinct()
         )
         if not included_blocked:

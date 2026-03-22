@@ -42,11 +42,18 @@ class TestProcessDunning:
     ) -> None:
         # Given
         customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
         past_time = utc_now() - timedelta(hours=1)
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
+            subscription=subscription,
             status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = past_time
@@ -72,11 +79,18 @@ class TestProcessDunning:
     ) -> None:
         # Given
         customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
         future_time = utc_now() + timedelta(hours=1)
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
+            subscription=subscription,
             status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = future_time
@@ -99,12 +113,19 @@ class TestProcessDunning:
     ) -> None:
         # Given
         customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
         past_time = utc_now() - timedelta(hours=1)
 
         order1 = await create_order(
             save_fixture,
             product=product,
             customer=customer,
+            subscription=subscription,
             status=OrderStatus.pending,
         )
         order1.next_payment_attempt_at = past_time
@@ -114,6 +135,7 @@ class TestProcessDunning:
             save_fixture,
             product=product,
             customer=customer,
+            subscription=subscription,
             status=OrderStatus.pending,
         )
         order2.next_payment_attempt_at = past_time
@@ -128,6 +150,115 @@ class TestProcessDunning:
         assert enqueue_job_mock.call_count == 2
         enqueue_job_mock.assert_any_call("order.process_dunning_order", order1.id)
         enqueue_job_mock.assert_any_call("order.process_dunning_order", order2.id)
+
+    async def test_canceled_subscription_order_not_enqueued(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """Orders belonging to canceled subscriptions should not be picked up by the dunning query."""
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        past_time = utc_now() - timedelta(hours=1)
+
+        canceled_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+        order_canceled = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=canceled_subscription,
+            status=OrderStatus.pending,
+        )
+        order_canceled.next_payment_attempt_at = past_time
+        await save_fixture(order_canceled)
+
+        unpaid_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.unpaid,
+        )
+        order_unpaid = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=unpaid_subscription,
+            status=OrderStatus.pending,
+        )
+        order_unpaid.next_payment_attempt_at = past_time
+        await save_fixture(order_unpaid)
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_dunning()
+
+        # Then — neither canceled nor unpaid subscription orders should be enqueued
+        enqueue_job_mock.assert_not_called()
+
+    async def test_only_billable_subscription_orders_enqueued(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """Only orders with billable subscriptions (active/past_due) should be enqueued."""
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        past_time = utc_now() - timedelta(hours=1)
+
+        # Active subscription order — should be enqueued
+        active_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        order_active = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=active_subscription,
+            status=OrderStatus.pending,
+        )
+        order_active.next_payment_attempt_at = past_time
+        await save_fixture(order_active)
+
+        # Canceled subscription order — should NOT be enqueued
+        canceled_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+        order_canceled = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=canceled_subscription,
+            status=OrderStatus.pending,
+        )
+        order_canceled.next_payment_attempt_at = past_time
+        await save_fixture(order_canceled)
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_dunning()
+
+        # Then — only the active subscription order is enqueued
+        enqueue_job_mock.assert_called_once_with(
+            "order.process_dunning_order",
+            order_active.id,
+        )
 
 
 @pytest.mark.asyncio

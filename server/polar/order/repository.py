@@ -90,13 +90,21 @@ class OrderRepository(
         return await self.get_one_or_none(statement)
 
     async def get_due_dunning_orders(self, *, options: Options = ()) -> Sequence[Order]:
-        """Get orders that are due for dunning retry based on next_payment_attempt_at."""
+        """Get orders that are due for dunning retry based on next_payment_attempt_at.
+
+        Only returns orders whose associated subscription is still in a
+        billable state (trialing, active, or past_due). Orders belonging to
+        canceled or unpaid subscriptions are excluded so we never retry
+        payment for a terminal subscription.
+        """
 
         statement = (
             self.get_base_statement()
+            .join(Subscription, Order.subscription_id == Subscription.id)
             .where(
                 Order.next_payment_attempt_at.is_not(None),
                 Order.next_payment_attempt_at <= utc_now(),
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
             )
             .order_by(Order.next_payment_attempt_at.asc())
             .options(*options)

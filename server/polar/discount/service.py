@@ -181,7 +181,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_update: DiscountUpdate,
     ) -> Discount:
         if (
-            discount_update.duration is not None
+            "duration" in discount_update.model_fields_set
             and discount_update.duration != discount.duration
         ):
             raise PolarRequestValidationError(

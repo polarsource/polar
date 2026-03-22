@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -38,36 +38,28 @@ class UserRepository(
             statement = statement.where(User.blocked_at.is_(None))
         return await self.get_one_or_none(statement)
 
-    async def get_by_any_email(
+    async def get_all_by_any_email(
         self,
         email: str,
         *,
         include_deleted: bool = False,
         included_blocked: bool = False,
-    ) -> User | None:
-        """Look up a user by their primary email or any linked OAuth account email.
-
-        Priority: primary email match first, OAuth account email as fallback.
-        This avoids MultipleResultsFound when the same email appears as both
-        a User.email and an OAuthAccount.account_email on different users.
-        """
-        # Priority 1: primary email match
-        user = await self.get_by_email(
-            email, include_deleted=include_deleted, included_blocked=included_blocked
-        )
-        if user is not None:
-            return user
-
-        # Fallback: OAuth account email match
+    ) -> Sequence[User]:
+        """Look up all users matching a given email as primary email or OAuth account email."""
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
-            .join(User.oauth_accounts)
-            .where(func.lower(OAuthAccount.account_email) == email.lower())
+            .outerjoin(User.oauth_accounts)
+            .where(
+                or_(
+                    func.lower(User.email) == email.lower(),
+                    func.lower(OAuthAccount.account_email) == email.lower(),
+                )
+            )
             .distinct()
         )
         if not included_blocked:
             statement = statement.where(User.blocked_at.is_(None))
-        return await self.get_one_or_none(statement)
+        return await self.get_all(statement)
 
     async def get_by_stripe_customer_id(
         self,

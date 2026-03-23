@@ -12,11 +12,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useEffect } from 'react'
-import {
-  type UseFormReturn,
-  useFormContext,
-  useWatch,
-} from 'react-hook-form'
+import { type UseFormReturn, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
 import { useOnboardingData } from './OnboardingContext'
@@ -151,7 +147,12 @@ export function SandboxFormFields({
         rules={{ required: 'You must accept the terms to continue' }}
         render={({ field }) => (
           <FormItem>
-            <Box display="flex" flexDirection="row" alignItems="start" columnGap="m">
+            <Box
+              display="flex"
+              flexDirection="row"
+              alignItems="start"
+              columnGap="m"
+            >
               <Checkbox
                 id="terms"
                 checked={field.value}
@@ -165,10 +166,32 @@ export function SandboxFormFields({
                 className="cursor-pointer text-sm leading-snug font-medium"
               >
                 I agree to Polar&apos;s{' '}
-                <a href="https://polar.sh/legal/terms" className="text-gray-900 underline dark:text-white" target="_blank" rel="noreferrer">Terms</a>,{' '}
-                <a href="https://polar.sh/legal/privacy" className="text-gray-900 underline dark:text-white" target="_blank" rel="noreferrer">Privacy Policy</a>{' '}
+                <a
+                  href="https://polar.sh/legal/terms"
+                  className="text-gray-900 underline dark:text-white"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Terms
+                </a>
+                ,{' '}
+                <a
+                  href="https://polar.sh/legal/privacy"
+                  className="text-gray-900 underline dark:text-white"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Privacy Policy
+                </a>{' '}
                 &amp;{' '}
-                <a href="https://polar.sh/docs/merchant-of-record/account-reviews" className="text-gray-900 underline dark:text-white" target="_blank" rel="noreferrer">AUP</a>
+                <a
+                  href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                  className="text-gray-900 underline dark:text-white"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  AUP
+                </a>
               </label>
             </Box>
             <FormMessage />

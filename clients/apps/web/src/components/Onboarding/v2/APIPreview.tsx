@@ -28,11 +28,7 @@ interface Line {
 
 export type APIPreviewStep = 'personal' | 'business' | 'product' | 'sandbox'
 
-export function APIPreview({
-  step,
-}: {
-  step: APIPreviewStep
-}) {
+export function APIPreview({ step }: { step: APIPreviewStep }) {
   const data = useOnboardingDataLive()
   const { apiLoading, apiResponse, clearApiResponse } = useOnboardingData()
 

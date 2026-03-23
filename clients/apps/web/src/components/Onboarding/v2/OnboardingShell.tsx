@@ -129,9 +129,7 @@ export function OnboardingShell({
             backgroundColor="background-secondary"
           />
           <Box position="sticky" top={150} zIndex={1}>
-            {(apiStep ?? step) && (
-              <APIPreview step={(apiStep ?? step)!} />
-            )}
+            {(apiStep ?? step) && <APIPreview step={(apiStep ?? step)!} />}
           </Box>
         </Box>
       </Box>

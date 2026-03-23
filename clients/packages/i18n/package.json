@@ -43,7 +43,7 @@
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^5.0.156",
+    "ai": "^5.0.157",
     "dotenv": "^16.6.1",
     "react": "^19.2.4",
     "tsup": "^8.5.1",

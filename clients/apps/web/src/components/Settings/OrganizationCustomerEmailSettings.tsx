@@ -120,6 +120,11 @@ const OrganizationCustomerEmailSettings: React.FC<
     }
 
     reset(data.customer_email_settings)
+
+    toast({
+      title: 'Customer Email Settings Updated',
+      description: 'Your customer email settings have been saved.',
+    })
   }
 
   useAutoSave({

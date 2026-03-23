@@ -14,6 +14,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { CurrencySelector } from '../CurrencySelector'
+import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCurrencySettingsProps {
@@ -51,6 +52,12 @@ const OrganizationCurrencySettings: React.FC<
       } else {
         setError('root', { message: error.detail })
       }
+
+      toast({
+        title: 'Currency Settings Update Failed',
+        description: `Error updating currency settings: ${error.detail}`,
+      })
+
       return
     }
 
@@ -58,6 +65,11 @@ const OrganizationCurrencySettings: React.FC<
       ...data,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
+    })
+
+    toast({
+      title: 'Currency Settings Updated',
+      description: 'Your currency settings have been saved.',
     })
   }
 

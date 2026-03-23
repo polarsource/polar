@@ -56,6 +56,11 @@ const OrganizationSubscriptionSettings: React.FC<
     }
 
     reset(data.subscription_settings)
+
+    toast({
+      title: 'Subscription Settings Updated',
+      description: 'Your subscription settings have been saved.',
+    })
   }
 
   useAutoSave({

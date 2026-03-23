@@ -54,6 +54,11 @@ const OrganizationCustomerPortalSettings: React.FC<
     }
 
     reset(data.customer_portal_settings)
+
+    toast({
+      title: 'Customer Portal Settings Updated',
+      description: 'Your customer portal settings have been saved.',
+    })
   }
 
   useAutoSave({

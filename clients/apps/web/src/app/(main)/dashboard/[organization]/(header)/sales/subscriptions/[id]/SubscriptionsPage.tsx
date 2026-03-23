@@ -1,6 +1,7 @@
 'use client'
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
+import { TimelineView } from '@/components/Customer/TimelineView'
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
@@ -20,6 +21,7 @@ import {
   useUncancelSubscription,
 } from '@/hooks/queries'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
+import { useSubscriptionTimeline } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List } from '@polar-sh/ui/components/atoms/List'
@@ -60,6 +62,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
     hasSeatBasedSubscription ? { subscriptionId: subscription?.id } : undefined,
   )
+
+  const {
+    data: timelineData,
+    hasNextPage: timelineHasNextPage,
+    isFetchingNextPage: timelineIsFetchingNextPage,
+    fetchNextPage: timelineFetchNextPage,
+  } = useSubscriptionTimeline(_subscription.id)
 
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
@@ -215,6 +224,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
         subscription.status === 'trialing') && (
         <UpcomingChargeCard subscription={subscription} />
       )}
+
+      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
+        <div className="flex flex-col gap-6 p-8">
+          <h3 className="text-lg">Timeline</h3>
+          <TimelineView
+            entries={timelineData?.pages.flatMap((page) => page.items) ?? []}
+            organizationSlug={organization.slug}
+            hasNextPage={timelineHasNextPage}
+            isFetchingNextPage={timelineIsFetchingNextPage}
+            onLoadMore={() => timelineFetchNextPage()}
+          />
+        </div>
+      </ShadowBox>
 
       <div className="flex flex-col gap-4 md:hidden">
         <CustomerContextView

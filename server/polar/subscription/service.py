@@ -7,7 +7,7 @@ from typing import Any, Literal, cast, overload
 from urllib.parse import urlencode
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import func, literal, select, union_all
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
@@ -73,9 +73,10 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.customer import CustomerType
-from polar.models.order import OrderBillingReasonInternal
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
+from polar.models.refund import Refund, RefundStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -2417,6 +2418,175 @@ class SubscriptionService:
             OrderBillingReasonInternal.subscription_update,
             payment_mode=PaymentMode.sync,
         )
+
+
+    async def get_timeline(
+        self,
+        session: AsyncReadSession,
+        subscription: Subscription,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[list[Any], int]:
+        from polar.customer.schemas.timeline import (
+            CustomerTimelineEntryType,
+            OrderTimelineEntry,
+            RefundTimelineEntry,
+            SubscriptionCanceledTimelineEntry,
+            SubscriptionStartedTimelineEntry,
+        )
+
+        order_sq = select(
+            Order.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.order).label("event_type"),
+            Order.created_at.label("timestamp"),
+        ).where(
+            Order.subscription_id == subscription.id,
+            Order.status.in_(
+                [OrderStatus.paid, OrderStatus.refunded, OrderStatus.partially_refunded]
+            ),
+            Order.billing_reason != OrderBillingReasonInternal.subscription_create,
+            Order.deleted_at.is_(None),
+        )
+
+        refund_sq = select(
+            Refund.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.refund).label("event_type"),
+            Refund.created_at.label("timestamp"),
+        ).where(
+            Refund.subscription_id == subscription.id,
+            Refund.status == RefundStatus.succeeded,
+            Refund.deleted_at.is_(None),
+        )
+
+        started_sq = select(
+            Subscription.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.subscription_started).label("event_type"),
+            Subscription.started_at.label("timestamp"),
+        ).where(
+            Subscription.id == subscription.id,
+            Subscription.started_at.is_not(None),
+        )
+
+        canceled_sq = select(
+            Subscription.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.subscription_canceled).label(
+                "event_type"
+            ),
+            Subscription.canceled_at.label("timestamp"),
+        ).where(
+            Subscription.id == subscription.id,
+            Subscription.canceled_at.is_not(None),
+        )
+
+        timeline_cte = union_all(
+            order_sq, refund_sq, started_sq, canceled_sq
+        ).cte("subscription_timeline")
+
+        total_count: int = (
+            await session.execute(
+                select(func.count()).select_from(timeline_cte)
+            )
+        ).scalar_one()
+
+        rows = (
+            await session.execute(
+                select(timeline_cte)
+                .order_by(timeline_cte.c.timestamp.desc())
+                .limit(pagination.limit)
+                .offset((pagination.page - 1) * pagination.limit)
+            )
+        ).all()
+
+        order_ids = {
+            r.resource_id
+            for r in rows
+            if r.event_type == CustomerTimelineEntryType.order
+        }
+        refund_ids = {
+            r.resource_id
+            for r in rows
+            if r.event_type == CustomerTimelineEntryType.refund
+        }
+
+        orders_by_id: dict[Any, Order] = {}
+        if order_ids:
+            orders_by_id = {
+                o.id: o
+                for o in (
+                    await session.execute(
+                        select(Order)
+                        .where(Order.id.in_(order_ids))
+                        .options(joinedload(Order.product))
+                    )
+                )
+                .scalars()
+                .all()
+            }
+
+        refunds_by_id: dict[Any, Refund] = {}
+        if refund_ids:
+            refunds_by_id = {
+                r.id: r
+                for r in (
+                    await session.execute(
+                        select(Refund).where(Refund.id.in_(refund_ids))
+                    )
+                )
+                .scalars()
+                .all()
+            }
+
+        product_name = subscription.product.name if subscription.product else None
+
+        entries = []
+        for row in rows:
+            if row.event_type == CustomerTimelineEntryType.order:
+                order = orders_by_id.get(row.resource_id)
+                if order:
+                    entries.append(
+                        OrderTimelineEntry(
+                            id=order.id,
+                            timestamp=row.timestamp,
+                            amount=order.total_amount,
+                            currency=order.currency,
+                            billing_reason=order.billing_reason,
+                            product_name=order.product.name
+                            if order.product
+                            else None,
+                        )
+                    )
+            elif row.event_type == CustomerTimelineEntryType.refund:
+                refund = refunds_by_id.get(row.resource_id)
+                if refund:
+                    entries.append(
+                        RefundTimelineEntry(
+                            id=refund.id,
+                            timestamp=row.timestamp,
+                            amount=refund.amount,
+                            currency=refund.currency,
+                            order_id=refund.order_id,
+                        )
+                    )
+            elif row.event_type == CustomerTimelineEntryType.subscription_started:
+                entries.append(
+                    SubscriptionStartedTimelineEntry(
+                        id=subscription.id,
+                        timestamp=row.timestamp,
+                        subscription_id=subscription.id,
+                        product_name=product_name,
+                    )
+                )
+            elif row.event_type == CustomerTimelineEntryType.subscription_canceled:
+                entries.append(
+                    SubscriptionCanceledTimelineEntry(
+                        id=subscription.id,
+                        timestamp=row.timestamp,
+                        subscription_id=subscription.id,
+                        product_name=product_name,
+                    )
+                )
+
+        return entries, total_count
 
 
 subscription = SubscriptionService()

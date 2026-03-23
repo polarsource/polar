@@ -1,7 +1,7 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useSubscriptions = (
@@ -103,6 +103,29 @@ export const useUpdateSubscription = (id: string) =>
         queryKey: ['subscriptions', { id }, 'charge-preview'],
       })
     },
+  })
+
+export const useSubscriptionTimeline = (subscriptionId: string) =>
+  useInfiniteQuery({
+    queryKey: ['subscriptions', subscriptionId, 'timeline'],
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/subscriptions/{id}/timeline', {
+          params: { path: { id: subscriptionId }, query: { page: pageParam } },
+        }),
+      ),
+    retry: defaultRetry,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+      return lastPageParam + 1
+    },
+    enabled: !!subscriptionId,
   })
 
 export const useUncancelSubscription = (id: string) =>

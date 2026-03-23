@@ -4,6 +4,29 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+export const useCustomerTimeline = (customerId: string) =>
+  useInfiniteQuery({
+    queryKey: ['customers', customerId, 'timeline'],
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/customers/{id}/timeline', {
+          params: { path: { id: customerId }, query: { page: pageParam } },
+        }),
+      ),
+    retry: defaultRetry,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+      return lastPageParam + 1
+    },
+    enabled: !!customerId,
+  })
+
 export const useCustomers = (
   organizationId: string,
   parameters?: Omit<

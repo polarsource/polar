@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, func, or_
+from sqlalchemy import UnaryExpression, asc, desc, func, literal, or_, select, union_all
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy_utils.types.range import timedelta
@@ -25,6 +25,9 @@ from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.customer import CustomerType
+from polar.models.order import Order, OrderBillingReasonInternal, OrderStatus
+from polar.models.refund import Refund, RefundStatus
+from polar.models.subscription import Subscription
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -591,6 +594,191 @@ class CustomerService:
             await self.webhook(
                 session, redis, WebhookEventType.customer_state_changed, customer
             )
+
+
+    async def get_timeline(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[list[Any], int]:
+        from .schemas.timeline import (
+            CustomerTimelineEntryType,
+            OrderTimelineEntry,
+            RefundTimelineEntry,
+            SubscriptionCanceledTimelineEntry,
+            SubscriptionStartedTimelineEntry,
+        )
+
+        order_sq = select(
+            Order.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.order).label("event_type"),
+            Order.created_at.label("timestamp"),
+        ).where(
+            Order.customer_id == customer.id,
+            Order.status.in_(
+                [OrderStatus.paid, OrderStatus.refunded, OrderStatus.partially_refunded]
+            ),
+            Order.billing_reason != OrderBillingReasonInternal.subscription_create,
+            Order.deleted_at.is_(None),
+        )
+
+        refund_sq = select(
+            Refund.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.refund).label("event_type"),
+            Refund.created_at.label("timestamp"),
+        ).where(
+            Refund.customer_id == customer.id,
+            Refund.status == RefundStatus.succeeded,
+            Refund.deleted_at.is_(None),
+        )
+
+        sub_started_sq = select(
+            Subscription.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.subscription_started).label("event_type"),
+            Subscription.started_at.label("timestamp"),
+        ).where(
+            Subscription.customer_id == customer.id,
+            Subscription.started_at.is_not(None),
+            Subscription.deleted_at.is_(None),
+        )
+
+        sub_canceled_sq = select(
+            Subscription.id.label("resource_id"),
+            literal(CustomerTimelineEntryType.subscription_canceled).label(
+                "event_type"
+            ),
+            Subscription.canceled_at.label("timestamp"),
+        ).where(
+            Subscription.customer_id == customer.id,
+            Subscription.canceled_at.is_not(None),
+            Subscription.deleted_at.is_(None),
+        )
+
+        timeline_cte = union_all(
+            order_sq, refund_sq, sub_started_sq, sub_canceled_sq
+        ).cte("timeline")
+
+        total_count: int = (
+            await session.execute(select(func.count()).select_from(timeline_cte))
+        ).scalar_one()
+
+        rows = (
+            await session.execute(
+                select(timeline_cte)
+                .order_by(timeline_cte.c.timestamp.desc())
+                .limit(pagination.limit)
+                .offset((pagination.page - 1) * pagination.limit)
+            )
+        ).all()
+
+        order_ids = {r.resource_id for r in rows if r.event_type == CustomerTimelineEntryType.order}
+        refund_ids = {r.resource_id for r in rows if r.event_type == CustomerTimelineEntryType.refund}
+        sub_ids = {
+            r.resource_id
+            for r in rows
+            if r.event_type
+            in (
+                CustomerTimelineEntryType.subscription_started,
+                CustomerTimelineEntryType.subscription_canceled,
+            )
+        }
+
+        orders_by_id: dict[Any, Order] = {}
+        if order_ids:
+            orders_by_id = {
+                o.id: o
+                for o in (
+                    await session.execute(
+                        select(Order)
+                        .where(Order.id.in_(order_ids))
+                        .options(joinedload(Order.product))
+                    )
+                )
+                .scalars()
+                .all()
+            }
+
+        refunds_by_id: dict[Any, Refund] = {}
+        if refund_ids:
+            refunds_by_id = {
+                r.id: r
+                for r in (
+                    await session.execute(
+                        select(Refund).where(Refund.id.in_(refund_ids))
+                    )
+                )
+                .scalars()
+                .all()
+            }
+
+        subs_by_id: dict[Any, Subscription] = {}
+        if sub_ids:
+            subs_by_id = {
+                s.id: s
+                for s in (
+                    await session.execute(
+                        select(Subscription)
+                        .where(Subscription.id.in_(sub_ids))
+                        .options(joinedload(Subscription.product))
+                    )
+                )
+                .scalars()
+                .all()
+            }
+
+        entries = []
+        for row in rows:
+            if row.event_type == CustomerTimelineEntryType.order:
+                order = orders_by_id.get(row.resource_id)
+                if order:
+                    entries.append(
+                        OrderTimelineEntry(
+                            id=order.id,
+                            timestamp=row.timestamp,
+                            amount=order.total_amount,
+                            currency=order.currency,
+                            billing_reason=order.billing_reason,
+                            product_name=order.product.name if order.product else None,
+                        )
+                    )
+            elif row.event_type == CustomerTimelineEntryType.refund:
+                refund = refunds_by_id.get(row.resource_id)
+                if refund:
+                    entries.append(
+                        RefundTimelineEntry(
+                            id=refund.id,
+                            timestamp=row.timestamp,
+                            amount=refund.amount,
+                            currency=refund.currency,
+                            order_id=refund.order_id,
+                        )
+                    )
+            elif row.event_type == CustomerTimelineEntryType.subscription_started:
+                sub = subs_by_id.get(row.resource_id)
+                if sub:
+                    entries.append(
+                        SubscriptionStartedTimelineEntry(
+                            id=sub.id,
+                            timestamp=row.timestamp,
+                            subscription_id=sub.id,
+                            product_name=sub.product.name if sub.product else None,
+                        )
+                    )
+            elif row.event_type == CustomerTimelineEntryType.subscription_canceled:
+                sub = subs_by_id.get(row.resource_id)
+                if sub:
+                    entries.append(
+                        SubscriptionCanceledTimelineEntry(
+                            id=sub.id,
+                            timestamp=row.timestamp,
+                            subscription_id=sub.id,
+                            product_name=sub.product.name if sub.product else None,
+                        )
+                    )
+
+        return entries, total_count
 
 
 customer = CustomerService()

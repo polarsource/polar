@@ -2,6 +2,7 @@
 'use client'
 
 import { StatisticCard } from '@/components/Shared/StatisticCard'
+import { useCustomerTimeline } from '@/hooks/queries/customers'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
@@ -19,6 +20,7 @@ import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 import { EditCustomerModal } from './EditCustomerModal'
+import { TimelineView } from './TimelineView'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -72,6 +74,8 @@ export const CustomerContextView = ({
     }
     setCustomerSession(session)
   }, [customer])
+
+  const { data: timelineData } = useCustomerTimeline(customer.id)
 
   const metrics = useMetrics({
     startDate: new Date(customer.created_at),
@@ -263,6 +267,27 @@ export const CustomerContextView = ({
           ))}
         </ShadowBox>
       )}
+      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
+        <div className="flex flex-row items-center justify-between">
+          <h4 className="text-lg">Timeline</h4>
+          <Link
+            href={`/dashboard/${organization.slug}/customers/${customer.id}?tab=timeline`}
+            className="dark:text-polar-500 text-xs text-gray-500 hover:underline"
+          >
+            View All
+          </Link>
+        </div>
+        <TimelineView
+          entries={(
+            timelineData?.pages.flatMap((page) => page.items) ?? []
+          ).slice(0, 10)}
+          organizationSlug={organization.slug}
+          hasNextPage={false}
+          isFetchingNextPage={false}
+          onLoadMore={() => {}}
+          compact
+        />
+      </ShadowBox>
       <InlineModal
         isShown={isModalShown}
         hide={hideModal}

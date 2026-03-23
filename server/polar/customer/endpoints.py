@@ -32,6 +32,7 @@ from .schemas.customer import (
     ExternalCustomerID,
 )
 from .schemas.state import CustomerState
+from .schemas.timeline import CustomerTimelineEntry
 from .service import customer as customer_service
 
 router = APIRouter(
@@ -154,6 +155,36 @@ async def export(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get(
+    "/{id}/timeline",
+    summary="Get Customer Timeline",
+    response_model=ListResource[CustomerTimelineEntry],
+    responses={404: CustomerNotFound},
+    tags=[APITag.private],
+)
+async def get_timeline(
+    id: CustomerID,
+    auth_subject: auth.CustomerRead,
+    pagination: PaginationParamsQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[CustomerTimelineEntry]:
+    """
+    Get a customer's activity timeline.
+
+    Returns a paginated, reverse-chronological list of system events for the
+    customer, including orders, refunds, and subscription lifecycle changes.
+    """
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    entries, count = await customer_service.get_timeline(
+        session, customer, pagination=pagination
+    )
+    return ListResource.from_paginated_results(entries, count, pagination)
 
 
 @router.get(

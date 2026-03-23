@@ -5,6 +5,7 @@ import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
+import { TimelineView } from '@/components/Customer/TimelineView'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
@@ -15,6 +16,7 @@ import {
   useSubscriptions,
   useWallets,
 } from '@/hooks/queries'
+import { useCustomerTimeline } from '@/hooks/queries/customers'
 import { useOrders } from '@/hooks/queries/orders'
 import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
 import { formatPercentage, formatScalar } from '@/utils/formatters'
@@ -33,6 +35,7 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { benefitsDisplayNames } from '../Benefit/utils'
@@ -86,6 +89,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     customer_id: customer.id,
     type: 'billing',
   })
+
+  const {
+    data: timelineData,
+    hasNextPage: timelineHasNextPage,
+    isFetchingNextPage: timelineIsFetchingNextPage,
+    fetchNextPage: timelineFetchNextPage,
+  } = useCustomerTimeline(customer.id)
 
   const [selectedMetric, setSelectedMetric] = React.useState<
     keyof schemas['Metrics']
@@ -213,10 +223,26 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     }
   }, [metricsData])
 
+  const [tab, setTab] = useQueryState(
+    'tab',
+    parseAsStringLiteral([
+      'overview',
+      'timeline',
+      'events',
+      'usage',
+      'members',
+    ]).withDefault('overview'),
+  )
+
   return (
-    <Tabs defaultValue="overview" className="flex flex-col">
+    <Tabs
+      value={tab}
+      onValueChange={(v) => setTab(v as typeof tab)}
+      className="flex flex-col"
+    >
       <TabsList className="mb-8">
         <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="timeline">Timeline</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
         {showMembersTab && <TabsTrigger value="members">Members</TabsTrigger>}
@@ -582,6 +608,15 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             ))}
           </div>
         </ShadowBox>
+      </TabsContent>
+      <TabsContent value="timeline" className="flex flex-col gap-y-4">
+        <TimelineView
+          entries={timelineData?.pages.flatMap((page) => page.items) ?? []}
+          organizationSlug={organization.slug}
+          hasNextPage={timelineHasNextPage}
+          isFetchingNextPage={timelineIsFetchingNextPage}
+          onLoadMore={() => timelineFetchNextPage()}
+        />
       </TabsContent>
       <CustomerUsageView
         customer={customer}

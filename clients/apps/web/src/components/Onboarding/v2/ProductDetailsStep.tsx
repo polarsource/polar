@@ -2,6 +2,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import * as Sentry from '@sentry/nextjs'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -74,6 +75,7 @@ export function ProductDetailsStep() {
   >(null)
   const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
   const [aupMessage, setAupMessage] = useState<string | null>(null)
+  const [validationError, setValidationError] = useState(false)
   const [aupHistory, setAupHistory] = useState<
     Array<{ product_description: string; verdict: string; message?: string }>
   >([])
@@ -176,17 +178,35 @@ export function ProductDetailsStep() {
   const onSubmit = async (formData: FormSchema) => {
     setLoading('validating')
 
-    const res = await fetch(`/onboarding/validate-description`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        product_description: formData.productDescription,
-        selling_categories: formData.sellingCategories,
-        pricing_models: formData.pricingModel,
-        history: aupHistory,
-      }),
-    })
+    let res: Response
+    try {
+      res = await fetch('/onboarding/validate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_description: formData.productDescription,
+          selling_categories: formData.sellingCategories,
+          pricing_models: formData.pricingModel,
+          history: aupHistory,
+        }),
+      })
+    } catch (error) {
+      Sentry.captureException(error)
+      setValidationError(true)
+      setLoading(null)
+      return
+    }
 
+    if (!res.ok) {
+      Sentry.captureException(
+        new Error(`Validation failed with status ${res.status}`),
+      )
+      setValidationError(true)
+      setLoading(null)
+      return
+    }
+
+    setValidationError(false)
     const validation: {
       verdict: 'APPROVE' | 'DENY' | 'CLARIFY'
       confidence: number
@@ -403,6 +423,11 @@ export function ProductDetailsStep() {
                   Continue without review
                 </Button>
               )}
+            {validationError && (
+              <p className="text-sm text-red-500 dark:text-red-500">
+                Something went wrong, please try again.
+              </p>
+            )}
           </div>
         </form>
       </Form>

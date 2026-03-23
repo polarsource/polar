@@ -2,6 +2,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import * as Sentry from '@sentry/nextjs'
 import { useUpdateUser } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -80,6 +81,7 @@ export function PersonalDetailsStep() {
     useOnboardingData()
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(false)
 
   const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
   const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
@@ -109,6 +111,7 @@ export function PersonalDetailsStep() {
 
   const onSubmit = async (formData: FormSchema) => {
     setSubmitting(true)
+    setSubmitError(false)
     setApiLoading(true)
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
@@ -118,16 +121,25 @@ export function PersonalDetailsStep() {
       dateOfBirth,
     })
 
-    const { error } = await updateUser.mutateAsync({
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      country: formData.country as schemas['CountryAlpha2Input'],
-      date_of_birth: dateOfBirth,
-    })
+    try {
+      const { error } = await updateUser.mutateAsync({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        country: formData.country as schemas['CountryAlpha2Input'],
+        date_of_birth: dateOfBirth,
+      })
 
-    if (error) {
+      if (error) {
+        Sentry.captureException(error)
+        setSubmitting(false)
+        setSubmitError(true)
+        await showApiResponse(400, 'Failed to save personal details')
+        return
+      }
+    } catch (error) {
+      Sentry.captureException(error)
       setSubmitting(false)
-      await showApiResponse(400, 'Failed to save personal details')
+      setSubmitError(true)
       return
     }
 
@@ -289,9 +301,16 @@ export function PersonalDetailsStep() {
             </Box>
           </Box>
 
-          <Button type="submit" loading={submitting} fullWidth>
-            Continue
-          </Button>
+          <div className="flex flex-col gap-y-2">
+            <Button type="submit" loading={submitting} fullWidth>
+              Continue
+            </Button>
+            {submitError && (
+              <p className="text-sm text-red-500 dark:text-red-500">
+                Something went wrong, please try again.
+              </p>
+            )}
+          </div>
         </form>
       </Form>
     </OnboardingShell>

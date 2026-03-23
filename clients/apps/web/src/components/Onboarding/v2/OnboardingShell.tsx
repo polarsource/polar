@@ -48,6 +48,7 @@ export function OnboardingShell({
           alignItems="center"
           paddingTop="5xl"
           paddingBottom="3xl"
+          paddingHorizontal={{ base: 'l', lg: 'none' }}
         >
           <motion.div
             key={step}

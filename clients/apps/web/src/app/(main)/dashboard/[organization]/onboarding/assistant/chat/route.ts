@@ -486,7 +486,7 @@ based on the conversation history whether you're done.
             }
           : {},
       },
-      ...convertToModelMessages(messages),
+      ...(await convertToModelMessages(messages)),
     ],
     stopWhen: stepCountIs(15),
     experimental_transform: smoothStream(),

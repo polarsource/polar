@@ -42,6 +42,10 @@ from polar.middlewares import (
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.observability.http_middleware import HttpMetricsMiddleware
+from polar.observability.memory_profile import (
+    start_memory_profiler,
+    stop_memory_profiler,
+)
 from polar.observability.remote_write import (
     start_remote_write_pusher,
     stop_remote_write_pusher,
@@ -117,6 +121,11 @@ class State(TypedDict):
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
+    # Start memory profiler (if configured)
+    profiler_enabled = start_memory_profiler()
+    if profiler_enabled:
+        log.info("memory_profile_enabled")
+
     # Start HTTP metrics pusher (if configured)
     # Use include_queue_metrics=False since queue metrics are worker-specific
     metrics_enabled = start_remote_write_pusher(include_queue_metrics=False)
@@ -167,6 +176,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     }
 
     # Stop background threads
+    stop_memory_profiler()
     stop_slo_metrics()
     stop_remote_write_pusher()
 

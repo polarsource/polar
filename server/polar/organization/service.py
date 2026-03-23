@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import structlog
@@ -29,20 +29,20 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
     Customer,
-    Order,
     Organization,
-    Subscription,
     User,
     UserOrganization,
 )
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import OrganizationDetails, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
-from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
-from polar.organization_review.schemas import ReviewContext
+from polar.organization_review.repository import (
+    OrganizationReviewRepository as AgentReviewRepository,
+)
+from polar.organization_review.schemas import ReviewContext, ReviewVerdict
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
@@ -62,6 +62,8 @@ if TYPE_CHECKING:
     pass
 
 log = structlog.get_logger()
+
+_MIN_REVIEW_THRESHOLD = 10_000
 
 
 class PaymentStepID(StrEnum):
@@ -204,6 +206,7 @@ class OrganizationService:
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
         feature_settings = create_data.get("feature_settings", {})
         feature_settings["member_model_enabled"] = True
+        feature_settings["seat_based_pricing_enabled"] = True
         create_data["feature_settings"] = feature_settings
 
         organization = await repository.create(
@@ -273,6 +276,9 @@ class OrganizationService:
             old_member_model = organization.feature_settings.get(
                 "member_model_enabled", False
             )
+            old_seat_based = organization.feature_settings.get(
+                "seat_based_pricing_enabled", False
+            )
 
             organization.feature_settings = {
                 **organization.feature_settings,
@@ -281,9 +287,45 @@ class OrganizationService:
                 ),
             }
 
+            new_seat_based = organization.feature_settings.get(
+                "seat_based_pricing_enabled", False
+            )
             new_member_model = organization.feature_settings.get(
                 "member_model_enabled", False
             )
+
+            if old_seat_based and not new_seat_based:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": (
+                                "body",
+                                "feature_settings",
+                                "seat_based_pricing_enabled",
+                            ),
+                            "msg": "Seat-based pricing cannot be disabled once enabled.",
+                            "type": "value_error",
+                            "input": False,
+                        }
+                    ]
+                )
+
+            if new_seat_based and not new_member_model:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": (
+                                "body",
+                                "feature_settings",
+                                "seat_based_pricing_enabled",
+                            ),
+                            "msg": "Member model must be enabled before enabling seat-based pricing.",
+                            "type": "value_error",
+                            "input": True,
+                        }
+                    ]
+                )
+
             if not old_member_model and new_member_model:
                 enqueue_job(
                     "organization.backfill_members",
@@ -301,7 +343,6 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
-        previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -314,8 +355,14 @@ class OrganizationService:
         )
 
         # Only store details once to avoid API overrides later w/o review
-        if not previous_details and update_schema.details:
-            organization.details = update_schema.details.model_dump()
+        # We do allow initial details being set upon creation that will still require review,
+        # so upon creation we set details but not details_submitted_at
+        # so details_submitted_at effectively doubles as a "submit for review"
+        # timestamp, for now. We'll revisit this soon enough. @pieterbeulque
+        if not organization.details_submitted_at and update_schema.details:
+            organization.details = cast(
+                OrganizationDetails, update_schema.details.model_dump()
+            )
             organization.details_submitted_at = datetime.now(UTC)
             enqueue_job(
                 "organization_review.run_agent",
@@ -381,23 +428,27 @@ class OrganizationService:
         """Check if an organization can be deleted immediately.
 
         An organization can be deleted immediately if it has:
-        - No orders
-        - No active subscriptions
+        - No paid orders (excludes $0 orders from free/discounted products)
+        - No paid active subscriptions (excludes inherently free or
+          permanently discounted subscriptions)
 
         If it has an account but no orders/subscriptions, we'll attempt to
         delete the Stripe account first.
         """
         blocked_reasons: list[OrganizationDeletionBlockedReason] = []
+        repository = OrganizationRepository.from_session(session)
 
-        # Check for orders
-        order_count = await self._count_orders_by_organization(session, organization.id)
+        # Check for paid orders (excludes $0 orders)
+        order_count = await repository.count_paid_orders_by_organization(
+            organization.id
+        )
         if order_count > 0:
             blocked_reasons.append(OrganizationDeletionBlockedReason.HAS_ORDERS)
 
-        # Check for active subscriptions
+        # Check for paid active subscriptions (excludes free subscriptions)
         active_subscription_count = (
-            await self._count_active_subscriptions_by_organization(
-                session, organization.id
+            await repository.count_paid_active_subscriptions_by_organization(
+                organization.id
             )
         )
         if active_subscription_count > 0:
@@ -561,41 +612,6 @@ class OrganizationService:
             account_id=account.id,
         )
 
-    async def _count_orders_by_organization(
-        self,
-        session: AsyncReadSession,
-        organization_id: UUID,
-    ) -> int:
-        """Count orders for all customers of this organization."""
-        statement = (
-            sql.select(sql.func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
-
-    async def _count_active_subscriptions_by_organization(
-        self,
-        session: AsyncReadSession,
-        organization_id: UUID,
-    ) -> int:
-        """Count active subscriptions for all customers of this organization."""
-        statement = (
-            sql.select(sql.func.count(Subscription.id))
-            .join(Customer, Subscription.customer_id == Customer.id)
-            .where(
-                Customer.organization_id == organization_id,
-                Customer.is_deleted.is_(False),
-                Subscription.status.in_(SubscriptionStatus.active_statuses()),
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
-
     async def add_user(
         self,
         session: AsyncSession,
@@ -700,12 +716,17 @@ class OrganizationService:
     async def check_review_threshold(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        if organization.is_under_review:
-            return organization
-
         transfers_sum = await transaction_service.get_transactions_sum(
             session, organization.account_id, type=TransactionType.balance
         )
+
+        # Always keep total_balance in sync
+        organization.total_balance = transfers_sum
+        session.add(organization)
+
+        if organization.is_under_review:
+            return organization
+
         if (
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
@@ -741,10 +762,14 @@ class OrganizationService:
         await self._sync_account_status(session, organization)
         session.add(organization)
 
-        # If there's a pending appeal, mark it as approved
+        # If there's an appeal, mark it as approved (handles both pending and previously rejected appeals)
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if review and review.appeal_submitted_at and review.appeal_decision is None:
+        if (
+            review
+            and review.appeal_submitted_at
+            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+        ):
             review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
@@ -755,6 +780,41 @@ class OrganizationService:
             initial_review=initial_review,
         )
         return organization
+
+    async def handle_ongoing_review_verdict(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        verdict: ReviewVerdict,
+    ) -> bool:
+        """Handle AI agent verdict for an ongoing threshold review.
+
+        Returns True if auto-approved, False if escalated to human review (Plain ticket created).
+        Only auto-approves when: status is ONGOING_REVIEW and verdict is APPROVE.
+        """
+        is_eligible = (
+            organization.status == OrganizationStatus.ONGOING_REVIEW
+            and verdict == ReviewVerdict.APPROVE
+        )
+
+        if is_eligible:
+            next_threshold = max(
+                organization.next_review_threshold * 2, _MIN_REVIEW_THRESHOLD
+            )
+            await self.confirm_organization_reviewed(
+                session, organization, next_threshold
+            )
+            return True
+
+        # Not eligible or not approved → create Plain ticket for human review
+        # Guard: only create a thread if the org is still under review
+        # (it may have been handled already, e.g. on a task retry)
+        if organization.status in (
+            OrganizationStatus.INITIAL_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
+        ):
+            await plain_service.create_organization_review_thread(session, organization)
+        return False
 
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
@@ -775,13 +835,29 @@ class OrganizationService:
         return organization
 
     async def set_organization_under_review(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        enqueue_review: bool = True,
     ) -> Organization:
         organization.status = OrganizationStatus.ONGOING_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
-        enqueue_job("organization.under_review", organization_id=organization.id)
+
+        # Record a human ESCALATE decision so the agent knows not to auto-act
+        review_repository = AgentReviewRepository.from_session(session)
+        await review_repository.deactivate_current_decisions(organization.id)
+        await review_repository.save_review_decision(
+            organization_id=organization.id,
+            actor_type="human",
+            decision="ESCALATE",
+            review_context="manual",
+        )
+
+        if enqueue_review:
+            enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
     async def update_status_from_stripe_account(
@@ -808,17 +884,6 @@ class OrganizationService:
                 )
             ):
                 organization.status = OrganizationStatus.ACTIVE
-                organization.status_updated_at = datetime.now(UTC)
-
-            # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
-            if any(
-                (
-                    not account.is_details_submitted,
-                    not account.is_charges_enabled,
-                    not account.is_payouts_enabled,
-                )
-            ):
-                organization.status = OrganizationStatus.ONBOARDING_STARTED
                 organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)

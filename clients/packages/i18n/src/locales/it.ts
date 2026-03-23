@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Aggiungi dati aziendali',
       removeBusinessDetails: 'Rimuovi dati aziendali',
       billingDetails: 'Dati aziendali',
+      addDiscountCode: 'Aggiungi codice sconto',
     },
     pricing: {
       subtotal: 'Subtotale',
@@ -84,6 +85,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Fino al {date}',
       },
     },
     trial: {
@@ -109,6 +111,38 @@ export default {
           other: 'Prova di # anni',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# giorno gratis',
+            other: '# giorni gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# mese gratis',
+            other: '# mesi gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# anno gratis',
+            other: '# anni gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/giorno',
+          week: '/settimana',
+          month: '/mese',
+          year: '/anno',
+        },
+        then: 'Poi',
+        startingDate: 'a partire dal {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Totale al termine della prova',
+        totalWhenDiscountExpires: 'Totale alla scadenza dello sconto',
+        totalDueToday: 'Totale dovuto oggi',
       },
     },
     pwywForm: {
@@ -202,6 +236,10 @@ export default {
       getFree: 'Ottieni gratis',
       paymentsUnavailable: 'Pagamenti attualmente non disponibili',
     },
+    productDescription: {
+      readMore: 'Leggi di più',
+      readLess: 'Mostra meno',
+    },
   },
   intervals: {
     short: {
@@ -212,12 +250,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Personalizzato',
     license_keys: 'Chiavi di licenza',
     github_repository: 'Accesso repository GitHub',
     discord: 'Invito Discord',
     downloadables: 'File scaricabili',
-    custom: 'Personalizzato',
     meter_credit: 'Crediti a consumo',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: '°',

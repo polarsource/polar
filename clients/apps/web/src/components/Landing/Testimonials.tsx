@@ -1,5 +1,5 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Image from 'next/image'
 import Link from 'next/link'
 import { JSX } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -24,7 +24,7 @@ export const companyTestimonials = [
     ),
   },
   {
-    link: '/customers/repo-prompt',
+    link: 'https://repoprompt.com',
     name: 'Eric Provencher',
     company: 'Repo Prompt',
     verified: true,
@@ -40,7 +40,7 @@ export const companyTestimonials = [
   },
 ]
 
-export const userTestimonials = [
+const userTestimonials = [
   {
     link: 'https://x.com/rauchg/status/1909810055622672851',
     name: 'Guillermo Rauch',
@@ -156,7 +156,7 @@ export const Testamonial = ({
       href={link}
       target="_blank"
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-white p-8 transition-colors hover:bg-white',
+        'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-gray-50 p-8 transition-colors hover:bg-gray-100',
         className,
       )}
     >
@@ -172,7 +172,7 @@ export const Testamonial = ({
               width={64}
               height={64}
               loading="lazy"
-              CustomImageComponent={Image}
+              CustomImageComponent={StaticImage}
             />
           )}
         </div>
@@ -204,8 +204,18 @@ export const Testimonials = () => {
           Testimonials
         </span>
         <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
-          Why people love Polar
+          Trusted by industry leaders
         </h1>
+      </div>
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        {companyTestimonials.map((testimonial, index) => (
+          <Testamonial
+            key={`testimonial-${index}`}
+            size="lg"
+            className={index === 0 ? 'xl:col-span-2' : ''}
+            {...testimonial}
+          />
+        ))}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {userTestimonials.map((testimonial, index) => (

@@ -54,6 +54,7 @@ resource "render_env_group" "backend" {
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }
       POLAR_TAX_PROCESSORS             = { value = var.backend_config.tax_processors }
+      POLAR_TAX_RECORD_PROCESSOR       = { value = var.backend_config.tax_record_processor }
       POLAR_NUMERAL_API_KEY            = { value = var.backend_secrets.numeral_api_key }
     },
     var.backend_config.user_session_cookie_key != "" ? {
@@ -101,6 +102,7 @@ resource "render_env_group" "aws_s3" {
     POLAR_S3_FILES_PUBLIC_BUCKET_NAME      = { value = var.aws_s3_config.files_public_bucket_name }
     POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME = { value = var.aws_s3_config.customer_invoices_bucket_name }
     POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME   = { value = var.aws_s3_config.payout_invoices_bucket_name }
+    POLAR_S3_LOGS_BUCKET_NAME              = { value = var.aws_s3_config.logs_bucket_name }
     POLAR_AWS_ACCESS_KEY_ID                = { value = var.aws_s3_secrets.access_key_id }
     POLAR_AWS_SECRET_ACCESS_KEY            = { value = var.aws_s3_secrets.secret_access_key }
     POLAR_S3_FILES_DOWNLOAD_SALT           = { value = var.aws_s3_secrets.files_download_salt }
@@ -195,8 +197,17 @@ resource "render_env_group" "tinybird" {
     POLAR_TINYBIRD_CLICKHOUSE_USERNAME = { value = var.tinybird_config.clickhouse_username }
     POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = { value = var.tinybird_config.clickhouse_token }
     POLAR_TINYBIRD_WORKSPACE           = { value = var.tinybird_config.workspace }
-    POLAR_TINYBIRD_EVENTS_WRITE        = { value = var.tinybird_config.events_write }
-    POLAR_TINYBIRD_EVENTS_READ         = { value = var.tinybird_config.events_read }
+  }
+}
+
+resource "render_env_group" "memory_profile" {
+  count          = var.memory_profile_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "memory-profile-${var.environment}"
+  env_vars = {
+    POLAR_MEMORY_PROFILE_ENABLED        = { value = "true" }
+    POLAR_MEMORY_PROFILE_S3_BUCKET_NAME = { value = var.memory_profile_config.s3_bucket_name }
+    POLAR_MEMORY_PROFILE_INTERVAL       = { value = var.memory_profile_config.interval }
   }
 }
 
@@ -213,18 +224,10 @@ resource "render_web_service" "api" {
 
   runtime_source = {
     image = {
-      image_url              = "ghcr.io/polarsource/polar"
-      tag                    = "latest"
+      image_url              = split("@", var.api_service_config.image_url)[0]
       registry_credential_id = var.registry_credential_id
+      digest                 = var.api_service_config.image_digest
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      runtime_source.image.image_url,
-      runtime_source.image.digest,
-      runtime_source.image.tag,
-    ]
   }
 
   autoscaling = var.environment == "production" ? {
@@ -246,6 +249,7 @@ resource "render_web_service" "api" {
   custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
+    SERVICE_NAME                 = { value = "api${local.env_suffix}" }
     WEB_CONCURRENCY              = { value = var.api_service_config.web_concurrency }
     FORWARDED_ALLOW_IPS          = { value = var.api_service_config.forwarded_allow_ips }
     POLAR_ALLOWED_HOSTS          = { value = var.api_service_config.allowed_hosts }
@@ -279,30 +283,63 @@ resource "render_web_service" "worker" {
   num_instances     = each.value.num_instances
 
   runtime_source = {
-    image = each.value.digest != null ? {
-      image_url              = each.value.image_url
+    image = {
+      image_url              = split("@", each.value.image_url)[0]
       registry_credential_id = var.registry_credential_id
-      digest                 = each.value.digest
-      } : {
-      image_url              = each.value.image_url
-      registry_credential_id = var.registry_credential_id
-      tag                    = each.value.tag
+      digest                 = each.value.image_digest
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      runtime_source.image.image_url,
-      runtime_source.image.tag,
-      runtime_source.image.digest,
-    ]
   }
 
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
+    SERVICE_NAME                 = { value = each.key }
     dramatiq_prom_port           = { value = each.value.dramatiq_prom_port }
     POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
+    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
+    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
+    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
+    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
+    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
+    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
+    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
+    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
+    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
+    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
+    POLAR_REDIS_HOST             = { value = var.redis_config.host }
+    POLAR_REDIS_PORT             = { value = var.redis_config.port }
+    POLAR_REDIS_DB               = { value = var.api_service_config.redis_db }
+  }
+}
+
+resource "render_cron_job" "cron" {
+  for_each = var.cron_jobs
+
+  environment_id = var.render_environment_id
+  name           = each.key
+  plan           = each.value.plan
+  region         = "ohio"
+  schedule       = each.value.schedule
+  start_command  = each.value.start_command
+
+  # Cron jobs use tag "latest" instead of a pinned digest so Render
+  # automatically pulls the newest image before each run.
+  runtime_source = {
+    image = {
+      image_url              = split("@", coalesce(each.value.image_url, var.api_service_config.image_url))[0]
+      registry_credential_id = var.registry_credential_id
+      tag                    = "latest"
+    }
+  }
+
+  # Cron jobs don't support Render secret_files, so we pass JWKS as an env var
+  # and write it to a temp file in the start command. POLAR_JWKS is set here
+  # to override the env group value (/etc/secrets/jwks.json) which doesn't exist.
+  env_vars = {
+    SERVICE_NAME                 = { value = each.key }
+    POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
+    POLAR_JWKS                   = { value = "/tmp/jwks.json" }
+    POLAR_JWKS_CONTENT           = { value = var.backend_secrets.jwks }
     POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
     POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
     POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
@@ -322,7 +359,8 @@ resource "render_web_service" "worker" {
 locals {
   env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
-  all_service_ids = concat([render_web_service.api.id], local.worker_ids)
+  cron_job_ids    = [for c in render_cron_job.cron : c.id]
+  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids)
 }
 
 # Env group links
@@ -389,4 +427,10 @@ resource "render_env_group_link" "tinybird" {
   count        = var.tinybird_config != null ? 1 : 0
   env_group_id = render_env_group.tinybird[0].id
   service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "memory_profile" {
+  count        = var.memory_profile_config != null ? 1 : 0
+  env_group_id = render_env_group.memory_profile[0].id
+  service_ids  = [render_web_service.api.id]
 }

@@ -9,10 +9,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (
-        _: string, // pathname
-        /* clientPayload?: string, */
-      ) => {
+      onBeforeGenerateToken: async () => {
         const user = await getAuthenticatedUser()
         if (!user) {
           throw new Error('Unauthenticated')
@@ -38,7 +35,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           // Run any logic after the file upload completed
           // const { userId } = JSON.parse(tokenPayload);
           // await db.update({ avatar: blob.url, userId });
-        } catch (error) {
+        } catch {
           throw new Error('Could not update user')
         }
       },

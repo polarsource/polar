@@ -1,4 +1,5 @@
 import LogoType from '@/components/Brand/logos/LogoType'
+import { UploadImage } from '@/components/Image/Image'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import { schemas } from '@polar-sh/client'
 
@@ -12,16 +13,16 @@ export default function SharedLayout({
   children?: React.ReactNode
 }) {
   return (
-    <div className="dark:bg-polar-950 flex flex-col gap-12 bg-white pt-16 md:items-center md:p-16">
+    <div className="dark:bg-polar-950 flex flex-col items-center gap-12 bg-white pt-16 md:p-16">
       <div className="flex w-96 flex-col items-center gap-6">
         <div className="flex flex-row items-center gap-2">
           <LogoType className="h-10" />
           {client?.logo_uri && (
             <>
               <AddOutlined className="h-5" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <UploadImage
                 src={client.logo_uri}
+                approximateWidth={40}
                 className="h-10"
                 alt={client.client_name ?? client.client_id}
               />

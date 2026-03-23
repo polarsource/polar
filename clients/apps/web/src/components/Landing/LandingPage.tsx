@@ -1,7 +1,6 @@
 'use client'
 
 import { Hero } from '@/components/Landing/Hero/Hero'
-import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
 import useIsMobile from '@/utils/mobile'
 import { Stream } from '@cloudflare/stream-react'
@@ -9,10 +8,13 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
+import { BillingDiagram } from './BillingDiagram'
 import Features from './Features'
 import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
+import { Products } from './Products'
 import { Section } from './Section'
+import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -23,15 +25,15 @@ export default function Page() {
   )
 }
 
-export const PageContent = () => {
+const PageContent = () => {
   const { isMobile } = useIsMobile()
-
   return (
     <>
-      <Section className="flex flex-col gap-y-32 py-0 md:py-0">
+      <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
         <Hero
-          title="Monetize your software"
-          description="Turn your software into a business with 6 lines of code"
+          title="Turn Usage Into Revenue"
+          description="A billing platform built for AI companies"
+          size="large"
         >
           <GetStartedButton size="lg" text="Get Started" />
           <Link
@@ -39,37 +41,44 @@ export const PageContent = () => {
             prefetch
             className="dark:text-polar-400 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
           >
-            <Button
-              variant="secondary"
-              size="lg"
-              className="dark:bg-polar-800 rounded-full border-none bg-white"
-            >
+            <Button variant="secondary" size="lg">
               Why Polar
             </Button>
           </Link>
         </Hero>
-        <Features />
+      </Section>
+      <Section className="flex flex-col gap-y-32" border>
         <Logotypes />
-        {isMobile ? null : (
-          <div className="dark:border-polar-700 relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
+        <Features />
+      </Section>
+      <Section className="flex flex-col gap-y-32">
+        <BillingDiagram />
+        <Usage />
+      </Section>
+      {isMobile ? null : (
+        <Section className="flex max-w-[1620px]! flex-col gap-y-32">
+          <div className="dark:border-polar-700 relative aspect-video w-full flex-col items-center overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
             <Stream
               src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-              letterboxColor="black"
               autoplay
               muted
               loop
             />
           </div>
-        )}
+        </Section>
+      )}
+      <Section className="flex flex-col gap-y-32" border>
         <Adapters />
-        <Usage />
+      </Section>
+      <Section className="flex flex-col gap-y-32" border>
+        <Products />
       </Section>
       <Section className="flex flex-col gap-y-24">
-        <MerchantOfRecord />
         <Testimonials />
       </Section>
       <Section className="flex flex-col gap-y-24">
         <Pricing />
+        <Upsell />
       </Section>
     </>
   )

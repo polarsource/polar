@@ -1,9 +1,14 @@
-import { CONFIG } from '@/utils/config'
+'use client'
+
+import { usePathname } from 'next/navigation'
 
 const SandboxBanner = () => {
-  if (!CONFIG.IS_SANDBOX) {
+  const pathname = usePathname()
+
+  if (['/', '/login'].includes(pathname)) {
     return null
   }
+
   return (
     <div className="sticky top-0 z-50 flex flex-row items-center justify-between bg-yellow-100 px-8 py-2 text-sm text-yellow-500 dark:bg-yellow-950">
       <div></div>

@@ -1,0 +1,19 @@
+
+- name: smoke_empty_org
+  description: Endpoint returns zero-filled row for org with no data (validates SQL,
+    JOINs with intervals, subscription_state, orders_updates_by_order_id, credit_order_fx_state,
+    system_events_by_org)
+  parameters: org_ids=99999999-9999-9999-9999-999999999999&bounds_start=2024-01-01
+    00:00:00&bounds_end=2024-01-02 00:00:00&start_dt=2024-01-01 00:00:00&end_dt=2024-01-01
+    00:00:00&buffer_start=2023-12-31 00:00:00&buffer_end=2024-01-03 00:00:00&tz=UTC
+  expected_result: |
+    {"timestamp":"2024-01-01 00:00:00","orders":0,"revenue":0,"net_revenue":0,"cumulative_revenue":0,"net_cumulative_revenue":0,"average_order_value":0,"net_average_order_value":0,"one_time_products":0,"one_time_products_revenue":0,"one_time_products_net_revenue":0,"new_subscriptions":0,"new_subscriptions_revenue":0,"new_subscriptions_net_revenue":0,"renewed_subscriptions":0,"renewed_subscriptions_revenue":0,"renewed_subscriptions_net_revenue":0}
+
+- name: smoke_with_fixture_data
+  description: Endpoint returns event metrics for fixture org with order and subscription
+    events
+  parameters: org_ids=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa&bounds_start=2024-01-01
+    00:00:00&bounds_end=2024-01-02 00:00:00&start_dt=2024-01-01 00:00:00&end_dt=2024-01-01
+    00:00:00&buffer_start=2023-12-31 00:00:00&buffer_end=2024-01-03 00:00:00&tz=UTC
+  expected_result: |
+    {"timestamp":"2024-01-01 00:00:00","orders":1,"revenue":900,"net_revenue":800,"cumulative_revenue":900,"net_cumulative_revenue":800,"average_order_value":900,"net_average_order_value":800,"one_time_products":0,"one_time_products_revenue":0,"one_time_products_net_revenue":0,"new_subscriptions":0,"new_subscriptions_revenue":900,"new_subscriptions_net_revenue":800,"renewed_subscriptions":0,"renewed_subscriptions_revenue":0,"renewed_subscriptions_net_revenue":0}

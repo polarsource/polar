@@ -1,13 +1,18 @@
 import uuid
 
 import stripe as stripe_lib
+import structlog
 
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
+from polar.enums import PaymentMode
 from polar.exceptions import PolarError
+from polar.integrations.stripe.service import stripe as stripe_service
+from polar.logging import Logger
 from polar.models import (
     Checkout,
     Order,
+    Organization,
     Payment,
     PaymentMethod,
     Wallet,
@@ -16,10 +21,13 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
+from polar.organization.repository import OrganizationRepository
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
+
+log: Logger = structlog.get_logger()
 
 
 class OrderDoesNotExist(PolarError):
@@ -43,6 +51,52 @@ class OutdatedCheckoutIntent(PolarError):
         self.intent_id = intent_id
         message = f"Intent with id {intent_id} for checkout {checkout_id} is outdated."
         super().__init__(message)
+
+
+class UnresolvedPaymentError(PolarError):
+    def __init__(self, processor_id: str) -> None:
+        self.processor_id = processor_id
+        message = (
+            f"Received a payment with id {processor_id} that can't be resolved to "
+            "an organization."
+        )
+        super().__init__(message)
+
+
+async def _resolve_organization(
+    session: AsyncSession,
+    object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+) -> Organization | None:
+    if object.metadata is None:
+        return None
+
+    if (organization_id := object.metadata.get("organization_id")) is None:
+        log.warning(
+            "Legacy payment resolution: no organization_id in metadata",
+            object_id=object.id,
+        )
+        if checkout := await resolve_checkout(session, object):
+            return checkout.organization
+        if order := await resolve_order(session, object, checkout=None):
+            return order.organization
+        wallet, _ = await resolve_wallet(session, object)
+        if wallet:
+            return wallet.organization
+
+    repository = OrganizationRepository.from_session(session)
+    return await repository.get_by_id(
+        uuid.UUID(organization_id), include_deleted=True, include_blocked=True
+    )
+
+
+async def resolve_organization(
+    session: AsyncSession,
+    object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+) -> Organization:
+    organization = await _resolve_organization(session, object)
+    if organization is None:
+        raise UnresolvedPaymentError(object.id)
+    return organization
 
 
 async def resolve_checkout(
@@ -106,6 +160,11 @@ async def resolve_order(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
         )
         if order is None:
+            # Ignore missing order if payment mode is sync, as it means the order
+            # was discarded due to the payment failure.
+            if object.metadata.get("payment_mode") == PaymentMode.sync:
+                return None
+
             raise OrderDoesNotExist(order_id)
         return order
 
@@ -120,6 +179,7 @@ async def resolve_order(
 async def handle_success(
     session: AsyncSession, object: stripe_lib.Charge | stripe_lib.SetupIntent
 ) -> None:
+    organization = await resolve_organization(session, object)
     checkout = await resolve_checkout(session, object)
     wallet, wallet_transaction = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
@@ -127,7 +187,7 @@ async def handle_success(
     payment: Payment | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
-            session, object, checkout, wallet, order
+            session, object, organization, checkout, wallet, order
         )
 
     if checkout is not None:
@@ -140,6 +200,16 @@ async def handle_success(
                 and object.client_secret != checkout_intent_client_secret
             ):
                 raise OutdatedCheckoutIntent(checkout.id, object.id)
+
+            # Metadata marker is set when confirmation was denied because of trial abuse detection
+            if checkout.status == CheckoutStatus.open:
+                updated_object = await stripe_service.get_setup_intent(object.id)
+                if (
+                    updated_object.metadata
+                    and updated_object.metadata.get("polar_trial_abuse_detected")
+                    == "true"
+                ):
+                    raise OutdatedCheckoutIntent(checkout.id, object.id)
 
         payment_method: PaymentMethod | None = None
         if checkout.should_save_payment_method:
@@ -165,6 +235,7 @@ async def handle_failure(
     session: AsyncSession,
     object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
 ) -> None:
+    organization = await resolve_organization(session, object)
     checkout = await resolve_checkout(session, object)
     wallet, _ = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
@@ -172,11 +243,11 @@ async def handle_failure(
     payment: Payment | None = None
     if object.OBJECT_NAME == "charge":
         payment = await payment_service.upsert_from_stripe_charge(
-            session, object, checkout, wallet, order
+            session, object, organization, checkout, wallet, order
         )
     elif object.OBJECT_NAME == "payment_intent":
         payment = await payment_service.upsert_from_stripe_payment_intent(
-            session, object, checkout, order
+            session, object, organization, checkout, order
         )
 
     if checkout is not None:

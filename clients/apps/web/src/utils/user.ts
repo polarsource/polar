@@ -4,9 +4,9 @@ import { headers } from 'next/headers'
 import { cache } from 'react'
 
 async function retryWithBackoff<T>(
-  fn: () => Promise<{ data?: T; error?: any }>,
+  fn: () => Promise<{ data?: T; error?: unknown }>,
   maxRetries = 3,
-): Promise<{ data?: T; error?: any }> {
+): Promise<{ data?: T; error?: unknown }> {
   let delay = 100
   let lastResult
 
@@ -36,7 +36,7 @@ const _getAuthenticatedUser = async (): Promise<
   // Middleware set this header for authenticated requests
   const userData = (await headers()).get('x-polar-user')
   if (userData) {
-    return JSON.parse(userData)
+    return JSON.parse(Buffer.from(userData, 'base64').toString('utf-8'))
   }
   return undefined
 }
@@ -53,7 +53,10 @@ const _getUserOrganizations = async (
     return []
   }
 
-  const requestOptions: any = {
+  const requestOptions: {
+    params: { query: { limit: number; sorting: 'name'[] } }
+    [key: string]: unknown
+  } = {
     params: {
       query: {
         limit: 100,
@@ -87,7 +90,7 @@ const _getUserOrganizations = async (
     return []
   }
 
-  return data.items
+  return data?.items ?? []
 }
 
 // Create a cached version that doesn't bypass cache by default

@@ -9,7 +9,7 @@ export const useOAuthAccounts = (): schemas['OAuthAccountRead'][] => {
   return currentUser?.oauth_accounts || []
 }
 
-export const usePlatformOAuthAccount = (
+const usePlatformOAuthAccount = (
   platform: schemas['OAuthPlatform'],
 ): schemas['OAuthAccountRead'] | undefined => {
   const oauthAccounts = useOAuthAccounts()

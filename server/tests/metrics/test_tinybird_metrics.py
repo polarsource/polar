@@ -1,3 +1,5 @@
+import asyncio
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -8,6 +10,10 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import registry as entities_registry
+from sqlalchemy.schema import CreateSequence
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -20,10 +26,10 @@ from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tin
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
 from polar.metrics import queries_tinybird
-from polar.metrics.metrics import METRICS_TINYBIRD_SETTLEMENT
+from polar.metrics.metrics import METRICS_TINYBIRD
 from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
-from polar.models import Customer, Event, Organization, Product, Subscription
+from polar.models import Customer, Event, Model, Organization, Product, Subscription
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
@@ -49,7 +55,7 @@ YEARLY_PRICE = 600_00
 ONE_TIME_PRICE = 100_00
 FIXED_NOW = datetime(2024, 7, 1, tzinfo=UTC)
 
-SETTLEMENT_METRIC_SLUGS = [m.slug for m in METRICS_TINYBIRD_SETTLEMENT]
+SETTLEMENT_METRIC_SLUGS = [m.slug for m in METRICS_TINYBIRD]
 
 
 @dataclass(frozen=True)
@@ -68,12 +74,6 @@ class QueryCase:
 
 
 @dataclass
-class CaseSnapshot:
-    pg: MetricsResponse
-    tinybird: MetricsResponse
-
-
-@dataclass
 class OrganizationContext:
     organization: Organization
     product_ids: dict[str, UUID]
@@ -83,7 +83,7 @@ class OrganizationContext:
 @dataclass
 class MetricsHarness:
     organizations: dict[str, OrganizationContext]
-    snapshots: dict[str, CaseSnapshot]
+    snapshots: dict[str, MetricsResponse]
 
 
 @dataclass(frozen=True)
@@ -107,6 +107,7 @@ class OrderScenario:
     balance_net_amount: int | None = None
     include_balance_net_amount: bool = True
     balance_exchange_rate: float | None = None
+    balance_presentment_currency: str = "usd"
     include_order_created_at_metadata: bool = True
     include_order_paid: bool = True
     include_balance: bool = True
@@ -130,6 +131,7 @@ class SubscriptionScenario:
     ends_at: datetime | None = None
     cancellation_reason: CustomerCancellationReason | None = None
     canceled_event_ends_at: datetime | None = None
+    duplicate_canceled_event_timestamp: datetime | None = None
     cancel_at_period_end: bool = False
     revoked_at: datetime | None = None
 
@@ -345,6 +347,23 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
             ),
         ),
         CustomerScenario(
+            key="stockholm_duplicate_canceled_events",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(datetime(2026, 1, 20, 12, 0, tzinfo=UTC),),
+                    amount=MONTHLY_PRICE,
+                    canceled_at=datetime(2026, 1, 26, 17, 15, 42, tzinfo=UTC),
+                    ends_at=datetime(2026, 2, 24, 12, 15, 19, tzinfo=UTC),
+                    cancellation_reason=CustomerCancellationReason.other,
+                    cancel_at_period_end=True,
+                    duplicate_canceled_event_timestamp=datetime(
+                        2026, 2, 24, 12, 15, 19, tzinfo=UTC
+                    ),
+                ),
+            ),
+        ),
+        CustomerScenario(
             key="stockholm_trial_orders_without_balance",
             one_time_orders=(
                 OrderScenario(
@@ -449,6 +468,7 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                     balance_amount=2_000,
                     balance_net_amount=2_000,
                     balance_exchange_rate=2.0,
+                    balance_presentment_currency="gbp",
                 ),
                 OrderScenario(
                     product_key="one_time",
@@ -483,6 +503,32 @@ def _build_alpha_customers() -> tuple[CustomerScenario, ...]:
                             emit_balance_credit_order=True,
                         ),
                     ),
+                ),
+            ),
+        ),
+        CustomerScenario(
+            key="trial_subscription_no_balance",
+            subscriptions=(
+                SubscriptionScenario(
+                    product_key="monthly",
+                    order_timestamps=(),
+                    amount=MONTHLY_PRICE,
+                    orders=(
+                        OrderScenario(
+                            product_key="monthly",
+                            ordered_at=_dt(date(2026, 1, 15)),
+                            amount=0,
+                            include_balance=False,
+                        ),
+                    ),
+                ),
+                SubscriptionScenario(
+                    product_key="monthly_plus",
+                    order_timestamps=(_dt(date(2026, 1, 15)),),
+                    amount=MONTHLY_PLUS_PRICE,
+                    canceled_at=_dt(date(2026, 1, 20)),
+                    ends_at=_dt(date(2026, 2, 15)),
+                    cancellation_reason=CustomerCancellationReason.other,
                 ),
             ),
         ),
@@ -729,6 +775,18 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("orders",),
     ),
     QueryCase(
+        label="alpha_daily_kolkata_duplicate_canceled_events",
+        organization_key="alpha",
+        start_date=date(2026, 1, 25),
+        end_date=date(2026, 2, 24),
+        interval=TimeInterval.day,
+        timezone="Asia/Kolkata",
+        metrics=(
+            "canceled_subscriptions",
+            "canceled_subscriptions_other",
+        ),
+    ),
+    QueryCase(
         label="alpha_daily_stockholm_trial_orders_without_balance",
         organization_key="alpha",
         start_date=date(2026, 2, 1),
@@ -808,6 +866,20 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("renewed_subscriptions", "renewed_subscriptions_net_revenue"),
     ),
     QueryCase(
+        label="alpha_daily_trial_subscription_mrr",
+        organization_key="alpha",
+        start_date=date(2026, 1, 15),
+        end_date=date(2026, 1, 31),
+        interval=TimeInterval.day,
+        customer_keys=("trial_subscription_no_balance",),
+        metrics=(
+            "monthly_recurring_revenue",
+            "committed_monthly_recurring_revenue",
+            "active_subscriptions",
+            "committed_subscriptions",
+        ),
+    ),
+    QueryCase(
         label="beta_monthly_q1",
         organization_key="beta",
         start_date=date(2024, 1, 1),
@@ -850,30 +922,36 @@ def _assert_number_equal(
 
 
 def _assert_metric_parity(
-    metric_slug: str, pg: MetricsResponse, tb: MetricsResponse, *, case_label: str
+    metric_slug: str,
+    expected: MetricsResponse,
+    actual: MetricsResponse,
+    *,
+    case_label: str,
 ) -> None:
-    assert len(pg.periods) == len(tb.periods), f"[{case_label}] period length mismatch"
-    for i, (pg_period, tb_period) in enumerate(
-        zip(pg.periods, tb.periods, strict=True)
+    assert len(expected.periods) == len(actual.periods), (
+        f"[{case_label}] period length mismatch"
+    )
+    for i, (expected_period, actual_period) in enumerate(
+        zip(expected.periods, actual.periods, strict=True)
     ):
-        assert pg_period.timestamp == tb_period.timestamp
-        pg_value = _number_or_zero(getattr(pg_period, metric_slug, None))
-        tb_value = _number_or_zero(getattr(tb_period, metric_slug, None))
+        assert expected_period.timestamp == actual_period.timestamp
+        expected_value = _number_or_zero(getattr(expected_period, metric_slug, None))
+        actual_value = _number_or_zero(getattr(actual_period, metric_slug, None))
         _assert_number_equal(
-            pg_value,
-            tb_value,
+            expected_value,
+            actual_value,
             label=(
-                f"[{case_label}] period={i} ts={pg_period.timestamp.isoformat()} "
-                f"metric={metric_slug} pg={pg_value} tb={tb_value}"
+                f"[{case_label}] period={i} ts={expected_period.timestamp.isoformat()} "
+                f"metric={metric_slug} expected={expected_value} actual={actual_value}"
             ),
         )
 
-    pg_total = _number_or_zero(getattr(pg.totals, metric_slug, None))
-    tb_total = _number_or_zero(getattr(tb.totals, metric_slug, None))
+    expected_total = _number_or_zero(getattr(expected.totals, metric_slug, None))
+    actual_total = _number_or_zero(getattr(actual.totals, metric_slug, None))
     _assert_number_equal(
-        pg_total,
-        tb_total,
-        label=f"[{case_label}] totals metric={metric_slug} pg={pg_total} tb={tb_total}",
+        expected_total,
+        actual_total,
+        label=f"[{case_label}] totals metric={metric_slug} expected={expected_total} actual={actual_total}",
     )
 
 
@@ -883,6 +961,8 @@ async def _create_subscription_created_event(
     customer: Customer,
     subscription: Subscription,
     product: Product,
+    *,
+    amount: int | None = None,
 ) -> Event:
     assert subscription.started_at is not None
     return await create_event(
@@ -896,6 +976,8 @@ async def _create_subscription_created_event(
             "subscription_id": str(subscription.id),
             "product_id": str(product.id),
             "customer_id": str(customer.id),
+            "amount": amount if amount is not None else subscription.amount,
+            "currency": subscription.currency,
             "started_at": subscription.started_at.isoformat(),
             "recurring_interval": product.recurring_interval.value
             if product.recurring_interval
@@ -915,6 +997,7 @@ async def _create_subscription_canceled_event(
     ends_at: datetime,
     customer_cancellation_reason: str,
     cancel_at_period_end: bool = False,
+    event_timestamp: datetime | None = None,
 ) -> Event:
     return await create_event(
         save_fixture,
@@ -922,7 +1005,7 @@ async def _create_subscription_canceled_event(
         customer=customer,
         source=EventSource.system,
         name=SystemEvent.subscription_canceled.value,
-        timestamp=canceled_at,
+        timestamp=event_timestamp or canceled_at,
         metadata={
             "subscription_id": str(subscription.id),
             "canceled_at": canceled_at.isoformat(),
@@ -980,6 +1063,7 @@ async def _create_paid_order_events(
     balance_net_amount: int | None = None,
     include_balance_net_amount: bool = True,
     balance_exchange_rate: float | None = None,
+    balance_presentment_currency: str = "usd",
     include_order_created_at_metadata: bool = True,
     include_order_paid: bool = True,
     include_balance: bool = True,
@@ -1049,7 +1133,7 @@ async def _create_paid_order_events(
     if not emit_balance_credit_order:
         balance_metadata["transaction_id"] = str(transaction.id)
         balance_metadata["presentment_amount"] = balance_amount_value
-        balance_metadata["presentment_currency"] = "usd"
+        balance_metadata["presentment_currency"] = balance_presentment_currency
     if balance_exchange_rate is not None:
         balance_metadata["exchange_rate"] = balance_exchange_rate
 
@@ -1225,6 +1309,7 @@ async def _seed_customer_scenario(
                 customer,
                 subscription,
                 product,
+                amount=subscription_scenario.amount,
             )
         )
 
@@ -1249,6 +1334,7 @@ async def _seed_customer_scenario(
                         subscription_order.include_balance_net_amount
                     ),
                     balance_exchange_rate=subscription_order.balance_exchange_rate,
+                    balance_presentment_currency=subscription_order.balance_presentment_currency,
                     include_order_created_at_metadata=(
                         subscription_order.include_order_created_at_metadata
                     ),
@@ -1303,6 +1389,24 @@ async def _seed_customer_scenario(
                         revoked_at=subscription_scenario.revoked_at,
                     )
                 )
+            if subscription_scenario.duplicate_canceled_event_timestamp is not None:
+                events.append(
+                    await _create_subscription_canceled_event(
+                        save_fixture,
+                        organization,
+                        customer,
+                        subscription,
+                        canceled_at=subscription_scenario.canceled_at,
+                        ends_at=canceled_event_ends_at,
+                        customer_cancellation_reason=(
+                            subscription_scenario.cancellation_reason.value
+                        ),
+                        cancel_at_period_end=subscription_scenario.cancel_at_period_end,
+                        event_timestamp=(
+                            subscription_scenario.duplicate_canceled_event_timestamp
+                        ),
+                    )
+                )
 
     for one_time_order in scenario.one_time_orders:
         product = products[one_time_order.product_key]
@@ -1323,6 +1427,7 @@ async def _seed_customer_scenario(
                 balance_net_amount=one_time_order.balance_net_amount,
                 include_balance_net_amount=one_time_order.include_balance_net_amount,
                 balance_exchange_rate=one_time_order.balance_exchange_rate,
+                balance_presentment_currency=one_time_order.balance_presentment_currency,
                 include_order_created_at_metadata=(
                     one_time_order.include_order_created_at_metadata
                 ),
@@ -1363,11 +1468,6 @@ async def _seed_organization_scenario(
     events: list[Event],
 ) -> OrganizationContext:
     organization = await create_organization(save_fixture)
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "tinybird_read": True,
-        "tinybird_compare": False,
-    }
     await save_fixture(organization)
 
     products: dict[str, Product] = {}
@@ -1402,17 +1502,9 @@ async def _query_metrics(
     organization: Organization,
     case: QueryCase,
     *,
-    tinybird_read: bool,
     product_ids: dict[str, UUID],
     customer_ids: dict[str, UUID],
 ) -> MetricsResponse:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "tinybird_read": tinybird_read,
-        "tinybird_compare": False,
-    }
-    await session.flush()
-
     selected_product_ids = [product_ids[k] for k in case.product_keys]
     selected_customer_ids = [customer_ids[k] for k in case.customer_keys]
     selected_org_ids = [organization.id] if case.include_organization_filter else None
@@ -1436,9 +1528,53 @@ async def _query_metrics(
 
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHarness:
+async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
+    # The harness commits shared seed data once for speed, so it can't use the
+    # worker database that regular tests rely on transaction rollbacks to isolate.
+    database_id = f"{worker_id}_tinybird_metrics"
+    sync_database_url = get_database_url(database_id, "psycopg2")
+
+    if database_exists(sync_database_url):
+        drop_database(sync_database_url)
+
+    create_database(sync_database_url)
+
+    async_database_url = get_database_url(database_id)
     engine = create_async_engine(
-        dsn=get_database_url(worker_id),
+        dsn=async_database_url,
+        application_name=f"test_{worker_id}_tinybird_metrics_database",
+        pool_size=settings.DATABASE_POOL_SIZE,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    )
+
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(CreateSequence(Customer.short_id_sequence))
+            for entity in entities_registry.entities():
+                if isinstance(entity, PGTrigger):
+                    continue
+                await conn.execute(entity.to_sql_statement_create())
+            await conn.run_sync(Model.metadata.create_all)
+            for entity in entities_registry.entities():
+                if not isinstance(entity, PGTrigger):
+                    continue
+                await conn.execute(entity.to_sql_statement_create())
+
+        yield async_database_url
+    finally:
+        await engine.dispose()
+        drop_database(sync_database_url)
+
+
+@pytest_asyncio.fixture(scope="module", loop_scope="module")
+async def metrics_harness(
+    tinybird_metrics_database_url: str,
+    worker_id: str,
+    tinybird_workspace: str,
+    tinybird_clickhouse_token: str,
+) -> MetricsHarness:
+    engine = create_async_engine(
+        dsn=tinybird_metrics_database_url,
         application_name=f"test_{worker_id}_metrics_harness",
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
@@ -1452,18 +1588,18 @@ async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHar
         api_token=tinybird_workspace,
         read_token=tinybird_workspace,
         clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
-        clickhouse_token=tinybird_workspace,
+        clickhouse_token=tinybird_clickhouse_token,
     )
 
     events: list[Event] = []
-    snapshots: dict[str, CaseSnapshot] = {}
+    snapshots: dict[str, MetricsResponse] = {}
     organizations: dict[str, OrganizationContext] = {}
+    sessionmaker = create_async_sessionmaker(engine)
 
     try:
         with (
             patch.object(tinybird_service, "client", tinybird_client),
             patch.object(queries_tinybird, "tinybird_client", tinybird_client),
-            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
         ):
             for scenario in ORGANIZATION_SCENARIOS:
                 organizations[scenario.key] = await _seed_organization_scenario(
@@ -1475,32 +1611,31 @@ async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHar
             tinybird_events = [_event_to_tinybird(event) for event in events]
             await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-            for case in QUERY_CASES:
-                org_context = organizations[case.organization_key]
-                auth_subject = AuthSubject(
-                    org_context.organization,
-                    {Scope.metrics_read},
-                    None,
-                )
-                pg = await _query_metrics(
-                    session,
-                    auth_subject,
-                    org_context.organization,
-                    case,
-                    tinybird_read=False,
-                    product_ids=org_context.product_ids,
-                    customer_ids=org_context.customer_ids,
-                )
-                tb = await _query_metrics(
-                    session,
-                    auth_subject,
-                    org_context.organization,
-                    case,
-                    tinybird_read=True,
-                    product_ids=org_context.product_ids,
-                    customer_ids=org_context.customer_ids,
-                )
-                snapshots[case.label] = CaseSnapshot(pg=pg, tinybird=tb)
+            await session.commit()
+
+            semaphore = asyncio.Semaphore(10)
+
+            async def run_case(case: QueryCase) -> tuple[str, MetricsResponse]:
+                async with semaphore:
+                    org_context = organizations[case.organization_key]
+                    auth_subject = AuthSubject(
+                        org_context.organization,
+                        {Scope.metrics_read},
+                        None,
+                    )
+                    async with sessionmaker() as case_session:
+                        result = await _query_metrics(
+                            case_session,
+                            auth_subject,
+                            org_context.organization,
+                            case,
+                            product_ids=org_context.product_ids,
+                            customer_ids=org_context.customer_ids,
+                        )
+                    return case.label, result
+
+            results = await asyncio.gather(*(run_case(c) for c in QUERY_CASES))
+            snapshots = dict(results)
 
             return MetricsHarness(organizations=organizations, snapshots=snapshots)
     finally:
@@ -1510,27 +1645,10 @@ async def metrics_harness(worker_id: str, tinybird_workspace: str) -> MetricsHar
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 class TestTinybirdMetrics:
-    @pytest.mark.parametrize("metric_slug", SETTLEMENT_METRIC_SLUGS)
-    def test_metric_parity_across_cases(
-        self,
-        metrics_harness: MetricsHarness,
-        metric_slug: str,
-    ) -> None:
-        for case in QUERY_CASES:
-            if case.metrics is not None and metric_slug not in case.metrics:
-                continue
-            snapshot = metrics_harness.snapshots[case.label]
-            _assert_metric_parity(
-                metric_slug,
-                snapshot.pg,
-                snapshot.tinybird,
-                case_label=case.label,
-            )
-
     def test_dataset_has_signal_for_reason_metrics(
         self, metrics_harness: MetricsHarness
     ) -> None:
-        snapshot = metrics_harness.snapshots["alpha_monthly_h1"].pg
+        snapshot = metrics_harness.snapshots["alpha_monthly_h1"]
         for slug in (
             "canceled_subscriptions_customer_service",
             "canceled_subscriptions_low_quality",
@@ -1548,7 +1666,7 @@ class TestTinybirdMetrics:
     ) -> None:
         snapshot = metrics_harness.snapshots[
             "alpha_daily_half_hour_timezone_customer_filter"
-        ].pg
+        ]
         assert len(snapshot.periods) == 2
 
         first = snapshot.periods[0]
@@ -1566,31 +1684,22 @@ class TestTinybirdMetrics:
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots["alpha_monthly_partial_window_karachi"]
-        assert len(snapshot.pg.periods) == 3
-        feb_pg = snapshot.pg.periods[2]
-        feb_tb = snapshot.tinybird.periods[2]
-
-        assert feb_pg.churned_subscriptions == 0
-        assert feb_tb.churned_subscriptions == 0
+        assert len(snapshot.periods) == 3
+        feb = snapshot.periods[2]
+        assert feb.churned_subscriptions == 0
 
     def test_new_subscriptions_counts_full_first_week_at_range_boundary(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots["alpha_weekly_stockholm_boundary"]
         stockholm = ZoneInfo("Europe/Stockholm")
-        week_start_pg = next(
+        week_start = next(
             p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 1, 26)
-        )
-        week_start_tb = next(
-            p
-            for p in snapshot.tinybird.periods
+            for p in snapshot.periods
             if p.timestamp.astimezone(stockholm).date() == date(2026, 1, 26)
         )
 
-        assert week_start_pg.new_subscriptions == 4
-        assert week_start_pg.new_subscriptions == week_start_tb.new_subscriptions
+        assert week_start.new_subscriptions == 4
 
     def test_order_paid_timestamp_drift_matches_order_created_day(
         self, metrics_harness: MetricsHarness
@@ -1600,31 +1709,19 @@ class TestTinybirdMetrics:
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
 
-        feb_4_pg = next(
+        feb_4 = next(
             p
-            for p in snapshot.pg.periods
+            for p in snapshot.periods
             if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 4)
         )
-        feb_4_tb = next(
+        feb_13 = next(
             p
-            for p in snapshot.tinybird.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 4)
-        )
-        feb_13_pg = next(
-            p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 13)
-        )
-        feb_13_tb = next(
-            p
-            for p in snapshot.tinybird.periods
+            for p in snapshot.periods
             if p.timestamp.astimezone(stockholm).date() == date(2026, 2, 13)
         )
 
-        assert feb_4_pg.orders == 3
-        assert feb_13_pg.orders == 2
-        assert feb_4_tb.orders == 3
-        assert feb_13_tb.orders == 2
+        assert feb_4.orders == 3
+        assert feb_13.orders == 2
 
     def test_revoked_after_cancel_at_period_end_does_not_stay_active(
         self, metrics_harness: MetricsHarness
@@ -1634,18 +1731,17 @@ class TestTinybirdMetrics:
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
 
-        def period_for(day: int, periods: list[Any]) -> Any:
+        def period_for(day: int) -> Any:
             return next(
                 p
-                for p in periods
+                for p in snapshot.periods
                 if p.timestamp.astimezone(stockholm).date() == date(2026, 1, day)
             )
 
         for day in (17, 18, 19, 20):
-            pg = period_for(day, snapshot.pg.periods)
-            tb = period_for(day, snapshot.tinybird.periods)
-            assert tb.active_subscriptions == pg.active_subscriptions
-            assert tb.committed_subscriptions == pg.committed_subscriptions
+            p = period_for(day)
+            assert p.active_subscriptions is not None
+            assert p.committed_subscriptions is not None
 
     def test_trial_orders_without_balance_are_counted(
         self, metrics_harness: MetricsHarness
@@ -1655,20 +1751,17 @@ class TestTinybirdMetrics:
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
 
-        def period_for(day: int, periods: list[Any]) -> Any:
+        def period_for(day: int) -> Any:
             return next(
                 p
-                for p in periods
+                for p in snapshot.periods
                 if p.timestamp.astimezone(stockholm).date() == date(2026, 2, day)
             )
 
         for day, expected_orders in ((6, 1), (9, 2), (11, 1)):
-            pg = period_for(day, snapshot.pg.periods)
-            tb = period_for(day, snapshot.tinybird.periods)
-            assert pg.orders == expected_orders
-            assert pg.one_time_products == expected_orders
-            assert tb.orders == expected_orders
-            assert tb.one_time_products == expected_orders
+            p = period_for(day)
+            assert p.orders == expected_orders
+            assert p.one_time_products == expected_orders
 
     def test_balance_only_refunded_without_order_paid_is_included(
         self, metrics_harness: MetricsHarness
@@ -1678,26 +1771,17 @@ class TestTinybirdMetrics:
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
 
-        oct_5_pg = next(
+        oct_5 = next(
             p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2025, 10, 5)
-        )
-        oct_5_tb = next(
-            p
-            for p in snapshot.tinybird.periods
+            for p in snapshot.periods
             if p.timestamp.astimezone(stockholm).date() == date(2025, 10, 5)
         )
 
-        assert oct_5_pg.orders == 1
-        assert oct_5_pg.one_time_products == 1
-        assert oct_5_pg.one_time_products_net_revenue == -180
+        assert oct_5.orders == 1
+        assert oct_5.one_time_products == 1
+        assert oct_5.one_time_products_net_revenue == -180
 
-        assert oct_5_tb.orders == 1
-        assert oct_5_tb.one_time_products == 1
-        assert oct_5_tb.one_time_products_net_revenue == -180
-
-    def test_duplicate_refund_with_reversal_keeps_pg_parity(
+    def test_duplicate_refund_with_reversal(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
@@ -1705,26 +1789,15 @@ class TestTinybirdMetrics:
         ]
         stockholm = ZoneInfo("Europe/Stockholm")
 
-        dec_4_pg = next(
+        dec_4 = next(
             p
-            for p in snapshot.pg.periods
-            if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 4)
-        )
-        dec_4_tb = next(
-            p
-            for p in snapshot.tinybird.periods
+            for p in snapshot.periods
             if p.timestamp.astimezone(stockholm).date() == date(2025, 12, 4)
         )
 
-        assert dec_4_pg.orders == 1
-        assert dec_4_pg.one_time_products == 1
-        assert dec_4_pg.one_time_products_net_revenue == -180
-        assert dec_4_tb.orders == dec_4_pg.orders
-        assert dec_4_tb.one_time_products == dec_4_pg.one_time_products
-        assert (
-            dec_4_tb.one_time_products_net_revenue
-            == dec_4_pg.one_time_products_net_revenue
-        )
+        assert dec_4.orders == 1
+        assert dec_4.one_time_products == 1
+        assert dec_4.one_time_products_net_revenue == -180
 
     def test_applied_balance_partial_reduces_revenue_with_fx(
         self, metrics_harness: MetricsHarness
@@ -1732,15 +1805,11 @@ class TestTinybirdMetrics:
         snapshot = metrics_harness.snapshots[
             "alpha_daily_stockholm_applied_balance_partial"
         ]
-        pg = snapshot.pg.periods[0]
-        tb = snapshot.tinybird.periods[0]
+        period = snapshot.periods[0]
 
-        assert pg.orders == 1
-        assert pg.net_revenue == 4_025
-        assert pg.one_time_products_net_revenue == 4_025
-        assert tb.orders == pg.orders
-        assert tb.net_revenue == pg.net_revenue
-        assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue
+        assert period.orders == 1
+        assert period.net_revenue == 4_025
+        assert period.one_time_products_net_revenue == 4_025
 
     def test_applied_balance_full_reduces_revenue_to_zero(
         self, metrics_harness: MetricsHarness
@@ -1748,15 +1817,11 @@ class TestTinybirdMetrics:
         snapshot = metrics_harness.snapshots[
             "alpha_daily_stockholm_applied_balance_full"
         ]
-        pg = snapshot.pg.periods[0]
-        tb = snapshot.tinybird.periods[0]
+        period = snapshot.periods[0]
 
-        assert pg.orders == 1
-        assert pg.net_revenue == -350
-        assert pg.one_time_products_net_revenue == -350
-        assert tb.orders == pg.orders
-        assert tb.net_revenue == pg.net_revenue
-        assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue
+        assert period.orders == 1
+        assert period.net_revenue == -350
+        assert period.one_time_products_net_revenue == -350
 
     def test_balance_credit_order_uses_previous_balance_order_fx(
         self, metrics_harness: MetricsHarness
@@ -1764,31 +1829,36 @@ class TestTinybirdMetrics:
         snapshot = metrics_harness.snapshots[
             "alpha_daily_stockholm_credit_order_previous_balance_fx"
         ]
-        pg = snapshot.pg.periods[0]
-        tb = snapshot.tinybird.periods[0]
+        period = snapshot.periods[0]
 
-        assert pg.orders == 1
-        assert pg.net_revenue == 4_800
-        assert pg.one_time_products_net_revenue == 4_800
-        assert tb.orders == pg.orders
-        assert tb.net_revenue == pg.net_revenue
-        assert tb.one_time_products_net_revenue == pg.one_time_products_net_revenue
+        assert period.orders == 1
+        assert period.net_revenue == 4_800
+        assert period.one_time_products_net_revenue == 4_800
 
-    def test_renewed_credit_order_with_negative_applied_balance_matches_pg(
+    def test_renewed_credit_order_with_negative_applied_balance(
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots[
             "alpha_daily_stockholm_renewed_negative_applied_balance_credit_order"
         ]
-        pg = snapshot.pg.periods[0]
-        tb = snapshot.tinybird.periods[0]
+        period = snapshot.periods[0]
 
-        assert pg.renewed_subscriptions == 1
-        assert pg.renewed_subscriptions_net_revenue == 14_900
-        assert tb.renewed_subscriptions == pg.renewed_subscriptions
-        assert (
-            tb.renewed_subscriptions_net_revenue == pg.renewed_subscriptions_net_revenue
-        )
+        assert period.renewed_subscriptions == 1
+        assert period.renewed_subscriptions_net_revenue == 14_900
+
+    def test_trial_subscription_mrr_uses_subscription_created_amount(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots["alpha_daily_trial_subscription_mrr"]
+        first = snapshot.periods[0]
+
+        expected_mrr = MONTHLY_PRICE + MONTHLY_PLUS_PRICE
+        expected_cmrr = MONTHLY_PRICE
+
+        assert first.active_subscriptions == 2
+        assert first.committed_subscriptions == 1
+        assert first.monthly_recurring_revenue == expected_mrr
+        assert first.committed_monthly_recurring_revenue == expected_cmrr
 
     def test_org_filter_disabled_matches_org_subject_scope(
         self, metrics_harness: MetricsHarness
@@ -1804,22 +1874,16 @@ class TestTinybirdMetrics:
         ):
             _assert_metric_parity(
                 metric_slug,
-                org_filtered.pg,
-                no_org_filter.pg,
-                case_label=f"pg_{metric_slug}",
-            )
-            _assert_metric_parity(
-                metric_slug,
-                org_filtered.tinybird,
-                no_org_filter.tinybird,
-                case_label=f"tb_{metric_slug}",
+                org_filtered,
+                no_org_filter,
+                case_label=metric_slug,
             )
 
     def test_multiple_organizations_have_distinct_totals(
         self, metrics_harness: MetricsHarness
     ) -> None:
-        alpha = metrics_harness.snapshots["alpha_monthly_h1"].pg.totals
-        beta = metrics_harness.snapshots["beta_monthly_q1"].pg.totals
+        alpha = metrics_harness.snapshots["alpha_monthly_h1"].totals
+        beta = metrics_harness.snapshots["beta_monthly_q1"].totals
 
         assert (alpha.orders or 0) > 0
         assert (beta.orders or 0) > 0
@@ -1830,12 +1894,9 @@ class TestTinybirdMetrics:
         self, metrics_harness: MetricsHarness
     ) -> None:
         snapshot = metrics_harness.snapshots["beta_daily_customer_filter"]
-        assert len(snapshot.pg.periods) == 1
+        assert len(snapshot.periods) == 1
 
-        pg_period = snapshot.pg.periods[0]
-        tb_period = snapshot.tinybird.periods[0]
+        period = snapshot.periods[0]
 
-        assert pg_period.active_user_by_event == 1
-        assert float(pg_period.costs or 0) == pytest.approx(2.0)
-        assert pg_period.active_user_by_event == tb_period.active_user_by_event
-        assert float(tb_period.costs or 0) == pytest.approx(2.0)
+        assert period.active_user_by_event == 1
+        assert float(period.costs or 0) == pytest.approx(2.0)

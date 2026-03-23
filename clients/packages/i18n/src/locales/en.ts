@@ -40,6 +40,7 @@ export default {
       },
       taxId: 'Tax ID',
       discountCode: 'Discount code',
+      addDiscountCode: 'Add discount code',
       optional: 'Optional',
       apply: {
         value: 'Apply',
@@ -103,6 +104,11 @@ export default {
             other: 'for the first # years',
           },
         },
+        until: {
+          value: 'Until {date}',
+          _llmContext:
+            'Shown next to the discount name to indicate when the discount expires. Displayed as: "Spring Sale (-50%) · Until Apr 23".',
+        },
       },
     },
     trial: {
@@ -129,6 +135,46 @@ export default {
           other: '# years trial',
         },
       },
+      hero: {
+        free: {
+          day: {
+            _mode: 'plural',
+            '=1': '# day free',
+            other: '# days free',
+          },
+          month: {
+            _mode: 'plural',
+            '=1': '# month free',
+            other: '# months free',
+          },
+          year: {
+            _mode: 'plural',
+            '=1': '# year free',
+            other: '# years free',
+          },
+        },
+        intervalSuffix: {
+          day: '/day',
+          week: '/week',
+          month: '/month',
+          year: '/year',
+        },
+        then: {
+          value: 'Then',
+          _llmContext:
+            'Prefix before the recurring price in the trial hero subtitle. Displayed as: "Then <bold>$99.99/year</bold> starting April 5, 2026". The price is a separate bold element.',
+        },
+        startingDate: {
+          value: 'starting {date}',
+          _llmContext:
+            'Suffix after the recurring price when a trial end date is known. Displayed as: "Then $99.99/year starting April 5, 2026". The "Then" prefix and bold price are separate elements.',
+        },
+      },
+      summary: {
+        totalWhenTrialEnds: 'Total when trial ends',
+        totalWhenDiscountExpires: 'Total when discount expires',
+        totalDueToday: 'Total due today',
+      },
     },
     pwywForm: {
       label: 'Name a fair price',
@@ -139,6 +185,10 @@ export default {
     productSwitcher: {
       billedRecurring: 'Billed {frequency}',
       oneTimePurchase: 'One-time purchase',
+    },
+    productDescription: {
+      readMore: 'Read more',
+      readLess: 'Read less',
     },
     card: {
       included: 'Included',
@@ -228,12 +278,13 @@ export default {
     },
   },
   benefitTypes: {
-    license_keys: 'License Keys',
-    github_repository: 'GitHub Repository Access',
-    discord: 'Discord Invite',
-    downloadables: 'File Downloads',
+    license_keys: 'License keys',
+    github_repository: 'GitHub repository access',
+    discord: 'Discord invite',
+    downloadables: 'File downloads',
     custom: 'Custom',
-    meter_credit: 'Meter Credits',
+    meter_credit: 'Meter credits',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: {

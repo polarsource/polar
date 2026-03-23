@@ -9,18 +9,15 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     Index,
-    Select,
     String,
     Uuid,
     and_,
     case,
-    event,
     exists,
     extract,
     literal_column,
     or_,
     select,
-    update,
 )
 from sqlalchemy import (
     cast as sql_cast,
@@ -28,7 +25,6 @@ from sqlalchemy import (
 from sqlalchemy import (
     cast as sqla_cast,
 )
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
@@ -388,107 +384,3 @@ class Event(Model, MetadataMixin):
         "name": (str, name),
         "source": (str, source),
     }
-
-
-class EventClosure(Model):
-    __tablename__ = "events_closure"
-    __table_args__ = (
-        Index(
-            "ix_events_closure_ancestor_descendant",
-            "ancestor_id",
-            "descendant_id",
-        ),
-        Index(
-            "ix_events_closure_descendant_ancestor",
-            "descendant_id",
-            "ancestor_id",
-        ),
-    )
-
-    ancestor_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("events.id", ondelete="cascade"),
-        primary_key=True,
-        nullable=False,
-    )
-
-    descendant_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("events.id", ondelete="cascade"),
-        primary_key=True,
-        nullable=False,
-    )
-
-    depth: Mapped[int] = mapped_column(
-        BigInteger,
-        nullable=False,
-        index=True,
-    )
-
-    @declared_attr
-    def ancestor(cls) -> Mapped[Event]:
-        return relationship(
-            Event,
-            foreign_keys="EventClosure.ancestor_id",
-            lazy="raise",
-        )
-
-    @declared_attr
-    def descendant(cls) -> Mapped[Event]:
-        return relationship(
-            Event,
-            foreign_keys="EventClosure.descendant_id",
-            lazy="raise",
-        )
-
-
-# Event listener to populate closure table when events are inserted
-@event.listens_for(Event, "after_insert")
-def populate_event_closure(mapper: Any, connection: Any, target: Event) -> None:
-    """
-    Automatically populate the closure table when an event is inserted.
-    This ensures the closure table is maintained even when using session.add() directly.
-    """
-    # Insert self-reference
-    connection.execute(
-        insert(EventClosure).values(
-            ancestor_id=target.id,
-            descendant_id=target.id,
-            depth=0,
-        )
-    )
-
-    # If event has a parent, copy parent's ancestors
-    if target.parent_id is not None:
-        parent_closures: Select[Any] = select(
-            EventClosure.ancestor_id,
-            literal_column(f"'{target.id}'::uuid").label("descendant_id"),
-            (EventClosure.depth + 1).label("depth"),
-        ).where(EventClosure.descendant_id == target.parent_id)
-
-        connection.execute(
-            insert(EventClosure).from_select(
-                ["ancestor_id", "descendant_id", "depth"],
-                parent_closures,
-            )
-        )
-
-    # Set root_id if not already set
-    if target.root_id is None:
-        if target.parent_id is None:
-            # This is a root event
-            connection.execute(
-                update(Event).where(Event.id == target.id).values(root_id=target.id)
-            )
-            target.root_id = target.id
-        else:
-            # Get parent's root_id
-            result = connection.execute(
-                select(Event.root_id).where(Event.id == target.parent_id)
-            )
-            parent_root_id = result.scalar_one_or_none()
-            root_id = parent_root_id or target.parent_id
-            connection.execute(
-                update(Event).where(Event.id == target.id).values(root_id=root_id)
-            )
-            target.root_id = root_id

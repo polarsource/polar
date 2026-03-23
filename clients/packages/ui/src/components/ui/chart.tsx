@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import * as React from 'react'
@@ -195,14 +196,20 @@ const ChartTooltipContent = <TValue extends ValueType, TName extends NameType>({
 
           return (
             <div
-              key={item.dataKey}
+              key={typeof item.dataKey === 'function' ? index : item.dataKey}
               className={cn(
                 '[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
                 indicator === 'dot' && 'items-center',
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                formatter(
+                  item.value as TValue,
+                  item.name as TName,
+                  item,
+                  index,
+                  payload,
+                )
               ) : (
                 <>
                   {itemConfig?.icon ? (

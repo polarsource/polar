@@ -48,12 +48,12 @@ const CreateBenefitModalContent = ({
   const form = useForm<schemas['BenefitCreate']>({
     defaultValues: {
       organization_id: organization.id,
-      type: type ? type : 'custom',
+      type: type ? type : 'feature_flag',
       description: description ? description : undefined,
       properties: {
-        ...(properties as any),
+        ...properties,
       },
-    },
+    } as schemas['BenefitCreate'],
   })
 
   const { toast } = useToast()

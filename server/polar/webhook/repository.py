@@ -30,7 +30,7 @@ class WebhookEventRepository(
     model = WebhookEvent
 
     async def get_all_undelivered(
-        self, older_than: datetime | None = None
+        self, older_than: datetime | None = None, newer_than: datetime | None = None
     ) -> Sequence[WebhookEvent]:
         statement = (
             self.get_base_statement()
@@ -47,6 +47,8 @@ class WebhookEventRepository(
         )
         if older_than is not None:
             statement = statement.where(WebhookEvent.created_at < older_than)
+        if newer_than is not None:
+            statement = statement.where(WebhookEvent.created_at > newer_than)
         return await self.get_all(statement)
 
     async def get_recent_by_endpoint(

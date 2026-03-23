@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
-from polar.enums import AccountType, InvoiceNumbering
+from polar.enums import AccountType, InvoiceNumbering, SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
@@ -16,9 +16,14 @@ from polar.models.organization import (
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
-from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
+from polar.organization.schemas import (
+    OrganizationCreate,
+    OrganizationFeatureSettings,
+    OrganizationUpdate,
+)
 from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
+from polar.organization_review.schemas import ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -83,7 +88,10 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {"member_model_enabled": True}
+        assert organization.feature_settings == {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -115,6 +123,7 @@ class TestCreate:
         assert organization.feature_settings == {
             "issue_funding_enabled": False,
             "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
         }
 
     @pytest.mark.auth
@@ -292,22 +301,30 @@ async def test_get_next_invoice_number_multiple_customers(
 
 @pytest.mark.asyncio
 class TestCheckReviewThreshold:
-    async def test_already_under_review(
+    async def test_already_under_review_still_updates_total_balance(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         # Given organization already under review
         organization.status = OrganizationStatus.INITIAL_REVIEW
         organization.next_review_threshold = 1000
+        organization.total_balance = None
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=7500,
+        )
 
         # When
         result = await organization_service.check_review_threshold(
             session, organization
         )
 
-        # Then
+        # Then - status unchanged but total_balance is updated
         assert result.status == OrganizationStatus.INITIAL_REVIEW
+        assert result.total_balance == 7500
 
     async def test_below_review_threshold(
         self,
@@ -331,6 +348,7 @@ class TestCheckReviewThreshold:
 
         # Then
         assert result.status == OrganizationStatus.ACTIVE
+        assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
 
     async def test_initial_review(
@@ -356,6 +374,7 @@ class TestCheckReviewThreshold:
 
         # Then
         assert result.status == OrganizationStatus.INITIAL_REVIEW
+        assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
 
     async def test_ongoing_review(
@@ -382,10 +401,36 @@ class TestCheckReviewThreshold:
 
         # Then
         assert result.status == OrganizationStatus.ONGOING_REVIEW
+        assert result.total_balance == 5000
         transaction_sum_mock.assert_called_once()
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+
+    async def test_total_balance_zero(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization with no transactions
+        organization.status = OrganizationStatus.ACTIVE
+        organization.next_review_threshold = 10000
+        organization.total_balance = None
+
+        mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=0,
+        )
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.total_balance == 0
 
 
 @pytest.mark.asyncio
@@ -443,6 +488,236 @@ class TestConfirmOrganizationReviewed:
             organization_id=organization.id,
             initial_review=False,
         )
+
+    async def test_overrides_rejected_appeal(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org denied with a rejected appeal
+        organization.status = OrganizationStatus.DENIED
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=80.0,
+            violated_sections=["tos"],
+            reason="Violation",
+            model_used="test",
+            appeal_submitted_at=datetime(2025, 2, 1, tzinfo=UTC),
+            appeal_reason="Please reconsider",
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+            appeal_reviewed_at=datetime(2025, 2, 2, tzinfo=UTC),
+        )
+        session.add(review)
+        await session.flush()
+
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        # When: operator manually approves the org
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        # Then: appeal decision is overridden to approved
+        assert result.status == OrganizationStatus.ACTIVE
+        assert review.appeal_decision == OrganizationReview.AppealDecision.APPROVED
+        assert review.appeal_reviewed_at is not None
+
+
+@pytest.mark.asyncio
+class TestHandleOngoingReviewVerdict:
+    async def test_auto_approve_on_approve_verdict(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500 (50_000 cents)
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is APPROVE
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: auto-approved, threshold doubled
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 100_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_escalate_on_deny_verdict(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is DENY
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.DENY
+        )
+
+        # Then: escalated, Plain ticket created, status unchanged
+        assert result is False
+        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_escalate_on_needs_human_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is DENY
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.DENY
+        )
+
+        # Then: escalated, Plain ticket created
+        assert result is False
+        assert organization.status == OrganizationStatus.ONGOING_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_auto_approve_low_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with a low threshold (no min threshold required)
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 100
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is APPROVE
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: auto-approved regardless of threshold, next threshold floored to $100
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 10_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_auto_approve_zero_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ONGOING_REVIEW with default threshold of $0
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        organization.next_review_threshold = 0
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is APPROVE
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: auto-approved even with default $0 threshold, next threshold set to $100
+        assert result is True
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.next_review_threshold == 10_000
+        enqueue_job_mock.assert_called_once()
+        plain_mock.assert_not_called()
+
+    async def test_not_eligible_initial_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is INITIAL_REVIEW with threshold=$500
+        organization.status = OrganizationStatus.INITIAL_REVIEW
+        organization.next_review_threshold = 50_000
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is APPROVE but status is INITIAL_REVIEW
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: not eligible, escalated to Plain
+        assert result is False
+        assert organization.status == OrganizationStatus.INITIAL_REVIEW
+        plain_mock.assert_called_once_with(session, organization)
+        enqueue_job_mock.assert_not_called()
+
+    async def test_not_eligible_wrong_status(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given: org is ACTIVE with threshold=$500
+        organization.status = OrganizationStatus.ACTIVE
+        organization.next_review_threshold = 50_000
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        plain_mock = mocker.patch(
+            "polar.organization.service.plain_service.create_organization_review_thread"
+        )
+
+        # When: verdict is APPROVE but status is ACTIVE (not ONGOING_REVIEW)
+        result = await organization_service.handle_ongoing_review_verdict(
+            session, organization, ReviewVerdict.APPROVE
+        )
+
+        # Then: not eligible, but org is not under review so no Plain thread
+        assert result is False
+        plain_mock.assert_not_called()
+        enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -613,7 +888,7 @@ class TestGetPaymentStatus:
         organization.account = account
         organization.account_id = account.id
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
         await save_fixture(organization)
 
         # Ensure relationships are loaded
@@ -671,7 +946,7 @@ class TestGetPaymentStatus:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
 
         # Set up user verification
         user.identity_verification_status = IdentityVerificationStatus.verified
@@ -1155,24 +1430,69 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is True
         assert result.blocked_reasons == []
 
-    async def test_blocked_with_orders(
+    async def test_blocked_with_paid_orders(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
-        """Organization with orders cannot be immediately deleted."""
+        """Organization with paid orders cannot be immediately deleted."""
         from tests.fixtures.random_objects import create_order
 
-        await create_order(save_fixture, customer=customer)
+        await create_order(save_fixture, customer=customer, subtotal_amount=1000)
 
         result = await organization_service.check_can_delete(session, organization)
 
         assert result.can_delete_immediately is False
         assert "has_orders" in [r.value for r in result.blocked_reasons]
 
-    async def test_blocked_with_active_subscriptions(
+    async def test_not_blocked_with_zero_amount_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only $0 orders can be deleted."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=0,
+            tax_amount=0,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_fully_discounted_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only fully discounted $0 orders can be deleted."""
+        from tests.fixtures.random_objects import create_order
+
+        await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=1000,
+            discount_amount=1000,
+            tax_amount=0,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1180,7 +1500,7 @@ class TestCheckCanDelete:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Organization with active subscriptions cannot be immediately deleted."""
+        """Organization with paid active subscriptions cannot be immediately deleted."""
         from polar.models.subscription import SubscriptionStatus
         from tests.fixtures.random_objects import create_subscription
 
@@ -1189,6 +1509,101 @@ class TestCheckCanDelete:
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is False
+        assert "has_active_subscriptions" in [r.value for r in result.blocked_reasons]
+
+    async def test_not_blocked_with_free_active_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Organization with only free active subscriptions can be deleted."""
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_product, create_subscription
+
+        free_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None, "usd")],
+        )
+        await create_subscription(
+            save_fixture,
+            product=free_product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_not_blocked_with_forever_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Organization with subscriptions made free by a forever discount can be deleted."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
+        )
+
+        result = await organization_service.check_can_delete(session, organization)
+
+        assert result.can_delete_immediately is True
+        assert result.blocked_reasons == []
+
+    async def test_blocked_with_non_forever_discounted_free_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Subscription with a 100% off once discount still blocks deletion."""
+        from polar.models.discount import DiscountDuration, DiscountType
+        from polar.models.subscription import SubscriptionStatus
+        from tests.fixtures.random_objects import create_discount, create_subscription
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            discount=discount,
         )
 
         result = await organization_service.check_can_delete(session, organization)
@@ -1465,7 +1880,7 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         """Soft delete clears details and socials."""
-        organization.details = {"about": "Test company"}  # type: ignore[assignment]
+        organization.details = {"about": "Test company"}
         organization.socials = [
             {"platform": "twitter", "url": "https://twitter.com/test"}
         ]
@@ -1475,5 +1890,102 @@ class TestSoftDeleteOrganization:
             session, organization
         )
 
-        assert result.details == {}  # type: ignore[comparison-overlap]
+        assert result.details == {}
         assert result.socials == []
+
+
+@pytest.mark.asyncio
+class TestUpdateSeatBasedPricing:
+    async def test_enable_seat_based_pricing_with_member_model(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": False,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                feature_settings=OrganizationFeatureSettings(
+                    seat_based_pricing_enabled=True,
+                ),
+            ),
+        )
+
+        assert result.feature_settings["seat_based_pricing_enabled"] is True
+
+    async def test_enable_seat_based_pricing_without_member_model(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": False,
+            "seat_based_pricing_enabled": False,
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.update(
+                session,
+                organization,
+                OrganizationUpdate(
+                    feature_settings=OrganizationFeatureSettings(
+                        seat_based_pricing_enabled=True,
+                    ),
+                ),
+            )
+
+    async def test_disable_seat_based_pricing_when_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await organization_service.update(
+                session,
+                organization,
+                OrganizationUpdate(
+                    feature_settings=OrganizationFeatureSettings(
+                        seat_based_pricing_enabled=False,
+                    ),
+                ),
+            )
+
+    async def test_keep_seat_based_pricing_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            "member_model_enabled": True,
+            "seat_based_pricing_enabled": True,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                feature_settings=OrganizationFeatureSettings(
+                    seat_based_pricing_enabled=True,
+                ),
+            ),
+        )
+
+        assert result.feature_settings["seat_based_pricing_enabled"] is True

@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Firmendaten hinzufügen',
       removeBusinessDetails: 'Firmendaten entfernen',
       billingDetails: 'Unternehmensdaten',
+      addDiscountCode: 'Rabattcode hinzufügen',
     },
     pricing: {
       subtotal: 'Zwischensumme',
@@ -58,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Bis {date}',
       },
       everyInterval: {
         day: {
@@ -109,6 +111,38 @@ export default {
           other: '# Jahre Testphase',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# Tag kostenlos',
+            other: '# Tage kostenlos',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# Monat kostenlos',
+            other: '# Monate kostenlos',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# Jahr kostenlos',
+            other: '# Jahre kostenlos',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/Tag',
+          week: '/Woche',
+          month: '/Monat',
+          year: '/Jahr',
+        },
+        then: 'Danach',
+        startingDate: 'ab {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Gesamtbetrag nach Testzeitraum',
+        totalWhenDiscountExpires: 'Gesamtbetrag nach Ablauf des Rabatts',
+        totalDueToday: 'Heute fälliger Betrag',
       },
     },
     pwywForm: {
@@ -206,6 +240,10 @@ export default {
       getFree: 'Kostenlos erhalten',
       paymentsUnavailable: 'Zahlungen sind derzeit nicht verfügbar',
     },
+    productDescription: {
+      readMore: 'Mehr anzeigen',
+      readLess: 'Weniger anzeigen',
+    },
   },
   intervals: {
     short: {
@@ -216,12 +254,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Benutzerdefiniert',
     license_keys: 'Lizenzschlüssel',
     github_repository: 'GitHub-Repository-Zugang',
     discord: 'Discord-Einladung',
     downloadables: 'Dateidownloads',
-    custom: 'Benutzerdefiniert',
     meter_credit: 'Verbrauchsguthaben',
+    feature_flag: 'Feature-Flag',
   },
   ordinal: {
     zero: '.',

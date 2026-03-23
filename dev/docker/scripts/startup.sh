@@ -25,6 +25,7 @@ EMAIL_MARKER="emails/bin/.built-${ARCH}"
 if [[ "${1:-api}" == "api" ]] && [[ ! -f "$EMAIL_MARKER" ]]; then
     echo "Building email templates for ${ARCH}..."
     cd emails
+    export CI=true
     # Clean previous builds (may be from different architecture)
     rm -rf dist
     rm -f bin/react-email-pkg bin/.built-* 2>/dev/null || true

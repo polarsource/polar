@@ -87,12 +87,15 @@ const MobileNav = ({
   const pathname = usePathname()
   const { currentUser } = useAuth()
 
+  /* eslint-disable react-hooks/set-state-in-effect -- close mobile nav on route change */
   useEffect(() => {
     setMobileNavOpen(false)
   }, [pathname])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const header = (
     <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/"
         className="shrink-0 items-center font-semibold text-black dark:text-white"
@@ -193,7 +196,7 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
-      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
+      <div className="dark:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 bg-white px-4 md:overflow-y-auto md:border md:px-8 md:shadow-xs">
         <div
           className={twMerge(
             'flex h-full w-full flex-col gap-8 pt-8',

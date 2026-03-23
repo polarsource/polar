@@ -47,6 +47,7 @@ class BenefitLicenseKeysService(
             benefit=benefit,
             license_key_id=current_lk_id,
             key=user_provided_key,
+            member_id=member.id if member else None,
         )
         return {
             **grant_properties,

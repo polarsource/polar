@@ -105,6 +105,40 @@ resource "render_redis" "redis" {
 }
 
 # =============================================================================
+# Service image data sources
+#
+# We read the current image digest from Render to avoid stale state in
+# Terraform causing "unable to fetch image" errors on service updates.
+#
+# The service IDs are hardcoded because referencing module outputs would
+# create a cyclic dependency (module -> data source -> module).
+#
+# First-time setup: create the services first without the data sources
+# (use a default tag like "latest"), then add the data sources with the
+# service IDs from `terraform state show`.
+# =============================================================================
+
+locals {
+  production_service_ids = {
+    api                    = "srv-ci4r87h8g3ne0dmvvl60"
+    scheduler              = "srv-d4uto5ili9vc73dd37tg"
+    worker                 = "srv-d4k6otfgi27c73cicnpg"
+    worker-medium-priority = "srv-d4k62svpm1nc73af5e3g"
+    worker-high-priority   = "srv-d3hrh1j3fgac73a1t4r0"
+    worker-webhook         = "srv-d5l0oekhg0os73clofm0"
+  }
+}
+
+data "render_web_service" "production_api" {
+  id = local.production_service_ids["api"]
+}
+
+data "render_web_service" "production_worker" {
+  for_each = { for k, v in local.production_service_ids : k => v if k != "api" }
+  id       = each.value
+}
+
+# =============================================================================
 # Production
 # =============================================================================
 
@@ -119,6 +153,8 @@ module "production" {
     allowed_hosts   = "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins    = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains  = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    image_url       = data.render_web_service.production_api.runtime_source.image.image_url
+    image_digest    = data.render_web_service.production_api.runtime_source.image.digest
     plan            = "pro"
     web_concurrency = "4"
   }
@@ -143,30 +179,44 @@ module "production" {
     "scheduler" = {
       start_command      = "uv run python -m polar.worker.scheduler"
       plan               = "starter"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["scheduler"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["scheduler"].runtime_source.image.digest
       dramatiq_prom_port = "10000"
     }
     "worker" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues low_priority"
-      tag                = "latest"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
+      image_url          = data.render_web_service.production_worker["worker"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker"].runtime_source.image.digest
       custom_domains     = [{ name = "worker.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
     "worker-medium-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker-medium-priority"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-medium-priority"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
     }
     "worker-high-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker-high-priority"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-high-priority"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
     }
     "worker-webhook" = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
-      tag                = "latest"
+      image_url          = data.render_web_service.production_worker["worker-webhook"].runtime_source.image.image_url
+      image_digest       = data.render_web_service.production_worker["worker-webhook"].runtime_source.image.digest
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
+    }
+  }
+
+  cron_jobs = {
+    "bulk-appeal-review" = {
+      schedule      = "0 8 * * *" # 8:00 UTC = 9:00 CET
+      start_command = "uv run python -m scripts.bulk_appeal_review --execute --limit 0"
+      image_url     = "ghcr.io/polarsource/polar-playwright"
+      plan          = "standard"
     }
   }
 
@@ -196,6 +246,7 @@ module "production" {
     auth_cookie_domain         = "polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
     tax_processors             = "[\"stripe\"]"
+    tax_record_processor       = "stripe"
   }
 
   backend_secrets = {
@@ -229,6 +280,7 @@ module "production" {
     files_public_bucket_name      = "polar-public-files"
     customer_invoices_bucket_name = "polar-customer-invoices"
     payout_invoices_bucket_name   = "polar-payout-invoices"
+    logs_bucket_name              = "polar-production-logs"
   }
 
   aws_s3_secrets = {
@@ -277,6 +329,10 @@ module "production" {
     slack_channel   = var.slo_report_slack_channel
   }
 
+  memory_profile_config = {
+    s3_bucket_name = "polar-production-logs"
+  }
+
   tinybird_config = {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"
@@ -285,11 +341,24 @@ module "production" {
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace
-    events_write        = var.tinybird_events_write
-    events_read         = var.tinybird_events_read
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
+}
+
+# =============================================================================
+# Tailscale Subnet Router
+# =============================================================================
+
+module "tailscale_router" {
+  source = "../modules/tailscale_router"
+
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+  tailscale_authkey      = var.tailscale_authkey
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar]
 }
 
 # =============================================================================

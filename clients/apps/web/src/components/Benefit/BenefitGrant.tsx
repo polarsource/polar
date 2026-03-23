@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
@@ -92,6 +93,7 @@ const BenefitGrantOAuth = ({
     errorPlatform === platform ? searchParams.get('error_retry_after') : null
 
   // Start countdown timer for rate limit errors
+  /* eslint-disable react-hooks/set-state-in-effect -- initializes countdown then starts interval */
   useEffect(() => {
     const bail = () => {
       if (countdownRef.current) {
@@ -125,6 +127,7 @@ const BenefitGrantOAuth = ({
 
     return bail
   }, [retryAfter])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const accounts = useMemo(
     () =>

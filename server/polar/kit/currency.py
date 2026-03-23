@@ -1,22 +1,47 @@
 from decimal import Decimal
 from enum import StrEnum
-from typing import cast
 
 from babel.numbers import format_currency as _format_currency
-from countryinfo import CountryInfo
+from babel.numbers import get_territory_currencies
 
 
 class PresentmentCurrency(StrEnum):
+    aed = "aed"
+    ars = "ars"
     aud = "aud"
     brl = "brl"
     cad = "cad"
     chf = "chf"
+    clp = "clp"
+    cny = "cny"
+    cop = "cop"
+    czk = "czk"
+    dkk = "dkk"
     eur = "eur"
-    inr = "inr"
     gbp = "gbp"
+    hkd = "hkd"
+    huf = "huf"
+    idr = "idr"
+    ils = "ils"
+    inr = "inr"
     jpy = "jpy"
+    krw = "krw"
+    mxn = "mxn"
+    myr = "myr"
+    nok = "nok"
+    nzd = "nzd"
+    pen = "pen"
+    php = "php"
+    pln = "pln"
+    ron = "ron"
+    sar = "sar"
     sek = "sek"
+    sgd = "sgd"
+    thb = "thb"
+    try_ = "try"
+    twd = "twd"
     usd = "usd"
+    zar = "zar"
 
 
 def get_presentment_currency(country: str) -> PresentmentCurrency | None:
@@ -29,17 +54,15 @@ def get_presentment_currency(country: str) -> PresentmentCurrency | None:
         The presentment currency or None if no supported currency is found.
     """
     try:
-        countryinfo = CountryInfo(country)
-        currencies = cast(list[str], countryinfo.currencies())
-    except KeyError:
+        currencies = get_territory_currencies(country)
+    except Exception:
         return None
-    else:
-        for currency in currencies:
-            try:
-                return PresentmentCurrency(currency.lower())
-            except ValueError:
-                continue
-        return None
+    for currency in currencies:
+        try:
+            return PresentmentCurrency(currency.lower())
+        except ValueError:
+            continue
+    return None
 
 
 _ZERO_DECIMAL_CURRENCIES: set[str] = {

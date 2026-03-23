@@ -82,7 +82,7 @@ export default function Index() {
         router.back()
       })
     },
-    [updateSubscription, subscription],
+    [updateSubscription, subscription, router],
   )
 
   // Set default proration behavior from organization settings
@@ -213,6 +213,7 @@ const PRORATION_BEHAVIOR_LABELS: Record<
 > = {
   invoice: 'Invoice Immediately',
   prorate: 'Prorate next Invoice',
+  next_period: 'Apply on Next Period',
 }
 
 const ProrationBehaviorSelector = ({

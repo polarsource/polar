@@ -12,7 +12,6 @@ from fastapi import (
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 
-from polar.auth.dependencies import WebUserWrite
 from polar.auth.scope import Scope
 from polar.auth.service import auth as auth_service
 from polar.config import settings
@@ -23,6 +22,7 @@ from polar.models import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 
+from ..dependencies import get_admin
 from ..responses import HXRedirectResponse
 
 router = APIRouter()
@@ -34,19 +34,11 @@ router = APIRouter()
 )
 async def start_impersonation(
     request: Request,
-    # response: Response,
-    auth_subject: WebUserWrite,
+    admin_session: UserSession = Depends(get_admin),
     user_id: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:  # RedirectResponse | HXRedirectResponse:
     """Start impersonating a user. Only available to admin users."""
-
-    # Check if the current user is an admin
-    if not auth_subject.subject.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin users can impersonate other users",
-        )
 
     # Get the target user
     result = await session.execute(select(User).where(User.id == user_id))
@@ -65,8 +57,9 @@ async def start_impersonation(
         expire_in=timedelta(minutes=60),
     )
 
-    # Get the current session token to preserve it
-    current_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+    admin_token = request.cookies.get(
+        settings.IMPERSONATION_COOKIE_KEY
+    ) or request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
 
     # Create response object
     org_repository = OrganizationRepository.from_session(session)
@@ -76,15 +69,11 @@ async def start_impersonation(
     )
 
     # Set admin session cookie
-    if (
-        current_token
-        and auth_subject.session
-        and isinstance(auth_subject.session, UserSession)
-    ):
+    if admin_token:
         response.set_cookie(
             settings.IMPERSONATION_COOKIE_KEY,
-            value=current_token,
-            expires=auth_subject.session.expires_at,
+            value=admin_token,
+            expires=admin_session.expires_at,
             path="/",
             domain=settings.USER_SESSION_COOKIE_DOMAIN,
             secure=True,

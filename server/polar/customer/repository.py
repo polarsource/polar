@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, String, cast, func, or_, select, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -218,6 +218,60 @@ class CustomerRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_readable_external_ids_by_ids(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        customer_ids: Sequence[UUID],
+    ) -> list[str]:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .with_only_columns(Customer.external_id)
+            .where(
+                Customer.id.in_(customer_ids),
+                Customer.external_id.isnot(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [r for r in result.scalars().all() if r is not None]
+
+    async def get_readable_ids_by_external_ids(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        external_ids: Sequence[str],
+    ) -> list[UUID]:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .with_only_columns(Customer.id)
+            .where(Customer.external_id.in_(external_ids))
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
+    async def search_by_query(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_ids: Sequence[UUID],
+        query: str,
+    ) -> tuple[list[UUID], list[str]]:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .with_only_columns(Customer.id, Customer.external_id)
+            .where(
+                Customer.organization_id.in_(organization_ids),
+                or_(
+                    cast(Customer.id, String).ilike(f"%{query}%"),
+                    Customer.external_id.ilike(f"%{query}%"),
+                    Customer.name.ilike(f"%{query}%"),
+                    Customer.email.ilike(f"%{query}%"),
+                ),
+            )
+        )
+        result = await self.session.execute(statement)
+        rows = result.all()
+        customer_ids = [r.id for r in rows]
+        external_ids = [r.external_id for r in rows if r.external_id is not None]
+        return customer_ids, external_ids
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

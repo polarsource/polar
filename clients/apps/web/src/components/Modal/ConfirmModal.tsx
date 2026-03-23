@@ -42,6 +42,7 @@ export const ConfirmModal = ({
     },
   })
   const { control, handleSubmit, reset, watch } = form
+  // eslint-disable-next-line react-hooks/incompatible-library
   const prompt = watch('prompt')
 
   const handleConfirm = useCallback(() => {
@@ -83,7 +84,10 @@ export const ConfirmModal = ({
               <Form {...form}>
                 <form
                   className="flex w-full flex-col gap-y-2"
-                  onSubmit={handleSubmit(onSubmit)}
+                  onSubmit={(e) => {
+                    e.stopPropagation()
+                    handleSubmit(onSubmit)(e)
+                  }}
                 >
                   {confirmPrompt && (
                     <>

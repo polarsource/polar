@@ -24,6 +24,20 @@ export const createClientSideAPI = (token?: string): Client => {
 
 export const api = createClientSideAPI()
 
+export const getSSRHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {}
+
+  if (process.env.GITHUB_TOKEN) {
+    headers['X-Github-Token'] = process.env.GITHUB_TOKEN
+  }
+
+  if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
+    headers['X-Preview-Token'] = process.env.POLAR_PREVIEW_ACCESS_TOKEN
+  }
+
+  return headers
+}
+
 export const createServerSideAPI = async (
   headers: NextRequest['headers'],
   cookies: ReadonlyRequestCookies,
@@ -50,6 +64,14 @@ export const createServerSideAPI = async (
     apiHeaders = {
       ...apiHeaders,
       'X-Github-Token': process.env.GITHUB_TOKEN,
+    }
+  }
+
+  // Preview environments: include access token so SSR calls pass through the funnel gate
+  if (process.env.POLAR_PREVIEW_ACCESS_TOKEN) {
+    apiHeaders = {
+      ...apiHeaders,
+      'X-Preview-Token': process.env.POLAR_PREVIEW_ACCESS_TOKEN,
     }
   }
 

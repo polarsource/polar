@@ -32,7 +32,18 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 
-  ignoreErrors: [/WeakMap key undefined/i],
+  ignoreErrors: [
+    /WeakMap key undefined/i,
+    /NetworkError/i,
+    /AbortError/i,
+    /HTTP Client Error with status code: 5\d\d/i,
+    /Exceeded storage quota/i,
+    /QuotaExceededError/i,
+    /ResizeObserver loop/i,
+    /Non-Error promise rejection/i,
+  ],
+
+  denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
 
   beforeSend: (event) => {
     // Do not flag PostHog errors
@@ -41,6 +52,18 @@ Sentry.init({
       event.request?.url?.includes('/ingest/batch')
     ) {
       return null
+    }
+
+    // Group fetch errors by page URL so they don't all pile into one issue
+    const message = event.exception?.values?.[0]?.value ?? ''
+    if (/Failed to fetch|Load failed/i.test(message)) {
+      const page =
+        event.request?.url?.replace(/https?:\/\/[^/]+/, '') ?? 'unknown'
+      const normalized = page.replace(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+        ':id',
+      )
+      event.fingerprint = ['fetch-error', normalized]
     }
 
     return event

@@ -1,286 +1,389 @@
 ---
 title: "Migrate Seat-Based Pricing to the Member Model"
 sidebarTitle: "Seat-Based → Member Model"
-description: "Migration guide for organizations with seat-based pricing transitioning to the member model"
+description: "What changes when your organization moves to the member model, and how to update your integration"
 ---
 
-This guide is for developers with **existing seat-based pricing integrations** whose organization is being migrated to the member model. It covers breaking changes, data migration details, and how to update your integration.
+If you sell seat-based products on Polar, your organization will be migrated to the **member model**. This guide explains what changes, what breaks, and exactly how to update your code.
 
-<Warning>
-This migration involves breaking changes to how seats, benefit grants, and customers are structured. Review all sections carefully before the migration is applied to your organization.
-</Warning>
+## What the member model introduces
 
-## Key concept: Customer, Member, and CustomerSeat
+The member model introduces a separation between **who pays** and **who uses** through three entities:
 
-The member model introduces a separation between **who pays** and **who uses**, through three distinct entities:
+- A **Customer** is the billing entity (who pays). They own subscriptions, orders, and payment methods. After migration, customers with seat-based products are upgraded to `type: "team"`.
+- A **Member** is a person under a customer (who uses). Each member has their own email and role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently.
+- A **CustomerSeat** is the link between a subscription and a member. It tracks assignment status and carries metadata.
 
-- A **Customer** is the billing entity — who pays. They own subscriptions, orders, and payment methods. After migration, customers with seat-based products are upgraded to `type: "team"`.
-- A **Member** is a person under a customer — who uses. Each member has their own email, role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently.
-- A **CustomerSeat** is the link between a product and a member. It tracks assignment status and carries metadata.
-
-**Before the member model**, a seat holder was represented as their own `Customer` entity. **After**, each seat holder is a `Member` under the billing customer (the purchaser), and the `CustomerSeat` links the subscription to the member.
-
-```
-Before:
-  Subscription (customer_id = billing_manager)
-    └── CustomerSeat (customer_id = seat_holder_A)  ← separate Customer entity
-    └── CustomerSeat (customer_id = seat_holder_B)  ← separate Customer entity
-
-After:
-  Customer (billing_manager, type: "team")
-    ├── Member: billing_manager (role: owner)
-    ├── Member: seat_holder_A (role: member)
-    └── Member: seat_holder_B (role: member)
-
-  Subscription (customer_id = billing_manager)
-    └── CustomerSeat (customer_id = billing_manager, member_id = seat_holder_A)
-    └── CustomerSeat (customer_id = billing_manager, member_id = seat_holder_B)
-```
+Today, each seat holder is represented as their own `Customer`. After migration, seat holders become `Member` records under the purchasing customer, and `CustomerSeat` links the subscription to each member.
 
 For a full overview of how these entities work together, see the [Seat-Based Pricing guide](/guides/seat-based-pricing).
 
-## Breaking changes summary
+## How the migration works: two phases
 
-| # | Change | Impact |
-|---|--------|--------|
-| 1 | `seat.customer_id` now refers to the billing customer, not the seat holder | All seat-related API responses and webhooks |
-| 2 | Old seat-holder customers may be deleted | Customer lookups by stored IDs |
-| 3 | Benefit grant `customer_id` rewritten to billing customer | Grant lookups and webhook payloads |
+The migration happens in **two phases** so you can update your integration before the breaking change hits.
 
-## What happens to your data
+### Phase 1: Preparation (non-breaking)
 
-When the member model is enabled for your organization, an automatic migration runs in the background:
+In this phase, Polar creates `Member` records for all your existing seat holders and populates `member_id` on seats and benefit grants. **Nothing breaks** because `customer_id` on seats still points to the seat holder, and no customers are deleted.
 
-<Steps>
-  <Step title="Owner members created">
-    Every existing customer gets an **owner member** — a 1:1 `Member` record with the same email. This is the default member for billing operations.
-  </Step>
+This gives you time to start reading the new `member` and `member_id` fields and update your code before the breaking change.
 
-  <Step title="Seats migrated">
-    For each existing seat:
-    - A new `Member` is created under the **billing customer** with the seat holder's email
-    - `seat.customer_id` is updated to point to the billing customer
-    - `seat.member_id` is set to the new member
-    - `seat.email` is set to the seat holder's email
-  </Step>
+### Phase 2: Member model enabled (breaking)
 
-  <Step title="Benefit grants transferred">
-    Benefit grants that belonged to old seat-holder customers are transferred:
-    - `grant.customer_id` is updated to the billing customer
-    - `grant.member_id` is set to the corresponding member
-    - Associated license keys and downloadable records are also transferred
-  </Step>
+In this phase, the member model is fully activated. `customer_id` on seats and grants **flips** to point to the billing customer (the buyer), old seat-holder customer records are deleted, and all new operations use the member model.
 
-  <Step title="Orphaned customers cleaned up">
-    Old seat-holder customers that have no subscriptions or orders of their own are soft-deleted. They will no longer appear in API responses.
-  </Step>
-</Steps>
+**This is the breaking change.** If your code reads `customer_id` to identify seat holders, it will now get the buyer instead.
 
-## Detailed changes
+## A real-world example
 
-### 1. `seat.customer_id` now refers to the billing customer
+Imagine you sell a **Team Pro** plan. Jane (the manager) buys 3 seats and assigns them to Alice and Bob.
 
-This is the most impactful change. The `customer_id` field on seats changes meaning.
+### Before migration (current state)
 
-**Before:**
+```
+Jane purchases Team Pro (3 seats)
+  └── Subscription: sub_456 (customer_id: cust_jane)
+
+Seats:
+  seat_1 → customer_id: cust_alice   ← Alice is her own Customer
+  seat_2 → customer_id: cust_bob     ← Bob is his own Customer
+  seat_3 → unassigned
+
+Benefit grants:
+  grant for Alice → customer_id: cust_alice
+  grant for Bob   → customer_id: cust_bob
+```
+
+Your code probably does something like this to grant access:
+
+```typescript
+// Your current webhook handler
+if (event.type === 'benefit_grant.created') {
+  const userId = event.data.customer_id; // "cust_alice", the seat holder
+  await grantAccessToApp(userId);
+}
+```
+
+This works because `customer_id` on the grant points to Alice directly.
+
+### After Phase 1: Preparation (non-breaking)
+
+Members are created, `member_id` is populated on seats and grants, but `customer_id` still points to the seat holder. Your existing code **continues to work**.
+
+```
+Jane's Customer record (cust_jane)
+  ├── Member: mem_jane  (role: owner)    ← new
+  ├── Member: mem_alice (role: member)   ← new
+  └── Member: mem_bob   (role: member)   ← new
+
+Seats:
+  seat_1 → customer_id: cust_alice, member_id: mem_alice  ← customer_id unchanged
+  seat_2 → customer_id: cust_bob,   member_id: mem_bob    ← customer_id unchanged
+  seat_3 → unassigned
+
+Benefit grants:
+  grant for Alice → customer_id: cust_alice, member_id: mem_alice  ← customer_id unchanged
+  grant for Bob   → customer_id: cust_bob,   member_id: mem_bob    ← customer_id unchanged
+```
+
+**What you can do now:** Start reading `seat.member` and `grant.member` in your code. Both the old `customer_id` and the new `member` fields are available, so you can update your integration at your own pace.
+
+```typescript
+// During Phase 1, both fields work
+if (event.type === 'benefit_grant.created') {
+  const grant = event.data;
+
+  // Old way still works:
+  grant.customer_id; // "cust_alice", still the seat holder
+
+  // New way also works:
+  grant.member.id;    // "mem_alice"
+  grant.member.email; // "alice@company.com"
+}
+```
+
+### After Phase 2: Member model enabled (breaking)
+
+`customer_id` flips to the billing customer. Old seat-holder customers are deleted.
+
+```
+Jane's Customer record (cust_jane, type: "team")
+  ├── Member: mem_jane  (role: owner)
+  ├── Member: mem_alice (role: member)
+  └── Member: mem_bob   (role: member)
+
+cust_alice → deleted (404)
+cust_bob   → deleted (404)
+
+Seats:
+  seat_1 → customer_id: cust_jane, member_id: mem_alice  ← customer_id changed!
+  seat_2 → customer_id: cust_jane, member_id: mem_bob    ← customer_id changed!
+  seat_3 → unassigned
+
+Benefit grants:
+  grant for Alice → customer_id: cust_jane, member_id: mem_alice  ← customer_id changed!
+  grant for Bob   → customer_id: cust_jane, member_id: mem_bob    ← customer_id changed!
+```
+
+Now **every** `customer_id` is `cust_jane`, the buyer. Your old webhook handler would grant access to Jane instead of Alice and Bob.
+
+```typescript
+// ❌ Broken after Phase 2 because customer_id is now the buyer
+if (event.type === 'benefit_grant.created') {
+  const userId = event.data.customer_id; // "cust_jane", NOT Alice!
+  await grantAccessToApp(userId);
+}
+
+// ✅ Works in both phases using member to identify the actual user
+if (event.type === 'benefit_grant.created') {
+  const grant = event.data;
+  const user = grant.member;
+  await grantAccessToApp(user.id, user.email); // mem_alice, "alice@company.com"
+}
+```
+
+## Breaking changes at a glance
+
+These changes happen in **Phase 2** only:
+
+| What changed | Phase 1 | Phase 2 | Fix |
+|---|---|---|---|
+| `seat.customer_id` | Still the seat holder | The buyer | Use `seat.member` or `seat.email` |
+| `grant.customer_id` | Still the grant recipient | The buyer | Use `grant.member` |
+| Old seat-holder customer IDs | Still valid | `404` | Map to `member_id` via seat list |
+
+## How to update your code
+
+<Info>
+Update your code during Phase 1 so everything works when Phase 2 activates. The `member` field is available in both phases.
+</Info>
+
+### 1. Seats: identify holders by member, not customer_id
+
+Calling `GET /v1/customer-seats/{seat_id}` or listing seats for a subscription returns:
+
+**Phase 1** (non-breaking, `customer_id` still points to Alice):
 ```json
 {
-  "id": "seat_123",
+  "id": "seat_1",
   "subscription_id": "sub_456",
-  "customer_id": "cust_seat_holder",
-  "email": null,
-  "member": null,
+  "customer_id": "cust_alice",
+  "member": {
+    "id": "mem_alice",
+    "email": "alice@company.com",
+    "customer_id": "cust_jane",
+    "role": "member"
+  },
+  "email": "alice@company.com",
   "customer_email": "alice@company.com"
 }
 ```
 
-**After:**
+**Phase 2** (breaking, `customer_id` flipped to Jane):
 ```json
 {
-  "id": "seat_123",
+  "id": "seat_1",
   "subscription_id": "sub_456",
-  "customer_id": "cust_billing_manager",
+  "customer_id": "cust_jane",
   "member": {
-    "id": "mem_789",
+    "id": "mem_alice",
     "email": "alice@company.com",
-    "customer_id": "cust_billing_manager",
+    "customer_id": "cust_jane",
     "role": "member"
   },
+  "email": "alice@company.com",
   "customer_email": "alice@company.com"
 }
 ```
 
-**What to update:**
-- To identify the seat holder, use `seat.member`, or `seat.email` instead of `seat.customer_id`
-- `seat.customer_id` now always points to the person who purchased the subscription
-- The `customer_email` field continues to resolve to the seat holder's email (no change needed if you use this field)
+- Use `seat.member` or `seat.email` to identify who holds the seat. This works in both phases.
+- `seat.customer_email` still resolves to the holder's email, so it is safe to keep using.
 
-### 2. Seat-holder customers may be deleted
+### 2. Benefit grants: use grant.member for the recipient
 
-Old `Customer` records that were created solely to represent seat holders (and have no subscriptions or orders of their own) are soft-deleted during migration.
+Calling `GET /v1/benefit-grants/{grant_id}` or receiving a `benefit_grant.created` webhook returns:
 
-**What breaks:**
-- `GET /v1/customers/{old_seat_holder_id}` returns `404`
-- Lookups by `external_customer_id` for these customers return `404`
-- Any stored references to these customer IDs become stale
-
-**What to update:**
-- Use `seat.member_id` or `seat.member.email` to identify seat holders going forward
-- If you stored seat-holder customer IDs in your system, map them to the new `member_id` values using the seat list endpoint
-
-### 3. Benefit grant `customer_id` rewritten
-
-Benefit grants that were previously associated with seat-holder customers now point to the billing customer.
-
-**Before:**
+**Phase 1:**
 ```json
 {
-  "id": "grant_123",
-  "customer_id": "cust_seat_holder",
-  "member": null,
-  "benefit_id": "ben_456"
-}
-```
-
-**After:**
-```json
-{
-  "id": "grant_123",
-  "customer_id": "cust_billing_manager",
+  "id": "grant_1",
+  "customer_id": "cust_alice",
   "member": {
-    "id": "mem_789",
+    "id": "mem_alice",
     "email": "alice@company.com",
-    "customer_id": "cust_billing_manager",
+    "customer_id": "cust_jane",
     "role": "member"
   },
-  "benefit_id": "ben_456"
+  "benefit_id": "ben_789"
 }
 ```
 
-**What to update:**
-- To identify who received a benefit, use `grant.member`  instead of `grant.customer_id`
-- `grant.customer_id` now refers to the billing customer for all seat-based grants
-- License keys and downloadable records associated with the grant are also transferred to the member and the billing customer.
-
-## Updating seat assignment calls
-
-The seat assignment API is **backward compatible**. Existing calls using `email`, `customer_id`, or `external_customer_id` continue to work — they are resolved to a member under the billing customer internally.
-
-However, the response now shows the billing customer's `customer_id`, not the value you passed:
-
-```typescript
-// This still works
-const seat = await polar.customerSeats.assign({
-  subscription_id: "sub_123",
-  email: "alice@company.com"
-});
-
-// But seat.customer_id is now the billing customer, not alice's old customer
-console.log(seat.customer_id);  // "cust_billing_manager"
-console.log(seat.member.email); // "alice@company.com"
-console.log(seat.member_id);    // "mem_789"
+**Phase 2:**
+```json
+{
+  "id": "grant_1",
+  "customer_id": "cust_jane",
+  "member": {
+    "id": "mem_alice",
+    "email": "alice@company.com",
+    "customer_id": "cust_jane",
+    "role": "member"
+  },
+  "benefit_id": "ben_789"
+}
 ```
 
-You can also use the new member-based identifiers:
+- Use `grant.member` to know who received the benefit. This is consistent across both phases.
+- License keys and downloads tied to this grant also transfer in Phase 2.
+
+### 3. Replace stored seat-holder customer IDs
+
+If you stored `cust_alice` or `cust_bob` in your database to track who has access, those IDs will return `404` after Phase 2. Use the seat list endpoint to map old references to new member IDs during Phase 1:
 
 ```typescript
-// Assign by member ID
-const seat = await polar.customerSeats.assign({
-  subscription_id: "sub_123",
-  member_id: "mem_789"
+// List all seats for a subscription to get the new member IDs
+const seats = await polar.customerSeats.list({
+  subscription_id: "sub_456"
 });
 
-// Assign by external member ID
-const seat = await polar.customerSeats.assign({
-  subscription_id: "sub_123",
-  external_member_id: "your_user_id_123",
-  email: "alice@company.com"  // optional, used for invitation email
-});
+for (const seat of seats.result.items) {
+  if (seat.member) {
+    // Map: seat.member.email → seat.member.id
+    await updateYourDatabase(seat.member.email, seat.member.id);
+  }
+}
 ```
 
-<Warning>
-You cannot mix legacy identifiers (`customer_id`, `external_customer_id`) with member identifiers (`member_id`, `external_member_id`) in the same request.
-</Warning>
+### 4. Update webhook handlers
 
-## Updating webhook handlers
-
-### Seat webhooks
-
-Update any code that reads `customer_id` from seat webhook payloads to use `member` or `email` instead:
+**Seat webhooks:**
 
 ```typescript
 // Before
 if (event.type === 'customer_seat.claimed') {
-  const seatHolderId = event.data.customer_id; // ❌ Now the billing customer
-  await grantAccess(seatHolderId);
+  const holderId = event.data.customer_id; // ❌ Will be the buyer after Phase 2
+  await grantAccess(holderId);
 }
 
-// After
+// After (works in both phases)
 if (event.type === 'customer_seat.claimed') {
-  const seatHolder = event.data.member;        // ✅ The seat occupant
-  await grantAccess(seatHolder.id, seatHolder.email);
+  const holder = event.data.member;        // ✅ Always the seat occupant
+  await grantAccess(holder.id, holder.email);
 }
 ```
 
-### Benefit grant webhooks
-
-Benefit grant webhooks now include a `member` field:
+**Benefit grant webhooks:**
 
 ```typescript
 if (event.type === 'benefit_grant.created') {
   const grant = event.data;
 
-  // Before: grant.customer_id identified the seat holder
-  // After: grant.customer_id is the billing customer
-
-  // Use member to identify who received the benefit
   if (grant.member) {
+    // Seat-based grant: member is the end user
     await grantAccess(grant.member.id, grant.member.email);
   } else {
-    // Non-seat grant — owner member, use customer as before
+    // Direct purchase: customer is the end user
     await grantAccess(grant.customer_id);
   }
 }
 ```
 
-### New webhook events
+**New member lifecycle events** are now available if you want to track when team members are added or removed:
 
-The following events are now emitted. Subscribe to them if you need to track member lifecycle:
+- `member.created` is emitted when a member joins the team (via seat assignment or customer creation)
+- `member.updated` is emitted when a member's details change
+- `member.deleted` is emitted when a member is removed
 
-- `member.created` — when a member is created (during seat assignment or customer creation)
-- `member.updated` — when a member's details change
-- `member.deleted` — when a member is removed
+### 5. Seat assignment
 
-## Switching to member sessions
+Existing assignment calls using `email`, `customer_id`, or `external_customer_id` continue to work. Polar resolves them to a member internally. However, the **response changes** between phases:
 
-After migration, use **member sessions** instead of customer sessions for portal access. Member sessions are scoped to a specific member and control what they can see and do in the portal.
+**Phase 1:** `seat.customer_id` in the response still points to the seat holder.
 
 ```typescript
-// Before: customer session
-const session = await polar.customerSessions.create({
-  customer_id: "cust_123"
+const seat = await polar.customerSeats.assign({
+  subscription_id: "sub_456",
+  email: "charlie@company.com"
 });
 
-// After: member session
-const session = await polar.memberSessions.create({
-  member_id: "mem_789"
-});
-// Redirect to session.member_portal_url
+seat.customer_id;    // "cust_charlie" (the seat holder)
+seat.member.email;   // "charlie@company.com"
+seat.member.id;      // "mem_charlie"
 ```
 
-- **Owners and billing managers** see full team management — assigning seats, managing members, adjusting seat count.
+**Phase 2:** `seat.customer_id` in the response points to the buyer, not the seat holder.
+
+```typescript
+const seat = await polar.customerSeats.assign({
+  subscription_id: "sub_456",
+  email: "charlie@company.com"
+});
+
+seat.customer_id;    // "cust_jane" (the buyer, NOT charlie)
+seat.member.email;   // "charlie@company.com"
+seat.member.id;      // "mem_charlie"
+```
+
+If your code reads `customer_id` from the assignment response, switch to `seat.member` instead.
+
+You can also assign by member ID directly:
+
+```typescript
+const seat = await polar.customerSeats.assign({
+  subscription_id: "sub_456",
+  member_id: "mem_charlie"
+});
+```
+
+<Warning>
+Do not mix legacy identifiers (`customer_id`, `external_customer_id`) with member identifiers (`member_id`, `external_member_id`) in the same request.
+</Warning>
+
+### 6. Pass member_id when creating customer sessions
+
+After migration, pass a `member_id` when creating customer sessions to scope the portal view to a specific member:
+
+```typescript
+// Before: customer session with no member context
+const session = await polar.customerSessions.create({
+  customer_id: "cust_jane"
+});
+
+// After: pass member_id to scope the session
+const session = await polar.customerSessions.create({
+  customer_id: "cust_jane",
+  member_id: "mem_alice"
+});
+// Redirect to session.customer_portal_url
+```
+
+You can also use `external_member_id` as an alternative to `member_id`:
+
+```typescript
+const session = await polar.customerSessions.create({
+  customer_id: "cust_jane",
+  external_member_id: "your_user_id_alice"
+});
+```
+
+- **Owners and billing managers** see full team management, including assigning seats, managing members, and adjusting seat count.
 - **Regular members** see only their own benefits and account details.
 
 <Info>
-Customer sessions still work after migration but do not support member-scoped portal views. Switch to member sessions for the full post-migration experience.
+For team customers, `member_id` is required. For individual customers, it is optional. When omitted, the owner member is used automatically.
 </Info>
 
 ## Migration checklist
 
-- [ ] Update seat-related code to use `seat.member` / `seat.email` instead of `seat.customer_id` for identifying seat holders
-- [ ] Update benefit grant code to use `grant.member` instead of `grant.customer_id` for identifying recipients
+**During Phase 1 (do this now):**
+
+- [ ] Update seat-handling code to use `seat.member` / `seat.email` instead of `seat.customer_id`
+- [ ] Update benefit grant code to use `grant.member` instead of `grant.customer_id`
 - [ ] Replace any stored seat-holder customer IDs with member IDs
-- [ ] Update webhook handlers to read `member` field from seat and grant payloads
-- [ ] Switch from `customerSessions.create()` to `memberSessions.create()` for portal access
-- [ ] (Optional) Start using `member_id` or `external_member_id` in seat assignment calls
-- [ ] (Optional) Subscribe to `member.created`, `member.updated`, `member.deleted` webhooks
+- [ ] Update webhook handlers to read `member` from seat and grant payloads
+- [ ] Pass `member_id` when calling `customerSessions.create()` for portal access
+
+**Optional enhancements:**
+
+- [ ] Use `member_id` or `external_member_id` in seat assignment calls
+- [ ] Subscribe to `member.created`, `member.updated`, `member.deleted` webhooks

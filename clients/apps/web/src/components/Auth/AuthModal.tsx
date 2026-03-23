@@ -1,5 +1,4 @@
 import { schemas } from '@polar-sh/client'
-import LogoIcon from '../Brand/logos/LogoIcon'
 import Login from './Login'
 
 interface AuthModalProps {
@@ -18,16 +17,13 @@ export const AuthModal = ({
 
   const copy = isSignup ? (
     <p className="dark:text-polar-500 text-xl text-gray-500">
-      Join thousands of developers &amp; startups monetizing their products with
-      Polar.
+      Join thousands of startups running their billing on&nbsp;Polar.
     </p>
   ) : null
 
   return (
     <div className="overflow-y-auto p-12">
       <div className="flex flex-col justify-between gap-y-16">
-        <LogoIcon className="text-black dark:text-white" size={60} />
-
         <div className="flex flex-col gap-y-4">
           <h1 className="text-3xl">{title}</h1>
           {copy}

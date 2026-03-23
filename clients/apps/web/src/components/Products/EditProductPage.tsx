@@ -1,23 +1,27 @@
+/* eslint-disable max-lines */
+import { useToast } from '@/components/Toast/use-toast'
 import { useAlertIfUnsaved } from '@/hooks/editor'
 import {
   useBenefits,
   useUpdateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { setProductValidationErrors } from '@/utils/api/errors'
+import {
+  findFirstErrorMessage,
+  setProductValidationErrors,
+} from '@/utils/api/errors'
 import { ProductEditOrCreateForm } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { FieldErrors } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import ProductForm from './ProductForm/ProductForm'
-
-type PresentmentCurrency = schemas['PresentmentCurrency']
 
 export interface EditProductPageProps {
   organization: schemas['Organization']
@@ -29,6 +33,7 @@ export const EditProductPage = ({
   product,
 }: EditProductPageProps) => {
   const router = useRouter()
+  const { toast } = useToast()
   const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
   })
@@ -66,6 +71,15 @@ export const EditProductPage = ({
   })
   const { handleSubmit, setError, formState } = form
 
+  const onInvalid = useCallback(
+    (errors: FieldErrors<ProductEditOrCreateForm>) => {
+      const message =
+        findFirstErrorMessage(errors) ?? 'Please check the form for errors'
+      toast({ title: 'Validation Error', description: message })
+    },
+    [toast],
+  )
+
   const originalBenefitIds = useMemo(
     () => product.benefits.map((b) => b.id),
     [product.benefits],
@@ -89,58 +103,80 @@ export const EditProductPage = ({
 
   const onSubmit = useCallback(
     async (productUpdate: ProductEditOrCreateForm) => {
-      const { full_medias, metadata, ...productUpdateRest } = productUpdate
+      try {
+        const { full_medias, metadata, ...productUpdateRest } = productUpdate
 
-      const { data: updatedProduct, error } = await updateProduct.mutateAsync({
-        id: product.id,
-        body: {
-          ...productUpdateRest,
-          medias: full_medias.map((media) => media.id),
-          metadata: metadata.reduce(
-            (acc, { key, value }) => ({ ...acc, [key]: value }),
-            {},
-          ),
-        },
-      })
-
-      if (error) {
-        if (isValidationError(error.detail)) {
-          setProductValidationErrors(error.detail, setError)
-        }
-        return
-      }
-
-      if (hasBenefitsChanged) {
-        await updateBenefits.mutateAsync({
-          id: product.id,
-          body: {
-            benefits: enabledBenefitIds,
+        const { data: updatedProduct, error } = await updateProduct.mutateAsync(
+          {
+            id: product.id,
+            body: {
+              ...productUpdateRest,
+              medias: full_medias.map((media) => media.id),
+              metadata: metadata.reduce(
+                (acc, { key, value }) => ({ ...acc, [key]: value }),
+                {},
+              ),
+            },
           },
+        )
+
+        if (error) {
+          if (isValidationError(error.detail)) {
+            setProductValidationErrors(error.detail, setError)
+            toast({
+              title: 'Error',
+              description: error.detail[0]?.msg || 'An error occurred',
+            })
+          } else {
+            toast({
+              title: 'Error',
+              description: String(
+                ('detail' in error ? error.detail : null) ||
+                  'An error occurred',
+              ),
+            })
+          }
+          return
+        }
+
+        if (hasBenefitsChanged) {
+          await updateBenefits.mutateAsync({
+            id: product.id,
+            body: {
+              benefits: enabledBenefitIds,
+            },
+          })
+        }
+
+        router.push(
+          getStatusRedirect(
+            `/dashboard/${organization.slug}/products/${product.id}`,
+            'Product Updated',
+            `Product ${updatedProduct.name} was updated successfully`,
+          ),
+        )
+      } catch (e) {
+        toast({
+          title: 'Error',
+          description:
+            e instanceof Error ? e.message : 'An unexpected error occurred',
         })
       }
-
-      router.push(
-        getStatusRedirect(
-          `/dashboard/${organization.slug}/products/${product.id}`,
-          'Product Updated',
-          `Product ${updatedProduct.name} was updated successfully`,
-        ),
-      )
     },
     [
-      product,
-      organization,
-      enabledBenefitIds,
-      hasBenefitsChanged,
       updateProduct,
-      updateBenefits,
-      setError,
+      product.id,
+      hasBenefitsChanged,
       router,
+      organization.slug,
+      setError,
+      toast,
+      updateBenefits,
+      enabledBenefitIds,
     ],
   )
 
   const onSelectBenefit = useCallback((benefit: schemas['Benefit']) => {
-    console.log({ benefit })
     setEnabledBenefits((benefits) => [...benefits, benefit])
   }, [])
 
@@ -179,7 +215,7 @@ export const EditProductPage = ({
       className="gap-y-16"
       header={
         <Button
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit(onSubmit, onInvalid)}
           loading={isLoading}
           disabled={isLoading}
         >
@@ -190,7 +226,7 @@ export const EditProductPage = ({
       <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">
         <Form {...form}>
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
             className="flex flex-col gap-y-6"
           >
             <ProductForm
@@ -231,7 +267,7 @@ export const EditProductPage = ({
       )}
       <div className="flex flex-row items-center gap-2 pb-12">
         <Button
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit(onSubmit, onInvalid)}
           loading={isLoading}
           disabled={isLoading}
         >

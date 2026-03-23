@@ -1,4 +1,6 @@
+/* eslint-disable max-lines */
 import { useAuth } from '@/hooks'
+import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
@@ -13,12 +15,12 @@ import LinkedIn from '@mui/icons-material/LinkedIn'
 import Public from '@mui/icons-material/Public'
 import X from '@mui/icons-material/X'
 import YouTube from '@mui/icons-material/YouTube'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { enums, isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Select,
   SelectContent,
@@ -27,7 +29,6 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -38,7 +39,13 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
-import { useForm, useFormContext } from 'react-hook-form'
+import {
+  ControllerRenderProps,
+  FieldValues,
+  useForm,
+  useFormContext,
+  useWatch,
+} from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
@@ -54,15 +61,6 @@ interface OrganizationDetailsFormProps {
   inKYCMode: boolean
 }
 
-const AcquisitionOptions = {
-  website: 'Website & SEO',
-  socials: 'Social media',
-  sales: 'Sales',
-  ads: 'Ads',
-  email: 'Email marketing',
-  other: 'Other',
-}
-
 const SwitchingFromOptions = {
   paddle: 'Paddle',
   lemon_squeezy: 'Lemon Squeezy',
@@ -71,15 +69,20 @@ const SwitchingFromOptions = {
   other: 'Other',
 }
 
-const SOCIAL_PLATFORM_DOMAINS = {
+const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
   'x.com': 'x',
   'twitter.com': 'x',
   'instagram.com': 'instagram',
   'facebook.com': 'facebook',
+  'fb.com': 'facebook',
   'youtube.com': 'youtube',
-  'linkedin.com': 'linkedin',
   'youtu.be': 'youtube',
+  'linkedin.com': 'linkedin',
   'github.com': 'github',
+  'threads.net': 'threads',
+  'tiktok.com': 'tiktok',
+  'discord.gg': 'discord',
+  'discord.com': 'discord',
 }
 
 interface OrganizationSocialLinksProps {
@@ -146,9 +149,13 @@ const OrganizationSocialLinks = ({
     let newPlatform: schemas['OrganizationSocialPlatforms'] = 'other'
     try {
       const url = new URL(value)
-      const hostname = url.hostname as keyof typeof SOCIAL_PLATFORM_DOMAINS
+      let hostname = url.hostname
+      if (hostname.startsWith('www.')) {
+        hostname = hostname.slice(4)
+      }
       newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
         'other') as schemas['OrganizationSocialPlatforms']
+      // eslint-disable-next-line no-empty
     } catch {}
 
     // Update the socials array
@@ -175,7 +182,7 @@ const OrganizationSocialLinks = ({
             variant="ghost"
             size="icon"
             onClick={() => handleRemoveSocial(index)}
-            className="text-gray-400 hover:text-gray-600"
+            className="dark:text-polar-400 text-gray-400 hover:text-gray-600"
           >
             <CloseOutlined fontSize="small" />
           </Button>
@@ -204,7 +211,7 @@ const CompactTextArea = ({
   placeholder,
   rows = 3,
 }: {
-  field: any
+  field: ControllerRenderProps<FieldValues, string>
   placeholder: string
   rows?: number
 }) => (
@@ -216,13 +223,14 @@ const CompactTextArea = ({
   />
 )
 
-export const OrganizationDetailsForm: React.FC<
-  OrganizationDetailsFormProps
-> = ({ organization, inKYCMode }) => {
-  const { control, watch, setError, setValue } =
+const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
+  organization,
+  inKYCMode,
+}) => {
+  const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
-  const name = watch('name')
-  const avatarURL = watch('avatar_url')
+  const { name, avatar_url: avatarURL } = useWatch({ control })
+
   const { status: urlStatus, validateURL } = useURLValidation({
     organizationSlug: organization.slug,
   })
@@ -284,10 +292,10 @@ export const OrganizationDetailsForm: React.FC<
                     <Avatar
                       avatar_url={avatarURL ?? ''}
                       name={name ?? ''}
-                      className="h-16 w-16 transition-opacity hover:opacity-75"
+                      className="h-10 w-10 transition-opacity hover:opacity-75"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                      <AddPhotoAlternateOutlined className="text-gray-600" />
+                      <AddPhotoAlternateOutlined className="dark:text-polar-400 text-gray-600" />
                     </div>
                   </div>
                   <FormMessage className="mt-2 text-xs/snug" />
@@ -317,95 +325,118 @@ export const OrganizationDetailsForm: React.FC<
                 )}
               />
             </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Support Email *
-              </label>
-              <FormField
-                control={control}
-                name="email"
-                rules={{ required: 'Support email is required' }}
-                render={({ field }) => (
-                  <div>
-                    <Input
-                      type="email"
-                      {...field}
-                      value={field.value || ''}
-                      placeholder="support@acme.com"
-                    />
-                    <FormMessage />
-                  </div>
-                )}
-              />
-            </div>
           </div>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Website *</label>
+          <label className="mb-2 block text-sm font-medium">Country</label>
           <FormField
             control={control}
-            name="website"
-            rules={{
-              required: 'Website is required',
-              validate: (value) => {
-                if (!value) return 'Website is required'
-                if (!value.startsWith('https://')) {
-                  return 'Website must start with https://'
-                }
-                try {
-                  new URL(value)
-                  return true
-                } catch {
-                  return 'Please enter a valid URL'
-                }
-              },
-            }}
+            name="country"
             render={({ field }) => (
               <div>
-                <Input
-                  type="url"
-                  {...field}
-                  value={field.value || ''}
-                  placeholder="https://acme.com"
-                  onChange={(e) => {
-                    let value = e.target.value
-                    if (value.startsWith('http://')) {
-                      value = value.replace('http://', 'https://')
-                    }
-                    const hasProtocol = value.startsWith('https://')
-                    const isTypingProtocol =
-                      'https://'.startsWith(value) ||
-                      'http://'.startsWith(value)
-                    if (!hasProtocol && !isTypingProtocol) {
-                      value = 'https://' + value
-                    }
-                    field.onChange(value)
-                  }}
-                  onBlur={(e) => {
-                    field.onBlur()
-                    validateURL(e.target.value)
-                  }}
-                  postSlot={
-                    urlStatus === 'validating' ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                    ) : urlStatus === 'valid' ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : urlStatus === 'invalid' ? (
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    ) : null
+                <CountryPicker
+                  allowedCountries={enums.addressInputCountryValues}
+                  value={
+                    (field.value as schemas['CountryAlpha2Input']) ?? undefined
                   }
+                  onChange={field.onChange as (value: string) => void}
+                  placeholder="Select country"
                 />
                 <FormMessage />
-                {urlStatus === 'invalid' && (
-                  <p className="mt-1 text-xs text-amber-600">
-                    Website appears to be unreachable
-                  </p>
-                )}
               </div>
             )}
           />
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium">Website *</label>
+            <FormField
+              control={control}
+              name="website"
+              rules={{
+                required: 'Website is required',
+                validate: (value) => {
+                  if (!value) return 'Website is required'
+                  if (!value.startsWith('https://')) {
+                    return 'Website must start with https://'
+                  }
+                  try {
+                    new URL(value)
+                    return true
+                  } catch {
+                    return 'Please enter a valid URL'
+                  }
+                },
+              }}
+              render={({ field }) => (
+                <div>
+                  <Input
+                    type="url"
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="https://acme.com"
+                    onChange={(e) => {
+                      let value = e.target.value
+                      if (value.startsWith('http://')) {
+                        value = value.replace('http://', 'https://')
+                      }
+                      const hasProtocol = value.startsWith('https://')
+                      const isTypingProtocol =
+                        'https://'.startsWith(value) ||
+                        'http://'.startsWith(value)
+                      if (!hasProtocol && !isTypingProtocol) {
+                        value = 'https://' + value
+                      }
+                      field.onChange(value)
+                    }}
+                    onBlur={(e) => {
+                      field.onBlur()
+                      validateURL(e.target.value)
+                    }}
+                    postSlot={
+                      urlStatus === 'validating' ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      ) : urlStatus === 'valid' ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : urlStatus === 'invalid' ? (
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      ) : null
+                    }
+                  />
+                  <FormMessage />
+                  {urlStatus === 'invalid' && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      Website appears to be unreachable
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Support Email *
+            </label>
+            <FormField
+              control={control}
+              name="email"
+              rules={{ required: 'Support email is required' }}
+              render={({ field }) => (
+                <div>
+                  <Input
+                    type="email"
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="support@acme.com"
+                  />
+                  <FormMessage />
+                </div>
+              )}
+            />
+          </div>
         </div>
 
         {/* Social Links - Progressive Disclosure */}
@@ -414,7 +445,7 @@ export const OrganizationDetailsForm: React.FC<
             <label className="block text-sm font-medium">
               Social Media {inKYCMode && '*'}
             </label>
-            <p className="mt-2 text-xs text-gray-600">
+            <p className="dark:text-polar-400 mt-2 text-xs text-gray-600">
               Your personal social media links are used for identity
               verification. They will never be shown publicly.
             </p>
@@ -428,7 +459,7 @@ export const OrganizationDetailsForm: React.FC<
         <div className="border-t pt-8">
           <div className="mb-6">
             <h3 className="mb-2 text-lg font-medium">Business Details</h3>
-            <p className="text-sm text-gray-600">
+            <p className="dark:text-polar-400 text-sm text-gray-600">
               Help us understand your business for compliance and payment setup.
             </p>
           </div>
@@ -436,50 +467,12 @@ export const OrganizationDetailsForm: React.FC<
           <div className="space-y-6">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Describe your business *
+                Describe your product *
               </label>
-              <p className="mb-2 text-xs text-gray-600">
-                Tell us: what industry you&apos;re in, what problem you solve,
-                and who your customers are
-              </p>
-              <FormField
-                control={control}
-                name="details.about"
-                rules={{
-                  required: 'Please describe your business',
-                  minLength: {
-                    value: 50,
-                    message: 'Please provide at least 50 characters',
-                  },
-                  maxLength: {
-                    value: 3000,
-                    message: 'Please keep under 3000 characters',
-                  },
-                }}
-                render={({ field }) => (
-                  <div>
-                    <CompactTextArea
-                      field={field}
-                      placeholder="We make project management software for design teams."
-                    />
-                    <div className="mt-1 flex items-center justify-between">
-                      <FormMessage />
-                      <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/3000 characters (min 50)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                What do you sell? Include type and features that are granted *
-              </label>
-              <p className="mb-2 text-xs text-gray-600">
-                Tell us: product type (SaaS, course, service, etc.) and main
-                features (advanced reporting, team collaboration, etc.)
+              <p className="dark:text-polar-400 mb-2 text-xs text-gray-600">
+                Describe what your product is and does, and who it&rsquo;s for,
+                including your pricing model (e.g. subscription, one-time
+                payment).
               </p>
               <FormField
                 control={control}
@@ -487,8 +480,8 @@ export const OrganizationDetailsForm: React.FC<
                 rules={{
                   required: 'Please describe what you sell',
                   minLength: {
-                    value: 50,
-                    message: 'Please provide at least 50 characters',
+                    value: 30,
+                    message: 'Please provide at least 30 characters',
                   },
                   maxLength: {
                     value: 3000,
@@ -504,45 +497,6 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/3000 characters (min 50)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                How will you integrate Polar into your business? *
-              </label>
-              <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Polar, what features
-                you&apos;ll use, and how it fits your workflow
-              </p>
-              <FormField
-                control={control}
-                name="details.intended_use"
-                rules={{
-                  required: 'Please describe how you will use Polar',
-                  minLength: {
-                    value: 30,
-                    message: 'Please provide at least 30 characters',
-                  },
-                  maxLength: {
-                    value: 3000,
-                    message: 'Please keep under 3000 characters',
-                  },
-                }}
-                render={({ field }) => (
-                  <div>
-                    <CompactTextArea
-                      field={field}
-                      placeholder="Checkout on our website, API for subscription billing, webhooks for user access"
-                    />
-                    <div className="mt-1 flex items-center justify-between">
-                      <FormMessage />
-                      <span className="text-xs text-gray-500">
                         {field.value?.length || 0}/3000 characters (min 30)
                       </span>
                     </div>
@@ -553,111 +507,42 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Main customer acquisition channels *
+                Currently using
               </label>
               <FormField
                 control={control}
-                name="details.customer_acquisition"
-                rules={{
-                  required: 'Please select at least one acquisition channel',
-                  validate: (value) =>
-                    (value && value.length > 0) ||
-                    'Please select at least one channel',
-                }}
+                name="details.switching_from"
                 render={({ field }) => (
                   <div>
-                    <div className="space-y-2">
-                      {Object.entries(AcquisitionOptions).map(
-                        ([key, label]) => (
-                          <label
-                            key={key}
-                            className="flex cursor-pointer items-center gap-2"
-                          >
-                            <Checkbox
-                              checked={field.value?.includes(key) || false}
-                              onCheckedChange={(checked) => {
-                                const current = field.value || []
-                                if (checked) {
-                                  field.onChange([...current, key])
-                                } else {
-                                  field.onChange(
-                                    current.filter((v) => v !== key),
-                                  )
-                                }
-                              }}
-                            />
-                            <span className="text-sm">{label}</span>
-                          </label>
-                        ),
-                      )}
-                    </div>
-                    <FormMessage className="mt-2" />
+                    <Select
+                      value={field.value || 'none'}
+                      onValueChange={(value) => {
+                        field.onChange(value === 'none' ? undefined : value)
+                        setValue('details.switching', value !== 'none', {
+                          shouldDirty: true,
+                        })
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          This is my first payment platform
+                        </SelectItem>
+                        {Object.entries(SwitchingFromOptions).map(
+                          ([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </div>
                 )}
               />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Expected annual revenue *
-                </label>
-                <FormField
-                  control={control}
-                  name="details.future_annual_revenue"
-                  render={({ field }) => (
-                    <div>
-                      <MoneyInput
-                        {...field}
-                        placeholder={100_000_000}
-                        currency="usd"
-                        className="w-full"
-                      />
-                      <FormMessage />
-                    </div>
-                  )}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Currently using
-                </label>
-                <FormField
-                  control={control}
-                  name="details.switching_from"
-                  render={({ field }) => (
-                    <div>
-                      <Select
-                        value={field.value || 'none'}
-                        onValueChange={(value) => {
-                          field.onChange(value === 'none' ? undefined : value)
-                          setValue('details.switching', value !== 'none', {
-                            shouldDirty: true,
-                          })
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            This is my first payment platform
-                          </SelectItem>
-                          {Object.entries(SwitchingFromOptions).map(
-                            ([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label}
-                              </SelectItem>
-                            ),
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  )}
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -677,13 +562,33 @@ const OrganizationProfileSettings: React.FC<
 > = ({ organization: _organization, kyc, onSubmitted }) => {
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']
+    country?: schemas['CountryAlpha2Input']
   }
+  const inKYCMode = kyc === true
   const router = useRouter()
+
+  const { data: kycData, isLoading: isKYCLoading } = useOrganizationKYC(
+    organization.id,
+    inKYCMode,
+  )
+
   const form = useForm<schemas['OrganizationUpdate']>({
-    defaultValues: organization,
+    defaultValues: {
+      ...organization,
+      ...(kycData?.details ? { details: kycData.details } : {}),
+    },
   })
   const { handleSubmit, setError, formState, reset } = form
-  const inKYCMode = kyc === true
+
+  // Reset form when KYC data loads to merge details into defaults
+  React.useEffect(() => {
+    if (kycData?.details) {
+      reset({
+        ...organization,
+        details: kycData.details,
+      })
+    }
+  }, [kycData, organization, reset])
 
   const { currentUser } = useAuth()
 
@@ -733,6 +638,7 @@ const OrganizationProfileSettings: React.FC<
       ...data,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
+      country: data.country as schemas['CountryAlpha2Input'] | undefined,
       socials: [...(data.socials || []), ...emptySocials],
     })
 
@@ -755,13 +661,21 @@ const OrganizationProfileSettings: React.FC<
     enabled: !inKYCMode,
   })
 
+  if (inKYCMode && isKYCLoading) {
+    return (
+      <div className="mx-auto flex max-w-2xl items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
   return (
     <Form {...form}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
         }}
-        className="max-w-2xl"
+        className="mx-auto max-w-2xl"
       >
         <SettingsGroup>
           {!inKYCMode && (

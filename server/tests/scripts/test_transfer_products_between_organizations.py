@@ -476,8 +476,7 @@ class TestProductTransferService:
             organization=source_org,
             products=[product],
             type=DiscountType.fixed,
-            amount=1000,  # $10.00
-            currency="USD",
+            amounts={"usd": 1000},
             duration=DiscountDuration.once,
         )
 
@@ -525,8 +524,7 @@ class TestProductTransferService:
             organization=source_org,
             products=[product_transfer, product_stay],  # Used by both products
             type=DiscountType.fixed,
-            amount=1000,  # $10.00
-            currency="USD",
+            amounts={"usd": 1000},
             duration=DiscountDuration.once,
         )
 
@@ -585,8 +583,7 @@ class TestProductTransferService:
             organization=source_org,
             products=[product_transfer],  # Only transferring product
             type=DiscountType.fixed,
-            amount=1000,
-            currency="USD",
+            amounts={"usd": 1000},
             duration=DiscountDuration.once,
             code="DIRECT10",
         )
@@ -607,8 +604,7 @@ class TestProductTransferService:
             organization=source_org,
             products=[product_stay],  # Only staying product
             type=DiscountType.fixed,
-            amount=500,
-            currency="USD",
+            amounts={"usd": 500},
             duration=DiscountDuration.once,
             code="STAY5",
         )

@@ -4,6 +4,9 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
+    UUID as SA_UUID,
+)
+from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
     Numeric,
@@ -15,19 +18,19 @@ from sqlalchemy import (
     cast,
     desc,
     func,
+    literal,
     literal_column,
     or_,
     select,
     text,
 )
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
-from polar.kit.sorting import Sorting
-from polar.kit.time_queries import TimeInterval
+from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.kit.utils import generate_uuid
 from polar.models import (
     BillingEntry,
@@ -37,20 +40,23 @@ from polar.models import (
     Meter,
     UserOrganization,
 )
-from polar.models.event import EventClosure, EventSource
+from polar.models.event import EventSource
 from polar.models.product_price import ProductPriceMeteredUnit
 
-from .sorting import EventSortProperty
 from .system import SystemEvent
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     model = Event
 
+    # Note: this method is deprecated. Typically when you get_all you want to use
+    # Tinybird instead of postgres.
     async def get_all_by_name(self, name: str) -> Sequence[Event]:
         statement = self.get_base_statement().where(Event.name == name)
         return await self.get_all(statement)
 
+    # Note: this method is deprecated. Typically when you get_all you want to use
+    # Tinybird instead of postgres.
     async def get_all_by_organization(self, organization_id: UUID) -> Sequence[Event]:
         statement = self.get_base_statement().where(
             Event.organization_id == organization_id
@@ -241,225 +247,65 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
 
-    async def list_with_closure_table(
-        self,
-        statement: Select[tuple[Event]],
-        limit: int,
-        page: int,
-        aggregate_fields: Sequence[str] = (),
-        depth: int | None = None,
-        parent_id: UUID | None = None,
-        cursor_pagination: bool = False,
-        sorting: Sequence[Sorting[EventSortProperty]] = (
-            (EventSortProperty.timestamp, True),
-        ),
-    ) -> tuple[Sequence[Event], int]:
-        """
-        List events using closure table to get a correct children_count.
-        Optionally aggregates fields from descendants's metadata.
-
-        When depth is specified, returns events up to that depth from anchor events:
-        - depth=0: root events only (or nothing if parent_id specified, since parent is excluded)
-        - depth=1: roots + direct children (or just children if parent_id specified)
-        - depth=N: roots + descendants up to N levels
-
-        Anchor events are determined by parent_id:
-        - If parent_id is set: returns descendants of that event (excludes the parent itself)
-        - If parent_id is None: root events (parent_id IS NULL) are anchors (included in results)
-
-        When depth is None, no hierarchy filtering is applied (returns all matching events).
-
-        If cursor_pagination is True, returns (events, 1 if has_next_page else 0).
-        Otherwise returns (events, total_count).
-        """
-        # Apply depth filtering using closure table only when depth is specified
-        if depth is not None:
-            if parent_id is not None:
-                # Single anchor: the specified parent
-                # Exclude the anchor itself (depth > 0) for backwards compatibility
-                anchor_ids = select(Event.id).where(Event.id == parent_id)
-                descendants_subquery = select(EventClosure.descendant_id).where(
-                    EventClosure.ancestor_id.in_(anchor_ids),
-                    EventClosure.depth > 0,
-                    EventClosure.depth <= depth,
-                )
-            else:
-                # Anchor: root events (those without parents)
-                # Include the anchors themselves (depth >= 0)
-                anchor_ids = statement.with_only_columns(Event.id).where(
-                    Event.parent_id.is_(None)
-                )
-                descendants_subquery = select(EventClosure.descendant_id).where(
-                    EventClosure.ancestor_id.in_(anchor_ids),
-                    EventClosure.depth <= depth,
-                )
-
-            # Filter main statement to only include these events
-            statement = statement.where(Event.id.in_(descendants_subquery))
-
-        descendant_event = aliased(Event, name="descendant_event")
-
-        # Step 1: Get paginated event IDs (with total count for legacy pagination)
-        offset = (page - 1) * limit
-        query_limit = limit + 1 if cursor_pagination else limit
-
-        paginated_events_subquery = (
-            statement.limit(query_limit).offset(offset)
-        ).subquery("paginated_events")
-
-        aggregation_columns: list[Any] = [
-            EventClosure.ancestor_id,
-            (func.count() - 1).label("descendant_count"),
-        ]
-
-        field_aggregations = {}
-        for field_path in aggregate_fields:
-            pg_path = "{" + field_path.replace(".", ",") + "}"
-            label = f"agg_{field_path.replace('.', '_')}"
-
-            # Only aggregate numeric fields by summing them
-            # Returns NULL if no values to sum or if all values are NULL
-            numeric_expr = cast(
-                descendant_event.user_metadata.op("#>>")(
-                    literal_column(f"'{pg_path}'")
-                ),
-                Numeric,
-            )
-
-            aggregation_columns.append(func.sum(numeric_expr).label(label))
-            field_aggregations[field_path] = label
-
-        paginated_event_id = paginated_events_subquery.c.id
-
-        aggregations_lateral = (
-            select(*aggregation_columns)
-            .select_from(EventClosure)
-            .join(descendant_event, EventClosure.descendant_id == descendant_event.id)
-            .where(EventClosure.ancestor_id == paginated_event_id)
-            .group_by(EventClosure.ancestor_id)
-        ).lateral("aggregations")
-
-        # Reference user_metadata from the paginated subquery
-        paginated_user_metadata = paginated_events_subquery.c.user_metadata
-
-        metadata_expr: Any = paginated_user_metadata
-        if aggregate_fields:
-            for field_path, label in field_aggregations.items():
-                parts = field_path.split(".")
-                pg_path = "{" + ",".join(parts) + "}"
-                agg_column = getattr(aggregations_lateral.c, label)
-
-                # For nested paths, jsonb_set with create_if_missing doesn't work reliably
-                # Use deep merge approach: extract parent, merge, set back
-                if len(parts) > 1:
-                    # Build the full nested structure
-                    # For "_cost.amount"=7: {"_cost": {"amount": 7}}
-                    nested_value = func.to_jsonb(agg_column)
-                    for part in reversed(parts):
-                        nested_value = func.jsonb_build_object(part, nested_value)
-
-                    # Deep merge: get existing parent object, merge with new, set back
-                    parent_key = parts[0]
-                    existing_parent = func.coalesce(
-                        metadata_expr.op("->")(parent_key), text("'{}'::jsonb")
-                    )
-                    merged_parent = existing_parent.op("||")(
-                        nested_value.op("->")(parent_key)
-                    )
-
-                    metadata_expr = func.jsonb_set(
-                        metadata_expr,
-                        text(f"'{{{parent_key}}}'"),
-                        merged_parent,
-                        text("true"),
-                    )
-                else:
-                    # Simple top-level key
-                    metadata_expr = func.jsonb_set(
-                        metadata_expr,
-                        text(f"'{pg_path}'"),
-                        func.to_jsonb(agg_column),
-                        text("true"),
-                    )
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == EventSortProperty.timestamp:
-                order_by_clauses.append(
-                    clause_function(paginated_events_subquery.c.timestamp)
-                )
-
-        final_query = (
-            select(Event)
-            .select_from(paginated_events_subquery)
-            .join(Event, Event.id == paginated_events_subquery.c.id)
-            .add_columns(
-                func.coalesce(aggregations_lateral.c.descendant_count, 0).label(
-                    "child_count"
-                ),
-                metadata_expr.label("aggregated_metadata"),
-            )
-            .outerjoin(aggregations_lateral, literal_column("true"))
-            .order_by(*order_by_clauses)
+    async def get_by_id_with_eager(self, id: UUID) -> Event | None:
+        statement = (
+            self.get_base_statement()
+            .where(Event.id == id)
             .options(*self.get_eager_options())
         )
+        return await self.get_one_or_none(statement)
 
-        result = await self.session.execute(final_query)
-        rows = result.all()
-
-        events = []
-        for row in rows:
-            event = row[0]
-            event.child_count = row.child_count
-
-            if aggregate_fields:
-                aggregated = row.aggregated_metadata
-                # If _cost exists but has None/missing fields, clean it up
-                if "_cost" in aggregated:
-                    cost_obj = aggregated.get("_cost")
-                    if cost_obj is None or cost_obj.get("amount") is None:
-                        # Remove incomplete _cost object entirely
-                        del aggregated["_cost"]
-                    elif "currency" not in cost_obj:
-                        # Add default currency if missing
-                        cost_obj["currency"] = "usd"  # FIXME: Main Polar currency
-
-                event.user_metadata = aggregated
-
-            # Expunge the event from the session to prevent modifications from being persisted
-            # We're only modifying transient display fields (child_count, aggregated metadata)
-            self.session.expunge(event)
-
-            events.append(event)
-
-        if cursor_pagination:
-            has_next_page = 1 if len(events) > limit else 0
-            return events[:limit], has_next_page
-
-        # Run count query separately for better performance
-        total_count = 0
-        if len(events) > 0:
-            count_statement = statement.with_only_columns(func.count()).order_by(None)
-            count_result = await self.session.execute(count_statement)
-            total_count = count_result.scalar() or 0
-
-        return events, total_count
-
-    async def get_with_aggregation(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        id: UUID,
-        aggregate_fields: Sequence[str],
-    ) -> Event | None:
-        """Get a single event with aggregated metadata from descendants."""
-        statement = self.get_readable_statement(auth_subject).where(Event.id == id)
-
-        events, _ = await self.list_with_closure_table(
-            statement, limit=1, page=1, aggregate_fields=aggregate_fields
+    async def get_by_ids_with_eager(
+        self, ids: Sequence[UUID], organization_ids: Sequence[UUID]
+    ) -> list[Event]:
+        if not ids:
+            return []
+        statement = (
+            self.get_base_statement()
+            .where(Event.id.in_(ids), Event.organization_id.in_(organization_ids))
+            .options(*self.get_eager_options())
         )
+        results = await self.get_all(statement)
+        order = {id: i for i, id in enumerate(ids)}
+        return sorted(results, key=lambda e: order.get(e.id, 0))
 
-        return events[0] if events else None
+    async def get_ancestors_batch(
+        self, event_ids: Sequence[UUID]
+    ) -> dict[UUID, list[str]]:
+        if not event_ids:
+            return {}
+
+        anchor = select(
+            Event.id.label("event_id"),
+            Event.parent_id.label("ancestor_id"),
+            literal(1).label("depth"),
+        ).where(Event.id.in_(event_ids), Event.parent_id.is_not(None))
+
+        cte = anchor.cte("ancestor_chain", recursive=True)
+        parent = Event.__table__.alias("parent")
+        recursive = (
+            select(
+                cte.c.event_id,
+                parent.c.parent_id.label("ancestor_id"),
+                (cte.c.depth + 1).label("depth"),
+            )
+            .select_from(cte.join(parent, cte.c.ancestor_id == parent.c.id))
+            .where(parent.c.parent_id.is_not(None))
+        )
+        cte = cte.union_all(recursive)
+
+        statement = select(
+            cte.c.event_id,
+            func.array_agg(
+                aggregate_order_by(cte.c.ancestor_id, cte.c.depth.asc()),
+                type_=SA_UUID(),
+            ).label("ancestors"),
+        ).group_by(cte.c.event_id)
+
+        result = await self.session.execute(statement)
+        return {
+            row.event_id: [str(aid) for aid in row.ancestors] for row in result.all()
+        }
 
     async def get_hierarchy_stats(
         self,
@@ -511,7 +357,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             bucket_expr = func.date_trunc(
                 interval.value,
                 literal_column("root_event.timestamp"),
-                timezone,
+                literal_column(f"'{timezone}'"),
             )
 
         per_root_select_exprs: list[ColumnElement[Any]] = [
@@ -787,3 +633,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             result_list.append(row_dict)
 
         return result_list
+
+    async def get_timestamp_series(
+        self,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        interval: TimeInterval,
+    ) -> list[datetime]:
+        cte = get_timestamp_series_cte(start_timestamp, end_timestamp, interval)
+        result = await self.session.execute(select(cte.c.timestamp))
+        return [row[0] for row in result.all()]

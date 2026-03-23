@@ -1,0 +1,373 @@
+#!/bin/bash
+
+# Enhanced Tech Notes Management Script
+#
+# Functionalities:
+# 1. Check if listing is up to date (CI integration)
+# 2. Fix/regenerate the listing
+# 3. Create new tech notes interactively
+#
+# Usage:
+#   ./tech-notes [--check|--fix|--new|--help]
+
+TECH_NOTES_DIR="engineering/tech-notes"
+OUTPUT_FILE="engineering/tech-notes.mdx"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Show usage information
+show_usage() {
+    cat << 'USAGE'
+Enhanced Tech Notes Management Script
+
+USAGE:
+    ./tech-notes [OPTION]
+
+OPTIONS:
+    --check     Check if the listing is up to date (exits 0 if up to date, 1 if not)
+    --fix       Regenerate the tech notes listing (default behavior)
+    --new       Create a new tech note interactively
+    --help      Show this help message
+
+EXAMPLES:
+    ./tech-notes           # Regenerate listing (same as --fix)
+    ./tech-notes --check   # Check if listing needs update (for CI)
+    ./tech-notes --fix     # Explicitly regenerate listing
+    ./tech-notes --new     # Create new tech note with prompts
+
+CI INTEGRATION:
+    Use --check in CI/CD pipelines to ensure the listing stays updated:
+
+    - name: Check tech notes listing
+      run: ./tech-notes --check
+
+USAGE
+}
+
+# Helper function to convert title to filename slug
+slugify() {
+    local title="$1"
+    echo "$title" | \
+        tr '[:upper:]' '[:lower:]' | \
+        sed 's/[^a-z0-9 -]//g' | \
+        sed 's/  \+/ /g' | \
+        sed 's/ /-/g' | \
+        sed 's/^-\+\|-\+$//g'
+}
+
+# Get default author from git config
+get_author_default() {
+    git config user.name 2>/dev/null || echo "Engineering Team"
+}
+
+# Function to extract frontmatter value
+extract_frontmatter() {
+    local file="$1"
+    local key="$2"
+
+    # Extract value between --- blocks, then find the specific key
+    awk -v key="$key" '
+    /^---$/ && !in_frontmatter { in_frontmatter=1; next }
+    /^---$/ && in_frontmatter { in_frontmatter=0; exit }
+    in_frontmatter && $0 ~ "^" key ":" {
+        gsub("^" key ": *", "")
+        gsub("^[\"'']", "")
+        gsub("[\"'']$", "")
+        print
+        exit
+    }' "$file"
+}
+
+# Function to get filename without extension
+get_filename() {
+    basename "$1" .mdx
+}
+
+# Function to generate icon based on tags or content
+get_icon() {
+    local tags="$1"
+    local title="$2"
+    local description="$3"
+    local content="$tags $title $description"
+
+    case "$content" in
+        *debug* | *bug* | *memory* | *leak* | *error*) echo "bug" ;;
+        *performance* | *optimization* | *speed* | *slow*) echo "zap" ;;
+        *security* | *auth* | *vulnerability*) echo "shield" ;;
+        *database* | *sql* | *query*) echo "database" ;;
+        *api* | *rest* | *graphql*) echo "code" ;;
+        *deploy* | *infrastructure* | *docker* | *k8s*) echo "server" ;;
+        *test* | *testing* | *qa*) echo "check-circle" ;;
+        *design* | *architecture* | *system*) echo "layout" ;;
+        *) echo "file-text" ;;
+    esac
+}
+
+# Generate the tech notes listing content and return it as string
+generate_listing_content() {
+    local output_content=""
+
+    # Header
+    output_content+="---
+title: \"Tech Notes\"
+description: \"Technical insights, debugging stories, and engineering learnings from the Polar team\"
+---
+
+Welcome to Polar Tech Notes! Here you'll find technical deep-dives, debugging stories, and insights from our engineering team.
+
+## Latest Post
+
+"
+
+    # Create temporary file to store posts with dates for sorting
+    local temp_file=$(mktemp)
+
+    # Process each .mdx file in tech-notes directory
+    for file in "$TECH_NOTES_DIR"/*.mdx; do
+        # Skip if no files found
+        [ ! -f "$file" ] && continue
+
+        # Extract metadata
+        local title=$(extract_frontmatter "$file" "title")
+        local description=$(extract_frontmatter "$file" "description")
+        local author=$(extract_frontmatter "$file" "author")
+        local date=$(extract_frontmatter "$file" "date")
+        local tags=$(extract_frontmatter "$file" "tags")
+
+        # Get filename for URL
+        local filename=$(get_filename "$file")
+
+        # Generate icon
+        local icon=$(get_icon "$tags" "$title" "$description")
+
+        # Skip if no title found (invalid frontmatter)
+        [ -z "$title" ] && continue
+
+        # Add to temp file with date for sorting (newest first)
+        echo "$date|$title|$description|$author|$icon|$filename" >> "$temp_file"
+    done
+
+    # Sort by date (newest first) and generate content
+    local is_first=true
+    local bullet_posts=""
+
+    while IFS='|' read -r date title description author icon filename; do
+        if [ "$is_first" = true ]; then
+            # First (latest) post as a card
+            output_content+="<Card
+  title=\"$title\"
+  icon=\"$icon\"
+  href=\"/engineering/tech-notes/$filename\"
+>
+  $description
+
+  **Author:** $author • **Published:** $date
+</Card>
+
+"
+            is_first=false
+        else
+            # Other posts as bullet points
+            bullet_posts+="- [$title](/engineering/tech-notes/$filename) - $description (*$author*, $date)
+"
+        fi
+    done < <(sort -t'|' -k1,1r "$temp_file")
+
+    # Add bullet points if there are any
+    if [ -n "$bullet_posts" ]; then
+        output_content+="## All Posts
+
+$bullet_posts
+"
+    fi
+
+    # Clean up temp file
+    rm -f "$temp_file"
+
+    # Footer
+    output_content+="---
+
+## About Our Tech Notes
+
+Our tech notes document:
+- **Technical Investigations**: Deep-dives into complex problems and their solutions
+- **Debugging Stories**: Real-world debugging scenarios and methodologies
+- **Performance Optimizations**: How we improve system performance and scalability
+- **Lessons Learned**: Key insights from building and maintaining Polar
+
+Want to contribute? Check out our [engineering guidelines](/engineering/introduction) and reach out to the engineering team."
+
+    echo "$output_content"
+}
+
+# Generate and save the listing
+generate_listing() {
+    local content=$(generate_listing_content)
+    echo "$content" > "$OUTPUT_FILE"
+
+    local note_count=$(ls -1 "$TECH_NOTES_DIR"/*.mdx 2>/dev/null | wc -l | tr -d ' ')
+    echo -e "${GREEN}✅ Generated $OUTPUT_FILE with tech notes listings${NC}"
+    echo -e "${BLUE}📝 Found $note_count tech note(s)${NC}"
+}
+
+# Check if the listing is up to date
+check_listing() {
+    if [ ! -f "$OUTPUT_FILE" ]; then
+        echo -e "${RED}❌ $OUTPUT_FILE does not exist${NC}"
+        echo -e "${YELLOW}💡 Run with --fix to generate it${NC}"
+        return 1
+    fi
+
+    local current_content=$(cat "$OUTPUT_FILE")
+    local expected_content=$(generate_listing_content)
+
+    if [ "$current_content" = "$expected_content" ]; then
+        echo -e "${GREEN}✅ Tech notes listing is up to date${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Tech notes listing is out of date${NC}"
+        echo -e "${YELLOW}💡 Run with --fix to update it${NC}"
+        return 1
+    fi
+}
+
+# Create a new tech note interactively
+create_new_note() {
+    echo -e "${BLUE}📝 Creating a new tech note...${NC}"
+    echo
+
+    # Get title
+    while true; do
+        echo -n "Enter the title: "
+        read -r title
+        if [ -n "$title" ]; then
+            break
+        fi
+        echo -e "${RED}Title cannot be empty. Please try again.${NC}"
+    done
+
+    # Get description
+    while true; do
+        echo -n "Enter a brief description: "
+        read -r description
+        if [ -n "$description" ]; then
+            break
+        fi
+        echo -e "${RED}Description cannot be empty. Please try again.${NC}"
+    done
+
+    # Get author with default
+    local default_author=$(get_author_default)
+    echo -n "Enter author name [$default_author]: "
+    read -r author
+    author=${author:-$default_author}
+
+    # Get tags (optional)
+    echo -n "Enter tags (comma-separated, optional): "
+    read -r tags_input
+
+    # Format tags as YAML array
+    local tags_yaml=""
+    if [ -n "$tags_input" ]; then
+        # Convert comma-separated tags to YAML array format
+        local tags_formatted=$(echo "$tags_input" | sed 's/,/", "/g' | sed 's/^/["/' | sed 's/$/"]/')
+        tags_yaml="tags: $tags_formatted"
+    fi
+
+    # Generate filename
+    local slug=$(slugify "$title")
+    local filename="$TECH_NOTES_DIR/$slug.mdx"
+
+    # Check if file already exists
+    if [ -f "$filename" ]; then
+        echo -e "${RED}❌ File $filename already exists${NC}"
+        return 1
+    fi
+
+    # Get current date
+    local current_date=$(date +%Y-%m-%d)
+
+    # Format date for display
+    local formatted_date=$(date -j -f "%Y-%m-%d" "$current_date" "+%B %d, %Y" 2>/dev/null || echo "$current_date")
+
+    # Create the file
+    cat > "$filename" << NOTE
+---
+title: "$title"
+description: "$description"
+author: "$author"
+date: "$current_date"
+$([ -n "$tags_yaml" ] && echo "$tags_yaml")
+---
+
+# $title
+
+<Info>
+**Author:** $author • **Published:** $formatted_date
+</Info>
+
+$description
+
+## Overview
+
+<!-- Add your content here -->
+
+## Details
+
+<!-- Add detailed explanation -->
+
+## Conclusion
+
+<!-- Summarize key findings -->
+NOTE
+
+    echo
+    echo -e "${GREEN}✅ Created new tech note: $filename${NC}"
+    echo -e "${BLUE}📝 File details:${NC}"
+    echo "   Title: $title"
+    echo "   Description: $description"
+    echo "   Author: $author"
+    echo "   Date: $current_date"
+    [ -n "$tags_input" ] && echo "   Tags: $tags_input"
+    echo
+
+    # Ask if user wants to regenerate listing
+    echo -n "Regenerate tech notes listing? [Y/n]: "
+    read -r regenerate
+    if [ "$regenerate" != "n" ] && [ "$regenerate" != "N" ]; then
+        echo
+        generate_listing
+    fi
+}
+
+# Main execution logic
+case "${1:-}" in
+    --check)
+        check_listing
+        exit $?
+        ;;
+    --fix)
+        generate_listing
+        ;;
+    --new)
+        create_new_note
+        ;;
+    --help|-h)
+        show_usage
+        ;;
+    "")
+        # Default behavior: regenerate listing
+        generate_listing
+        ;;
+    *)
+        echo -e "${RED}❌ Unknown option: $1${NC}" >&2
+        echo >&2
+        show_usage >&2
+        exit 1
+        ;;
+esac

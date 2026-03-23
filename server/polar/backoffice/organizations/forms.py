@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from annotated_types import Ge
 from fastapi import UploadFile
@@ -7,12 +7,19 @@ from pydantic import (
     Field,
     StringConstraints,
     TypeAdapter,
+    model_validator,
 )
 
-from polar.kit.schemas import HttpUrlToStr
+from polar.kit.schemas import HttpUrlToStr, Schema
 from polar.organization.schemas import NameInput, OrganizationFeatureSettings, SlugInput
 
 from .. import forms
+
+
+class OrganizationCheckoutSettingsForm(Schema):
+    """Checkout settings form schema."""
+
+    require_3ds: bool = False
 
 
 class ApproveOrganizationForm(forms.BaseForm):
@@ -24,10 +31,20 @@ class ApproveOrganizationForm(forms.BaseForm):
         forms.CurrencyValidator,
         Field(title="Next Review Threshold"),
     ]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 class DenyOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["deny"], forms.SkipField]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 class UnderReviewOrganizationForm(forms.BaseForm):
@@ -36,10 +53,20 @@ class UnderReviewOrganizationForm(forms.BaseForm):
 
 class ApproveOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["approve_appeal"], forms.SkipField]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 class DenyOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["deny_appeal"], forms.SkipField]
+    reason: Annotated[
+        str | None,
+        forms.TextAreaField(rows=3, placeholder="Reason for this decision"),
+        Field(default=None, title="Reason"),
+    ]
 
 
 OrganizationStatusForm = Annotated[
@@ -85,6 +112,11 @@ class UpdateOrganizationForm(forms.BaseForm):
         forms.SubFormField(OrganizationFeatureSettings),
         Field(default=None, title="Feature Flags"),
     ]
+    checkout_settings: Annotated[
+        OrganizationCheckoutSettingsForm | None,
+        forms.SubFormField(OrganizationCheckoutSettingsForm),
+        Field(default=None, title="Checkout Settings"),
+    ]
 
 
 class UpdateOrganizationDetailsDataForm(forms.BaseForm):
@@ -107,10 +139,10 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
         ),
     ]
     intended_use: Annotated[
-        str,
+        str | None,
         forms.TextAreaField(rows=3),
         Field(
-            min_length=1,
+            None,
             title="Intended Use",
             description="How the organization will integrate and use Polar",
         ),
@@ -118,6 +150,15 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
 
 
 class UpdateOrganizationDetailsForm(forms.BaseForm):
+    email: Annotated[
+        str | None,
+        forms.InputField(type="email", placeholder="contact@example.com"),
+        Field(
+            None,
+            title="Email",
+            description="Support or contact email for the organization",
+        ),
+    ]
     website: Annotated[
         HttpUrlToStr | None,
         forms.InputField(type="url", placeholder="https://example.com"),
@@ -144,6 +185,14 @@ class UpdateOrganizationInternalNotesForm(forms.BaseForm):
 
 class UpdateOrganizationSocialsForm(forms.BaseForm):
     """Form for editing organization social media links."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def empty_strings_to_none(cls, data: dict[str, Any]) -> dict[str, Any]:
+        for key, value in data.items():
+            if isinstance(value, str) and value.strip() == "":
+                data[key] = None
+        return data
 
     youtube_url: Annotated[
         HttpUrlToStr | None,

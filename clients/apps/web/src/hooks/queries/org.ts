@@ -1,7 +1,13 @@
+/* eslint-disable max-lines */
 import revalidate from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { operations, schemas, unwrap } from '@polar-sh/client'
+import {
+  ClientResponseError,
+  operations,
+  schemas,
+  unwrap,
+} from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -23,7 +29,7 @@ export const useInviteOrganizationMember = (id: string) =>
         body: { email },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizationMembers', id],
       })
@@ -37,7 +43,7 @@ export const useLeaveOrganization = (id: string) =>
         params: { path: { id } },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
@@ -51,7 +57,7 @@ export const useRemoveOrganizationMember = (organizationId: string) =>
         params: { path: { id: organizationId, user_id: userId } },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizationMembers', organizationId],
       })
@@ -75,7 +81,7 @@ export const useCreateOrganization = () =>
     mutationFn: (body: schemas['OrganizationCreate']) => {
       return api.POST('/v1/organizations/', { body })
     },
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -128,6 +134,19 @@ export const useOrganization = (id: string, enabled: boolean = true) =>
     enabled,
   })
 
+export const useOrganizationKYC = (id: string, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['organizations', id, 'kyc'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/kyc', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+
 export const useOrganizationAccount = (id?: string) =>
   useQuery({
     queryKey: ['organizations', 'account', id],
@@ -137,11 +156,14 @@ export const useOrganizationAccount = (id?: string) =>
           params: { path: { id: id ?? '' } },
         }),
       ),
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 403 || error?.response?.status === 404) {
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ClientResponseError &&
+        (error.response.status === 403 || error.response.status === 404)
+      ) {
         return false
       }
-      return defaultRetry(failureCount, error)
+      return defaultRetry(failureCount, error as ClientResponseError)
     },
     enabled: !!id,
   })
@@ -186,7 +208,7 @@ export const useCreateOrganizationAccessToken = (organization_id: string) =>
         },
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { error } = result
       if (error) {
         return
@@ -205,7 +227,7 @@ export const useUpdateOrganizationAccessToken = (id: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -226,7 +248,7 @@ export const useDeleteOrganizationAccessToken = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       const { error } = result
       if (error) {
         return
@@ -298,7 +320,7 @@ export const useDeleteOrganization = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })

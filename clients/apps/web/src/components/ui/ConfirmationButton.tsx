@@ -38,23 +38,6 @@ export default function ConfirmationButton({
 }: ConfirmationButtonProps) {
   const [showConfirmation, setShowConfirmation] = useState(false)
 
-  // Handle escape key to cancel
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showConfirmation) {
-        handleCancel()
-      }
-    }
-
-    if (showConfirmation) {
-      document.addEventListener('keydown', handleKeyDown)
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [showConfirmation])
-
   const handleInitialClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -74,6 +57,23 @@ export default function ConfirmationButton({
   const handleCancel = () => {
     setShowConfirmation(false)
   }
+
+  // Handle escape key to cancel
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showConfirmation) {
+        handleCancel()
+      }
+    }
+
+    if (showConfirmation) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showConfirmation])
 
   const getConfirmationStyles = () => {
     if (destructive) {

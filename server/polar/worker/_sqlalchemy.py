@@ -6,11 +6,18 @@ import dramatiq
 import structlog
 from dramatiq.asyncio import get_event_loop_thread
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.logfire import instrument_sqlalchemy
 from polar.logging import Logger
-from polar.postgres import AsyncEngine, AsyncSession, create_async_engine
+from polar.postgres import (
+    AsyncEngine,
+    AsyncReadSession,
+    AsyncSession,
+    create_async_engine,
+    create_async_read_engine,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -26,15 +33,21 @@ def _get_worker_pool_name() -> str:
 
 
 _sqlalchemy_engine: AsyncEngine | None = None
+_sqlalchemy_read_engine: AsyncEngine | None = None
 _sqlalchemy_async_sessionmaker: AsyncSessionMakerType | None = None
+_sqlalchemy_async_read_sessionmaker: AsyncSessionMakerType | None = None
 
 
 async def dispose_sqlalchemy_engine() -> None:
-    global _sqlalchemy_engine
+    global _sqlalchemy_engine, _sqlalchemy_read_engine
     if _sqlalchemy_engine is not None:
         await _sqlalchemy_engine.dispose()
         log.info("Disposed SQLAlchemy engine")
         _sqlalchemy_engine = None
+    if _sqlalchemy_read_engine is not None:
+        await _sqlalchemy_read_engine.dispose()
+        log.info("Disposed SQLAlchemy read engine")
+        _sqlalchemy_read_engine = None
 
 
 class SQLAlchemyMiddleware(dramatiq.Middleware):
@@ -49,14 +62,39 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
             raise RuntimeError("SQLAlchemy not initialized")
         return _sqlalchemy_async_sessionmaker()
 
+    @classmethod
+    def get_async_read_session(
+        cls,
+    ) -> contextlib.AbstractAsyncContextManager[AsyncReadSession]:
+        global _sqlalchemy_async_read_sessionmaker
+        if _sqlalchemy_async_read_sessionmaker is None:
+            raise RuntimeError("SQLAlchemy not initialized")
+        return _sqlalchemy_async_read_sessionmaker()
+
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        global _sqlalchemy_engine, _sqlalchemy_async_sessionmaker
+        global \
+            _sqlalchemy_engine, \
+            _sqlalchemy_read_engine, \
+            _sqlalchemy_async_sessionmaker, \
+            _sqlalchemy_async_read_sessionmaker
         pool_name = _get_worker_pool_name()
         _sqlalchemy_engine = create_async_engine("worker", pool_logging_name=pool_name)
         _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)
-        instrument_sqlalchemy([_sqlalchemy_engine.sync_engine])
+
+        instrument_engines = [_sqlalchemy_engine.sync_engine]
+
+        if settings.is_read_replica_configured():
+            _sqlalchemy_read_engine = create_async_read_engine("worker")
+            _sqlalchemy_async_read_sessionmaker = create_async_sessionmaker(
+                _sqlalchemy_read_engine
+            )
+            instrument_engines.append(_sqlalchemy_read_engine.sync_engine)
+        else:
+            _sqlalchemy_async_read_sessionmaker = _sqlalchemy_async_sessionmaker
+
+        instrument_sqlalchemy(instrument_engines)
         log.info("Created database engine", pool_name=pool_name)
 
     def after_worker_shutdown(
@@ -80,3 +118,14 @@ async def AsyncSessionMaker() -> AsyncIterator[AsyncSession]:
             raise
         else:
             await session.commit()
+
+
+@contextlib.asynccontextmanager
+async def AsyncReadSessionMaker() -> AsyncIterator[AsyncReadSession]:
+    """
+    Context manager for read-only database sessions.
+
+    Uses the read replica when configured, otherwise falls back to the primary.
+    """
+    async with SQLAlchemyMiddleware.get_async_read_session() as session:
+        yield session

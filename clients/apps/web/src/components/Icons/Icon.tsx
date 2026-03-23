@@ -3,7 +3,7 @@ const Icon = ({
   classes,
 }: {
   classes: string
-  icon: React.ReactElement<any>
+  icon: React.ReactElement
 }) => {
   return (
     <div

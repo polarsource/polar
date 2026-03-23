@@ -21,8 +21,9 @@ from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
 from .dispute import Dispute
 from .downloadable import Downloadable
+from .email_log import EmailLog
 from .email_verification import EmailVerification
-from .event import Event, EventClosure
+from .event import Event
 from .event_type import EventType
 from .external_event import ExternalEvent
 from .file import File
@@ -47,6 +48,7 @@ from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
+from .organization_review_feedback import OrganizationReviewFeedback
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
@@ -74,6 +76,7 @@ from .refund import Refund
 from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
+from .subscription_update import SubscriptionUpdate
 from .transaction import Transaction
 from .trial_redemption import TrialRedemption
 from .user import OAuthAccount, User
@@ -108,9 +111,9 @@ __all__ = [
     "DiscountRedemption",
     "Dispute",
     "Downloadable",
+    "EmailLog",
     "EmailVerification",
     "Event",
-    "EventClosure",
     "EventType",
     "ExternalEvent",
     "File",
@@ -141,6 +144,7 @@ __all__ = [
     "OrganizationAccessToken",
     "OrganizationAgentReview",
     "OrganizationReview",
+    "OrganizationReviewFeedback",
     "Payment",
     "PaymentMethod",
     "Payout",
@@ -165,6 +169,7 @@ __all__ = [
     "Subscription",
     "SubscriptionMeter",
     "SubscriptionProductPrice",
+    "SubscriptionUpdate",
     "TimestampedModel",
     "Transaction",
     "TrialRedemption",

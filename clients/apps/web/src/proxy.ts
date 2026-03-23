@@ -9,8 +9,31 @@ import { createServerSideAPI } from './utils/client'
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
+const IS_SANDBOX =
+  (process.env.NEXT_PUBLIC_ENVIRONMENT ||
+    process.env.VERCEL_ENV ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV) === 'sandbox'
+
+// App routes allowed on sandbox — everything else (marketing, docs) is blocked
+// Strings match by prefix, RegExps are tested directly
+const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
+  '/login',
+  '/dashboard',
+  '/start',
+  '/onboarding',
+  '/finance',
+  '/settings',
+  '/oauth2',
+  '/checkout',
+  '/verify-email',
+  '/api',
+  /^\/favicon[\w-]*\.\w+$/, // /favicon.png, /favicon-dark.png, etc.
+  /^\/[^/]+\/portal(\/|$)/, // /:organization/portal
+]
+
 const AUTHENTICATED_ROUTES = [
   new RegExp('^/start(/.*)?'),
+  new RegExp('^/onboarding(/.*)?'),
   new RegExp('^/dashboard(/.*)?'),
   new RegExp('^/finance(/.*)?'),
   new RegExp('^/settings(/.*)?'),
@@ -72,6 +95,31 @@ export async function proxy(request: NextRequest) {
   // doesn't appear to be working consistently with Vercel rewrites
   if (isForwardedRoute(request)) {
     return NextResponse.next()
+  }
+
+  // Sandbox: rewrite root to login, block non-app routes
+  if (IS_SANDBOX) {
+    const { pathname } = request.nextUrl
+
+    if (pathname === '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+
+    const isAllowed = SANDBOX_ALLOWED_PATHS.some((path) =>
+      typeof path === 'string'
+        ? pathname === path || pathname.startsWith(`${path}/`)
+        : path.test(pathname),
+    )
+
+    if (!isAllowed) {
+      // Rewrite to a non-existent path so Next.js renders the not-found page
+      const url = request.nextUrl.clone()
+      url.pathname = '/_sandbox_blocked'
+      return NextResponse.rewrite(url, { status: 404 })
+    }
   }
 
   // Redirect old customer query string URLs to path-based URLs
@@ -188,7 +236,9 @@ export async function proxy(request: NextRequest) {
     'x-polar-distinct-id': distinctId,
   }
   if (user) {
-    headers['x-polar-user'] = JSON.stringify(user)
+    headers['x-polar-user'] = Buffer.from(JSON.stringify(user)).toString(
+      'base64',
+    )
   }
 
   const response = NextResponse.next({ headers })

@@ -1,7 +1,9 @@
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
@@ -674,3 +676,298 @@ class TestDelete:
             await member_service.delete(session, owner)
 
         assert "only owner" in str(exc_info.value).lower()
+
+
+@pytest.mark.asyncio
+class TestDeleteByCustomer:
+    async def test_enqueues_seat_revocation_for_each_member(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock: MagicMock = mocker.patch("polar.member.service.enqueue_job")
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+        regular = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="regular@example.com",
+            name="Regular",
+            role=MemberRole.member,
+        )
+        await save_fixture(regular)
+
+        deleted = await member_service.delete_by_customer(session, customer.id)
+
+        assert len(deleted) == 2
+        assert all(m.deleted_at is not None for m in deleted)
+
+        seat_revocation_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args[0] == "customer_seat.revoke_seats_for_member"
+        ]
+        assert len(seat_revocation_calls) == 2
+        revoked_member_ids = {c.kwargs["member_id"] for c in seat_revocation_calls}
+        assert revoked_member_ids == {owner.id, regular.id}
+
+    async def test_enqueues_benefit_grant_deletions_for_each_member(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_member_mock: MagicMock = mocker.patch(
+            "polar.benefit.grant.service.BenefitGrantService"
+            ".enqueue_member_grant_deletions"
+        )
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        await member_service.delete_by_customer(session, customer.id)
+
+        enqueue_member_mock.assert_called_once_with(session, owner.id)
+
+    async def test_skips_owner_guard(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """delete_by_customer should delete the only owner without raising."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        deleted = await member_service.delete_by_customer(session, customer.id)
+
+        assert len(deleted) == 1
+        assert deleted[0].deleted_at is not None
+
+    async def test_no_members_returns_empty(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        deleted = await member_service.delete_by_customer(session, customer.id)
+
+        assert deleted == []
+
+
+@pytest.mark.asyncio
+class TestGetOrCreateByEmail:
+    async def test_creates_new_member(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that a new member is created when none exists."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="new@example.com",
+            name="New Member",
+        )
+
+        assert member is not None
+        assert member.customer_id == customer.id
+        assert member.organization_id == organization.id
+        assert member.email == "new@example.com"
+        assert member.name == "New Member"
+        assert member.role == MemberRole.member
+
+    async def test_returns_existing_active_member(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that an existing active member is returned."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Existing",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Different Name",
+        )
+
+        assert member.id == existing.id
+        assert member.name == "Existing"  # Not updated
+
+    async def test_handles_integrity_error_race_condition(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that IntegrityError from race condition is handled by re-lookup."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        # Pre-create the member so re-lookup finds it
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+            name="Racer",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        # Mock repository.create to raise IntegrityError, simulating a race
+        from polar.member.repository import MemberRepository
+
+        original_create = MemberRepository.create
+
+        call_count = 0
+
+        async def mock_create(self: Any, model: Any, flush: bool = False) -> None:
+            nonlocal call_count
+            call_count += 1
+            raise IntegrityError(
+                "duplicate", params=None, orig=Exception("unique violation")
+            )
+
+        mocker.patch.object(MemberRepository, "create", mock_create)
+
+        # Also need to ensure get_by_customer_id_and_email returns None first, then the existing member
+        original_get = MemberRepository.get_by_customer_id_and_email
+
+        get_call_count = 0
+
+        async def mock_get(self: Any, customer_id: Any, email: Any) -> Member | None:
+            nonlocal get_call_count
+            get_call_count += 1
+            if get_call_count == 1:
+                return None  # First call: no existing member found
+            return await original_get(self, customer_id, email)
+
+        mocker.patch.object(MemberRepository, "get_by_customer_id_and_email", mock_get)
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+        )
+
+        assert member.id == existing.id
+        assert call_count == 1  # create was attempted
+
+    async def test_sets_external_id_on_creation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that external_id is set when creating a new member."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="ext@example.com",
+            external_id="ext_123",
+        )
+
+        assert member.external_id == "ext_123"
+        assert member.email == "ext@example.com"
+
+    async def test_sets_role_on_creation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that role is set when creating a new member."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            role=MemberRole.owner,
+        )
+
+        assert member.role == MemberRole.owner

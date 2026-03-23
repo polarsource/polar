@@ -16,6 +16,7 @@ from sqlalchemy.util.typing import TypeAlias
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
+from polar.email.schemas import SubscriptionRevokedEmail
 from polar.enums import (
     PaymentProcessor,
     SubscriptionProrationBehavior,
@@ -51,11 +52,13 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
+from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
@@ -64,6 +67,7 @@ from polar.product.guard import (
     is_metered_price,
 )
 from polar.product.price_set import PriceSet
+from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
@@ -80,6 +84,7 @@ from polar.subscription.service import (
     TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
+from polar.subscription.update import generate_subscription_update
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -170,7 +175,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.subscription.service.enqueue_email")
+    return mocker.patch("polar.subscription.service.enqueue_email_template")
 
 
 @pytest.fixture
@@ -364,6 +369,120 @@ class TestCreate:
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    async def test_valid_free_seat_based(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_seat_based: Product,
+        customer: Customer,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_seat_based.id,
+            customer_id=customer.id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.product_id == product_recurring_free_seat_based.id
+        assert subscription.customer_id == customer.id
+        assert subscription.seats == 1
+        assert subscription.amount == 0
+        assert subscription.currency == "usd"
+        assert subscription.recurring_interval == SubscriptionRecurringInterval.month
+
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
+
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    async def test_paid_seat_based_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
+
+    async def test_mixed_tier_seat_based_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Product with multi-tier pricing where tier 1 is $0/seat but tier 2 is $10/seat."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        # Create a seat price with mixed tiers manually
+        price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": 5, "price_per_seat": 0},
+                    {"min_seats": 6, "max_seats": None, "price_per_seat": 1000},
+                ]
+            },
+            product=product,
+        )
+        await save_fixture(price)
+        product.prices.append(price)
+        product.all_prices.append(price)
+
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
 
 
 @pytest.mark.asyncio
@@ -869,8 +988,7 @@ class TestCycle:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             duration_in_months=3,
             organization=organization,
@@ -1043,10 +1161,11 @@ class TestCycle:
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cancel,
         )
 
         enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], SubscriptionRevokedEmail)
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
 
@@ -1201,8 +1320,7 @@ class TestCycle:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             duration_in_months=3,
             organization=organization,
@@ -1271,6 +1389,122 @@ class TestCycle:
         assert cycle_entries[2].discount == discount
         # Fourth entry should have no discount
         assert cycle_entries[3].discount is None
+
+    async def test_pending_update_product(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        assert updated_subscription.product == product_second
+
+        price = product_second.prices[0]
+        assert is_fixed_price(price)
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert (
+            billing_entry.start_timestamp == updated_subscription.current_period_start
+        )
+        assert billing_entry.end_timestamp == updated_subscription.current_period_end
+        assert billing_entry.direction == BillingEntryDirection.debit
+        assert billing_entry.product_price_id == price.id
+
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert updated_subscription.pending_update is None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = await subscription_update_repository.get_by_id(
+            subscription_update.id
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.applied_at is not None
+
+    async def test_pending_update_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        subscription_update, _ = generate_subscription_update(subscription, seats=10)
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        assert updated_subscription.seats == 10
+        assert updated_subscription.pending_update is None
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = await subscription_update_repository.get_by_id(
+            subscription_update.id
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.applied_at is not None
 
 
 @pytest.mark.asyncio
@@ -2115,6 +2349,21 @@ class TestUpdateProduct:
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
 
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.prorate
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
     async def test_seat_based_to_fixed_not_allowed(
         self,
         session: AsyncSession,
@@ -2182,6 +2431,163 @@ class TestUpdateProduct:
                 product_id=seat_product.id,
             )
 
+    async def test_next_period_behavior_new_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+
+        assert updated_subscription.product == product_recurring_multiple_currencies
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.next_period
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is not None
+        assert subscription_update.product_id == product.id
+        assert subscription_update.applied_at is None
+        assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_next_period_behavior_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        product_second: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        subscription_update, _ = generate_subscription_update(
+            subscription, product=product
+        )
+        await save_fixture(subscription_update)
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_second.id,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+
+        assert updated_subscription.product == product_recurring_multiple_currencies
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product_second.id)
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.next_period
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.id == subscription_update.id
+        assert updated_subscription_update.applied_at is None
+        assert updated_subscription_update.product_id == product_second.id
+        assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_proration_behavior_deletes_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        product_second: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        subscription_update, _ = generate_subscription_update(
+            subscription, product=product
+        )
+        await save_fixture(subscription_update)
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product_second.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert updated_subscription.product == product_second
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is None
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:
@@ -2248,6 +2654,17 @@ class TestUpdateDiscount:
 
         assert subscription.discount is None
 
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["discount_id"] is None
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
     async def test_valid_added(
         self,
         save_fixture: SaveFixture,
@@ -2265,6 +2682,17 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount == discount_percentage_50
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["discount_id"] == str(discount_percentage_50.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
     async def test_valid_modified(
         self,
@@ -2287,6 +2715,17 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount == discount_percentage_100
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["discount_id"] == str(discount_percentage_100.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
 
 @pytest.mark.asyncio
@@ -2347,6 +2786,17 @@ class TestUpdateTrial:
         # Verify that the webhook was triggered
         assert_hooks_called_once(subscription_hooks, {"updated"})
 
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["trial_end"] == new_trial_end.isoformat()
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
     async def test_active_subscription_ending_now_validation_error(
         self,
         session: AsyncSession,
@@ -2396,6 +2846,17 @@ class TestUpdateTrial:
         assert updated_subscription.trial_end == trial_end
         assert updated_subscription.current_period_end == trial_end
         assert updated_subscription.trialing
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["trial_end"] == trial_end.isoformat()
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
     async def test_active_subscription_adding_trial_before_current_period_end(
         self,
@@ -3002,8 +3463,64 @@ class TestUpdateSeats:
         with pytest.raises(NotASeatBasedSubscription):
             await subscription_service.update_seats(session, subscription, seats=10)
 
+    @pytest.mark.parametrize(
+        "proration_behavior",
+        list(SubscriptionProrationBehavior),
+    )
+    async def test_unchanged_seats(
+        self,
+        proration_behavior: SubscriptionProrationBehavior,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+
+        # When: Update with same seat count
+        updated = await subscription_service.update_seats(
+            session, subscription, seats=10, proration_behavior=proration_behavior
+        )
+        await session.flush()
+
+        # Then: Successfully updated (no-op)
+        assert updated.seats == 10
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is None
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 0
+
+    @pytest.mark.parametrize(
+        "proration_behavior",
+        [
+            SubscriptionProrationBehavior.prorate,
+            SubscriptionProrationBehavior.invoice,
+        ],
+    )
     async def test_trialing_subscription(
         self,
+        proration_behavior: SubscriptionProrationBehavior,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -3029,7 +3546,7 @@ class TestUpdateSeats:
 
         # When: Update seats during trial
         updated = await subscription_service.update_seats(
-            session, subscription, seats=10
+            session, subscription, seats=10, proration_behavior=proration_behavior
         )
         await session.flush()
 
@@ -3071,15 +3588,73 @@ class TestUpdateSeats:
         with pytest.raises(AlreadyCanceledSubscription):
             await subscription_service.update_seats(session, subscription, seats=10)
 
-    async def test_proration_invoice_behavior(
+    @pytest.mark.parametrize(
+        ("initial", "new"),
+        [
+            (5, 10),  # Increase seats
+            (10, 5),  # Decrease seats
+        ],
+    )
+    async def test_proration_invoice_behavior_success(
         self,
+        initial: int,
+        new: int,
         session: AsyncSession,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         frozen_time: datetime,
         enqueue_job_mock: MagicMock,
         customer: Customer,
         organization: Organization,
     ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=initial,
+        )
+
+        # When: Update with invoice behavior
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=new,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+        await session.flush()
+
+        # Then: Order created and paid immediately
+        create_subscription_update_order_mock.assert_awaited_once_with(
+            session, subscription
+        )
+
+    async def test_proration_invoice_behavior_failure(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        create_subscription_update_order_mock = mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            side_effect=PaymentFailed(PaymentFailedReason.card_error),
+        )
+
         # Given: Subscription with 5 seats
         product = await create_product(
             save_fixture,
@@ -3094,21 +3669,22 @@ class TestUpdateSeats:
             seats=5,
         )
 
-        # When: Update with invoice behavior
-        await subscription_service.update_seats(
-            session,
-            subscription,
-            seats=10,
-            proration_behavior=SubscriptionProrationBehavior.invoice,
-        )
-        await session.flush()
+        nested = await session.begin_nested()
 
-        # Then: Order creation job enqueued
-        enqueue_job_mock.assert_any_call(
-            "order.create_subscription_order",
-            subscription.id,
-            OrderBillingReasonInternal.subscription_update,
-        )
+        # When: Update with invoice behavior
+        with pytest.raises(PaymentFailed):
+            await subscription_service.update_seats(
+                session,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
+
+        # Then: subscription is untouched
+        await nested.rollback()
+        await session.refresh(subscription)
+        assert subscription.seats == 5
+        assert subscription.amount == 5000
 
     async def test_proration_prorate_behavior(
         self,
@@ -3134,7 +3710,7 @@ class TestUpdateSeats:
         )
 
         # When: Update with prorate behavior
-        await subscription_service.update_seats(
+        updated = await subscription_service.update_seats(
             session,
             subscription,
             seats=10,
@@ -3146,6 +3722,73 @@ class TestUpdateSeats:
         # (prorate means add to next invoice, not create immediately)
         for call_args in enqueue_job_mock.call_args_list:
             assert call_args[0][0] != "order.create_subscription_order"
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["seats"] == 10
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.prorate
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+    async def test_proration_invoice_behavior_emits_event(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Update with invoice behavior
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+        await session.flush()
+
+        # Then: subscription.updated event emitted with invoice proration behavior
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["seats"] == 10
+        assert (
+            event.user_metadata["proration_behavior"]
+            == SubscriptionProrationBehavior.invoice
+        )
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
 
     async def test_no_proration_at_period_end(
         self,
@@ -3195,6 +3838,157 @@ class TestUpdateSeats:
         ]
         assert len(proration_entries) == 0
 
+    async def test_next_period_behavior_new_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription at end of period
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        # Set period end to past
+        subscription.current_period_end = utc_now() - timedelta(hours=1)
+        await save_fixture(subscription)
+
+        # When: Update seats
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        # Then: seats not updated
+        assert updated.seats == 5
+
+        # But SubscriptionUpdate created
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert subscription_update is not None
+        assert subscription_update.seats == 10
+        assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_next_period_behavior_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with existing future SubscriptionUpdate
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        future_time = utc_now() + timedelta(days=15)
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription, seats=8
+        )
+        await save_fixture(subscription_update)
+
+        # When: Update seats with next_period behavior
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.next_period,
+        )
+        await session.flush()
+
+        # Then: seats not updated
+        assert updated.seats == 5
+
+        # Then: Existing SubscriptionUpdate updated to new seat count
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is not None
+        assert updated_subscription_update.id == subscription_update.id
+        assert updated_subscription_update.seats == 10
+        assert subscription_update.applies_at == subscription.current_period_end
+
+    async def test_proration_behavior_deletes_existing_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with existing future SubscriptionUpdate
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription=subscription, seats=8
+        )
+        await save_fixture(subscription_update)
+
+        # When: Update seats with a proration behavior
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: seats are updated
+        assert updated.seats == 10
+
+        # Then: Existing SubscriptionUpdate is deleted
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        updated_subscription_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                subscription.id
+            )
+        )
+        assert updated_subscription_update is None
+
     async def test_seat_increase_with_fixed_discount(
         self,
         session: AsyncSession,
@@ -3220,8 +4014,7 @@ class TestUpdateSeats:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,  # $10 discount
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             organization=organization,
             products=[product],
@@ -3355,8 +4148,7 @@ class TestUpdateSeats:
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
-            amount=1000,  # $10 discount
-            currency="usd",
+            amounts={"usd": 1000},
             duration=DiscountDuration.repeating,
             organization=organization,
             products=[product],
@@ -3569,6 +4361,68 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             subscription_id=subscription.id,
             delay=None,
         )
+
+
+@pytest.mark.asyncio
+class TestUpdateBillingPeriod:
+    async def test_emits_event(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        assert subscription.current_period_end is not None
+        new_period_end = subscription.current_period_end + timedelta(days=7)
+
+        updated_subscription = (
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=new_period_end,
+            )
+        )
+
+        assert updated_subscription.current_period_end == new_period_end
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_updated
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["billing_period_end"] == new_period_end.isoformat()
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+    async def test_canceled_subscription_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        new_period_end = utc_now() + timedelta(days=30)
+
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=new_period_end,
+            )
 
 
 @pytest.mark.asyncio

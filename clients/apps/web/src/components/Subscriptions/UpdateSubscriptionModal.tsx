@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import {
@@ -107,6 +108,7 @@ const UpdateProduct = ({
     [allProducts, activePriceIds, subscription],
   )
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = watch('product_id')
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId),
@@ -595,12 +597,7 @@ const UpdateBillingPeriod = ({
 }) => {
   const updateSubscription = useUpdateSubscription(subscription.id)
 
-  const minDate = useMemo<Date | undefined>(() => {
-    if (subscription.current_period_end) {
-      return new Date(subscription.current_period_end)
-    }
-    return new Date()
-  }, [subscription])
+  const minDate = useMemo<Date>(() => new Date(), [])
 
   const form = useForm<schemas['SubscriptionUpdateBillingPeriod']>({
     defaultValues: {

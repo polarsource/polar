@@ -122,16 +122,17 @@ export const InactiveSubscriptionsOverview = ({
     sorting: ['-created_at'],
   })
 
+  const orderItems = orders?.items
   const pastDueOrder = useMemo(() => {
     if (
       !retryPaymentSubscription ||
       retryPaymentSubscription.status !== 'past_due' ||
-      !orders?.items
+      !orderItems
     ) {
       return null
     }
-    return orders.items.find((order) => order.status === 'pending')
-  }, [retryPaymentSubscription, orders?.items])
+    return orderItems.find((order) => order.status === 'pending')
+  }, [retryPaymentSubscription, orderItems])
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -181,7 +182,7 @@ export const InactiveSubscriptionsOverview = ({
                     size="sm"
                     onClick={() => openRetryPaymentModal(row.original)}
                   >
-                    Retry Payment
+                    Retry payment
                   </Button>
                 )}
                 <Button
@@ -189,7 +190,7 @@ export const InactiveSubscriptionsOverview = ({
                   size="sm"
                   onClick={() => openSubscriptionModal(row.original)}
                 >
-                  View Subscription
+                  Manage subscription
                 </Button>
               </span>
             ),

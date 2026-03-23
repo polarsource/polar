@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'

@@ -49,6 +49,7 @@ const SelectContent = ({
 }: React.ComponentProps<typeof SelectContentPrimitive>) => (
   <SelectContentPrimitive
     ref={ref}
+    position={position}
     className={twMerge('dark:bg-polar-800 rounded-xl border-none', className)}
     {...props}
   >

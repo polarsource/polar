@@ -9,19 +9,16 @@
     "./react-internal": "./react-internal.js"
   },
   "scripts": {
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@next/eslint-plugin-next": "^16.1.6",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-only-warn": "^1.1.0",
+    "@eslint/js": "^9.39.4",
+    "@next/eslint-plugin-next": "^16.2.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-turbo": "^2.8.9",
+    "eslint-plugin-turbo": "^2.8.18",
     "globals": "^16.5.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.55.0"
+    "typescript-eslint": "^8.57.1"
   }
 }

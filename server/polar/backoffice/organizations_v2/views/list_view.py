@@ -120,7 +120,7 @@ class OrganizationListView:
         with tag.th(
             classes=f"cursor-pointer hover:bg-base-300 {align_class}",
             **{
-                "hx-get": str(request.url_for("organizations-v2:list")),
+                "hx-get": str(request.url_for("organizations:list")),
                 "hx-vals": hx_vals,
                 "hx-target": "#org-list",
                 "hx-include": "#filter-form",
@@ -141,9 +141,7 @@ class OrganizationListView:
         yield
 
     @contextlib.contextmanager
-    def organization_row(
-        self, request: Request, org: Organization, show_quick_actions: bool = False
-    ) -> Generator[None]:
+    def organization_row(self, request: Request, org: Organization) -> Generator[None]:
         """Render a single organization row in the table."""
         days_in_status = self.calculate_days_in_status(org)
         needs_attention = self.is_needs_attention(org)
@@ -160,7 +158,7 @@ class OrganizationListView:
                     with tag.a(
                         href=str(
                             request.url_for(
-                                "organizations-v2:detail", organization_id=org.id
+                                "organizations:detail", organization_id=org.id
                             )
                         ),
                         classes="font-semibold hover:underline flex items-center gap-2",
@@ -221,54 +219,23 @@ class OrganizationListView:
                     with tag.span(classes="text-base-content/40"):
                         text("—")
 
-            # Next review
+            # Total balance
             with tag.td(classes="text-sm text-right"):
-                if org.next_review_threshold:
-                    text(f"${org.next_review_threshold / 100:,.0f}")
+                if org.total_balance is not None:
+                    text(f"${org.total_balance / 100:,.2f}")
                 else:
                     with tag.span(classes="text-base-content/40"):
                         text("—")
 
             # Actions
             with tag.td(classes="text-right"):
-                if show_quick_actions:
-                    with tag.div(classes="flex gap-2 justify-end"):
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_post=str(
-                                request.url_for(
-                                    "organizations-v2:approve", organization_id=org.id
-                                )
-                            )
-                            + "?threshold=25000",
-                            hx_confirm="Approve with $250 threshold?",
-                        ):
-                            text("Approve")
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations-v2:deny_dialog",
-                                    organization_id=org.id,
-                                )
-                            ),
-                            hx_target="#modal",
-                        ):
-                            text("Deny")
-                else:
-                    with tag.a(
-                        href=str(
-                            request.url_for(
-                                "organizations-v2:detail", organization_id=org.id
-                            )
-                        ),
-                        classes="btn btn-ghost btn-sm",
-                    ):
-                        text("View →")
+                with tag.a(
+                    href=str(
+                        request.url_for("organizations:detail", organization_id=org.id)
+                    ),
+                    classes="btn btn-ghost btn-sm",
+                ):
+                    text("View →")
 
         yield
 
@@ -293,9 +260,14 @@ class OrganizationListView:
             with tag.h1(classes="text-3xl font-bold"):
                 text("Organizations")
             with action_bar(position="right"):
+                with tag.a(
+                    href=str(request.url_for("organizations-classic:list")),
+                    classes="btn btn-ghost btn-sm",
+                ):
+                    text("Switch to Classic View")
                 with button(
                     variant="primary",
-                    hx_get=str(request.url_for("organizations-v2:list")) + "/new",
+                    hx_get=str(request.url_for("organizations:list")) + "/new",
                     hx_target="#modal",
                 ):
                     text("+ Create Thread")
@@ -304,13 +276,13 @@ class OrganizationListView:
         tabs = [
             Tab(
                 label="All",
-                url=str(request.url_for("organizations-v2:list")),
+                url=str(request.url_for("organizations:list")),
                 active=status_filter is None,
                 count=sum(status_counts.values()),
             ),
             Tab(
                 label="Initial Review",
-                url=str(request.url_for("organizations-v2:list"))
+                url=str(request.url_for("organizations:list"))
                 + "?status=initial_review",
                 active=status_filter == OrganizationStatus.INITIAL_REVIEW,
                 count=status_counts.get(OrganizationStatus.INITIAL_REVIEW, 0),
@@ -318,7 +290,7 @@ class OrganizationListView:
             ),
             Tab(
                 label="Ongoing Review",
-                url=str(request.url_for("organizations-v2:list"))
+                url=str(request.url_for("organizations:list"))
                 + "?status=ongoing_review",
                 active=status_filter == OrganizationStatus.ONGOING_REVIEW,
                 count=status_counts.get(OrganizationStatus.ONGOING_REVIEW, 0),
@@ -326,14 +298,14 @@ class OrganizationListView:
             ),
             Tab(
                 label="Active",
-                url=str(request.url_for("organizations-v2:list")) + "?status=active",
+                url=str(request.url_for("organizations:list")) + "?status=active",
                 active=status_filter == OrganizationStatus.ACTIVE,
                 count=status_counts.get(OrganizationStatus.ACTIVE, 0),
                 badge_variant="success",
             ),
             Tab(
                 label="Denied",
-                url=str(request.url_for("organizations-v2:list")) + "?status=denied",
+                url=str(request.url_for("organizations:list")) + "?status=denied",
                 active=status_filter == OrganizationStatus.DENIED,
                 count=status_counts.get(OrganizationStatus.DENIED, 0),
                 badge_variant="error",
@@ -348,7 +320,7 @@ class OrganizationListView:
             with tag.form(
                 id="filter-form",
                 classes="space-y-4",
-                hx_get=str(request.url_for("organizations-v2:list")),
+                hx_get=str(request.url_for("organizations:list")),
                 hx_trigger="submit, change from:.filter-select",
                 hx_target="#org-list",
             ):
@@ -591,8 +563,8 @@ class OrganizationListView:
 
                                     with self.sortable_header(
                                         request,
-                                        "Next Review",
-                                        "next_review",
+                                        "Balance",
+                                        "total_balance",
                                         current_sort,
                                         current_direction,
                                         "right",
@@ -605,9 +577,7 @@ class OrganizationListView:
 
                             with tag.tbody():
                                 for org in needs_attention:
-                                    with self.organization_row(
-                                        request, org, show_quick_actions=True
-                                    ):
+                                    with self.organization_row(request, org):
                                         pass
 
                     # Divider
@@ -676,8 +646,8 @@ class OrganizationListView:
 
                                 with self.sortable_header(
                                     request,
-                                    "Next Review",
-                                    "next_review",
+                                    "Balance",
+                                    "total_balance",
                                     current_sort,
                                     current_direction,
                                     "right",
@@ -701,7 +671,7 @@ class OrganizationListView:
                     with tag.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
-                            hx_get=str(request.url_for("organizations-v2:list"))
+                            hx_get=str(request.url_for("organizations:list"))
                             + f"?page={page + 1}",
                             hx_target="#org-list",
                             hx_swap="beforeend",
@@ -811,8 +781,8 @@ class OrganizationListView:
 
                                     with self.sortable_header(
                                         request,
-                                        "Next Review",
-                                        "next_review",
+                                        "Balance",
+                                        "total_balance",
                                         current_sort,
                                         current_direction,
                                         "right",
@@ -825,9 +795,7 @@ class OrganizationListView:
 
                             with tag.tbody():
                                 for org in needs_attention:
-                                    with self.organization_row(
-                                        request, org, show_quick_actions=True
-                                    ):
+                                    with self.organization_row(request, org):
                                         pass
 
                     # Divider
@@ -896,8 +864,8 @@ class OrganizationListView:
 
                                 with self.sortable_header(
                                     request,
-                                    "Next Review",
-                                    "next_review",
+                                    "Balance",
+                                    "total_balance",
                                     current_sort,
                                     current_direction,
                                     "right",
@@ -921,7 +889,7 @@ class OrganizationListView:
                     with tag.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
-                            hx_get=str(request.url_for("organizations-v2:list"))
+                            hx_get=str(request.url_for("organizations:list"))
                             + f"?page={page + 1}",
                             hx_target="#org-list",
                             hx_swap="beforeend",

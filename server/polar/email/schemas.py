@@ -35,9 +35,12 @@ class EmailTemplate(StrEnum):
     subscription_confirmation = "subscription_confirmation"
     subscription_cycled = "subscription_cycled"
     subscription_cycled_after_trial = "subscription_cycled_after_trial"
+    subscription_final_invoice = "subscription_final_invoice"
     subscription_past_due = "subscription_past_due"
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
+    subscription_renewal_reminder = "subscription_renewal_reminder"
+    subscription_trial_conversion_reminder = "subscription_trial_conversion_reminder"
     subscription_updated = "subscription_updated"
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
@@ -65,6 +68,7 @@ class EmailProps(BaseModel):
 class LoginCodeProps(EmailProps):
     code: str
     code_lifetime_minutes: int
+    domain: str
 
 
 class LoginCodeEmail(BaseModel):
@@ -77,6 +81,7 @@ class CustomerSessionCodeProps(EmailProps):
     code: str
     code_lifetime_minutes: int
     url: str
+    domain: str
 
 
 class CustomerSessionCodeEmail(BaseModel):
@@ -260,6 +265,17 @@ class SubscriptionCycledAfterTrialEmail(BaseModel):
     props: SubscriptionCycledAfterTrialProps
 
 
+class SubscriptionFinalInvoiceProps(SubscriptionPropsBase):
+    order: OrderEmail
+
+
+class SubscriptionFinalInvoiceEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_final_invoice] = (
+        EmailTemplate.subscription_final_invoice
+    )
+    props: SubscriptionFinalInvoiceProps
+
+
 class SubscriptionPastDueProps(SubscriptionPropsBase):
     payment_url: str | None = None
 
@@ -269,6 +285,28 @@ class SubscriptionPastDueEmail(BaseModel):
         EmailTemplate.subscription_past_due
     )
     props: SubscriptionPastDueProps
+
+
+class SubscriptionRenewalReminderProps(SubscriptionPropsBase):
+    renewal_date: str
+
+
+class SubscriptionRenewalReminderEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_renewal_reminder] = (
+        EmailTemplate.subscription_renewal_reminder
+    )
+    props: SubscriptionRenewalReminderProps
+
+
+class SubscriptionTrialConversionReminderProps(SubscriptionPropsBase):
+    conversion_date: str
+
+
+class SubscriptionTrialConversionReminderEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_trial_conversion_reminder] = (
+        EmailTemplate.subscription_trial_conversion_reminder
+    )
+    props: SubscriptionTrialConversionReminderProps
 
 
 class SubscriptionRevokedProps(SubscriptionPropsBase): ...
@@ -373,7 +411,10 @@ Email = Annotated[
     | SubscriptionConfirmationEmail
     | SubscriptionCycledEmail
     | SubscriptionCycledAfterTrialEmail
+    | SubscriptionFinalInvoiceEmail
     | SubscriptionPastDueEmail
+    | SubscriptionRenewalReminderEmail
+    | SubscriptionTrialConversionReminderEmail
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail

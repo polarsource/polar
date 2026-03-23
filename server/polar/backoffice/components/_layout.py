@@ -15,15 +15,13 @@ def content(
 ) -> Generator[None]:
     with tag.div(classes="breadcrumbs text-sm"):
         with tag.ul():
-            for title, href in reversed(
-                [
-                    *breadcrumbs,
-                    (
-                        "Polar Backoffice",
-                        str(request.url_for("index")),
-                    ),
-                ]
-            ):
+            for title, href in [
+                (
+                    "Polar Backoffice",
+                    str(request.url_for("index")),
+                ),
+                *breadcrumbs,
+            ]:
                 with tag.li():
                     with tag.a(href=href):
                         text(title)

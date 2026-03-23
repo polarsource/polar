@@ -13,6 +13,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.openapi import APITag
+from polar.order.service import PaymentFailed
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -259,6 +260,10 @@ async def create(
     response_model=SubscriptionSchema,
     responses={
         200: {"description": "Subscription updated."},
+        402: {
+            "description": "Payment required to apply the subscription update.",
+            "model": PaymentFailed.schema(),
+        },
         403: {
             "description": (
                 "Subscription is already canceled or will be at the end of the period."

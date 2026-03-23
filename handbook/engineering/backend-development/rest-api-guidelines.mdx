@@ -1,0 +1,199 @@
+---
+title: "REST API Guidelines"
+description: "Best practices and conventions for designing and implementing RESTful APIs at Polar"
+---
+
+This document outlines the guidelines and principles we follow when designing and implementing RESTful APIs at Polar. Adhering to these standards ensures consistency, maintainability, and a better developer experience for both internal and external users of our APIs.
+
+## Overview
+
+- Versioned base path: `/v1/`
+- Plural resource names: `/v1/customers/`, `/v1/orders/`
+- Standard methods: `GET`, `POST`, `PATCH`, `DELETE`
+- Consistent schemas across list and get responses
+- No shape-changing parameters (avoid toggling fields on/off in responses)
+
+## Core conventions
+
+- Always use `polar.kit.Schema` (or `TimestampedSchema` when timestamps exist)
+- Snake_case field names
+- Add docstrings, field descriptions, and meaningful examples
+- Separate read/create/update schemas; updates must be partial (all fields optional)
+- Validation errors should return `422 Unprocessable Entity` in FastAPI format via `PolarRequestValidationError`
+
+## Schemas
+
+Our schemas are defined in our Python backend using [Pydantic](https://docs.pydantic.dev/latest/) models. Each schema represents a resource to read, create, or update.
+
+**Inherit from `polar.kit.Schema`**
+
+```py
+# ✅ DO
+from polar.kit import Schema
+
+class Customer(Schema):
+    email: str
+
+# ❌ DON'T
+from pydantic import BaseModel
+
+class Customer(BaseModel):
+    email: str
+```
+
+**Use snake case for field names**
+
+```py
+# ✅ DO
+class Customer(Schema):
+    first_name: str
+
+
+# ❌ DON'T
+class Customer(Schema):
+    firstName: str
+```
+
+**If the underlying data model includes `created_at` or `updated_at` fields, inherit from `polar.kit.TimestampedSchema`**
+
+```py
+# ✅ DO
+from polar.kit import TimestampedSchema
+
+class Customer(TimestampedSchema):
+    email: str
+
+# ❌ DON'T
+from polar.kit import Schema
+
+class Customer(Schema):
+    email: str
+    created_at: datetime
+    updated_at: datetime
+
+# ❌ DON'T
+from polar.kit import Schema
+
+class Customer(Schema):
+    email: str
+```
+
+**Add description to schema and fields, and meaningful example values.**
+
+```py
+# ✅ DO
+from polar.kit import Schema
+from pydantic import Field
+
+class Customer(Schema):
+    """A customer of the platform."""
+
+    email: str = Field(..., description="The customer's email address", example="john@example.com")
+
+# ❌ DON'T
+from polar.kit import Schema
+
+class Customer(Schema):
+    email: str
+```
+
+**Separate read, create, and update schemas**
+
+```py
+# ✅ DO
+class CustomerRead(Schema):
+    id: int
+    email: str
+
+class CustomerCreate(Schema):
+    email: str
+
+class CustomerUpdate(Schema):
+    email: str | None = None
+```
+
+**Update schemas should support partial updates**
+
+All fields in update schemas should be optional with a default value of `None`, allowing clients to update only the fields they need.
+
+```py
+# ✅ DO
+class CustomerUpdate(Schema):
+    email: str | None = None
+    first_name: str | None = None
+
+# ❌ DON'T
+class CustomerUpdate(Schema):
+    email: str
+    first_name: str
+```
+
+## Endpoints
+
+## Authentication Subjects
+
+All authenticated endpoints should clearly define the authentication subject, which can be one of the following:
+
+- User: An individual user authenticated via PAT, OAuth access token or web session cookie.
+- Organization: An organization authenticated via an OAT or OAuth access token.
+- Customer: A customer authenticated via a Customer Session.
+
+In most cases, Admin API will support User and Organization subjects, while Customer Portal API will support Customer subjects. It's key then when querying resources to filter upon the authentication subject to ensure proper access control.
+
+### List endpoints
+
+List endpoints return a list of resources and support filtering, pagination, and sorting.
+
+- **Filtering**: By default, no filter is applied; return all resources the subject can access. Avoid implicit filters like `active=true`. Allow repeated query parameters for multi-value filters:
+  ```
+  # ✅ DO
+  GET /v1/customers/?status=active&status=pending
+  ```
+- **Pagination**: Page-based with `page` and `limit`.
+- **Sorting**: Use `sorting` with comma-separated fields; prefix with `-` for descending:
+  ```
+  # ✅ DO
+  GET /v1/customers/?sorting=-created_at,first_name
+  ```
+- For endpoints supporting User subject, they'll typically expect an `organization_id` filter to scope results to a specific organization. If not set return resources across all organizations the subject has access to.
+- **Response shape**:
+
+  ```json
+  {
+    "items": [
+      {
+        "id": 1,
+        "email": "john@example.com"
+      }
+    ],
+    "pagination": {
+      "total_count": 1,
+      "max_page": 1
+    }
+  }
+  ```
+
+- Do not add parameters that change the response schema. Use separate endpoints if different representations are needed.
+
+### Get endpoints
+
+- Retrieve a single resource by its unique identifier (typically ID).
+- Response schema matches the list item schema.
+- Do not add parameters that change the response schema; prefer separate endpoints for alternate representations.
+
+### Create endpoints
+
+- Request body uses the create schema.
+- On validation errors, return `422 Unprocessable Entity` with FastAPI-style details (`PolarRequestValidationError`).
+- On success, return `201 Created` with the read schema.
+
+### Update endpoints
+
+- Request body uses the update schema (partial updates allowed).
+- On validation errors, return `422 Unprocessable Entity` with FastAPI-style details (`PolarRequestValidationError`).
+- On success, return `200 OK` with the read schema.
+
+### Delete endpoints
+
+- Delete an existing resource.
+- On success, return `204 No Content` with an empty response body.

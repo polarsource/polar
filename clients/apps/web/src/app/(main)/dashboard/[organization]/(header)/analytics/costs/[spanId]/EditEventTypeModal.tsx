@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 interface EditEventTypeModalProps {
   eventTypeId: string
@@ -73,12 +73,17 @@ export const EditEventTypeModal = ({
     [updateEventType, form, toast, hide],
   )
 
+  const { label_property_selector: labelPropertySelector } = useWatch({
+    control: form.control,
+  })
+
   return (
     <SyntaxHighlighterProvider>
       <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
         <div>
           <h2 className="text-xl">Edit Event Type</h2>
           <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
+            {/* eslint-disable-next-line react/no-unescaped-entities */}
             Update the display label for event type "{eventName}"
           </p>
         </div>
@@ -158,7 +163,7 @@ export const EditEventTypeModal = ({
           <div className="flex flex-col gap-y-2">
             <h3>Ingesting Events</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
-              {form.watch('label_property_selector')
+              {labelPropertySelector
                 ? 'To ingest events with dynamic labels, include the property in metadata.'
                 : 'To ingest events with this label, use the following event name.'}
             </p>
@@ -167,14 +172,14 @@ export const EditEventTypeModal = ({
             <SyntaxHighlighterClient
               lang="typescript"
               code={
-                form.watch('label_property_selector')
+                labelPropertySelector
                   ? `await polar.events.ingest({
   events: [{
     name: "${eventName}",
     customerId: "<value>",
     metadata: {
       // Used for dynamic label
-      ${form.watch('label_property_selector')}: "<value>", 
+      ${labelPropertySelector}: "<value>", 
     },
   }],
 });`

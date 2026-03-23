@@ -137,9 +137,10 @@ class TestProcessDunningOrder:
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
-        caplog: pytest.LogCaptureFixture,
+        mocker: MockerFixture,
     ) -> None:
         # Given
+        log_mock = mocker.patch("polar.order.service.log")
         customer = await create_customer(save_fixture, organization=organization)
         order = await create_order(
             save_fixture,
@@ -152,7 +153,10 @@ class TestProcessDunningOrder:
         await process_dunning_order(order.id)
 
         # Then
-        assert "Order has no subscription, skipping dunning" in caplog.text
+        log_mock.warning.assert_called_once_with(
+            "Order has no subscription, skipping dunning",
+            order_id=order.id,
+        )
 
     async def test_cancelled_subscription_order_cleared_from_dunning(
         self,
@@ -194,9 +198,10 @@ class TestProcessDunningOrder:
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
-        caplog: pytest.LogCaptureFixture,
+        mocker: MockerFixture,
     ) -> None:
         # Given
+        log_mock = mocker.patch("polar.order.service.log")
         customer = await create_customer(save_fixture, organization=organization)
         subscription = await create_subscription(
             save_fixture,
@@ -220,8 +225,10 @@ class TestProcessDunningOrder:
         await process_dunning_order(order.id)
 
         # Then
-        assert (
-            "Order subscription has no payment method, record a failure" in caplog.text
+        log_mock.warning.assert_called_once_with(
+            "Order subscription has no payment method, record a failure",
+            order_id=order.id,
+            subscription_id=subscription.id,
         )
 
     async def test_valid_order_triggers_payment_retry(

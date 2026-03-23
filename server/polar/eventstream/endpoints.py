@@ -10,6 +10,8 @@ from uvicorn import Server
 
 from polar.auth.dependencies import WebUserRead
 from polar.exceptions import ResourceNotFound
+from polar.observability import HTTP_SSE_CONNECTIONS_OPENED
+from polar.observability.utils import get_path_template
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -47,39 +49,60 @@ def _uvicorn_should_exit() -> bool:
     return False
 
 
+# Maximum lifetime for a single SSE connection.
+# After this duration the server sends a "reconnect" event and closes the connection,
+# forcing the client to reconnect. This caps steady-state memory growth caused by
+# long-lived connections holding DB sessions and Redis subscriptions indefinitely.
+MAX_SSE_CONNECTION_LIFETIME = 10 * 60  # 10 minutes
+
+
 async def subscribe(
     redis: Redis,
     channels: list[str],
     request: Request,
     on_iteration: Callable[[], Awaitable[None]] | None = None,
 ) -> AsyncGenerator[Any, Any]:
+    deadline = asyncio.get_event_loop().time() + MAX_SSE_CONNECTION_LIFETIME
+
     async with redis.pubsub() as pubsub:
         await pubsub.subscribe(*channels)
 
-        while not _uvicorn_should_exit():
-            if await request.is_disconnected():
-                await pubsub.close()
-                break
+        endpoint = get_path_template(request.scope)
+        if endpoint is not None:
+            HTTP_SSE_CONNECTIONS_OPENED.labels(endpoint=endpoint).inc()
 
-            if on_iteration is not None:
-                await on_iteration()
+        try:
+            while not _uvicorn_should_exit():
+                if await request.is_disconnected():
+                    break
 
-            try:
-                message = await pubsub.get_message(
-                    ignore_subscribe_messages=True,
-                    # Waits for up to 10s for a new message
-                    timeout=10.0,
-                )
+                # Enforce maximum connection lifetime
+                remaining = deadline - asyncio.get_event_loop().time()
+                if remaining <= 0:
+                    yield '{"type": "reconnect"}'
+                    break
 
-                if message is not None:
-                    log.info("redis.pubsub", message=message["data"])
-                    yield message["data"]
-            except asyncio.CancelledError as e:
-                await pubsub.close()
-                raise e
-            except ConnectionError as e:
-                await pubsub.close()
-                raise e
+                if on_iteration is not None:
+                    await on_iteration()
+
+                try:
+                    message = await pubsub.get_message(
+                        ignore_subscribe_messages=True,
+                        # Waits for up to 1s for a new message (shorter interval
+                        # reduces disconnect detection latency from 10s to ~1s)
+                        timeout=min(1.0, remaining),
+                    )
+
+                    if message is not None:
+                        log.debug("redis.pubsub", message=message["data"])
+                        yield message["data"]
+                except asyncio.CancelledError:
+                    raise
+                except ConnectionError:
+                    raise
+        finally:
+            if endpoint is not None:
+                HTTP_SSE_CONNECTIONS_OPENED.labels(endpoint=endpoint).dec()
 
 
 @router.get("/user")

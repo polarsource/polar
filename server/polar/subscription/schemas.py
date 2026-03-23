@@ -76,7 +76,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     current_period_start: datetime = Field(
         description="The start timestamp of the current billing period."
     )
-    current_period_end: datetime | None = Field(
+    current_period_end: datetime = Field(
         description="The end timestamp of the current billing period."
     )
     trial_start: datetime | None = Field(
@@ -171,6 +171,20 @@ class SubscriptionMeter(SubscriptionMeterBase):
     )
 
 
+class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
+    """Pending update to be applied to a subscription at the beginning of the next period."""
+
+    applies_at: datetime = Field(
+        description="The date and time when the subscription update will be applied."
+    )
+    product_id: UUID4 | None = Field(
+        description="ID of the new product to apply to the subscription. If `null`, the product won't be changed."
+    )
+    seats: int | None = Field(
+        description="Number of seats to apply to the subscription. If `null`, the number of seats won't be changed."
+    )
+
+
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
     user_id: SkipJsonSchema[UUID4] = Field(
@@ -209,6 +223,12 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
     meters: list[SubscriptionMeter] = Field(
         description="List of meters associated with the subscription."
+    )
+    pending_update: PendingSubscriptionUpdate | None = Field(
+        description=(
+            "Pending subscription update that will be applied at the beginning of the next period. "
+            "If `null`, there is no pending update."
+        )
     )
 
 

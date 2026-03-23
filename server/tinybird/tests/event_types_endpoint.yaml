@@ -1,0 +1,17 @@
+# Smoke tests for event_types_endpoint
+# Populate expected_result after tb build: tb test update event_types_endpoint
+
+- name: smoke_empty_org
+  description: Endpoint returns empty result for org with no data (validates SQL and joins)
+  parameters: organization_id=99999999-9999-9999-9999-999999999999
+  expected_result: ''
+
+- name: smoke_with_fixture_data
+  description: Endpoint returns event types for fixture org
+  parameters: organization_id=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+  expected_result: |
+    {"name":"subscription.canceled","source":"system","occurrences":1,"first_seen":"2024-01-01 18:00:00.000","last_seen":"2024-01-01 18:00:00.000"}
+    {"name":"api.call","source":"user","occurrences":1,"first_seen":"2024-01-01 12:00:00.000","last_seen":"2024-01-01 12:00:00.000"}
+    {"name":"balance.order","source":"system","occurrences":1,"first_seen":"2024-01-01 10:02:00.000","last_seen":"2024-01-01 10:02:00.000"}
+    {"name":"order.paid","source":"system","occurrences":1,"first_seen":"2024-01-01 10:01:00.000","last_seen":"2024-01-01 10:01:00.000"}
+    {"name":"subscription.created","source":"system","occurrences":1,"first_seen":"2024-01-01 10:00:00.000","last_seen":"2024-01-01 10:00:00.000"}

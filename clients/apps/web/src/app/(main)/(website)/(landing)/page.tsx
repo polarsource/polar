@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import LandingPage from '../../../../components/Landing/LandingPage'
-
 export const metadata: Metadata = {
   title: 'Polar — Monetize your software with ease',
   description: 'Monetize your software with ease',

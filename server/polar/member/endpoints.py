@@ -5,6 +5,7 @@ from fastapi import Depends, Query
 from polar.customer.schemas.customer import ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.models.member import MemberRole
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -42,6 +43,7 @@ async def list_members(
     external_customer_id: ExternalCustomerID | None = Query(
         None, description="Filter by customer external ID."
     ),
+    role: MemberRole | None = Query(None, description="Filter by member role."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Member]:
     """List members with optional customer ID filter."""
@@ -57,6 +59,7 @@ async def list_members(
         auth_subject,
         customer_id=parsed_customer_id,
         external_customer_id=external_customer_id,
+        role=role,
         pagination=pagination,
         sorting=sorting,
     )

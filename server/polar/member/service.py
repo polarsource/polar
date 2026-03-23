@@ -35,6 +35,7 @@ class MemberService:
         *,
         customer_id: UUID | None = None,
         external_customer_id: str | None = None,
+        role: MemberRole | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[MemberSortProperty]] = [
             (MemberSortProperty.created_at, True)
@@ -46,6 +47,9 @@ class MemberService:
 
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
+
+        if role is not None:
+            statement = statement.where(Member.role == role)
 
         if external_customer_id is not None:
             statement = statement.join(Customer).where(
@@ -137,6 +141,57 @@ class MemberService:
 
         return deleted_member
 
+    async def delete_by_customer(
+        self,
+        session: AsyncSession,
+        customer_id: UUID,
+    ) -> Sequence[Member]:
+        """
+        Soft-delete all members for a customer.
+
+        Unlike delete(), this skips the owner guard since the entire
+        customer is being removed.
+        """
+        from polar.benefit.grant.service import (
+            benefit_grant as benefit_grant_service,
+        )
+
+        repository = MemberRepository.from_session(session)
+        members = await repository.list_by_customer(session, customer_id)
+
+        if not members:
+            return []
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            members[0].organization_id
+        )
+
+        deleted: list[Member] = []
+        for member in members:
+            enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
+            await benefit_grant_service.enqueue_member_grant_deletions(
+                session, member.id
+            )
+            deleted_member = await repository.soft_delete(member)
+            log.info(
+                "member.delete.success",
+                member_id=member.id,
+                customer_id=member.customer_id,
+                organization_id=member.organization_id,
+            )
+
+            if organization:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_deleted,
+                    deleted_member,
+                )
+            deleted.append(deleted_member)
+
+        return deleted
+
     async def create_owner_member(
         self,
         session: AsyncSession,
@@ -162,7 +217,11 @@ class MemberService:
         Returns:
             Created/existing Member if feature flag enabled, None if flag disabled
         """
-        if not organization.feature_settings.get("member_model_enabled", False):
+        member_model = organization.feature_settings.get("member_model_enabled", False)
+        seat_based = organization.feature_settings.get(
+            "seat_based_pricing_enabled", False
+        )
+        if not member_model and not seat_based:
             log.debug(
                 "member.create_owner_member.skipped",
                 reason="feature_flag_disabled",
@@ -173,7 +232,7 @@ class MemberService:
 
         repository = MemberRepository.from_session(session)
 
-        email = owner_email or customer.email
+        email = (owner_email or customer.email).strip().lower()
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id
 
@@ -255,18 +314,15 @@ class MemberService:
         Returns:
             Created/existing Member if feature flag enabled, None if flag disabled
         """
-        if not organization.feature_settings.get("member_model_enabled", False):
+        member_model = organization.feature_settings.get("member_model_enabled", False)
+        seat_based = organization.feature_settings.get(
+            "seat_based_pricing_enabled", False
+        )
+        if not member_model and not seat_based:
             return None
 
-        repository = MemberRepository.from_session(session)
-
-        existing_member = await repository.get_by_customer_and_email(
-            session, customer, email=customer.email
-        )
-        if existing_member:
-            return existing_member
-
-        member = Member(
+        return await self.get_or_create_by_email(
+            session,
             customer_id=customer.id,
             organization_id=organization.id,
             email=customer.email,
@@ -274,14 +330,61 @@ class MemberService:
             role=MemberRole.member,
         )
 
+    async def get_or_create_by_email(
+        self,
+        session: AsyncSession,
+        *,
+        customer_id: UUID,
+        organization_id: UUID,
+        email: str,
+        name: str | None = None,
+        external_id: str | None = None,
+        role: MemberRole = MemberRole.member,
+    ) -> Member:
+        """
+        Get or create a member by email under a customer.
+
+        Consolidated get-or-create pattern that handles:
+        - Returning existing active members
+        - Race condition retries on IntegrityError
+        - Email normalization (strip + lowercase)
+        """
+        email = email.strip().lower()
+
+        repository = MemberRepository.from_session(session)
+
+        existing = await repository.get_by_customer_id_and_email(customer_id, email)
+        if existing:
+            return existing
+        member = Member(
+            customer_id=customer_id,
+            organization_id=organization_id,
+            email=email,
+            name=name,
+            external_id=external_id,
+            role=role,
+        )
+
         try:
-            return await repository.create(member)
-        except IntegrityError:
-            existing_member = await repository.get_by_customer_and_email(
-                session, customer, email=customer.email
+            created = await repository.create(member, flush=True)
+            log.info(
+                "member.get_or_create_by_email.created",
+                member_id=created.id,
+                customer_id=customer_id,
+                organization_id=organization_id,
+                email=email,
             )
-            if existing_member:
-                return existing_member
+            return created
+        except IntegrityError:
+            # 4. Race condition: another transaction created the member concurrently
+            log.info(
+                "member.get_or_create_by_email.integrity_error_retry",
+                customer_id=customer_id,
+                email=email,
+            )
+            existing = await repository.get_by_customer_id_and_email(customer_id, email)
+            if existing:
+                return existing
             raise
 
     async def list_by_customer(
@@ -324,41 +427,14 @@ class MemberService:
         Returns:
             Created or existing Member
         """
-        repository = MemberRepository.from_session(session)
-
-        # Check if member already exists
-        existing_member = await repository.get_by_customer_id_and_email(
-            customer.id, email
-        )
-        if existing_member:
-            log.debug(
-                "member.add_to_customer.already_exists",
-                customer_id=customer.id,
-                email=email,
-                existing_member_id=existing_member.id,
-            )
-            return existing_member
-
-        # Create the new member
-        member = Member(
+        return await self.get_or_create_by_email(
+            session,
             customer_id=customer.id,
             organization_id=customer.organization_id,
             email=email,
             name=name,
             role=role,
         )
-
-        created_member = await repository.create(member, flush=True)
-
-        log.info(
-            "member.add_to_customer.success",
-            customer_id=customer.id,
-            member_id=created_member.id,
-            email=email,
-            role=role,
-        )
-
-        return created_member
 
     async def list_by_customers(
         self,
@@ -409,10 +485,16 @@ class MemberService:
         if customer is None:
             raise ResourceNotFound("Customer not found")
 
-        if not customer.organization.feature_settings.get(
+        member_model = customer.organization.feature_settings.get(
             "member_model_enabled", False
-        ):
+        )
+        seat_based = customer.organization.feature_settings.get(
+            "seat_based_pricing_enabled", False
+        )
+        if not member_model and not seat_based:
             raise NotPermitted("Member management is not enabled for this organization")
+
+        email = email.strip().lower()
 
         repository = MemberRepository.from_session(session)
 

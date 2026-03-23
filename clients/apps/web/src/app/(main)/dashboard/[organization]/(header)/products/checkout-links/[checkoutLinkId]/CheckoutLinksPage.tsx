@@ -7,7 +7,6 @@ import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDeleteCheckoutLink } from '@/hooks/queries'
 import { usePushRouteWithoutCache } from '@/utils/router'
-import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -67,22 +66,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header={
         <>
           <div className="flex flex-row items-center gap-6">
-            <span className="dark:bg-polar-700 flex h-12 w-12 shrink-0 flex-row items-center justify-center rounded-full bg-gray-200 text-2xl text-black dark:text-white">
-              <LinkOutlined />
-            </span>
             <div className="flex flex-col">
-              <p className="text-lg">
+              <p className="text-xl">
                 {(checkoutLink.label?.length ?? 0) > 0
                   ? checkoutLink.label
                   : 'Untitled'}
               </p>
-              <div className="dark:text-polar-500 flex flex-row items-center gap-2 font-mono text-sm text-gray-500">
-                <span>
-                  {checkoutLink.products.length === 1
-                    ? checkoutLink.products[0].name
-                    : `${checkoutLink.products.length} Products`}
-                </span>
-              </div>
             </div>
           </div>
 

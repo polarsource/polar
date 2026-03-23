@@ -17,14 +17,11 @@ def _transform_avatar_urls_for_email(props_json: str) -> str:
     )
 
 
-def render_email_template(email: "Email") -> str:
-    props_json = email.props.model_dump_json()
-    props_json = _transform_avatar_urls_for_email(props_json)
-
+def render_from_json(template: str, props_json: str) -> str:
     process = subprocess.Popen(
         [
             settings.EMAIL_RENDERER_BINARY_PATH,
-            email.template,
+            template,
             props_json,
         ],
         stdout=subprocess.PIPE,
@@ -36,4 +33,13 @@ def render_email_template(email: "Email") -> str:
     return stdout.decode("utf-8")
 
 
-__all__ = ["render_email_template"]
+def serialize_email_props(email: "Email") -> str:
+    props_json = email.props.model_dump_json()
+    return _transform_avatar_urls_for_email(props_json)
+
+
+def render_email_template(email: "Email") -> str:
+    return render_from_json(email.template, serialize_email_props(email))
+
+
+__all__ = ["render_email_template", "render_from_json", "serialize_email_props"]

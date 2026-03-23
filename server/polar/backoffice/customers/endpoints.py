@@ -1,29 +1,53 @@
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
-from pydantic import UUID4
+from pydantic import UUID4, EmailStr, Field, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import document, tag, text
 
+from polar.backoffice import forms
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.schemas.customer import CustomerUpdate
+from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParamsQuery
-from polar.models import Customer, Order, Organization, Product, Subscription
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    Order,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.sorting import SubscriptionSortProperty
 from polar.wallet.service import wallet as wallet_service
+from polar.worker import enqueue_job
 
 from ..components import button, datatable, description_list, modal
 from ..formatters import currency
 from ..layout import layout
 from ..orders.components import orders_datatable
+from ..responses import HXRedirectResponse
+from ..toast import add_toast
 from .components import customers_datatable, email_verified_badge
+
+
+class UpdateCustomerEmailForm(forms.BaseForm):
+    email: Annotated[
+        EmailStr,
+        forms.InputField(type="email", placeholder="customer@example.com"),
+        Field(title="Email"),
+    ]
+
 
 router = APIRouter()
 
@@ -140,6 +164,12 @@ async def get(
         session, customer, "usd"
     )
 
+    # Get granted benefits
+    benefit_grant_repository = BenefitGrantRepository.from_session(session)
+    benefit_grants = await benefit_grant_repository.list_granted_by_customer(
+        customer.id, options=(joinedload(BenefitGrant.benefit),)
+    )
+
     with layout(
         request,
         [
@@ -167,8 +197,22 @@ async def get(
                 # Customer Details
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Customer Details")
+                        with tag.div(classes="flex justify-between items-center"):
+                            with tag.h2(classes="card-title"):
+                                text("Customer Details")
+                            with button(
+                                hx_get=str(
+                                    request.url_for(
+                                        "customers:edit_email",
+                                        id=customer.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                                variant="secondary",
+                                size="sm",
+                                ghost=True,
+                            ):
+                                text("Edit Email")
                         with description_list.DescriptionList[Customer](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -196,7 +240,10 @@ async def get(
                                 "organization.name",
                                 "Name",
                                 href_getter=lambda r, i: str(
-                                    r.url_for("organizations:get", id=i.organization_id)
+                                    r.url_for(
+                                        "organizations:detail",
+                                        organization_id=i.organization_id,
+                                    )
                                 ),
                             ),
                             description_list.DescriptionListAttrItem(
@@ -329,6 +376,42 @@ async def get(
                     with tag.div(classes="text-center py-8 text-gray-500"):
                         text("No orders found")
 
+            # Benefits Section
+            with tag.div(classes="mt-8"):
+                with tag.div(classes="flex justify-between items-center mb-4"):
+                    with tag.h2(classes="text-2xl font-bold"):
+                        text(f"Granted Benefits ({len(benefit_grants)})")
+                    if benefit_grants:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "customers:revoke_benefits", id=customer.id
+                                )
+                            ),
+                            hx_target="#modal",
+                            variant="error",
+                        ):
+                            text("Revoke Benefits")
+
+                if benefit_grants:
+                    with datatable.Datatable[BenefitGrant, Any](
+                        datatable.DatatableAttrColumn(
+                            "benefit_id",
+                            "ID",
+                            clipboard=True,
+                            href_route_name="benefits:get",
+                        ),
+                        datatable.DatatableAttrColumn(
+                            "benefit.description", "Description"
+                        ),
+                        datatable.DatatableAttrColumn("benefit.type", "Type"),
+                        datatable.DatatableDateTimeColumn("granted_at", "Granted At"),
+                    ).render(request, benefit_grants):
+                        pass
+                else:
+                    with tag.div(classes="text-center py-8 text-gray-500"):
+                        text("No granted benefits found")
+
 
 @router.get(
     "/{id}/generate_portal_link_modal", name="customers:generate_portal_link_modal"
@@ -408,5 +491,123 @@ async def generate_portal_link_modal(
                     with tag.form(method="dialog"):
                         with button(variant="primary"):
                             text("Done")
+
+    return HTMLResponse(str(doc))
+
+
+@router.api_route(
+    "/{id}/revoke_benefits", name="customers:revoke_benefits", methods=["GET", "POST"]
+)
+async def revoke_benefits(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id)
+
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        enqueue_job("benefit.revoke_customer", customer_id=customer.id)
+
+        await add_toast(
+            request,
+            f"Benefit revocation task enqueued for {customer.email}.",
+            "success",
+        )
+
+        with tag.div(hx_redirect=str(request.url_for("customers:get", id=customer.id))):
+            pass
+        return
+
+    # GET method - show confirmation modal
+    with modal("Revoke Benefits", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    f"Are you sure you want to revoke all benefits for {customer.email}? "
+                    "This will revoke all currently granted benefits for this customer."
+                )
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for("customers:revoke_benefits", id=customer.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Revoke")
+
+
+@router.api_route(
+    "/{id}/edit_email", name="customers:edit_email", methods=["GET", "POST"]
+)
+async def edit_email(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    customer_repository = CustomerRepository.from_session(session)
+    customer = await customer_repository.get_by_id(id)
+
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        try:
+            form = UpdateCustomerEmailForm.model_validate_form(form_data)
+            customer_update = CustomerUpdate(email=form.email)
+            await customer_service.update(session, customer, customer_update)
+
+            await add_toast(
+                request,
+                f"Customer email updated to {form.email}.",
+                "success",
+            )
+
+            return HXRedirectResponse(
+                request, str(request.url_for("customers:get", id=customer.id))
+            )
+        except ValidationError as e:
+            validation_error = e
+        except PolarRequestValidationError as e:
+            error_message = "; ".join(err["msg"] for err in e.errors())
+
+    # GET or failed POST - show the form modal
+    with document() as doc:
+        with tag.div(id="modal"):
+            with modal("Edit Customer Email", open=True):
+                if error_message:
+                    with tag.div(classes="alert alert-error mb-4"):
+                        with tag.p(classes="text-sm"):
+                            text(error_message)
+
+                with UpdateCustomerEmailForm.render(
+                    data={"email": customer.email},
+                    validation_error=validation_error,
+                    method="POST",
+                    hx_post=str(
+                        request.url_for("customers:edit_email", id=customer.id)
+                    ),
+                    hx_target="#modal",
+                ):
+                    with tag.div(classes="modal-action"):
+                        with tag.form(method="dialog"):
+                            with button(ghost=True):
+                                text("Cancel")
+                        with button(type="submit", variant="primary"):
+                            text("Update Email")
 
     return HTMLResponse(str(doc))

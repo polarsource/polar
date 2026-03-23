@@ -4,6 +4,9 @@ import { EU_COUNTRY_CODES } from '@/components/Privacy/countries'
 import { usePostHog } from '@/hooks/posthog'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
+import { InlineModal } from '../Modal/InlineModal'
+import { useModal } from '../Modal/useModal'
+import { CookiePreferencesModal } from './CookiePreferencesModal'
 
 export function cookieConsentGiven() {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
@@ -20,6 +23,11 @@ export function cookieConsentGiven() {
 export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   const isEU = countryCode ? EU_COUNTRY_CODES.includes(countryCode) : false
   const [consentGiven, setConsentGiven] = useState<string | null>('')
+  const {
+    isShown: preferencesOpen,
+    show: showPreferences,
+    hide: hidePreferences,
+  } = useModal()
   const { setPersistence } = usePostHog()
   const searchParams = useSearchParams()
 
@@ -44,11 +52,10 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   }, [setConsentGiven])
 
   useEffect(() => {
-    // We want this to only run once the client loads
-    // or else it causes a hydration error
     const currentConsent = cookieConsentGiven()
 
     if (doNotTrackParameter && currentConsent === 'undecided') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only localStorage read to avoid hydration mismatch
       declineCookies()
     } else {
       setConsentGiven(currentConsent)
@@ -75,29 +82,43 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   }
 
   return (
-    consentGiven === 'undecided' && (
-      <div className="shadow-3xl dark:bg-polar-950 dark:border-polar-700 dark:text-polar-500 fixed right-8 bottom-8 left-8 z-50 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 md:left-auto md:max-w-96">
-        <p>
-          We use tracking cookies to understand how you use the product and help
-          us improve it.
-        </p>
-        <div className="flex flex-row items-center gap-x-4">
-          <button
-            className="cursor-pointer text-blue-500 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-gray-200"
-            onClick={handleAcceptCookies}
-            type="button"
-          >
-            Accept
-          </button>
-          <button
-            className="cursor-pointer text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-600"
-            onClick={handleDeclineCookies}
-            type="button"
-          >
-            Decline
-          </button>
+    <>
+      {consentGiven === 'undecided' && (
+        <div className="shadow-3xl dark:bg-polar-950 dark:border-polar-700 dark:text-polar-500 fixed right-8 bottom-8 left-8 z-50 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 md:left-auto md:max-w-96">
+          <p>
+            We use tracking cookies to understand how you use the product and
+            help us improve it.
+          </p>
+          <div className="flex flex-row items-center gap-x-4">
+            <button
+              className="cursor-pointer text-blue-500 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-gray-200"
+              onClick={handleAcceptCookies}
+              type="button"
+            >
+              Accept
+            </button>
+            <button
+              className="cursor-pointer text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-600"
+              onClick={handleDeclineCookies}
+              type="button"
+            >
+              Decline
+            </button>
+            <button
+              className="cursor-pointer transition-colors hover:text-gray-400 dark:hover:text-gray-400"
+              onClick={showPreferences}
+              type="button"
+            >
+              Manage preferences
+            </button>
+          </div>
         </div>
-      </div>
-    )
+      )}
+      <InlineModal
+        isShown={preferencesOpen}
+        hide={hidePreferences}
+        modalContent={<CookiePreferencesModal hide={hidePreferences} />}
+      />
+    </>
   )
 }

@@ -1,19 +1,20 @@
 'use client'
 
+import { CostDeviation } from '@/components/Events/CostDeviation'
+import { EventRow } from '@/components/Events/EventRow'
+import {
+  generateDateRange,
+  groupEmptyDates,
+  groupEventsByDay,
+} from '@/components/Events/eventTableUtils'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import { endOfDay, subMonths } from 'date-fns'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { getDefaultEndDate, getDefaultStartDate } from '../utils'
-import { EventRow } from './components/EventRow'
-import {
-  generateDateRange,
-  groupEmptyDates,
-  groupEventsByDay,
-} from './components/utils'
 
 export default function CostsEventsTable({
   organization,
@@ -24,7 +25,7 @@ export default function CostsEventsTable({
   fetchNextPage,
 }: {
   organization: schemas['Organization']
-  spanId: schemas['EventTypeWithStats']['id']
+  spanId?: schemas['EventTypeWithStats']['id']
   events: schemas['Event'][]
   eventTypes: schemas['EventTypeWithStats'][]
   hasNextPage: boolean
@@ -50,25 +51,48 @@ export default function CostsEventsTable({
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  const { data: hierarchyStats, isLoading: isHierarchyLoading } =
-    useEventHierarchyStats(
-      organization.id,
-      {
-        event_type_id: spanId,
-        start_date: startDateISOString,
-        end_date: endDateISOString,
-        interval: 'month',
-        aggregate_fields: ['_cost.amount'],
+  const { data: hierarchyStats } = useEventHierarchyStats(
+    organization.id,
+    {
+      event_type_id: spanId,
+      start_date: startDateISOString,
+      end_date: endDateISOString,
+      interval: 'month',
+      aggregate_fields: ['_cost.amount'],
+    },
+    !!spanId,
+  )
+
+  const costDeviationMetadata = useMemo(() => {
+    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
+      return undefined
+    }
+    const stat = hierarchyStats.totals[0]
+    return {
+      average: parseFloat(stat.averages?.['_cost_amount'] || '0'),
+      p10: parseFloat(stat.p10?.['_cost_amount'] || '0'),
+      p90: parseFloat(stat.p90?.['_cost_amount'] || '0'),
+    }
+  }, [hierarchyStats])
+
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage) {
+          fetchNextPage()
+        }
       },
-      !!spanId,
+      { rootMargin: '200px' },
     )
 
-  const eventTypesMap = eventTypes.reduce<
-    Record<string, schemas['EventTypeWithStats']>
-  >((acc, curr) => {
-    acc[curr.name] = curr
-    return acc
-  }, {})
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasNextPage, fetchNextPage])
 
   const dayGroups = useMemo(() => {
     const eventsMap = groupEventsByDay(events)
@@ -83,130 +107,71 @@ export default function CostsEventsTable({
     return groups
   }, [events, startDate, endDate])
 
-  const showEventTypes = !spanId
-
-  const costDeviationMetadata = useMemo(() => {
-    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
-      return undefined
-    }
-
-    const stat = hierarchyStats.totals[0]
-    const average = parseFloat(stat.averages?.['_cost_amount'] || '0')
-    const p10 = parseFloat(stat.p10?.['_cost_amount'] || '0')
-    const p90 = parseFloat(stat.p90?.['_cost_amount'] || '0')
-
-    return {
-      average,
-      p10,
-      p90,
-    }
-  }, [hierarchyStats])
-
   return events.length > 0 && eventTypes.length > 0 ? (
-    <div>
-      <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
-        <table className="w-full table-fixed border-collapse rounded-lg">
-          <thead>
-            <tr>
-              {showEventTypes && (
-                <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-48 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                  Event Type
-                </th>
-              )}
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                Event
-              </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-64 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                Customer
-              </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-48 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
-                Timestamp
-              </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-48 border-b border-gray-200 bg-gray-100 p-2 text-right text-sm font-medium whitespace-nowrap text-gray-600">
-                Cost
-              </th>
-            </tr>
-          </thead>
-          {dayGroups.map((group, groupIndex) => {
-            return (
-              <tbody
-                key={
-                  group.type === 'empty-range'
-                    ? `empty-${groupIndex}`
-                    : `day-${group.date.toISOString()}`
-                }
-                className="dark:divide-polar-700 group divide-y divide-gray-200"
-              >
-                <tr className="dark:bg-polar-800 bg-gray-50 not-group-first-of-type:border-t">
-                  <th
-                    colSpan={showEventTypes ? 5 : 4}
-                    className="dark:text-polar-400 p-2 text-left text-sm font-normal text-gray-400"
-                  >
-                    {group.type === 'empty-range' ? (
-                      <FormattedInterval
-                        startDatetime={group.endDate}
-                        endDatetime={group.startDate}
-                      />
-                    ) : (
-                      <FormattedInterval
-                        startDatetime={group.date}
-                        endDatetime={group.date}
-                      />
-                    )}
-                  </th>
-                </tr>
-                {group.type === 'empty-range' ? (
-                  <tr>
-                    <td
-                      colSpan={showEventTypes ? 5 : 4}
-                      className="dark:text-polar-600 p-2 text-center text-sm text-gray-400 italic"
-                    >
-                      No events
-                    </td>
-                  </tr>
-                ) : (
-                  group.events.map((event) => (
-                    <EventRow
-                      key={event.id}
-                      event={event}
-                      organization={organization}
-                      eventType={eventTypesMap[event.name]}
-                      showEventType={showEventTypes}
-                      costDeviationMetadata={costDeviationMetadata}
-                    />
-                  ))
-                )}
-              </tbody>
-            )
-          })}
-          <tfoot>
-            <tr>
-              <td
-                colSpan={showEventTypes ? 5 : 4}
-                className="dark:border-polar-700 border-t border-gray-200"
-              >
-                {hasNextPage ? (
-                  <button
-                    className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
-                    onClick={() => fetchNextPage()}
-                  >
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
-                      Showing first {events.length} events
-                    </span>
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
-                      Load more
-                    </span>
-                  </button>
-                ) : (
-                  <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
-                    Showing all {events.length} events
-                  </span>
-                )}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+    <div className="flex flex-col gap-y-8">
+      {dayGroups.map((group, groupIndex) => (
+        <div
+          key={
+            group.type === 'empty-range'
+              ? `empty-${groupIndex}`
+              : `day-${group.date.toISOString()}`
+          }
+          className="flex flex-col gap-y-2"
+        >
+          <span className="dark:text-polar-500 text-gray-500">
+            {group.type === 'empty-range' ? (
+              <FormattedInterval
+                startDatetime={group.endDate}
+                endDatetime={group.startDate}
+              />
+            ) : (
+              <FormattedInterval
+                startDatetime={group.date}
+                endDatetime={group.date}
+              />
+            )}
+          </span>
+          {group.type === 'empty-range' ? (
+            <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-6">
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                No events
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-y-2">
+              {group.events.map((event) => {
+                const costMeta = (
+                  event.metadata as {
+                    _cost?: { amount?: string; currency?: string }
+                  }
+                )._cost
+                const eventCost = Number(costMeta?.amount ?? 0)
+                const eventCurrency = costMeta?.currency ?? 'usd'
+                return (
+                  <EventRow
+                    key={event.id}
+                    event={event}
+                    organization={organization}
+                    expandChildren
+                    costBadge={
+                      costDeviationMetadata && spanId ? (
+                        <CostDeviation
+                          eventCost={eventCost}
+                          currency={eventCurrency}
+                          averageCost={costDeviationMetadata.average}
+                          p10Cost={costDeviationMetadata.p10}
+                          p90Cost={costDeviationMetadata.p90}
+                        />
+                      ) : undefined
+                    }
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+      <div ref={sentinelRef} />
     </div>
   ) : (
     <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">

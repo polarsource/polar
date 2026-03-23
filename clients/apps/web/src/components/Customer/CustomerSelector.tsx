@@ -73,7 +73,7 @@ export const CustomerSelector = ({
     [selectedCustomerIds, onSelectCustomerIds],
   )
 
-  const handleBlur = useCallback((e: React.FocusEvent) => {
+  const handleBlur = useCallback(() => {
     setOpen(false)
   }, [])
 

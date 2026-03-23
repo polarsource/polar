@@ -12,7 +12,9 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsup",
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     "./guards": {
@@ -62,24 +64,33 @@
     }
   },
   "devDependencies": {
+    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "19.2.14",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "jsdom": "^27.4.0",
     "react": "^19.2.4",
-    "terser": "^5.46.0",
+    "terser": "^5.46.1",
     "tsup": "^8.5.1",
-    "typescript": "latest"
-  },
-  "dependencies": {
+    "typescript": "latest",
+    "vitest": "^4.1.0",
     "@polar-sh/currency": "workspace:^",
-    "@polar-sh/sdk": "^0.43.1",
-    "@polar-sh/ui": "workspace:^",
+    "@polar-sh/client": "workspace:*",
     "@polar-sh/i18n": "workspace:*",
+    "@polar-sh/ui": "workspace:^",
+    "date-fns": "^4.1.0",
     "event-source-plus": "^0.1.15",
     "eventemitter3": "^5.0.4",
     "markdown-to-jsx": "^8.0.0",
-    "react-hook-form": "~7.71.1"
+    "react-hook-form": "~7.71.2"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
   },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",

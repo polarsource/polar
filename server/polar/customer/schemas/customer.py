@@ -5,6 +5,7 @@ from typing import Annotated
 from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
+from pydantic.aliases import AliasChoices
 
 from polar.config import settings
 from polar.kit.address import Address, AddressInput
@@ -22,7 +23,7 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
-from polar.member import Member, OwnerCreate
+from polar.member import OwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
 from polar.tax.tax_id import TaxID
@@ -62,7 +63,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
-    tax_id: TaxID | None = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
     type: CustomerType | None = Field(
         default=None,
@@ -96,7 +97,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
-    tax_id: TaxID | None = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
 
 
@@ -124,7 +125,15 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
     )
     external_id: str | None = Field(
-        description=_external_id_description, examples=[_external_id_example]
+        default=None,
+        description=_external_id_description,
+        examples=[_external_id_example],
+        validation_alias=AliasChoices(
+            # From ORM model
+            "saved_external_id",
+            # From cached state or stored webhook payload
+            "external_id",
+        ),
     )
     email: str = Field(description=_email_description, examples=[_email_example])
     email_verified: bool = Field(
@@ -173,12 +182,3 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
 
 class Customer(CustomerBase):
     """A customer in an organization."""
-
-
-class CustomerWithMembers(Customer):
-    """A customer in an organization with their members loaded."""
-
-    members: list[Member] = Field(
-        default_factory=list,
-        description="List of members belonging to this customer.",
-    )

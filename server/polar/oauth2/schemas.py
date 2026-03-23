@@ -157,9 +157,9 @@ class TokenResponse(Schema):
     access_token: str
     token_type: Literal["Bearer"]
     expires_in: int
-    refresh_token: str | None
+    refresh_token: str | None = None
     scope: str
-    id_token: str
+    id_token: str | None = None
 
 
 class RevokeTokenRequest(Schema):

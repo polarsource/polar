@@ -136,11 +136,7 @@ class AccountSection:
 
                             with tag.div(classes="grid grid-cols-2 gap-3"):
                                 # Charges enabled
-                                charges_enabled = (
-                                    account.is_charges_enabled
-                                    if hasattr(account, "charges_enabled")
-                                    else False
-                                )
+                                charges_enabled = account.is_charges_enabled
                                 with tag.div(classes="flex items-center gap-2"):
                                     icon = "Yes" if charges_enabled else "No"
                                     color = (
@@ -153,11 +149,7 @@ class AccountSection:
                                     text("Charges Enabled")
 
                                 # Payouts enabled
-                                payouts_enabled = (
-                                    account.is_payouts_enabled
-                                    if hasattr(account, "payouts_enabled")
-                                    else False
-                                )
+                                payouts_enabled = account.is_payouts_enabled
                                 with tag.div(classes="flex items-center gap-2"):
                                     icon = "Yes" if payouts_enabled else "No"
                                     color = (
@@ -183,7 +175,7 @@ class AccountSection:
                                         size="sm",
                                         hx_get=str(
                                             request.url_for(
-                                                "organizations-v2:disconnect_stripe_account",
+                                                "organizations:disconnect_stripe_account",
                                                 organization_id=self.org.id,
                                             )
                                         ),
@@ -196,7 +188,7 @@ class AccountSection:
                                         size="sm",
                                         hx_get=str(
                                             request.url_for(
-                                                "organizations-v2:delete_stripe_account",
+                                                "organizations:delete_stripe_account",
                                                 organization_id=self.org.id,
                                             )
                                         ),
@@ -220,7 +212,7 @@ class AccountSection:
                             variant="primary",
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:setup_account",
+                                    "organizations:setup_account",
                                     organization_id=self.org.id,
                                 )
                             ),
@@ -258,7 +250,7 @@ class AccountSection:
                             size="sm",
                             hx_get=str(
                                 request.url_for(
-                                    "organizations-v2:grant_credit",
+                                    "organizations:grant_credit",
                                     organization_id=self.org.id,
                                 )
                             ),
@@ -326,7 +318,7 @@ class AccountSection:
                                                         ghost=True,
                                                         hx_get=str(
                                                             request.url_for(
-                                                                "organizations-v2:revoke_credit",
+                                                                "organizations:revoke_credit",
                                                                 organization_id=self.org.id,
                                                                 credit_id=credit.id,
                                                             )

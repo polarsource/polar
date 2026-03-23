@@ -5,29 +5,32 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { MinusIcon, PlusIcon } from 'lucide-react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
 interface CustomerSeatQuantityManagerProps {
   api: Client
-  subscription: schemas['CustomerSubscription']
+  subscriptionId: string
   totalSeats: number
-  assignedSeats: number
+  availableSeats: number
+  prorationBehavior?: schemas['CustomerOrganization']['proration_behavior']
+  pendingUpdate?: schemas['PendingSubscriptionUpdate'] | null
   onUpdate?: () => void
 }
 
 export const CustomerSeatQuantityManager = ({
   api,
-  subscription,
+  subscriptionId,
   totalSeats,
-  assignedSeats,
+  availableSeats,
+  prorationBehavior,
+  pendingUpdate,
   onUpdate,
 }: CustomerSeatQuantityManagerProps) => {
   const updateSubscription = useCustomerUpdateSubscription(api)
 
-  const availableSeats = totalSeats - assignedSeats
+  const assignedSeats = totalSeats - availableSeats
 
   const { handleSubmit, watch, setValue, setError } = useForm<{
     seats: number
@@ -37,15 +40,28 @@ export const CustomerSeatQuantityManager = ({
     },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const seats = watch('seats')
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
+
+  const invoicingMessage = useMemo(() => {
+    if (!prorationBehavior) return null
+    switch (prorationBehavior) {
+      case 'invoice':
+        return "I'll be charged immediately with a proration for the current month."
+      case 'prorate':
+        return 'Your next invoice will include the updated seats plus the proration for the current month.'
+      case 'next_period':
+        return 'The seat update will be applied on your next billing cycle.'
+    }
+  }, [prorationBehavior])
 
   const onSubmit = useCallback(
     async (data: { seats: number }) => {
       try {
         const result = await updateSubscription.mutateAsync({
-          id: subscription.id,
+          id: subscriptionId,
           body: {
             seats: data.seats,
           },
@@ -62,11 +78,23 @@ export const CustomerSeatQuantityManager = ({
             variant: 'error',
           })
         } else {
+          const descriptionMessage = (() => {
+            const seatText = `${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}`
+            switch (prorationBehavior) {
+              case 'invoice':
+                return `Subscription now has ${seatText}. You'll be charged immediately with a proration for the current month.`
+              case 'prorate':
+                return `Subscription now has ${seatText}. Your next invoice will include the updated seats plus the proration for the current month.`
+              case 'next_period':
+                return `Subscription will have ${seatText} starting on your next billing cycle.`
+              default:
+                return `Subscription now has ${seatText}.`
+            }
+          })()
           toast({
             title: 'Seats updated',
-            description: `Subscription now has ${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}.`,
+            description: descriptionMessage,
           })
-
           onUpdate?.()
         }
       } catch (error) {
@@ -84,7 +112,7 @@ export const CustomerSeatQuantityManager = ({
         }
       }
     },
-    [updateSubscription, subscription.id, onUpdate, setError],
+    [updateSubscription, subscriptionId, prorationBehavior, onUpdate, setError],
   )
 
   const handleIncrement = () => {
@@ -100,73 +128,78 @@ export const CustomerSeatQuantityManager = ({
   }
 
   return (
-    <div className="flex flex-col gap-3 text-sm">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <div className="flex flex-col">
-          <DetailRow
-            label="Total Seats"
-            value={
-              <div className="flex w-full flex-row items-center justify-between gap-2">
-                <span className="dark:text-polar-200 font-medium">{seats}</span>
-                <div className="flex flex-row items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleDecrement}
-                    disabled={!canDecrease || updateSubscription.isPending}
-                    className="text-xxs h-6 w-6"
-                  >
-                    <MinusIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleIncrement}
-                    disabled={updateSubscription.isPending}
-                    className="text-xxs h-6 w-6"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            }
-          />
-          <DetailRow
-            label="Assigned"
-            value={
-              <span className="dark:text-polar-200 font-medium">
-                {assignedSeats}
-              </span>
-            }
-          />
-          <DetailRow
-            label="Available"
-            value={
-              <span className="dark:text-polar-200 font-medium">
-                {availableSeats}
-              </span>
-            }
-          />
+    <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border p-4">
+      <div className="flex flex-col gap-2 text-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="font-medium">Total seats</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={handleDecrement}
+              disabled={!canDecrease || updateSubscription.isPending}
+            >
+              <MinusIcon className="h-4 w-4" />
+            </Button>
+
+            <span className="dark:text-polar-200 flex h-8 min-w-8 items-center justify-center px-2 font-medium">
+              {seats}
+            </span>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={handleIncrement}
+              disabled={updateSubscription.isPending}
+            >
+              <PlusIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+      </div>
 
-        {hasChanges && (
-          <Button
-            loading={updateSubscription.isPending}
-            onClick={handleSubmit(onSubmit)}
-          >
-            Update Seats
-          </Button>
+      {!hasChanges &&
+        pendingUpdate?.seats != null &&
+        pendingUpdate.seats !== totalSeats && (
+          <span className="dark:text-polar-500 mt-3 text-sm text-gray-500">
+            A change to{' '}
+            <span className="font-medium">
+              {pendingUpdate.seats}{' '}
+              {pendingUpdate.seats === 1 ? 'seat' : 'seats'}
+            </span>{' '}
+            is scheduled for your next billing cycle.
+          </span>
         )}
 
-        {!canDecrease && seats !== undefined && seats < assignedSeats && (
-          <p className="text-xs text-red-500 dark:text-red-400">
-            Cannot decrease below {assignedSeats} assigned seats. Revoke seats
-            first.
-          </p>
-        )}
-      </form>
-    </div>
+      {hasChanges && (
+        <div className="mt-4 flex flex-col gap-3">
+          {invoicingMessage && (
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              {invoicingMessage}
+            </span>
+          )}
+          <div className="flex flex-row-reverse gap-3">
+            <Button
+              loading={updateSubscription.isPending}
+              onClick={handleSubmit(onSubmit)}
+              className="w-full"
+            >
+              Update seats
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!canDecrease && seats !== undefined && seats < assignedSeats && (
+        <p className="text-xs text-red-500 dark:text-red-400">
+          Cannot decrease below {assignedSeats} assigned seats. Revoke seats
+          first.
+        </p>
+      )}
+    </form>
   )
 }

@@ -13,6 +13,14 @@ pnpm generate     # Generate API client from OpenAPI
 pnpm typecheck    # Type checking (in apps/web)
 ```
 
+## Post-Feature Checklist
+
+After finishing a feature, always run `pnpm lint` and check for any new errors or warnings introduced by your changes. Fix them before considering the feature complete.
+
+## File Size Limit
+
+Files are limited to 250 lines of code (excluding blanks and comments) via the `max-lines` ESLint rule. If you hit this limit, refactor the file into smaller pieces — extract sub-components, split hooks into separate files, or move helpers into their own modules. Do not add `eslint-disable max-lines` to new files.
+
 ## Project Structure
 
 ```
@@ -285,6 +293,10 @@ if (error) {
   )
 }
 ```
+
+## Internationalization (i18n)
+
+Translation files live in `packages/i18n/src/locales/`. When adding new translatable strings, **only add them to `en.ts`**. Do not manually edit other locale files. A CI job automatically translates new English strings into all supported languages and commits the results to the branch. After pushing changes to `en.ts`, pull the branch once the CI translation job completes.
 
 ## Reference Files
 

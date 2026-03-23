@@ -1,17 +1,64 @@
+from __future__ import annotations
+
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from pydantic import Field
+from pydantic import Field, computed_field
 
 from polar.kit.schemas import Schema
+
+if TYPE_CHECKING:
+    from pydantic_ai.usage import RunUsage as Usage
 
 # --- Review context ---
 
 
 class ReviewContext(StrEnum):
     SUBMISSION = "submission"  # First review at details submission time
+    SETUP_COMPLETE = "setup_complete"  # Review when account setup is complete
     THRESHOLD = "threshold"  # Following reviews when payment threshold hit
+    MANUAL = "manual"  # Full manual review triggered from backoffice
+
+
+# --- Shared utility schemas ---
+
+
+class UsageInfo(Schema):
+    """Token usage and cost from the AI call."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float | None = None
+
+    def __add__(self, other: UsageInfo) -> UsageInfo:
+        cost: float | None = None
+        if self.estimated_cost_usd is not None or other.estimated_cost_usd is not None:
+            cost = (self.estimated_cost_usd or 0.0) + (other.estimated_cost_usd or 0.0)
+        return UsageInfo(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+            estimated_cost_usd=cost,
+        )
+
+    @classmethod
+    def from_agent_usage(cls, usage: Usage, model_name: str) -> UsageInfo:
+        import genai_prices
+
+        estimated_cost: float | None = None
+        try:
+            price = genai_prices.calc_price(usage, model_name, provider_id="openai")
+            estimated_cost = float(price.total_price)
+        except Exception:
+            pass
+        return cls(
+            input_tokens=usage.input_tokens or 0,
+            output_tokens=usage.output_tokens or 0,
+            total_tokens=(usage.input_tokens or 0) + (usage.output_tokens or 0),
+            estimated_cost_usd=estimated_cost,
+        )
 
 
 # --- Collector output schemas ---
@@ -24,9 +71,8 @@ class OrganizationData(Schema):
     email: str | None = None
     about: str | None = None
     product_description: str | None = None
-    intended_use: str | None = None
-    customer_acquisition: list[str] = Field(default_factory=list)
-    future_annual_revenue: int | None = None
+    selling_categories: list[str] = Field(default_factory=list)
+    pricing_models: list[str] = Field(default_factory=list)
     switching_from: str | None = None
     previous_annual_revenue: int | None = None
     socials: list[dict[str, str]] = Field(default_factory=list)
@@ -49,6 +95,15 @@ class ProductsData(Schema):
     total_count: int = 0
 
 
+class IdentityData(Schema):
+    verification_status: str | None = None
+    verification_error_code: str | None = None
+    verified_first_name: str | None = None
+    verified_last_name: str | None = None
+    verified_address_country: str | None = None
+    verified_dob: str | None = None
+
+
 class AccountData(Schema):
     country: str | None = None
     currency: str | None = None
@@ -56,14 +111,22 @@ class AccountData(Schema):
     is_details_submitted: bool = False
     is_charges_enabled: bool = False
     is_payouts_enabled: bool = False
-    identity_verification_status: str | None = None
+
+    requirements_currently_due: list[str] = Field(default_factory=list)
+    requirements_past_due: list[str] = Field(default_factory=list)
+    requirements_pending_verification: list[str] = Field(default_factory=list)
+    requirements_disabled_reason: str | None = None
+    requirements_errors: list[dict[str, str]] = Field(default_factory=list)
+    capabilities: dict[str, str] = Field(default_factory=dict)
+    business_name: str | None = None
+    business_url: str | None = None
+    business_support_address_country: str | None = None
 
 
 class PaymentMetrics(Schema):
     total_payments: int = 0
     succeeded_payments: int = 0
     total_amount_cents: int = 0
-    risk_scores: list[int] = Field(default_factory=list)
     p50_risk_score: int | None = None
     p90_risk_score: int | None = None
     refund_count: int = 0
@@ -88,11 +151,59 @@ class HistoryData(Schema):
     has_blocked_orgs: bool = False
 
 
+class CheckoutSuccessUrlData(Schema):
+    unique_urls: list[str] = Field(default_factory=list)
+    domains: list[str] = Field(default_factory=list)
+
+
+class CheckoutReturnUrlData(Schema):
+    unique_urls: list[str] = Field(default_factory=list)
+    domains: list[str] = Field(default_factory=list)
+
+
+class CheckoutLinkBenefitData(Schema):
+    label: str | None = None
+    product_names: list[str] = Field(default_factory=list)
+    has_benefits: bool = False
+
+
+class CheckoutLinksData(Schema):
+    total_links: int = 0
+    links_without_benefits: int = 0
+    links: list[CheckoutLinkBenefitData] = Field(default_factory=list)
+
+
+class WebhookEndpointData(Schema):
+    url: str
+    enabled: bool = True
+
+
+class IntegrationData(Schema):
+    api_key_count: int = 0
+    webhook_endpoints: list[WebhookEndpointData] = Field(default_factory=list)
+    webhook_domains: list[str] = Field(default_factory=list)
+    webhook_known_service_domains: list[str] = Field(default_factory=list)
+
+
+class SetupData(Schema):
+    checkout_success_urls: CheckoutSuccessUrlData = Field(
+        default_factory=CheckoutSuccessUrlData
+    )
+    checkout_return_urls: CheckoutReturnUrlData = Field(
+        default_factory=CheckoutReturnUrlData
+    )
+    checkout_links: CheckoutLinksData = Field(default_factory=CheckoutLinksData)
+    integration: IntegrationData = Field(default_factory=IntegrationData)
+
+
 class WebsitePage(Schema):
     url: str
     title: str | None = None
     content: str = Field(default="", description="Extracted text content")
     content_truncated: bool = False
+    method: str = Field(
+        default="http", description="How the page was fetched: 'http' or 'browser'"
+    )
 
 
 class WebsiteData(Schema):
@@ -104,18 +215,75 @@ class WebsiteData(Schema):
     scrape_error: str | None = None
     total_pages_attempted: int = 0
     total_pages_succeeded: int = 0
+    usage: UsageInfo = Field(default_factory=UsageInfo)
+
+
+class PriorDimensionAssessment(Schema):
+    """Summary of a single dimension from a prior agent review."""
+
+    dimension: str = Field(description="e.g. policy_compliance, product_legitimacy")
+    risk_level: str = Field(description="LOW, MEDIUM, or HIGH")
+    findings: list[str] = Field(default_factory=list)
+
+
+class PriorFeedbackEntry(Schema):
+    """A single prior review decision for the organization."""
+
+    actor_type: str = Field(
+        description="Who made this decision: 'agent' (automated) or 'human' (backoffice reviewer)"
+    )
+    decision: str = Field(
+        description="Action taken by the actor: 'APPROVE', 'DENY', or 'ESCALATE'"
+    )
+    review_context: str = Field(
+        description="Review trigger: submission, setup_complete, threshold, manual, appeal"
+    )
+    reason: str | None = Field(
+        default=None,
+        description="Human-provided reason (always None for agent entries)",
+    )
+    agent_verdict: str | None = Field(
+        default=None,
+        description="The AI agent's raw verdict: 'APPROVE' or 'DENY'. "
+        "Present on both agent and human entries when an agent review exists.",
+    )
+    agent_risk_level: str | None = Field(
+        default=None,
+        description="Agent's overall risk level: 'LOW', 'MEDIUM', or 'HIGH'",
+    )
+    agent_report_summary: str | None = Field(
+        default=None, description="Summary from the linked agent review report"
+    )
+    violated_sections: list[str] = Field(
+        default_factory=list,
+        description="Policy sections the agent flagged as violated",
+    )
+    dimensions: list[PriorDimensionAssessment] = Field(
+        default_factory=list,
+        description="Per-dimension risk assessments from the agent review",
+    )
+    created_at: datetime | None = None
+
+
+class PriorFeedbackData(Schema):
+    """All prior review decisions for the organization."""
+
+    entries: list[PriorFeedbackEntry] = Field(default_factory=list)
 
 
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
-    context: ReviewContext
+    context: ReviewContext | None = None
     organization: OrganizationData
     products: ProductsData
+    identity: IdentityData = Field(default_factory=IdentityData)
     account: AccountData
     metrics: PaymentMetrics
     history: HistoryData
+    setup: SetupData = Field(default_factory=SetupData)
     website: WebsiteData | None = None
+    prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
     collected_at: datetime
 
 
@@ -128,14 +296,28 @@ class ReviewDimension(StrEnum):
     IDENTITY_TRUST = "identity_trust"
     FINANCIAL_RISK = "financial_risk"
     PRIOR_HISTORY = "prior_history"
+    SETUP_READINESS = "setup_readiness"
+
+
+class RiskLevel(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+RISK_LEVEL_SCORES: dict[RiskLevel, float] = {
+    RiskLevel.LOW: 15.0,
+    RiskLevel.MEDIUM: 50.0,
+    RiskLevel.HIGH: 85.0,
+}
 
 
 class DimensionAssessment(Schema):
     dimension: ReviewDimension = Field(
         description="The review dimension being assessed"
     )
-    score: float = Field(
-        ge=0, le=100, description="Risk score 0-100 (0=no risk, 100=highest risk)"
+    risk_level: RiskLevel = Field(
+        description="Risk level: LOW (no/minimal risk), MEDIUM (some concerns, needs attention), HIGH (serious risk, likely violation)"
     )
     confidence: float = Field(
         ge=0,
@@ -150,6 +332,12 @@ class DimensionAssessment(Schema):
         description="Brief recommendation for this dimension",
     )
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def score(self) -> float:
+        """Backward compat: derived numeric score so old code can read new data."""
+        return RISK_LEVEL_SCORES[self.risk_level]
+
 
 class ReviewVerdict(StrEnum):
     APPROVE = "APPROVE"
@@ -161,15 +349,18 @@ class ReviewAgentReport(Schema):
     """Structured output from the AI review agent."""
 
     verdict: ReviewVerdict = Field(
-        description="Overall review verdict: APPROVE, DENY, or NEEDS_HUMAN_REVIEW"
-    )
-    overall_risk_score: float = Field(
-        ge=0,
-        le=100,
-        description="Aggregate risk score 0-100",
+        description="Overall review verdict: APPROVE or DENY"
     )
     summary: str = Field(
-        description="2-3 sentence summary of the review findings",
+        description="1-2 sentence summary of the review findings for internal reviewers",
+    )
+    merchant_summary: str = Field(
+        default="",
+        description=(
+            "1-2 sentence reason shown to the merchant. "
+            "Must NOT mention: scraped website content, prior organizations, "
+            "internal risk scores, or Stripe verification specifics. "
+        ),
     )
     violated_sections: list[str] = Field(
         default_factory=list,
@@ -178,18 +369,18 @@ class ReviewAgentReport(Schema):
     dimensions: list[DimensionAssessment] = Field(
         description="Per-dimension risk assessments",
     )
+    overall_risk_level: RiskLevel = Field(
+        description="Overall risk level across all dimensions: LOW, MEDIUM, or HIGH"
+    )
     recommended_action: str = Field(
         description="Specific recommended action for human reviewer",
     )
 
-
-class UsageInfo(Schema):
-    """Token usage and cost from the AI call."""
-
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    estimated_cost_usd: float | None = None
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def overall_risk_score(self) -> float:
+        """Backward compat: numeric score from overall_risk_level."""
+        return RISK_LEVEL_SCORES[self.overall_risk_level]
 
 
 class AgentReviewResult(Schema):

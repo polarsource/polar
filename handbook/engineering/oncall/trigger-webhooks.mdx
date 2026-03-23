@@ -1,0 +1,93 @@
+---
+title: "Trigger Webhooks"
+description: "Procedure for manually triggering missed or failed webhooks"
+---
+
+# Trigger Webhooks
+
+## Context
+
+If BetterStack is mentioning that Webhooks monitor is failing, it's likely due to an error in the webhook delivery process. This could be caused by a variety of factors, such as network issues, server downtime, or misconfigured webhook settings.
+
+First, fix the issue causing the failure. Then, follow this procedure to trigger the webhooks manually.
+
+## When to Use
+
+- Webhooks monitors fails on BetterStack
+
+## Prerequisites
+
+- SSH access to Render services
+- Webhook event timestamps or date range
+
+## Procedure
+
+### Step 1: SSH into Render Service
+
+Connect to the main application service via SSH:
+
+```bash
+ssh srv-d089jj7diees73934ka0@ssh.ohio.render.com
+```
+
+### Step 2: Navigate to Application Directory
+
+```bash
+cd /app/server
+```
+
+### Step 3: Trigger Webhooks
+
+Use the webhook trigger script to replay webhooks for events after a specific timestamp:
+
+```bash
+uv run python -m scripts.webhook_trigger "YYYY-MM-DD"
+```
+
+#### Accepted Date Formats
+
+The script accepts three date formats:
+
+<CodeGroup>
+```bash Date Only
+uv run python -m scripts.webhook_trigger "2025-10-07"
+```
+
+</CodeGroup>
+
+<Warning>
+  The date parameter is required. The script will trigger webhooks for **all events created after** the specified timestamp.
+</Warning>
+
+### Step 4: Monitor Execution
+
+The script will:
+1. Query for webhook events created after the specified timestamp
+2. Retry delivery for each event
+
+Monitor the output for any errors or failed deliveries.
+
+## Verification
+
+After triggering webhooks, verify that https://worker-dramatiq.onrender.com/webhooks is returning status "ok".
+
+## Post-Procedure
+
+- [ ] Document the webhook trigger in the on-call log
+- [ ] Confirm webhook delivery with the merchant
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Script shows: No module named scripts.webhook_trigger">
+    Make sure you're using the correct command format with `-m`:
+    ```bash
+    uv run python -m scripts.webhook_trigger "YYYY-MM-DD"
+    ```
+    **Not** `scripts/webhook_trigger` or `scripts.webhook_triegger` (note spelling).
+  </Accordion>
+</AccordionGroup>
+
+## Related Documentation
+
+- [Render SSH Access](https://docs.render.com/ssh-access)

@@ -7,11 +7,13 @@ from pydantic import (
     Discriminator,
     Field,
     Tag,
+    ValidationInfo,
     computed_field,
     field_validator,
 )
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
+from pydantic_core import PydanticCustomError
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
 from polar.custom_field.schemas import (
@@ -20,7 +22,7 @@ from polar.custom_field.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
-from polar.kit.currency import PresentmentCurrency
+from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.db.models import Model
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -33,6 +35,7 @@ from polar.kit.schemas import (
     Schema,
     SelectorWidget,
     SetSchemaReference,
+    StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
@@ -41,6 +44,7 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
+    SeatTierType,
 )
 from polar.models.product_price import (
     ProductPriceCustom as ProductPriceCustomModel,
@@ -60,6 +64,7 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
+PRODUCT_NAME_MAX_LENGTH = 64
 
 # PostgreSQL int4 range limit
 INT_MAX_VALUE = 2_147_483_647
@@ -72,18 +77,79 @@ ProductID = Annotated[
     SelectorWidget("/v1/products", "Product", "name"),
 ]
 
-# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
+# Ref: https://docs.stripe.com/currencies#minimum-and-maximum-charge-amounts
 MAXIMUM_PRICE_AMOUNT = 99999999
-MINIMUM_PRICE_AMOUNT = 50
+DEFAULT_MINIMUM_PRICE_AMOUNT = (
+    50  # USD default, used as fallback for unlisted currencies
+)
+
+# Minimums as provided by Stripe, but with some changes on some currencies.
+# Stripe indeeds enforces the source amount converted to target currency match the minimum
+# of the target currency.
+# Comment added for the cases where our minimum differs from Stripe's.
+MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
+    "usd": 50,
+    "aed": 200,
+    "ars": 50,
+    "aud": 50,
+    "brl": 50,
+    "cad": 50,
+    "chf": 50,
+    "cop": 50,
+    "czk": 1500,
+    "dkk": 250,
+    "eur": 50,
+    "gbp": 30,
+    "hkd": 400,
+    "huf": 17500,
+    "idr": 50,
+    "ils": 50,
+    "inr": 6000,  # 60.00 INR > 0.50 USD
+    "jpy": 50,
+    "krw": 50,
+    "mxn": 10,
+    "myr": 200,
+    "nok": 300,
+    "nzd": 50,
+    "php": 50,
+    "pln": 200,
+    "ron": 200,
+    "rub": 50,
+    "sek": 300,
+    "sgd": 50,
+    "thb": 10,
+    "zar": 50,
+}
+
+MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
+    f"- {currency.upper()}: {format_currency(amount, currency)}"
+    for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
+)
 
 
+def validate_minimum_price_amount(
+    currency: str, amount: int, *, allow_zero: bool = False
+) -> int:
+    minimum = MINIMUM_PRICE_PER_CURRENCY.get(
+        currency.lower(), DEFAULT_MINIMUM_PRICE_AMOUNT
+    )
+    if amount < minimum and not (allow_zero and amount == 0):
+        if allow_zero:
+            message = f"Amount must be at least {format_currency(minimum, currency)} or 0 for free pricing"
+        else:
+            message = f"Amount must be at least {format_currency(minimum, currency)}"
+        raise PydanticCustomError("minimum_price", message)
+    return amount
+
+
+GLOBAL_MINIMUM_PRICE_AMOUNT = min(MINIMUM_PRICE_PER_CURRENCY.values())
 PriceAmount = Annotated[
     int,
     Field(
         ...,
-        ge=MINIMUM_PRICE_AMOUNT,
+        ge=GLOBAL_MINIMUM_PRICE_AMOUNT,
         le=MAXIMUM_PRICE_AMOUNT,
-        description="The price in cents.",
+        description=f"The price in cents.\nMinimum amounts per currency:\n{MINIMUM_PRICE_PER_CURRENCY_DOCSTRING}",
     ),
 ]
 SeatPriceAmount = Annotated[
@@ -101,8 +167,10 @@ PriceCurrency = Annotated[
 ]
 ProductName = Annotated[
     str,
+    StripValidator,
     Field(
         min_length=PRODUCT_NAME_MIN_LENGTH,
+        max_length=PRODUCT_NAME_MAX_LENGTH,
         description="The name of the product.",
     ),
 ]
@@ -129,6 +197,16 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
     amount_type: Literal[ProductPriceAmountType.fixed]
     price_amount: PriceAmount
 
+    @field_validator("price_amount")
+    @classmethod
+    def validate_price_amount(cls, v: int, info: ValidationInfo) -> int:
+        currency = info.data.get("price_currency")
+        if currency is None:
+            # price_currency failed its own validation; skip currency-specific check
+            # (Pydantic will already report the currency error)
+            return v
+        return validate_minimum_price_amount(currency, v)
+
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel
 
@@ -140,7 +218,7 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.custom]
     minimum_amount: int = Field(
-        default=MINIMUM_PRICE_AMOUNT,
+        default=DEFAULT_MINIMUM_PRICE_AMOUNT,
         ge=0,
         description=(
             "The minimum amount the customer can pay. "
@@ -170,9 +248,9 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     def validate_amount_not_in_minimum_gap(cls, v: int | None) -> int | None:
         # Minimum payment is $0.50, so values 1-49 are invalid
         # 0 is valid (free), None is valid (use default), >= 50 is valid
-        if v is not None and 0 < v < MINIMUM_PRICE_AMOUNT:
+        if v is not None and 0 < v < DEFAULT_MINIMUM_PRICE_AMOUNT:
             raise ValueError(
-                f"Amount must be 0 (for free) or at least {MINIMUM_PRICE_AMOUNT} cents"
+                f"Amount must be 0 (for free) or at least {DEFAULT_MINIMUM_PRICE_AMOUNT} cents"
             )
         return v
 
@@ -216,6 +294,10 @@ class ProductPriceSeatTiers(Schema):
     - maximum_seats = last tier's max_seats (None for unlimited)
     """
 
+    seat_tier_type: SeatTierType = Field(
+        default=SeatTierType.volume,
+        description="How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
+    )
     tiers: list[ProductPriceSeatTier] = Field(
         min_length=1, description="List of pricing tiers"
     )
@@ -407,8 +489,18 @@ class ProductCreateOneTime(ProductCreateBase):
     )
 
 
+def _product_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        ri = v.get("recurring_interval")
+    else:
+        ri = getattr(v, "recurring_interval", None)
+    return "recurring" if ri is not None else "one_time"
+
+
 ProductCreate = Annotated[
-    ProductCreateRecurring | ProductCreateOneTime,
+    Annotated[ProductCreateRecurring, Tag("recurring")]
+    | Annotated[ProductCreateOneTime, Tag("one_time")],
+    Discriminator(_product_create_discriminator),
     SetSchemaReference("ProductCreate"),
 ]
 
@@ -520,14 +612,14 @@ class ProductPriceBase(TimestampedSchema):
     )
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
-    type: ProductPriceType = Field(
+    type: SkipJsonSchema[ProductPriceType] = Field(
         validation_alias=AliasChoices("legacy_type", "type"),
         deprecated=(
             "This field is actually set from Product. "
             "It's only kept for backward compatibility."
         ),
     )
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
+    recurring_interval: SkipJsonSchema[SubscriptionRecurringInterval | None] = Field(
         validation_alias=AliasChoices(
             "legacy_recurring_interval", "recurring_interval"
         ),
@@ -562,7 +654,7 @@ class ProductPriceCustomBase(ProductPriceBase):
     @field_validator("minimum_amount", mode="before")
     @classmethod
     def set_minimum_amount_default(cls, v: int | None) -> int:
-        return v if v is not None else MINIMUM_PRICE_AMOUNT
+        return v if v is not None else DEFAULT_MINIMUM_PRICE_AMOUNT
 
 
 class ProductPriceFreeBase(ProductPriceBase):

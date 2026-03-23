@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   FieldEvents,
   FieldFormat,
+  FieldName,
   FieldUrl,
 } from '@/components/Settings/Webhook/WebhookForm'
 import { toast } from '@/components/Toast/use-toast'
@@ -57,6 +58,7 @@ export default function WebhookContextView({
             onSubmit={handleSubmit(onSubmit)}
             className="flex max-w-[700px] flex-col gap-y-4"
           >
+            <FieldName />
             <FieldUrl />
             <FieldFormat />
             <FieldEvents />

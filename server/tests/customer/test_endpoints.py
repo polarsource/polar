@@ -3,10 +3,10 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
+from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
     Customer,
-    Member,
     Organization,
     Product,
     UserOrganization,
@@ -108,114 +108,6 @@ class TestListCustomers:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["external_id"] == "ext_456"
 
-    @pytest.mark.auth
-    async def test_include_members_false(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Enable member model feature flag
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        # Create members for the customer
-        member1 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member1@example.com",
-            name="Member One",
-            role="owner",
-            external_id="ext_member1",
-        )
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member2@example.com",
-            name="Member Two",
-            role="member",
-            external_id="ext_member2",
-        )
-        await save_fixture(member1)
-        await save_fixture(member2)
-
-        response = await client.get("/v1/customers/", params={"include_members": False})
-
-        assert response.status_code == 200
-        json = response.json()
-        assert len(json["items"]) > 0
-        for item in json["items"]:
-            assert "members" in item
-            assert item["members"] == []
-
-    @pytest.mark.auth
-    async def test_include_members_true(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Enable member model feature flag
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        # Create members for the customer
-        member1 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member1@example.com",
-            name="Member One",
-            role="owner",
-            external_id="ext_member1",
-        )
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member2@example.com",
-            name="Member Two",
-            role="member",
-            external_id="ext_member2",
-        )
-        await save_fixture(member1)
-        await save_fixture(member2)
-
-        response = await client.get("/v1/customers/", params={"include_members": True})
-
-        assert response.status_code == 200
-        json = response.json()
-        assert len(json["items"]) > 0
-
-        # Find our customer in the response
-        customer_data = next(
-            (item for item in json["items"] if item["id"] == str(customer.id)), None
-        )
-        assert customer_data is not None
-        assert "members" in customer_data
-        assert len(customer_data["members"]) == 2
-
-        # Verify member data
-        member_emails = {m["email"] for m in customer_data["members"]}
-        assert "member1@example.com" in member_emails
-        assert "member2@example.com" in member_emails
-
-        member_names = {m["name"] for m in customer_data["members"]}
-        assert "Member One" in member_names
-        assert "Member Two" in member_names
-
 
 @pytest.mark.asyncio
 class TestGetExternal:
@@ -266,109 +158,6 @@ class TestGetExternal:
 
         json = response.json()
         assert json["id"] == str(customer_external_id.id)
-
-    @pytest.mark.auth
-    async def test_include_members_true(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Enable member model feature flag
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-            external_id="test_ext_id",
-        )
-
-        # Create members for the customer
-        member1 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="owner@example.com",
-            name="Owner Member",
-            role="owner",
-            external_id="ext_owner",
-        )
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="regular@example.com",
-            name="Regular Member",
-            external_id="ext_member_1",
-            role="member",
-        )
-        await save_fixture(member1)
-        await save_fixture(member2)
-
-        response = await client.get(
-            f"/v1/customers/external/{customer.external_id}",
-            params={"include_members": True},
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["id"] == str(customer.id)
-        assert "members" in json
-        assert len(json["members"]) == 2
-
-        # Verify member data
-        member_emails = {m["email"] for m in json["members"]}
-        assert "owner@example.com" in member_emails
-        assert "regular@example.com" in member_emails
-
-        # Verify one member has external_id
-        member_with_external = next(
-            (m for m in json["members"] if m["external_id"] == "ext_member_1"), None
-        )
-        assert member_with_external is not None
-        assert member_with_external["name"] == "Regular Member"
-
-    @pytest.mark.auth
-    async def test_include_members_false(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        # Enable member model feature flag
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer2@example.com",
-            external_id="test_ext_id_2",
-        )
-
-        # Create a member
-        member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Test Member",
-            role="owner",
-            external_id="ext_member",
-        )
-        await save_fixture(member)
-
-        response = await client.get(
-            f"/v1/customers/external/{customer.external_id}",
-            params={"include_members": False},
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["id"] == str(customer.id)
-        assert "members" in json
-        assert json["members"] == []
 
 
 @pytest.mark.asyncio
@@ -538,64 +327,9 @@ class TestCreateCustomer:
         assert json["external_id"] is None
 
     @pytest.mark.auth
-    async def test_include_members_true(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        response = await client.post(
-            "/v1/customers/",
-            json={
-                "email": "customer@example.com",
-                "organization_id": str(organization.id),
-            },
-            params={"include_members": True},
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["email"] == "customer@example.com"
-        assert "members" in json
-        assert len(json["members"]) == 1
-        assert json["members"][0]["email"] == "customer@example.com"
-        assert json["members"][0]["role"] == "owner"
-
-    @pytest.mark.auth
-    async def test_include_members_false(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        response = await client.post(
-            "/v1/customers/",
-            json={
-                "email": "customer@example.com",
-                "organization_id": str(organization.id),
-            },
-            params={"include_members": False},
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["email"] == "customer@example.com"
-        assert "members" in json
-        assert len(json["members"]) == 0
-
-    @pytest.mark.auth
     async def test_owner_override_all_fields(
         self,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
@@ -618,7 +352,6 @@ class TestCreateCustomer:
                     "external_id": "owner_ext_456",
                 },
             },
-            params={"include_members": True},
         )
 
         assert response.status_code == 201
@@ -627,137 +360,16 @@ class TestCreateCustomer:
         assert json["email"] == "customer@polar.sh"
         assert json["name"] == "Customer Name"
         assert json["external_id"] == "customer_ext_123"
-        assert "members" in json
-        assert len(json["members"]) == 1
 
-        owner = json["members"][0]
-        assert owner["email"] == "owner@polar.sh"
-        assert owner["name"] == "Owner Name"
-        assert owner["external_id"] == "owner_ext_456"
-        assert owner["role"] == "owner"
-
-    @pytest.mark.auth
-    async def test_owner_override_email_only(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that only owner email can be overridden, name and external_id fall back to customer values."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        response = await client.post(
-            "/v1/customers/",
-            json={
-                "email": "customer@polar.sh",
-                "name": "Customer Name",
-                "external_id": "customer_ext_789",
-                "organization_id": str(organization.id),
-                "owner": {
-                    "email": "different.owner@polar.sh",
-                },
-            },
-            params={"include_members": True},
+        member_repository = MemberRepository.from_session(session)
+        owner = await member_repository.get_owner_by_customer_id(
+            session, uuid.UUID(json["id"])
         )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["email"] == "customer@polar.sh"
-        assert json["name"] == "Customer Name"
-        assert json["external_id"] == "customer_ext_789"
-        assert "members" in json
-        assert len(json["members"]) == 1
-
-        owner = json["members"][0]
-        assert owner["email"] == "different.owner@polar.sh"
-        assert owner["name"] == "Customer Name"
-        assert owner["external_id"] == "customer_ext_789"
-        assert owner["role"] == "owner"
-
-    @pytest.mark.auth
-    async def test_owner_override_name_only(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that only owner name can be overridden, email and external_id fall back to customer values."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        response = await client.post(
-            "/v1/customers/",
-            json={
-                "email": "customer@polar.sh",
-                "name": "Customer Name",
-                "external_id": "customer_ext_abc",
-                "organization_id": str(organization.id),
-                "owner": {
-                    "name": "Different Owner Name",
-                },
-            },
-            params={"include_members": True},
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["email"] == "customer@polar.sh"
-        assert json["name"] == "Customer Name"
-        assert json["external_id"] == "customer_ext_abc"
-        assert "members" in json
-        assert len(json["members"]) == 1
-
-        owner = json["members"][0]
-        assert owner["email"] == "customer@polar.sh"
-        assert owner["name"] == "Different Owner Name"
-        assert owner["external_id"] == "customer_ext_abc"
-        assert owner["role"] == "owner"
-
-    @pytest.mark.auth
-    async def test_owner_override_external_id_only(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that only owner external_id can be overridden, email and name fall back to customer values."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        response = await client.post(
-            "/v1/customers/",
-            json={
-                "email": "customer@polar.sh",
-                "name": "Customer Name",
-                "external_id": "customer_ext_xyz",
-                "organization_id": str(organization.id),
-                "owner": {
-                    "external_id": "different_owner_ext_id",
-                },
-            },
-            params={"include_members": True},
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["email"] == "customer@polar.sh"
-        assert json["name"] == "Customer Name"
-        assert json["external_id"] == "customer_ext_xyz"
-        assert "members" in json
-        assert len(json["members"]) == 1
-
-        owner = json["members"][0]
-        assert owner["email"] == "customer@polar.sh"
-        assert owner["name"] == "Customer Name"
-        assert owner["external_id"] == "different_owner_ext_id"
-        assert owner["role"] == "owner"
+        assert owner is not None
+        assert owner.email == "owner@polar.sh"
+        assert owner.name == "Owner Name"
+        assert owner.external_id == "owner_ext_456"
+        assert owner.role == "owner"
 
 
 @pytest.mark.asyncio
@@ -916,86 +528,6 @@ class TestUpdateCustomer:
             "already exists" in str(error.get("msg", ""))
             for error in json.get("detail", [])
         )
-
-    @pytest.mark.auth
-    async def test_include_members_true(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Member One",
-            role="member",
-            external_id="ext_member",
-        )
-        await save_fixture(member)
-
-        response = await client.patch(
-            f"/v1/customers/{customer.id}",
-            json={"metadata": {"test": "test"}},
-            params={"include_members": True},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert "members" in json
-        assert len(json["members"]) >= 1
-        member_emails = {m["email"] for m in json["members"]}
-        assert "member@example.com" in member_emails
-
-    @pytest.mark.auth
-    async def test_include_members_false(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Member One",
-            role="member",
-            external_id="ext_member",
-        )
-        await save_fixture(member)
-
-        response = await client.patch(
-            f"/v1/customers/{customer.id}",
-            json={"metadata": {"test": "test"}},
-            params={"include_members": False},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert "members" in json
-        assert len(json["members"]) == 0
 
 
 @pytest.mark.asyncio

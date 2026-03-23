@@ -22,7 +22,7 @@ jobs:
       migrations: ${{ steps.filter.outputs.migrations }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -61,7 +61,7 @@ jobs:
         uses: useblacksmith/setup-docker-builder@v1
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ghcr.io/polarsource/polar
@@ -97,7 +97,7 @@ jobs:
 
       - name: Docker meta (Playwright)
         id: meta-playwright
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/polarsource/polar-playwright
           tags: |

@@ -7,6 +7,8 @@ import logfire
 from fastapi import FastAPI
 from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.sdk.trace import SpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
     ALWAYS_ON,
@@ -14,6 +16,8 @@ from opentelemetry.sdk.trace.sampling import (
     Sampler,
     SamplingResult,
 )
+
+from polar.observability.s3_span_exporter import S3SpanExporter
 
 if TYPE_CHECKING:
     from opentelemetry.context import Context
@@ -117,7 +121,38 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
 
 
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
-    resolved_service_name = os.environ.get("RENDER_SERVICE_NAME", service_name)
+    resolved_service_name = os.environ.get(
+        "SERVICE_NAME", os.environ.get("RENDER_SERVICE_NAME", service_name)
+    )
+
+    additional_span_processors: list[SpanProcessor] = []
+    if settings.S3_LOGS_BUCKET_NAME is not None:
+        additional_span_processors.append(
+            BatchSpanProcessor(
+                S3SpanExporter(
+                    bucket_name=settings.S3_LOGS_BUCKET_NAME,
+                    service_name=resolved_service_name,
+                    endpoint_url=settings.S3_ENDPOINT_URL,
+                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                    region_name=settings.AWS_REGION,
+                    scrub_patterns=[
+                        r"email",
+                        r"user\.?name",
+                        r"full\.?name",
+                        r"first\.?name",
+                        r"last\.?name",
+                        r"phone",
+                        r"address",
+                        r"ip_?address",
+                        r"cookie",
+                        r"^http\.url$",
+                    ],
+                ),
+                max_export_batch_size=2048,
+                schedule_delay_millis=60_000,
+            )
+        )
 
     logfire.configure(
         send_to_logfire="if-token-present",
@@ -139,6 +174,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
         scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
+        additional_span_processors=additional_span_processors or None,
     )
 
 

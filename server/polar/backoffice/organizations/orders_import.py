@@ -28,6 +28,7 @@ from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.worker import enqueue_job
+from polar.worker._enqueue import JobQueueManager
 
 from ..components import alert
 
@@ -234,6 +235,7 @@ async def orders_import(
                 status=OrderStatus.paid,
                 subtotal_amount=0,
                 discount_amount=0,
+                net_amount=0,
                 tax_amount=0,  # Don't import tax to avoid perturbing our own tax reports
                 applied_balance_amount=0,
                 currency="usd",
@@ -254,6 +256,7 @@ async def orders_import(
                     OrderItem(
                         label="Imported",
                         amount=subtotal_amount,
+                        net_amount=subtotal_amount,
                         tax_amount=0,  # Don't import tax to avoid perturbing our own tax reports
                         proration=False,
                     )
@@ -341,6 +344,9 @@ async def orders_import(
         yield i, total_rows
 
     if errors:
+        await session.rollback()
+        job_queue_manager = JobQueueManager.get()
+        job_queue_manager.reset()
         raise OrdersImportError(errors)
     else:
         await session.commit()

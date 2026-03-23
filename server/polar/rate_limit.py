@@ -19,7 +19,7 @@ async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
         try:
             ip, _ = await client_ip(scope)
             return ip, RateLimitGroup.default
-        except EmptyInformation:
+        except (EmptyInformation, ValueError, TypeError):
             return auth_subject.rate_limit_key
 
     return auth_subject.rate_limit_key
@@ -35,6 +35,9 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     ],
     "^/v1/customer-seats/claim/.+/stream": [
         Rule(minute=10, block_time=300, zone="seat-claim-stream")
+    ],
+    "^/v1/checkouts/.+/confirm": [
+        Rule(minute=6, hour=20, block_time=1800, zone="checkout-confirm")
     ],
 }
 

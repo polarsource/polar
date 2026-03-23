@@ -1,3 +1,4 @@
+import ipaddress
 from typing import Annotated
 
 from pydantic import (
@@ -8,10 +9,24 @@ from pydantic import (
     UrlConstraints,
     field_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
+
+LOCALHOST_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
+
+
+def is_blocked_webhook_host(host: str) -> bool:
+    if host.lower() in LOCALHOST_HOSTS:
+        return True
+    clean = host.strip("[]")
+    try:
+        return not ipaddress.ip_address(clean).is_global
+    except ValueError:
+        return False
+
 
 HttpsUrl = Annotated[
     AnyUrl,
@@ -53,6 +68,10 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
     """
 
     url: EndpointURL
+    name: str | None = Field(
+        default=None,
+        description="An optional name for the webhook endpoint to help organize and identify it.",
+    )
     format: EndpointFormat
     secret: EndpointSecret
     organization_id: UUID4 = Field(
@@ -70,7 +89,11 @@ class WebhookEndpointCreate(Schema):
     """
 
     url: EndpointURL
-    secret: EndpointSecret | None = Field(
+    name: str | None = Field(
+        default=None,
+        description="An optional name for the webhook endpoint to help organize and identify it.",
+    )
+    secret: SkipJsonSchema[EndpointSecret | None] = Field(
         default=None,
         deprecated="The secret is now generated on the backend.",
         min_length=32,
@@ -92,6 +115,15 @@ class WebhookEndpointCreate(Schema):
             return v.strip()
         return v
 
+    @field_validator("url", mode="after")
+    @classmethod
+    def validate_not_localhost(cls, v: AnyUrl) -> AnyUrl:
+        if v.host and is_blocked_webhook_host(v.host):
+            raise ValueError(
+                "Webhook URLs cannot point to localhost or private IP addresses."
+            )
+        return v
+
 
 class WebhookEndpointUpdate(Schema):
     """
@@ -99,7 +131,11 @@ class WebhookEndpointUpdate(Schema):
     """
 
     url: EndpointURL | None = None
-    secret: EndpointSecret | None = Field(
+    name: str | None = Field(
+        default=None,
+        description="An optional name for the webhook endpoint to help organize and identify it.",
+    )
+    secret: SkipJsonSchema[EndpointSecret | None] = Field(
         default=None,
         deprecated="The secret should is now generated on the backend.",
         min_length=32,
@@ -115,6 +151,15 @@ class WebhookEndpointUpdate(Schema):
     def strip_url(cls, v: str | None) -> str | None:
         if isinstance(v, str):
             return v.strip()
+        return v
+
+    @field_validator("url", mode="after")
+    @classmethod
+    def validate_not_localhost(cls, v: AnyUrl | None) -> AnyUrl | None:
+        if v is not None and v.host and is_blocked_webhook_host(v.host):
+            raise ValueError(
+                "Webhook URLs cannot point to localhost or private IP addresses."
+            )
         return v
 
 

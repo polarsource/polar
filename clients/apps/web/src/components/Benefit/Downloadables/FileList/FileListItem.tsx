@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -202,24 +203,21 @@ export const FileListItem = ({
     })
   })
 
-  const patchFile = useCallback(
-    async (attrs: { name?: string; version?: string }) => {
-      await patchFileQuery.mutateAsync(attrs).then((result) => {
-        if (result.error) {
-          toast({
-            title: 'File Update Failed',
-            description: `Error updating file ${file.name}: ${result.error.detail}`,
-          })
-          return
-        }
+  const patchFile = async (attrs: { name?: string; version?: string }) => {
+    await patchFileQuery.mutateAsync(attrs).then((result) => {
+      if (result.error) {
         toast({
-          title: 'File Updated',
-          description: `File ${file.name} updated successfully`,
+          title: 'File Update Failed',
+          description: `Error updating file ${file.name}: ${result.error.detail}`,
         })
+        return
+      }
+      toast({
+        title: 'File Updated',
+        description: `File ${file.name} updated successfully`,
       })
-    },
-    [patchFileQuery],
-  )
+    })
+  }
 
   const {
     isShown: isDeleteShown,
@@ -238,7 +236,7 @@ export const FileListItem = ({
     [file, setArchivedFile],
   )
 
-  const onDelete = useCallback(async () => {
+  const onDelete = async () => {
     deleteFile.mutateAsync().then((response) => {
       if (response.error) {
         toast({
@@ -252,7 +250,7 @@ export const FileListItem = ({
         description: `File ${file.name} deleted successfully`,
       })
     })
-  }, [deleteFile])
+  }
 
   const onCopySHA = useCallback(() => {
     navigator.clipboard.writeText(file.checksum_sha256_hex ?? '')
@@ -264,12 +262,9 @@ export const FileListItem = ({
     return archivedFiles ? !archivedFiles[file.id] : true
   }, [archivedFiles, file])
 
-  const update = useCallback(
-    (attrs: { name?: string; version?: string }) => {
-      patchFile(attrs)
-    },
-    [patchFile],
-  )
+  const update = (attrs: { name?: string; version?: string }) => {
+    patchFile(attrs)
+  }
 
   return (
     <div

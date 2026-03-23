@@ -18,7 +18,8 @@ from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
-from polar.models import Customer, CustomerSession, MemberSession
+from polar.models import Customer, CustomerSession, Member, MemberSession
+from polar.models.customer import CustomerType
 from polar.postgres import AsyncSession
 
 from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
@@ -35,17 +36,40 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         auth_subject: AuthSubject[User | Organization],
         customer_create: CustomerSessionCreate,
     ) -> CustomerSession | MemberSession:
+        customer = await self._get_customer(session, auth_subject, customer_create)
+
+        feature_settings = customer.organization.feature_settings
+        member_model_enabled = feature_settings.get("member_model_enabled", False)
+
+        if member_model_enabled:
+            member = await self._resolve_member(session, customer, customer_create)
+            token, member_session = await member_session_service.create_member_session(
+                session, member, customer_create.return_url
+            )
+            member_session.raw_token = token
+            return member_session
+
+        token, customer_session = await self.create_customer_session(
+            session, customer, customer_create.return_url
+        )
+        customer_session.raw_token = token
+        return customer_session
+
+    async def _get_customer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        customer_create: CustomerSessionCreate,
+    ) -> Customer:
         repository = CustomerRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
             joinedload(Customer.organization),
         )
 
-        id_field: str
-        id_value: uuid.UUID | str
         if isinstance(customer_create, CustomerSessionCustomerIDCreate):
             statement = statement.where(Customer.id == customer_create.customer_id)
             id_field = "customer_id"
-            id_value = customer_create.customer_id
+            id_value: uuid.UUID | str = customer_create.customer_id
         else:
             statement = statement.where(
                 Customer.external_id == customer_create.external_customer_id
@@ -67,43 +91,118 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 ]
             )
 
-        # For orgs with member_model_enabled, create MemberSession for owner member
-        feature_settings = customer.organization.feature_settings
-        if feature_settings.get("member_model_enabled", False):
-            member_repository = MemberRepository.from_session(session)
-            owner_member = await member_repository.get_owner_by_customer_id(
-                session, customer.id
-            )
-            if owner_member is None:
-                # Auto-create owner member (graceful fallback during migration)
-                owner_member = await member_service.create_owner_member(
-                    session, customer, customer.organization
-                )
-                # Ensure customer relationship is loaded for response serialization
-                if owner_member is not None:
-                    owner_member.customer = customer
-            if owner_member is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "loc": ("body", id_field),
-                            "msg": "No owner member found for this customer.",
-                            "type": "value_error",
-                            "input": id_value,
-                        }
-                    ]
-                )
-            token, member_session = await member_session_service.create_member_session(
-                session, owner_member, customer_create.return_url
-            )
-            member_session.raw_token = token
-            return member_session
+        return customer
 
-        token, customer_session = await self.create_customer_session(
-            session, customer, customer_create.return_url
+    async def _resolve_member(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        customer_create: CustomerSessionCreate,
+    ) -> Member:
+        member_repository = MemberRepository.from_session(session)
+
+        if customer_create.member_id is not None:
+            return await self._get_member_by_id(
+                member_repository, customer, customer_create.member_id
+            )
+
+        if customer_create.external_member_id is not None:
+            return await self._get_member_by_external_id(
+                member_repository, customer, customer_create.external_member_id
+            )
+
+        customer_type = customer.type or CustomerType.individual
+        if customer_type == CustomerType.team:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "member_id"),
+                        "msg": "member_id is required for team customers.",
+                        "type": "value_error",
+                        "input": None,
+                    }
+                ]
+            )
+
+        return await self._resolve_owner_member(session, member_repository, customer)
+
+    async def _get_member_by_id(
+        self,
+        member_repository: MemberRepository,
+        customer: Customer,
+        member_id: uuid.UUID,
+    ) -> Member:
+        member = await member_repository.get_by_id_and_customer_id(
+            member_id, customer.id
         )
-        customer_session.raw_token = token
-        return customer_session
+        if member is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "member_id"),
+                        "msg": "Member does not exist for this customer.",
+                        "type": "value_error",
+                        "input": member_id,
+                    }
+                ]
+            )
+        # get_by_id_and_customer_id doesn't joinedload the customer,
+        # set it for response serialization
+        member.customer = customer
+        return member
+
+    async def _get_member_by_external_id(
+        self,
+        member_repository: MemberRepository,
+        customer: Customer,
+        external_member_id: str,
+    ) -> Member:
+        member = await member_repository.get_by_customer_id_and_external_id(
+            customer.id, external_member_id
+        )
+        if member is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "external_member_id"),
+                        "msg": "Member does not exist for this customer.",
+                        "type": "value_error",
+                        "input": external_member_id,
+                    }
+                ]
+            )
+        # get_by_customer_id_and_external_id doesn't joinedload the customer,
+        # set it for response serialization
+        member.customer = customer
+        return member
+
+    async def _resolve_owner_member(
+        self,
+        session: AsyncSession,
+        member_repository: MemberRepository,
+        customer: Customer,
+    ) -> Member:
+        member = await member_repository.get_owner_by_customer_id(session, customer.id)
+        if member is None:
+            # create_owner_member doesn't set the customer relationship,
+            # set it for response serialization
+            member = await member_service.create_owner_member(
+                session, customer, customer.organization
+            )
+            if member is not None:
+                member.customer = customer
+        if member is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "customer_id"),
+                        "msg": "No owner member found for this customer.",
+                        "type": "value_error",
+                        "input": customer.id,
+                    }
+                ]
+            )
+        return member
 
     async def create_customer_session(
         self,

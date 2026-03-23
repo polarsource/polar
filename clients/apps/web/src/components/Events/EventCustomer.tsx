@@ -1,4 +1,3 @@
-import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
 import { schemas } from '@polar-sh/client'
@@ -42,17 +41,12 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
 
     return (
       <Popover>
-        <PopoverTrigger className="group block">
-          <div className="flex flex-row items-center gap-x-2 font-sans">
-            <AnonymousCustomerAvatar
-              externalId={event.external_customer_id}
-              className="size-6 shrink-0"
-            />
-            <div className="flex flex-row items-baseline gap-x-2">
-              <span className="dark:text-polar-500 dark:group-data-[state=open]:text-polar-300 text-sm text-gray-500 group-data-[state=open]:text-gray-600">
-                {name}
-              </span>
-            </div>
+        <PopoverTrigger className="group block w-full overflow-hidden">
+          <div className="flex w-full flex-row items-center gap-x-2 overflow-hidden text-left font-sans">
+            <Avatar name={event.external_customer_id} avatar_url={null} />
+            <span className="dark:text-polar-500 dark:group-data-[state=open]:text-polar-300 w-full truncate text-sm text-gray-500 group-data-[state=open]:text-gray-600">
+              {name}
+            </span>
           </div>
         </PopoverTrigger>
         <PopoverContent
@@ -62,10 +56,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
           sideOffset={4}
         >
           <div className="flex flex-row items-center gap-x-2 font-sans">
-            <AnonymousCustomerAvatar
-              externalId={event.external_customer_id}
-              className="size-10 shrink-0"
-            />
+            <Avatar name={event.external_customer_id} avatar_url={null} />
             <div className="flex flex-col gap-0.5">
               <span className="text-sm/4 font-medium whitespace-nowrap text-gray-700 dark:text-white">
                 {name}

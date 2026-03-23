@@ -329,28 +329,6 @@ resource "tfe_variable" "tinybird_workspace_production" {
   }
 }
 
-resource "tfe_variable" "tinybird_events_write_production" {
-  key             = "tinybird_events_write"
-  category        = "terraform"
-  description     = "Tinybird Events Write enabled for production"
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "tinybird_events_read_production" {
-  key             = "tinybird_events_read"
-  category        = "terraform"
-  description     = "Tinybird Events Read enabled for production"
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "tinybird_clickhouse_username_production" {
   key             = "tinybird_clickhouse_username"
   category        = "terraform"
@@ -371,6 +349,14 @@ resource "tfe_variable" "tinybird_read_token_production" {
   key             = "tinybird_read_token"
   category        = "terraform"
   description     = "Tinybird Read Token for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "tailscale_authkey_production" {
+  key             = "tailscale_authkey"
+  category        = "terraform"
+  description     = "Tailscale auth key for the subnet router"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }

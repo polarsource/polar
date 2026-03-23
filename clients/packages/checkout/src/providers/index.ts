@@ -9,4 +9,5 @@ export {
   CheckoutContext,
   CheckoutProvider,
   useCheckout,
+  type Result,
 } from './CheckoutProvider'

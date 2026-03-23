@@ -5,7 +5,7 @@ readme = "README.md"
 requires-python = ">=3.14.0"
 dependencies = [
   "fastapi>=0.120.2",
-  "uvicorn[standard]>=0.31.1",
+  "uvicorn[standard]>=0.42.0",
   "asyncpg>=0.29.0",
   "alembic>=1.9.2",
   "sqlalchemy[asyncio]>=2.0.34",
@@ -55,7 +55,6 @@ dependencies = [
   "asgi-ratelimit>=0.10.0",
   "aiocsv>=1.4.0",
   "alembic-utils>=0.8.8",
-  "countryinfo>=0.1.2",
   "clickhouse-connect>=0.8.0",
   "playwright>=1.50.0",
   "trafilatura>=2.0.0",
@@ -87,6 +86,9 @@ dev = [
   "polar-sdk==0.27.3",
   "locust>=2.20.0",
   "debugpy>=1.8.19",
+  "pydantic-evals>=0.7.1",
+  "gepa>=0.1.0",
+  "litellm>=1.82.2",
 ]
 
 [tool.taskipy.tasks]
@@ -104,10 +106,12 @@ db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
 tb_deploy = { cmd = "python -m scripts.tinybird", help = "deploy tinybird datasources" }
+preview = { cmd = "python -m scripts.preview", help = "manage preview environments" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
 generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
 seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test data into the database" }
+enable_payments = { cmd = "python -m scripts.enable_payments", help = "enable payments for an organization by slug" }
 loadtest_setup = { cmd = "python -m scripts.loadtest_setup", help = "setup load test data for event ingestion" }
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
 

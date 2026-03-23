@@ -1,16 +1,21 @@
 import { Upload } from '@/components/FileUpload/Upload'
+import { useToast } from '@/components/Toast/use-toast'
 import {
   useBenefits,
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { setProductValidationErrors } from '@/utils/api/errors'
+import {
+  findFirstErrorMessage,
+  setProductValidationErrors,
+} from '@/utils/api/errors'
 import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
-import { schemas } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
+import type { FieldErrors } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
@@ -35,6 +40,7 @@ const reuploadMedia = async (
       onFileUploadProgress: () => {},
       onFileUploaded: (response) =>
         resolve(response as schemas['ProductMediaFileRead']),
+      onFileUploadError: (_fileId, error) => reject(error),
     })
     upload.run().catch(reject)
   })
@@ -50,6 +56,7 @@ export const CreateProductPage = ({
   sourceProduct,
 }: CreateProductPageProps) => {
   const router = useRouter()
+  const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
@@ -99,6 +106,15 @@ export const CreateProductPage = ({
   })
   const { handleSubmit, setError } = form
 
+  const onInvalid = useCallback(
+    (errors: FieldErrors<ProductEditOrCreateForm>) => {
+      const message =
+        findFirstErrorMessage(errors) ?? 'Please check the form for errors'
+      toast({ title: 'Validation Error', description: message })
+    },
+    [toast],
+  )
+
   const createProduct = useCreateProduct(organization)
   const updateBenefits = useUpdateProductBenefits(organization)
 
@@ -127,8 +143,17 @@ export const CreateProductPage = ({
         } as schemas['ProductCreate'])
 
         if (error) {
-          if (error.detail) {
+          if (isValidationError(error.detail)) {
             setProductValidationErrors(error.detail, setError)
+            toast({
+              title: 'Error',
+              description: error.detail[0]?.msg || 'An error occurred',
+            })
+          } else {
+            toast({
+              title: 'Error',
+              description: String(error.detail || 'An error occurred'),
+            })
           }
           return
         }
@@ -147,18 +172,25 @@ export const CreateProductPage = ({
             `Product ${product.name} was created successfully`,
           ),
         )
+      } catch (e) {
+        toast({
+          title: 'Error',
+          description:
+            e instanceof Error ? e.message : 'An unexpected error occurred',
+        })
       } finally {
         setIsSubmitting(false)
       }
     },
     [
-      organization,
       sourceProduct,
-      enabledBenefitIds,
       createProduct,
       updateBenefits,
-      setError,
+      enabledBenefitIds,
       router,
+      organization,
+      setError,
+      toast,
     ],
   )
 
@@ -185,7 +217,7 @@ export const CreateProductPage = ({
       <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">
         <Form {...form}>
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
             className="flex flex-col gap-y-6"
           >
             <ProductForm
@@ -208,7 +240,7 @@ export const CreateProductPage = ({
       </div>
       <div className="flex flex-row items-center gap-2 pb-12">
         <Button
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit(onSubmit, onInvalid)}
           loading={isSubmitting}
           disabled={isSubmitting}
         >

@@ -38,6 +38,7 @@ class S3Service:
         self.bucket = bucket
         self.presign_ttl = presign_ttl
         self.client = client
+        self._unsigned_client = get_client(signature_version=botocore.UNSIGNED)
 
     def upload(
         self,
@@ -234,8 +235,7 @@ class S3Service:
         # This is apparently the *only* way to get a public URL with boto3,
         # apart from building a URL manually 🙄
         # Ref: https://stackoverflow.com/a/48197923
-        unsigned_client = get_client(signature_version=botocore.UNSIGNED)
-        return unsigned_client.generate_presigned_url(
+        return self._unsigned_client.generate_presigned_url(
             "get_object", ExpiresIn=0, Params=dict(Bucket=self.bucket, Key=path)
         )
 

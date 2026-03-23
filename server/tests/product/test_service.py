@@ -1646,6 +1646,10 @@ class TestUpdateBenefits:
                     product.id,
                 ),
                 call("order.update_product_benefits_grants", product.id),
+                call(
+                    "customer_seat.update_product_benefits_grants",
+                    product.id,
+                ),
             ]
         )
 
@@ -1692,6 +1696,10 @@ class TestUpdateBenefits:
                     product.id,
                 ),
                 call("order.update_product_benefits_grants", product.id),
+                call(
+                    "customer_seat.update_product_benefits_grants",
+                    product.id,
+                ),
             ]
         )
 
@@ -1733,6 +1741,10 @@ class TestUpdateBenefits:
                     product.id,
                 ),
                 call("order.update_product_benefits_grants", product.id),
+                call(
+                    "customer_seat.update_product_benefits_grants",
+                    product.id,
+                ),
             ]
         )
 
@@ -1900,6 +1912,10 @@ class TestUpdateBenefits:
                     product.id,
                 ),
                 call("order.update_product_benefits_grants", product.id),
+                call(
+                    "customer_seat.update_product_benefits_grants",
+                    product.id,
+                ),
             ]
         )
 

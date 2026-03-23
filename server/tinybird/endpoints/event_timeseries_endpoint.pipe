@@ -1,0 +1,151 @@
+DESCRIPTION >
+    Event timeseries with hierarchy-aware aggregations.
+    Rolls up an aggregate field from all descendants via root_id, then computes
+    occurrences, customers, and field statistics (sum, avg, p10, p90, p99)
+    per event name per time bucket. Roots only for now.
+
+NODE per_root_totals
+DESCRIPTION >
+    For each root event, sum the aggregate field across all events in its hierarchy.
+
+SQL >
+    %
+    SELECT
+        re.id AS root_id,
+        re.name AS root_name,
+        re.timestamp AS root_timestamp,
+        re.customer_id AS customer_id,
+        re.external_customer_id AS external_customer_id,
+        COALESCE(
+            sum(
+                {% if defined(agg_field) and agg_field == '_cost.amount' %}ae.cost_amount
+                {% elif defined(agg_field) and agg_field == '_cost.currency' %}ae.cost_currency
+                {% elif defined(agg_field) and agg_field == '_llm.input_tokens' %}ae.llm_input_tokens
+                {% elif defined(agg_field) and agg_field == '_llm.output_tokens' %}ae.llm_output_tokens
+                {% elif defined(agg_depth) and agg_depth == '1' %}
+                    JSONExtractFloat(
+                        ae.user_metadata, {{ String(agg_key_1, description="Aggregate field key 1") }}
+                    )
+                {% elif defined(agg_depth) and agg_depth == '2' %}
+                    JSONExtractFloat(
+                        ae.user_metadata,
+                        {{ String(agg_key_1) }},
+                        {{ String(agg_key_2, description="Aggregate field key 2") }}
+                    )
+                {% elif defined(agg_depth) and agg_depth == '3' %}
+                    JSONExtractFloat(
+                        ae.user_metadata,
+                        {{ String(agg_key_1) }},
+                        {{ String(agg_key_2) }},
+                        {{ String(agg_key_3, description="Aggregate field key 3") }}
+                    )
+                {% else %}0
+                {% end %}
+            ),
+            0
+        ) AS field_total
+    FROM events_by_timestamp re
+    LEFT JOIN
+        events_by_timestamp ae
+        ON ae.root_id = re.id
+        AND ae.organization_id = toUUID(
+            {{
+                String(
+                    organization_id,
+                    '00000000-0000-0000-0000-000000000000',
+                    description="Organization UUID",
+                )
+            }}
+        )
+    WHERE
+        re.organization_id
+        = toUUID({{ String(organization_id, '00000000-0000-0000-0000-000000000000') }})
+        AND re.parent_id IS NULL
+        AND re.source = 'user'
+        AND re.timestamp >= toDateTime(
+            {{ String(start_dt, '2024-01-01 00:00:00', description="Start datetime") }},
+            {{ String(tz, 'UTC', description="Timezone") }}
+        )
+        AND re.timestamp < toDateTime(
+            {{ String(end_dt, '2024-01-02 00:00:00', description="End datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        {% if defined(customer_ids) and customer_ids != '' %}
+            AND re.customer_id IN (
+                SELECT
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                    )
+            )
+        {% end %}
+        {% if defined(external_customer_ids) and external_customer_ids != '' %}
+            AND re.external_customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    external_customer_ids,
+                                    description="Comma-separated external customer IDs",
+                                )
+                            }}
+                        )
+                    )
+            )
+        {% end %}
+        {% if defined(names) and names != '' %}
+            AND re.name IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(',', {{ String(names, description="Comma-separated event names") }})
+                    )
+            )
+        {% end %}
+        {% if defined(event_type_id) %}
+            AND re.event_type_id = toUUID({{ String(event_type_id, description="Event type UUID") }})
+        {% end %}
+    GROUP BY re.id, re.name, re.timestamp, re.customer_id, re.external_customer_id
+
+NODE event_timeseries_result
+DESCRIPTION >
+    Aggregate per-root totals by name and time bucket.
+
+SQL >
+    %
+    SELECT
+        root_name AS name,
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(root_timestamp, {{ String(tz, 'UTC') }})) AS bucket,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(root_timestamp, {{ String(tz, 'UTC') }})) AS bucket,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(root_timestamp, {{ String(tz, 'UTC') }}), 1) AS bucket,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(root_timestamp, {{ String(tz, 'UTC') }})) AS bucket,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(root_timestamp, {{ String(tz, 'UTC') }})) AS bucket,
+        {% else %} toStartOfDay(toDateTime(root_timestamp, {{ String(tz, 'UTC') }})) AS bucket,
+        {% end %}
+        count() AS occurrences,
+        uniqExact(
+            if(customer_id IS NOT NULL, toString(customer_id), external_customer_id)
+        ) AS customers,
+        sum(field_total) AS field_sum,
+        avg(field_total) AS field_avg,
+        quantile(0.10)
+        (field_total) AS field_p10,
+        quantile(0.90)
+        (field_total) AS field_p90,
+        quantile(0.99)
+        (field_total) AS field_p99
+    FROM per_root_totals
+    GROUP BY name, bucket
+    ORDER BY bucket ASC, name ASC
+
+TYPE ENDPOINT

@@ -16,6 +16,7 @@ const statusColors = {
   paid: 'green',
   refunded: 'blue',
   partially_refunded: 'blue',
+  void: 'red',
 } as const
 
 export default function Index() {

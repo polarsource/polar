@@ -1,14 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import {
-  ComponentProps,
-  ComponentType,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { ComponentProps, useCallback, useState } from 'react'
 
 const Avatar = ({
   name,
@@ -25,7 +18,7 @@ const Avatar = ({
   height?: number | undefined
   width?: number | undefined
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading']
-  CustomImageComponent?: ComponentType<any> // Used mainly to pass next/image
+  CustomImageComponent?: React.ElementType
 }) => {
   const initials = getInitials(name)
 
@@ -40,21 +33,21 @@ const Avatar = ({
     setShowInitials(false)
   }, [setHasLoaded, setShowInitials])
 
-  const imgRef = useRef<HTMLImageElement>(null)
-
   const onError = useCallback(() => {
     setShowInitials(true)
     setHasLoaded(true)
   }, [setHasLoaded, setShowInitials])
 
-  // We need to look at the `.complete`-property on the <img>
-  // in order to detect resources in the cache.
-  useEffect(() => {
-    if (imgRef.current && imgRef.current.complete) {
-      setHasLoaded(true)
-      setShowInitials(false)
-    }
-  }, [imgRef.current])
+  // Callback ref to detect images already in the browser cache.
+  const imgRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (node && node.complete) {
+        setHasLoaded(true)
+        setShowInitials(false)
+      }
+    },
+    [setHasLoaded, setShowInitials],
+  )
 
   const ImageElement = CustomImageComponent || 'img'
 
@@ -72,7 +65,6 @@ const Avatar = ({
         </div>
       ) : (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <ImageElement
             ref={imgRef}
             alt={name}

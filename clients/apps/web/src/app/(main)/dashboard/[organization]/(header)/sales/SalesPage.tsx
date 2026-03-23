@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -156,7 +157,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: order } }) => (
         <span>
-          {formatCurrency('compact')(order.net_amount, order.currency)}
+          {formatCurrency('standard')(order.net_amount, order.currency)}
         </span>
       ),
     },

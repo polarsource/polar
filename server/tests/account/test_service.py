@@ -8,7 +8,6 @@ from polar.account.service import (
     account as account_service,
 )
 from polar.auth.models import AuthSubject
-from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import Account, Organization, Transaction, User, UserOrganization
 from polar.models.transaction import Processor, TransactionType
@@ -225,95 +224,6 @@ class TestChangeAdmin:
             await account_service.change_admin(
                 session, account, user.id, organization.id
             )
-
-
-@pytest.mark.asyncio
-class TestSearch:
-    async def test_search_filters_deleted_organizations(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-    ) -> None:
-        # Create account with user as admin
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
-
-        # Associate the existing organization with the account
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        # Create a second organization that will be marked as deleted
-        organization_deleted = Organization(
-            name="Deleted Organization",
-            slug="deleted-org",
-            account_id=account.id,
-            customer_invoice_prefix="DEL",
-            deleted_at=utc_now(),  # Mark as deleted
-        )
-        await save_fixture(organization_deleted)
-
-        # Create auth subject
-        auth_subject = AuthSubject[User](subject=user, scopes=set(), session=None)
-
-        # Search for accounts
-        accounts, count = await account_service.search(
-            session, auth_subject, pagination=PaginationParams(limit=10, page=1)
-        )
-
-        # Verify results
-        assert count == 1
-        assert len(accounts) == 1
-        assert accounts[0].id == account.id
-
-        # Verify only active organization is included
-        assert len(accounts[0].organizations) == 1
-        assert accounts[0].organizations[0].id == organization.id
-        assert accounts[0].organizations[0].slug == organization.slug
-
-    async def test_search_includes_all_active_organizations(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-        organization: Organization,
-    ) -> None:
-        # Create account with user as admin
-        account = await create_account(
-            save_fixture, admin=user, status=Account.Status.ACTIVE
-        )
-
-        # Associate the existing organization with the account
-        organization.account_id = account.id
-        await save_fixture(organization)
-
-        # Create a second active organization
-        organization_two = Organization(
-            name="Organization Two",
-            slug="org-two",
-            account_id=account.id,
-            customer_invoice_prefix="ORG2",
-        )
-        await save_fixture(organization_two)
-
-        # Create auth subject
-        auth_subject = AuthSubject[User](subject=user, scopes=set(), session=None)
-
-        # Search for accounts
-        accounts, count = await account_service.search(
-            session, auth_subject, pagination=PaginationParams(limit=10, page=1)
-        )
-
-        # Verify both active organizations are included
-        assert count == 1
-        assert len(accounts) == 1
-        assert len(accounts[0].organizations) == 2
-
-        # Verify organization slugs
-        organization_slugs = {org.slug for org in accounts[0].organizations}
-        assert organization_slugs == {organization.slug, "org-two"}
 
 
 @pytest.mark.asyncio

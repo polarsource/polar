@@ -67,6 +67,8 @@ SlugValidator = AfterValidator(_validate_slug)
 UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
 
+StripValidator = AfterValidator(lambda v: v.strip())
+
 
 @dataclasses.dataclass(slots=True)
 class ClassName:

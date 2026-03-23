@@ -56,6 +56,7 @@ class FormField:
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -117,6 +118,7 @@ class InputField(FormField):
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -152,6 +154,9 @@ class InputField(FormField):
         ):
             if errors:
                 classes("input-error")
+        if description:
+            with tag.div(classes="label"):
+                text(description)
         for error in errors:
             with tag.div(classes="label text-error"):
                 text(error["msg"])
@@ -181,6 +186,7 @@ class TextAreaField(FormField):
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -217,6 +223,9 @@ class TextAreaField(FormField):
                 classes("textarea-error")
             if value is not None:
                 text(str(value))
+        if description:
+            with tag.div(classes="label"):
+                text(description)
         for error in errors:
             with tag.div(classes="label text-error"):
                 text(error["msg"])
@@ -244,6 +253,7 @@ class CheckboxField(FormField):
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -274,6 +284,9 @@ class CheckboxField(FormField):
             ):
                 pass
             text(label)
+        if description:
+            with tag.div(classes="label"):
+                text(description)
         for error in errors:
             with tag.div(classes="label text-error"):
                 text(error["msg"])
@@ -302,6 +315,7 @@ class CurrencyField(InputField):
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: int | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -325,6 +339,7 @@ class CurrencyField(InputField):
             id,
             label,
             required=required,
+            description=description,
             value=formatted_value,
             errors=errors,
         ):
@@ -365,6 +380,7 @@ class SelectField(FormField):
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: str | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -402,6 +418,9 @@ class SelectField(FormField):
                 selected = value == option_value if value is not None else False
                 with tag.option(value=option_value, selected=selected):
                     text(option_label)
+        if description:
+            with tag.div(classes="label"):
+                text(description)
         for error in errors:
             with tag.div(classes="label text-error"):
                 text(error["msg"])
@@ -429,6 +448,7 @@ class SubFormField(FormField):
         label: str,
         *,
         required: bool = False,
+        description: str | None = None,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
@@ -591,6 +611,7 @@ class BaseForm(BaseModel):
                         key,
                         field.title or key,
                         required=field.is_required(),
+                        description=field.description,
                         value=_get_data_value(data, errors, key),
                         errors=_get_field_errors(errors, key),
                     ):

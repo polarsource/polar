@@ -2,10 +2,11 @@
 
 import { FileObject, useFileUpload } from '@/components/FileUpload'
 import { FileRead } from '@/components/FileUpload/Upload'
+import { toast } from '@/components/Toast/use-toast'
 import { useFiles } from '@/hooks/queries/files'
 import FileUploadIcon from '@mui/icons-material/FileUploadOutlined'
 import { schemas } from '@polar-sh/client'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import { ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
@@ -15,7 +16,7 @@ const DropzoneView = ({
   children,
 }: {
   isDragActive: boolean
-  children: ReactElement<any>
+  children: ReactElement
 }) => {
   return (
     <div
@@ -48,12 +49,14 @@ interface DownloadablesFormProps {
   organization: schemas['Organization']
   initialFiles: FileRead[]
   initialArchivedFiles: { [key: string]: boolean }
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 const DownloadablesForm = ({
   organization,
   initialFiles,
   initialArchivedFiles,
+  onUploadingChange,
 }: DownloadablesFormProps) => {
   const {
     setValue,
@@ -108,6 +111,13 @@ const DownloadablesForm = ({
     })
   }
 
+  const onFileUploadError = useCallback((fileName: string) => {
+    toast({
+      title: 'Upload Failed',
+      description: `Failed to upload ${fileName}. Please try again.`,
+    })
+  }, [])
+
   const {
     files,
     setFiles,
@@ -120,12 +130,23 @@ const DownloadablesForm = ({
     organization,
     service: 'downloadable',
     onFilesUpdated,
+    onFileUploadError,
     initialFiles,
   })
 
+  const isUploading = files.some((file) => !file.is_uploaded)
+
   useEffect(() => {
-    trigger('properties.files')
-  }, [files, trigger])
+    onUploadingChange?.(isUploading)
+  }, [isUploading, onUploadingChange])
+
+  useEffect(() => {
+    // Only re-validate when uploads complete, not during upload progress
+    // This prevents the error message from bouncing in/out while uploading
+    if (!isUploading) {
+      trigger('properties.files')
+    }
+  }, [isUploading, trigger])
 
   return (
     <>
@@ -142,11 +163,9 @@ const DownloadablesForm = ({
         archivedFiles={archivedFiles}
         setArchivedFile={setArchivedFile}
       />
-      {errors.properties?.files && (
-        <p className="text-destructive-foreground text-sm">
-          {errors.properties.files.message}
-        </p>
-      )}
+      <p className="text-destructive-foreground min-h-[20px] text-sm">
+        {errors.properties?.files?.message}
+      </p>
     </>
   )
 }
@@ -154,13 +173,15 @@ const DownloadablesForm = ({
 interface DownloadablesBenefitFormProps {
   organization: schemas['Organization']
   update?: boolean
+  onUploadingChange?: (uploading: boolean) => void
 }
 
 export const DownloadablesBenefitForm = ({
   organization,
   update = false,
+  onUploadingChange,
 }: DownloadablesBenefitFormProps) => {
-  const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
+  useFormContext<schemas['BenefitDownloadablesCreate']>()
 
   if (!update) {
     return (
@@ -168,21 +189,25 @@ export const DownloadablesBenefitForm = ({
         organization={organization}
         initialFiles={[]}
         initialArchivedFiles={{}}
+        onUploadingChange={onUploadingChange}
       />
     )
   }
 
-  // Use file IDs as key to force remount when benefit is updated
-  const fileIds = getValues('properties.files')
-  const key = fileIds?.join(',') ?? ''
-
-  return <DownloadablesEditForm key={key} organization={organization} />
+  return (
+    <DownloadablesEditForm
+      organization={organization}
+      onUploadingChange={onUploadingChange}
+    />
+  )
 }
 
 const DownloadablesEditForm = ({
   organization,
+  onUploadingChange,
 }: {
   organization: schemas['Organization']
+  onUploadingChange?: (uploading: boolean) => void
 }) => {
   const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
@@ -203,6 +228,7 @@ const DownloadablesEditForm = ({
       organization={organization}
       initialFiles={filesQuery.data?.items ?? []}
       initialArchivedFiles={initial.archivedFiles}
+      onUploadingChange={onUploadingChange}
     />
   )
 }

@@ -36,6 +36,8 @@ def order_status_badge(status: OrderStatus) -> Generator[None]:
             classes("badge-error")
         elif status == OrderStatus.partially_refunded:
             classes("badge-info")
+        elif status == OrderStatus.void:
+            classes("badge-error")
         text(status.replace("_", " ").title())
     yield
 

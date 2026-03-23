@@ -2,7 +2,6 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
-import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateProduct } from '@/hooks/queries/products'
 import {
@@ -74,7 +73,7 @@ export const ProductListItem = ({
         title: 'Product archived',
         description: 'The product has been archived',
       })
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'An error occurred while archiving the product',
@@ -95,7 +94,6 @@ export const ProductListItem = ({
       <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
         <ListItem className="flex flex-row items-center justify-between gap-x-6">
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
-            <ProductThumbnail product={product} />
             <div className="flex min-w-0 flex-row items-center gap-x-2">
               <span className="truncate">{product.name}</span>
               {product.visibility === 'private' && (

@@ -6,7 +6,6 @@ from typing import Any
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.discount.repository import DiscountRepository
@@ -31,7 +30,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 
-from .schemas import DiscountCreate, DiscountUpdate
+from .schemas import DiscountCreate, DiscountFixedCreateBase, DiscountUpdate
 from .sorting import DiscountSortProperty
 
 log = structlog.get_logger()
@@ -82,6 +81,8 @@ class DiscountService(ResourceServiceReader[Discount]):
                 order_by_clauses.append(clause_function(Discount.code))
             elif criterion == DiscountSortProperty.redemptions_count:
                 order_by_clauses.append(clause_function(Discount.redemptions_count))
+            elif criterion == DiscountSortProperty.ends_at:
+                order_by_clauses.append(clause_function(Discount.ends_at))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)
@@ -92,10 +93,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Discount | None:
-        statement = (
-            self._get_readable_discount_statement(auth_subject)
-            .where(Discount.id == id)
-            .options(joinedload(Discount.organization))
+        statement = self._get_readable_discount_statement(auth_subject).where(
+            Discount.id == id
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -110,9 +109,13 @@ class DiscountService(ResourceServiceReader[Discount]):
             session, auth_subject, discount_create
         )
 
+        repository = DiscountRepository.from_session(session)
+
         if discount_create.code is not None:
-            existing_discount = await self.get_by_code_and_organization(
-                session, discount_create.code, organization, redeemable=False
+            existing_discount = (
+                await repository.get_by_code_and_organization_for_update(
+                    discount_create.code, organization.id
+                )
             )
             if existing_discount is not None:
                 raise PolarRequestValidationError(
@@ -148,9 +151,20 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
+
+        if isinstance(discount_create, DiscountFixedCreateBase):
+            if (
+                discount_create.amount is not None
+                and discount_create.currency is not None
+            ):
+                discount_create.amounts = {
+                    discount_create.currency: discount_create.amount
+                }
+
         discount = discount_model(
             **discount_create.model_dump(
-                exclude={"organization_id", "products"}, by_alias=True
+                exclude={"organization_id", "products", "amount", "currency"},
+                by_alias=True,
             ),
             id=discount_id,
             organization=organization,
@@ -158,9 +172,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        session.add(discount)
-
-        return discount
+        return await repository.create(discount)
 
     async def update(
         self,
@@ -169,7 +181,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_update: DiscountUpdate,
     ) -> Discount:
         if (
-            discount_update.duration is not None
+            "duration" in discount_update.model_fields_set
             and discount_update.duration != discount.duration
         ):
             raise PolarRequestValidationError(
@@ -213,7 +225,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount.redemptions_count > 0:
             forbidden_fields = (
-                {"amount", "currency"}
+                {"amount", "currency", "amounts"}
                 if isinstance(discount, DiscountFixed)
                 else {"basis_points"}
             )
@@ -261,19 +273,22 @@ class DiscountService(ResourceServiceReader[Discount]):
                     )
                 discount.discount_products.append(DiscountProduct(product=product))
 
-        updated_fields = set()
         exclude = {"products"}
         if isinstance(discount, DiscountFixed):
             exclude.add("basis_points")
+            if discount_update.amount and discount_update.currency:
+                discount.amounts = {discount_update.currency: discount_update.amount}
+                exclude.add("amount")
+                exclude.add("currency")
         else:
             exclude.add("amount")
             exclude.add("currency")
+            exclude.add("amounts")
         for attr, value in discount_update.model_dump(
             exclude_unset=True, exclude=exclude, by_alias=True
         ).items():
             if value != getattr(discount, attr):
                 setattr(discount, attr, value)
-                updated_fields.add(attr)
 
         session.add(discount)
         await session.flush()
@@ -308,7 +323,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             return None
 
         if currency is not None and isinstance(discount, DiscountFixed):
-            if discount.currency != currency:
+            if currency not in discount.amounts:
                 return None
 
         if products is not None:
@@ -364,7 +379,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             return None
 
         if currency is not None and isinstance(discount, DiscountFixed):
-            if discount.currency != currency:
+            if currency not in discount.amounts:
                 return None
 
         if len(discount.products) > 0 and product not in discount.products:

@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.92"
+      version = ">= 5.0"
     }
 
   }
@@ -145,4 +145,8 @@ resource "aws_s3_bucket_cors_configuration" "public_files" {
     allowed_origins = var.allowed_origins
     expose_headers  = ["ETag"]
   }
+}
+
+resource "aws_s3_bucket" "logs" {
+  bucket = "${local.full_name_prefix}-logs"
 }

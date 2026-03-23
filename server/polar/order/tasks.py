@@ -24,7 +24,7 @@ from polar.worker import (
 )
 
 from .repository import OrderRepository
-from .service import CardPaymentFailed, NoPendingBillingEntries
+from .service import NoPendingBillingEntries, PaymentFailed
 from .service import order as order_service
 
 log: Logger = structlog.get_logger()
@@ -126,8 +126,8 @@ async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> 
 
         try:
             await order_service.trigger_payment(session, order, payment_method)
-        except CardPaymentFailed:
-            # Card errors should not be retried - they will be handled by the dunning process
+        except PaymentFailed:
+            # Payment failures should not be retried - they will be handled by the dunning process
             # Log the failure but don't retry the task
             log.info(
                 "Card payment failed, not retrying - will be handled by dunning",

@@ -1,19 +1,24 @@
-import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
+import type { schemas } from '@polar-sh/client'
 
 interface ProductCheckoutMixin {
   product_id: string
-  product: CheckoutProduct
-  productPriceId: string
-  productPrice: ProductPrice
-  prices: { [k: string]: ProductPrice[] }
+  product: schemas['CheckoutProduct']
+  product_price_id: string
+  product_price: schemas['ProductPrice']
+  prices: { [k: string]: schemas['ProductPrice'][] }
 }
 
-export type ProductCheckoutPublic = CheckoutPublic & ProductCheckoutMixin
+export type ProductCheckoutPublic = schemas['CheckoutPublic'] &
+  ProductCheckoutMixin
 
 export const hasProductCheckout = (
-  checkout: CheckoutPublic,
+  checkout: schemas['CheckoutPublic'],
 ): checkout is ProductCheckoutPublic => {
   return checkout.product !== null && checkout.prices !== null
+}
+
+export const isLegacyRecurringProductPrice = (
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
+): price is schemas['LegacyRecurringProductPrice'] => {
+  return (price as schemas['LegacyRecurringProductPrice']).type === 'recurring'
 }

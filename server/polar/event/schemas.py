@@ -37,6 +37,7 @@ from polar.event.system import (
     SubscriptionRevokedMetadata,
     SubscriptionSeatsUpdatedMetadata,
     SubscriptionUncanceledMetadata,
+    SubscriptionUpdatedMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.kit.metadata import METADATA_DESCRIPTION, MetadataValue
@@ -332,6 +333,17 @@ class SubscriptionCreatedEvent(SystemEventBase):
     )
 
 
+class SubscriptionUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a subscription is updated."""
+
+    name: Literal[SystemEventEnum.subscription_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionCycledEvent(SystemEventBase):
     """An event created by Polar when a subscription is cycled."""
 
@@ -541,6 +553,7 @@ SystemEvent = Annotated[
     | BenefitUpdatedEvent
     | BenefitRevokedEvent
     | SubscriptionCreatedEvent
+    | SubscriptionUpdatedEvent
     | SubscriptionCycledEvent
     | SubscriptionCanceledEvent
     | SubscriptionRevokedEvent
@@ -675,6 +688,28 @@ class ListStatisticsTimeseries(Schema):
     periods: list[StatisticsPeriod] = Field(description="Stats for each time period.")
     totals: list[EventStatistics] = Field(
         description="Overall stats across all periods."
+    )
+
+
+class PropertyGroupStat(Schema):
+    """Aggregate statistics for events grouped by a metadata property value."""
+
+    value: str = Field(description="The property value.")
+    occurrences: int = Field(description="Number of events with this property value.")
+    customers: int = Field(
+        description="Number of distinct customers associated with these events."
+    )
+    totals: dict[str, Decimal] = Field(
+        description="Sum of each aggregate field across all matching events.",
+        default_factory=dict,
+    )
+
+
+class ListPropertyGroupStats(Schema):
+    """Event statistics grouped by a metadata property."""
+
+    items: list[PropertyGroupStat] = Field(
+        description="Stats grouped by property value, ordered by first aggregate field descending."
     )
 
 

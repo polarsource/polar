@@ -1,0 +1,57 @@
+{
+  "name": "@polar-sh/orbit",
+  "version": "0.1.0",
+  "description": "Orbit — Design system for Polar",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/orbit"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./dist/components/*.d.ts",
+      "default": "./src/components/*.tsx"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
+    "format": "oxfmt",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stylexjs/stylex": "^0.18.1",
+    "@tanstack/react-table": "^8.21.3",
+    "class-variance-authority": "^0.7.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^0.577.0",
+    "next-themes": "^0.4.6",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@polar-sh/eslint-config": "workspace:*",
+    "@polar-sh/typescript-config": "workspace:*",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "tsup": "^8.5.1",
+    "typescript": "latest"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  }
+}

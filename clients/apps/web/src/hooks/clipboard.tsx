@@ -5,6 +5,7 @@ import { useCallback } from 'react'
 export const useSafeCopy = (toast: typeof toastFunction) => {
   return useCallback(
     async (text: string) => {
+      // eslint-disable-next-line no-async-promise-executor
       return new Promise<void>(async (resolve) => {
         try {
           await navigator.clipboard.writeText(text)

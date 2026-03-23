@@ -12,9 +12,8 @@ from polar.customer_portal.repository.customer_session_code import (
     CustomerSessionCodeRepository,
 )
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.email.react import render_email_template
 from polar.email.schemas import CustomerSessionCodeEmail, CustomerSessionCodeProps
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
@@ -204,7 +203,8 @@ class CustomerSessionService:
         delta = customer_session_code.expires_at - utc_now()
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
-        body = render_email_template(
+        domain = settings.frontend_hostname
+        enqueue_email_template(
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
                     {
@@ -215,16 +215,13 @@ class CustomerSessionService:
                         "url": settings.generate_frontend_url(
                             f"/{organization.slug}/portal/authenticate"
                         ),
+                        "domain": domain,
                     }
                 )
-            )
-        )
-
-        enqueue_email(
+            ),
             **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=f"Access your {organization.name} purchases",
-            html_content=body,
         )
 
         if settings.is_development():

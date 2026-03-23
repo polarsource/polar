@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { useTheme } from 'next-themes'
@@ -271,6 +272,7 @@ export function PhyllotaxisSunflower() {
         const base = baseDots[i]
         let tx = base.x,
           ty = base.y,
+          // eslint-disable-next-line prefer-const
           tr = base.r
 
         if (mouse) {

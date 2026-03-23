@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+import structlog
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -20,7 +21,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.member.schemas import Member as MemberSchema
+from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.customer import CustomerType
@@ -29,6 +30,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.tax_id import InvalidTaxID, validate_tax_id
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -40,6 +42,8 @@ from .schemas.customer import (
 )
 from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
+
+log = structlog.get_logger()
 
 
 class CustomerService:
@@ -158,13 +162,45 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
+        validated_tax_id = None
+        if customer_create.tax_id is not None:
+            if customer_create.billing_address is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "billing_address"),
+                            "msg": "Country is required to validate tax ID.",
+                            "input": None,
+                        }
+                    ]
+                )
+            try:
+                validated_tax_id = validate_tax_id(
+                    customer_create.tax_id,
+                    customer_create.billing_address.country,
+                )
+            except InvalidTaxID as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid",
+                            "loc": ("body", "tax_id"),
+                            "msg": "Invalid tax ID.",
+                            "input": customer_create.tax_id,
+                        }
+                    ]
+                ) from e
+
         try:
             async with repository.create_context(
                 Customer(
                     organization=organization,
                     **customer_create.model_dump(
-                        exclude={"organization_id", "owner"}, by_alias=True
+                        exclude={"organization_id", "owner", "tax_id"},
+                        by_alias=True,
                     ),
+                    tax_id=validated_tax_id,
                 )
             ) as customer:
                 owner_email = (
@@ -188,7 +224,10 @@ class CustomerService:
                 return customer
         except IntegrityError as e:
             error_str = str(e)
-            if "ix_customers_organization_id_email_case_insensitive" in error_str:
+            if (
+                "ix_customers_organization_id_email_case_insensitive" in error_str
+                or "ix_customers_organization_id_email_not_null" in error_str
+            ):
                 raise PolarRequestValidationError(
                     [
                         {
@@ -220,6 +259,9 @@ class CustomerService:
     ) -> Customer:
         repository = CustomerRepository.from_session(session)
 
+        old_email = customer.email
+        email_changed = False
+
         errors: list[ValidationError] = []
         if (
             customer_update.email is not None
@@ -240,6 +282,7 @@ class CustomerService:
 
             customer.email = customer_update.email
             customer.email_verified = False
+            email_changed = True
 
         # Prevent setting billing address to null
         if (
@@ -308,12 +351,86 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        return await repository.update(
-            customer,
-            update_dict=customer_update.model_dump(
-                exclude={"email"}, exclude_unset=True, by_alias=True
-            ),
+        # Validate tax_id
+        tax_id = customer_update.tax_id or (
+            customer.tax_id[0] if customer.tax_id else None
         )
+        if tax_id is not None:
+            billing_address = (
+                customer_update.billing_address
+                if "billing_address" in customer_update.model_fields_set
+                and customer_update.billing_address is not None
+                else customer.billing_address
+            )
+            if billing_address is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "billing_address"),
+                            "msg": "Country is required to validate tax ID.",
+                            "input": None,
+                        }
+                    ]
+                )
+            try:
+                customer.tax_id = validate_tax_id(tax_id, billing_address.country)
+            except InvalidTaxID as e:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid",
+                            "loc": ("body", "tax_id"),
+                            "msg": "Invalid tax ID.",
+                            "input": customer_update.tax_id,
+                        }
+                    ]
+                ) from e
+
+        try:
+            updated_customer = await repository.update(
+                customer,
+                update_dict=customer_update.model_dump(
+                    exclude={"email", "tax_id"}, exclude_unset=True, by_alias=True
+                ),
+            )
+        except IntegrityError as e:
+            error_str = str(e)
+            if "customers_organization_id_external_id_key" in error_str:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "A customer with this external ID already exists.",
+                            "input": customer_update.external_id
+                            if isinstance(customer_update, CustomerUpdate)
+                            else None,
+                        }
+                    ]
+                ) from e
+            raise
+
+        # Sync member email when the customer email changes.
+        # Only the member whose email matched the old customer email is updated.
+        if email_changed and old_email is not None:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_customer_and_email(
+                session, updated_customer, old_email
+            )
+            if member is not None:
+                await member_repository.update(
+                    member, update_dict={"email": updated_customer.email}
+                )
+                log.info(
+                    "customer.update.synced_member_email",
+                    customer_id=updated_customer.id,
+                    member_id=member.id,
+                    old_email=old_email,
+                    new_email=updated_customer.email,
+                )
+
+        return updated_customer
 
     async def delete(
         self,
@@ -324,6 +441,8 @@ class CustomerService:
     ) -> Customer:
         enqueue_job("subscription.cancel_customer", customer_id=customer.id)
         enqueue_job("benefit.revoke_customer", customer_id=customer.id)
+
+        await member_service.delete_by_customer(session, customer.id)
 
         if anonymize:
             # Anonymize also sets deleted_at
@@ -401,7 +520,7 @@ class CustomerService:
     ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
-        cache_key = f"polar:customer_state:v3:{customer.id}"
+        cache_key = f"polar:customer_state:v4:{customer.id}"
 
         if cache:
             raw_state = await redis.get(cache_key)
@@ -472,14 +591,6 @@ class CustomerService:
             await self.webhook(
                 session, redis, WebhookEventType.customer_state_changed, customer
             )
-
-    async def load_members(
-        self,
-        session: AsyncReadSession,
-        customer_id: uuid.UUID,
-    ) -> Sequence[MemberSchema]:
-        members = await member_service.list_by_customer(session, customer_id)
-        return [MemberSchema.model_validate(member) for member in members]
 
 
 customer = CustomerService()

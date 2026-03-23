@@ -7,28 +7,27 @@ import {
 import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { Card } from '@polar-sh/ui/components/ui/card'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
-import { ArrowRight, Loader2, Send, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import React, { useState } from 'react'
 
 interface AppealFormProps {
   organization: schemas['Organization']
-  disabled?: boolean
-  onAppealApproved?: () => void
-  onContinueAfterSubmission?: () => void
+  reason?: string | null
   existingReviewStatus?: schemas['OrganizationReviewStatus']
 }
 
 const AppealForm: React.FC<AppealFormProps> = ({
   organization,
-  disabled = false,
-  onAppealApproved,
-  onContinueAfterSubmission,
+  reason,
   existingReviewStatus,
 }) => {
-  const [appealReason, setAppealReason] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [appealReason, setAppealReason] = useState(
+    () => existingReviewStatus?.appeal_reason ?? '',
+  )
+  const [isSubmitted, setIsSubmitted] = useState(
+    () => !!existingReviewStatus?.appeal_submitted_at,
+  )
   const [showForm, setShowForm] = useState(false)
 
   const appealMutation = useOrganizationAppeal(organization.id)
@@ -38,14 +37,16 @@ const AppealForm: React.FC<AppealFormProps> = ({
   const currentReviewStatus = existingReviewStatus || reviewStatus.data
 
   // Update state based on existing review status
-  useEffect(() => {
+  const [prevReviewStatus, setPrevReviewStatus] = useState(currentReviewStatus)
+  if (currentReviewStatus !== prevReviewStatus) {
+    setPrevReviewStatus(currentReviewStatus)
     if (currentReviewStatus?.appeal_submitted_at) {
       setIsSubmitted(true)
       if (currentReviewStatus.appeal_reason) {
         setAppealReason(currentReviewStatus.appeal_reason)
       }
     }
-  }, [currentReviewStatus])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,169 +77,119 @@ const AppealForm: React.FC<AppealFormProps> = ({
     const reviewedAt = currentReviewStatus?.appeal_reviewed_at
 
     return (
-      <Card className="p-6">
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-medium">
-                {decision === 'approved'
-                  ? 'Appeal Approved'
-                  : decision === 'rejected'
-                    ? 'Appeal Denied'
-                    : 'Appeal Under Review'}
-              </h3>
-              <p className="dark:text-polar-400 mt-1 text-sm text-gray-600">
-                {decision === 'approved'
-                  ? 'Your appeal has been approved. Payment access has been restored.'
-                  : decision === 'rejected'
-                    ? 'Your appeal has been reviewed and denied. Please contact support for further assistance.'
-                    : 'Thank you for submitting your appeal. Our team will review your case and get back to you as soon as possible.'}
-              </p>
-              {submissionDate && (
-                <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
-                  Submitted: {new Date(submissionDate).toLocaleDateString()}
-                  {reviewedAt &&
-                    ` • Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Next button for approved appeals or continue after submission */}
-          {decision === 'approved' && onAppealApproved ? (
-            <div className="flex justify-center pt-4">
-              <Button onClick={onAppealApproved} className="w-auto">
-                Continue to Account Setup
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          ) : decision !== 'rejected' && onContinueAfterSubmission ? (
-            <div className="flex justify-center pt-4">
-              <Button onClick={onContinueAfterSubmission} className="w-auto">
-                Continue Setup While Appeal is Reviewed
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          ) : null}
-
-          {/* Show the appeal reason */}
-          {appealReason && (
-            <div className="border-t pt-4">
-              <h4 className="dark:text-polar-300 mb-2 text-sm font-medium text-gray-700">
-                Your Appeal:
-              </h4>
-              <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-3">
-                <p className="dark:text-polar-300 text-sm whitespace-pre-wrap text-gray-700">
-                  {appealReason}
-                </p>
-              </div>
-            </div>
+      <div className="space-y-4">
+        <div>
+          <h4 className="mb-1 font-medium">
+            {decision === 'approved'
+              ? 'Appeal approved'
+              : decision === 'rejected'
+                ? 'Appeal denied'
+                : 'Appeal under review'}
+          </h4>
+          <p className="dark:text-polar-400 text-sm text-gray-600">
+            {decision === 'approved'
+              ? 'Your appeal has been approved. Payment access has been restored.'
+              : decision === 'rejected'
+                ? 'Your appeal has been reviewed and denied. Please contact support for further assistance.'
+                : 'Our team will review your case and get back to you as soon as possible.'}
+          </p>
+          {submissionDate && (
+            <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
+              Submitted: {new Date(submissionDate).toLocaleDateString()}
+              {reviewedAt &&
+                ` · Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
+            </p>
           )}
         </div>
-      </Card>
-    )
-  }
 
-  if (!showForm) {
-    return (
-      <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
-        <div className="space-y-4 text-center">
-          <h3 className="text-lg font-medium">Submit an Appeal</h3>
-          <p className="dark:text-polar-400 text-sm text-gray-600">
-            {disabled
-              ? 'Appeal functionality is currently disabled. Please contact support if you believe this decision is incorrect.'
-              : 'If you believe your organization was incorrectly flagged, you can submit an appeal for manual review.'}
-          </p>
-          <Button
-            onClick={() => setShowForm(true)}
-            className="w-auto"
-            disabled={disabled}
-          >
-            <Send className="mr-2 h-4 w-4" />
-            {disabled ? 'Appeal Disabled' : 'Start Appeal'}
-          </Button>
-        </div>
-      </Card>
+        {appealReason && (
+          <>
+            <div className="dark:bg-polar-800 rounded-lg bg-white p-3">
+              <p className="dark:text-polar-300 text-sm text-gray-700">
+                {appealReason}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
     )
   }
 
   return (
-    <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Submit Appeal</h3>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowForm(false)}
-            disabled={disabled}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            Why should your organization be approved? *
-          </label>
-          <p className="dark:text-polar-400 text-xs text-gray-500">
-            {disabled
-              ? 'Appeal submission is currently disabled. Please contact support for assistance.'
-              : "Please provide a detailed explanation of your business model and why it complies with our acceptable use policy. Be specific about what you're selling and how it fits within our guidelines."}
+    <div className="space-y-4">
+      <div className="space-y-2">
+        {reason && (
+          <p className="dark:text-polar-400 text-sm text-gray-600">{reason}</p>
+        )}
+        {!showForm && (
+          <p className="dark:text-polar-400 text-sm text-gray-600">
+            If you believe this is incorrect, you can{' '}
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="cursor-pointer underline hover:no-underline"
+            >
+              submit an appeal
+            </button>{' '}
+            for manual review.
           </p>
-          <Textarea
-            value={appealReason}
-            onChange={(e) => setAppealReason(e.target.value)}
-            disabled={disabled}
-            className={`min-h-32 w-full`}
-            placeholder={
-              disabled
-                ? 'Appeal submission disabled...'
-                : 'Explain why your organization should be approved for payments...'
-            }
-            maxLength={5000}
-          />
-          <div className="flex justify-between text-xs">
-            <span
-              className={characterCount < 50 ? 'text-red-500' : 'text-gray-500'}
-            >
-              Minimum 50 characters required
-            </span>
-            <span
-              className={
-                characterCount > 5000 ? 'text-red-500' : 'text-gray-500'
-              }
-            >
-              {characterCount}/5000
-            </span>
-          </div>
-        </div>
+        )}
+      </div>
 
-        <div className="flex justify-end space-x-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowForm(false)}
-            disabled={disabled}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={disabled || !isValid || appealMutation.isPending}
-            className="w-auto"
-          >
-            {appealMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-4 w-4" />
-            )}
-            {disabled ? 'Appeal Disabled' : 'Submit Appeal'}
-          </Button>
-        </div>
-      </form>
-    </Card>
+      {showForm && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Why should your organization be approved?
+            </label>
+            <p className="dark:text-polar-400 text-sm text-gray-500">
+              Please explain why you believe this decision is incorrect. Include
+              any context about your business that may help us reconsider.
+            </p>
+            <Textarea
+              value={appealReason}
+              onChange={(e) => setAppealReason(e.target.value)}
+              className="dark:bg-polar-800 min-h-32 w-full bg-white"
+              placeholder="Explain why your organization should be approved despite the initial review decision…"
+              maxLength={5000}
+            />
+            <div className="flex justify-between text-xs">
+              <span className={'text-gray-500'}>
+                Minimum 50 characters required
+              </span>
+              <span
+                className={
+                  characterCount > 5000 ? 'text-red-500' : 'text-gray-500'
+                }
+              >
+                {characterCount}/5000
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <Button
+              type="button"
+              variant="ghost"
+              className="opacity-60"
+              onClick={() => setShowForm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!isValid || appealMutation.isPending}
+              className="w-auto"
+            >
+              {appealMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Submit Appeal
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
   )
 }
 

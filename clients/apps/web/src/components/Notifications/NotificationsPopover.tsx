@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
@@ -13,7 +14,7 @@ import {
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Icon from '../Icons/Icon'
 
@@ -21,7 +22,6 @@ type NotificationSchema = schemas['NotificationsList']['notifications'][number]
 
 export const NotificationsPopover = () => {
   const [show, setShow] = useState(false)
-  const [showBadge, setShowBadge] = useState(false)
 
   const notifs = useNotifications()
   const markRead = useNotificationsMarkRead()
@@ -61,7 +61,7 @@ export const NotificationsPopover = () => {
     setShow(false)
   })
 
-  useEffect(() => {
+  const showBadge = useMemo(() => {
     const haveNotifications =
       notifs.data && notifs.data.notifications.length > 0
     const noReadNotifications =
@@ -70,13 +70,11 @@ export const NotificationsPopover = () => {
       haveNotifications &&
       notifs.data.last_read_notification_id !== notifs.data.notifications[0].id
 
-    const showBadge = !!(
+    return !!(
       haveNotifications &&
       (noReadNotifications || lastNotificationIsUnread)
     )
-
-    setShowBadge(showBadge)
-  }, [notifs, notifs.data])
+  }, [notifs.data])
 
   return (
     <Popover>
@@ -109,7 +107,7 @@ export const NotificationsPopover = () => {
 
 export default Popover
 
-export const List = ({
+const List = ({
   notifications,
   setIsInNestedModal,
 }: {
@@ -143,7 +141,7 @@ const Item = ({
 }: {
   iconClasses: string
   n: NotificationSchema
-  children: { icon: React.ReactElement<any>; text: React.ReactElement<any> }
+  children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
     <div className="flex space-x-2.5 text-sm transition-colors duration-100">
@@ -185,8 +183,12 @@ const MaintainerNewPaidSubscription = ({
             )}{' '}
             {payload.tier_price_amount !== null && (
               <>
-                ({formatCurrency('compact')(payload.tier_price_amount, 'usd')}/
-                {payload.tier_price_recurring_interval})
+                (
+                {formatCurrency('compact')(
+                  payload.tier_price_amount,
+                  payload.currency || 'usd',
+                )}
+                /{payload.tier_price_recurring_interval})
               </>
             )}
           </>
@@ -222,7 +224,12 @@ const MaintainerNewProductSale = ({
             ) : (
               <span className="font-bold">{payload.product_name}</span>
             )}{' '}
-            ({formatCurrency('compact')(payload.product_price_amount, 'usd')})
+            (
+            {formatCurrency('compact')(
+              payload.product_price_amount,
+              payload.currency || 'usd',
+            )}
+            )
           </>
         ),
         icon: <ShoppingBagOutlined fontSize="small" />,
@@ -268,7 +275,10 @@ const MaintainerAccountCreditsGranted = ({
           <>
             {payload.organization_name} has received{' '}
             <span className="font-bold">
-              {formatCurrency('compact')(payload.amount, 'usd')}
+              {formatCurrency('compact')(
+                payload.amount,
+                payload.currency || 'usd',
+              )}
             </span>{' '}
             in fee credits!
           </>
@@ -279,7 +289,7 @@ const MaintainerAccountCreditsGranted = ({
   )
 }
 
-export const Notification = ({
+const Notification = ({
   n,
 }: {
   n: NotificationSchema
@@ -302,7 +312,7 @@ export const Notification = ({
 
 const InternalLink = (props: {
   href: string
-  children: React.ReactElement<any>
+  children: React.ReactElement
 }) => {
   return (
     <Link className="font-bold hover:underline" href={props.href}>

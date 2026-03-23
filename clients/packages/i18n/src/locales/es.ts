@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Añadir datos de empresa',
       removeBusinessDetails: 'Eliminar datos de empresa',
       billingDetails: 'Datos de la empresa',
+      addDiscountCode: 'Añadir código de descuento',
     },
     pricing: {
       subtotal: 'Subtotal',
@@ -58,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Hasta {date}',
       },
       everyInterval: {
         day: {
@@ -109,6 +111,38 @@ export default {
           other: 'prueba de # años',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# día gratis',
+            other: '# días gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# mes gratis',
+            other: '# meses gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# año gratis',
+            other: '# años gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/día',
+          week: '/semana',
+          month: '/mes',
+          year: '/año',
+        },
+        then: 'Después',
+        startingDate: 'a partir del {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Total al finalizar la prueba',
+        totalWhenDiscountExpires: 'Total al finalizar el descuento',
+        totalDueToday: 'Total a pagar hoy',
       },
     },
     pwywForm: {
@@ -202,6 +236,10 @@ export default {
       getFree: 'Obtener gratis',
       paymentsUnavailable: 'Los pagos no están disponibles actualmente',
     },
+    productDescription: {
+      readMore: 'Leer más',
+      readLess: 'Leer menos',
+    },
   },
   intervals: {
     short: {
@@ -212,12 +250,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Personalizado',
     license_keys: 'Claves de licencia',
     github_repository: 'Acceso a repositorio de GitHub',
     discord: 'Invitación a Discord',
     downloadables: 'Descargas de archivos',
-    custom: 'Personalizado',
     meter_credit: 'Créditos de consumo',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: 'º',

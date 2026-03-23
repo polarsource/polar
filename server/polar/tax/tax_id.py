@@ -9,6 +9,7 @@ import stdnum.co.nit
 import stdnum.exceptions
 import stdnum.il.idnr
 import stdnum.in_.gstin
+import stdnum.mk.edb
 import stdnum.tr.vkn
 import stdnum.vn.mst
 from pydantic import Field
@@ -77,6 +78,7 @@ class TaxIDFormat(StrEnum):
     kr_brn = "kr_brn"
     kz_bin = "kz_bin"
     li_uid = "li_uid"
+    mk_vat = "mk_vat"
     mx_rfc = "mx_rfc"
     my_frp = "my_frp"
     my_itn = "my_itn"
@@ -115,7 +117,7 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "AT": (TaxIDFormat.eu_vat,),
     "AU": (TaxIDFormat.au_abn, TaxIDFormat.au_arn),
     "BE": (TaxIDFormat.eu_vat,),
-    "BG": (TaxIDFormat.bg_uic, TaxIDFormat.eu_vat),
+    "BG": (TaxIDFormat.eu_vat,),
     "BH": (TaxIDFormat.bh_vat,),
     "BO": (TaxIDFormat.bo_tin,),
     "BR": (TaxIDFormat.br_cnpj, TaxIDFormat.br_cpf),
@@ -134,21 +136,21 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "CR": (TaxIDFormat.cr_tin,),
     "CY": (TaxIDFormat.eu_vat,),
     "CZ": (TaxIDFormat.eu_vat,),
-    "DE": (TaxIDFormat.de_stn, TaxIDFormat.eu_vat),
+    "DE": (TaxIDFormat.eu_vat,),
     "DK": (TaxIDFormat.eu_vat,),
     "DO": (TaxIDFormat.do_rcn,),
     "EC": (TaxIDFormat.ec_ruc,),
     "EE": (TaxIDFormat.eu_vat,),
     "EG": (TaxIDFormat.eg_tin,),
-    "ES": (TaxIDFormat.es_cif, TaxIDFormat.eu_vat),
+    "ES": (TaxIDFormat.eu_vat,),
     "FI": (TaxIDFormat.eu_vat,),
     "FR": (TaxIDFormat.eu_vat,),
     "GB": (TaxIDFormat.gb_vat,),
     "GE": (TaxIDFormat.ge_vat,),
     "GR": (TaxIDFormat.eu_vat,),
     "HK": (TaxIDFormat.hk_br,),
-    "HR": (TaxIDFormat.hr_oib, TaxIDFormat.eu_vat),
-    "HU": (TaxIDFormat.hu_tin, TaxIDFormat.eu_vat),
+    "HR": (TaxIDFormat.eu_vat,),
+    "HU": (TaxIDFormat.eu_vat,),
     "ID": (TaxIDFormat.id_npwp,),
     "IE": (TaxIDFormat.eu_vat,),
     "IL": (TaxIDFormat.il_vat,),
@@ -164,6 +166,7 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "LU": (TaxIDFormat.eu_vat,),
     "LV": (TaxIDFormat.eu_vat,),
     "MT": (TaxIDFormat.eu_vat,),
+    "MK": (TaxIDFormat.mk_vat,),
     "MX": (TaxIDFormat.mx_rfc,),
     "MY": (TaxIDFormat.my_frp, TaxIDFormat.my_itn, TaxIDFormat.my_sst),
     "NG": (TaxIDFormat.ng_tin,),
@@ -175,13 +178,13 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "PH": (TaxIDFormat.ph_tin,),
     "PL": (TaxIDFormat.eu_vat,),
     "PT": (TaxIDFormat.eu_vat,),
-    "RO": (TaxIDFormat.ro_tin, TaxIDFormat.eu_vat),
+    "RO": (TaxIDFormat.eu_vat,),
     "RS": (TaxIDFormat.rs_pib,),
     "RU": (TaxIDFormat.ru_inn, TaxIDFormat.ru_kpp),
     "SA": (TaxIDFormat.sa_vat,),
     "SE": (TaxIDFormat.eu_vat,),
     "SG": (TaxIDFormat.sg_gst, TaxIDFormat.sg_uen),
-    "SI": (TaxIDFormat.si_tin, TaxIDFormat.eu_vat),
+    "SI": (TaxIDFormat.eu_vat,),
     "SK": (TaxIDFormat.eu_vat,),
     "SV": (TaxIDFormat.sv_nit,),
     "TH": (TaxIDFormat.th_vat,),
@@ -311,6 +314,15 @@ class ILVATValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class MKVATValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.mk.edb.compact(number)
+        try:
+            return stdnum.mk.edb.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ae_trn:
@@ -323,6 +335,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CONITValidator()
         case TaxIDFormat.il_vat:
             return ILVATValidator()
+        case TaxIDFormat.mk_vat:
+            return MKVATValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
         case TaxIDFormat.in_gst:
@@ -379,19 +393,22 @@ def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
 
 
 class TaxIDType(TypeDecorator[Any]):
-    impl = JSONB
+    impl = JSONB(none_as_null=True)
     cache_ok = True
 
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
             if not isinstance(value, tuple | list) or len(value) != 2:
                 raise TypeError("Invalid tax ID value.")
-            return json.dumps(value)
+            return list(value)
         return value
 
-    def process_result_value(self, value: str | None, dialect: Dialect) -> Any:
+    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
-            return json.loads(value)
+            # Handle legacy double-serialized values (stored as JSON strings)
+            if isinstance(value, str):
+                value = json.loads(value)
+            return tuple(value)
         return value
 
 

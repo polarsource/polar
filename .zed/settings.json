@@ -1,1 +1,15 @@
-{}
+{
+  "lsp": {
+    "oxfmt": {
+      "binary": {
+        "arguments": ["--lsp"],
+        "path": "clients/node_modules/.bin/oxfmt",
+      },
+      "initialization_options": {
+        "settings": {
+          "fmt.configPath": "clients/.oxfmtrc.json",
+        },
+      },
+    },
+  },
+}

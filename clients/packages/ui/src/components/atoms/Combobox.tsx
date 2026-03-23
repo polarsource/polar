@@ -42,6 +42,8 @@ export interface ComboboxProps<T> {
 
   // Styling
   className?: string
+  popoverClassName?: string
+  popoverAlign?: 'start' | 'center' | 'end'
 }
 
 export function Combobox<T>({
@@ -58,6 +60,8 @@ export function Combobox<T>({
   searchPlaceholder = 'Search…',
   emptyLabel = 'No results found',
   className,
+  popoverClassName,
+  popoverAlign,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
@@ -95,7 +99,7 @@ export function Combobox<T>({
             'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 font-normal shadow-xs transition-colors hover:border-gray-300 hover:bg-white',
             selectedItem
               ? 'text-foreground hover:text-foreground'
-              : 'text-foreground/50 hover:text-foreground/50',
+              : 'text-foreground/50 hover:text-foreground/50 dark:text-polar-400 dark:hover:text-polar-300',
             className,
           )}
         >
@@ -103,7 +107,13 @@ export function Combobox<T>({
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) rounded-xl p-0">
+      <PopoverContent
+        align={popoverAlign}
+        className={cn(
+          'w-(--radix-popover-trigger-width) rounded-xl p-0',
+          popoverClassName,
+        )}
+      >
         <Command shouldFilter={false} className="rounded-xl">
           <CommandInput
             placeholder={searchPlaceholder}

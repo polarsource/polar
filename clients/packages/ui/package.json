@@ -26,9 +26,10 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "format": "prettier --write ./src",
-    "format:check": "prettier -c ./src",
-    "lint": "pnpm format:check"
+    "format": "oxfmt ./src",
+    "format:check": "oxfmt --check ./src",
+    "lint": "pnpm format:check && eslint --max-warnings 0 .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@polar-sh/currency": "workspace:^",
@@ -52,19 +53,19 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "input-otp": "^1.4.2",
-    "lucide-react": "^0.564.0",
-    "react-day-picker": "^9.13.2",
-    "react-hook-form": "~7.71.1",
+    "lucide-react": "^0.577.0",
+    "react-day-picker": "^9.14.0",
+    "react-hook-form": "~7.71.2",
     "react-timeago": "^8.3.0",
-    "recharts": "^3.7.0",
-    "tailwind-merge": "^3.4.0"
+    "recharts": "^3.8.0",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@stripe/stripe-js": "^7.9.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "prettier": "^3.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tsup": "^8.5.1",

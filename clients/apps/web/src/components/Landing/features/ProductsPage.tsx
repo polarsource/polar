@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { StaticImage } from '@/components/Image/StaticImage'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
@@ -8,7 +9,6 @@ import CreditCardOutlined from '@mui/icons-material/CreditCardOutlined'
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
@@ -128,7 +128,7 @@ export const ProductsPage = () => {
                 </div>
               </div>
             </motion.div>
-            <Image
+            <StaticImage
               src="/assets/landing/abstract_07.jpg"
               alt="Subscriptions"
               className="absolute inset-0 h-full w-full object-cover"

@@ -13,10 +13,10 @@
     "dist"
   ],
   "scripts": {
-    "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi | openapi-typescript --enum-values -o ./src/v1.ts && prettier --write ./src && pnpm run build",
-    "test:ts": "tsc --noEmit",
+    "generate": "uv run --directory ../../../server/ -m scripts.generate_openapi | openapi-typescript --enum-values -o ./src/v1.ts && oxfmt ./src && pnpm run build",
     "build": "rm -rf dist/ && tsup",
-    "lint": "prettier -c ."
+    "lint": "oxfmt --check . && eslint --max-warnings 0 .",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {
@@ -25,6 +25,7 @@
     }
   },
   "devDependencies": {
+    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "openapi-typescript": "^7.10.1",
     "tsup": "^8.5.1",

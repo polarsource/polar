@@ -1,0 +1,181 @@
+---
+title: "Metadata"
+description: "A shared mechanism letting users attach arbitrary key-value data to Polar models."
+---
+
+Metadata is a shared mechanism that lets Polar users attach arbitrary key-value pairs to supported resources (customers, orders, subscriptions, products, etc.). It is entirely for the benefit of integrators — Polar itself does not use these values — and is exposed as a plain `metadata` field in every API request and response.
+
+## When to use this concept
+
+Add metadata support to a model whenever:
+
+- The resource is user-facing and exposed through the public API.
+- Users are likely to need to cross-reference Polar records with their own systems (e.g. storing an internal record ID, a feature flag, or a campaign tag).
+
+Do **not** use `user_metadata` to store Polar-internal data; use dedicated columns for that.
+
+## How to use this concept
+
+### 1. Add the mixin to the SQLAlchemy model
+
+```python
+from polar.kit.metadata import MetadataMixin
+
+class Order(MetadataMixin, RecordModel):
+    ...
+```
+
+`MetadataMixin` adds a single `user_metadata` column of type `JSONB` (non-nullable, defaults to `{}`).
+
+> **Why `user_metadata` and not `metadata`?**
+> `metadata` is a reserved keyword in SQLAlchemy — it clashes with `DeclarativeBase.metadata`, the object that holds the table registry. Using `user_metadata` as the column name avoids this conflict at the ORM level while keeping the public-facing API field name `metadata` through Pydantic aliasing (see below).
+
+### 2. Add the Pydantic mixins to the schemas
+
+Use `MetadataInputMixin` for write schemas (create / update) and `MetadataOutputMixin` for read schemas:
+
+```python
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+
+class OrderCreate(MetadataInputMixin, Schema):
+    ...
+
+class OrderUpdate(MetadataInputMixin, Schema):
+    ...
+
+class Order(MetadataOutputMixin, TimestampedSchema, IDSchema):
+    ...
+```
+
+Pydantic handles the rename transparently:
+
+- **`MetadataInputMixin`** exposes the field as `metadata` to API consumers and serialises it as `user_metadata` when writing to the database (`serialization_alias="user_metadata"`).
+- **`MetadataOutputMixin`** reads either `user_metadata` (from the ORM object) or `metadata` (from a plain dict) and exposes it as `metadata` in the response (`validation_alias=AliasChoices("user_metadata", "metadata")`).
+
+API consumers always see `metadata`; the internal column name `user_metadata` is never exposed.
+
+### 3. Support metadata filtering on list endpoints
+
+Add `MetadataQuery` to your list endpoint and service, then call `apply_metadata_clause` to filter results:
+
+```python
+# endpoints.py
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
+
+@router.get(
+    "/",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
+async def list(
+    metadata: MetadataQuery,
+    ...
+):
+    items, count = await order_service.list(session, ..., metadata=metadata)
+```
+
+```python
+# service.py
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
+
+async def list(self, session, *, metadata: MetadataQuery | None = None, ...):
+    statement = repository.get_readable_statement(auth_subject)
+    if metadata is not None:
+        statement = apply_metadata_clause(Order, statement, metadata)
+    ...
+```
+
+The query parameter uses the `deepObject` style: `?metadata[key]=value`. Multiple values for the same key are OR-ed; multiple keys are AND-ed.
+
+## How it works
+
+### Storage
+
+`MetadataMixin` maps to a PostgreSQL `JSONB` column:
+
+```python
+MetadataColumn = Annotated[
+    dict[str, Any], mapped_column(JSONB, nullable=False, default=dict)
+]
+
+class MetadataMixin:
+    user_metadata: Mapped[MetadataColumn]
+```
+
+### Validation constraints
+
+`MetadataField` (used by `MetadataInputMixin`) enforces the following limits:
+
+| Constraint                  | Limit                         |
+| --------------------------- | ----------------------------- |
+| Maximum keys per object     | 50                            |
+| Maximum key length          | 40 characters                 |
+| Maximum string value length | 500 characters                |
+| Allowed value types         | `str`, `int`, `float`, `bool` |
+
+### Pydantic aliasing
+
+```python
+class MetadataInputMixin(BaseModel):
+    # Public name: "metadata" → serialised as "user_metadata" for the ORM
+    metadata: MetadataField = Field(
+        default_factory=dict, serialization_alias="user_metadata"
+    )
+
+class MetadataOutputMixin(BaseModel):
+    # Accepts "user_metadata" (ORM) or "metadata" (dict); always outputs "metadata"
+    metadata: MetadataOutputType = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+```
+
+This means callers always use `metadata`, while internally the ORM column is always accessed as `user_metadata`.
+
+### Filtering
+
+`_get_metadata_query` parses `deepObject`-style query parameters (e.g. `metadata[key]=value`) from the raw request. `get_metadata_clause` then translates the result into a SQLAlchemy `WHERE` clause that queries the JSONB column:
+
+```python
+# For each key: OR across all provided values; AND across all keys.
+model.user_metadata[key].as_string() == value
+```
+
+#### Why the OpenAPI schema is injected manually
+
+FastAPI cannot automatically generate a correct OpenAPI `parameter` object for `deepObject`-style query parameters — it has no built-in concept for them. Two functions work together to paper over this gap:
+
+**`add_metadata_query_schema`** is called once, at application startup, inside the custom `openapi()` function in `polar/openapi.py`. It injects a reusable `MetadataQuery` component into the global `components/schemas` section of the OpenAPI document:
+
+```python
+openapi_schema["components"]["schemas"]["MetadataQuery"] = {
+    "anyOf": [
+        {
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {"type": "string"},
+                    {"type": "integer"},
+                    {"type": "boolean"},
+                    {"type": "array", "items": {"type": "string"}},
+                    {"type": "array", "items": {"type": "integer"}},
+                    {"type": "array", "items": {"type": "boolean"}},
+                ]
+            },
+        },
+        {"type": "null"},
+    ],
+    "title": "MetadataQuery",
+}
+```
+
+Each value can be a scalar (`string`, `integer`, `boolean`) or an array of scalars — the array form is used when the same key appears multiple times in the query string (e.g. `?metadata[tag]=a&metadata[tag]=b`).
+
+**`get_metadata_query_openapi_schema`** returns the parameter descriptor that references that component schema. It is passed to individual route definitions via `openapi_extra`:
+
+```python
+@router.get(
+    "/",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
+```
+
+The descriptor sets `style: deepObject` and `$ref: "#/components/schemas/MetadataQuery"`, which tells OpenAPI-aware tools (SDK generators, documentation renderers) to expect bracket-notation keys (`metadata[key]`). Because FastAPI never sees this parameter declaration, it does not try to parse it itself — the actual parsing is handled by `_get_metadata_query` via a raw `Request` dependency.

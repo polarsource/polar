@@ -23,6 +23,7 @@ export type HeroProps = PropsWithChildren<{
   className?: string
   title: string
   description: string
+  size?: 'default' | 'large'
 }>
 
 export const Hero = ({
@@ -30,11 +31,12 @@ export const Hero = ({
   title,
   description,
   children,
+  size = 'default',
 }: HeroProps) => {
   return (
     <motion.div
       className={twMerge(
-        'relative flex flex-col items-center justify-center gap-4 px-4 pt-8 text-center md:pt-12',
+        'relative flex flex-col items-center justify-center gap-8 px-4 pt-8 text-center md:pt-12',
         className,
       )}
       variants={containerVariants}
@@ -43,7 +45,10 @@ export const Hero = ({
       viewport={{ once: true }}
     >
       <motion.h1
-        className="text-5xl leading-tight! tracking-tight text-balance md:px-0 md:text-7xl"
+        className={twMerge(
+          'leading-tighter! tracking-tight text-balance md:px-0',
+          size === 'default' ? 'text-3xl md:text-7xl' : 'text-5xl md:text-9xl',
+        )}
         variants={itemVariants}
       >
         {title}

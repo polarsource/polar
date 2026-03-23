@@ -768,6 +768,8 @@ export interface components {
       code_lifetime_minutes: number
       /** Url */
       url: string
+      /** Domain */
+      domain: string
     }
     /** EmailUpdateEmail */
     EmailUpdateEmail: {
@@ -806,6 +808,8 @@ export interface components {
       code: string
       /** Code Lifetime Minutes */
       code_lifetime_minutes: number
+      /** Domain */
+      domain: string
     }
     /** MaintainerCreateAccountNotificationPayload */
     MaintainerCreateAccountNotificationPayload: {
@@ -826,6 +830,11 @@ export interface components {
       tier_price_recurring_interval: string
       /** Tier Organization Name */
       tier_organization_name: string
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }
@@ -890,6 +899,11 @@ export interface components {
        * @default null
        */
       billing_reason: components['schemas']['OrderBillingReasonInternal'] | null
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
       /**
@@ -1648,6 +1662,27 @@ export interface components {
       url: string
       order: components['schemas']['OrderEmail']
     }
+    /** SubscriptionFinalInvoiceEmail */
+    SubscriptionFinalInvoiceEmail: {
+      /**
+       * Template
+       * @default subscription_final_invoice
+       * @constant
+       */
+      template: 'subscription_final_invoice'
+      props: components['schemas']['SubscriptionFinalInvoiceProps']
+    }
+    /** SubscriptionFinalInvoiceProps */
+    SubscriptionFinalInvoiceProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      order: components['schemas']['OrderEmail']
+    }
     /** SubscriptionEmail */
     SubscriptionEmail: {
       /**
@@ -1806,6 +1841,28 @@ export interface components {
      * @enum {string}
      */
     SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
+    /** SubscriptionRenewalReminderEmail */
+    SubscriptionRenewalReminderEmail: {
+      /**
+       * Template
+       * @default subscription_renewal_reminder
+       * @constant
+       */
+      template: 'subscription_renewal_reminder'
+      props: components['schemas']['SubscriptionRenewalReminderProps']
+    }
+    /** SubscriptionRenewalReminderProps */
+    SubscriptionRenewalReminderProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /** Renewal Date */
+      renewal_date: string
+    }
     /** SubscriptionRevokedEmail */
     SubscriptionRevokedEmail: {
       /**
@@ -1825,6 +1882,28 @@ export interface components {
       subscription: components['schemas']['SubscriptionEmail']
       /** Url */
       url: string
+    }
+    /** SubscriptionTrialConversionReminderEmail */
+    SubscriptionTrialConversionReminderEmail: {
+      /**
+       * Template
+       * @default subscription_trial_conversion_reminder
+       * @constant
+       */
+      template: 'subscription_trial_conversion_reminder'
+      props: components['schemas']['SubscriptionTrialConversionReminderProps']
+    }
+    /** SubscriptionTrialConversionReminderProps */
+    SubscriptionTrialConversionReminderProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /** Conversion Date */
+      conversion_date: string
     }
     /**
      * SubscriptionStatus

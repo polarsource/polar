@@ -20,7 +20,12 @@
     "NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
     "NEXT_PUBLIC_CODESPACE_NAME",
     "NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
+    "POLAR_PREVIEW_ACCESS_TOKEN",
+    "POLAR_PREVIEW_BUILD",
+    "POLAR_PREVIEW_BACKEND_HOST",
     "VERCEL_ENV",
+    "VERCEL_GIT_PULL_REQUEST_ID",
+    "VERCEL_URL",
     "NEXT_PUBLIC_VERCEL_ENV",
     "NEXT_PUBLIC_LOGIN_PATH",
     "NEXT_PUBLIC_GITHUB_APP_NAMESPACE",
@@ -45,13 +50,17 @@
     "S3_UPLOAD_ORIGINS",
     "GOOGLE_GENERATIVE_AI_API_KEY",
     "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
     "GRAM_API_KEY",
     "GRAM_API_URL",
     "MCP_OAUTH2_CLIENT_ID",
-    "MCP_OAUTH2_CLIENT_SECRET"
+    "MCP_OAUTH2_CLIENT_SECRET",
+    "CI"
   ],
   "tasks": {
-    "test": {},
+    "test": {
+      "dependsOn": ["^build"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]

@@ -62,6 +62,9 @@ class TinybirdEvent(TypedDict):
     customer_cancellation_reason: str | None
     customer_cancellation_comment: str | None
     proration_behavior: str | None
+    trial_end: str | None
+    seats: int | None
+    billing_period_end: str | None
     # Type/enum fields
     benefit_type: str | None
     billing_type: str | None
@@ -81,3 +84,5 @@ class TinybirdEvent(TypedDict):
     llm_output_tokens: int | None
     # Remaining metadata as JSON string
     user_metadata: str
+    # Ancestor chain (parent → root)
+    ancestors: list[str]

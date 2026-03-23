@@ -61,6 +61,7 @@ from polar.models import (
     ProductPriceFree,
     ProductPriceMeteredUnit,
     ProductPriceSeatUnit,
+    ProductVisibility,
     Refund,
     Subscription,
     SubscriptionProductPrice,
@@ -183,7 +184,7 @@ async def create_oauth_account(
         account_id="xxyyzz",
         account_email="foo@bar.com",
         account_username=rstr("gh_username"),
-        user_id=user.id,
+        user=user,
     )
     await save_fixture(oauth_account)
     return oauth_account
@@ -393,6 +394,7 @@ async def create_product(
     recurring_interval_count: int | None = 1,
     name: str = "Product",
     is_archived: bool = False,
+    visibility: ProductVisibility = ProductVisibility.public,
     prices: Sequence[PriceFixtureType] = [(1000, "usd")],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     trial_interval: TrialInterval | None = None,
@@ -409,6 +411,7 @@ async def create_product(
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
         is_archived=is_archived,
+        visibility=visibility,
         organization=organization,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
@@ -680,8 +683,7 @@ async def create_discount(
     save_fixture: SaveFixture,
     *,
     type: typing.Literal[DiscountType.fixed],
-    amount: int,
-    currency: str,
+    amounts: dict[str, int],
     duration: DiscountDuration,
     organization: Organization,
     name: str = "Discount",
@@ -712,8 +714,7 @@ async def create_discount(
     save_fixture: SaveFixture,
     *,
     type: DiscountType,
-    amount: int | None = None,
-    currency: str | None = None,
+    amounts: dict[str, int] | None = None,
     basis_points: int | None = None,
     duration: DiscountDuration,
     organization: Organization,
@@ -740,10 +741,8 @@ async def create_discount(
         redemptions_count=0,
     )
     if isinstance(custom_field, DiscountFixed):
-        assert amount is not None
-        assert currency is not None
-        custom_field.amount = amount
-        custom_field.currency = currency
+        assert amounts is not None
+        custom_field.amounts = amounts
     elif isinstance(custom_field, DiscountPercentage):
         assert basis_points is not None
         custom_field.basis_points = basis_points
@@ -763,8 +762,7 @@ async def discount_fixed_once(
     return await create_discount(
         save_fixture,
         type=DiscountType.fixed,
-        amount=1000,
-        currency="usd",
+        amounts={"usd": 1000},
         duration=DiscountDuration.once,
         organization=organization,
         code="DISCOUNTFIXEDONCE",
@@ -796,6 +794,20 @@ async def discount_percentage_100(
         duration=DiscountDuration.once,
         organization=organization,
         code="DISCOUNTPERCENTAGE100",
+    )
+
+
+@pytest_asyncio.fixture
+async def discount_percentage_100_forever(
+    save_fixture: SaveFixture, organization: Organization
+) -> DiscountPercentage:
+    return await create_discount(
+        save_fixture,
+        type=DiscountType.percentage,
+        basis_points=10_000,
+        duration=DiscountDuration.forever,
+        organization=organization,
+        code="DISCOUNTPERCENTAGE100FOREVER",
     )
 
 
@@ -859,6 +871,7 @@ async def create_order(
             OrderItem(
                 label="",
                 amount=subtotal_amount,
+                net_amount=subtotal_amount,
                 tax_amount=tax_amount,
                 proration=False,
             )
@@ -868,6 +881,7 @@ async def create_order(
         created_at=created_at or utc_now(),
         status=status,
         subtotal_amount=subtotal_amount,
+        net_amount=subtotal_amount - discount_amount,
         tax_amount=tax_amount,
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
@@ -1068,6 +1082,7 @@ async def create_subscription(
         scheduler_locked_at=scheduler_locked_at,
         seats=seats,
         past_due_at=past_due_at,
+        pending_update=None,
     )
 
     # For non-trial subscriptions with a discount, set discount_applied_at to simulate
@@ -1290,6 +1305,18 @@ async def product_recurring_free_price(
 
 
 @pytest_asyncio.fixture
+async def product_recurring_free_seat_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[("seat", 0, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
 async def product_recurring_metered(
     save_fixture: SaveFixture, organization: Organization, meter: Meter
 ) -> Product:
@@ -1406,6 +1433,8 @@ async def create_checkout(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     seats: int | None = None,
+    min_seats: int | None = None,
+    max_seats: int | None = None,
     require_billing_address: bool = False,
     customer_billing_address: Address | None = None,
     created_at: datetime | None = None,
@@ -1445,6 +1474,7 @@ async def create_checkout(
         customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
         amount=amount,
+        net_amount=amount,
         tax_amount=tax_amount,
         currency=currency,
         organization=product.organization,
@@ -1461,10 +1491,13 @@ async def create_checkout(
         trial_interval_count=trial_interval_count,
         trial_end=trial_end,
         seats=seats,
+        min_seats=min_seats,
+        max_seats=max_seats,
         require_billing_address=require_billing_address,
         customer_billing_address=customer_billing_address,
         tax_processor=TaxProcessor.stripe,
     )
+    checkout.net_amount = checkout.amount - checkout.discount_amount
     if analytics_metadata is not None:
         checkout.analytics_metadata = analytics_metadata
     if created_at is not None:
@@ -1916,10 +1949,15 @@ async def create_event(
     external_customer_id: str | None = None,
     external_id: str | None = None,
     parent_id: uuid.UUID | None = None,
+    root_id: uuid.UUID | None = None,
     metadata: dict[str, str | int | bool | float | Any] | None = None,
     event_type: EventType | None = None,
 ) -> Event:
+    event_id = uuid.uuid4()
+    if root_id is None:
+        root_id = parent_id if parent_id is not None else event_id
     event = Event(
+        id=event_id,
         timestamp=timestamp or utc_now(),
         source=source,
         name=name,
@@ -1927,6 +1965,7 @@ async def create_event(
         external_customer_id=external_customer_id,
         external_id=external_id,
         parent_id=parent_id,
+        root_id=root_id,
         organization=organization,
         user_metadata=metadata or {},
         event_type_id=event_type.id if event_type else None,
@@ -2038,7 +2077,7 @@ async def create_account(
     country: str = "US",
     currency: str = "usd",
     account_type: AccountType = AccountType.stripe,
-    stripe_id: str = "STRIPE_ID",
+    stripe_id: str | None = "STRIPE_ID",
     processor_fees_applicable: bool = True,
     fee_basis_points: int | None = None,
     fee_fixed: int | None = None,

@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { StaticImage } from '@/components/Image/StaticImage'
 import AccountBalanceOutlined from '@mui/icons-material/AccountBalanceOutlined'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
@@ -8,7 +9,6 @@ import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined'
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
@@ -129,7 +129,7 @@ export const FinancePage = () => {
                 </div>
               </div>
             </motion.div>
-            <Image
+            <StaticImage
               src="/assets/landing/abstract_07.jpg"
               alt="Finance"
               className="absolute inset-0 h-full w-full object-cover"

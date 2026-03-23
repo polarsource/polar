@@ -432,6 +432,49 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             joinedload(CustomerSeat.member),
         )
 
+    def get_claimed_by_product_via_subscriptions(
+        self, product_id: UUID
+    ) -> Select[tuple[CustomerSeat]]:
+        """Get statement for claimed seats linked to a product via active subscriptions."""
+        return (
+            select(CustomerSeat)
+            .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+            .where(
+                Subscription.product_id == product_id,
+                Subscription.is_deleted.is_(False),
+                Subscription.active.is_(True),
+                CustomerSeat.status == SeatStatus.claimed,
+                CustomerSeat.customer_id.is_not(None),
+            )
+        )
+
+    def get_claimed_by_product_via_orders(
+        self, product_id: UUID
+    ) -> Select[tuple[CustomerSeat]]:
+        """Get statement for claimed seats linked to a product via orders."""
+        return (
+            select(CustomerSeat)
+            .join(Order, CustomerSeat.order_id == Order.id)
+            .where(
+                Order.product_id == product_id,
+                Order.is_deleted.is_(False),
+                CustomerSeat.status == SeatStatus.claimed,
+                CustomerSeat.customer_id.is_not(None),
+            )
+        )
+
+    async def count_claimed_by_product_via_subscriptions(self, product_id: UUID) -> int:
+        """Count claimed seats for a product via active subscriptions."""
+        stmt = self.get_claimed_by_product_via_subscriptions(product_id)
+        result = await self.session.execute(stmt.with_only_columns(func.count()))
+        return result.scalar_one()
+
+    async def count_claimed_by_product_via_orders(self, product_id: UUID) -> int:
+        """Count claimed seats for a product via orders."""
+        stmt = self.get_claimed_by_product_via_orders(product_id)
+        result = await self.session.execute(stmt.with_only_columns(func.count()))
+        return result.scalar_one()
+
     def get_eager_options_with_prices(self) -> Options:
         return (
             *self.get_eager_options(),

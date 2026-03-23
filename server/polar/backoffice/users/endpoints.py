@@ -6,7 +6,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 from tagflow import classes, tag, text
 
@@ -115,7 +115,16 @@ async def list(
         try:
             statement = statement.where(User.id == uuid.UUID(query))
         except ValueError:
-            statement = statement.where(User.email.ilike(f"%{query}%"))
+            statement = (
+                statement.outerjoin(User.oauth_accounts)
+                .where(
+                    or_(
+                        User.email.ilike(f"%{query}%"),
+                        OAuthAccount.account_email.ilike(f"%{query}%"),
+                    )
+                )
+                .distinct()
+            )
     if identity_verification_status:
         statement = statement.where(
             User.identity_verification_status == identity_verification_status
@@ -277,7 +286,9 @@ async def get(
                     "organization.id",
                     "ID",
                     external_href=lambda r, i: str(
-                        r.url_for("organizations:get", id=i.organization_id)
+                        r.url_for(
+                            "organizations:detail", organization_id=i.organization_id
+                        )
                     ),
                     clipboard=True,
                 ),
@@ -303,7 +314,9 @@ async def get(
                     datatable.DatatableActionHTMX[UserOrganization](
                         "Delete Organization",
                         lambda r, i: str(
-                            r.url_for("organizations:delete", id=i.organization_id)
+                            r.url_for(
+                                "organizations-classic:delete", id=i.organization_id
+                            )
                         ),
                         target="#modal",
                         hidden=lambda _, i: i.organization.is_deleted,

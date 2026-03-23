@@ -25,6 +25,7 @@ os.environ.setdefault("PROMETHEUS_MULTIPROC_DIR", str(prometheus_dir))
 
 from prometheus_client import (  # noqa: E402
     Counter,
+    Gauge,
     Histogram,
 )
 
@@ -69,4 +70,11 @@ HTTP_REQUEST_DURATION_SECONDS = Histogram(
     "HTTP request duration in seconds",
     ["endpoint", "method"],
     buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+)
+
+# SSE metrics
+HTTP_SSE_CONNECTIONS_OPENED = Gauge(
+    "polar_http_sse_opened_connection_total",
+    "Number of currently open SSE connections",
+    ["endpoint"],
 )

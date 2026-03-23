@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Bedrijfsgegevens toevoegen',
       removeBusinessDetails: 'Bedrijfsgegevens verwijderen',
       billingDetails: 'Bedrijfsgegevens',
+      addDiscountCode: 'Kortingscode toevoegen',
     },
     pricing: {
       subtotal: 'Subtotaal',
@@ -58,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'Tot {date}',
       },
       everyInterval: {
         day: {
@@ -109,6 +111,38 @@ export default {
           other: '# jaar proefperiode',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# dag gratis',
+            other: '# dagen gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# maand gratis',
+            other: '# maanden gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# jaar gratis',
+            other: '# jaar gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dag',
+          week: '/week',
+          month: '/maand',
+          year: '/jaar',
+        },
+        then: 'Daarna',
+        startingDate: 'vanaf {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Totaal na proefperiode',
+        totalWhenDiscountExpires: 'Totaal na afloop korting',
+        totalDueToday: 'Totaal vandaag te betalen',
       },
     },
     pwywForm: {
@@ -202,6 +236,10 @@ export default {
       getFree: 'Gratis verkrijgen',
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
+    productDescription: {
+      readMore: 'Lees meer',
+      readLess: 'Lees minder',
+    },
   },
   intervals: {
     short: {
@@ -212,12 +250,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Aangepast',
     license_keys: 'Licentiesleutels',
     github_repository: 'Toegang tot GitHub-repository',
     discord: 'Discord-uitnodiging',
     downloadables: 'Bestandsdownloads',
-    custom: 'Aangepast',
-    meter_credit: 'Verbruikstegoeden',
+    meter_credit: 'Verbruikstegoed',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: 'de',

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Literal, NotRequired, TypedDict
 
 import httpx
@@ -191,6 +192,13 @@ class NumeralTaxService(TaxServiceProtocol):
             response = await self.client.post("/tax/calculations", json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            if e.response.is_server_error:
+                log.debug(
+                    "Numeral tax calculation server error",
+                    status_code=e.response.status_code,
+                    text=e.response.text,
+                )
+                raise TaxCalculationTechnicalError("Numeral server error") from e
             if e.response.status_code == 429:
                 log.debug("Numeral rate limit exceeded")
                 raise TaxCalculationTechnicalError("Rate limit exceeded") from e
@@ -202,6 +210,7 @@ class NumeralTaxService(TaxServiceProtocol):
                 return TaxCalculation(
                     processor_id=None,
                     amount=0,
+                    currency=currency,
                     taxability_reason=TaxabilityReason.not_supported,
                     tax_rate=TaxRate(
                         rate_type="percentage",
@@ -244,6 +253,7 @@ class NumeralTaxService(TaxServiceProtocol):
         return TaxCalculation(
             processor_id=calculation["id"],
             amount=calculation["total_tax_amount"],
+            currency=currency,
             taxability_reason=taxability_reason,
             tax_rate=tax_rate,
         )
@@ -318,6 +328,38 @@ class NumeralTaxService(TaxServiceProtocol):
 
         refund = response.json()
         return refund["id"]
+
+    async def backfill(
+        self,
+        calculation: TaxCalculation,
+        amount: int,
+        address: Address,
+        tax_code: TaxCode,
+        reference: str,
+        transaction_date: datetime,
+    ) -> str:
+        response = await self.client.post(
+            "/tax/manual_line_items",
+            json={
+                "order_id": reference,
+                "address_postal_code": address.postal_code or "",
+                "address_province": address.get_unprefixed_state() or "",
+                "address_country": address.country,
+                "transaction_date_time": int(transaction_date.timestamp()),
+                "currency_code": calculation["currency"],
+                "line_items": [
+                    {
+                        "line_item_id": calculation["processor_id"],
+                        "sales": amount,
+                        "total_taxes": calculation["amount"],
+                        "product_category": tax_code.to_numeral(),
+                    }
+                ],
+            },
+        )
+        response.raise_for_status()
+        manual_line_item = response.json()
+        return manual_line_item["line_item_id"]
 
 
 numeral_tax_service = NumeralTaxService()

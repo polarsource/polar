@@ -8,15 +8,19 @@ This module provides a modern, three-column layout with:
 - Keyboard shortcuts and accessibility improvements
 """
 
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 
+import stripe as stripe_lib
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
+from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
 from polar.account.service import account as account_service
@@ -29,52 +33,109 @@ from polar.backoffice.organizations.analytics import (
     PaymentAnalyticsService,
 )
 from polar.backoffice.organizations.forms import (
+    AddPaymentMethodDomainForm,
     DeleteStripeAccountForm,
     DisconnectStripeAccountForm,
+    OrganizationOrdersImportForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
     UpdateOrganizationSocialsForm,
 )
+from polar.backoffice.organizations.orders_import import orders_import_sse
 from polar.enums import AccountType
 from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
 from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
-from polar.models.member import Member
 from polar.models.order import Order, OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
+from polar.models.user_session import UserSession
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization_review.repository import OrganizationReviewRepository
+from polar.organization_review.schemas import ReviewAgentReport
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
 from ..components import button, modal
+from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import OrganizationListView
 from .views.modals import DeleteStripeModal, DisconnectStripeModal
+from .views.sections._shared import RISK_LEVEL_BADGE, VERDICT_BADGE
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
+from .views.sections.reviews_section import ReviewsSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
 
-router = APIRouter(prefix="/organizations-v2", tags=["organizations-v2"])
+router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
 
 
-@router.get("/", name="organizations-v2:list")
+async def count_test_sales(
+    session: AsyncSession, organization_id: UUID4
+) -> tuple[int, int]:
+    """
+    Count test sales (self-purchases by org team members with positive amounts).
+
+    Uses UserOrganization + User to get actual org team member emails,
+    NOT the Member model which represents customer usage entities.
+
+    Returns (total_count, unrefunded_count).
+    """
+    team_member_emails_subquery = (
+        select(func.lower(User.email))
+        .join(UserOrganization, User.id == UserOrganization.user_id)
+        .where(
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.deleted_at.is_(None),
+        )
+        .correlate(None)
+    )
+
+    test_sales_filter = (
+        Customer.organization_id == organization_id,
+        func.lower(Customer.email).in_(team_member_emails_subquery),
+        Order.net_amount > 0,
+    )
+
+    orders_count_result = await session.execute(
+        select(func.count(Order.id))
+        .join(Customer, Order.customer_id == Customer.id)
+        .where(*test_sales_filter)
+    )
+    orders_count = orders_count_result.scalar() or 0
+
+    unrefunded_orders_result = await session.execute(
+        select(func.count(Order.id))
+        .join(Customer, Order.customer_id == Customer.id)
+        .where(
+            *test_sales_filter,
+            Order.status.notin_([OrderStatus.refunded, OrderStatus.partially_refunded]),
+        )
+    )
+    unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
+
+    return orders_count, unrefunded_orders_count
+
+
+@router.get("/", name="organizations:list")
 async def list_organizations(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
@@ -138,19 +199,22 @@ async def list_organizations(
     # Apply filters
     if status_filter:
         stmt = stmt.where(Organization.status == status_filter)
-    else:
-        # By default, exclude denied organizations
+    elif not q:
+        # By default, exclude denied organizations (but not when searching)
         stmt = stmt.where(Organization.status != OrganizationStatus.DENIED)
 
     if q:
-        search_term = f"%{q}%"
-        stmt = stmt.where(
-            or_(
-                Organization.name.ilike(search_term),
-                Organization.slug.ilike(search_term),
-                Organization.email.ilike(search_term),
+        try:
+            stmt = stmt.where(Organization.id == uuid.UUID(q))
+        except ValueError:
+            search_term = f"%{q}%"
+            stmt = stmt.where(
+                or_(
+                    Organization.name.ilike(search_term),
+                    Organization.slug.ilike(search_term),
+                    Organization.email.ilike(search_term),
+                )
             )
-        )
 
     # Country filter
     if country:
@@ -223,13 +287,13 @@ async def list_organizations(
         stmt = stmt.join(Organization.account).order_by(country_order)
     elif sort == "created":
         stmt = stmt.order_by(
-            Organization.created_at.asc() if is_desc else Organization.created_at.desc()
+            Organization.created_at.desc() if is_desc else Organization.created_at.asc()
         )
     elif sort == "updated":
         stmt = stmt.order_by(
-            Organization.modified_at.asc()
+            Organization.modified_at.desc()
             if is_desc
-            else Organization.modified_at.desc()
+            else Organization.modified_at.asc()
         )
     elif sort == "status_duration":
         status_order = (
@@ -245,13 +309,13 @@ async def list_organizations(
             else OrganizationReview.risk_score.desc().nullslast()
         )
         stmt = stmt.join(Organization.review).order_by(risk_order)
-    elif sort == "next_review":
-        threshold_order = (
-            Organization.next_review_threshold.asc().nullsfirst()
+    elif sort == "total_balance":
+        balance_order = (
+            Organization.total_balance.desc().nullslast()
             if is_desc
-            else Organization.next_review_threshold.desc().nullslast()
+            else Organization.total_balance.asc().nullsfirst()
         )
-        stmt = stmt.order_by(threshold_order)
+        stmt = stmt.order_by(balance_order)
     elif sort == "priority":
         # Priority: Under Review > Denied > Others, then by days in status
         stmt = stmt.order_by(
@@ -297,8 +361,8 @@ async def list_organizations(
         # Render full page with layout
         with layout(
             request,
-            [("Organizations V2", str(request.url))],
-            "organizations-v2:list",
+            [("Organizations", str(request.url))],
+            "organizations:list",
         ):
             with list_view.render(
                 request,
@@ -315,7 +379,7 @@ async def list_organizations(
                 pass
 
 
-@router.get("/{organization_id}", name="organizations-v2:detail")
+@router.get("/{organization_id}", name="organizations:detail")
 async def get_organization_detail(
     request: Request,
     organization_id: UUID4,
@@ -360,15 +424,29 @@ async def get_organization_detail(
     members_result = await session.execute(members_stmt)
     organization.members = list(members_result.scalars().unique().all())  # type: ignore[attr-defined]
 
+    # Fetch AI verdict for action buttons (needed regardless of section)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    ai_verdict = ""
+    if agent_review:
+        parsed = agent_review.parsed_report
+        ai_verdict = parsed.report.verdict.value
+
+    # Fetch admin user email for Plain search
+    admin_user = await repository.get_admin_user(session, organization)
+    admin_email = admin_user.email if admin_user else None
+
     # Create views
-    detail_view = OrganizationDetailView(organization)
+    detail_view = OrganizationDetailView(
+        organization, ai_verdict=ai_verdict, admin_email=admin_email
+    )
 
     # Fetch analytics data for overview section
     setup_data = None
     payment_stats = None
     orders_count = 0
     unrefunded_orders_count = 0
-    agent_report = None
+    parsed_agent_report = None
     agent_reviewed_at = None
     if section == "overview":
         setup_analytics = OrganizationSetupAnalyticsService(session)
@@ -453,7 +531,6 @@ async def get_organization_detail(
         (
             payment_count,
             total_amount,
-            _risk_scores,
         ) = await payment_analytics.get_succeeded_payments_stats(organization_id)
         refunds_count, refunds_amount = await payment_analytics.get_refund_stats(
             organization_id
@@ -461,6 +538,7 @@ async def get_organization_detail(
         failed_count = await payment_analytics.get_failed_payments_count(
             organization_id
         )
+        risk_scores = await payment_analytics.get_risk_scores(organization_id)
         (
             dispute_count,
             dispute_amount,
@@ -478,6 +556,8 @@ async def get_organization_detail(
             (chargeback_count / payment_count * 100) if payment_count > 0 else 0
         )
 
+        p50_risk, p90_risk = payment_analytics.calculate_risk_percentiles(risk_scores)
+
         payment_stats = {
             "payment_count": payment_count,
             "total_amount": total_amount / 100,
@@ -494,56 +574,26 @@ async def get_organization_detail(
             "chargeback_rate": chargeback_rate,
             "next_review_threshold": organization.next_review_threshold,
             "total_transfer_sum": total_transfer_sum,
+            "p50_risk": p50_risk,
+            "p90_risk": p90_risk,
+            "risk_scores_count": len(risk_scores),
         }
 
-        # Fetch test sales data (self-purchases by org members with positive amounts)
-        member_emails_subquery = (
-            select(func.lower(Member.email))
-            .where(
-                Member.organization_id == organization_id,
-                Member.deleted_at.is_(None),
-            )
-            .correlate(None)
+        orders_count, unrefunded_orders_count = await count_test_sales(
+            session, organization_id
         )
 
-        test_sales_filter = (
-            Customer.organization_id == organization_id,
-            func.lower(Customer.email).in_(member_emails_subquery),
-            Order.net_amount > 0,
-        )
-
-        orders_count_result = await session.execute(
-            select(func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(*test_sales_filter)
-        )
-        orders_count = orders_count_result.scalar() or 0
-
-        unrefunded_orders_result = await session.execute(
-            select(func.count(Order.id))
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                *test_sales_filter,
-                Order.status.notin_(
-                    [OrderStatus.refunded, OrderStatus.partially_refunded]
-                ),
-            )
-        )
-        unrefunded_orders_count = unrefunded_orders_result.scalar() or 0
-
-        review_repo = OrganizationReviewRepository.from_session(session)
-        agent_review = await review_repo.get_latest_agent_review(organization_id)
-        agent_report = agent_review.report if agent_review else None
+        parsed_agent_report = agent_review.parsed_report if agent_review else None
         agent_reviewed_at = agent_review.reviewed_at if agent_review else None
 
     # Render based on section
     with layout(
         request,
         [
-            ("Organizations V2", str(request.url_for("organizations-v2:list"))),
+            ("Organizations", str(request.url_for("organizations:list"))),
             (organization.name, str(request.url)),
         ],
-        "organizations-v2:detail",
+        "organizations:detail",
     ):
         with detail_view.render(request, section):
             # Render section content
@@ -552,7 +602,7 @@ async def get_organization_detail(
                     organization,
                     orders_count=orders_count,
                     unrefunded_orders_count=unrefunded_orders_count,
-                    agent_report=agent_report,
+                    agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
                 )
                 with overview.render(
@@ -562,7 +612,14 @@ async def get_organization_detail(
             elif section == "team":
                 # Get admin user for the organization
                 admin_user = await repository.get_admin_user(session, organization)
-                team_section = TeamSection(organization, admin_user)
+                identity_country = None
+                if admin_user:
+                    identity_country = await user_service.get_identity_verified_country(
+                        admin_user
+                    )
+                team_section = TeamSection(
+                    organization, admin_user, identity_country=identity_country
+                )
                 with team_section.render(request):
                     pass
             elif section == "account":
@@ -600,6 +657,13 @@ async def get_organization_detail(
                 )
                 with files_section.render(request):
                     pass
+            elif section == "reviews":
+                agent_reviews = await review_repo.get_all_agent_reviews(organization_id)
+                reviews_section = ReviewsSection(
+                    organization, agent_reviews=agent_reviews
+                )
+                with reviews_section.render(request):
+                    pass
             elif section == "history":
                 # TODO: Implement history section
                 with tag.div():
@@ -613,46 +677,198 @@ async def get_organization_detail(
                     text(f"Unknown section: {section}")
 
 
-@router.post("/{organization_id}/approve", name="organizations-v2:approve")
-async def approve_organization(
+def _get_review_report(
+    agent_review: OrganizationAgentReview | None,
+) -> ReviewAgentReport | None:
+    """Extract the ReviewAgentReport from an agent review.
+
+    Isolated in a helper so the explicit return type prevents Any-widening
+    in callers that also use untyped dict access (e.g. ``request.form()``).
+    """
+    if agent_review is None:
+        return None
+    return agent_review.parsed_report.report
+
+
+def _render_ai_review_summary(report: ReviewAgentReport) -> None:
+    """Render a compact AI review summary for use in approve/deny dialogs."""
+    verdict = report.verdict.value
+
+    badge_class = VERDICT_BADGE.get(verdict, "badge-ghost")
+
+    risk_level = report.overall_risk_level.value
+    risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
+
+    with tag.div(classes="bg-base-200 p-4 rounded-lg space-y-3"):
+        with tag.div(classes="flex items-center gap-3"):
+            with tag.span(classes="text-sm font-semibold"):
+                text("AI Verdict:")
+            with tag.div(classes=f"badge {badge_class} badge-sm"):
+                text(verdict)
+            with tag.span(classes="text-sm font-semibold"):
+                text("Risk:")
+            with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
+                text(risk_level)
+
+        if report.summary:
+            with tag.p(classes="text-sm"):
+                text(report.summary)
+
+        if report.violated_sections:
+            with tag.div(classes="text-sm"):
+                with tag.span(classes="font-medium text-error"):
+                    text("Violated sections: ")
+                with tag.span():
+                    text(", ".join(report.violated_sections))
+
+
+@router.api_route(
+    "/{organization_id}/approve-dialog",
+    name="organizations:approve_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def approve_dialog(
     request: Request,
     organization_id: UUID4,
-    threshold: int | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-) -> HXRedirectResponse:
-    """Approve an organization with optional threshold."""
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id, include_blocked=True)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Check form data for threshold in dollars (from custom approve input)
-    if threshold is None:
-        form_data = await request.form()
-        raw_dollars = form_data.get("threshold_dollars")
-        if raw_dollars:
-            threshold = int(float(str(raw_dollars)) * 100)
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
+    is_override = verdict == "DENY"
 
-    # Use provided threshold or default to $250 in cents
-    next_review_threshold = threshold if threshold else 25000
+    # Suggested threshold: double current or $250 min
+    current_threshold = organization.next_review_threshold or 0
+    suggested_threshold_cents = max(25000, current_threshold * 2)
+    suggested_threshold_dollars = suggested_threshold_cents // 100
 
-    # Approve the organization
-    await organization_service.confirm_organization_reviewed(
-        session, organization, next_review_threshold
-    )
+    # When AI agrees with approval, process POST directly (1-click from button)
+    if not is_override and request.method == "POST":
+        data = await request.form()
+        raw_threshold = data.get("threshold", str(suggested_threshold_dollars))
+        threshold = int(float(str(raw_threshold)) * 100)
 
-    return HXRedirectResponse(
-        request,
-        str(
-            request.url_for("organizations-v2:detail", organization_id=organization_id)
-        ),
-        303,
-    )
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="APPROVE",
+        )
+        await organization_service.confirm_organization_reviewed(
+            session, organization, threshold
+        )
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    # Override path: AI said DENY but human wants to APPROVE — show dialog
+    error_message: str | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        raw_threshold = data.get("threshold", str(suggested_threshold_dollars))
+        threshold = int(float(str(raw_threshold)) * 100)
+
+        override_reason = str(data.get("override_reason", "")).strip() or None
+
+        if not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="APPROVE",
+                reason=override_reason,
+            )
+            await organization_service.confirm_organization_reviewed(
+                session, organization, threshold
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    with modal("Approve Organization", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:approve_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            if review_report:
+                _render_ai_review_summary(review_report)
+
+            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
+                with tag.div(classes="form-control"):
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text font-semibold"):
+                            text("Next Review Threshold (in dollars)")
+                    with tag.input(
+                        type="number",
+                        name="threshold",
+                        value=str(suggested_threshold_dollars),
+                        placeholder=str(suggested_threshold_dollars),
+                        classes="input input-bordered",
+                    ):
+                        pass
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text-alt"):
+                            text("Amount in dollars that will trigger next review")
+
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for override (required)")
+                with tag.textarea(
+                    name="override_reason",
+                    classes="textarea textarea-bordered w-full",
+                    placeholder="Why are you overriding the AI recommendation?",
+                    rows="3",
+                    required=True,
+                ):
+                    pass
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(variant="primary", type="submit"):
+                    text("Approve Organization")
+
+    return None
 
 
 @router.post(
-    "/{organization_id}/run-review-agent", name="organizations-v2:run_review_agent"
+    "/{organization_id}/run-review-agent", name="organizations:run_review_agent"
 )
 async def run_review_agent(
     request: Request,
@@ -665,11 +881,15 @@ async def run_review_agent(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    enqueue_job("organization_review.run_agent", organization_id=organization.id)
+    enqueue_job(
+        "organization_review.run_agent",
+        organization_id=organization.id,
+        context="manual",
+    )
 
     return HXRedirectResponse(
         request,
-        str(request.url_for("organizations-v2:detail", organization_id=organization_id))
+        str(request.url_for("organizations:detail", organization_id=organization_id))
         + "?section=overview",
         303,
     )
@@ -677,7 +897,7 @@ async def run_review_agent(
 
 @router.api_route(
     "/{organization_id}/deny-dialog",
-    name="organizations-v2:deny_dialog",
+    name="organizations:deny_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -685,6 +905,7 @@ async def deny_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -693,24 +914,69 @@ async def deny_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if request.method == "POST":
-        # Deny the organization
-        await organization_service.deny_organization(session, organization)
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    review_report = _get_review_report(agent_review)
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
-            ),
-            303,
-        )
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        override_reason = str(form_data.get("override_reason", "")).strip() or None
+
+        if not override_reason:
+            error_message = "A reason is required when denying an organization."
+        else:
+            # Record review decision before denying
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="DENY",
+                reason=override_reason,
+            )
+
+            # Deny the organization
+            await organization_service.deny_organization(session, organization)
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": "Why are you denying this organization?",
+        "rows": "3",
+        "required": True,
+    }
 
     with modal("Deny Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:deny_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             with tag.p(classes="font-semibold text-error"):
                 text("⚠️ Warning: Payments will be blocked")
+
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-2"):
@@ -719,27 +985,26 @@ async def deny_dialog(
                         "This action can be reversed, but the organization will need to be reviewed again."
                     )
 
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Reason for denial (required)")
+                with tag.textarea(**textarea_attrs):
+                    pass
+
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with tag.form(
-                    hx_post=str(
-                        request.url_for(
-                            "organizations-v2:deny_dialog",
-                            organization_id=organization_id,
-                        )
-                    ),
-                ):
-                    with button(variant="error", type="submit"):
-                        text("Deny Organization")
+                with button(variant="error", type="submit"):
+                    text("Deny Organization")
 
     return None
 
 
 @router.api_route(
     "/{organization_id}/approve-denied-dialog",
-    name="organizations-v2:approve_denied_dialog",
+    name="organizations:approve_denied_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -747,6 +1012,7 @@ async def approve_denied_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -755,40 +1021,90 @@ async def approve_denied_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
+    is_override = verdict == "DENY"
+
+    error_message: str | None = None
+
     if request.method == "POST":
         data = await request.form()
         # Convert dollars to cents (user enters 250, we store 25000)
         raw_threshold = data.get("threshold", "250")
         threshold = int(float(str(raw_threshold)) * 100)
 
-        # Approve the organization
-        await organization_service.confirm_organization_reviewed(
-            session, organization, threshold
-        )
+        override_reason = str(data.get("override_reason", "")).strip() or None
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
-            ),
-            303,
-        )
+        if is_override and not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            # Record review decision before approving denied org
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="APPROVE",
+                reason=override_reason,
+            )
+
+            # Approve the organization
+            await organization_service.confirm_organization_reviewed(
+                session, organization, threshold
+            )
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    reason_label = (
+        "Reason for override (required)"
+        if is_override
+        else "Reason for approval (optional)"
+    )
+    reason_placeholder = (
+        "Why are you overriding the AI recommendation?"
+        if is_override
+        else "Why are you approving this organization?"
+    )
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": reason_placeholder,
+        "rows": "3",
+    }
+    if is_override:
+        textarea_attrs["required"] = True
 
     with modal("Approve Denied Organization", open=True):
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:approve_denied_dialog",
+                    "organizations:approve_denied_dialog",
                     organization_id=organization_id,
                 )
             ),
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             with tag.p(classes="font-semibold"):
                 text("Approve this previously denied organization")
+
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-3"):
@@ -813,6 +1129,13 @@ async def approve_denied_dialog(
                         with tag.span(classes="label-text-alt"):
                             text("Amount in dollars that will trigger next review")
 
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text(reason_label)
+                with tag.textarea(**textarea_attrs):
+                    pass
+
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
@@ -824,8 +1147,124 @@ async def approve_denied_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/deny-appeal-dialog",
+    name="organizations:deny_appeal_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def deny_appeal_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    """Deny an organization's appeal dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(
+        organization_id,
+        include_blocked=True,
+        options=(joinedload(Organization.review),),
+    )
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Fetch AI review for context
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    review_report = _get_review_report(agent_review)
+
+    error_message: str | None = None
+
+    if request.method == "POST":
+        form_data = await request.form()
+        reason = str(form_data.get("reason", "")).strip() or None
+
+        # Record review decision
+        await review_repo.record_human_decision(
+            organization_id=organization_id,
+            reviewer_id=user_session.user.id,
+            decision="DENY",
+            review_context="appeal",
+            reason=reason,
+        )
+
+        # Deny the appeal
+        await organization_service.deny_appeal(session, organization)
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    # Show appeal reason if available
+    appeal_reason = None
+    if organization.review and organization.review.appeal_reason:
+        appeal_reason = organization.review.appeal_reason
+
+    with modal("Deny Appeal", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-error"):
+                text("⚠️ This will reject the organization's appeal")
+
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            if review_report:
+                _render_ai_review_summary(review_report)
+
+            if appeal_reason:
+                with tag.div(classes="bg-base-200 p-4 rounded-lg"):
+                    with tag.p(classes="font-semibold text-sm mb-2"):
+                        text("Appeal Reason")
+                    with tag.p(classes="text-sm whitespace-pre-wrap"):
+                        text(appeal_reason)
+
+            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
+                with tag.p():
+                    text(
+                        "Denying the appeal will keep the organization in DENIED status. "
+                        "They will not be able to receive payments."
+                    )
+
+            with tag.form(
+                hx_post=str(
+                    request.url_for(
+                        "organizations:deny_appeal_dialog",
+                        organization_id=organization_id,
+                    )
+                ),
+                classes="flex flex-col gap-4",
+            ):
+                with tag.div(classes="form-control"):
+                    with tag.label(classes="label"):
+                        with tag.span(classes="label-text"):
+                            text("Reason for denying appeal (optional)")
+                    with tag.textarea(
+                        name="reason",
+                        classes="textarea textarea-bordered w-full",
+                        placeholder="Why are you denying this appeal?",
+                        rows="3",
+                    ):
+                        pass
+
+                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
+                    with button(variant="error", type="submit"):
+                        text("Deny Appeal")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/unblock-approve-dialog",
-    name="organizations-v2:unblock_approve_dialog",
+    name="organizations:unblock_approve_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -833,6 +1272,7 @@ async def unblock_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
@@ -841,43 +1281,93 @@ async def unblock_approve_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    # Fetch AI review for context (needed for both POST validation and GET rendering)
+    review_repo = OrganizationReviewRepository.from_session(session)
+    agent_review = await review_repo.get_latest_agent_review(organization_id)
+    review_report = _get_review_report(agent_review)
+    verdict = review_report.verdict.value if review_report else ""
+    is_override = verdict == "DENY"
+
+    error_message: str | None = None
+
     if request.method == "POST":
         data = await request.form()
         # Convert dollars to cents (user enters 250, we store 25000)
         raw_threshold = data.get("threshold", "250")
         threshold = int(float(str(raw_threshold)) * 100)
 
-        # Unblock the organization (set blocked_at to None)
-        organization.blocked_at = None
+        override_reason = str(data.get("override_reason", "")).strip() or None
 
-        # Approve the organization
-        await organization_service.confirm_organization_reviewed(
-            session, organization, threshold
-        )
+        if is_override and not override_reason:
+            error_message = (
+                "A reason is required when overriding the AI recommendation."
+            )
+        else:
+            # Record review decision before unblocking
+            await review_repo.record_human_decision(
+                organization_id=organization_id,
+                reviewer_id=user_session.user.id,
+                decision="APPROVE",
+                reason=override_reason,
+            )
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
-            ),
-            303,
-        )
+            # Unblock the organization (set blocked_at to None)
+            organization.blocked_at = None
+
+            # Approve the organization
+            await organization_service.confirm_organization_reviewed(
+                session, organization, threshold
+            )
+
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                ),
+                303,
+            )
+
+    reason_label = (
+        "Reason for override (required)"
+        if is_override
+        else "Reason for approval (optional)"
+    )
+    reason_placeholder = (
+        "Why are you overriding the AI recommendation?"
+        if is_override
+        else "Why are you approving this organization?"
+    )
+    textarea_attrs: dict[str, Any] = {
+        "name": "override_reason",
+        "classes": "textarea textarea-bordered w-full",
+        "placeholder": reason_placeholder,
+        "rows": "3",
+    }
+    if is_override:
+        textarea_attrs["required"] = True
 
     with modal("Unblock & Approve Organization", open=True):
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:unblock_approve_dialog",
+                    "organizations:unblock_approve_dialog",
                     organization_id=organization_id,
                 )
             ),
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
             with tag.p(classes="font-semibold"):
                 text("Unblock and approve this organization")
+
+            if review_report:
+                _render_ai_review_summary(review_report)
 
             with tag.div(classes="bg-base-200 p-4 rounded-lg"):
                 with tag.p(classes="mb-3"):
@@ -902,6 +1392,13 @@ async def unblock_approve_dialog(
                         with tag.span(classes="label-text-alt"):
                             text("Amount in dollars that will trigger next review")
 
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text(reason_label)
+                with tag.textarea(**textarea_attrs):
+                    pass
+
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
@@ -914,7 +1411,7 @@ async def unblock_approve_dialog(
 
 @router.api_route(
     "/{organization_id}/block-dialog",
-    name="organizations-v2:block_dialog",
+    name="organizations:block_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -939,9 +1436,7 @@ async def block_dialog(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             ),
             303,
         )
@@ -976,7 +1471,7 @@ async def block_dialog(
                 with tag.form(
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:block_dialog",
+                            "organizations:block_dialog",
                             organization_id=organization_id,
                         )
                     ),
@@ -988,8 +1483,73 @@ async def block_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/under-review-dialog",
+    name="organizations:under_review_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def under_review_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Set organization under review dialog and action."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        await organization_service.set_organization_under_review(
+            session, organization, enqueue_review=False
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Set Under Review", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-warning"):
+                text("Set Organization Under Review")
+
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status to Ongoing Review")
+                    with tag.li():
+                        text("Block payouts while the organization is under review")
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(
+                    hx_post=str(
+                        request.url_for(
+                            "organizations:under_review_dialog",
+                            organization_id=organization_id,
+                        )
+                    ),
+                ):
+                    with button(variant="warning", type="submit"):
+                        text("Set Under Review")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/edit",
-    name="organizations-v2:edit",
+    name="organizations:edit",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1002,7 +1562,9 @@ async def edit_organization(
     repository = OrganizationRepository(session)
 
     # Fetch organization
-    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    organization = await repository.get_by_id(
+        organization_id, include_blocked=True, include_deleted=True
+    )
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -1013,8 +1575,10 @@ async def edit_organization(
         try:
             form = UpdateOrganizationBasicForm.model_validate_form(data)
             if form.slug != organization.slug:
-                existing_slug = await repository.get_by_slug(form.slug)
-                if existing_slug is not None:
+                existing_slug = await repository.get_by_slug(
+                    form.slug, include_deleted=True
+                )
+                if existing_slug is not None and existing_slug.id != organization.id:
                     raise ValidationError.from_exception_data(
                         title="SlugAlreadyExists",
                         line_errors=[
@@ -1038,7 +1602,7 @@ async def edit_organization(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1063,9 +1627,7 @@ async def edit_organization(
             data=form_data,
             validation_error=validation_error,
             hx_post=str(
-                request.url_for(
-                    "organizations-v2:edit", organization_id=organization_id
-                )
+                request.url_for("organizations:edit", organization_id=organization_id)
             ),
             hx_target="#modal",
             classes="space-y-4",
@@ -1086,7 +1648,7 @@ async def edit_organization(
 
 @router.api_route(
     "/{organization_id}/edit-details",
-    name="organizations-v2:edit_details",
+    name="organizations:edit_details",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1119,7 +1681,7 @@ async def edit_details(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1131,22 +1693,21 @@ async def edit_details(
 
     # Prepare data for form rendering
     form_data = {
+        "email": organization.email,
         "website": organization.website,
         "details": organization.details or {},
     }
 
     with modal("Edit Organization Details", open=True):
         with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text(
-                "Update organization details (about, product description, intended use)"
-            )
+            text("Update organization email, website, and details")
 
         with UpdateOrganizationDetailsForm.render(
             data=form_data,
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_details", organization_id=organization_id
+                    "organizations:edit_details", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1168,7 +1729,7 @@ async def edit_details(
 
 @router.api_route(
     "/{organization_id}/edit-order-settings",
-    name="organizations-v2:edit_order_settings",
+    name="organizations:edit_order_settings",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1196,9 +1757,7 @@ async def edit_order_settings(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=settings",
             303,
@@ -1213,7 +1772,7 @@ async def edit_order_settings(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_order_settings",
+                    "organizations:edit_order_settings",
                     organization_id=organization_id,
                 )
             ),
@@ -1258,7 +1817,7 @@ async def edit_order_settings(
 
 @router.api_route(
     "/{organization_id}/edit-socials",
-    name="organizations-v2:edit_socials",
+    name="organizations:edit_socials",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1340,7 +1899,7 @@ async def edit_socials(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1397,7 +1956,7 @@ async def edit_socials(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_socials", organization_id=organization_id
+                    "organizations:edit_socials", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1419,7 +1978,7 @@ async def edit_socials(
 
 @router.api_route(
     "/{organization_id}/edit-features",
-    name="organizations-v2:edit_features",
+    name="organizations:edit_features",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1442,11 +2001,14 @@ async def edit_features(
         try:
             data = await request.form()
 
-            # Parse feature flags from form data
-            feature_flags = {}
-            for field_name in OrganizationFeatureSettings.model_fields.keys():
-                # Checkboxes that are unchecked won't be in form data
-                feature_flags[field_name] = field_name in data
+            # Parse boolean feature flags from form data
+            feature_flags: dict[str, bool] = {}
+            for (
+                field_name,
+                field_info,
+            ) in OrganizationFeatureSettings.model_fields.items():
+                if field_info.annotation is bool:
+                    feature_flags[field_name] = field_name in data
 
             # Merge with existing feature_settings
             old_member_model = organization.feature_settings.get(
@@ -1475,7 +2037,7 @@ async def edit_features(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=settings"
@@ -1493,18 +2055,20 @@ async def edit_features(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_features", organization_id=organization_id
+                    "organizations:edit_features", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
             classes="space-y-4",
         ):
-            # Feature flags checkboxes
+            # Feature flags checkboxes (boolean fields only)
             with tag.div(classes="space-y-3"):
                 for (
                     field_name,
                     field_info,
                 ) in OrganizationFeatureSettings.model_fields.items():
+                    if field_info.annotation is not bool:
+                        continue
                     enabled = organization.feature_settings.get(field_name, False)
                     label = field_name.replace("_", " ").title()
 
@@ -1537,8 +2101,100 @@ async def edit_features(
 
 
 @router.api_route(
+    "/{organization_id}/edit-checkout-settings",
+    name="organizations:edit_checkout_settings",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_checkout_settings(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization checkout settings (e.g., require 3DS)."""
+    repository = OrganizationRepository(session)
+
+    # Fetch organization
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        data = await request.form()
+
+        # Parse checkout settings from form data
+        checkout_settings = {
+            "require_3ds": "require_3ds" in data,
+        }
+
+        # Merge with existing checkout_settings
+        updated_checkout_settings = {
+            **organization.checkout_settings,
+            **checkout_settings,
+        }
+
+        # Update organization
+        await repository.update(
+            organization,
+            update_dict={"checkout_settings": updated_checkout_settings},
+        )
+
+        redirect_url = (
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            )
+            + "?section=settings"
+        )
+        return HXRedirectResponse(request, redirect_url, 303)
+
+    # Render checkout settings form
+    require_3ds = organization.checkout_require_3ds
+
+    with modal("Edit Checkout Settings", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text("Configure checkout behavior for this organization")
+
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_checkout_settings",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            # Checkout settings checkboxes
+            with tag.div(classes="space-y-3"):
+                with tag.div(classes="form-control"):
+                    with tag.label(classes="label cursor-pointer justify-start gap-3"):
+                        with tag.input(
+                            type="checkbox",
+                            name="require_3ds",
+                            classes="checkbox checkbox-sm",
+                            **{"checked": ""} if require_3ds else {},
+                        ):
+                            pass
+                        with tag.span(classes="label-text"):
+                            text("Require 3DS on all checkouts")
+
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/add-note",
-    name="organizations-v2:add_note",
+    name="organizations:add_note",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1568,7 +2224,7 @@ async def add_note(
                 request,
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 ),
                 303,
@@ -1586,7 +2242,7 @@ async def add_note(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:add_note", organization_id=organization_id
+                    "organizations:add_note", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1608,7 +2264,7 @@ async def add_note(
 
 @router.api_route(
     "/{organization_id}/edit-note",
-    name="organizations-v2:edit_note",
+    name="organizations:edit_note",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1638,7 +2294,7 @@ async def edit_note(
                 request,
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 ),
                 303,
@@ -1656,7 +2312,7 @@ async def edit_note(
             validation_error=validation_error,
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:edit_note", organization_id=organization_id
+                    "organizations:edit_note", organization_id=organization_id
                 )
             ),
             hx_target="#modal",
@@ -1678,7 +2334,7 @@ async def edit_note(
 
 @router.get(
     "/{organization_id}/impersonate/{user_id}",
-    name="organizations-v2:impersonate",
+    name="organizations:impersonate",
 )
 async def impersonate_user(
     request: Request,
@@ -1726,14 +2382,15 @@ async def impersonate_user(
 
     response = HXRedirectResponse(request, redirect_url, 303)
 
-    # Get current admin session token
-    current_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+    admin_token = request.cookies.get(
+        settings.IMPERSONATION_COOKIE_KEY
+    ) or request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
 
     # Preserve admin session in impersonation cookie
-    if current_token:
+    if admin_token:
         response.set_cookie(
             settings.IMPERSONATION_COOKIE_KEY,
-            value=current_token,
+            value=admin_token,
             expires=impersonation_session.expires_at,
             path="/",
             domain=settings.USER_SESSION_COOKIE_DOMAIN,
@@ -1764,7 +2421,7 @@ async def impersonate_user(
 
 @router.post(
     "/{organization_id}/make-admin/{user_id}",
-    name="organizations-v2:make_admin",
+    name="organizations:make_admin",
 )
 async def make_admin(
     request: Request,
@@ -1794,7 +2451,7 @@ async def make_admin(
         raise HTTPException(status_code=400, detail=str(e))
 
     redirect_url = (
-        str(request.url_for("organizations-v2:detail", organization_id=organization_id))
+        str(request.url_for("organizations:detail", organization_id=organization_id))
         + "?section=team"
     )
     return HXRedirectResponse(request, redirect_url, 303)
@@ -1802,7 +2459,7 @@ async def make_admin(
 
 @router.delete(
     "/{organization_id}/remove-member/{user_id}",
-    name="organizations-v2:remove_member",
+    name="organizations:remove_member",
 )
 async def remove_member(
     request: Request,
@@ -1829,7 +2486,7 @@ async def remove_member(
         raise HTTPException(status_code=400, detail=str(e))
 
     redirect_url = (
-        str(request.url_for("organizations-v2:detail", organization_id=organization_id))
+        str(request.url_for("organizations:detail", organization_id=organization_id))
         + "?section=team"
     )
     return HXRedirectResponse(request, redirect_url, 303)
@@ -1837,7 +2494,7 @@ async def remove_member(
 
 @router.api_route(
     "/{organization_id}/delete-dialog",
-    name="organizations-v2:delete_dialog",
+    name="organizations:delete_dialog",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1858,7 +2515,7 @@ async def delete_dialog(
 
         return HXRedirectResponse(
             request,
-            str(request.url_for("organizations-v2:list")),
+            str(request.url_for("organizations:list")),
             303,
         )
 
@@ -1891,7 +2548,7 @@ async def delete_dialog(
                 with tag.form(
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:delete_dialog",
+                            "organizations:delete_dialog",
                             organization_id=organization_id,
                         )
                     ),
@@ -1904,7 +2561,7 @@ async def delete_dialog(
 
 @router.api_route(
     "/{organization_id}/setup-account",
-    name="organizations-v2:setup_account",
+    name="organizations:setup_account",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -1930,9 +2587,7 @@ async def setup_account(
         # Redirect back to account section
         redirect_url = (
             str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=account"
         )
@@ -1959,7 +2614,7 @@ async def setup_account(
                     variant="primary",
                     hx_post=str(
                         request.url_for(
-                            "organizations-v2:setup_account",
+                            "organizations:setup_account",
                             organization_id=organization_id,
                         )
                     ),
@@ -1969,9 +2624,58 @@ async def setup_account(
     return None
 
 
+@router.post(
+    "/{organization_id}/resync-stripe-account",
+    name="organizations:resync_stripe_account",
+    response_model=None,
+)
+async def resync_stripe_account(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse:
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id_with_account(organization_id)
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if not organization.account:
+        raise HTTPException(status_code=400, detail="Organization has no account")
+
+    if organization.account.account_type != AccountType.stripe:
+        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
+
+    if not organization.account.stripe_id:
+        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
+
+    stripe_account = await stripe_lib.Account.retrieve_async(
+        organization.account.stripe_id
+    )
+    await account_service.update_account_from_stripe(
+        session, stripe_account=stripe_account
+    )
+
+    logger.info(
+        "Stripe account resynced from backoffice",
+        organization_id=str(organization_id),
+        stripe_id=organization.account.stripe_id,
+        admin_user_id=str(user_session.user_id),
+    )
+
+    await add_toast(request, "Account resynced from Stripe", variant="success")
+
+    redirect_url = (
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=account"
+    )
+    return HXRedirectResponse(request, redirect_url, 303)
+
+
 @router.api_route(
     "/{organization_id}/disconnect-stripe-account",
-    name="organizations-v2:disconnect_stripe_account",
+    name="organizations:disconnect_stripe_account",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2052,7 +2756,7 @@ async def disconnect_stripe_account(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=account"
@@ -2064,7 +2768,7 @@ async def disconnect_stripe_account(
 
     form_action = str(
         request.url_for(
-            "organizations-v2:disconnect_stripe_account",
+            "organizations:disconnect_stripe_account",
             organization_id=organization_id,
         )
     )
@@ -2077,7 +2781,7 @@ async def disconnect_stripe_account(
 
 @router.api_route(
     "/{organization_id}/delete-stripe-account",
-    name="organizations-v2:delete_stripe_account",
+    name="organizations:delete_stripe_account",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2151,7 +2855,7 @@ async def delete_stripe_account(
             redirect_url = (
                 str(
                     request.url_for(
-                        "organizations-v2:detail", organization_id=organization_id
+                        "organizations:detail", organization_id=organization_id
                     )
                 )
                 + "?section=account"
@@ -2163,7 +2867,7 @@ async def delete_stripe_account(
 
     form_action = str(
         request.url_for(
-            "organizations-v2:delete_stripe_account",
+            "organizations:delete_stripe_account",
             organization_id=organization_id,
         )
     )
@@ -2174,13 +2878,6 @@ async def delete_stripe_account(
     return None
 
 
-# TODO: Implement action endpoints
-# - POST /{organization_id}/quick-approve
-# - GET /{organization_id}/deny-dialog
-# - GET /{organization_id}/plain-thread
-# - etc.
-
-
 # =============================================================================
 # Fee Credit Management Endpoints
 # =============================================================================
@@ -2188,7 +2885,7 @@ async def delete_stripe_account(
 
 @router.api_route(
     "/{organization_id}/grant-credit",
-    name="organizations-v2:grant_credit",
+    name="organizations:grant_credit",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2264,9 +2961,7 @@ async def grant_credit(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=account",
         )
@@ -2276,7 +2971,7 @@ async def grant_credit(
         with tag.form(
             hx_post=str(
                 request.url_for(
-                    "organizations-v2:grant_credit", organization_id=organization_id
+                    "organizations:grant_credit", organization_id=organization_id
                 )
             ),
         ):
@@ -2353,7 +3048,7 @@ async def grant_credit(
 
 @router.api_route(
     "/{organization_id}/credits/{credit_id}/revoke",
-    name="organizations-v2:revoke_credit",
+    name="organizations:revoke_credit",
     methods=["GET", "POST"],
     response_model=None,
 )
@@ -2398,9 +3093,7 @@ async def revoke_credit(
         return HXRedirectResponse(
             request,
             str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
+                request.url_for("organizations:detail", organization_id=organization_id)
             )
             + "?section=account",
         )
@@ -2439,7 +3132,7 @@ async def revoke_credit(
                 variant="error",
                 hx_post=str(
                     request.url_for(
-                        "organizations-v2:revoke_credit",
+                        "organizations:revoke_credit",
                         organization_id=organization_id,
                         credit_id=credit_id,
                     )
@@ -2448,6 +3141,183 @@ async def revoke_credit(
                 text("Revoke Credit")
 
     return None
+
+
+@router.api_route(
+    "/{organization_id}/import-orders",
+    name="organizations:import_orders",
+    methods=["GET", "POST"],
+    dependencies=[Depends(get_admin)],
+)
+async def import_orders(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_deleted=True)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = OrganizationOrdersImportForm.model_validate_form(data)
+            return EventSourceResponse(
+                orders_import_sse(
+                    session,
+                    organization,
+                    form.file,
+                    invoice_number_prefix=form.invoice_number_prefix,
+                )
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Import Orders", open=True):
+        with OrganizationOrdersImportForm.render(
+            {"invoice_number_prefix": "IMPORTED-"},
+            action=str(request.url),
+            method="POST",
+            classes="flex flex-col",
+            validation_error=validation_error,
+            _="on submit halt the event then call formPostSSE(me, '#import-progress')",
+        ):
+            with tag.div(id="import-progress"):
+                pass
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Import")
+
+
+@router.api_route(
+    "/{organization_id}/add-payment-method-domain",
+    name="organizations:add_payment_method_domain",
+    methods=["GET", "POST"],
+    dependencies=[Depends(get_admin)],
+)
+async def add_payment_method_domain(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = AddPaymentMethodDomainForm.model_validate_form(data)
+
+            await stripe_service.create_payment_method_domain(form.domain_name)
+
+            await add_toast(
+                request,
+                f"Successfully added {form.domain_name} to allowlist",
+                variant="success",
+            )
+            return
+
+        except ValidationError as e:
+            validation_error = e
+        except stripe_lib.InvalidRequestError as e:
+            logger.error(
+                "Invalid request to Stripe API",
+                organization_id=organization_id,
+                domain=data.get("domain_name"),
+                error=str(e),
+                error_code=e.code if hasattr(e, "code") else None,
+            )
+            error_message = (
+                "Unable to add domain to allowlist. "
+                "Please verify the domain and try again."
+            )
+            await add_toast(request, error_message, variant="error")
+
+    with modal("Add Domain to Allowlist", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary mb-4"):
+            text(
+                "Add a custom domain to the Apple Pay / Google Pay allowlist. "
+                "This allows these payment methods to appear in embeds on the specified domain."
+            )
+
+        with AddPaymentMethodDomainForm.render(
+            {},
+            hx_post=str(request.url),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Add Domain")
+
+
+@router.post(
+    "/{organization_id}/refunds-blocked",
+    name="organizations:set_refunds_blocked",
+    dependencies=[Depends(get_admin)],
+)
+async def set_refunds_blocked(
+    request: Request,
+    organization_id: UUID4,
+    blocked: bool,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    if organization.refunds_blocked == blocked:
+        status = "blocked" if blocked else "not blocked"
+        await add_toast(
+            request,
+            f"Refunds are already {status} for this organization.",
+            "error",
+        )
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            )
+            + "?section=settings",
+            303,
+        )
+
+    organization = await repository.update(
+        organization, update_dict={"refunds_blocked": blocked}
+    )
+
+    action = "blocked" if blocked else "unblocked"
+    await add_toast(
+        request, f"Refunds have been {action} for this organization.", "success"
+    )
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=settings",
+        303,
+    )
 
 
 __all__ = ["router"]

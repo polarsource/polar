@@ -21,9 +21,9 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "build": "rm -rf dist/ && tsup",
-    "format": "prettier --write ./src",
-    "format:check": "prettier -c ./src",
-    "lint": "pnpm format:check",
+    "format": "oxfmt ./src",
+    "format:check": "oxfmt --check ./src",
+    "lint": "pnpm format:check && eslint --max-warnings 0 .",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
@@ -33,10 +33,11 @@
     }
   },
   "devDependencies": {
+    "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "latest",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.0"
   },
   "publishConfig": {
     "access": "public"

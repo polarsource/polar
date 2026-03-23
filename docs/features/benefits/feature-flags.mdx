@@ -1,0 +1,42 @@
+---
+title: "Feature Flag Benefit"
+sidebarTitle: "Feature Flags"
+description: "Gate access to features using simple, API-driven feature flags"
+---
+
+The Feature Flag benefit is a lightweight way to grant feature access to customers without any external service integration. If a customer has the benefit grant, they have access — it's that simple.
+
+## Use Cases
+
+* Gate premium features behind a subscription tier
+* Offer early access or beta features to select customers
+* Differentiate access levels across product tiers
+* Control API rate limit tiers or usage quotas in your application
+
+## Create Feature Flag Benefit
+
+1. Go to `Benefits` in the sidebar
+2. Click `+ New Benefit` to create a new benefit
+3. Choose `Feature Flag` as the `Type`
+4. Give it a short description (e.g. "Premium Features" or "Beta Access")
+
+### Metadata
+
+You can optionally attach key-value metadata to a feature flag benefit. This is useful for passing additional context to your application, for example:
+
+* `role` → `editor`
+* `max_upload_size` → `10`
+* `priority` → `elevated`
+
+Metadata can be configured when creating or editing the benefit in the dashboard using the **Add Metadata** button.
+
+## Integration
+
+The recommended way to check if a customer has a feature flag benefit is through the [Customer State](/integrate/customer-state) API or the [`customer.state_changed`](/api-reference/webhooks/customer.state_changed) webhook.
+
+The customer state object includes all granted benefits. Simply check if the customer has a benefit grant for your feature flag benefit to determine access.
+
+### Lifecycle
+
+* **Subscriptions**: The feature flag is granted at the start of each subscription cycle and automatically revoked when the subscription is cancelled.
+* **One-time purchases**: The feature flag is granted at the time of purchase with lifetime access.

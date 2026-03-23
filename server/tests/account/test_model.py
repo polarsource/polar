@@ -4,22 +4,51 @@ from polar.postgres import AsyncSession
 
 
 def generate_account(
-    user: User, fee_basis_points: int | None = None, fee_fixed: int | None = None
+    user: User,
+    fee_basis_points: int | None = None,
+    fee_fixed: int | None = None,
+    *,
+    stripe_id: str | None = "acct_test",
+    is_payouts_enabled: bool = True,
+    status: Account.Status = Account.Status.ACTIVE,
 ) -> Account:
     account = Account(
         account_type=AccountType.stripe,
-        status=Account.Status.ACTIVE,
+        status=status,
         next_review_threshold=1000,
         admin_id=user.id,
         country="US",
         currency="usd",
         is_details_submitted=True,
         is_charges_enabled=True,
-        is_payouts_enabled=True,
+        is_payouts_enabled=is_payouts_enabled,
+        stripe_id=stripe_id,
         _platform_fee_percent=fee_basis_points,
         _platform_fee_fixed=fee_fixed,
     )
     return account
+
+
+class TestIsPayoutReady:
+    def test_active_with_stripe_connected(self, user: User) -> None:
+        account = generate_account(user)
+        assert account.is_payout_ready() is True
+
+    def test_disconnected_stripe(self, user: User) -> None:
+        account = generate_account(user, stripe_id=None)
+        assert account.is_payout_ready() is False
+
+    def test_payouts_disabled(self, user: User) -> None:
+        account = generate_account(user, is_payouts_enabled=False)
+        assert account.is_payout_ready() is False
+
+    def test_under_review(self, user: User) -> None:
+        account = generate_account(user, status=Account.Status.UNDER_REVIEW)
+        assert account.is_payout_ready() is False
+
+    def test_disconnected_and_payouts_disabled(self, user: User) -> None:
+        account = generate_account(user, stripe_id=None, is_payouts_enabled=False)
+        assert account.is_payout_ready() is False
 
 
 class TestAccountFeeCalulations:

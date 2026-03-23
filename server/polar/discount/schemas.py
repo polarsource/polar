@@ -138,6 +138,16 @@ Amount = Annotated[
 Currency = Annotated[
     PresentmentCurrency, Field(description="The currency of the fixed amount discount.")
 ]
+Amounts = Annotated[
+    dict[PresentmentCurrency, Amount],
+    Field(
+        min_length=1,
+        description=(
+            "Map of currency to fixed amount to discount from the total. "
+            "This allows specifying different discount amounts for different currencies."
+        ),
+    ),
+]
 BasisPoints = Annotated[
     int,
     Field(
@@ -197,8 +207,23 @@ class DiscountRepeatDurationCreateBase(Schema):
 
 class DiscountFixedCreateBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
-    amount: Amount
-    currency: Currency = PresentmentCurrency.usd
+    amount: Amount | None = Field(
+        default=None,
+        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
+    )
+    currency: Currency | None = Field(
+        default=PresentmentCurrency.usd,
+        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
+    )
+    amounts: Amounts | None = None
+
+    @model_validator(mode="after")
+    def validate_either_amount_or_amounts(self) -> Self:
+        if self.amount is not None and self.amounts is not None:
+            raise ValueError("Cannot specify both `amount` and `amounts`.")
+        if self.amount is None and self.amounts is None:
+            raise ValueError("Must specify either `amount` or `amounts`.")
+        return self
 
 
 class DiscountPercentageCreateBase(Schema):
@@ -254,8 +279,15 @@ class DiscountUpdate(MetadataInputMixin, Schema):
     duration_in_months: DurationInMonths | None = None
 
     type: DiscountType | None = None
-    amount: Amount | None = None
-    currency: Currency | None = None
+    amount: Amount | None = Field(
+        default=None,
+        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
+    )
+    currency: Currency | None = Field(
+        default=None,
+        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
+    )
+    amounts: Amounts | None = None
     basis_points: BasisPoints | None = None
 
     products: ProductsList | None = None
@@ -263,6 +295,12 @@ class DiscountUpdate(MetadataInputMixin, Schema):
     @model_validator(mode="after")
     def validate_starts_at_ends_at(self) -> Self:
         _starts_at_ends_at_validator(self.starts_at, self.ends_at)
+        return self
+
+    @model_validator(mode="after")
+    def validate_either_amount_or_amounts(self) -> Self:
+        if self.amount is not None and self.amounts is not None:
+            raise ValueError("Cannot specify both `amount` and `amounts`.")
         return self
 
 
@@ -323,8 +361,18 @@ class DiscountRepeatDurationBase(Schema):
 
 class DiscountFixedBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
-    amount: int = Field(examples=[1000])
-    currency: str = Field(examples=["usd"])
+    amount: int = Field(
+        examples=[1000],
+        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
+    )
+    currency: str = Field(
+        examples=["usd"],
+        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
+    )
+    amounts: dict[str, int] = Field(
+        examples=[{"usd": 1000, "eur": 900}],
+        description=("Map of currency to fixed amount to discount from the total."),
+    )
 
 
 class DiscountPercentageBase(Schema):

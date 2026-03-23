@@ -1,0 +1,1968 @@
+<Info>
+**Status**: Draft
+**Created**: November 5, 2025
+**Last Updated**: November 14, 2025
+</Info>
+## Problem Statement
+
+### Current Limitations
+
+1. **Ambiguous Event Attribution**: When a customer belongs to multiple seat-based subscriptions from different organizations (e.g., Alice works for both Acme and Slack), events lack business context to determine which customer should be billed.
+2. **Inflexible Billing Management**: Changing the billing manager becomes tricky because billing information (payment methods, orders) is tied to a single Customer entity.
+3. **No Business-Level Aggregation**: When a business has multiple subscriptions from the same merchant, it's difficult to aggregate usage or provide consolidated billing.
+
+### Requirements
+
+1. **Subscription Visibility**: Know what subscriptions a business customer has
+2. **Billing Transfer**: Allow transfer of subscriptions to another billing manager
+3. **Clear Attribution**: Easily know who is the billing customer of an event
+4. **Backward Compatibility**: Existing B2C integrations must continue working without changes
+
+### Current Merchant Workflows (Must Preserve)
+
+#### Workflow A: Public Checkout (B2C - Current)
+1. Customer visits merchant site, clicks checkout link
+2. Polar Checkout: Buyer enters email + card
+3. Polar auto-creates individual customer
+4. Post-purchase: Customer manages subscription via Customer Portal
+
+#### Workflow B: Public Checkout (B2B - Current seats flow)
+1. Customer visits merchant site, clicks checkout link
+2. Polar Checkout: Buyer enters email + card
+3. Polar auto-creates billing manager
+4. Post-purchase: Buyer invites team members, manages via Customer Portal
+
+#### Workflow C: Checkout Sessions (API-driven)
+1. Merchant app creates customer and business in their system
+2. Merchant creates Polar customer + business inside Polar via API
+3. Billing manager clicks checkout in merchant app
+4. Polar Checkout: Pre-filled information, enters card
+5. Returns to merchant app (optional: Customer Portal access)
+
+---
+
+## Solution
+
+**Decision: Option 1 (Member Model) is the preferred solution.**
+
+After evaluating both approaches using our weighted decision matrix, Option 1 scores 69 vs Option 2's 62. The Member Model provides superior billing accuracy, cleaner architecture, and better long-term maintainability. While it introduces breaking changes for existing B2B/seat-based customers, these are limited. The clear separation of concerns (Customer = billing, Member = usage) eliminates ambiguity and aligns perfectly with our Auth providers integration goals.
+
+We evaluated two architectural approaches. Both solve the core problem but differ in complexity, migration risk, and developer experience.
+
+### Tenets
+
+These tenets guide our decision-making, weighted by importance:
+
+1. **Billing Accuracy** (weight: 7) - Charge the right customer, events hit correct paying customer
+2. **Backward Compatibility** (weight: 6) - Existing B2C and B2B customers continue working unchanged.
+3. **Simplicity** (weight: 5) - Seamless checkout, straightforward queries, simple event ingestion
+4. **Minimal Changes for B2B** (weight: 4) - Merchants make minimal changes when adding B2B
+5. **Polar Developer Experience** (weight: 3) - Avoid excessive filtering or complex queries
+6. **WorkOS/Auth0 Integration** (weight: 2) - Support enterprise identity providers
+
+Scale: 🔴 1 (poor) | 🟡 2 (acceptable) | 🟢 3 (excellent)
+
+---
+
+### (Preferred) Option 1: Member Model
+
+**Concept**: Introduce a `Member` entity that represents "who uses the product". `Customer` becomes purely a billing entity. Every Customer has one or more Members - even individual customers have a single member (themselves). This creates uniform architecture with no special cases.
+
+**High-Level Architecture**:
+```
+Customer (id, name, stripe_customer_id)  # Pure billing entity
+  ├─ Subscriptions
+  ├─ Orders
+  ├─ PaymentMethods
+  └─ Members → Who uses/accesses the product
+
+Member (id, customer_id, email, name, external_id, role)  # Pure usage entity
+  ├─ BenefitGrants (what they can access)
+  ├─ Events (what they did)
+  ├─ CustomerSeats (seats they claimed)
+  └─ CustomerSessions (how they authenticate)
+
+  UNIQUE constraint: (customer_id, email) - same email allowed across different customers
+  UNIQUE constraint: (customer_id, external_id) - same external_id allowed across different customers
+```
+
+**Key Insight**: Uniform 1:N relationship everywhere
+```
+Customer (Alice Personal)
+  └── Member (Alice) [1:1 for individuals]
+
+Customer (ACME Corp)
+  ├── Member (Alice at ACME - different member ID than other Alice)
+  ├── Member (Bob at ACME)
+  └── Member (Carol at ACME)
+
+Customer (Lolo Inc)
+  ├── Member (Alice at Lolo - different member ID than other Alice)
+  └── Member (Dan at Lolo)
+```
+
+
+
+**Scoring**:
+| Tenet                   | Score | Rationale |
+| ----------------------- | ----- | --------- |
+| Billing Accuracy        | 🟢 3  | Perfect separation - Customer = billing, Member = usage |
+| Backward Compatibility  | 🔴 1  | Current integration with B2B requires migration |
+| Simplicity              | 🟢 3  | Uniform 1:N model, no type discrimination, no special cases |
+| Minimal B2B Changes     | 🟢 3  | Just add members, existing customer_id queries work |
+| Polar Dev Experience    | 🟢 3  | Clean queries, no type filtering, clear separation |
+| WorkOS Integration      | 🟢 3  | Members map directly to WorkOS users/members |
+| **Weighted Total**      | **69** | |
+
+**Pros**:
+- **No polymorphism**: Customer is always billing entity, no `type` field needed
+- **Uniform API**: All authentication goes through Member, single code path
+- **Easy multi-membership**: Alice has multiple member records (personal, ACME, Lolo). Each one has a different ID.
+- **Clean separation**: Customer = billing, Member = usage/access
+- **Perfect WorkOS fit**: Members map 1:1 to WorkOS/BetterAuth members
+- **Unique per customer**: Email and external_id are unique per customer, allowing same values across different customers.
+
+**Cons**:
+- Extra entity for every user.
+- More joins for some queries (member -> customer)
+- Conceptual shift: "authenticate as member, not customer"
+
+---
+
+### Option 2: Customer Type + Member
+
+**Concept**: Extend existing `Customer` entity with a `type` discriminator field (`individual` | `business`). Business customers have Members (a separate junction table) linking to individual customers. Single Customer entity for both billing and usage.
+
+**High-Level Architecture**:
+```
+Customer (id, email, name, type: individual|business)
+  ├─ Subscriptions (any customer can have subscriptions)
+  ├─ Orders (any customer can have orders)
+  ├─ PaymentMethods (any customer can have payment methods)
+  ├─ Events (individuals generate, businesses pay)
+  ├─ CustomerSeats (individuals claim seats)
+  ├─ BenefitGrants (individuals receive benefits)
+  └─ CustomerSessions (individuals authenticate)
+
+Member (business_customer_id, individual_customer_id, role)
+  ├─ Links business to individual members
+  └─ Roles: admin, billing_manager, member
+```
+
+
+*Backward compatibility:*
+- **ZERO BREAKING CHANGES**: All existing API calls work identically
+- `type` defaults to `"individual"` if not specified
+- Existing customers auto-migrated to `type="individual"`
+- B2B features are opt-in via `type="business"` parameter
+
+**Scoring**:
+| Tenet                   | Score | Rationale |
+| ----------------------- | ----- | --------- |
+| Billing Accuracy        | 🟡 2  | Customer serves dual purpose, but naming conventions mitigate |
+| Backward Compatibility  | 🟢 3  | Zero breaking changes, additive-only schema |
+| Simplicity              | 🟡 2  | Single entity concept, but polymorphism adds query complexity |
+| Minimal B2B Changes     | 🟡 2  | Just add `type` parameter, similar code patterns |
+| Polar Dev Experience    | 🟡 2  | Requires type filtering, mitigated by SQLAlchemy polymorphism |
+| WorkOS Integration      | 🟢 3  | Individual customers map cleanly to WorkOS users |
+| **Weighted Total**      | **62** | |
+
+**Pros**:
+- Minimal schema changes (add one field, one table)
+- Zero breaking changes for existing merchants
+- Lower migration risk (additive-only)
+- "A customer is a customer" - simpler mental model
+
+**Cons**:
+- Type discrimination in queries (mitigated by SQLAlchemy polymorphism)
+- Customer entity serves dual purpose (usage + billing)
+- Need clear naming conventions to avoid confusion
+
+---
+
+### Decision Matrix
+
+Scale: 🔴 1 (poor) | 🟡 2 (acceptable) | 🟢 3 (excellent)
+
+| Tenet                   | Weight | Option 1: Member Model | Option 2: Customer Type + Member |
+| ----------------------- | ------ | ---------------------- | -------------------------------- |
+| Billing Accuracy        | 7      | 🟢 3 (21)              | 🟡 2 (14)              |
+| Backward compatibility  | 6      | 🔴 3 (6)               | 🟢 3 (18)              |
+| Simplicity              | 5      | 🟢 3 (15)              | 🟡 2 (10)              |
+| Minimal changes for B2B | 4      | 🟢 3 (12)              | 🟡 2 (8)               |
+| Polar dev experience    | 3      | 🟢 3 (9)               | 🟡 2 (6)               |
+| WorkOS Integration      | 2      | 🟢 3 (6)               | 🟢 3 (6)               |
+| **Total Score**         | -      | **69**                 | **62**                 |
+
+
+---
+
+
+## Migration Plan
+
+### Overview
+
+The migration introduces the `Member` model while maintaining backward compatibility for existing B2C customers. B2B/seat-based customers will experience breaking changes and require coordinated migration. The rollout uses feature flags to minimize risk and allow gradual adoption.
+
+**Timeline**: ~1 month for a single SDE for implementation + 2-4 weeks for coordinated merchant migration
+
+### Phase 1: B2C Customer Migration (Automatic, Zero-Downtime)
+
+All existing individual customers receive automatic migration with full backward compatibility:
+
+**What happens:**
+1. **Schema changes deployed**: Add `members` table with foreign key to `customers`
+   - UNIQUE constraint: `(customer_id, email)` - ensures email uniqueness per customer
+   - UNIQUE constraint: `(customer_id, external_id)` - ensures external_id uniqueness per customer
+2. **Auto-create default members**: Migration script creates one member per customer
+   - `member.customer_id` → existing customer ID
+   - `member.email` → customer email
+   - `member.name` → customer name
+   - `member.external_id` → customer external_id (if exists)
+   - `member.role` → `"owner"` (default)
+3. **Service layer dual support**: Endpoints accept both `customer_id` (legacy) and `member_id` (new)
+   - When `customer_id` provided → resolve to default member automatically
+   - When `member_id` provided → use directly
+4. **Migrate usage data**:
+   - `benefit_grants.member_id` → default member ID (keep `customer_id` for backward compat queries)
+   - `customer_sessions.member_id` → default member ID
+   - `events.member_id` → default member ID (keep `customer_id` denormalized)
+   - `customer_seats.member_id` → NULL initially (migrated in Phase 2)
+
+**Merchant impact:** None. All existing API calls work identically
+
+---
+
+### Phase 2: B2B/Seat-Based Customer Migration (Coordinated)
+
+Existing seat-based subscriptions require structural changes and merchant coordination:
+
+**Current state:**
+- Billing manager = Customer with payment method
+- Seat holders = Separate Customer entities linked via `customer_seats` table
+- Usage events reference individual customer IDs
+
+**New state:**
+- Billing manager = Customer (unchanged) with admin Member
+- Seat holders = Members of the billing customer
+- Usage events reference member IDs
+
+**Migration steps:**
+
+1. **Identify seat-based customers**: Query subscriptions/orders with `seats > 0`
+
+2. **Transform billing managers**:
+   ```sql
+   -- For each customer with seat-based subscription
+   INSERT INTO members (customer_id, email, name, external_id, role)
+   SELECT id, email, name, external_id, 'owner'
+   FROM customers
+   WHERE id IN (SELECT customer_id FROM subscriptions WHERE seats IS NOT NULL);
+   ```
+
+3. **Transform seat holders**:
+   ```sql
+   -- For each claimed seat, create member under billing customer
+   INSERT INTO members (customer_id, email, name, external_id, role)
+   SELECT
+     cs.subscription.customer_id,  -- Billing customer
+     seat_holder.email,
+     seat_holder.name,
+     seat_holder.external_id,
+     'member'
+   FROM customer_seats cs
+   JOIN customers seat_holder ON cs.customer_id = seat_holder.id
+   WHERE cs.status = 'claimed' 
+    -- avoid adding billing manager twice;
+    and cs.subscription.customer_id <> seat_holder.id 
+
+   -- Update customer_seats to reference members
+   UPDATE customer_seats
+   SET member_id = <new_member_id>
+   WHERE customer_id = <old_seat_holder_customer_id>;
+   ```
+
+4. **Migrate usage data**:
+   - **Benefit grants**: Reassign from seat holder customer → member
+   - **Events**: Reassign from seat holder customer → member (update both `member_id` and keep `customer_id` pointing to billing customer)
+   - **Customer sessions**: Migrate to member sessions
+
+5. **Update merchant integrations** (⚠️ **Breaking changes**):
+
+   | Flow | Current (uses customer_id) | New (uses member_id) |
+   |------|---------------------------|--------------------------|
+   | **Event ingestion** | `POST /events { customer_id: "seat_holder_cust_123" }` | `POST /events { customer_id: "billing_cust_456", member_id: "mem_123" }` |
+   | **Customer portal sessions** | `POST /customer-sessions { customer_id: "seat_holder_cust_123" }` | `POST /customer-sessions { member_id: "mem_123" }` |
+   | **Benefit downloads (B2B)** | `GET /benefit-grants?customer_id=seat_holder_cust_123` | `GET /benefit-grants?member_id=mem_123` |
+
+   **📖 See [Appendix A: Merchant Migration Guide](#appendix-a-merchant-migration-guide-b2bseat-based-products) for detailed instructions, code examples, and FAQ.**
+
+**Communication plan:**
+1. **2 weeks before migration**: Email merchants with seat-based products
+   - Explain breaking changes
+   - Provide [Appendix A: Merchant Migration Guide](#appendix-a-merchant-migration-guide-b2bseat-based-products) with code examples
+   - Offer dedicated support channel
+2. **1 week before migration**: Second reminder with migration deadline
+3. **Migration day**: Enable feature flag, monitor metrics
+4. **Post-migration**: Support merchants during transition period
+
+---
+
+
+### Rollback Plan
+
+**Feature flag:** `member_model_enabled` (organization-level or global toggle)
+
+During the migration period, if a bug is found or a merchant complaint, disable the feature flag to revert to the previous functionality. All code should work with feature flag enabled or disabled.
+
+---
+
+## Implementation Plan
+
+
+### Phase 1: Schema 
+**Goal**: Database ready, feature flag in place, no production impact yet
+
+1. **Create member table with indexes**
+   - Add table: `members(id, customer_id FK, email, name, external_id, role, created_at, updated_at)`
+   - Indexes: `customer_id`, `(customer_id, email)` UNIQUE, `(customer_id, external_id)` UNIQUE
+
+3. **Add feature flag infrastructure**
+   - Organization-level feature flag: `member_model_enabled` (default: false)
+
+### Phase 1: Customer
+**Goal**: Customer onboarding should create members. Expose members to customers API.
+
+### Phase 2: Benefits
+**Goal**: benefits should be granted to members.
+
+### Phase 3: Member Management
+**Goal**: Member management should support CRUD operations.
+
+### Phase 4: Customer Portal
+**Goal**: Member should be able to authenticate with customer portal and see their benefits. Billing managers and owners should be able to manage members.
+
+### Phase 5: Dashboard
+**Goal**: The dashboard should display member-related information. Benefits should point to members. Members should be shown for B2B customers only.
+
+### Phase 6: Event ingestion
+**Goal**: Event ingestion should support members. CustomerMeter should be the aggregation of all member events and a new MemberEventMeter should be created.
+
+### Phase 7: Seats
+**Goal**: Seats should point to members.
+
+### Phase 8: Webhooks
+**Goal**: Webhooks should include member information. Create webhooks for member events.
+
+### Phase 9: Adapters
+**Goal**: Adapters should work out of the box with the member model.
+
+### Phase 10: Mobile app
+**Goal**: Mobile app should work out of the box with the member model.
+
+### Phase 11: Documentation
+**Goal**: Document member model and migration process.
+
+### Phase 12: Rollout
+**Goal**: Rollout member model to production for B2C and B2B customers. Migrate existing B2B customers to member model.
+
+---
+
+## Appendices
+
+### Appendix A: Merchant Migration Guide (B2B/Seat-Based Products)
+
+**Audience**: Merchants using seat-based pricing or B2B subscriptions
+
+**TL;DR**: If you use seat-based pricing, you'll need to update your integration to use `member_id` instead of `customer_id` for B2B customers. B2C customers are unaffected.
+
+---
+
+#### What is Changing?
+
+We're introducing a new **Member** entity to improve how Polar handles team subscriptions and usage-based billing. This change provides:
+
+1. **Better billing accuracy**: Clear separation between who pays (Customer) and who uses the product (Member)
+2. **Multi-company support**: Users can be members of multiple companies without confusion
+3. **Clearer usage attribution**: Events and benefits are always tied to the specific person who used them
+
+**Key architectural change**:
+```
+Before:
+Customer (billing manager) ─── purchases subscription with seats
+Customer (seat holder 1)   ─── separate customer entity
+Customer (seat holder 2)   ─── separate customer entity
+
+After:
+Customer (billing manager) ─┬─ Member (billing manager)
+                            ├─ Member (seat holder 1)
+                            └─ Member (seat holder 2)
+```
+
+**For B2C customers**: Nothing changes. We automatically create a 1:1 member for each customer, and all existing API calls continue working.
+
+**For B2B/seat-based customers**: Seat holders become **members** of the billing customer instead of separate customer entities.
+
+---
+
+#### Why This Change?
+
+**Problem we're solving**: When a user (e.g., Alice) works for multiple companies (Acme Corp and Slack Inc), and both companies purchase your product, Polar doesn't know which company to bill when Alice generates usage events. This causes billing ambiguity. This will allow other futures in the comming weeks, like better analytics and insights.
+
+**Solution**: The Member model ensures every action is attributed to a specific member of a specific customer, eliminating ambiguity.
+
+---
+
+#### Breaking Changes (B2B/Seat-Based Only)
+
+Imagine that before we had a seat based subscription with:
+
+- Alice being the billing manager and a seat holder
+- Ben being a seat holder
+
+
+##### 1. Customer API + Member API
+
+Given the example above, we will have the following schema on our database:
+
+1. Customer Alice:
+  1. Member Alice (owner)
+  2. Member Bob (member)
+2. Customer Bob (new customer with no subscriptions and nothing attached to him):
+  1. Member Bob (owner)
+
+**Before** (current):
+```typescript
+// Seat holder's customer_id
+await polar.customers.get([{
+  externalCustomerId: "cust_ben_123",
+}]);
+```
+
+**After** (new - required):
+```typescript
+await polar.members.get([{
+  externalCustomerId: "cust_alice_123",  // The customer who pays
+  externalMemberId: "cust_ben_123",    // The member of the business
+}]);
+```
+
+**Why**: Previously, `externalCustomerId` pointed to Ben, a seat holder (a separate customer). Now you should use the members to get the data of Ben.
+
+##### 1. Event Ingestion API
+
+**Before** (current):
+```typescript
+// Seat holder's customer_id
+await polar.events.ingest([{
+  externalCustomerId: "cust_ben_123",
+  name: "api.request",
+  properties: { endpoint: "/themes" }
+}]);
+```
+
+**After** (new - required):
+```typescript
+// Billing customer + specific member
+await polar.events.create([{
+  externalCustomerId: "cust_alice_123",  // Who pays will be mandatory
+  externalMemberId: "cust_ben_123",    // Who did the action
+  name: "api.request",
+  properties: { endpoint: "/themes" }
+}]);
+```
+
+**Why**: Previously, `externalCustomerId` pointed to the seat holder (a separate customer). Now it must point to the **billing customer**, with `member_id` identifying the specific team member.
+
+---
+
+##### 2. Customer Portal Sessions
+
+**Before** (current):
+```typescript
+// Generate portal link for seat holder
+const session = await polar.customerSessions.create({
+  externalCustomerId: "cust_alice_123"
+});
+```
+
+**After** (new - required):
+```typescript
+// Generate portal link for member
+const session = await polar.customerSessions.create({
+  externalCustomerId: "cust_alice_123",
+  externalMemberId: "cust_ben_123"
+});
+```
+
+**Why**: Portal sessions must authenticate as a specific member to show the correct subscriptions and benefits.
+
+---
+
+##### 3. Benefit grants
+
+**Before** (current):
+```typescript
+const session = await polar.benefits.grants({
+  externalCustomerId: "cust_ben_123"
+});
+```
+
+**After** (new - required):
+```typescript
+const session = await polar.benefits.grants({
+  externalCustomerId: "cust_alice_123",
+  externalMemberId: "cust_ben_123"
+});
+```
+
+##### 3. Other endpoints
+
+All the other endpoints where a customerId/externalCustomerId are you passing you will need to:
+
+1. Make sure that the customerId or externalCustomerId points to the customerId/externalCustomerId of the billing manager
+2. Pass the `externalMemberId` alongside `externalCustomerId`
+
+Verify the following endpoints:
+
+**Customer endpoints**
+The will work the same for billing managers, but members will not be there.
+
+1. GET: `/v1/customers`.
+2. GET: `/v1/customers/{customerId}`.
+2. PATCH: `/v1/customers/{customerId}`.
+2. DELETE: `/v1/customers/{customerId}`
+2. GET: `/v1/customers/external/{externalId}`.
+2. PATCH: `/v1/customers/external/{externalId}`.
+2. DELETE: `/v1/customers/external/{externalId}`
+
+**Customer Meters**
+
+The customer meter will point to the billing manager, so it will be the meter aggregated as a business.
+
+We will create a new endpoint to get the meters for members.
+
+**Seats**
+
+The response of seats will contain the `member` entity. `customer_id` will be removed.
+
+1. POST: `/v1/seats`: we will need to pass the `mail`, `externalMemberId`, `memberId`, along with `subscriptionId`
+2. GET: `/v1/seats/{seatId}`
+2. PATCH: `/v1/seats/{seatId}`.
+2. DELETE: `/v1/seats/{seatId}`
+
+#### Migration Checklist
+
+Use this checklist to ensure your integration is updated:
+
+- [ ] **Update SDK to latest version**
+  - TypeScript: `npm install @polar-sh/sdk@latest`
+  - Python: `pip install --upgrade polar-sdk`
+
+- [ ] **Update code**
+  - [ ] Change `customer_id` from seat holder customer to billing customer
+  - [ ] Add `member_id` parameter for all B2B events
+
+- [ ] **Monitor after migration**
+  - [ ] Test that you can log inside customer portal
+  - [ ] Check error rates in your application logs
+  - [ ] Confirm billing accuracy for B2B customers
+
+---
+
+#### How to Identify If You're Affected
+
+**You ARE affected if**:
+- ✅ You sell products with seat-based pricing
+- ✅ You use the Customer Seats API (`/v1/customer-seats`)
+- ✅ You have subscriptions or orders with `seats > 0`
+- ✅ You track usage events for team members
+
+**You ARE NOT affected if**:
+- ❌ You only sell B2C products (individual subscriptions)
+- ❌ You don't use seat-based pricing
+- ❌ You don't use our API directly.
+
+---
+
+#### Migration Timeline
+
+| Phase | What Happens | Action Required |
+|-------|-------------|-----------------|
+| **Week -2** | Migration announcement email sent | Review this guide, plan updates |
+| **Week -1** | Staging environment updated | Test your integration in staging |
+| **Week 0** | Production migration begins | Deploy updated code, monitor |
+| **Week 1-2** | One-on-one migration support | Work with Polar team if issues arise |
+
+---
+
+#### Getting Help
+
+**Before migration**:
+- Review the [updated API documentation](#) (link to come)
+- Test in staging environment (feature flag enabled for your org)
+- Email support@polar.sh with questions
+
+**During migration**:
+- Schedule 1-on-1 call if needed.
+
+**After migration**:
+- Report issues immediately: support@polar.sh
+- Check status page: status.polar.sh
+
+
+#### Webhook Changes
+
+The following webhook payloads will include new `members` array and `member_id` fields:
+
+**`subscription.created` / `subscription.updated`**:
+```json
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_123",
+    "customer": {
+      "id": "cust_acme_456",
+      "name": "Acme Corp",
+      "members": [                    // NEW
+        {
+          "id": "mem_alice_789",
+          "email": "alice@acme.com",
+          "role": "owner"
+        }
+      ]
+    }
+  }
+}
+```
+
+**`benefit_grant.created`**:
+```json
+{
+  "type": "benefit_grant.created",
+  "data": {
+    "id": "grant_123",
+    "customer_id": "cust_acme_456",
+    "member_id": "mem_alice_789",     // NEW
+    "benefit_id": "benefit_456"
+  }
+}
+```
+
+**`customer_seat.claimed`**:
+```json
+{
+  "type": "customer_seat.claimed",
+  "data": {
+    "id": "seat_123",
+    "subscription_id": "sub_456",
+    "customer_id": "cust_acme_789",    // will point to the business customer
+    "member_id": "mem_alice_101",     // NEW (replaces old customer_id reference)
+    "status": "claimed"
+  }
+}
+```
+
+**Action required**: Update your webhook handlers to:
+1. Extract and store `member_id` from webhooks
+2. Use `member_id` for subsequent API calls
+3. Handle the new `members` array in customer objects
+
+---
+
+#### FAQ
+
+**Q: Will my existing customers break?**
+A: No. B2C customers continue working with zero changes. B2B customers will need your updated integration deployed before we migrate their data.
+
+**Q: What happens if I don't migrate?**
+A: Your B2B customers will experience errors when trying to access the portal, generate events, or claim benefits. B2C customers are unaffected.
+
+**Q: Can I test before production migration?**
+A: Yes! We'll enable the feature flag in staging 2 weeks before production. Test thoroughly with seat-based subscriptions.
+
+**Q: How long do I have to migrate?**
+A: We'll coordinate with you to schedule a migration window. Most merchants complete the update in 1-2 days. We provide 2 weeks notice minimum.
+
+**Q: Will historical data change?**
+A: No. Past events, benefit grants, and subscriptions remain unchanged. Only new data uses the member model.
+
+**Q: What if Alice works for multiple companies?**
+A: Perfect! That's why we built this. Alice will have separate `member_id` values for each company (e.g., `mem_alice_at_acme_123` and `mem_alice_at_slack_456`).
+
+**Q: Do I need to migrate B2C customers?**
+A: No. B2C customers are automatically migrated with full backward compatibility. Your existing code works unchanged.
+
+---
+
+### Appendix E: ER Diagram (Option 1: Member Model)
+
+
+```mermaid
+erDiagram
+    Organization ||--o{ Customer : "has"
+    Organization ||--o{ Product : "sells"
+
+    Customer ||--o{ Subscription : "owns (billing)"
+    Customer ||--o{ Member : "has (usage/access)"
+    Customer ||--o{ Order : "owns (billing)"
+    Customer ||--o{ PaymentMethod : "owns (billing)"
+
+    Member ||--o{ BenefitGrant : "receives benefits"
+    Member ||--o{ CustomerSeat : "claims seats"
+    Member ||--o{ CustomerSession : "authenticates"
+    Member ||--o{ Event : "performs actions"
+
+    Subscription ||--o{ CustomerSeat : "allocates"
+    Subscription ||--o{ BenefitGrant : "provides"
+    Subscription ||--o{ Event : "bills usage"
+    Subscription }o--|| Product : "is for"
+    Subscription }o--o| PaymentMethod : "pays with"
+
+    Order }o--|| Product : "is for"
+
+    Customer {
+        uuid id PK
+        uuid organization_id FK
+        string email "Email for B2C, name for B2B"
+        string name "Customer name or business name"
+        string external_id
+        string stripe_customer_id "Stripe billing ID"
+        jsonb user_metadata
+    }
+
+    Member {
+        uuid id PK
+        uuid customer_id FK "→ Customer (who pays)"
+        string email "Member email"
+        string name "Member name"
+        string external_id "External identifier"
+        string role "owner | admin | billing_manager | member"
+        UNIQUE customer_id_email "(customer_id, email)"
+        UNIQUE customer_id_external_id "(customer_id, external_id)"
+    }
+
+    Subscription {
+        uuid id PK
+        uuid customer_id FK "→ Customer (who pays)"
+        uuid payment_method_id FK
+        int seats "NULL for non-seat, number for seat-based"
+        string status
+    }
+
+    CustomerSeat {
+        uuid id PK
+        uuid subscription_id FK
+        uuid member_id FK "→ Member (who uses the seat)"
+        uuid customer_id FK "Denormalized for performance"
+        string status
+    }
+
+    Event {
+        uuid id PK
+        uuid member_id FK "→ Member (who did the action)"
+        uuid customer_id FK "Denormalized for billing queries"
+        uuid subscription_id FK "→ Subscription (which subscription to bill)"
+        string name
+        jsonb properties
+    }
+
+    CustomerSession {
+        uuid id PK
+        uuid member_id FK "→ Member (who authenticates)"
+        string token
+        datetime expires_at
+    }
+
+    BenefitGrant {
+        uuid id PK
+        uuid member_id FK "→ Member (who receives benefit)"
+        uuid customer_id FK "Denormalized for performance"
+        uuid subscription_id FK
+        uuid benefit_id FK
+    }
+```
+
+**Key Points:**
+- **Separation of Concerns**: Customer = billing entity, Member = usage/access entity
+- **No Polymorphism**: Customer table has no `type` discriminator, always represents billing
+- **1:1 for B2C**: Individual customers have 1 default member
+- **1:N for B2B**: Business customers have N members (team members)
+- **Unique Constraints**:
+  - `(customer_id, email)` - Same email allowed across different customers, unique per customer
+  - `(customer_id, external_id)` - Same external_id allowed across different customers, unique per customer
+- **Event Attribution**: Events always reference `member_id` (never ambiguous across customers. Can be ambiguous across same customer with multiple subscriptions)
+- **Denormalization**: `customer_id` kept in usage tables for query performance (optional)
+- **Authentication**: Customer portal sessions authenticate as Member, not Customer
+- **Backward Compatibility**: Service layer accepts both `customer_id` (resolves to default member) and `member_id`
+
+---
+
+### Appendix F: Event Attribution Strategy
+
+This appendix details how we handle event attribution in B2B scenarios.
+
+**Problem**: When an individual customer is a member of multiple businesses, which subscription should be billed for their usage events?
+
+**Solution**: Use `subscription_id` (optional) with automatic inference.
+
+#### Inference Logic
+
+```python
+async def infer_subscription(customer: IndividualCustomer) -> UUID:
+    """Infer which subscription to bill for this customer's event."""
+
+    # Get all business memberships
+    memberships = await get_memberships_with_subscriptions(customer)
+
+    if len(memberships) == 0:
+        # Individual B2C customer - use their own subscription
+        if customer.subscriptions:
+            return customer.subscriptions[0].id
+        else:
+            raise BadRequest("Customer has no active subscriptions")
+
+    elif len(memberships) == 1:
+        # Member of exactly ONE business - unambiguous
+        _, subscription = memberships[0]
+        return subscription.id
+
+    else:
+        # Member of MULTIPLE businesses - ambiguous, require explicit subscription_id
+        raise BadRequest(
+            f"Customer is member of {len(memberships)} businesses. "
+            f"Specify 'subscription_id' parameter."
+        )
+```
+
+#### Edge Cases
+
+**Case 1**: Alice has her own B2C subscription AND is a member of Acme Corp
+- **Inference**: Fails (2 possible subscriptions)
+- **Merchant action**: Must specify `subscription_id`
+
+**Case 2**: Bob is a member of Acme AND Slack
+- **Inference**: Fails (2 business subscriptions)
+- **Merchant action**: Must specify `subscription_id`
+
+**Case 3**: Charlie is only a member of Acme
+- **Inference**: Success (only 1 subscription)
+- **Merchant action**: No action needed, auto-inferred
+
+#### API Error Response
+
+```json
+{
+  "error": {
+    "type": "ambiguous_subscription",
+    "message": "Customer cust_alice_123 belongs to 2 subscriptions. Specify 'subscription_id'.",
+    "details": {
+      "customer_id": "cust_alice_123",
+      "available_subscriptions": [
+        {
+          "subscription_id": "sub_personal_456",
+          "type": "individual",
+          "product": "prod_theme_basic"
+        },
+        {
+          "subscription_id": "sub_acme_789",
+          "type": "business",
+          "business_customer_id": "cust_acme_123",
+          "product": "prod_theme_pro"
+        }
+      ]
+    }
+  }
+}
+```
+
+Merchants can then prompt the user or maintain context in their app to track which subscription is active.
+
+---
+
+### Appendix H: Complete Integration Flows (Side-by-Side Comparison)
+
+This appendix shows how merchants integrate with Polar for common workflows, comparing **Option 1 (Member Model)** vs **Option 2 (Customer Type + Member)** side-by-side.
+
+---
+
+#### Flow 1: Create B2C Customer
+
+##### Option 1: Member Model
+
+```http
+POST https://api.polar.sh/v1/customers
+Authorization: Bearer polar_secret_...
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "name": "Alice Smith",
+  "external_id": "alice_001",
+  "organization_id": "org_abc123"
+}
+```
+
+**Response 201:**
+```json
+{
+  "id": "cust_alice_123",
+  "email": "alice@example.com",
+  "name": "Alice Smith",
+  "external_id": "alice_001",
+  "organization_id": "org_abc123",
+  "members": [
+    {
+      "id": "ben_alice_456",
+      "email": "alice@example.com",
+      "name": "Alice Smith",
+      "role": "admin"
+    }
+  ]
+}
+```
+
+**What Happens:**
+- Creates 1 Customer (billing entity)
+- Auto-creates 1 Member (usage entity) with same email
+- Member linked to customer
+
+---
+
+##### Option 2: Customer Type + Member
+
+```http
+POST https://api.polar.sh/v1/customers
+Authorization: Bearer polar_secret_...
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "name": "Alice Smith",
+  "external_id": "alice_001",
+  "organization_id": "org_abc123"
+  // type defaults to "individual"
+}
+```
+
+**Response 201:**
+```json
+{
+  "id": "cust_alice_123",
+  "type": "individual",
+  "email": "alice@example.com",
+  "name": "Alice Smith",
+  "external_id": "alice_001",
+  "organization_id": "org_abc123"
+}
+```
+
+**What Happens:**
+- Creates 1 Customer with `type="individual"` (default)
+- No separate Member entity needed for individuals
+
+---
+
+**Key Difference:**
+- **Option 1**: Always creates Customer + Member (uniform 1:N model)
+- **Option 2**: Creates only Customer, type discriminates individual vs business
+
+---
+
+#### Flow 2: Create B2B Customer with Billing Manager
+
+##### Option 1: Member Model
+
+```http
+# Step 1: Create business customer
+POST https://api.polar.sh/v1/customers
+Authorization: Bearer polar_secret_...
+
+{
+  "name": "Acme Corp",
+  "external_id": "acme_001",
+  "organization_id": "org_abc123",
+  owner: { // optional 
+    email: 'alice@example.com',
+    name: 'Alice Smith',
+    externalId: 'external_alice'
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "id": "cust_acme_123",
+  "name": "Acme Corp",
+  "email": null,
+  "members": [
+    {
+      "id": "ben_alice_456",
+      "email": "alice@example.com",
+      "name": "Alice Smith",
+      "role": "admin"
+    }
+  ]
+}
+```
+
+```http
+# Step 2: Add billing manager as member
+POST https://api.polar.sh/v1/customers/cust_acme_123/members
+Authorization: Bearer polar_secret_...
+
+{
+  "email": "billing@acme.com",
+  "name": "Jane Doe",
+  "role": "billing_manager"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "ben_jane_789",
+  "customer_id": "cust_acme_123",
+  "email": "billing@acme.com",
+  "name": "Jane Doe",
+  "role": "billing_manager"
+}
+```
+
+---
+
+##### Option 2: Customer Type + Member
+
+```http
+# Step 1: Create business customer
+POST https://api.polar.sh/v1/customers
+Authorization: Bearer polar_secret_...
+
+{
+  "type": "business",
+  "name": "Acme Corp",
+  "external_id": "acme_001",
+  "organization_id": "org_abc123"
+  // email optional for business
+}
+```
+
+**Response:**
+```json
+{
+  "id": "cust_acme_123",
+  "type": "business",
+  "name": "Acme Corp",
+  "email": null,
+  "members": []  // Empty initially
+}
+```
+
+```http
+# Step 2: Add billing manager to business via Member
+POST https://api.polar.sh/v1/customers/cust_acme_123/members
+Authorization: Bearer polar_secret_...
+
+{
+  "email": "billing@acme.com",
+  "name": "Jane Doe",
+  "role": "billing_manager"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "member_789",
+  "business_customer_id": "cust_acme_123",
+  "individual_customer_id": "cust_jane_456",
+  "role": "billing_manager"
+}
+```
+
+---
+
+**Key Difference:**
+- **Option 1**: Beneficiaries don't exist outside the Customer.
+- **Option 2**: Individual customers exist independently.
+
+---
+
+#### Flow 3: One-Time Product Purchase (B2C) with Checkout Sessions
+
+**Scenario**: Alice purchases a $49 theme (one-time payment) using checkout sessions.
+
+##### Option 1: Member Model
+
+```http
+# Step 1: Create checkout session
+POST https://api.polar.sh/v1/checkouts
+Authorization: Bearer polar_secret_...
+
+{
+  "product_id": "prod_theme_123",
+  "customer_email": "alice@example.com",
+  "success_url": "https://merchant.com/success",
+  "customer_metadata": {
+    "user_id": "alice_001"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "id": "checkout_abc",
+  "url": "https://polar.sh/checkout/abc",
+  "customer_id": null  // Created after payment
+}
+```
+
+```http
+# Step 2: Customer completes checkout (Polar hosted)
+# → Polar auto-creates Customer + Member
+
+# Step 3: Webhook received
+```
+
+**Webhook Payload:**
+```json
+{
+  "type": "order.created",
+  "data": {
+    "id": "order_123",
+    "customer": {
+      "id": "cust_alice_456",
+      "email": "alice@example.com",
+      "members": [
+        {
+          "id": "ben_alice_789",
+          "email": "alice@example.com",
+          "role": "admin"
+        }
+      ]
+    },
+    "product_id": "prod_theme_123",
+    "amount": 4900
+  }
+}
+```
+
+```http
+# Step 4: Grant benefit to member
+# Polar automatically creates BenefitGrant linked to ben_alice_789
+```
+
+---
+
+##### Option 2: Customer Type + Member
+
+```http
+# Step 1: Create checkout session
+POST https://api.polar.sh/v1/checkouts
+Authorization: Bearer polar_secret_...
+
+{
+  "product_id": "prod_theme_123",
+  "customer_email": "alice@example.com",
+  "success_url": "https://merchant.com/success",
+  "customer_metadata": {
+    "user_id": "alice_001"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "id": "checkout_abc",
+  "url": "https://polar.sh/checkout/abc",
+  "customer_id": null  // Created after payment
+}
+```
+
+```http
+# Step 2: Customer completes checkout (Polar hosted)
+# → Polar auto-creates Customer with type="individual"
+
+# Step 3: Webhook received
+```
+
+**Webhook Payload:**
+```json
+{
+  "type": "order.created",
+  "data": {
+    "id": "order_123",
+    "customer": {
+      "id": "cust_alice_456",
+      "type": "individual",
+      "email": "alice@example.com"
+    },
+    "product_id": "prod_theme_123",
+    "amount": 4900
+  }
+}
+```
+
+```http
+# Step 4: Grant benefit to customer
+# Polar automatically creates BenefitGrant linked to cust_alice_456
+```
+
+---
+
+**Key Difference:**
+- **Option 1**: Benefit grant links to `member_id`
+- **Option 2**: Benefit grant links to `customer_id` (individual customer)
+
+---
+
+#### Flow 4: Seat-Based Product Purchase (B2B, 4 Seats) with Checkout Sessions
+
+**Scenario**: Acme Corp purchases a 4-seat subscription ($199/month) for their team.
+
+##### Option 1: Member Model
+
+```http
+# Step 1: Create business customer
+POST https://api.polar.sh/v1/customers
+Authorization: Bearer polar_secret_...
+
+{
+  "name": "Acme Corp",
+  "customer_email": "billing@acme.com",
+  "external_id": "acme_001",
+  "organization_id": "org_abc123"
+}
+```
+
+**Response:** `{ "id": "cust_acme_123", ... }`
+
+```http
+# Step 2: Create checkout session for business
+POST https://api.polar.sh/v1/checkouts
+Authorization: Bearer polar_secret_...
+
+{
+  "product_id": "prod_team_plan_4seats",
+  "external_customer_id": "acme_001",
+  "success_url": "https://merchant.com/success"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "checkout_def",
+  "url": "https://polar.sh/checkout/def",
+  "customer_id": "cust_acme_123"
+}
+```
+
+```http
+# Step 3: Billing manager completes checkout
+# → Polar auto-creates member for billing@acme.com
+```
+
+Step 4: Webhook received
+**Webhook Payload:**
+```json
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_acme_456",
+    "customer": {
+      "id": "cust_acme_123",
+      "name": "Acme Corp",
+      "members": [
+        {
+          "id": "ben_billing_789",      // member created before or during the checkout
+          "email": "billing@acme.com",
+          "role": "admin"
+        }
+      ]
+    },
+    "product_id": "prod_team_plan_4seats",
+    "seats": 4,
+    "status": "active"
+  }
+}
+```
+
+
+```http
+# Step 5: Beneficiaries claim seats
+POST https://api.polar.sh/v1/subscriptions/sub_acme_456/seats
+Authorization: Bearer polar_customer_session_... // ben_billing_789 session
+
+{ "member_email": "alive@acme.com" }
+```
+
+**Response:**
+```json
+{
+  "id": "seat_001",
+  "subscription_id": "sub_acme_456",
+  "member_id": "ben_alice_101",
+  "status": "active"
+}
+```
+
+---
+
+##### Option 2: Customer Type + Member
+
+```http
+# Step 1: Create business customer
+POST https://api.polar.sh/v1/customers
+Authorization: Bearer polar_secret_...
+
+{
+  "type": "business",
+  "name": "Acme Corp",
+  "customer_email": "billing@acme.com",
+  "external_id": "acme_001",
+  "organization_id": "org_abc123"
+}
+```
+
+**Response:** `{ "id": "cust_acme_123", "type": "business", ... }`
+
+```http
+# Step 2: Create checkout session
+POST https://api.polar.sh/v1/checkouts
+Authorization: Bearer polar_secret_...
+
+{
+  "product_id": "prod_team_plan_4seats",
+  "external_customer_id": "acme_001",
+  "success_url": "https://merchant.com/success"
+}
+```
+
+```http
+# Step 3: Billing manager completes checkout
+# Webhook received
+```
+
+Step 4: Webhook received
+**Webhook Payload:**
+```json
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_acme_789",
+    "customer": {
+      "id": "cust_acme_123",
+      "type": "business",
+      "name": "Acme Corp",
+      "members": [
+        {
+          "id": "member_789",
+          "customer": {
+            "id": "cust_acme_456",        // created on the fly or returning existing members
+            "email": "billing@acme.com"
+          },
+          "role": "admin"
+        }
+      ]
+    },
+    "product_id": "prod_team_plan_4seats",
+    "seats": 4,
+    "status": "active"
+  }
+}
+```
+
+```http
+# Step 5: Beneficiaries claim seats
+POST https://api.polar.sh/v1/subscriptions/sub_acme_789/seats
+Authorization: Bearer polar_customer_session_... // cust_acme_456 session
+
+{ "customer_email": "alice@acme.com" }
+```
+
+
+**Response:**
+```json
+{
+  "id": "seat_001",
+  "subscription_id": "sub_acme_789",
+  "customer_id": "cust_alice_101",
+  "status": "active"
+}
+```
+
+---
+
+**Key Difference:**
+- **Option 1**: Seats link to `member_id`
+- **Option 2**: Seats link to `customer_id` (individual customer)
+
+---
+
+#### Flow 5: Seat-Based Product with Checkout Links (Public)
+
+**Scenario**: Public checkout link for team subscription - auto-creates business on checkout.
+
+##### Option 1: Member Model
+
+```http
+# Merchant shares public checkout link
+https://buy.polar.sh/polar_cl_gon2ISU4r7oYyjVaxXlRVUv5MKh1H3c1gCxKn1zZGHA
+
+# Customer clicks, enters email, completes purchase
+# → Polar auto-creates Customer + Member
+
+# Webhook received
+```
+
+**Webhook Payload:**
+```json
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_789",
+    "customer": {
+      "id": "cust_auto_123",
+      "email": "buyer@company.com",
+      "members": [
+        {
+          "id": "ben_buyer_456",
+          "email": "buyer@company.com",
+          "role": "admin"
+        }
+      ]
+    },
+    "product_id": "prod_team_plan",
+    "seats": 5
+  }
+}
+```
+
+---
+
+##### Option 2: Customer Type + Member
+
+```http
+# Merchant shares public checkout link
+https://polar.sh/org_abc/products/prod_team_plan
+
+# Customer clicks, enters email, completes purchase
+# → Polar detects seat-based product, auto-creates:
+#    1. Business customer (generated name from email domain)
+#    2. Individual customer for buyer
+#    3. Member linking them
+
+# Webhook received
+```
+
+**Webhook Payload:**
+```json
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_789",
+    "customer": {
+      "id": "cust_business_123",
+      "type": "business",
+      "name": "company.com",  // Auto-generated
+      "members": [
+        {
+          "id": "member_456",
+          "customer": {
+            "id": "cust_buyer_789",
+            "type": "individual",
+            "email": "buyer@company.com"
+          },
+          "role": "admin"
+        }
+      ]
+    },
+    "product_id": "prod_team_plan",
+    "seats": 5
+  }
+}
+```
+
+---
+
+**Key Difference:**
+- **Option 1**: Single customer created
+- **Option 2**: Two customers created, one business and one individual
+
+---
+
+#### Flow 6: Download Benefits
+
+##### Flow 6a: B2C Customer Download Benefit
+
+**Scenario**: Bob (individual customer) access to a downloadable benefit.
+
+###### Option 1: Member Model
+
+```http
+# Bob authenticates via Customer Portal
+# Session identifies him by customer_id (B2C backward compatibility as 1 member == 1 customer in B2C)
+
+# B2C: Using customer_id (backward compatible)
+GET https://api.polar.sh/v1/customer-portal/downloadables
+Authorization: Bearer polar_customer_session_...
+
+```
+
+**Response (same for both):**
+```json
+{
+  "items": [
+    {
+      "id": "grant_001",
+      "member_id": "ben_bob_default_456",  // Auto-created default member
+      "customer_id": "cust_bob_123",  // Same as billing customer
+      "file": {
+        "id": "benefit_theme_download",
+        "name": "Premium Theme Package"
+      }
+    }
+  ]
+}
+```
+
+**How B2C Compatibility Works:**
+- Customer session endpoints accepts both `customer_id` (legacy) and `member_id` (new)
+- B2C customers have auto-created "default" member (1:1 mapping)
+- `customer_id=cust_bob_123` internally resolves to `member_id=ben_bob_default_456`
+
+---
+
+##### Flow 6b: B2B Team Member Claims Benefit
+
+> ⚠️ This contains a breaking change with seats functionality
+
+**Scenario**: Alice (team member at ACME) claims access to a downloadable benefit.
+
+###### Option 1: Member Model
+
+```http
+# Alice authenticates via Customer Portal
+# Session identifies her as ben_alice_acme_123 (B2B: explicit member)
+
+GET https://api.polar.sh/v1/benefit-grants?member_id=ben_alice_acme_123
+Authorization: Bearer polar_member_session_...
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "grant_002",
+      "member_id": "ben_alice_acme_123",
+      "customer_id": "cust_acme_456",  // ACME Inc (business) paid for it
+      "benefit": {
+        "id": "benefit_theme_download",
+        "type": "downloadable",
+        "description": "Premium Theme Package"
+      },
+      "subscription_id": "sub_acme_789"
+    }
+  ]
+}
+```
+
+**Key B2B Difference:**
+- ❌ Cannot use `customer_id` query param for B2B (ambiguous - which member?)
+- ✅ Must use `member_id` to identify which team member
+- ✅ Authentication token contains member context
+
+---
+
+###### Option 2: Customer Type + Member
+
+```http
+# Alice authenticates via Customer Portal
+# Session identifies her as cust_alice_123 (individual customer)
+
+GET https://api.polar.sh/v1/customer-portal/downloadables
+Authorization: Bearer polar_customer_session_...
+```
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "grant_001",
+      "customer_id": "cust_alice_123",
+      "file": {
+        "id": "benefit_theme_download",
+        "name": "Premium Theme Package"
+      }
+    }
+  ]
+}
+```
+
+```http
+# Download benefit
+GET https://api.polar.sh/v1/benefits/benefit_theme_download/download
+Authorization: Bearer polar_customer_session_...
+```
+
+---
+
+**Key Differences:**
+- **Option 1 (B2C)**: `customer_id` backward compatible, internally maps to default member
+- **Option 1 (B2B)**: ⚠️ Uses `member_id` for explicit team member identification
+- **Option 2**: Always uses `customer_id` (individual customer for both B2C and B2B members)
+
+---
+
+#### Flow 7: Customer Portal Link Generation
+
+##### Flow 7a: B2C Customer Portal
+
+**Scenario**: Bob (individual customer) needs to access Customer Portal to manage his subscription.
+
+###### Option 1: Member Model
+
+```http
+# Option A: Using customer_id (B2C backward compatible)
+POST https://api.polar.sh/v1/customer-sessions
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_bob_123"  // ✅ B2C backward compatible
+}
+
+# Option B: Using member_id (new explicit way)
+POST https://api.polar.sh/v1/customer-sessions
+Authorization: Bearer polar_secret_...
+
+{
+  "member_id": "ben_bob_default_456"  // ✅ New way
+}
+```
+
+**Response (same for both):**
+```json
+{
+  "token": "polar_cst_abc123xyz",
+  "customer_id": "cust_bob_123",
+  "member_id": "ben_bob_default_456",  // Auto-resolved from customer
+  "return_url": "https://polar.sh/org_merchant/portal?token=polar_cst_abc123xyz",
+  "expires_at": "2025-12-01T10:00:00Z"
+}
+```
+
+**How B2C Compatibility Works:**
+- ✅ Endpoint accepts both `customer_id` (legacy) and `member_id` (new)
+- ✅ If `customer_id` provided → resolve to default member → create session
+- ✅ If `member_id` provided → create session directly
+
+**Portal shows:**
+- Bob's subscriptions (from customer_id: cust_bob_123)
+- Bob's benefit grants (from member_id: ben_bob_default_456)
+- Bob's orders and invoices
+
+---
+
+###### Option 2: Customer Type + Member
+
+```http
+POST https://api.polar.sh/v1/customer-sessions
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_bob_456"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "polar_cst_abc123xyz",
+  "customer_id": "cust_bob_456",
+  "return_url": "https://polar.sh/org_merchant/portal?token=polar_cst_abc123xyz",
+  "expires_at": "2025-12-01T10:00:00Z"
+}
+```
+
+**Portal shows:**
+- Bob's subscriptions
+- Bob's benefit grants
+- Bob's orders and invoices
+
+---
+
+##### Flow 7b: B2B Customer Portal
+
+
+**Scenario**: Jane (billing manager at Acme) needs to see company billing info.
+
+###### Option 1: Member Model
+
+> ⚠️ This contains a breaking change with seats functionality
+
+
+We can only use the member id. The customerId has multiple benefficieres and we don't know which one to pick.
+
+```http
+POST https://api.polar.sh/v1/customer-sessions
+Authorization: Bearer polar_secret_...
+
+{
+  "member_id": "ben_jane_789"  // Jane's member at Acme
+}
+```
+
+**Response:**
+```json
+{
+  "token": "polar_cst_def456",
+  "member_id": "ben_jane_789",
+  "customer_id": "cust_acme_123",
+  "url": "https://polar.sh/portal?token=polar_cst_def456",
+  "expires_at": "2025-12-01T10:00:00Z"
+}
+```
+
+**Portal shows (role-based on member.role = "billing_manager"):**
+- Acme's subscriptions (from customer_id)
+- All members (list all team members)
+- Company orders and invoices
+- Aggregated usage across all members
+
+---
+
+###### Option 2: Customer Type + Member
+
+```http
+POST https://api.polar.sh/v1/customer-sessions
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_jane_456"  // Jane's individual customer
+}
+```
+
+**Response:**
+```json
+{
+  "token": "polar_cst_def456",
+  "customer_id": "cust_jane_456",
+  "url": "https://polar.sh/portal?token=polar_cst_def456",
+  "expires_at": "2025-12-01T10:00:00Z"
+}
+```
+
+**Portal logic:**
+1. Check if cust_jane_456 is a member of any business customers
+2. Find member record: business_customer_id = cust_acme_123, role = "billing_manager"
+3. Show billing manager view
+
+**Portal shows:**
+- Acme's subscriptions (from business customer)
+- All members (query members of cust_acme_123)
+- Company orders and invoices
+- Aggregated usage across all members
+
+---
+
+**Key Difference:**
+- **Option 1**: ⚠️ Single `member_id` gives access to both personal and business context. Not compatible with B2B.
+- **Option 2**: `customer_id` requires lookup via Member table to find business context.
+
+---
+
+#### Flow 9: Event Ingestion
+
+##### Flow 9a: B2C Event Ingestion
+
+**Scenario**: Bob (individual customer) makes an API call - track usage.
+
+###### Option 1: Member Model
+
+```http
+# Option A: Using customer_id (B2C backward compatible)
+POST https://api.polar.sh/v1/events
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_bob_123",  // ✅ B2C backward compatible
+  "name": "api.request",
+  "properties": {
+    "endpoint": "/v1/themes",
+    "method": "POST"
+  }
+}
+
+# Option B: Using member_id (new explicit way)
+POST https://api.polar.sh/v1/events
+Authorization: Bearer polar_secret_...
+
+{
+  "member_id": "ben_bob_default_456",  // ✅ New way
+  "name": "api.request",
+  "properties": {
+    "endpoint": "/v1/themes",
+    "method": "POST"
+  }
+}
+```
+
+**Response (same for both):**
+201
+
+**How B2C Compatibility Works:**
+- Endpoint accepts both `customer_id` (legacy) and `member_id` (new)
+- If `customer_id` provided → resolve to default member → record event
+- If `member_id` provided → record event directly
+
+---
+
+###### Option 2: Customer Type + Member
+
+```http
+POST https://api.polar.sh/v1/events
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_bob_456",
+  "name": "api.request",
+  "properties": {
+    "endpoint": "/v1/themes",
+    "method": "POST"
+  }
+}
+```
+
+**Response:**
+201
+
+---
+
+##### Flow 9b: B2B Event Ingestion
+
+> ⚠️ This contains a breaking change with seats functionality
+
+**Scenario**: Alice (team member at Acme) makes an API call - bill Acme's subscription.
+
+###### Option 1: Member Model
+
+```http
+POST https://api.polar.sh/v1/events
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_acme_123", // the business customer of the subscription, who to bill. ⚠️ This breaks current seats usage as merchants will need to pass a new customer ID or use the new benefficiaryId
+  "member_id": "ben_alice_acme_123",  // Optional: Alice's member at Acme for granular usage
+  "name": "api.request",
+  "properties": {
+    "endpoint": "/v1/themes",
+    "method": "POST"
+  }
+}
+```
+
+**Response:**
+201
+
+**What happens:**
+- Bills Acme's subscription
+
+---
+
+###### Option 2: Customer Type + Member
+
+```http
+POST https://api.polar.sh/v1/events
+Authorization: Bearer polar_secret_...
+
+{
+  "customer_id": "cust_alice_123",  // Alice's individual customer
+  "name": "api.request",
+  "properties": {
+    "endpoint": "/v1/themes",
+    "method": "POST"
+  }
+}
+```
+
+**What happens:**
+- Polar checks if cust_alice_123 is a member of any businesses
+- Finds member record: business_customer_id = cust_acme_456
+- If Alice is member of ONLY ONE business and doesn't have a subscription, we will bill that business
+
+**Response (if Alice is member of only Acme):**
+201
+
+**Response (if Alice is member of Acme AND Lolo):**
+```json
+{
+  "error": {
+    "type": "ambiguous_subscription",
+    "message": "Customer cust_alice_123 is a member of 2 businesses. Specify 'subscription_id'.",
+    "details": {
+      "available_subscriptions": [
+        {"subscription_id": "sub_acme_789", "business": "Acme Corp"},
+        {"subscription_id": "sub_lolo_456", "business": "Lolo Inc"}
+      ]
+    }
+  }
+}
+```
+
+**Retry with explicit subscription:**
+```http
+POST https://api.polar.sh/v1/events
+{
+  "customer_id": "cust_alice_123",
+  "subscription_id": "sub_acme_789",  // Explicit
+  "name": "api.request"
+}
+```
+
+---
+
+#### Flow 10: Customer Portal Login
+
+The user access: https://polar.sh/petru-test/portal/request
+
+##### Flow 10.a: B2C login
+
+In both cases work as expected.
+ 
+##### Flow 10.b: B2B login
+
+###### Option 1: Member Model
+
+Member emails are not unique across per organization, they are unique per Customer. This means that a single email address can be associated with multiple members within the same organization.
+
+These are different entities that can be associated with the same email address.
+
+###### Option 2: Customer Type + Member
+
+Every customer has a unique email address. This means that a single email address, but they can have subscriptions attached to them and being a member of multiple business customers.
+
+---
+
+#### Summary: API Call Comparison
+
+| Flow | Option 1: Member | Option 2: Customer Type + Member |
+| ---- | -------------------- | -------------------------------- |
+| 1. Create B2C | Easy | Easy |
+| 2. Create B2B + Manager | Easy | Easy |
+| 3. Checkout Session (B2C) | Easy | Easy |
+| 4. Checkout Sessions (B2B) | Easy | Easy |
+| 5. Checkout Links (B2B) | Easy | Easy |
+| 6a. Download Files B2C | Easy | Easy |
+| 6b. Download Files B2B | ⚠️ Breaking change | Easy |
+| 7a. B2C Customer Portal Session | Easy | Easy |
+| 7b. B2B Customer Portal Session | ⚠️ Breaking change | Easy |
+| 9a. B2C Event Ingestion | Easy | Easy |
+| 9b. B2B Event Ingestion | ⚠️ Breaking change | 🟡 Medium |
+| 10a. Customer Portal Login (B2C) | Easy | Easy |
+| 10b. Customer Portal Login (B2B) | 🟡 Medium | 🟡 Medium |

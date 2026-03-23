@@ -2,8 +2,7 @@
 
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+
 import { ProductCheckoutPublic } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
 import { isLegacyRecurringPrice } from '../utils/product'
@@ -20,12 +19,19 @@ const CheckoutProductAmountLabel = ({
   layout?: 'default' | 'stacked'
   locale?: AcceptedLocale
 }) => {
-  const { product, productPrice, discount } = checkout
-  if (!discount || productPrice.amountType !== 'fixed') {
+  const { product, product_price, discount } = checkout
+  if (!discount || product_price.amount_type !== 'fixed') {
     return (
-      <ProductPriceLabel
-        product={product}
-        price={productPrice}
+      <AmountLabel
+        amount={checkout.total_amount}
+        currency={checkout.currency ?? product_price.price_currency}
+        interval={
+          isLegacyRecurringPrice(product_price)
+            ? product_price.recurring_interval
+            : product.recurring_interval
+        }
+        intervalCount={product.recurring_interval_count}
+        mode="compact"
         locale={locale}
       />
     )
@@ -40,14 +46,14 @@ const CheckoutProductAmountLabel = ({
       }
     >
       <AmountLabel
-        amount={checkout.netAmount}
+        amount={checkout.total_amount}
         currency={checkout.currency}
         interval={
-          isLegacyRecurringPrice(productPrice)
-            ? productPrice.recurringInterval
-            : product.recurringInterval
+          isLegacyRecurringPrice(product_price)
+            ? product_price.recurring_interval
+            : product.recurring_interval
         }
-        intervalCount={product.recurringIntervalCount}
+        intervalCount={product.recurring_interval_count}
         mode="compact"
         locale={locale}
       />
@@ -55,7 +61,7 @@ const CheckoutProductAmountLabel = ({
         <div className="text-gray-400 line-through">
           <ProductPriceLabel
             product={product}
-            price={productPrice}
+            price={product_price}
             locale={locale}
           />
         </div>
@@ -73,26 +79,22 @@ const CheckoutProductAmountLabel = ({
 
 interface CheckoutPricingProps {
   checkout: ProductCheckoutPublic
-  update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
-  disabled?: boolean
   layout?: 'default' | 'stacked'
   locale?: AcceptedLocale
 }
 
 const CheckoutPricing = ({
   checkout,
-  update,
-  disabled,
   layout = 'default',
   locale,
 }: CheckoutPricingProps) => {
-  const { product, productPrice, amount } = checkout
+  const { product_price } = checkout
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-light">
-          {productPrice.amountType !== 'custom' ? (
+        <h1 className="text-3xl font-light" data-testid="headline-price">
+          {product_price.amount_type !== 'custom' ? (
             <CheckoutProductAmountLabel
               checkout={checkout}
               layout={layout}
@@ -100,8 +102,8 @@ const CheckoutPricing = ({
             />
           ) : (
             formatCurrency('compact', locale)(
-              amount,
-              productPrice.priceCurrency,
+              checkout.total_amount,
+              checkout.currency ?? product_price.price_currency,
             )
           )}
         </h1>

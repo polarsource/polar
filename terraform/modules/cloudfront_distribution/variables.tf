@@ -29,6 +29,12 @@ variable "s3_bucket_arn" {
   type        = string
 }
 
+variable "cors_allowed_origins" {
+  description = "List of allowed origins for CORS response headers"
+  type        = list(string)
+  default     = []
+}
+
 variable "price_class" {
   description = "CloudFront price class"
   type        = string

@@ -13,21 +13,27 @@ export const createClient = (
   baseUrl: string,
   token?: string,
   headers?: HeadersOptions,
-) =>
-  createOpenAPIFetchClient<paths>({
+) => ({
+  ...createOpenAPIFetchClient<paths>({
     baseUrl,
     credentials: 'include',
     headers: {
       ...(headers ? headers : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-  })
+  }),
+  baseUrl,
+})
+
+export type ClientResponseErrorBody = Record<string, unknown> & {
+  message?: string
+}
 
 export class ClientResponseError extends Error {
-  error: any
+  error: ClientResponseErrorBody
   response: Response
 
-  constructor(error: any, response: Response) {
+  constructor(error: ClientResponseErrorBody, response: Response) {
     super(error.message)
     this.name = 'ClientResponseError'
     this.error = error
@@ -36,28 +42,28 @@ export class ClientResponseError extends Error {
 }
 
 export class UnauthorizedResponseError extends ClientResponseError {
-  constructor(error: any, response: Response) {
+  constructor(error: ClientResponseErrorBody, response: Response) {
     super(error, response)
     this.name = 'UnauthorizedResponseError'
   }
 }
 
 export class NotFoundResponseError extends ClientResponseError {
-  constructor(error: any, response: Response) {
+  constructor(error: ClientResponseErrorBody, response: Response) {
     super(error, response)
     this.name = 'NotFoundResponseError'
   }
 }
 
 export class TooManyRequestsResponseError extends ClientResponseError {
-  constructor(error: any, response: Response) {
+  constructor(error: ClientResponseErrorBody, response: Response) {
     super(error, response)
     this.name = 'TooManyRequestsResponseError'
   }
 }
 
 export const unwrap = async <
-  T extends Record<string | number, any>,
+  T extends Record<string | number, unknown>,
   Options,
   Media extends `${string}/${string}`,
 >(
@@ -100,7 +106,7 @@ export const unwrap = async <
 }
 
 export const isValidationError = (
-  detail: any,
+  detail: unknown,
 ): detail is {
   loc: (string | number)[]
   msg: string

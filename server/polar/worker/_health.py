@@ -50,6 +50,7 @@ async def health(request: Request) -> JSONResponse:
 
 
 UNDELIVERED_WEBHOOKS_MINIMUM_AGE = timedelta(minutes=5)
+UNDELIVERED_WEBHOOKS_MAXIMUM_AGE = timedelta(hours=6)
 UNDELIVERED_WEBHOOKS_ALERT_THRESHOLD = 10
 
 UNHANDLED_EXTERNAL_EVENTS_MINIMUM_AGE = timedelta(minutes=5)
@@ -61,7 +62,8 @@ async def webhooks(request: Request) -> JSONResponse:
     async with async_sessionmaker() as session:
         repository = WebhookEventRepository(session)
         undelivered_webhooks = await repository.get_all_undelivered(
-            older_than=utc_now() - UNDELIVERED_WEBHOOKS_MINIMUM_AGE
+            older_than=utc_now() - UNDELIVERED_WEBHOOKS_MINIMUM_AGE,
+            newer_than=utc_now() - UNDELIVERED_WEBHOOKS_MAXIMUM_AGE,
         )
         if len(undelivered_webhooks) > UNDELIVERED_WEBHOOKS_ALERT_THRESHOLD:
             return JSONResponse(

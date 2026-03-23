@@ -72,6 +72,7 @@
                   "features/benefits/credits",
                   "features/benefits/custom",
                   "features/benefits/discord-access",
+                  "features/benefits/feature-flags",
                   "features/benefits/file-downloads",
                   "features/benefits/github-access",
                   "features/benefits/license-keys"
@@ -576,7 +577,6 @@
               "guides/grant-meter-credits-after-purchase",
               "guides/grant-meter-credits-before-purchase",
               "guides/subscription-downgrades",
-              "guides/schedule-subscription-downgrades-qstash",
               "guides/subscription-upgrades",
               "guides/seat-based-pricing",
               "guides/theme-switch-in-checkout",

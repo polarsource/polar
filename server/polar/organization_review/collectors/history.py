@@ -22,9 +22,7 @@ def collect_history_data(
 
         if review is not None:
             review_verdict = review.verdict
-            appeal_decision = (
-                review.appeal_decision.value if review.appeal_decision else None
-            )
+            appeal_decision = review.appeal_decision
 
         if org.status == OrganizationStatus.DENIED:
             has_prior_denials = True

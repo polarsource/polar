@@ -1,126 +1,64 @@
 'use client'
 
+import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import MetricChartBox from '@/components/Metrics/MetricChartBox'
-import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { IOSAppBanner } from '@/components/Upsell/IOSAppBanner'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
-import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
-import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
-import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
-import {
-  ALL_METRICS,
-  getChartRangeParams,
-  getPreviousParams,
-} from '@/utils/metrics'
+import { useOrganizationPaymentStatus } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { motion } from 'framer-motion'
-import React from 'react'
-import { twMerge } from 'tailwind-merge'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { ConstructionIcon } from 'lucide-react'
+import Link from 'next/link'
 
-interface HeroChartProps {
-  organization: schemas['Organization']
-}
-
-const HeroChart = ({ organization }: HeroChartProps) => {
-  const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof schemas['Metrics']>('revenue')
-  const [startDate, endDate, interval] = React.useMemo(
-    () => getChartRangeParams('30d', organization.created_at),
-    [organization.created_at],
-  )
-
-  const { data: currentPeriodData, isLoading: currentPeriodLoading } =
-    useMetrics({
-      organization_id: organization.id,
-      startDate: startDate,
-      endDate: endDate,
-      interval: interval,
-      metrics: [selectedMetric],
-    })
-
-  const previousParams = React.useMemo(
-    () => getPreviousParams(startDate, '30d'),
-    [startDate],
-  )
-
-  const { data: previousPeriodData, isLoading: previousPeriodLoading } =
-    useMetrics(
-      {
-        organization_id: organization.id,
-        startDate: previousParams ? previousParams[0] : startDate,
-        endDate: previousParams ? previousParams[1] : endDate,
-        interval: interval,
-        metrics: [selectedMetric],
-      },
-      previousParams !== null,
-    )
-
-  return (
-    <MetricChartBox
-      metric={selectedMetric}
-      onMetricChange={setSelectedMetric}
-      data={currentPeriodData}
-      previousData={previousPeriodData}
-      interval={interval}
-      loading={currentPeriodLoading || previousPeriodLoading}
-      chartType="line"
-      availableMetrics={ALL_METRICS}
-    />
-  )
-}
+const cellClassName =
+  'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200'
 
 interface OverviewPageProps {
   organization: schemas['Organization']
 }
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
-  const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
-
-  const motionVariants = {
-    variants: {
-      initial: { opacity: 0 },
-      animate: { opacity: 1, transition: { duration: 0.3 } },
-      exit: { opacity: 0, transition: { duration: 0.3 } },
-    },
-  }
-  const cardClassName = 'flex w-full flex-col h-full'
+  const { data: paymentStatus, isLoading } = useOrganizationPaymentStatus(
+    organization.id,
+  )
 
   return (
-    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
+    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12" title={null}>
       <IOSAppBanner />
-      {paymentStatus && !paymentStatus.payment_ready && (
-        <PaymentOnboardingStepper organization={organization} />
+      {!paymentStatus?.payment_ready && !isLoading && (
+        <div className="dark:bg-polar-800 flex flex-col justify-between gap-4 rounded-2xl bg-gray-100 p-4 md:flex-row md:p-6">
+          <div className="flex flex-col gap-y-2 text-sm">
+            <div className="flex flex-row items-center gap-x-3">
+              <ConstructionIcon className="h-4 w-4 shrink-0" />
+              <h3 className="font-medium">Your account is in Test Mode</h3>
+            </div>
+            <div>
+              <p className="dark:text-polar-500 max-w-4xl text-gray-500">
+                Set up your products and integrate into your app. Test the full
+                flow with 100% discount codes.
+              </p>
+              <p className="dark:text-polar-500 text-gray-500">
+                When you&rsquo;re ready, go live to start accepting payments
+                from your customers.
+              </p>
+            </div>
+          </div>
+          <Link href={`/dashboard/${organization.slug}/finance/account`}>
+            <Button>Go Live</Button>
+          </Link>
+        </div>
       )}
-      <HeroChart organization={organization} />
-      <motion.div
-        className="grid grid-cols-1 gap-6 md:gap-10 xl:grid-cols-3"
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        transition={{ staggerChildren: 0.1 }}
-      >
-        <motion.div className={cardClassName} {...motionVariants}>
-          <MonthWidget />
-        </motion.div>
-        <motion.div
-          className={twMerge(cardClassName, 'xl:col-span-2')}
-          {...motionVariants}
-        >
-          <RevenueWidget />
-        </motion.div>
-        <motion.div className={cardClassName} {...motionVariants}>
-          <OrdersWidget />
-        </motion.div>
-        <motion.div className={cardClassName} {...motionVariants}>
-          <SubscribersWidget />
-        </motion.div>
-        <motion.div className={cardClassName} {...motionVariants}>
-          <AccountWidget />
-        </motion.div>
-      </motion.div>
+      <OverviewSection organization={organization} />
+
+      <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">
+        <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-3">
+          <RevenueWidget className={cellClassName} />
+          <OrdersWidget className={cellClassName} />
+          <AccountWidget className={cellClassName} />
+        </div>
+      </div>
     </DashboardBody>
   )
 }

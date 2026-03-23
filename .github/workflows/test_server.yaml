@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -21,7 +25,7 @@ jobs:
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           list-files: json
@@ -100,8 +104,9 @@ jobs:
         run: |
           export TB_HOST=http://localhost:7181
           export TB_ADMIN_TOKEN=$(curl -s http://localhost:7181/tokens | jq -r .admin_token)
-          tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe
+          tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe endpoints/*.pipe
           tb build
+          tb test run
 
   migration-check:
     name: "Server: Migration Check 📚"
@@ -295,4 +300,4 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n auto --dist=loadgroup --no-cov
+        run: uv run pytest -n auto --dist=loadgroup --no-cov --durations=0

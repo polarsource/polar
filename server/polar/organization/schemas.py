@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
+from urllib.parse import urlparse
 
 from pydantic import (
     UUID4,
@@ -8,6 +9,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
+    field_validator,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -15,6 +17,7 @@ from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
+from polar.kit.address import CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
@@ -92,40 +95,63 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization compares Tinybird results with database",
     )
-    presentment_currencies_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization has multiple presentment currencies enabled"
-        ),
-    )
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",
     )
+    overview_metrics: list[str] | None = Field(
+        None,
+        description="Ordered list of metric slugs shown on the dashboard overview.",
+    )
+
+    @field_validator("overview_metrics", mode="before")
+    @classmethod
+    def _coerce_overview_metrics(cls, v: Any) -> list[str] | None:
+        if isinstance(v, bool):
+            return None
+        return v
 
 
 class OrganizationDetails(Schema):
-    about: str = Field(
-        ..., description="Brief information about you and your business."
+    about: str | None = Field(
+        None,
+        deprecated=True,
+        description="Brief information about you and your business.",
     )
-    product_description: str = Field(
-        ..., description="Description of digital products being sold."
+    product_description: str | None = Field(
+        None, description="Description of digital products being sold."
     )
-    intended_use: str = Field(
-        ..., description="How the organization will integrate and use Polar."
+    selling_categories: list[str] = Field(
+        default_factory=list, description="Categories of products being sold."
+    )
+    pricing_models: list[str] = Field(
+        default_factory=list, description="Pricing models used by the organization."
+    )
+    intended_use: str | None = Field(
+        None,
+        deprecated=True,
+        description="How the organization will integrate and use Polar.",
     )
     customer_acquisition: list[str] = Field(
-        ..., description="Main customer acquisition channels."
+        default_factory=list,
+        deprecated=True,
+        description="Main customer acquisition channels.",
     )
-    future_annual_revenue: int = Field(
-        ..., ge=0, description="Estimated revenue in the next 12 months"
+    future_annual_revenue: int | None = Field(
+        None,
+        ge=0,
+        deprecated=True,
+        description="Estimated revenue in the next 12 months",
     )
-    switching: bool = Field(True, description="Switching from another platform?")
+    switching: bool = Field(False, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")
-    previous_annual_revenue: int = Field(
-        0, ge=0, description="Revenue from last year if applicable."
+    previous_annual_revenue: int | None = Field(
+        None,
+        ge=0,
+        deprecated=True,
+        description="Revenue from last year if applicable.",
     )
 
 
@@ -137,6 +163,8 @@ class OrganizationSocialPlatforms(StrEnum):
     youtube = "youtube"
     tiktok = "tiktok"
     linkedin = "linkedin"
+    threads = "threads"
+    discord = "discord"
     other = "other"
 
 
@@ -148,7 +176,28 @@ PLATFORM_DOMAINS = {
     "youtube": ["youtube.com", "youtu.be"],
     "tiktok": ["tiktok.com"],
     "linkedin": ["linkedin.com"],
+    "threads": ["threads.net"],
+    "discord": ["discord.gg", "discord.com"],
 }
+
+# Reverse mapping: domain -> platform for auto-detection
+DOMAIN_TO_PLATFORM: dict[str, str] = {}
+for _platform, _domains in PLATFORM_DOMAINS.items():
+    for _domain in _domains:
+        DOMAIN_TO_PLATFORM[_domain] = _platform
+
+
+def detect_platform_from_url(url: str) -> str | None:
+    """Detect the social platform from a URL's hostname."""
+    try:
+        parsed = urlparse(url.lower())
+        hostname = parsed.hostname or ""
+        # Strip www. prefix
+        if hostname.startswith("www."):
+            hostname = hostname[4:]
+        return DOMAIN_TO_PLATFORM.get(hostname)
+    except Exception:
+        return None
 
 
 class OrganizationSocialLink(Schema):
@@ -160,20 +209,13 @@ class OrganizationSocialLink(Schema):
     @model_validator(mode="before")
     @classmethod
     def validate_url(cls, data: dict[str, Any]) -> dict[str, Any]:
-        platform = data.get("platform")
         url = data.get("url", "").lower()
-
-        if not (platform and url):
+        if not url:
             return data
 
-        if platform == "other":
-            return data
-
-        valid_domains = PLATFORM_DOMAINS[platform]
-        if not any(domain in url for domain in valid_domains):
-            raise ValueError(
-                f"Invalid URL for {platform}. Must be from: {', '.join(valid_domains)}"
-            )
+        # Auto-detect platform from URL domain, fallback to "other"
+        detected = detect_platform_from_url(url)
+        data["platform"] = detected or "other"
 
         return data
 
@@ -278,7 +320,7 @@ class Organization(OrganizationBase):
     )
     status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
-        description="When the business details were submitted.",
+        description="When the business details were submitted for review.",
     )
 
     default_presentment_currency: str = Field(
@@ -304,12 +346,40 @@ class Organization(OrganizationBase):
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
         description="Settings related to the customer portal",
     )
+    country: CountryAlpha2 | None = Field(
+        None, description="Two-letter country code (ISO 3166-1 alpha-2)."
+    )
+
+
+class OrganizationKYC(Organization):
+    """Organization with compliance/KYC details. Only returned from the dedicated KYC endpoint."""
+
+    details: OrganizationDetails | None = Field(
+        None,
+        description="Organization compliance details. Only visible to organization members.",
+    )
+
+
+class OrganizationIndividualLegalEntitySchema(Schema):
+    type: Literal["individual"]
+
+
+class OrganizationCompanyLegalEntitySchema(Schema):
+    type: Literal["company"]
+    registered_name: str
+
+
+OrganizationLegalEntitySchema = Annotated[
+    OrganizationIndividualLegalEntitySchema | OrganizationCompanyLegalEntitySchema,
+    Field(discriminator="type"),
+]
 
 
 class OrganizationCreate(Schema):
     name: NameInput
     slug: SlugInput
     avatar_url: AvatarUrl | None = None
+    legal_entity: OrganizationLegalEntitySchema | None = None
     email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
@@ -321,6 +391,9 @@ class OrganizationCreate(Schema):
     details: OrganizationDetails | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
+    )
+    country: CountryAlpha2Input | None = Field(
+        None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
@@ -347,6 +420,9 @@ class OrganizationUpdate(Schema):
     details: OrganizationDetails | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
+    )
+    country: CountryAlpha2Input | None = Field(
+        None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
 
     feature_settings: OrganizationFeatureSettings | None = None

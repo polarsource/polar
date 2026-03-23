@@ -64,30 +64,6 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
     enabled: id.length > 0,
   })
 
-export const useBenefitProducts = (
-  organizationId?: string,
-  benefitId?: string,
-  limit = 100,
-) =>
-  useQuery({
-    queryKey: ['products', { organizationId, benefitId }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/products/', {
-          params: {
-            query: {
-              organization_id: organizationId ?? '',
-              benefit_id: benefitId ?? '',
-              is_archived: false,
-              limit,
-            },
-          },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled: !!organizationId && !!benefitId,
-  })
-
 export const useProduct = (id?: string | null) =>
   useQuery({
     queryKey: ['products', { id }],
@@ -104,7 +80,7 @@ export const useCreateProduct = (organization: schemas['Organization']) =>
     mutationFn: (body: schemas['ProductCreate']) => {
       return api.POST('/v1/products/', { body })
     },
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -129,7 +105,7 @@ export const useUpdateProduct = (organization: schemas['Organization']) =>
         body,
       })
     },
-    onSuccess: async (result, variables, _ctx) => {
+    onSuccess: async (result, variables) => {
       if (result.error) {
         return
       }
@@ -159,7 +135,7 @@ export const useUpdateProductBenefits = (
         body,
       })
     },
-    onSuccess: async (result, variables, _ctx) => {
+    onSuccess: async (result, variables) => {
       if (result.error) {
         return
       }

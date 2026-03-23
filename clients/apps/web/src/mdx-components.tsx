@@ -1,6 +1,7 @@
+import { BlogHero } from '@/components/Blog/BlogHero'
+import { StaticImage } from '@/components/Image/StaticImage'
 import ProseWrapper from '@/components/MDX/ProseWrapper'
 import type { MDXComponents } from 'mdx/types'
-import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 
 interface ImportedImageSrc {
@@ -15,6 +16,7 @@ interface ImportedImageSrc {
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     ...components,
+    BlogHero,
     BodyWrapper(props) {
       return (
         <ProseWrapper className="flex w-full flex-col items-center md:max-w-7xl!">
@@ -52,7 +54,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         console.warn(
           ` 🌄 Absolute image path detected, this is not recommended for performance reasons: ${props.src}\n Tip: place the image file beside the MDX file and use a relative import.`,
         )
-        // eslint-disable-next-line
+        // eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element
         return <img {...props} />
       }
       /* Otherwise, the `rehype-mdx-import-media` was able to `import` it locally: optimize with next/image */
@@ -71,9 +73,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
           className = `${className} hidden dark:block`
         }
       }
-      // @ts-ignore
-      // eslint-disable-next-line jsx-a11y/alt-text
-      return <Image {...props} className={className} />
+      return <StaticImage {...props} className={className} />
     },
   }
 }

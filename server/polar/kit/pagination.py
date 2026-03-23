@@ -6,7 +6,7 @@ from fastapi import Depends, Query
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic._internal._repr import display_as_type
 from pydantic_core import CoreSchema
-from sqlalchemy import Select, func, over
+from sqlalchemy import Select, func, select
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 
 from polar.config import settings
@@ -60,20 +60,33 @@ async def paginate(
 ) -> tuple[Sequence[Any], int]:
     page, limit = pagination
     offset = limit * (page - 1)
-    statement = statement.offset(offset).limit(limit)
 
     if count_clause is not None:
-        statement = statement.add_columns(count_clause)
-    else:
-        statement = statement.add_columns(over(func.count()))
+        paginated = statement.offset(offset).limit(limit)
+        paginated = paginated.add_columns(count_clause)
+        result = await session.execute(paginated)
+        results: list[Any] = []
+        count = 0
+        for row in result.unique().all():
+            (*queried_data, c) = row._tuple()
+            count = int(c)
+            if len(queried_data) == 1:
+                results.append(queried_data[0])
+            else:
+                results.append(queried_data)
+        return results, count
 
-    result = await session.execute(statement)
+    count_statement = select(func.count()).select_from(
+        statement.order_by(None).subquery()
+    )
+    count_result = await session.execute(count_statement)
+    count = count_result.scalar_one()
 
-    results: list[Any] = []
-    count = 0
+    paginated = statement.offset(offset).limit(limit)
+    result = await session.execute(paginated)
+    results = []
     for row in result.unique().all():
-        (*queried_data, c) = row._tuple()
-        count = int(c)
+        queried_data = row._tuple()
         if len(queried_data) == 1:
             results.append(queried_data[0])
         else:

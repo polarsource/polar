@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
@@ -18,20 +19,20 @@ import { usePathname } from 'next/navigation'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { NavPopover, NavPopoverSection } from './NavPopover'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 px-0 md:w-full md:flex-1 md:items-center md:px-4">
+    <div className="dark:bg-polar-950 relative flex flex-col bg-white px-0 md:w-full md:flex-1 md:items-center md:px-4">
       <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageDesktopNavigation />
         <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
           <LandingPageTopbar />
           <LandingPageMobileNavigation />
         </SidebarProvider>
-
         <div className="dark:bg-polar-950 relative flex flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
           {children}
         </div>
@@ -91,6 +92,10 @@ const mobileNavigationItems: NavigationItem[] = [
     title: 'Documentation',
     href: 'https://polar.sh/docs',
     target: '_blank',
+  },
+  {
+    title: 'Blog',
+    href: '/blog',
   },
   {
     title: 'Company',
@@ -285,8 +290,8 @@ const LandingPageDesktopNavigation = () => {
   ]
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex">
-      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-6xl">
+    <div className="dark:text-polar-50 dark:bg-polar-950 sticky top-0 z-10 hidden w-full flex-col items-center gap-12 bg-white py-8 md:flex">
+      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
         <Link href="/">
           <PolarLogotype logoVariant="icon" size={40} />
         </Link>
@@ -303,13 +308,23 @@ const LandingPageDesktopNavigation = () => {
             <NavPopover trigger="Docs" sections={docsSections} layout="flex" />
           </li>
           <li>
+            <NavLink href="/blog">Blog</NavLink>
+          </li>
+          <li>
             <NavLink href="/company">Company</NavLink>
           </li>
         </ul>
 
-        <Button onClick={onLoginClick} variant="ghost" className="rounded-full">
-          Log In
-        </Button>
+        <div className="flex flex-row items-center gap-x-4">
+          <Button
+            onClick={onLoginClick}
+            variant="ghost"
+            className="rounded-full"
+          >
+            Log In
+          </Button>
+          <GetStartedButton size="default" />
+        </div>
       </div>
       <Modal
         title="Login"

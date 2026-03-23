@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
@@ -6,7 +7,7 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries'
 import { hasLegacyRecurringPrices } from '@/utils/product'
-import { Client, schemas, unwrap } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -15,7 +16,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
-import { getErrorRedirect } from '../Toast/utils'
 
 const ProductPriceListItem = ({
   product,
@@ -112,8 +112,9 @@ const CustomerChangePlanModal = ({
     if (!selectedProduct) return [false, null]
 
     const willTrigger =
+      prorationBehavior !== 'next_period' &&
       selectedProduct.recurring_interval !==
-      subscription.product.recurring_interval
+        subscription.product.recurring_interval
 
     if (!willTrigger) return [false, null]
 
@@ -130,7 +131,7 @@ const CustomerChangePlanModal = ({
     const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
 
     return [willTrigger, chargeOrCredit]
-  }, [selectedProduct, subscription])
+  }, [selectedProduct, prorationBehavior, subscription])
 
   const invoicingMessage = useMemo(() => {
     if (!selectedProduct) return null
@@ -146,10 +147,13 @@ const CustomerChangePlanModal = ({
       }
     }
 
-    if (prorationBehavior === 'invoice') {
-      return "I'll be charged immediately with a proration for the current month."
-    } else {
-      return 'Your next invoice will include the new plan plus the proration for the current month.'
+    switch (prorationBehavior) {
+      case 'invoice':
+        return "I'll be charged immediately with a proration for the current month."
+      case 'prorate':
+        return 'Your next invoice will include the new plan plus the proration for the current month.'
+      case 'next_period':
+        return 'The new plan will be applied on your next billing cycle.'
     }
   }, [
     selectedProduct,
@@ -187,34 +191,24 @@ const CustomerChangePlanModal = ({
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
     if (!selectedProduct) return
-    const { data, response } = await updateSubscription.mutateAsync({
+    const { data, error } = await updateSubscription.mutateAsync({
       id: subscription.id,
       body: {
         product_id: selectedProduct.id,
       },
     })
-    if (response.status === 400) {
-      const body = await response.json()
-      if (body.error === 'SubscriptionNotActiveOnStripe') {
-        router.push(
-          getErrorRedirect(
-            `/${organization.slug}/products/${subscription.product_id}`,
-            'Subscription Update Failed',
-            'Subscription is not active on Stripe',
-          ),
-        )
-      } else if (body.error === 'MissingPaymentMethod') {
-        const { url } = await unwrap(
-          api.POST('/v1/checkouts/client/', {
-            body: {
-              product_id: selectedProduct.id,
-              subscription_id: subscription.id,
-            },
-          }),
-        )
-        router.push(url)
-      }
-    } else if (data) {
+    if (error) {
+      const errorMessage =
+        typeof error.detail === 'string'
+          ? error.detail
+          : 'Failed to update subscription'
+      toast({
+        title: 'Error updating subscription',
+        description: errorMessage,
+        variant: 'error',
+      })
+    }
+    if (data) {
       toast({
         title: 'Subscription Updated',
         description: `Subscription was updated successfully`,
@@ -226,13 +220,21 @@ const CustomerChangePlanModal = ({
   }, [
     updateSubscription,
     selectedProduct,
-    organization,
     subscription,
     onUserSubscriptionUpdate,
     hide,
     router,
-    api,
   ])
+
+  const availableProducts = useMemo(
+    () =>
+      products
+        .filter((product) => product.id !== subscription.product_id)
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, 'en-US', { numeric: true }),
+        ),
+    [products, subscription],
+  )
 
   return (
     <div className="flex flex-col overflow-y-auto">
@@ -251,10 +253,13 @@ const CustomerChangePlanModal = ({
           />
         </List>
         <h3 className="font-medium">Available Plans</h3>
-        <List size="small">
-          {products
-            .filter((product) => product.id !== subscription.product_id)
-            .map((product) => (
+        {availableProducts.length === 0 ? (
+          <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
+            No other plans available
+          </p>
+        ) : (
+          <List size="small">
+            {availableProducts.map((product) => (
               <ProductPriceListItem
                 key={product.id}
                 product={product}
@@ -263,7 +268,8 @@ const CustomerChangePlanModal = ({
                 onSelect={() => setSelectedProduct(product)}
               />
             ))}
-        </List>
+          </List>
+        )}
         <div className="flex flex-col gap-y-6">
           {addedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">

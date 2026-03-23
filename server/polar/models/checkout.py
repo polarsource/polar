@@ -23,7 +23,7 @@ from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relatio
 
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.enums import PaymentProcessor, TaxProcessor
+from polar.enums import PaymentProcessor, TaxBehavior, TaxProcessor
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -39,10 +39,10 @@ from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer
-from .discount import Discount
+from .discount import Discount, DiscountDuration, DiscountPercentage
 from .organization import Organization
 from .product import Product
-from .product_price import ProductPrice, ProductPriceSeatUnit
+from .product_price import ProductPrice
 from .subscription import Subscription
 
 if TYPE_CHECKING:
@@ -137,7 +137,10 @@ class Checkout(
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    min_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    max_seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
+    net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True
@@ -147,6 +150,9 @@ class Checkout(
     )
     taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
         String, nullable=True, default=None
+    )
+    tax_behavior: Mapped[TaxBehavior | None] = mapped_column(
+        StringEnum(TaxBehavior), nullable=True, default=None
     )
     tax_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
@@ -293,11 +299,11 @@ class Checkout(
 
     @property
     def discount_amount(self) -> int:
-        return self.discount.get_discount_amount(self.amount) if self.discount else 0
-
-    @property
-    def net_amount(self) -> int:
-        return self.amount - self.discount_amount
+        return (
+            self.discount.get_discount_amount(self.amount, self.currency)
+            if self.discount
+            else 0
+        )
 
     @property
     def total_amount(self) -> int:
@@ -333,7 +339,19 @@ class Checkout(
         if self.is_free_product_price:
             return False
 
+        # PWYW set to `0`, with an extra guard for metered prices
+        # (those will still require a payment on next cycle)
         if self.amount == 0 and not self.has_metered_prices:
+            return False
+
+        # A 100% forever percentage discount makes the subscription entirely free
+        # (including metered usage), so no payment setup is needed.
+        if (
+            self.discount is not None
+            and self.discount.duration == DiscountDuration.forever
+            and isinstance(self.discount, DiscountPercentage)
+            and self.discount.basis_points == 10_000
+        ):
             return False
 
         return self.product.is_recurring
@@ -355,7 +373,7 @@ class Checkout(
         return getattr(self, "_customer_session_token", None)
 
     @customer_session_token.setter
-    def customer_session_token(self, value: str) -> None:
+    def customer_session_token(self, value: str | None) -> None:
         self._customer_session_token = value
 
     attached_custom_fields: AssociationProxy[
@@ -425,16 +443,6 @@ class Checkout(
         if self.product is None:
             return None
         return self.trial_interval_count or self.product.trial_interval_count
-
-    @property
-    def price_per_seat(self) -> int | None:
-        if not isinstance(self.product_price, ProductPriceSeatUnit):
-            return None
-
-        if self.seats is None:
-            return None
-
-        return self.product_price.get_price_per_seat(self.seats)
 
     @property
     def description(self) -> str:

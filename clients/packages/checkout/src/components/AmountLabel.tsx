@@ -1,15 +1,15 @@
+import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
 import { getTranslations } from '@polar-sh/i18n'
 import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
-import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
 
 interface AmountLabelProps {
   amount: number
   currency: string
   mode: 'compact' | 'standard'
-  interval?: SubscriptionRecurringInterval | null
+  interval?: schemas['SubscriptionRecurringInterval'] | null
   intervalCount?: number | null
   locale?: AcceptedLocale
 }

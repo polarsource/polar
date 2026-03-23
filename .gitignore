@@ -131,6 +131,7 @@ playground.py
 
 .DS_Store
 .pnpm-store
+pnpm-workspace.yaml
 
 # Secrets
 .secrets/
@@ -150,3 +151,12 @@ dev/docker/.env.docker
 # Tinybird
 server/.tinyb
 .tinyb
+
+.turbo
+.claude/worktrees
+
+# Eval artifacts (generated, may contain PII)
+server/polar/organization_review/eval/fixtures/
+optimization_results/
+server/cases.json
+server/cases_schema.json

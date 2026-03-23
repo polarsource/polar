@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import revalidate from '@/app/actions'
@@ -24,7 +25,7 @@ import { Label } from '@polar-sh/ui/components/ui/label'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import SharedLayout from './components/SharedLayout'
 
@@ -59,15 +60,14 @@ const OrganizationSelectionPage = ({
   const {
     control,
     handleSubmit,
-    watch,
     setError,
     setValue,
     formState: { errors },
   } = form
 
-  const name = watch('name')
-  const slug = watch('slug')
-  const terms = watch('terms')
+  const { name, slug, terms } = useWatch({
+    control,
+  })
 
   useEffect(() => {
     if (!editedSlug && name) {
@@ -197,32 +197,30 @@ const OrganizationSelectionPage = ({
                 )}
               />
 
-              {false && (
-                <FormField
-                  control={control}
-                  name="default_presentment_currency"
-                  rules={{
-                    required: 'Currency is required',
-                  }}
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <Label htmlFor="default_presentment_currency">
-                        Default Payment Currency
-                      </Label>
-                      <FormControl>
-                        <CurrencySelector
-                          value={field.value as schemas['PresentmentCurrency']}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription>
-                        The default currency for your products
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={control}
+                name="default_presentment_currency"
+                rules={{
+                  required: 'Currency is required',
+                }}
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <Label htmlFor="default_presentment_currency">
+                      Default payment currency
+                    </Label>
+                    <FormControl>
+                      <CurrencySelector
+                        value={field.value as schemas['PresentmentCurrency']}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      The default currency for your products
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 bg-white p-6">
@@ -309,7 +307,9 @@ const OrganizationSelectionPage = ({
           <Button
             type="submit"
             loading={createOrganization.isPending}
-            disabled={name.length < 3 || slug.length < 3 || !terms}
+            disabled={
+              !name || !slug || name.length < 3 || slug.length < 3 || !terms
+            }
             form="organization-create-form"
           >
             Create Organization

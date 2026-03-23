@@ -7,9 +7,11 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.organization_review.report import AnyAgentReport
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
+    from polar.models.organization_review_feedback import OrganizationReviewFeedback
 
 
 class OrganizationAgentReview(RecordModel):
@@ -32,7 +34,32 @@ class OrganizationAgentReview(RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise")
+        return relationship(
+            "Organization",
+            lazy="raise",
+            back_populates="agent_reviews",
+        )
+
+    @declared_attr
+    def review_feedbacks(
+        cls,
+    ) -> Mapped[list["OrganizationReviewFeedback"]]:
+        return relationship(
+            "OrganizationReviewFeedback",
+            lazy="raise",
+            back_populates="agent_review",
+        )
+
+    @property
+    def parsed_report(self) -> AnyAgentReport:
+        """Deserialize the raw JSONB into a versioned, typed report schema.
+
+        The result is *not* cached — call once and bind to a local variable
+        if you need it multiple times in the same scope.
+        """
+        from polar.organization_review.report import parse_agent_report
+
+        return parse_agent_report(self.report)
 
     def __repr__(self) -> str:
         return (

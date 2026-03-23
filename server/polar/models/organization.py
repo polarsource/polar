@@ -1,11 +1,12 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Self, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -21,7 +22,11 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
-from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
+from polar.enums import (
+    InvoiceNumbering,
+    SubscriptionProrationBehavior,
+    TaxBehaviorOption,
+)
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
@@ -31,7 +36,9 @@ from .account import Account
 if TYPE_CHECKING:
     from polar.email.sender import EmailFromReply
 
+    from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
+    from .organization_review_feedback import OrganizationReviewFeedback
     from .product import Product
 
 
@@ -40,9 +47,11 @@ class OrganizationSocials(TypedDict):
     url: str
 
 
-class OrganizationDetails(TypedDict):
+class OrganizationDetails(TypedDict, total=False):
     about: str
     product_description: str
+    selling_categories: list[str]
+    pricing_models: list[str]
     intended_use: str
     customer_acquisition: list[str]
     future_annual_revenue: int
@@ -96,7 +105,9 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_cycled: bool
     subscription_cycled_after_trial: bool
     subscription_past_due: bool
+    subscription_renewal_reminder: bool
     subscription_revoked: bool
+    subscription_trial_conversion_reminder: bool
     subscription_uncanceled: bool
     subscription_updated: bool
 
@@ -108,7 +119,9 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_cycled": True,
     "subscription_cycled_after_trial": True,
     "subscription_past_due": True,
+    "subscription_renewal_reminder": True,
     "subscription_revoked": True,
+    "subscription_trial_conversion_reminder": True,
     "subscription_uncanceled": True,
     "subscription_updated": True,
 }
@@ -135,6 +148,29 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
         "update_plan": True,
     },
 }
+
+
+class OrganizationCheckoutSettings(TypedDict):
+    require_3ds: bool
+
+
+_default_checkout_settings: OrganizationCheckoutSettings = {
+    "require_3ds": True,
+}
+
+
+class OrganizationIndividualLegalEntity(TypedDict):
+    type: Literal["individual"]
+
+
+class OrganizationCompanyLegalEntity(TypedDict):
+    type: Literal["company"]
+    registered_name: str
+
+
+OrganizationLegalEntity = (
+    OrganizationIndividualLegalEntity | OrganizationCompanyLegalEntity
+)
 
 
 class OrganizationStatus(StrEnum):
@@ -233,6 +269,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    total_balance: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, server_default="0"
+    )
+
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @declared_attr
@@ -250,6 +290,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
         nullable=True,
         default=None,
     )
+
+    # Flag to block refunds for all orders in this organization
+    refunds_blocked: Mapped[bool] = mapped_column(
+        nullable=False,
+        default=False,
+    )
+
+    country: Mapped[str | None] = mapped_column(String(2), nullable=True, default=None)
 
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
@@ -275,6 +323,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
         mapped_column(JSONB, nullable=False, default=_default_customer_portal_settings)
     )
 
+    checkout_settings: Mapped[OrganizationCheckoutSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_checkout_settings
+    )
+
+    legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
+
     @property
     def allow_customer_updates(self) -> bool:
         return self.customer_portal_settings["subscription"]["update_plan"]
@@ -288,10 +344,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
 
     #
-    # Currency settings
+    # Currency and tax settings
     #
     default_presentment_currency: Mapped[PresentmentCurrency] = mapped_column(
         String(3), nullable=False, default="usd"
+    )
+    default_tax_behavior: Mapped[TaxBehaviorOption] = mapped_column(
+        StringEnum(TaxBehaviorOption), nullable=True
     )
 
     #
@@ -371,6 +430,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
             "update_plan", True
         )
 
+    @property
+    def checkout_require_3ds(self) -> bool:
+        return self.checkout_settings.get("require_3ds", False)
+
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:
         return relationship("Product", lazy="raise", back_populates="organization")
@@ -397,6 +460,24 @@ class Organization(RateLimitGroupMixin, RecordModel):
             back_populates="organization",
             cascade="delete, delete-orphan",
             uselist=False,  # This makes it a one-to-one relationship
+        )
+
+    @declared_attr
+    def agent_reviews(cls) -> Mapped[list["OrganizationAgentReview"]]:
+        return relationship(
+            "OrganizationAgentReview",
+            lazy="raise",
+            back_populates="organization",
+        )
+
+    @declared_attr
+    def review_feedbacks(
+        cls,
+    ) -> Mapped[list["OrganizationReviewFeedback"]]:
+        return relationship(
+            "OrganizationReviewFeedback",
+            lazy="raise",
+            back_populates="organization",
         )
 
     def is_blocked(self) -> bool:

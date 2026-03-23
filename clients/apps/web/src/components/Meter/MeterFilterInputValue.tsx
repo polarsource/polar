@@ -4,10 +4,10 @@ import { useEventNames } from '@/hooks/queries/events'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useMemo, useState } from 'react'
-import { ControllerRenderProps } from 'react-hook-form'
+import { ControllerRenderProps, FieldPath, FieldValues } from 'react-hook-form'
 
 interface ValueInputProps {
-  field: ControllerRenderProps<any, any>
+  field: ControllerRenderProps<FieldValues, FieldPath<FieldValues>>
 }
 
 interface EventNameInputProps extends ValueInputProps {
@@ -123,7 +123,7 @@ const MetadataInput = ({ field }: ValueInputProps) => {
 }
 
 interface MeterFilterInputValueProps {
-  field: ControllerRenderProps<any, any>
+  field: ControllerRenderProps<FieldValues, FieldPath<FieldValues>>
   property: string
   organizationId: string
 }

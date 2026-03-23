@@ -35,6 +35,8 @@ import fr from './locales/fr'
 import hu from './locales/hu'
 import it from './locales/it'
 import nl from './locales/nl'
+import pt from './locales/pt'
+import ptPT from './locales/pt-PT'
 import sv from './locales/sv'
 
 const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
@@ -46,6 +48,8 @@ const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
   de,
   hu,
   it,
+  pt,
+  'pt-PT': ptPT,
 }
 
 export function getTranslations(

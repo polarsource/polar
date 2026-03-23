@@ -163,6 +163,7 @@ class WalletService:
                 statement_descriptor_suffix=organization.statement_descriptor(),
                 description=f"{organization.name} — Wallet Top-Up",
                 metadata={
+                    "organization_id": str(organization.id),
                     "customer_id": str(wallet.customer.id),
                     "wallet_id": str(wallet.id),
                     "wallet_transaction_id": str(transaction.id),

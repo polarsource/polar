@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useCustomerPortalContext } from '@/components/CustomerPortal/CustomerPortalProvider'
 import { getQueryClient } from '@/utils/api/query'
 import { Client, operations, schemas, unwrap } from '@polar-sh/client'
@@ -102,34 +103,11 @@ export const useCustomerPortalSession = (api: Client) =>
     retry: defaultRetry,
   })
 
-export const useAuthenticatedCustomer = (api: Client) =>
-  useQuery({
-    queryKey: ['customer'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/customers/me')),
-    retry: defaultRetry,
-  })
-
 export const usePortalAuthenticatedUser = (api: Client) =>
   useQuery({
     queryKey: ['portal_authenticated_user'],
     queryFn: () => unwrap(api.GET('/v1/customer-portal/customer-session/user')),
     retry: defaultRetry,
-  })
-
-export const useUpdateCustomerPortal = (api: Client) =>
-  useMutation({
-    mutationFn: async (body: schemas['CustomerPortalCustomerUpdate']) =>
-      api.PATCH('/v1/customer-portal/customers/me', {
-        body,
-      }),
-    onSuccess: async (result, _variables, _ctx) => {
-      if (result.error) {
-        return
-      }
-      getQueryClient().invalidateQueries({
-        queryKey: ['customer'],
-      })
-    },
   })
 
 export const useCustomerPaymentMethods = (api: Client) =>
@@ -146,7 +124,7 @@ export const useAddCustomerPaymentMethod = (api: Client) =>
       api.POST('/v1/customer-portal/customers/me/payment-methods', {
         body,
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -162,7 +140,7 @@ export const useConfirmCustomerPaymentMethod = (api: Client) =>
       api.POST('/v1/customer-portal/customers/me/payment-methods/confirm', {
         body,
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -190,7 +168,7 @@ export const useDeleteCustomerPaymentMethod = (api: Client) =>
       }
       return result
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
@@ -222,7 +200,7 @@ export const useCustomerBenefitGrantUpdate = (api: Client) =>
         params: { path: { id: variables.id } },
         body: variables.body,
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -230,21 +208,6 @@ export const useCustomerBenefitGrantUpdate = (api: Client) =>
         queryKey: ['customer_benefit_grants'],
       })
     },
-  })
-
-export const useCustomerLicenseKeys = (
-  api: Client,
-  parameters: operations['customer_portal:license_keys:list']['parameters']['query'],
-) =>
-  useQuery({
-    queryKey: ['customer_license_keys', { parameters }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/license-keys/', {
-          params: { query: parameters },
-        }),
-      ),
-    retry: defaultRetry,
   })
 
 export const useCustomerLicenseKey = (api: Client, id: string) =>
@@ -273,7 +236,7 @@ export const useCustomerLicenseKeyDeactivate = (api: Client, id: string) =>
           activation_id: opts.activationId,
         },
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -298,23 +261,6 @@ export const useCustomerDownloadables = (
     retry: defaultRetry,
   })
 
-export const useCustomerOrder = (
-  api: Client,
-  id: string,
-  initialData?: schemas['CustomerOrder'],
-) =>
-  useQuery({
-    queryKey: ['customer_order', { id }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/orders/{id}', {
-          params: { path: { id } },
-        }),
-      ),
-    retry: defaultRetry,
-    initialData,
-  })
-
 export const useCustomerOrders = (
   api: Client,
   parameters?: operations['customer_portal:orders:list']['parameters']['query'],
@@ -324,21 +270,6 @@ export const useCustomerOrders = (
     queryFn: () =>
       unwrap(
         api.GET('/v1/customer-portal/orders/', {
-          params: { query: parameters },
-        }),
-      ),
-    retry: defaultRetry,
-  })
-
-export const useCustomerSubscriptions = (
-  api: Client,
-  parameters?: operations['customer_portal:subscriptions:list']['parameters']['query'],
-) =>
-  useQuery({
-    queryKey: ['customer_subscriptions', { ...(parameters || {}) }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/subscriptions/', {
           params: { query: parameters },
         }),
       ),
@@ -367,7 +298,7 @@ export const useCustomerUpdateSubscription = (api: Client) =>
         params: { path: { id: variables.id } },
         body: variables.body,
       }),
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }
@@ -394,7 +325,7 @@ export const useCustomerCancelSubscription = (api: Client) =>
         params: { path: { id: variables.id } },
         body: variables.body,
       }),
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       if (result.error) {
         return
       }
@@ -419,7 +350,7 @@ export const useCustomerUncancelSubscription = (api: Client) =>
           cancellation_comment: null,
         },
       }),
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: () => {
       const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
@@ -465,9 +396,9 @@ export const useCustomerOrderConfirmPayment = (api: Client) =>
             payment_method_id: variables.payment_method_id,
           }),
           payment_processor: variables.payment_processor || 'stripe',
-        } as any,
+        } as schemas['CustomerOrderConfirmPayment'],
       }),
-    onSuccess: async (result, variables, _ctx) => {
+    onSuccess: async (result, variables) => {
       if (result.error) {
         return
       }
@@ -526,7 +457,7 @@ export const useAssignSeat = (api: Client) =>
           immediate_claim: variables.immediate_claim ?? false,
         },
       }),
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result) => {
       if (result.error) {
         return
       }
@@ -551,7 +482,7 @@ export const useRevokeSeat = (api: Client) =>
       }
       return result
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customer_seats'],
       })
@@ -576,25 +507,6 @@ export const useResendSeatInvitation = (api: Client) =>
       }
       return result
     },
-  })
-
-export const useCustomerClaimedSubscriptions = (api: Client) =>
-  useQuery({
-    queryKey: ['customer_claimed_subscriptions'],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/customer-portal/seats/subscriptions', {
-          params: { query: { limit: 100 } },
-        }),
-      ),
-    retry: defaultRetry,
-  })
-
-export const useCustomerWallets = (api: Client) =>
-  useQuery({
-    queryKey: ['customer_wallets'],
-    queryFn: () => unwrap(api.GET('/v1/customer-portal/wallets/')),
-    retry: defaultRetry,
   })
 
 // Member management hooks
@@ -636,7 +548,7 @@ export const useUpdateCustomerPortalMember = (api: Client) =>
       }
       return result
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customer_portal_members'],
       })
@@ -656,7 +568,7 @@ export const useAddCustomerPortalMember = (api: Client) =>
       }
       return result
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customer_portal_members'],
       })
@@ -676,7 +588,7 @@ export const useRemoveCustomerPortalMember = (api: Client) =>
       }
       return result
     },
-    onSuccess: async (_result, _variables, _ctx) => {
+    onSuccess: async () => {
       getQueryClient().invalidateQueries({
         queryKey: ['customer_portal_members'],
       })

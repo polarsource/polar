@@ -38,6 +38,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
   )
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     isShown
       ? (document.body.style.overflow = 'hidden')
       : (document.body.style.overflow = 'unset')
@@ -99,7 +100,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
 }
 
 export const InlineModalHeader = (props: {
-  children: React.ReactElement<any>
+  children: React.ReactElement
   className?: string
   hide: () => void
 }) => {
@@ -116,10 +117,7 @@ export const InlineModalHeader = (props: {
   )
 }
 
-export const CloseButton = (props: {
-  className?: string
-  hide: () => void
-}) => {
+const CloseButton = (props: { className?: string; hide: () => void }) => {
   return (
     <button
       type="button"

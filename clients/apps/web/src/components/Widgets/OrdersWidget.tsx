@@ -1,18 +1,14 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
+import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { WidgetContainer } from './WidgetContainer'
 
 const orderStatusBadgeClassNames = (order: schemas['Order']) => {
   switch (order.status) {
@@ -46,10 +42,10 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
     <Card
       className={twMerge(
         className,
-        'dark:bg-polar-700 flex flex-col gap-y-1 rounded-2xl border-none bg-white transition-opacity hover:opacity-60',
+        'dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60',
       )}
     >
-      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pt-2 pb-0 text-sm text-gray-400">
+      <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
         <span>{displayDate}</span>
         <Status
           className={twMerge(
@@ -58,13 +54,13 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
           )}
           status={order.status.split('_').join(' ')}
         />
-      </CardHeader>
-      <CardContent className="flex flex-row justify-between gap-x-4 p-4 pt-0 pb-3">
+      </div>
+      <div className="flex flex-row justify-between gap-x-4">
         <h3 className="min-w-0 truncate">{order.description}</h3>
-        <span className="">
+        <span>
           {formatCurrency('compact')(order.net_amount, order.currency)}
         </span>
-      </CardContent>
+      </div>
     </Card>
   )
 }
@@ -79,46 +75,40 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   const orders = useOrders(org.id, { limit: 10, sorting: ['-created_at'] })
 
   return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-800 relative h-full min-h-80 rounded-4xl bg-gray-50 md:min-h-fit',
-        className,
-      )}
+    <WidgetContainer
+      title="Latest Orders"
+      action={
+        <Link href={`/dashboard/${org.slug}/sales`}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-full border-none"
+          >
+            View All
+          </Button>
+        </Link>
+      }
+      className={twMerge('min-h-80', className)}
     >
       {(orders.data?.items.length ?? 0) > 0 ? (
-        <div className="absolute inset-2 flex flex-col">
-          <div className="flex items-center justify-between p-4">
-            <h3 className="text-lg">Latest Orders</h3>
-            <Link href={`/dashboard/${org.slug}/sales`}>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-full border-none"
-              >
-                View All
-              </Button>
+        <div className="flex flex-col gap-y-2 pb-6">
+          {orders.data?.items?.map((order) => (
+            <Link
+              key={order.id}
+              href={`/dashboard/${org.slug}/sales/${order.id}`}
+            >
+              <OrderCard order={order} />
             </Link>
-          </div>
-          <div className="flex h-full flex-col gap-y-2 overflow-y-auto rounded-t-2xl rounded-b-4xl pb-4">
-            {orders.data?.items?.map((order) => (
-              <Link
-                key={order.id}
-                href={`/dashboard/${org.slug}/sales/${order.id}`}
-              >
-                <OrderCard order={order} />
-              </Link>
-            ))}
-          </div>
+          ))}
         </div>
       ) : (
-        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 bg-gray-50 p-6 text-gray-400">
-          <ShoppingCartOutlined
-            className="dark:text-polar-600 text-gray-300"
-            fontSize="large"
-          />
+        <div className="dark:bg-polar-800 mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 p-8 text-center">
           <h3>No orders found</h3>
-        </Card>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Your most recent orders will appear here.
+          </p>
+        </div>
       )}
-    </div>
+    </WidgetContainer>
   )
 }

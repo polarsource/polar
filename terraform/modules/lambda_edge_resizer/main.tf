@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.92"
+      version = ">= 5.0"
     }
   }
 }
@@ -29,9 +29,16 @@ data "aws_iam_policy_document" "this" {
     actions = [
       "s3:GetObject",
       "s3:PutObject",
-      "s3:HeadObject",
+      "s3:ListBucket",
     ]
     resources = ["${var.source_bucket_arn}/*"]
+  }
+
+  statement {
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [var.source_bucket_arn]
   }
 
   statement {

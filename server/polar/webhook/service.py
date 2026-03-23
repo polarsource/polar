@@ -2,6 +2,7 @@ import datetime
 import json
 from collections.abc import Sequence
 from typing import Literal, cast, overload
+from urllib.parse import urlparse
 from uuid import UUID
 
 import structlog
@@ -14,10 +15,9 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.schemas.state import CustomerState
-from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
-from polar.email.sender import enqueue_email
-from polar.exceptions import PolarError, ResourceNotFound
+from polar.email.sender import enqueue_email_template
+from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
@@ -58,7 +58,11 @@ from polar.webhook.repository import (
 from polar.worker import enqueue_job
 
 from .eventstream import publish_webhook_event
-from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
+from .schemas import (
+    WebhookEndpointCreate,
+    WebhookEndpointUpdate,
+    is_blocked_webhook_host,
+)
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
@@ -158,6 +162,20 @@ class WebhookService:
         update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
         repository = WebhookEndpointRepository.from_session(session)
+
+        is_enabling = update_schema.enabled is True and not endpoint.enabled
+        if is_enabling and self._is_blocked_url(endpoint.url):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "enabled"),
+                        "msg": "Cannot enable a webhook endpoint with a localhost or private IP URL. Please update the URL first.",
+                        "input": update_schema.enabled,
+                    }
+                ]
+            )
+
         return await repository.update(
             endpoint,
             update_dict=update_schema.model_dump(exclude_unset=True, exclude_none=True),
@@ -297,9 +315,13 @@ class WebhookService:
         if event.payload is None:
             return
 
+        payload = json.loads(event.payload)
+        if "data" not in payload:
+            return
+
         if event.type == WebhookEventType.checkout_updated:
             checkout_repository = CheckoutRepository.from_session(session)
-            payload = json.loads(event.payload)
+
             checkout = await checkout_repository.get_by_id(UUID(payload["data"]["id"]))
             assert checkout is not None
             await publish_checkout_event(
@@ -389,12 +411,10 @@ class WebhookService:
                         }
                     )
 
-                    body = render_email_template(email)
-
-                    enqueue_email(
+                    enqueue_email_template(
+                        email,
                         to_email_addr=user.email,
                         subject=f"Webhook endpoint disabled for {organization.name}",
-                        html_content=body,
                     )
 
     async def count_earlier_pending_events(
@@ -798,6 +818,12 @@ class WebhookService:
 
             if updated_count < batch_size:
                 break
+
+    @staticmethod
+    def _is_blocked_url(url: str) -> bool:
+        parsed = urlparse(url)
+        hostname = parsed.hostname or ""
+        return is_blocked_webhook_host(hostname)
 
     async def _get_event_target_endpoints(
         self,

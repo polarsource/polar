@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Céges adatok hozzáadása',
       removeBusinessDetails: 'Céges adatok eltávolítása',
       billingDetails: 'Cégadatok',
+      addDiscountCode: 'Kedvezménykód hozzáadása',
     },
     pricing: {
       subtotal: 'Részösszeg',
@@ -58,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: '{date}-ig',
       },
       everyInterval: {
         day: {
@@ -109,6 +111,38 @@ export default {
           other: '# éves próbaidőszak',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# nap ingyen',
+            other: '# nap ingyen',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# hónap ingyen',
+            other: '# hónap ingyen',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# év ingyen',
+            other: '# év ingyen',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/nap',
+          week: '/hét',
+          month: '/hó',
+          year: '/év',
+        },
+        then: 'Ezután',
+        startingDate: 'kezdés: {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Fizetendő a próbaidőszak végén',
+        totalWhenDiscountExpires: 'Fizetendő a kedvezmény lejárta után',
+        totalDueToday: 'Ma fizetendő',
       },
     },
     pwywForm: {
@@ -200,6 +234,10 @@ export default {
       getFree: 'Ingyen megkapom',
       paymentsUnavailable: 'A fizetések jelenleg nem elérhetők',
     },
+    productDescription: {
+      readMore: 'Bővebben',
+      readLess: 'Kevesebb',
+    },
   },
   intervals: {
     short: {
@@ -210,12 +248,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Egyedi',
     license_keys: 'Licenckulcsok',
-    github_repository: 'GitHub tároló hozzáférés',
+    github_repository: 'GitHub repository hozzáférés',
     discord: 'Discord meghívó',
     downloadables: 'Fájlletöltések',
-    custom: 'Egyedi',
     meter_credit: 'Használat alapú kreditek',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: '.',

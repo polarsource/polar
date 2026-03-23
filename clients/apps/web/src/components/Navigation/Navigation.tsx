@@ -2,7 +2,7 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { twMerge } from 'tailwind-merge'
 
 export const ListItem = (props: {
-  children: React.ReactElement<any>
+  children: React.ReactElement
   current: boolean
   className?: string
 }) => {
@@ -36,8 +36,8 @@ export const Profile = (props: { name: string; avatar_url: string | null }) => {
 
 export const LinkItem = (props: {
   href: string
-  icon?: React.ReactElement<any>
-  children: React.ReactElement<any>
+  icon?: React.ReactElement
+  children: React.ReactElement
 }) => {
   return (
     <a href={props.href}>
@@ -48,25 +48,5 @@ export const LinkItem = (props: {
         </div>
       </ListItem>
     </a>
-  )
-}
-
-export const TextItem = (props: {
-  onClick: () => void
-  icon: React.ReactElement<any>
-  children: React.ReactElement<any>
-}) => {
-  return (
-    <div
-      className="flex cursor-pointer items-center text-sm"
-      onClick={props.onClick}
-    >
-      <ListItem current={false} className="gap-x-2 px-4 py-0 text-sm">
-        <>
-          <span className="text-lg">{props.icon}</span>
-          {props.children}
-        </>
-      </ListItem>
-    </div>
   )
 }

@@ -208,13 +208,13 @@ class InvoiceGenerator(FPDF):
     logo: ClassVar[Path] = Path(__file__).parent / "invoice-logo.svg"
     """Path to the logo image for the invoice."""
 
-    regular_font_file = Path(__file__).parent / "fonts/Geist-Regular.otf"
+    regular_font_file = Path(__file__).parent / "fonts/Inter-Regular.ttf"
     """Path to the regular font file."""
 
-    bold_font_file = Path(__file__).parent / "fonts/Geist-Bold.otf"
+    bold_font_file = Path(__file__).parent / "fonts/Inter-Bold.ttf"
     """Path to the bold font file."""
 
-    font_name: ClassVar[str] = "geist"
+    font_name: ClassVar[str] = "inter"
     """Font family name."""
 
     base_font_size: ClassVar[int] = 10

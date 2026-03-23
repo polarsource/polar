@@ -12,7 +12,7 @@ variable "aws_sso_user_assignments" {
   description = "List of user assignments with email and permission set name"
   type = list(object({
     email          = string
-    permission_set = string # One of: admin, s3_full_access
+    permission_set = string # One of: admin, s3_full_access, cloudfront_admin
   }))
   default = []
 }
@@ -28,8 +28,9 @@ locals {
 
   # Map permission set names to their ARNs
   permission_set_arns = {
-    admin          = aws_ssoadmin_permission_set.admin.arn
-    s3_full_access = aws_ssoadmin_permission_set.s3_full_access.arn
+    admin            = aws_ssoadmin_permission_set.admin.arn
+    s3_full_access   = aws_ssoadmin_permission_set.s3_full_access.arn
+    cloudfront_admin = aws_ssoadmin_permission_set.cloudfront_admin.arn
   }
 
   # Create a map keyed by email for the user assignments
@@ -59,6 +60,49 @@ resource "aws_ssoadmin_managed_policy_attachment" "s3_full_access" {
   permission_set_arn = aws_ssoadmin_permission_set.s3_full_access.arn
 }
 
+data "aws_iam_policy_document" "athena_query_access" {
+  statement {
+    sid = "AthenaQueryAccess"
+    actions = [
+      "athena:BatchGetQueryExecution",
+      "athena:GetDataCatalog",
+      "athena:GetQueryExecution",
+      "athena:GetQueryResults",
+      "athena:GetTableMetadata",
+      "athena:GetWorkGroup",
+      "athena:ListDataCatalogs",
+      "athena:ListDatabases",
+      "athena:ListQueryExecutions",
+      "athena:ListTableMetadata",
+      "athena:ListWorkGroups",
+      "athena:StartQueryExecution",
+      "athena:StopQueryExecution",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "GlueReadAccess"
+    actions = [
+      "glue:BatchGetPartition",
+      "glue:GetDatabase",
+      "glue:GetDatabases",
+      "glue:GetPartition",
+      "glue:GetPartitions",
+      "glue:GetTable",
+      "glue:GetTables",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_ssoadmin_permission_set_inline_policy" "athena_query_access" {
+  provider           = aws.sso
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.s3_full_access.arn
+  inline_policy      = data.aws_iam_policy_document.athena_query_access.json
+}
+
 # Administrator Access Permission Set (for admin users)
 resource "aws_ssoadmin_permission_set" "admin" {
   provider         = aws.sso
@@ -73,6 +117,55 @@ resource "aws_ssoadmin_managed_policy_attachment" "admin" {
   instance_arn       = local.sso_instance_arn
   managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
   permission_set_arn = aws_ssoadmin_permission_set.admin.arn
+}
+
+# CloudFront Admin Permission Set
+resource "aws_ssoadmin_permission_set" "cloudfront_admin" {
+  provider         = aws.sso
+  name             = "CloudFrontAdmin"
+  description      = "Manage CloudFront distributions, Lambda@Edge functions, and Lambda artifact S3 bucket"
+  instance_arn     = local.sso_instance_arn
+  session_duration = "PT8H"
+}
+
+resource "aws_ssoadmin_permission_set_inline_policy" "cloudfront_admin" {
+  provider           = aws.sso
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.cloudfront_admin.arn
+  inline_policy      = data.aws_iam_policy_document.cloudfront_admin_sso.json
+}
+
+data "aws_iam_policy_document" "cloudfront_admin_sso" {
+  statement {
+    actions = [
+      "cloudfront:ListDistributions",
+      "cloudfront:GetDistribution",
+      "cloudfront:UpdateDistribution",
+      "cloudfront:CreateInvalidation",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "lambda:GetFunction",
+      "lambda:UpdateFunctionCode",
+      "lambda:PublishVersion",
+    ]
+    resources = [module.image_resizer.function_arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      aws_s3_bucket.lambda_artifacts.arn,
+      "${aws_s3_bucket.lambda_artifacts.arn}/*",
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -154,7 +247,7 @@ module "image_resizer" {
   s3_bucket         = aws_s3_bucket.lambda_artifacts.id
   s3_key            = data.aws_s3_object.image_resizer_package.key
   s3_object_version = data.aws_s3_object.image_resizer_package.version_id
-  source_bucket_arn = module.s3_buckets.public_assets_bucket_arn
+  source_bucket_arn = module.s3_buckets.public_files_bucket_arn
 }
 
 
@@ -169,12 +262,13 @@ module "cloudfront_public_assets" {
     aws.us_east_1 = aws.us_east_1
   }
 
-  name                           = "polar-public-assets"
-  domain                         = "assets.polar.sh"
+  name                           = "polar-public-files"
+  domain                         = "uploads.polar.sh"
   cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
-  s3_bucket_id                   = module.s3_buckets.public_assets_bucket_id
-  s3_bucket_regional_domain_name = module.s3_buckets.public_assets_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
+  s3_bucket_id                   = module.s3_buckets.public_files_bucket_id
+  s3_bucket_regional_domain_name = module.s3_buckets.public_files_bucket_regional_domain_name
+  s3_bucket_arn                  = module.s3_buckets.public_files_bucket_arn
+  cors_allowed_origins           = ["https://polar.sh", "https://trace.playwright.dev"]
 
   lambda_function_associations = [
     {
@@ -183,6 +277,139 @@ module "cloudfront_public_assets" {
     },
   ]
 }
+
+# =============================================================================
+# CloudFront Distribution (CDN)
+# =============================================================================
+
+module "cloudfront_cdn" {
+  source = "../modules/cloudfront_distribution"
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  name                           = "polar-cdn"
+  domain                         = "cdn.polar.sh"
+  cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
+  s3_bucket_id                   = module.s3_buckets.public_assets_bucket_id
+  s3_bucket_regional_domain_name = module.s3_buckets.public_assets_bucket_regional_domain_name
+  s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
+  cors_allowed_origins           = ["https://polar.sh"]
+}
+
+# =============================================================================
+# GitHub Actions OIDC
+# =============================================================================
+
+resource "aws_iam_policy" "lambda_artifacts_upload" {
+  name = "lambda-artifacts-upload"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "e2e_reports_upload" {
+  name = "e2e-reports-upload"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = [
+          "${module.s3_buckets.public_files_bucket_arn}/e2e-artifacts",
+          "${module.s3_buckets.public_files_bucket_arn}/e2e-artifacts/*"
+        ]
+      }
+    ]
+  })
+}
+
+module "github_oidc_backup" {
+  source = "../modules/github_oidc"
+
+  role_name   = "github-actions-backup"
+  github_org  = "polarsource"
+  github_repo = "polar"
+  github_subjects = [
+    "ref:refs/heads/main",
+    "pull_request",
+  ]
+  policy_arns = {
+    backups          = aws_iam_policy.polar_sh_backups.arn
+    lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
+    e2e_reports      = aws_iam_policy.e2e_reports_upload.arn
+  }
+}
+
+resource "aws_iam_policy" "polar_sh_backups" {
+  name = "polar-sh-backups"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "VisualEditor0"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObjectAttributes",
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:GetObjectVersionAttributes",
+          "s3:DeleteObject",
+          "s3:DeleteObjectVersion"
+        ]
+        Resource = "${aws_s3_bucket.backups.arn}/*"
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# Application Access (IAM user policies)
+# =============================================================================
+
+module "application_access_production" {
+  source   = "../modules/application_access"
+  username = "polar-production-files"
+  buckets = {
+    customer_invoices = { name = "polar-customer-invoices" }
+    payout_invoices   = { name = "polar-payout-invoices" }
+    files             = { name = "polar-production-files", description = "Policy used by our app for downloadable benefits. Keep permissions to a bare minimum." }
+    public_files      = { name = "polar-public-files", description = "Policy used by our app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
+    logs              = { name = "polar-production-logs", description = "Policy used by our app to write OpenTelemetry spans to S3 for long-term backup." }
+  }
+}
+
+# =============================================================================
+# Athena for Span Logs
+# =============================================================================
+
+module "athena_spans" {
+  source           = "../modules/athena_spans"
+  environment      = "production"
+  logs_bucket_name = "polar-production-logs"
+}
+
+# =============================================================================
+# Backups S3 Bucket
+# =============================================================================
 
 resource "aws_s3_bucket" "backups" {
   bucket = "polar-sh-backups"

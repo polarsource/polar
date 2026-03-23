@@ -3,12 +3,12 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import delete, func, update
+from sqlalchemy import func, update
 
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion
-from polar.models import NotificationRecipient, OAuthAccount, User
+from polar.models import NotificationRecipient, User
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -21,6 +21,7 @@ from .schemas import (
     UserDeletionResponse,
     UserIdentityVerification,
     UserSignupAttribution,
+    UserUpdate,
 )
 
 log = structlog.get_logger()
@@ -98,6 +99,17 @@ class UserService:
         )
         enqueue_job("user.on_after_signup", user_id=user.id)
         return user
+
+    async def update(
+        self,
+        session: AsyncSession,
+        user: User,
+        update_schema: UserUpdate,
+    ) -> User:
+        repository = UserRepository.from_session(session)
+        return await repository.update(
+            user, update_dict=update_schema.model_dump(exclude_unset=True)
+        )
 
     async def create_identity_verification(
         self, session: AsyncSession, user: User
@@ -191,6 +203,35 @@ class UserService:
                 "identity_verification_status": IdentityVerificationStatus.failed
             },
         )
+
+    async def get_identity_verified_country(self, user: User) -> str | None:
+        if user.identity_verification_id is None:
+            return None
+        try:
+            vs = await stripe_service.get_verification_session(
+                user.identity_verification_id,
+                expand=["verified_outputs", "last_verification_report"],
+            )
+            # Try verified address country first
+            verified_outputs = getattr(vs, "verified_outputs", None)
+            if verified_outputs:
+                address = getattr(verified_outputs, "address", None)
+                if address and address.country:
+                    return address.country
+            # Fall back to document issuing country from the verification report
+            report = getattr(vs, "last_verification_report", None)
+            if report:
+                document = getattr(report, "document", None)
+                if document:
+                    issuing_country = getattr(document, "issuing_country", None)
+                    if issuing_country:
+                        return issuing_country
+        except stripe_lib.StripeError:
+            log.warning(
+                "get_identity_verified_country.fetch_failed",
+                identity_verification_id=user.identity_verification_id,
+            )
+        return None
 
     async def delete_identity_verification(
         self, session: AsyncSession, user: User
@@ -299,32 +340,20 @@ class UserService:
         if user.meta:
             update_dict["meta"] = {}
 
-        await self._delete_oauth_accounts(session, user)
-        await self._delete_notification_recipients(session, user)
-
         user = await repository.update(user, update_dict=update_dict)
         await repository.soft_delete(user)
 
-        log.info(
-            "user.deleted",
-            user_id=user.id,
-        )
+        await self._delete_oauth_accounts(session, user)
+        await self._delete_notification_recipients(session, user)
+
+        log.info("user.deleted", user_id=user.id)
 
         return user
 
-    async def _delete_oauth_accounts(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> None:
+    async def _delete_oauth_accounts(self, session: AsyncSession, user: User) -> None:
         """Delete all OAuth accounts for a user."""
-        stmt = delete(OAuthAccount).where(OAuthAccount.user_id == user.id)
-        await session.execute(stmt)
-
-        log.info(
-            "user.oauth_accounts_deleted",
-            user_id=user.id,
-        )
+        for account in user.oauth_accounts:
+            await session.delete(account)
 
     async def _delete_notification_recipients(
         self,

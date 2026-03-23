@@ -13,14 +13,15 @@ from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
-from polar.models.member import MemberRole
+from polar.models.customer import CustomerType
+from polar.models.member import Member, MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_member
 
 
 @pytest.mark.asyncio
@@ -275,140 +276,12 @@ class TestCreate:
         assert customer.external_id == "customer_ext_123"
 
         member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(
-            session, customer, email="owner@polar.sh"
-        )
+        member = await member_repository.get_owner_by_customer_id(session, customer.id)
         assert member is not None
         assert member.customer_id == customer.id
         assert member.email == "owner@polar.sh"
         assert member.name == "Owner Name"
         assert member.external_id == "owner_ext_456"
-        assert member.role == MemberRole.owner
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
-    async def test_owner_override_partial_email_only(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that only owner email can be overridden while name and external_id fall back to customer values."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        payload: dict[str, Any] = {
-            "email": "customer@polar.sh",
-            "name": "Customer Name",
-            "external_id": "customer_ext_789",
-            "owner": {
-                "email": "different.owner@polar.sh",
-            },
-        }
-        if is_user(auth_subject):
-            payload["organization_id"] = str(organization.id)
-
-        customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
-        )
-        await session.flush()
-
-        assert customer.email == "customer@polar.sh"
-        assert customer.name == "Customer Name"
-        assert customer.external_id == "customer_ext_789"
-
-        member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(
-            session, customer, email="different.owner@polar.sh"
-        )
-        assert member is not None
-        assert member.customer_id == customer.id
-        assert member.email == "different.owner@polar.sh"
-        assert member.name == "Customer Name"
-        assert member.external_id == "customer_ext_789"
-        assert member.role == MemberRole.owner
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
-    async def test_owner_override_name_only(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that only owner name can be overridden while email and external_id fall back to customer values."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        payload: dict[str, Any] = {
-            "email": "customer@polar.sh",
-            "name": "Customer Name",
-            "external_id": "customer_ext_abc",
-            "owner": {
-                "name": "Different Owner Name",
-            },
-        }
-        if is_user(auth_subject):
-            payload["organization_id"] = str(organization.id)
-
-        customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
-        )
-        await session.flush()
-
-        member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(session, customer)
-        assert member is not None
-        assert member.customer_id == customer.id
-        assert member.email == "customer@polar.sh"
-        assert member.name == "Different Owner Name"
-        assert member.external_id == "customer_ext_abc"
-        assert member.role == MemberRole.owner
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
-    )
-    async def test_owner_override_external_id_only(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User | Organization],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        """Test that only owner external_id can be overridden while email and name fall back to customer values."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        payload: dict[str, Any] = {
-            "email": "customer@polar.sh",
-            "name": "Customer Name",
-            "external_id": "customer_ext_xyz",
-            "owner": {
-                "external_id": "different_owner_ext_id",
-            },
-        }
-        if is_user(auth_subject):
-            payload["organization_id"] = str(organization.id)
-
-        customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
-        )
-        await session.flush()
-
-        member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_customer_and_email(session, customer)
-        assert member is not None
-        assert member.customer_id == customer.id
-        assert member.email == "customer@polar.sh"
-        assert member.name == "Customer Name"
-        assert member.external_id == "different_owner_ext_id"
         assert member.role == MemberRole.owner
 
     @pytest.mark.auth(
@@ -486,6 +359,83 @@ class TestCreate:
                 session, CustomerCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_tax_id_without_billing_address(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Creating a customer with tax_id but no billing_address should fail."""
+        payload: dict[str, Any] = {
+            "email": "taxid-no-address@example.com",
+            "tax_id": "FR61954506077",
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "billing_address")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_invalid_tax_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Creating a customer with an invalid tax_id should fail."""
+        payload: dict[str, Any] = {
+            "email": "invalid-taxid@example.com",
+            "tax_id": "INVALID",
+            "billing_address": {"country": "FR"},
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_valid_tax_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Creating a customer with a valid tax_id should validate and store it as a tuple."""
+        payload: dict[str, Any] = {
+            "email": "valid-taxid@example.com",
+            "tax_id": "FR61954506077",
+            "billing_address": {"country": "FR"},
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        customer = await customer_service.create(
+            session, CustomerCreate.model_validate(payload), auth_subject
+        )
+        await session.flush()
+
+        assert customer.tax_id is not None
+        assert customer.tax_id[0] == "FR61954506077"
+        assert customer.tax_id[1] == TaxIDFormat.eu_vat
 
 
 @pytest.mark.asyncio
@@ -641,7 +591,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that customer type can be upgraded from individual to team."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -668,7 +617,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that customer type cannot be downgraded from team to individual."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -695,7 +643,6 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         """Test that updating to the same type is allowed."""
-        from polar.models.customer import CustomerType
 
         customer = await create_customer(
             save_fixture,
@@ -714,6 +661,193 @@ class TestUpdate:
         await session.flush()
 
         assert updated_customer.type == CustomerType.team
+
+    async def test_tax_id_without_billing_address(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """Updating a customer with tax_id but no billing_address should fail."""
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(tax_id="FR61954506077"),
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "billing_address")
+
+    async def test_invalid_tax_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Updating a customer with an invalid tax_id should fail."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="invalid-taxid-update@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(tax_id="INVALID"),
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
+
+    async def test_valid_tax_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Updating a customer with a valid tax_id should validate and store it as a tuple."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="valid-taxid-update@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(tax_id="FR61954506077"),
+        )
+        await session.flush()
+
+        assert updated_customer.tax_id is not None
+        assert updated_customer.tax_id[0] == "FR61954506077"
+        assert updated_customer.tax_id[1] == TaxIDFormat.eu_vat
+
+    async def test_billing_address_change_revalidates_tax_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Changing billing_address should re-validate existing tax_id against new country."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="revalidate-taxid@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+        # Changing country to US should fail because FR VAT is not valid in US
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(
+                    billing_address=AddressInput(country=CountryAlpha2Input("US"))
+                ),
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
+
+    async def test_syncs_owner_member_email_on_email_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When customer email changes, active members with the old email are synced."""
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="old@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="old@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="new@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "new@example.com"
+        assert member.email == "new@example.com"
+
+    async def test_does_not_sync_member_email_when_member_email_differs(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Members with custom (non-customer) emails are NOT synced on customer email change."""
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        # This member deliberately has a different email (e.g. a team member's personal email)
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="employee@example.com",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="customer-new@example.com"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "customer-new@example.com"
+        # Employee member email should NOT be changed
+        assert member.email == "employee@example.com"
+
+    async def test_no_email_sync_when_email_unchanged(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When the email does not change, no member sync occurs."""
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="same@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="same@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        # Update name only – email stays the same
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="same@example.com", name="New Name"),
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.email == "same@example.com"
+        assert updated_customer.name == "New Name"
+        assert member.email == "same@example.com"
 
 
 @pytest.mark.asyncio
@@ -803,6 +937,143 @@ class TestDelete:
                 external_id=recycled.external_id,
                 user_metadata=recycled.user_metadata,
             )
+
+    async def test_delete_soft_deletes_members(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Deleting a customer should soft-delete its members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="member-cleanup@example.com",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        assert member.deleted_at is None
+        await customer_service.delete(session, customer)
+        await session.flush()
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_customer(session, customer.id)
+        assert len(active_members) == 0
+
+    async def test_delete_prevents_duplicate_members_on_recreate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """
+        Reproducer for the duplicate member bug:
+        1. Create customer → member auto-created
+        2. Delete customer → member should be deleted too
+        3. Create new customer with same email → new member created
+        4. Only ONE active member should exist for this email+org
+        """
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="duplicate-test@example.com",
+        )
+        member1 = await create_member(
+            save_fixture,
+            customer=customer1,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        await customer_service.delete(session, customer1)
+        await session.flush()
+
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="duplicate-test@example.com",
+        )
+        member2 = await create_member(
+            save_fixture,
+            customer=customer2,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_email_and_organization(
+            session, "duplicate-test@example.com", organization.id
+        )
+        assert len(active_members) == 1
+        assert active_members[0].id == member2.id
+        assert active_members[0].customer_id == customer2.id
+
+    async def test_delete_with_anonymize_soft_deletes_members(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Deleting with anonymize=True should also soft-delete members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="anon-member@example.com",
+            name="Anon Member User",
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+
+        assert member.deleted_at is None
+        await customer_service.delete(session, customer, anonymize=True)
+        await session.flush()
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_customer(session, customer.id)
+        assert len(active_members) == 0
+
+    async def test_delete_with_multiple_members(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Deleting a customer should soft-delete all its members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="multi-member@example.com",
+        )
+        member_owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="multi-member@example.com",
+        )
+        member_regular = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.member,
+            email="team-member@example.com",
+        )
+
+        await customer_service.delete(session, customer)
+        await session.flush()
+
+        repository = MemberRepository.from_session(session)
+        active_members = await repository.list_by_customer(session, customer.id)
+        assert len(active_members) == 0
 
 
 @pytest.mark.asyncio
@@ -902,7 +1173,6 @@ class TestAnonymize:
         organization: Organization,
     ) -> None:
         """Billing address should be cleared (invoices retain original)."""
-        from polar.kit.address import Address
 
         customer = await create_customer(
             save_fixture,

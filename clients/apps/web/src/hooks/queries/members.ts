@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 /**
@@ -40,24 +40,4 @@ export const useMembers = (
       return lastPageParam + 1
     },
     enabled: !!customerId,
-  })
-
-/**
- * Get a single member by ID.
- */
-export const useMember = (memberId: string | null) =>
-  useQuery({
-    queryKey: ['members', 'id', memberId],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/members/{id}', {
-          params: {
-            path: {
-              id: memberId ?? '',
-            },
-          },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled: !!memberId,
   })

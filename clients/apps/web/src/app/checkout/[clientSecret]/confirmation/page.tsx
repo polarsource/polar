@@ -1,11 +1,14 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
+import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
+import {
+  ClientResponseError,
+  NotFoundResponseError,
+  createClient,
+  unwrap,
+} from '@polar-sh/client'
 import { notFound, redirect } from 'next/navigation'
 
 export default async function Page(props: {
@@ -25,34 +28,22 @@ export default async function Page(props: {
 
   const { clientSecret } = params
 
-  const client = new PolarCore({ serverURL: getServerURL() })
-  const {
-    ok,
-    value: checkout,
-    error,
-  } = await checkoutsClientGet(
-    client,
-    {
-      clientSecret,
-    },
-    {
-      retries: {
-        strategy: 'backoff',
-        backoff: {
-          initialInterval: 200,
-          maxInterval: 2000,
-          exponent: 2,
-          maxElapsedTime: 15_000,
-        },
-        retryConnectionErrors: true,
-      },
-    },
-  )
+  const client = createClient(getServerURL(), undefined, getSSRHeaders())
 
-  if (!ok) {
-    if (error instanceof ResourceNotFound) {
+  let checkout
+  try {
+    checkout = await unwrap(
+      client.GET('/v1/checkouts/client/{client_secret}', {
+        params: { path: { client_secret: clientSecret } },
+      }),
+    )
+  } catch (error) {
+    if (error instanceof NotFoundResponseError) {
       notFound()
-    } else if (error instanceof ExpiredCheckoutError) {
+    } else if (
+      error instanceof ClientResponseError &&
+      error.response.status === 410
+    ) {
       notFound() // TODO: show expired checkout page
     } else {
       throw error

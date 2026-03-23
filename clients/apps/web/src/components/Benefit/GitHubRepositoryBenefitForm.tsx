@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useAuth } from '@/hooks'
 import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/hooks/queries'
 import { useUserSSE } from '@/hooks/sse'
@@ -57,8 +58,8 @@ export const GitHubRepositoryBenefitForm = ({
   useEffect(() => {
     if (repositoriesError) {
       setError('properties.repository_owner', {
-        message: repositoriesError.error['detail'],
-        type: repositoriesError.error['type'],
+        message: repositoriesError.error['detail'] as string | undefined,
+        type: repositoriesError.error['type'] as string | undefined,
       })
     } else {
       clearErrors('properties.repository_owner')
@@ -146,6 +147,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   // Set selected on load
   const didSetOnLoad = useRef(false)
+  /* eslint-disable react-hooks/set-state-in-effect -- one-time form init when repositories load */
   useEffect(() => {
     if (didSetOnLoad.current || isFetchingRepositories) {
       return
@@ -175,6 +177,7 @@ export const GitHubRepositoryBenefitForm = ({
     repos,
     setValue,
   ])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()

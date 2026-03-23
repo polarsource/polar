@@ -7,10 +7,5 @@
   "access": "restricted",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "web",
-    "@polar-sh/app",
-    "@examples/checkout-embed",
-    "@polar-sh/client"
-  ]
+  "ignore": ["web", "@polar-sh/app", "@examples/checkout-embed"]
 }

@@ -35,7 +35,6 @@ from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.login_code.endpoints import router as login_code_router
 from polar.member.endpoints import router as member_router
-from polar.member_session.endpoints import router as member_session_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -134,8 +133,6 @@ router.include_router(customer_seat_router)
 router.include_router(email_update_router)
 # /customer-sessions
 router.include_router(customer_session_router)
-# /member-sessions
-router.include_router(member_session_router)
 # /integrations/plain
 router.include_router(plain_router)
 # /events

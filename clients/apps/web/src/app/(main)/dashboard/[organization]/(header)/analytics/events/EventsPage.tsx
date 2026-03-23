@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
@@ -123,7 +124,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       end_timestamp: endDate.toISOString(),
       query: debouncedQuery ?? null,
       metadata: debouncedMetadata ?? null,
-      cursor_pagination: true as const,
+      cursor_pagination: false,
     }
   }, [
     selectedEventTypes,

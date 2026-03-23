@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'

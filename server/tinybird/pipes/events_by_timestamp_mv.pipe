@@ -55,6 +55,9 @@ SQL >
         customer_cancellation_reason,
         customer_cancellation_comment,
         proration_behavior,
+        trial_end,
+        seats,
+        billing_period_end,
         benefit_type,
         billing_type,
         checkout_status,
@@ -70,7 +73,8 @@ SQL >
         llm_output_tokens,
         user_metadata,
         member_id,
-        external_member_id
+        external_member_id,
+        ancestors
     FROM events_by_ingested_at
 
 TYPE MATERIALIZED

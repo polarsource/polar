@@ -34,6 +34,7 @@ export const useInvoiceDownload = ({
   })
 
   const { setError, watch } = form
+  // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('billing_address.country')
 
   // Reset form when payout changes

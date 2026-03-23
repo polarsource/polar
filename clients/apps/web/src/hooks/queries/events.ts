@@ -68,14 +68,6 @@ export const useEvents = (
   })
 }
 
-export const isCursorPagination = (
-  pagination:
-    | { total_count: number; max_page: number }
-    | { has_next_page: boolean },
-): pagination is { has_next_page: boolean } => {
-  return 'has_next_page' in pagination
-}
-
 export const useEvent = (
   organizationId: string,
   eventId: string,
@@ -121,6 +113,51 @@ export const useEventHierarchyStats = (
               organization_id: organizationId,
               timezone,
               ...(parameters || {}),
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
+export interface PropertyGroupStat {
+  value: string
+  occurrences: number
+  customers: number
+  totals: Record<string, string>
+}
+
+export const useEventPropertyGroupStats = (
+  organizationId: string,
+  property: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:get_statistics_by_property']['parameters']['query']
+    >,
+    'organization_id' | 'timezone' | 'property'
+  >,
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:get_statistics_by_property']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'eventPropertyGroupStats',
+      organizationId,
+      property,
+      { timezone, ...parameters },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-property', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              property,
+              timezone,
+              ...parameters,
             },
           },
         }),

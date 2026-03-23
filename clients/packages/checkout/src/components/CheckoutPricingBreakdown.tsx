@@ -1,5 +1,6 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   DEFAULT_LOCALE,
@@ -7,32 +8,49 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import { PropsWithChildren, useMemo } from 'react'
-import { hasProductCheckout } from '../guards'
+import { addMonths, addYears } from 'date-fns'
+import { useMemo } from 'react'
+import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
+import { getSeatRows } from '../utils/seats'
 import { getDiscountDisplay } from '../utils/discount'
-import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
+import { getMeteredPrices } from '../utils/product'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
+import DetailRow from './DetailRow'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
-const DetailRow = ({
-  title,
-  emphasis,
-  children,
-}: PropsWithChildren<{ title: string; emphasis?: boolean }>) => {
-  return (
-    <div
-      className={`flex flex-row items-start justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
-    >
-      <span className="min-w-0 truncate">{title}</span>
-      <span className="shrink-0">{children}</span>
-    </div>
-  )
+function formatShortDate(date: Date, locale: AcceptedLocale): string {
+  const isCurrentYear = date.getFullYear() === new Date().getFullYear()
+  return formatDate(date, locale, {
+    month: 'short',
+    day: 'numeric',
+    ...(isCurrentYear ? {} : { year: 'numeric' }),
+  })
+}
+
+function getDiscountEndDate(
+  baseDate: Date,
+  discount: NonNullable<schemas['CheckoutPublic']['discount']>,
+  interval: string | null,
+  intervalCount: number | null,
+): Date {
+  if (discount.duration === 'once') {
+    const count = intervalCount ?? 1
+    return interval === 'year'
+      ? addYears(baseDate, count)
+      : addMonths(baseDate, count)
+  }
+  if (
+    'duration_in_months' in discount &&
+    typeof discount.duration_in_months === 'number'
+  ) {
+    return addMonths(baseDate, discount.duration_in_months)
+  }
+  return baseDate
 }
 
 export interface CheckoutPricingBreakdownProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
 }
 
@@ -43,62 +61,48 @@ const CheckoutPricingBreakdown = ({
   const t = useTranslations(locale)
 
   const interval = hasProductCheckout(checkout)
-    ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
-      ? checkout.productPrice.recurringInterval
-      : checkout.product.recurringInterval
+    ? isLegacyRecurringProductPrice(checkout.product_price)
+      ? checkout.product_price.recurring_interval
+      : checkout.product.recurring_interval
     : null
   const intervalCount = hasProductCheckout(checkout)
-    ? checkout.product.recurringIntervalCount
+    ? checkout.product.recurring_interval_count
     : null
 
-  const { product, prices } = checkout
+  const { product, prices, currency } = checkout
   const meteredPrices = useMemo(
-    () => (product && prices ? getMeteredPrices(prices[product.id]) : []),
-    [product, prices],
+    () =>
+      product && prices ? getMeteredPrices(prices[product.id], currency) : [],
+    [product, prices, currency],
   )
 
-  const formattedDiscountDuration = useMemo(() => {
-    if (!checkout.discount) {
+  const discountEndLabel = useMemo(() => {
+    if (!checkout.discount || checkout.discount.duration === 'forever') {
       return ''
     }
 
-    if (!interval) {
-      return ''
-    }
+    const baseDate = checkout.trial_end
+      ? new Date(checkout.trial_end)
+      : new Date()
 
-    if (checkout.discount.duration === 'forever') {
-      return ''
-    }
+    const endDate = getDiscountEndDate(
+      baseDate,
+      checkout.discount,
+      interval,
+      intervalCount,
+    )
 
-    const tDiscountDuration = (count: number) =>
-      interval === 'year'
-        ? t('checkout.pricing.discount.duration.years', { count })
-        : t('checkout.pricing.discount.duration.months', { count })
-
-    if (checkout.discount.duration === 'once') {
-      if (intervalCount && intervalCount > 1) {
-        return tDiscountDuration(intervalCount)
-      }
-      return tDiscountDuration(1)
-    }
-
-    const durationInMonths =
-      'durationInMonths' in checkout.discount && checkout.discount
-        ? checkout.discount.durationInMonths
-        : -1
-
-    const calculatedDuration =
-      interval === 'year' ? Math.ceil(durationInMonths / 12) : durationInMonths
-
-    if (calculatedDuration <= 1) {
-      if (intervalCount && intervalCount > 1) {
-        return tDiscountDuration(intervalCount)
-      }
-      return tDiscountDuration(1)
-    }
-
-    return tDiscountDuration(calculatedDuration)
-  }, [checkout.discount, interval, intervalCount, t])
+    return t('checkout.pricing.discount.until', {
+      date: formatShortDate(endDate, locale),
+    })
+  }, [
+    checkout.discount,
+    checkout.trial_end,
+    interval,
+    intervalCount,
+    t,
+    locale,
+  ])
 
   const totalLabel = useMemo(() => {
     if (!interval) return t('checkout.pricing.total')
@@ -118,7 +122,9 @@ const CheckoutPricingBreakdown = ({
     }
   }, [interval, intervalCount, t])
 
-  if (checkout.isFreeProductPrice) {
+  const seatRows = useMemo(() => getSeatRows(checkout), [checkout])
+
+  if (checkout.is_free_product_price) {
     return null
   }
 
@@ -126,7 +132,32 @@ const CheckoutPricingBreakdown = ({
     <div className="flex flex-col gap-y-2">
       {checkout.currency ? (
         <>
-          <DetailRow title={t('checkout.pricing.subtotal')}>
+          {seatRows?.map((row, i) => (
+            <DetailRow
+              key={i}
+              title={`${row.seats} ${row.seats === 1 ? 'seat' : 'seats'}`}
+              subtitle={
+                formatCurrency('compact', locale)(
+                  row.pricePerSeat,
+                  checkout.currency!,
+                ) + ' per seat'
+              }
+              className="text-gray-600"
+            >
+              <AmountLabel
+                amount={row.seats * row.pricePerSeat}
+                currency={checkout.currency!}
+                interval={interval}
+                intervalCount={intervalCount}
+                mode="standard"
+                locale={locale}
+              />
+            </DetailRow>
+          ))}
+          <DetailRow
+            title={t('checkout.pricing.subtotal')}
+            className="text-gray-600"
+          >
             <AmountLabel
               amount={checkout.amount}
               currency={checkout.currency}
@@ -141,46 +172,47 @@ const CheckoutPricingBreakdown = ({
             <>
               <DetailRow
                 title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
+                subtitle={discountEndLabel || undefined}
+                className="text-gray-600"
               >
                 {formatCurrency('standard', locale)(
-                  -checkout.discountAmount,
+                  -checkout.discount_amount,
                   checkout.currency,
                 )}
               </DetailRow>
-              <DetailRow title={t('checkout.pricing.taxableAmount')}>
+              <DetailRow
+                title={t('checkout.pricing.taxableAmount')}
+                className="text-gray-600"
+              >
                 {formatCurrency('standard', locale)(
-                  checkout.netAmount,
+                  checkout.net_amount,
                   checkout.currency,
                 )}
               </DetailRow>
             </>
           )}
 
-          <DetailRow title={t('checkout.pricing.taxes')}>
-            {checkout.taxAmount !== null
+          <DetailRow
+            title={t('checkout.pricing.taxes')}
+            className="text-gray-600"
+          >
+            {checkout.tax_amount !== null
               ? formatCurrency('standard', locale)(
-                  checkout.taxAmount,
+                  checkout.tax_amount,
                   checkout.currency,
                 )
               : '—'}
           </DetailRow>
 
           <DetailRow title={totalLabel} emphasis>
-            <div className="flex flex-col items-end gap-y-1">
-              <AmountLabel
-                amount={checkout.totalAmount}
-                currency={checkout.currency}
-                interval={interval}
-                intervalCount={intervalCount}
-                mode="standard"
-                locale={locale}
-              />
-              {formattedDiscountDuration && (
-                <span className="text-xs font-normal text-gray-500">
-                  {formattedDiscountDuration}
-                </span>
-              )}
-            </div>
+            <AmountLabel
+              amount={checkout.total_amount}
+              currency={checkout.currency}
+              interval={interval}
+              intervalCount={intervalCount}
+              mode="standard"
+              locale={locale}
+            />
           </DetailRow>
           {meteredPrices.length > 0 && (
             <DetailRow
@@ -189,51 +221,17 @@ const CheckoutPricingBreakdown = ({
             />
           )}
           {meteredPrices.map((meteredPrice) => (
-            <DetailRow title={meteredPrice.meter.name} key={meteredPrice.id}>
+            <DetailRow
+              title={meteredPrice.meter.name}
+              key={meteredPrice.id}
+              className="text-gray-600"
+            >
               <MeteredPriceLabel price={meteredPrice} locale={locale} />
             </DetailRow>
           ))}
         </>
       ) : (
         <span>{t('checkout.pricing.free')}</span>
-      )}
-      {(checkout.trialEnd ||
-        (checkout.activeTrialInterval &&
-          checkout.activeTrialIntervalCount)) && (
-        <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
-          {checkout.activeTrialInterval &&
-            checkout.activeTrialIntervalCount && (
-              <DetailRow
-                emphasis
-                title={
-                  checkout.activeTrialInterval === 'year'
-                    ? t('checkout.trial.duration.years', {
-                        count: checkout.activeTrialIntervalCount,
-                      })
-                    : checkout.activeTrialInterval === 'month'
-                      ? t('checkout.trial.duration.months', {
-                          count: checkout.activeTrialIntervalCount,
-                        })
-                      : checkout.activeTrialInterval === 'week'
-                        ? t('checkout.trial.duration.weeks', {
-                            count: checkout.activeTrialIntervalCount,
-                          })
-                        : t('checkout.trial.duration.days', {
-                            count: checkout.activeTrialIntervalCount,
-                          })
-                }
-              >
-                <span>{t('checkout.pricing.free')}</span>
-              </DetailRow>
-            )}
-          {checkout.trialEnd && (
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              {t('checkout.trial.ends', {
-                endDate: formatDate(checkout.trialEnd, locale),
-              })}
-            </span>
-          )}
-        </div>
       )}
     </div>
   )

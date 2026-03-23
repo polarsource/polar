@@ -18,6 +18,7 @@ from polar.models import (
     Subscription,
     SubscriptionMeter,
 )
+from polar.models.product import ProductVisibility
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
 
@@ -72,12 +73,13 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             statement.join(Product, onclause=Subscription.product_id == Product.id)
             .join(Organization, onclause=Product.organization_id == Organization.id)
             .options(
-                joinedload(Subscription.customer),
+                joinedload(Subscription.customer).joinedload(Customer.organization),
                 contains_eager(Subscription.product).options(
                     selectinload(Product.product_medias),
                     contains_eager(Product.organization),
                 ),
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.pending_update),
             )
         )
 
@@ -126,6 +128,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     joinedload(Product.organization),
                 ),
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.pending_update),
             )
         )
 
@@ -184,7 +187,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         product_id: uuid.UUID,
     ) -> Subscription:
         return await subscription_service.update_product(
-            session, subscription, product_id=product_id
+            session,
+            subscription,
+            product_id=product_id,
+            allowed_visibilities=frozenset({ProductVisibility.public}),
         )
 
     async def uncancel(

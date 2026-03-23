@@ -23,11 +23,15 @@ Usage:
 
     # Actually create tickets for all organizations:
     uv run python -m scripts.create_review_tickets --execute --limit 0
+
+    # Create ticket for a specific organization:
+    uv run python -m scripts.create_review_tickets --execute --org-id a06e2689-0263-47f9-b9ce-36561878bc97
 """
 
 import argparse
 import asyncio
 import sys
+import uuid as uuid_mod
 from typing import cast
 
 import structlog
@@ -46,12 +50,17 @@ from polar.user.repository import UserRepository
 log = structlog.get_logger()
 
 
-async def process_organizations(dry_run: bool = False, limit: int = 1) -> None:
+async def process_organizations(
+    dry_run: bool = False,
+    limit: int = 1,
+    org_id: uuid_mod.UUID | None = None,
+) -> None:
     """Process organizations under review and create tickets if needed.
 
     Args:
         dry_run: If True, don't actually create tickets
         limit: Maximum number of organizations to process (default: 1)
+        org_id: If set, only process this specific organization
     """
 
     engine = create_async_engine("script")
@@ -63,12 +72,15 @@ async def process_organizations(dry_run: bool = False, limit: int = 1) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
 
-        # Query all organizations under review
+        # Query organizations under review
         statement = (
             select(Organization)
             .where(Organization.is_under_review.is_(True))
             .options(joinedload(Organization.account))
         )
+
+        if org_id is not None:
+            statement = statement.where(Organization.id == org_id)
 
         result = await session.execute(statement)
         organizations = result.unique().scalars().all()
@@ -248,6 +260,12 @@ def main() -> None:
         default=1,
         help="Maximum number of organizations to process (default: 1, use 0 for unlimited)",
     )
+    parser.add_argument(
+        "--org-id",
+        type=uuid_mod.UUID,
+        default=None,
+        help="Process only this specific organization ID",
+    )
     args = parser.parse_args()
 
     # Default to dry-run mode unless --execute is passed
@@ -271,10 +289,13 @@ def main() -> None:
         "Processing settings",
         limit=args.limit if args.limit > 0 else "unlimited",
         dry_run=dry_run,
+        org_id=str(args.org_id) if args.org_id else None,
     )
 
     try:
-        asyncio.run(process_organizations(dry_run=dry_run, limit=args.limit))
+        asyncio.run(
+            process_organizations(dry_run=dry_run, limit=args.limit, org_id=args.org_id)
+        )
     except KeyboardInterrupt:
         log.info("Interrupted by user")
         sys.exit(1)

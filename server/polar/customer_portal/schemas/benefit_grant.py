@@ -13,6 +13,12 @@ from polar.benefit.strategies.downloadables.properties import (
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesSubscriber,
 )
+from polar.benefit.strategies.feature_flag.properties import (
+    BenefitGrantFeatureFlagProperties,
+)
+from polar.benefit.strategies.feature_flag.schemas import (
+    BenefitFeatureFlagSubscriber,
+)
 from polar.benefit.strategies.github_repository.properties import (
     BenefitGrantGitHubRepositoryProperties,
 )
@@ -91,13 +97,20 @@ class CustomerBenefitGrantMeterCredit(CustomerBenefitGrantBase):
     properties: BenefitGrantMeterCreditProperties
 
 
+class CustomerBenefitGrantFeatureFlag(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
+    benefit: BenefitFeatureFlagSubscriber
+    properties: BenefitGrantFeatureFlagProperties
+
+
 CustomerBenefitGrant = Annotated[
     CustomerBenefitGrantDiscord
     | CustomerBenefitGrantGitHubRepository
     | CustomerBenefitGrantDownloadables
     | CustomerBenefitGrantLicenseKeys
     | CustomerBenefitGrantCustom
-    | CustomerBenefitGrantMeterCredit,
+    | CustomerBenefitGrantMeterCredit
+    | CustomerBenefitGrantFeatureFlag,
     SetSchemaReference("CustomerBenefitGrant"),
     MergeJSONSchema({"title": "CustomerBenefitGrant"}),
     ClassName("CustomerBenefitGrant"),
@@ -151,13 +164,18 @@ class CustomerBenefitGrantMeterCreditUpdate(CustomerBenefitGrantUpdateBase):
     benefit_type: Literal[BenefitType.meter_credit]
 
 
+class CustomerBenefitGrantFeatureFlagUpdate(CustomerBenefitGrantUpdateBase):
+    benefit_type: Literal[BenefitType.feature_flag]
+
+
 CustomerBenefitGrantUpdate = Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
     | CustomerBenefitGrantDownloadablesUpdate
     | CustomerBenefitGrantLicenseKeysUpdate
     | CustomerBenefitGrantCustomUpdate
-    | CustomerBenefitGrantMeterCreditUpdate,
+    | CustomerBenefitGrantMeterCreditUpdate
+    | CustomerBenefitGrantFeatureFlagUpdate,
     SetSchemaReference("CustomerBenefitGrantUpdate"),
     MergeJSONSchema({"title": "CustomerBenefitGrantUpdate"}),
     Discriminator("benefit_type"),

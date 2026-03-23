@@ -20,6 +20,8 @@ from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
+from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
+from polar.discount.service import discount as discount_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
 from polar.kit.currency import PresentmentCurrency
@@ -32,6 +34,7 @@ from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationDetails, OrganizationStatus
@@ -166,12 +169,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We provide business intelligence dashboard",
-                "intended_use": "Well have a checkout on our website granting.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Our business intellignce dashboard are mostly monthly subscriptions, but our mobile app is accessible after a one-time payment.",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -249,12 +249,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We make beautiful SQL management products for macOS.",
-                "intended_use": "Well have a checkout on our website granting a download link and license key.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "The desktop apps that we create allows connecting to SQL databases, and performing queries on those databases.",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "benefits": {
@@ -335,12 +332,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We're a hottest cloud provider since sliced bread",
-                "intended_use": "We'll be selling various plans allowing access to our cloud storage and cloud document services.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "We sell ColdMail which provides an email inbox plus file storage. We also sell TemperateDocs which allows creating and editing documents online.",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -423,12 +417,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We provide news in various formats",
-                "intended_use": "We'll have a checkout on our website where you buy subscriptions to our various news products.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "We send out our news products as emails daily and weekly",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 2000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -462,12 +453,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "is_admin": True,
             "details": {
                 "about": "Polar is an open source payment infrastructure platform for developers",
-                "intended_use": "We provide payment processing and subscription management for developers and creators.",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "SaaS platform for payment infrastructure",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 1000000,
                 "previous_annual_revenue": 0,
             },
             "products": [
@@ -488,12 +476,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "Testing seat-based pricing with members model",
-                "intended_use": "We sell seat-based licenses for our software",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Team software licenses with per-seat billing",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 500000,
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
@@ -527,12 +512,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "Testing seat-based pricing without members model",
-                "intended_use": "We sell seat-based licenses without member tracking",
                 "switching": False,
                 "switching_from": None,
                 "product_description": "Team software licenses with simple seat billing",
-                "customer_acquisition": ["website"],
-                "future_annual_revenue": 500000,
                 "previous_annual_revenue": 0,
             },
             "feature_settings": {
@@ -629,7 +611,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.email = org_data["email"]
         organization.website = org_data["website"]
         organization.bio = org_data["bio"]
-        organization.details = org_data.get("details", {})  # type: ignore
+        organization.details = org_data.get("details", {})
         organization.details_submitted_at = utc_now()
         organization.status = org_data.get("status", OrganizationStatus.CREATED)
         organization.feature_settings = org_data.get("feature_settings", {})
@@ -834,6 +816,37 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 auth_subject=auth_subject,
             )
 
+            if org_data["slug"] == "acme-corp":
+                e2e_checkout_link = await checkout_link_service.create(
+                    session=session,
+                    checkout_link_create=CheckoutLinkCreateProducts(
+                        payment_processor=PaymentProcessor.stripe,
+                        products=[product.id for product in org_products],
+                        label="E2E test checkout",
+                        allow_discount_codes=True,
+                    ),
+                    auth_subject=auth_subject,
+                )
+                e2e_checkout_link.client_secret = (
+                    "polar_cl_e2e_seed_checkout_link_subscription"
+                )
+                session.add(e2e_checkout_link)
+                await session.flush()
+
+        if org_products:
+            await discount_service.create(
+                session=session,
+                discount_create=DiscountPercentageOnceForeverDurationCreate(
+                    name="Free",
+                    code="free",
+                    type=DiscountType.percentage,
+                    basis_points=10000,
+                    duration=DiscountDuration.once,
+                    organization_id=organization.id,
+                ),
+                auth_subject=auth_subject,
+            )
+
         # Create customers for organization (skip if seat_based_customers are defined)
         num_customers = (
             random.randint(0, 5) if not org_data.get("seat_based_customers") else 0
@@ -915,8 +928,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 seats_allocated = customer_data["seats_allocated"]
 
                 # Create subscription with seats
+                amount = seat_based_price.calculate_amount(seats_purchased)
                 subscription = Subscription(
-                    amount=seat_based_price.calculate_amount(seats_purchased),
+                    amount=amount,
+                    net_amount=amount,
                     currency=seat_based_price.price_currency,
                     recurring_interval=seat_based_product.recurring_interval,
                     recurring_interval_count=1,
@@ -936,7 +951,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 spp = SubscriptionProductPrice(
                     subscription_id=subscription.id,
                     product_price_id=seat_based_price.id,
-                    amount=seat_based_price.calculate_amount(seats_purchased),
+                    amount=amount,
                 )
                 session.add(spp)
                 await session.flush()

@@ -11,6 +11,7 @@ class DiscountSortProperty(StrEnum):
     discount_name = "name"  # `name` is a reserved word, so we use `discount_name`
     code = "code"
     redemptions_count = "redemptions_count"
+    ends_at = "ends_at"
 
 
 ListSorting = Annotated[

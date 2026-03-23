@@ -166,7 +166,9 @@ class BalanceTransactionService(BaseTransactionService):
         source_account_id = incoming.account_id
         assert source_account_id is not None
         account_repository = AccountRepository.from_session(session)
-        source_account = await account_repository.get_by_id(source_account_id)
+        source_account = await account_repository.get_by_id(
+            source_account_id, include_deleted=True
+        )
         assert source_account is not None
 
         balance_correlation_key = str(uuid.uuid4())

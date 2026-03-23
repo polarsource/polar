@@ -127,7 +127,7 @@ const CommandItem = ({
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      "data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-xs px-2 py-1.5 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "group data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-xs px-2 py-1.5 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       className,
     )}
     {...props}

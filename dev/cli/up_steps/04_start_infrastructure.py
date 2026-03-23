@@ -33,9 +33,9 @@ def get_docker_compose_status() -> dict[str, bool]:
 def run(ctx: Context) -> bool:
     """Start Docker containers."""
     docker_status = get_docker_compose_status()
-    containers_running = any(docker_status.values()) if docker_status else False
+    all_running = bool(docker_status) and all(docker_status.values())
 
-    if containers_running and not ctx.clean:
+    if all_running and not ctx.clean:
         step_status(True, "Docker containers", "already running")
         return True
 

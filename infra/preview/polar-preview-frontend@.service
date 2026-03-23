@@ -1,0 +1,19 @@
+[Unit]
+Description=Polar Preview Frontend (PR %i)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/previews/pr-%i/clients/apps/web
+EnvironmentFile=/srv/previews/pr-%i/clients/.env.preview
+ExecStart=/usr/bin/npx next dev --turbopack --hostname 127.0.0.1 --port ${PORT}
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=15
+
+MemoryMax=2G
+CPUQuota=200%
+
+[Install]
+WantedBy=multi-user.target

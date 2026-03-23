@@ -7,18 +7,11 @@ import {
   differenceInYears,
   parse,
   startOfDay,
-  startOfMonth,
-  startOfYear,
-  startOfYesterday,
   subDays,
   subMonths,
   subYears,
 } from 'date-fns'
-import {
-  formatHumanFriendlyScalar,
-  formatPercentage,
-  formatScalar,
-} from './formatters'
+import { formatPercentage, formatScalar } from './formatters'
 
 /**
  * Converts a Date object to an ISO date string (YYYY-MM-DD) in local timezone.
@@ -37,21 +30,6 @@ export const toISODate = (date: Date) => {
  */
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date(1970, 0, 1, 0, 0, 0))
-
-export const getTickFormatter = (
-  metric: schemas['Metric'],
-): ((value: number) => string) => {
-  switch (metric.type) {
-    case 'scalar':
-      return formatHumanFriendlyScalar
-    case 'currency':
-      return (value: number) => formatCurrency('statistics')(value, 'usd')
-    case 'percentage':
-      return formatPercentage
-    case 'currency_sub_cent':
-      return (value: number) => formatCurrency('subcent')(value, 'usd')
-  }
-}
 
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],
@@ -163,24 +141,6 @@ export const getChartRangeParams = (
   return [startDate, endDate, interval]
 }
 
-export const getPreviousParams = (
-  startDate: Date,
-  range: ChartRange,
-): [Date, Date] | null => {
-  switch (range) {
-    case 'all_time':
-      return null
-    case '12m':
-      return [startOfYear(subYears(startDate, 1)), startDate]
-    case '3m':
-      return [startOfMonth(subMonths(startDate, 3)), startDate]
-    case '30d':
-      return [startOfDay(subMonths(startDate, 1)), startDate]
-    case 'today':
-      return [startOfYesterday(), startDate]
-  }
-}
-
 export const getPreviousDateRange = (
   startDate: Date,
   endDate: Date,
@@ -190,6 +150,14 @@ export const getPreviousDateRange = (
   const previousStartDate = new Date(startDate.getTime() - delta)
   return [previousStartDate, previousEndDate]
 }
+
+export const DEFAULT_OVERVIEW_METRICS: (keyof schemas['Metrics'])[] = [
+  'revenue',
+  'monthly_recurring_revenue',
+  'active_subscriptions',
+  'orders',
+  'checkouts_conversion',
+]
 
 export const ALL_METRICS: {
   slug: keyof schemas['Metrics']

@@ -1,5 +1,7 @@
+/* eslint-disable max-lines */
 'use client'
 
+import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
@@ -16,7 +18,6 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
-import { CustomerStatBox } from './CustomerStatBox'
 import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerContextViewProps {
@@ -39,8 +40,28 @@ export const CustomerContextView = ({
   >(null)
   const createCustomerSession = useCallback(async () => {
     setCustomerSessionLoading(true)
+
+    let memberId: string | undefined
+    if (customer.type === 'team') {
+      const { data: membersData } = await api.GET('/v1/members/', {
+        params: {
+          query: { customer_id: customer.id, role: 'owner', limit: 1 },
+        },
+      })
+      const ownerMember = membersData?.items?.[0]
+      if (!ownerMember) {
+        setCustomerSessionLoading(false)
+        setCustomerSessionError('No owner member found for this team customer.')
+        return
+      }
+      memberId = ownerMember.id
+    }
+
     const { data: session, error } = await api.POST('/v1/customer-sessions/', {
-      body: { customer_id: customer.id },
+      body: {
+        customer_id: customer.id,
+        ...(memberId ? { member_id: memberId } : {}),
+      },
     })
     setCustomerSessionLoading(false)
     if (error) {
@@ -87,16 +108,16 @@ export const CustomerContextView = ({
           </div>
         </Link>
         <div className="flex flex-row justify-between gap-4">
-          <CustomerStatBox title="Cumulative Revenue">
+          <StatisticCard title="Cumulative Revenue">
             {formatCurrency('statistics')(
               metrics.data?.periods[metrics.data.periods.length - 1]
                 .cumulative_revenue ?? 0,
               'usd',
             )}
-          </CustomerStatBox>
-          <CustomerStatBox title="First Seen">
+          </StatisticCard>
+          <StatisticCard title="First Seen">
             <FormattedDateTime datetime={customer.created_at} />
-          </CustomerStatBox>
+          </StatisticCard>
         </div>
         {!customer.deleted_at && (
           <div className="flex flex-col gap-4">

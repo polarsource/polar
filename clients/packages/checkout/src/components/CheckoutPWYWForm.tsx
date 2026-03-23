@@ -1,12 +1,10 @@
+import type { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
-import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Form,
@@ -15,16 +13,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { useCallback, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useCallback, useEffect, useRef } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
 
 export interface CheckoutPWYWFormProps {
-  update: (data: CheckoutUpdatePublic) => void
-  checkout: CheckoutPublic
-  productPrice: ProductPriceCustom
-  themePreset: ThemingPresetProps
+  update: (data: schemas['CheckoutUpdatePublic']) => void
+  checkout: schemas['CheckoutPublic']
+  productPrice: schemas['ProductPriceCustom']
   locale?: AcceptedLocale
 }
 
@@ -32,7 +28,6 @@ export const CheckoutPWYWForm = ({
   update,
   checkout,
   productPrice,
-  themePreset,
   locale = DEFAULT_LOCALE,
 }: CheckoutPWYWFormProps) => {
   const t = useTranslations(locale)
@@ -41,9 +36,9 @@ export const CheckoutPWYWForm = ({
   const form = useForm<{ amount: number }>({
     defaultValues: { amount: amount || 0 },
   })
-  const { control, trigger, reset, watch } = form
+  const { control, trigger, reset } = form
 
-  const minimumAmount = productPrice.minimumAmount ?? 50 // should be set, but fallback to 50 for type safety
+  const minimumAmount = productPrice.minimum_amount ?? 50 // should be set, but fallback to 50 for type safety
 
   const validateAmount = useCallback(
     (value: number): string | true => {
@@ -66,28 +61,34 @@ export const CheckoutPWYWForm = ({
 
       return true
     },
-    [minimumAmount, checkout.currency, locale],
+    [minimumAmount, checkout.currency, locale, t],
   )
 
+  const checkoutAmountRef = useRef(amount)
+
+  useEffect(() => {
+    checkoutAmountRef.current = amount
+  }, [amount])
+
   const debouncedAmountUpdate = useDebouncedCallback(
-    async (amount: number) => {
+    async (newAmount: number) => {
+      if (newAmount === checkoutAmountRef.current) return
       const isValid = await trigger('amount')
       if (isValid) {
-        update?.({ amount })
+        update?.({ amount: newAmount })
       }
     },
     600,
     [update, trigger],
   )
 
+  const watchedAmount = useWatch({ control, name: 'amount' })
+
   useEffect(() => {
-    const subscription = watch(async (value, { name }) => {
-      if (name === 'amount' && value.amount !== undefined) {
-        debouncedAmountUpdate(value.amount)
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [watch, debouncedAmountUpdate])
+    if (watchedAmount !== undefined) {
+      debouncedAmountUpdate(watchedAmount)
+    }
+  }, [watchedAmount, debouncedAmountUpdate])
 
   useEffect(() => {
     reset({ amount: amount || 0 })

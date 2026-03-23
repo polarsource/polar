@@ -1,22 +1,22 @@
 'use client'
 
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { schemas } from '@polar-sh/client'
 import { X } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 
 interface CheckoutEmbedCloseProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
 }
 
 const CheckoutEmbedClose: React.FC<
   React.PropsWithChildren<CheckoutEmbedCloseProps>
 > = ({ checkout }) => {
   const onClose = useCallback(() => {
-    if (!checkout.embedOrigin) {
+    if (!checkout.embed_origin) {
       return
     }
-    PolarEmbedCheckout.postMessage({ event: 'close' }, checkout.embedOrigin)
+    PolarEmbedCheckout.postMessage({ event: 'close' }, checkout.embed_origin)
   }, [checkout])
 
   useEffect(() => {

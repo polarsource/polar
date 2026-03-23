@@ -3,7 +3,7 @@ import operator
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, TypeVar
 from uuid import UUID
 
 from sqlalchemy import (
@@ -15,6 +15,7 @@ from sqlalchemy import (
     String,
     Text,
     Uuid,
+    cast,
     event,
     type_coerce,
 )
@@ -25,7 +26,7 @@ from sqlalchemy.orm.attributes import OP_BULK_REPLACE, Event
 
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehavior
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
@@ -46,7 +47,10 @@ if TYPE_CHECKING:
         Product,
         ProductPrice,
         SubscriptionProductPrice,
+        SubscriptionUpdate,
     )
+
+PP = TypeVar("PP", bound="ProductPrice")
 
 
 class SubscriptionStatus(StrEnum):
@@ -106,6 +110,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    net_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
@@ -122,6 +127,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     but has been migrated to be managed by Polar.
     """
 
+    tax_behavior: Mapped[TaxBehavior | None] = mapped_column(
+        StringEnum(TaxBehavior), nullable=True, default=None
+    )
+    """
+    Store the tax behavior of the subscription so we remain consistent in case of
+    product or organization default changes.
+    """
     tax_exempted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     """
     Whether the subscription is tax exempted.
@@ -137,8 +149,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     current_period_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
-    current_period_end: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
+    current_period_end: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=None
     )
     trial_start: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
@@ -276,6 +288,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             cascade="all, delete-orphan",
         )
 
+    @declared_attr
+    def pending_update(cls) -> Mapped["SubscriptionUpdate | None"]:
+        return relationship(
+            "SubscriptionUpdate",
+            lazy="raise",
+            uselist=False,
+            viewonly=True,
+            primaryjoin="and_(Subscription.id == SubscriptionUpdate.subscription_id, SubscriptionUpdate.applied_at == None, SubscriptionUpdate.deleted_at == None)",
+        )
+
     def is_incomplete(self) -> bool:
         return SubscriptionStatus.is_incomplete(self.status)
 
@@ -333,7 +355,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             Boolean,
         )
 
-    @property
+    @hybrid_property
     def past_due_deadline(self) -> datetime | None:
         if self.past_due_at is None:
             return None
@@ -342,6 +364,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             + functools.reduce(operator.add, settings.DUNNING_RETRY_INTERVALS)
             + timedelta(minutes=1)  # Add a minute to make sure we are past the deadline
         )
+
+    @past_due_deadline.inplace.expression
+    @classmethod
+    def _past_due_deadline_expression(cls) -> ColumnElement[datetime]:
+        total_interval = functools.reduce(
+            operator.add, settings.DUNNING_RETRY_INTERVALS
+        ) + timedelta(minutes=1)
+        return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
         if not SubscriptionStatus.is_billable(self.status):
@@ -376,8 +406,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     ) -> None:
         amount = sum(price.amount for price in prices)
         if discount is not None:
-            amount -= discount.get_discount_amount(amount)
+            amount -= discount.get_discount_amount(amount, self.currency)
         self.amount = amount
+        self.net_amount = amount  # Same as amount while tax-exclusive
 
     def update_meters(self, prices: Sequence["SubscriptionProductPrice"]) -> None:
         subscription_meters = self.meters or []
@@ -407,6 +438,12 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         for subscription_meter in self.meters:
             if subscription_meter.meter_id == meter.id:
                 return subscription_meter
+        return None
+
+    def get_price_by_type(self, price_type: type[PP]) -> PP | None:
+        for price in self.prices:
+            if isinstance(price, price_type):
+                return price
         return None
 
 

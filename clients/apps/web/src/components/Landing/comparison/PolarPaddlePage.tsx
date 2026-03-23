@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'

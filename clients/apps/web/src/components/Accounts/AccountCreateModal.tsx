@@ -119,7 +119,7 @@ const AccountCreateModal = ({
   )
 }
 
-export const AccountCountry = () => {
+const AccountCountry = () => {
   const { control } = useFormContext<schemas['AccountCreateForOrganization']>()
 
   return (

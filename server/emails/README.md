@@ -44,7 +44,7 @@ Don't hesitate to reuse existing schemas for common types like `Organization`, `
 3. Create a new TSX file in the `src/emails` directory with the name of the email template, as snake case, e.g. `customer_greetings.tsx`.
 4. Implement the email template using the `react-email` components.
 
-## How to render it from the Python server?
+## How to send it from the Python server?
 
 First, you'll need to build the email templates:
 
@@ -52,19 +52,31 @@ First, you'll need to build the email templates:
 uv run task emails
 ```
 
-Then, use the `render_email_template` function:
+Then, use `enqueue_email_template` to send the email via the background worker. This serializes the template data and enqueues a job — rendering happens in the worker, keeping the API request fast.
+
+```python
+from polar.email.schemas import CustomerGreetingsEmail, CustomerGreetingsProps
+from polar.email.sender import enqueue_email_template
+
+enqueue_email_template(
+    CustomerGreetingsEmail(
+        props=CustomerGreetingsProps.model_validate({
+            "email": "john@example.com",
+            "organization": organization,
+            "url": "https://example.com/welcome",
+        })
+    ),
+    to_email_addr="john@example.com",
+    subject="Welcome!",
+)
+```
+
+If you need to render synchronously (e.g. in scripts or workers that already run outside the event loop), you can use `render_email_template` directly:
 
 ```python
 from polar.email.react import render_email_template
-from polar.email.schemas import CustomerGreetingsEmail, CustomerGreetingsProps
 
-body = render_email_template(CustomerGreetingsEmail(
-    props=CustomerGreetingsProps.model_validate({
-        "email": "john@example.com",
-        "organization": organization,
-        "url": "https://example.com/welcome",
-    })
-))
+body = render_email_template(email)
 ```
 
 ## How does it work?

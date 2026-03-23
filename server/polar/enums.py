@@ -18,6 +18,31 @@ class TaxProcessor(StrEnum):
     numeral = "numeral"
 
 
+class TaxBehavior(StrEnum):
+    inclusive = "inclusive"
+    exclusive = "exclusive"
+
+    def to_option(self) -> "TaxBehaviorOption":
+        match self:
+            case TaxBehavior.inclusive:
+                return TaxBehaviorOption.inclusive
+            case TaxBehavior.exclusive:
+                return TaxBehaviorOption.exclusive
+
+    def to_stripe(self) -> Literal["inclusive", "exclusive"]:
+        match self:
+            case TaxBehavior.inclusive:
+                return "inclusive"
+            case TaxBehavior.exclusive:
+                return "exclusive"
+
+
+class TaxBehaviorOption(StrEnum):
+    location = "location"
+    inclusive = "inclusive"
+    exclusive = "exclusive"
+
+
 class AccountType(StrEnum):
     stripe = "stripe"
     manual = "manual"
@@ -51,15 +76,12 @@ class SubscriptionRecurringInterval(StrEnum):
 
 
 class SubscriptionProrationBehavior(StrEnum):
-    invoice = "invoice"  # Invoice immediately
-    prorate = "prorate"  # Add prorations to next invoice
-
-    def to_stripe(self) -> Literal["always_invoice", "create_prorations"]:
-        if self == SubscriptionProrationBehavior.invoice:
-            return "always_invoice"
-        if self == SubscriptionProrationBehavior.prorate:
-            return "create_prorations"
-        raise ValueError(f"Invalid proration behavior: {self}")
+    invoice = "invoice"
+    """Invoice immediately, and add prorations to the invoice."""
+    prorate = "prorate"
+    """Don't invoice immediately, but add prorations to the next invoice."""
+    next_period = "next_period"
+    """Don't invoice immediately, and don't add prorations. The new price will be applied at the start of the next period."""
 
 
 class InvoiceNumbering(StrEnum):
@@ -79,8 +101,33 @@ class TokenType(StrEnum):
     user_session_token = "polar_user_session_token"
 
 
+class EmailSender(StrEnum):
+    logger = "logger"
+    resend = "resend"
+
+
 class RateLimitGroup(StrEnum):
     web = "web"
     restricted = "restricted"
     default = "default"
     elevated = "elevated"
+
+
+class PaymentMode(StrEnum):
+    """
+    Internal flag to distinguish payment processing behaviour.
+    """
+
+    sync = "sync"
+    """
+    The payment is processed synchronously, and fails the operation if the payment fails.
+
+    Typical mode for subscription updates that require immediate payment.
+    """
+
+    background = "background"
+    """
+    The payment is processed asynchronously in the background, and doesn't affect the operation's result.
+
+    Typical mode for subscription cycle orders that can be retried.
+    """

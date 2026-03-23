@@ -1,4 +1,5 @@
-.dark\:bg-background-dark:is(.dark *) {
+.dark\:bg-background-dark:is(.dark *),
+.chat-assistant-floating-input:is(.dark *)::before {
   background-color: #070708;
 }
 

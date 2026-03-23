@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import revalidate from '@/app/actions'
@@ -24,7 +25,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/logos/LogoIcon'
@@ -74,7 +75,6 @@ export const OrganizationStep = ({
   const {
     control,
     handleSubmit,
-    watch,
     setError,
     clearErrors,
     setValue,
@@ -112,9 +112,9 @@ export const OrganizationStep = ({
     }
   }, [validationErrors, error, setError, clearErrors])
 
-  const name = watch('name')
-  const slug = watch('slug')
-  const terms = watch('terms')
+  const { name, slug, terms } = useWatch({
+    control,
+  })
 
   useEffect(() => {
     if (!editedSlug && name) {
@@ -244,36 +244,34 @@ export const OrganizationStep = ({
                   />
                 </FadeUp>
 
-                {false && (
-                  <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-                    <FormField
-                      control={control}
-                      name="default_presentment_currency"
-                      rules={{
-                        required: 'Currency is required',
-                      }}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          <FormLabel htmlFor="default_presentment_currency">
-                            Default Payment Currency
-                          </FormLabel>
-                          <FormControl className="flex w-full flex-col gap-y-4">
-                            <CurrencySelector
-                              value={
-                                field.value as schemas['PresentmentCurrency']
-                              }
-                              onChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                          <FormDescription>
-                            The default currency for your products
-                          </FormDescription>
-                        </FormItem>
-                      )}
-                    />
-                  </FadeUp>
-                )}
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+                  <FormField
+                    control={control}
+                    name="default_presentment_currency"
+                    rules={{
+                      required: 'Currency is required',
+                    }}
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormLabel htmlFor="default_presentment_currency">
+                          Default payment currency
+                        </FormLabel>
+                        <FormControl>
+                          <CurrencySelector
+                            value={
+                              field.value as schemas['PresentmentCurrency']
+                            }
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <FormDescription>
+                          The default currency for your products
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                </FadeUp>
 
                 <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <SupportedUseCases />
@@ -360,7 +358,13 @@ export const OrganizationStep = ({
                 <Button
                   type="submit"
                   loading={createOrganization.isPending}
-                  disabled={name.length === 0 || slug.length === 0 || !terms}
+                  disabled={
+                    !name ||
+                    !slug ||
+                    name.length < 3 ||
+                    slug.length < 3 ||
+                    !terms
+                  }
                 >
                   {experimentVariant === 'treatment' ? 'Continue' : 'Create'}
                 </Button>

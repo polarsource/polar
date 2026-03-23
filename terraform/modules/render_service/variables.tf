@@ -20,6 +20,7 @@ variable "registry_credential_id" {
   sensitive   = true
 }
 
+
 # Variables for configuring the services and workers
 variable "api_service_config" {
   description = "API service configuration"
@@ -27,6 +28,8 @@ variable "api_service_config" {
     allowed_hosts          = string # "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins           = string # "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = list(object({ name = string }))
+    image_url              = optional(string, "ghcr.io/polarsource/polar")
+    image_digest           = string
     web_concurrency        = optional(string, "2")
     forwarded_allow_ips    = optional(string, "*")
     database_pool_size     = optional(string, "20")
@@ -41,23 +44,14 @@ variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
     start_command      = string
-    image_url          = optional(string, "ghcr.io/polarsource/polar")
-    digest             = optional(string)
-    tag                = optional(string)
+    image_url          = string
+    image_digest       = string
     custom_domains     = optional(list(object({ name = string })), [])
     dramatiq_prom_port = optional(string, "10000")
     plan               = optional(string, "pro")
     num_instances      = optional(number, 1)
     database_pool_size = optional(string, "5")
   }))
-
-  validation {
-    condition = alltrue([
-      for name, worker in var.workers :
-      (worker.digest != null) != (worker.tag != null)
-    ])
-    error_message = "Each worker must specify exactly one of 'digest' or 'tag', not both or neither."
-  }
 }
 
 variable "postgres_config" {
@@ -125,6 +119,7 @@ variable "backend_config" {
     auth_cookie_key            = optional(string, "") # "polar.sh"
     invoices_additional_info   = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
     tax_processors             = optional(string, "[\"stripe\"]")
+    tax_record_processor       = optional(string, "stripe")
   })
 }
 
@@ -165,6 +160,7 @@ variable "aws_s3_config" {
     files_public_bucket_name      = string # "polar-public-files"
     customer_invoices_bucket_name = string # "polar-customer-invoices"
     payout_invoices_bucket_name   = string # "polar-payout-invoices"
+    logs_bucket_name              = string # "polar-logs"
   })
 }
 
@@ -245,6 +241,27 @@ variable "slo_report_config" {
   sensitive = true
 }
 
+variable "memory_profile_config" {
+  description = "Memory profiling configuration (optional). When set, enables periodic gc-based heap snapshots uploaded to S3 as JSON."
+  type = object({
+    s3_bucket_name = string
+    interval       = optional(number, 300)
+  })
+  default = null
+}
+
+variable "cron_jobs" {
+  description = "Map of cron job configurations. image_url defaults to the API service image. Uses 'latest' tag so Render pulls the newest image before each run."
+  type = map(object({
+    schedule           = string
+    start_command      = string
+    image_url          = optional(string)
+    plan               = optional(string, "starter")
+    database_pool_size = optional(string, "5")
+  }))
+  default = {}
+}
+
 variable "tinybird_config" {
   description = "Tinybird configuration (optional)"
   type = object({
@@ -255,8 +272,6 @@ variable "tinybird_config" {
     clickhouse_username = string
     clickhouse_token    = string
     workspace           = string
-    events_write        = bool
-    events_read         = bool
   })
   default   = null
   sensitive = true

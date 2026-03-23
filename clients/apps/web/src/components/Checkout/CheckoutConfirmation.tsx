@@ -4,14 +4,12 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
+import { createClient, unwrap, type schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -27,6 +25,7 @@ import CheckoutSeatInvitations from './CheckoutSeatInvitations'
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 const isIntegrationError = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   err: any,
 ): err is { name: 'IntegrationError'; message: string } =>
   err.name === 'IntegrationError'
@@ -37,14 +36,14 @@ const StripeRequiresAction = ({
   locale = DEFAULT_LOCALE,
 }: {
   stripe: Stripe | null
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale)
   const [pendingHandling, setPendingHandling] = useState(false)
   const [success, setSuccess] = useState(false)
   const { intent_status, intent_client_secret } =
-    checkout.paymentProcessorMetadata
+    checkout.payment_processor_metadata
   const handleNextAction = useCallback(
     async (stripe: Stripe): Promise<void> => {
       if (success || pendingHandling) {
@@ -100,7 +99,7 @@ const StripeRequiresAction = ({
 }
 
 export interface CheckoutConfirmationProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
   embed: boolean
   theme?: 'light' | 'dark'
   locale?: AcceptedLocale
@@ -120,21 +119,25 @@ export const CheckoutConfirmation = ({
 }: CheckoutConfirmationProps) => {
   const t = useTranslations(locale)
   const router = useRouter()
-  const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
+  const client = useMemo(() => createClient(getServerURL()), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { status, organization } = checkout
 
   const updateCheckout = useCallback(async () => {
-    const { ok, value } = await checkoutsClientGet(client, {
-      clientSecret: checkout.clientSecret,
-    })
-    if (ok) {
+    try {
+      const value = await unwrap(
+        client.GET('/v1/checkouts/client/{client_secret}', {
+          params: { path: { client_secret: checkout.client_secret } },
+        }),
+      )
       setCheckout(value)
+    } catch {
+      // Silently ignore - will retry on next interval/event
     }
   }, [client, checkout])
   const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(embed, theme)
 
-  const checkoutEvents = useCheckoutClientSSE(checkout.clientSecret)
+  const checkoutEvents = useCheckoutClientSSE(checkout.client_secret)
   useEffect(() => {
     if (disabled) {
       return
@@ -175,72 +178,76 @@ export const CheckoutConfirmation = ({
   }, [checkout.status, maxWaitingTimeMs, updateCheckout])
 
   return (
-    <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
-      <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
-        <Avatar
-          className="h-16 w-16"
-          avatar_url={organization.avatarUrl}
-          name={organization.name}
-        />
-        <h1 className="text-2xl font-medium">
-          {status === 'confirmed' && t('checkout.confirmation.processingTitle')}
-          {status === 'succeeded' && t('checkout.confirmation.successTitle')}
-          {status === 'failed' && t('checkout.confirmation.failedTitle')}
-        </h1>
-        <p className="dark:text-polar-500 text-gray-500">
-          {status === 'confirmed' &&
-            t('checkout.confirmation.processingDescription')}
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <ShadowBox className="flex w-full max-w-xl flex-col items-center justify-between gap-y-12 p-8 md:p-16">
+        <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
+          <Avatar
+            className="h-16 w-16"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
+          <h1 className="text-2xl font-medium">
+            {status === 'confirmed' &&
+              t('checkout.confirmation.processingTitle')}
+            {status === 'succeeded' && t('checkout.confirmation.successTitle')}
+            {status === 'failed' && t('checkout.confirmation.failedTitle')}
+          </h1>
+          <p className="dark:text-polar-500 text-gray-500">
+            {status === 'confirmed' &&
+              t('checkout.confirmation.processingDescription')}
+            {status === 'succeeded' && (
+              <>
+                {hasProductCheckout(checkout) &&
+                  t('checkout.confirmation.successDescription', {
+                    product: checkout.product.name,
+                  })}
+              </>
+            )}
+            {status === 'failed' &&
+              t('checkout.confirmation.failedDescription')}
+          </p>
+          {status === 'confirmed' && (
+            <div className="flex items-center justify-center">
+              {checkout.payment_processor === 'stripe' ? (
+                <Elements stripe={stripePromise}>
+                  <ElementsConsumer>
+                    {({ stripe }) => (
+                      <StripeRequiresAction
+                        stripe={stripe}
+                        checkout={checkout}
+                        locale={locale}
+                      />
+                    )}
+                  </ElementsConsumer>
+                </Elements>
+              ) : (
+                <SpinnerNoMargin className="h-8 w-8" />
+              )}
+            </div>
+          )}
           {status === 'succeeded' && (
             <>
+              <CheckoutSeatInvitations checkout={checkout} />
               {hasProductCheckout(checkout) &&
-                t('checkout.confirmation.successDescription', {
-                  product: checkout.product.name,
-                })}
+                checkout.product_price.amount_type !== 'seat_based' && (
+                  <CheckoutBenefits
+                    checkout={checkout}
+                    locale={locale}
+                    customerSessionToken={customerSessionToken}
+                    maxWaitingTimeMs={maxWaitingTimeMs}
+                  />
+                )}
+              <p className="dark:text-polar-500 text-center text-xs text-gray-500">
+                {t('checkout.footer.merchantOfRecord')}
+              </p>
             </>
           )}
-          {status === 'failed' && t('checkout.confirmation.failedDescription')}
-        </p>
-        {status === 'confirmed' && (
-          <div className="flex items-center justify-center">
-            {checkout.paymentProcessor === 'stripe' ? (
-              <Elements stripe={stripePromise}>
-                <ElementsConsumer>
-                  {({ stripe }) => (
-                    <StripeRequiresAction
-                      stripe={stripe}
-                      checkout={checkout}
-                      locale={locale}
-                    />
-                  )}
-                </ElementsConsumer>
-              </Elements>
-            ) : (
-              <SpinnerNoMargin className="h-8 w-8" />
-            )}
-          </div>
-        )}
-        {status === 'succeeded' && (
-          <>
-            <CheckoutSeatInvitations checkout={checkout} />
-            {hasProductCheckout(checkout) &&
-              checkout.productPrice.amountType !== 'seat_based' && (
-                <CheckoutBenefits
-                  checkout={checkout}
-                  locale={locale}
-                  customerSessionToken={customerSessionToken}
-                  maxWaitingTimeMs={maxWaitingTimeMs}
-                />
-              )}
-            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-              {t('checkout.footer.merchantOfRecord')}
-            </p>
-          </>
-        )}
-      </div>
-      <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
-        <span>{t('checkout.footer.poweredBy')}</span>
-        <LogoType className="h-5" />
-      </div>
-    </ShadowBox>
+        </div>
+        <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
+          <span>{t('checkout.footer.poweredBy')}</span>
+          <LogoType className="h-5" />
+        </div>
+      </ShadowBox>
+    </div>
   )
 }

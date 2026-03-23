@@ -1,0 +1,18 @@
+
+- name: smoke_empty_org
+  description: Endpoint returns zero-filled row for org with no data (validates SQL,
+    JOINs with intervals and subscription_state)
+  parameters: org_ids=99999999-9999-9999-9999-999999999999&bounds_start=2024-01-01
+    00:00:00&bounds_end=2024-01-02 00:00:00&start_dt=2024-01-01 00:00:00&end_dt=2024-01-01
+    00:00:00&tz=UTC
+  expected_result: |
+    {"timestamp":"2024-01-01 00:00:00","canceled_subscriptions":0,"canceled_subscriptions_customer_service":0,"canceled_subscriptions_low_quality":0,"canceled_subscriptions_missing_features":0,"canceled_subscriptions_switched_service":0,"canceled_subscriptions_too_complex":0,"canceled_subscriptions_too_expensive":0,"canceled_subscriptions_unused":0,"canceled_subscriptions_other":0}
+
+- name: smoke_with_fixture_data
+  description: Endpoint returns cancellation metrics for fixture org with a canceled
+    subscription
+  parameters: org_ids=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa&bounds_start=2024-01-01
+    00:00:00&bounds_end=2024-01-02 00:00:00&start_dt=2024-01-01 00:00:00&end_dt=2024-01-01
+    00:00:00&tz=UTC
+  expected_result: |
+    {"timestamp":"2024-01-01 00:00:00","canceled_subscriptions":1,"canceled_subscriptions_customer_service":0,"canceled_subscriptions_low_quality":0,"canceled_subscriptions_missing_features":0,"canceled_subscriptions_switched_service":0,"canceled_subscriptions_too_complex":0,"canceled_subscriptions_too_expensive":1,"canceled_subscriptions_unused":0,"canceled_subscriptions_other":0}

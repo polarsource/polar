@@ -37,16 +37,12 @@ class SeatAssign(Schema):
         None,
         description=(
             "External member ID for the seat assignment. "
-            "Only supported when member_model_enabled is true. "
             "Can be used alone (lookup existing member) or with email (create/validate member)."
         ),
     )
     member_id: UUID | None = Field(
         None,
-        description=(
-            "Member ID for the seat assignment. "
-            "Only supported when member_model_enabled is true."
-        ),
+        description="Member ID for the seat assignment.",
     )
     metadata: dict[str, Any] | None = Field(
         None, description="Additional metadata for the seat (max 10 keys, 1KB total)"

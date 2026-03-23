@@ -25,7 +25,7 @@ from ..layout import layout
 from ..orders.components import orders_datatable
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
-from .forms import CancelForm
+from .forms import CancelForm, UpdateBillingPeriodEndForm
 
 router = APIRouter()
 
@@ -57,7 +57,7 @@ class OrganizationColumn(
     def __init__(self) -> None:
         super().__init__("product.organization.name", "Organization")
         self.href_getter = lambda r, i: str(
-            r.url_for("organizations:get", id=i.product.organization_id)
+            r.url_for("organizations:detail", organization_id=i.product.organization_id)
         )
 
 
@@ -232,24 +232,38 @@ async def get(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
                     text(f"Subscription {subscription.id}")
-                if subscription.can_cancel():
-                    with button(
-                        hx_get=str(
-                            request.url_for("subscriptions:cancel", id=subscription.id)
-                        ),
-                        hx_target="#modal",
-                    ):
-                        text("Cancel")
-                if subscription.can_uncancel():
-                    with button(
-                        hx_get=str(
-                            request.url_for(
-                                "subscriptions:uncancel", id=subscription.id
-                            )
-                        ),
-                        hx_target="#modal",
-                    ):
-                        text("Uncancel")
+                with tag.div(classes="flex flex-row gap-2"):
+                    if subscription.can_cancel():
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:cancel", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Cancel")
+                    if subscription.can_uncancel():
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:uncancel", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Uncancel")
+                    if subscription.active:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:update_billing_period_end",
+                                    id=subscription.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Update Billing Period End")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
@@ -318,8 +332,8 @@ async def get(
                                 "Organization",
                                 href_getter=lambda r, i: str(
                                     r.url_for(
-                                        "organizations:get",
-                                        id=i.product.organization_id,
+                                        "organizations:detail",
+                                        organization_id=i.product.organization_id,
                                     )
                                 ),
                             ),
@@ -459,4 +473,67 @@ async def uncancel(
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
+                    text("Submit")
+
+
+@router.api_route(
+    "/{id}/update_billing_period_end",
+    name="subscriptions:update_billing_period_end",
+    methods=["GET", "POST"],
+)
+async def update_billing_period_end(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if not subscription.active:
+        await add_toast(request, "This subscription is not active.", "error")
+        return
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateBillingPeriodEndForm.model_validate_form(data)
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=form.new_period_end,
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("subscriptions:get", id=id)), 303
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    prefill_data = (
+        {"new_period_end": subscription.current_period_end.strftime("%Y-%m-%dT%H:%M")}
+        if subscription.current_period_end is not None
+        else None
+    )
+
+    with modal("Update billing period end", open=True):
+        with UpdateBillingPeriodEndForm.render(
+            data=prefill_data,
+            hx_post=str(
+                request.url_for("subscriptions:update_billing_period_end", id=id)
+            ),
+            hx_target="#modal",
+            classes="flex flex-col",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
                     text("Submit")

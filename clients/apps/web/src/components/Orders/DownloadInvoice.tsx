@@ -1,10 +1,11 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { useCustomerSSE, useOrganizationSSE } from '@/hooks/sse'
+import { useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
-import { api, createClientSideAPI } from '@/utils/client'
+import { api } from '@/utils/client'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import {
   enums,
@@ -35,6 +36,7 @@ import EventEmitter from 'eventemitter3'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
+import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
@@ -83,6 +85,7 @@ const DownloadInvoice = ({
     setError,
     formState: { errors },
   } = form
+  // eslint-disable-next-line react-hooks/incompatible-library
   const country = watch('billing_address.country')
 
   const downloadInvoice = useCallback(async () => {
@@ -433,7 +436,6 @@ export const DownloadInvoiceDashboard = ({
 }
 
 export const DownloadInvoicePortal = ({
-  customerSessionToken,
   order,
   onInvoiceGenerated,
   dropdown = false,
@@ -441,7 +443,7 @@ export const DownloadInvoicePortal = ({
   size,
   className,
 }: {
-  customerSessionToken: string
+  customerSessionToken?: string
   order: schemas['CustomerOrder']
   onInvoiceGenerated: () => void
   variant?: Variant
@@ -449,14 +451,13 @@ export const DownloadInvoicePortal = ({
   className?: string
   dropdown?: boolean
 }) => {
-  const eventEmitter = useCustomerSSE(customerSessionToken)
-  const api = createClientSideAPI(customerSessionToken)
+  const { customerSSE, client: api } = useCustomerPortalContext()
   return (
     <DownloadInvoice
       order={order}
       api={api}
       onInvoiceGenerated={onInvoiceGenerated}
-      eventEmitter={eventEmitter}
+      eventEmitter={customerSSE}
       invoiceURL="/v1/customer-portal/orders/{id}/invoice"
       orderURL="/v1/customer-portal/orders/{id}"
       dropdown={dropdown}

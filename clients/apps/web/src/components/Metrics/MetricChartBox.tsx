@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import Spinner from '@/components/Shared/Spinner'
@@ -22,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -50,6 +51,9 @@ interface MetricChartBoxProps {
   chartType?: 'line' | 'bar'
   /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
   availableMetrics?: MetricOption[]
+  /** Controlled hover index — syncs cursor across charts in a group. */
+  hoveredPeriodIndex?: number | null
+  onHoverPeriodChange?: (index: number | null) => void
 }
 
 const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
@@ -79,6 +83,8 @@ const MetricChartBox = ({
   simple = false,
   chartType = 'line',
   availableMetrics,
+  hoveredPeriodIndex: hoveredPeriodIndexProp,
+  onHoverPeriodChange,
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -102,9 +108,21 @@ const MetricChartBox = ({
   }, [previousData])
 
   const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
-  const [hoveredPeriodIndex, setHoveredPeriodIndex] = React.useState<
+  const [hoveredPeriodIndexLocal, setHoveredPeriodIndexLocal] = React.useState<
     number | null
   >(null)
+  const hoveredPeriodIndex =
+    hoveredPeriodIndexProp !== undefined
+      ? hoveredPeriodIndexProp
+      : hoveredPeriodIndexLocal
+
+  const handleDataIndexHover = useCallback(
+    (period: number | null) => {
+      setHoveredPeriodIndexLocal(period)
+      onHoverPeriodChange?.(period)
+    },
+    [onHoverPeriodChange],
+  )
 
   const hoveredPeriod = useMemo(() => {
     if (!data || !hoveredPeriodIndex) return null
@@ -149,14 +167,20 @@ const MetricChartBox = ({
     <ShadowBox
       ref={ref}
       className={twMerge(
-        'dark:bg-polar-800 group flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
+        'dark:bg-polar-800 group relative flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
         className,
       )}
     >
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <Spinner />
+        </div>
+      )}
       <div
         className={twMerge(
           'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
-          compact ? 'p-4' : 'p-6',
+          compact ? 'p-4' : 'px-6 py-4',
+          loading && 'invisible',
         )}
       >
         <div
@@ -314,16 +338,13 @@ const MetricChartBox = ({
       <div
         className={twMerge(
           'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
-          compact ? 'p-2' : 'p-4',
         )}
       >
         {loading ? (
           <div
             style={{ height }}
             className="flex flex-col items-center justify-center"
-          >
-            <Spinner />
-          </div>
+          />
         ) : data && selectedMetric ? (
           <MetricChart
             height={height}
@@ -332,11 +353,10 @@ const MetricChartBox = ({
             previousData={previousData?.periods}
             interval={interval}
             metric={selectedMetric}
-            onDataIndexHover={(period) => {
-              setHoveredPeriodIndex(period)
-            }}
+            onDataIndexHover={handleDataIndexHover}
             simple={simple}
             chartType={chartType}
+            activeCursorIndex={hoveredPeriodIndex}
           />
         ) : (
           <div

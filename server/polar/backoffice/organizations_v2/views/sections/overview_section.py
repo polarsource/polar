@@ -4,26 +4,44 @@ import contextlib
 import json
 from collections.abc import Generator
 from datetime import datetime
-from typing import Any
 
+import pycountry
 from fastapi import Request
 from tagflow import tag, text
 
+from polar.config import settings
 from polar.models import Organization
+from polar.organization_review.report import AnyAgentReport
+from polar.organization_review.schemas import DimensionAssessment
+from polar.organization_review.thresholds import (
+    AUTH_RATE,
+    CHARGEBACK_RATE,
+    DISPUTE_RATE,
+    P50_RISK,
+    P90_RISK,
+    REFUND_RATE,
+    thresholds_for_prompt,
+)
 
-from ....components import button, card, metric_card
+from ....components import card
+from ....components._alert import alert
 from ....components._metric_card import Variant
+from ._shared import (
+    RISK_LEVEL_BADGE,
+    ChecklistMixin,
+    render_checklist_row,
+)
 
 
-class OverviewSection:
-    """Render the overview section as a 2x2 grid of cards."""
+class OverviewSection(ChecklistMixin):
+    """Render the overview section with AI review as the primary content."""
 
     def __init__(
         self,
         organization: Organization,
         orders_count: int = 0,
         unrefunded_orders_count: int = 0,
-        agent_report: dict[str, Any] | None = None,
+        agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
     ) -> None:
         self.org = organization
@@ -33,92 +51,110 @@ class OverviewSection:
         self.agent_reviewed_at = agent_reviewed_at
 
     # ------------------------------------------------------------------
-    # Checklist helpers (ported from review_section.py)
+    # Full-width: Organization Review card (primary content)
     # ------------------------------------------------------------------
 
-    @property
-    def has_email(self) -> bool:
-        return bool(self.org.email)
+    _REVIEW_CONTEXT_LABELS: dict[str, str] = {
+        "submission": "Submission",
+        "setup_complete": "Setup Complete",
+        "threshold": "Threshold",
+        "manual": "Manual",
+    }
 
-    @property
-    def has_website(self) -> bool:
-        return bool(self.org.website)
+    def _render_review_context_badge(self, review_type: str | None) -> None:
+        """Render a small badge showing the review trigger context."""
+        if not review_type:
+            return
+        label = self._REVIEW_CONTEXT_LABELS.get(
+            review_type, review_type.replace("_", " ").title()
+        )
+        with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
+            text(label)
 
-    @property
-    def has_socials(self) -> bool:
-        return bool(self.org.socials and len(self.org.socials) >= 1)
+    @staticmethod
+    def _render_dimension_card(dim: DimensionAssessment) -> None:
+        """Render a single dimension with risk-level visual accent."""
+        name = dim.dimension.value.replace("_", " ").title()
+        risk = dim.risk_level.value
+        badge_class = RISK_LEVEL_BADGE.get(risk, "badge-ghost")
 
-    @property
-    def missing_items(self) -> list[str]:
-        items = []
-        if not self.has_email:
-            items.append("Add a support email in your organization settings")
-        if not self.has_website:
-            items.append("Add your website URL in your organization settings")
-        if not self.has_socials:
-            items.append(
-                "Add at least one social media link in your organization settings"
-            )
-        return items
+        # Left border accent: red for HIGH, yellow for MEDIUM, none for LOW
+        border_accent = {
+            "HIGH": "border-l-4 border-l-error",
+            "MEDIUM": "border-l-4 border-l-warning",
+            "LOW": "",
+        }.get(risk, "")
 
-    # ------------------------------------------------------------------
-    # Top-left: Organization Review card
-    # ------------------------------------------------------------------
+        with tag.div(classes=f"border border-base-200 rounded p-3 {border_accent}"):
+            with tag.div(classes="flex items-center justify-between mb-1"):
+                with tag.span(classes="text-sm font-medium"):
+                    text(name)
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.div(classes=f"badge badge-sm {badge_class}"):
+                        text(risk)
+                    with tag.span(classes="text-xs text-base-content/60"):
+                        text(f"{dim.confidence:.0%}")
+
+            if dim.findings:
+                with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
+                    for finding in dim.findings:
+                        with tag.li():
+                            text(finding)
 
     @contextlib.contextmanager
     def organization_review_card(self, request: Request) -> Generator[None]:
-        """Merged agent report + org.review fallback card."""
-        run_agent_url = str(
-            request.url_for(
-                "organizations-v2:run_review_agent",
-                organization_id=self.org.id,
-            )
-        )
+        """Full-width AI review card — the primary decision content."""
 
         with card(bordered=True):
             # --- No agent report: show fallback from org.review ---
             if self.agent_report is None:
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Organization Review")
-                    with button(
-                        variant="primary",
-                        size="sm",
-                        outline=True,
-                        hx_post=run_agent_url,
-                        hx_confirm="Run organization review agent?",
-                    ):
-                        text("Run Agent")
-
-                # Fallback: show org.review data if available
                 if self.org.review:
                     review = self.org.review
-                    with tag.div(classes="flex items-center gap-3 mb-3"):
-                        with tag.span(
-                            classes="badge badge-ghost border border-base-300 badge-lg"
-                        ):
-                            text(review.verdict or "N/A")
+
+                    # Header with timestamp
+                    with tag.div(classes="flex items-center justify-between mb-4"):
+                        with tag.h2(classes="text-lg font-bold"):
+                            text("Organization Review")
+                        if review.validated_at:
+                            with tag.span(classes="text-xs text-base-content/60"):
+                                text(review.validated_at.strftime("%Y-%m-%d %H:%M UTC"))
+
+                    # Verdict badge + risk score
+                    with tag.div(classes="flex items-center gap-4 mb-4"):
+                        verdict_str = (
+                            review.verdict.value
+                            if hasattr(review.verdict, "value")
+                            else str(review.verdict or "N/A")
+                        )
+                        fallback_badge = (
+                            "badge-error" if verdict_str == "FAIL" else "badge-neutral"
+                        )
+                        with tag.div(classes=f"badge {fallback_badge} badge-lg"):
+                            text(verdict_str)
+
                         if review.risk_score is not None:
-                            with tag.span(classes="text-lg font-bold"):
-                                text(f"Risk: {review.risk_score}")
+                            with tag.div(classes="flex items-center gap-1"):
+                                with tag.span(classes="text-sm text-base-content/60"):
+                                    text("Risk:")
+                                with tag.span(classes="text-sm font-semibold"):
+                                    text(f"{float(review.risk_score):.0f}/100")
 
-                    if review.violated_sections:
-                        with tag.div(classes="mb-3"):
-                            with tag.div(classes="text-sm font-semibold mb-1"):
-                                text("Violated Sections:")
-                            with tag.div(classes="flex flex-wrap gap-1"):
-                                for section in review.violated_sections:
-                                    with tag.span(
-                                        classes="badge badge-ghost border border-base-300 badge-sm"
-                                    ):
-                                        text(section)
-
+                    # Assessment reason (as summary paragraph)
                     if review.reason:
-                        with tag.div(
-                            classes="text-sm text-base-content/80 p-3 bg-base-200 rounded mt-3"
-                        ):
+                        with tag.p(classes="text-sm mb-4"):
                             text(review.reason)
 
+                    # Violated sections (inline comma-separated)
+                    if review.violated_sections:
+                        with tag.div(classes="mb-4"):
+                            with tag.span(
+                                classes="text-sm font-medium text-base-content/70"
+                            ):
+                                text("Violated sections: ")
+                            with tag.span(classes="text-sm"):
+                                text(", ".join(review.violated_sections))
+
+                    # Appeal information
                     if review.appeal_submitted_at:
                         with tag.div(
                             classes="mt-4 p-3 border-l-4 border-base-300 bg-base-100 rounded"
@@ -132,7 +168,36 @@ class OverviewSection:
                                 with tag.div(classes="mt-2 text-sm"):
                                     with tag.span(classes="font-semibold"):
                                         text(f"Decision: {review.appeal_decision}")
+
+                    # Model info
+                    if review.model_used:
+                        with tag.div(
+                            classes="flex flex-wrap gap-3 text-xs text-base-content/60 pt-3 border-t border-base-200"
+                        ):
+                            with tag.span():
+                                text(f"Model: {review.model_used}")
+
+                    # Organization details snapshot (collapsible)
+                    if review.organization_details_snapshot:
+                        with tag.details(classes="mt-4"):
+                            with tag.summary(
+                                classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
+                            ):
+                                text("View data snapshot used for this review")
+                            with tag.pre(
+                                classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
+                            ):
+                                text(
+                                    json.dumps(
+                                        review.organization_details_snapshot,
+                                        indent=2,
+                                        default=str,
+                                    )
+                                )
                 else:
+                    with tag.div(classes="flex items-center justify-between mb-4"):
+                        with tag.h2(classes="text-lg font-bold"):
+                            text("Organization Review")
                     with tag.p(classes="text-sm text-base-content/60 mb-4"):
                         text("No agent review yet")
 
@@ -140,95 +205,98 @@ class OverviewSection:
                 return
 
             # --- Agent report present ---
-            report = self.agent_report.get("report", {})
-            usage = self.agent_report.get("usage", {})
+            ar = self.agent_report
+            review_report = ar.report
+            usage = ar.usage
 
-            # Header with timestamp and re-run button
+            # Header with timestamp
             with tag.div(classes="flex items-center justify-between mb-4"):
-                with tag.h2(classes="text-lg font-bold"):
-                    text("Organization Review")
-                with tag.div(classes="flex items-center gap-3"):
-                    if self.agent_reviewed_at:
-                        with tag.span(classes="text-xs text-base-content/60"):
-                            text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
-                    with button(
-                        variant="secondary",
-                        size="sm",
-                        outline=True,
-                        hx_post=run_agent_url,
-                        hx_confirm="Re-run organization review agent?",
-                    ):
-                        text("Re-run Agent")
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Organization Review")
+                    self._render_review_context_badge(ar.review_type)
+                if self.agent_reviewed_at:
+                    with tag.span(classes="text-xs text-base-content/60"):
+                        text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
 
-            # Verdict badge + risk score
+            # Verdict + risk level — prominent inline
             has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
-                verdict = report.get("verdict", "")
-                verdict_classes = {
-                    "APPROVE": "badge-success",
-                    "DENY": "badge-error",
-                    "NEEDS_HUMAN_REVIEW": "badge-warning",
-                }
+                verdict = review_report.verdict.value
                 if verdict == "APPROVE" and has_missing:
-                    badge_class = "badge-warning"
+                    badge_class = "badge-neutral"
                     display_verdict = "APPROVE (checklist incomplete)"
-                else:
-                    badge_class = verdict_classes.get(verdict, "badge-ghost")
+                elif verdict == "DENY":
+                    badge_class = "badge-error"
                     display_verdict = verdict
-                with tag.div(classes=f"badge {badge_class} badge-lg"):
-                    text(display_verdict)
+                else:
+                    badge_class = "badge-neutral"
+                    display_verdict = verdict
+                with tag.div(classes="flex items-center gap-1"):
+                    with tag.span(classes="text-sm text-base-content/60"):
+                        text("AI Verdict:")
+                    with tag.div(classes=f"badge {badge_class} badge-sm"):
+                        text(display_verdict)
 
-                risk_score = report.get("overall_risk_score")
-                if risk_score is not None:
-                    score_color = (
-                        "text-success"
-                        if risk_score < 30
-                        else "text-warning"
-                        if risk_score < 70
-                        else "text-error"
-                    )
-                    with tag.div(classes="flex items-center gap-1"):
-                        with tag.span(classes="text-sm font-medium"):
-                            text("AI Risk:")
-                        with tag.span(classes=f"text-sm font-bold {score_color}"):
-                            text(f"{risk_score:.0f}/100")
+                risk_level = review_report.overall_risk_level.value
+                risk_badge_class = RISK_LEVEL_BADGE.get(risk_level, "badge-ghost")
+                with tag.div(classes="flex items-center gap-1"):
+                    with tag.span(classes="text-sm text-base-content/60"):
+                        text("AI Risk:")
+                    with tag.div(classes=f"badge {risk_badge_class} badge-sm"):
+                        text(risk_level)
 
             # Summary
-            summary = report.get("summary", "")
-            if summary:
+            if review_report.summary:
                 with tag.p(classes="text-sm mb-4"):
-                    text(summary)
+                    text(review_report.summary)
 
             # Violated sections
-            violated = report.get("violated_sections", [])
-            if violated:
+            if review_report.violated_sections:
                 with tag.div(classes="mb-4"):
-                    with tag.span(classes="text-sm font-medium text-error"):
+                    with tag.span(classes="text-sm font-medium text-base-content/70"):
                         text("Violated sections: ")
                     with tag.span(classes="text-sm"):
-                        text(", ".join(violated))
+                        text(", ".join(review_report.violated_sections))
 
-            # Recommended action
-            recommended = report.get("recommended_action", "")
-            if recommended:
-                with tag.div(
-                    classes="p-3 bg-info/10 border border-info/30 rounded text-sm mb-4"
-                ):
-                    with tag.span(classes="font-medium"):
-                        text("Recommended action: ")
-                    text(recommended)
+            # Dimensions — sorted by risk (HIGH first), 1 per row
+            if review_report.dimensions:
+                risk_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+                sorted_dims = sorted(
+                    review_report.dimensions,
+                    key=lambda d: risk_order.get(d.risk_level.value, 3),
+                )
 
-            # Per-dimension breakdown (collapsible)
-            dimensions = report.get("dimensions", [])
-            if dimensions:
-                with tag.details(classes="mb-4"):
-                    with tag.summary(
-                        classes="text-sm font-bold cursor-pointer hover:text-base-content"
-                    ):
+                elevated = [
+                    d for d in sorted_dims if d.risk_level.value in ("HIGH", "MEDIUM")
+                ]
+                low = [d for d in sorted_dims if d.risk_level.value == "LOW"]
+
+                with tag.div(classes="mb-4"):
+                    with tag.h3(classes="text-sm font-bold mb-3"):
                         text("Dimension Breakdown")
-                    with tag.div(classes="space-y-3 mt-2"):
-                        for dim in dimensions:
-                            self._render_dimension(dim)
+
+                    if elevated:
+                        with tag.div(classes="space-y-3 mb-3"):
+                            for dim in elevated:
+                                self._render_dimension_card(dim)
+
+                    if low:
+                        if elevated:
+                            with tag.details():
+                                with tag.summary(
+                                    classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content mb-2"
+                                ):
+                                    text(
+                                        f"{len(low)} low-risk dimension{'s' if len(low) != 1 else ''}"
+                                    )
+                                with tag.div(classes="space-y-3"):
+                                    for dim in low:
+                                        self._render_dimension_card(dim)
+                        else:
+                            with tag.div(classes="space-y-3"):
+                                for dim in low:
+                                    self._render_dimension_card(dim)
 
             # Appeal information
             if self.org.review and self.org.review.appeal_submitted_at:
@@ -247,10 +315,10 @@ class OverviewSection:
                                 text(f"Decision: {review.appeal_decision}")
 
             # Usage info
-            total_tokens = usage.get("total_tokens", 0)
-            cost = usage.get("estimated_cost_usd")
-            model_used = self.agent_report.get("model_used", "")
-            duration = self.agent_report.get("duration_seconds")
+            total_tokens = usage.total_tokens
+            cost = usage.estimated_cost_usd
+            model_used = ar.model_used
+            duration = ar.duration_seconds
             if total_tokens or cost or model_used:
                 with tag.div(
                     classes="flex flex-wrap gap-3 text-xs text-base-content/60 pt-3 border-t border-base-200"
@@ -264,46 +332,63 @@ class OverviewSection:
                     if cost is not None:
                         with tag.span():
                             text(f"Cost: ${cost:.4f}")
-                    if duration is not None:
+                    if duration:
                         with tag.span():
                             text(f"Duration: {duration:.1f}s")
 
             # Data snapshot (collapsible)
-            data_snapshot = self.agent_report.get("data_snapshot")
-            if data_snapshot:
-                with tag.details(classes="mt-4"):
-                    with tag.summary(
-                        classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
-                    ):
-                        text("View data snapshot used for this review")
-                    with tag.pre(
-                        classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
-                    ):
-                        text(json.dumps(data_snapshot, indent=2, default=str))
+            snapshot_data = ar.data_snapshot.model_dump(mode="json")
+            with tag.details(classes="mt-4"):
+                with tag.summary(
+                    classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
+                ):
+                    text("View data snapshot used for this review")
+                with tag.pre(
+                    classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
+                ):
+                    text(json.dumps(snapshot_data, indent=2, default=str))
 
             yield
 
     # ------------------------------------------------------------------
-    # Top-right: Payment Metrics card (unchanged)
+    # Account-level risk flags (e.g. Morocco, MAD currency)
+    # ------------------------------------------------------------------
+
+    def _render_risk_flags(self) -> None:
+        """Render account-level risk flags above metrics."""
+        account = self.org.account
+        if not account:
+            return
+
+        flags: list[str] = []
+        risk_countries = settings.RISK_COUNTRY_CODES
+        if account.country and account.country in risk_countries:
+            country_obj = pycountry.countries.get(alpha_2=account.country)
+            country_name = country_obj.name if country_obj else account.country
+            flags.append(f"Account country: {account.country} ({country_name})")
+        if account.currency and account.currency.lower() in {
+            c.lower() for c in settings.RISK_CURRENCY_CODES
+        }:
+            flags.append(f"Payout currency: {account.currency.upper()}")
+
+        if not flags:
+            return
+
+        with alert(variant="warning", soft=True):
+            with tag.div(classes="space-y-1"):
+                for flag in flags:
+                    with tag.div(classes="text-sm font-medium"):
+                        text(flag)
+
+    # ------------------------------------------------------------------
+    # Payment Metrics card
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _rate_variant(
-        value: float, *, yellow: float, red: float, higher_is_worse: bool = True
-    ) -> Variant:
-        """Pick metric card variant based on threshold direction."""
-        if higher_is_worse:
-            if value >= red:
-                return "error"
-            if value >= yellow:
-                return "warning"
-            return "default"
-        # Lower-is-worse (e.g. auth rate)
-        if value <= red:
-            return "error"
-        if value <= yellow:
-            return "warning"
-        return "default"
+    def _to_variant(level: str) -> Variant:
+        """Map threshold evaluation result to UI variant."""
+        _map: dict[str, Variant] = {"ok": "default", "warn": "warning", "crit": "error"}
+        return _map[level]
 
     @contextlib.contextmanager
     def payment_card(
@@ -311,34 +396,19 @@ class OverviewSection:
     ) -> Generator[None]:
         """Render payment statistics card with health-rate metrics."""
 
-        # Determine worst variant for card-level border accent
-        border_class = ""
-        if payment_stats:
-            variants = [
-                self._rate_variant(
-                    payment_stats.get("auth_rate", 100),
-                    yellow=90,
-                    red=75,
-                    higher_is_worse=False,
-                ),
-                self._rate_variant(
-                    payment_stats.get("refund_rate", 0), yellow=10, red=15
-                ),
-                self._rate_variant(
-                    payment_stats.get("dispute_rate", 0), yellow=0.50, red=0.75
-                ),
-                self._rate_variant(
-                    payment_stats.get("chargeback_rate", 0), yellow=0.15, red=0.30
-                ),
-            ]
-            if "error" in variants:
-                border_class = "border-l-4 border-l-error"
-            elif "warning" in variants:
-                border_class = "border-l-4 border-l-warning"
-
-        with card(bordered=True, classes=border_class):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Payment Metrics")
+        with card(bordered=True):
+            # Header with info tooltip
+            with tag.div(classes="flex items-center justify-between mb-4"):
+                with tag.h2(classes="text-lg font-bold"):
+                    text("Payment Metrics")
+                with tag.div(
+                    classes="tooltip tooltip-left before:whitespace-pre-line before:text-left before:max-w-xs",
+                    data_tip=thresholds_for_prompt(),
+                ):
+                    with tag.span(
+                        classes="badge badge-ghost badge-sm cursor-help text-base-content/40"
+                    ):
+                        text("thresholds")
 
             if not payment_stats:
                 with tag.p(classes="text-base-content/60"):
@@ -347,98 +417,123 @@ class OverviewSection:
                 next_review_threshold = payment_stats.get("next_review_threshold")
                 total_transfer_sum = payment_stats.get("total_transfer_sum")
 
-                if next_review_threshold or total_transfer_sum:
-                    with tag.div(
-                        classes="space-y-2 mb-4 pb-4 border-b border-base-200"
-                    ):
-                        if next_review_threshold:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Next Review")
-                                with tag.span(
-                                    classes="font-mono text-sm font-semibold"
-                                ):
-                                    text(f"${next_review_threshold / 100:,.0f}")
-
-                        if total_transfer_sum:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Total Transfers")
-                                with tag.span(
-                                    classes="font-mono text-sm font-semibold"
-                                ):
-                                    text(f"${total_transfer_sum / 100:,.2f}")
-
-                # Row 1: Total Payments + Total Amount
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
-                    with metric_card(
+                with tag.div(classes="space-y-0"):
+                    # Summary line items
+                    self._payment_line(
                         "Total Payments",
-                        payment_stats.get("payment_count", 0),
-                        compact=True,
-                    ):
-                        pass
-
-                    with metric_card(
+                        str(payment_stats.get("payment_count", 0)),
+                    )
+                    self._payment_line(
                         "Total Amount",
                         f"${payment_stats.get('total_amount', 0):,.2f}",
-                        compact=True,
-                    ):
-                        pass
+                    )
+                    if total_transfer_sum:
+                        self._payment_line(
+                            "Total Transfers",
+                            f"${total_transfer_sum / 100:,.2f}",
+                        )
+                    if next_review_threshold:
+                        self._payment_line(
+                            "Next Review",
+                            f"${next_review_threshold / 100:,.0f}",
+                        )
 
-                # Row 2: Auth Rate + Refund Rate
-                auth_rate = payment_stats.get("auth_rate", 100)
-                refund_rate = payment_stats.get("refund_rate", 0)
+                    # Divider before rate metrics
+                    tag.div(classes="border-b border-base-300 my-1")
 
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
-                    with metric_card(
+                    # Rate metrics
+                    auth_rate = payment_stats.get("auth_rate", 100)
+                    failed_count = payment_stats.get("failed_count", 0)
+                    self._payment_line(
                         "Auth Rate",
                         f"{auth_rate:.1f}%",
-                        subtitle=f"{payment_stats.get('failed_count', 0)} failed",
-                        variant=self._rate_variant(
-                            auth_rate, yellow=90, red=75, higher_is_worse=False
-                        ),
-                        compact=True,
-                    ):
-                        pass
+                        variant=self._to_variant(AUTH_RATE.evaluate(auth_rate)),
+                        detail=f"{failed_count} failed",
+                    )
 
-                    with metric_card(
+                    refund_rate = payment_stats.get("refund_rate", 0)
+                    self._payment_line(
                         "Refund Rate",
                         f"{refund_rate:.1f}%",
-                        subtitle=f"${payment_stats.get('refunds_amount', 0):,.2f}",
-                        variant=self._rate_variant(refund_rate, yellow=10, red=15),
-                        compact=True,
-                    ):
-                        pass
+                        variant=self._to_variant(REFUND_RATE.evaluate(refund_rate)),
+                        detail=f"${payment_stats.get('refunds_amount', 0):,.2f}",
+                    )
 
-                # Row 3: Dispute Rate + Chargeback Rate
-                dispute_rate = payment_stats.get("dispute_rate", 0)
-                chargeback_rate = payment_stats.get("chargeback_rate", 0)
-
-                with tag.div(classes="grid grid-cols-2 gap-3"):
-                    with metric_card(
+                    dispute_rate = payment_stats.get("dispute_rate", 0)
+                    self._payment_line(
                         "Dispute Rate",
                         f"{dispute_rate:.2f}%",
-                        subtitle=f"{payment_stats.get('dispute_count', 0)} disputes (${payment_stats.get('dispute_amount', 0):,.2f})",
-                        variant=self._rate_variant(dispute_rate, yellow=0.50, red=0.75),
-                        compact=True,
-                    ):
-                        pass
+                        variant=self._to_variant(DISPUTE_RATE.evaluate(dispute_rate)),
+                        detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0):,.2f}",
+                    )
 
-                    with metric_card(
+                    chargeback_rate = payment_stats.get("chargeback_rate", 0)
+                    self._payment_line(
                         "Chargeback Rate",
                         f"{chargeback_rate:.2f}%",
-                        subtitle=f"{payment_stats.get('chargeback_count', 0)} lost (${payment_stats.get('chargeback_amount', 0):,.2f})",
-                        variant=self._rate_variant(
-                            chargeback_rate, yellow=0.15, red=0.30
+                        variant=self._to_variant(
+                            CHARGEBACK_RATE.evaluate(chargeback_rate)
                         ),
-                        compact=True,
-                    ):
-                        pass
+                        detail=f"{payment_stats.get('chargeback_count', 0)} lost · ${payment_stats.get('chargeback_amount', 0):,.2f}",
+                    )
+
+                    # Risk scores
+                    risk_scores_count = payment_stats.get("risk_scores_count", 0)
+                    if risk_scores_count > 0:
+                        tag.div(classes="border-b border-base-300 my-1")
+
+                        p50_risk = payment_stats.get("p50_risk", 0)
+                        p90_risk = payment_stats.get("p90_risk", 0)
+                        self._payment_line(
+                            "P50 Risk",
+                            f"{p50_risk:.0f}",
+                            variant=self._to_variant(P50_RISK.evaluate(p50_risk)),
+                            detail=f"median of {risk_scores_count}",
+                        )
+                        self._payment_line(
+                            "P90 Risk",
+                            f"{p90_risk:.0f}",
+                            variant=self._to_variant(P90_RISK.evaluate(p90_risk)),
+                            detail="90th pctl",
+                        )
 
             yield
 
+    @staticmethod
+    def _payment_line(
+        label: str,
+        value: str,
+        *,
+        variant: Variant = "default",
+        detail: str | None = None,
+    ) -> None:
+        """Render a single compact metric line with background tint for alerts."""
+        row_bg: dict[Variant, str] = {
+            "default": "",
+            "success": "",
+            "warning": "bg-warning/5",
+            "error": "bg-error/10",
+            "info": "",
+        }
+
+        with tag.div(
+            classes=f"flex items-center justify-between py-1.5 px-1 rounded {row_bg[variant]}"
+        ):
+            # Left: label + detail
+            with tag.div(classes="flex items-center gap-2 min-w-0"):
+                with tag.span(classes="text-sm truncate"):
+                    text(label)
+                if detail:
+                    with tag.span(classes="text-xs text-base-content/50 truncate"):
+                        text(detail)
+
+            # Right: value
+            weight = "font-bold" if variant != "default" else "font-semibold"
+            with tag.span(classes=f"font-mono text-sm {weight}"):
+                text(value)
+
     # ------------------------------------------------------------------
-    # Bottom-left: Setup & Checklist card
+    # Setup & Checklist card
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
@@ -486,7 +581,7 @@ class OverviewSection:
             yield
 
     # ------------------------------------------------------------------
-    # Bottom-right: Organization Profile card
+    # Organization Profile card
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
@@ -582,47 +677,6 @@ class OverviewSection:
 
             yield
 
-    # ------------------------------------------------------------------
-    # Shared helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _render_dimension(dim: dict[str, Any]) -> None:
-        """Render a single dimension assessment."""
-        name = dim.get("dimension", "").replace("_", " ").title()
-        score = dim.get("score", 0)
-        confidence = dim.get("confidence", 0)
-        findings = dim.get("findings", [])
-        recommendation = dim.get("recommendation", "")
-
-        score_color = (
-            "badge-success"
-            if score < 30
-            else "badge-warning"
-            if score < 70
-            else "badge-error"
-        )
-
-        with tag.div(classes="border border-base-200 rounded p-3"):
-            with tag.div(classes="flex items-center justify-between mb-1"):
-                with tag.span(classes="text-sm font-medium"):
-                    text(name)
-                with tag.div(classes="flex items-center gap-2"):
-                    with tag.div(classes=f"badge badge-sm {score_color}"):
-                        text(f"{score:.0f}")
-                    with tag.span(classes="text-xs text-base-content/60"):
-                        text(f"{confidence:.0%} confidence")
-
-            if findings:
-                with tag.ul(classes="list-disc list-inside text-xs space-y-0.5 mt-1"):
-                    for finding in findings:
-                        with tag.li():
-                            text(finding)
-
-            if recommendation:
-                with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
-                    text(recommendation)
-
     def _render_checklist(self) -> None:
         """Render the account checklist rows."""
         with tag.div(classes="pt-4 mt-4 border-t border-base-200"):
@@ -630,13 +684,13 @@ class OverviewSection:
                 text("Account Checklist")
 
             with tag.div(classes="space-y-3"):
-                self._checklist_row(
+                render_checklist_row(
                     "Support Email",
                     self.has_email,
                     self.org.email if self.has_email else None,
                 )
 
-                self._checklist_row(
+                render_checklist_row(
                     "Website URL",
                     self.has_website,
                     self.org.website if self.has_website else None,
@@ -644,13 +698,13 @@ class OverviewSection:
 
                 if self.has_socials:
                     social_count = len(self.org.socials)
-                    self._checklist_row(
+                    render_checklist_row(
                         "Social Media",
                         True,
                         f"{social_count} link{'s' if social_count != 1 else ''}",
                     )
                 else:
-                    self._checklist_row("Social Media", False, None)
+                    render_checklist_row("Social Media", False, None)
 
                 # Test Sales — dot color based on unrefunded orders
                 # Green: no orders, or all refunded
@@ -686,27 +740,8 @@ class OverviewSection:
                             f"{self.unrefunded_orders_count} unrefunded order{'s' if self.unrefunded_orders_count != 1 else ''} — should be auto-refunded before approval."
                         )
 
-    @staticmethod
-    def _checklist_row(label: str, is_set: bool, value: str | None) -> None:
-        """Render a single checklist row."""
-        with tag.div(
-            classes="flex items-center justify-between py-2 border-b border-base-200"
-        ):
-            with tag.div(classes="flex items-center gap-2"):
-                dot_class = "bg-success" if is_set else "bg-error"
-                with tag.span(
-                    classes=f"w-2.5 h-2.5 rounded-full {dot_class} inline-block"
-                ):
-                    pass
-                with tag.span(classes="text-sm font-medium"):
-                    text(label)
-            with tag.span(
-                classes="text-sm" + (" text-base-content/60" if not is_set else "")
-            ):
-                text((value or "Set") if is_set else "Missing")
-
     # ------------------------------------------------------------------
-    # Main render: 2x2 grid
+    # Main render: AI review first, then supporting evidence
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
@@ -716,19 +751,22 @@ class OverviewSection:
         setup_data: dict[str, int | bool] | None = None,
         payment_stats: dict[str, int | float] | None = None,
     ) -> Generator[None]:
-        """Render the complete overview section as a 2x2 grid."""
+        """Render the overview section with AI review as primary content."""
 
-        with tag.div(classes="space-y-6"):
-            # Top row: Organization Review + Payment Metrics
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-6"):
+        # Two-column: AI review (primary, wider) + supporting evidence stacked
+        with tag.div(classes="flex flex-col lg:flex-row gap-6"):
+            # Left: AI Organization Review (~60%)
+            with tag.div(classes="lg:w-3/5 min-w-0"):
                 with self.organization_review_card(request):
                     pass
+
+            # Right: supporting evidence stacked (~40%)
+            with tag.div(classes="lg:w-2/5 space-y-6"):
+                self._render_risk_flags()
 
                 with self.payment_card(payment_stats):
                     pass
 
-            # Bottom row: Setup & Checklist + Organization Profile
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-6"):
                 with self.setup_checklist_card(setup_data):
                     pass
 

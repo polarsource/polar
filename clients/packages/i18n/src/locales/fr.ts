@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Ajouter les informations de facturation',
       removeBusinessDetails: 'Supprimer les informations de facturation',
       billingDetails: "Informations sur l'entreprise",
+      addDiscountCode: 'Ajouter un code de réduction',
     },
     pricing: {
       subtotal: 'Sous-total',
@@ -58,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: "Jusqu'au {date}",
       },
       everyInterval: {
         day: {
@@ -109,6 +111,38 @@ export default {
           other: 'Essai de # ans',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# jour gratuit',
+            other: '# jours gratuits',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# mois gratuit',
+            other: '# mois gratuits',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# an gratuit',
+            other: '# ans gratuits',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/jour',
+          week: '/semaine',
+          month: '/mois',
+          year: '/an',
+        },
+        then: 'Puis',
+        startingDate: 'à partir du {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: "Total à la fin de l'essai",
+        totalWhenDiscountExpires: 'Total à la fin de la réduction',
+        totalDueToday: "Total à payer aujourd'hui",
       },
     },
     pwywForm: {
@@ -204,6 +238,10 @@ export default {
       getFree: 'Obtenir gratuitement',
       paymentsUnavailable: 'Les paiements sont actuellement indisponibles',
     },
+    productDescription: {
+      readMore: 'Lire la suite',
+      readLess: 'Réduire',
+    },
   },
   intervals: {
     short: {
@@ -214,12 +252,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Personnalisé',
     license_keys: 'Clés de licence',
     github_repository: 'Accès au dépôt GitHub',
     discord: 'Invitation Discord',
     downloadables: 'Fichiers',
-    custom: 'Personnalisé',
     meter_credit: 'Crédits prépayés',
+    feature_flag: 'Accès à une fonctionnalité',
   },
   ordinal: {
     zero: 'e',

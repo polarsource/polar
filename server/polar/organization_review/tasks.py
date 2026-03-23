@@ -5,6 +5,7 @@ import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
+from polar.integrations.plain.service import plain as plain_service
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
@@ -13,9 +14,11 @@ from polar.organization.repository import (
 from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
 )
+from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
+from .report import build_agent_report
 from .repository import OrganizationReviewRepository
 from .schemas import ReviewContext, ReviewVerdict
 
@@ -36,7 +39,6 @@ class OrganizationDoesNotExist(OrganizationReviewTaskError):
 _VERDICT_MAP: dict[ReviewVerdict, str] = {
     ReviewVerdict.APPROVE: OrganizationReview.Verdict.PASS,
     ReviewVerdict.DENY: OrganizationReview.Verdict.FAIL,
-    ReviewVerdict.NEEDS_HUMAN_REVIEW: OrganizationReview.Verdict.UNCERTAIN,
 }
 
 
@@ -49,11 +51,11 @@ _VERDICT_MAP: dict[ReviewVerdict, str] = {
 async def run_review_agent(
     organization_id: uuid.UUID,
     context: str = ReviewContext.THRESHOLD,
+    auto_approve_eligible: bool = False,
 ) -> None:
     """Run the organization review agent as a background task.
 
-    For SUBMISSION context: creates an OrganizationReview record and auto-denies
-    on DENY or NEEDS_HUMAN_REVIEW.
+    For SUBMISSION context: creates an OrganizationReview record and auto-denies on DENY.
     For THRESHOLD context: log-only, persists to OrganizationAgentReview table.
     """
     review_context = ReviewContext(context)
@@ -69,9 +71,22 @@ async def run_review_agent(
             raise OrganizationDoesNotExist(organization_id)
 
         # Run the review agent
-        result = await run_organization_review(
-            session, organization, context=review_context
-        )
+        try:
+            result = await run_organization_review(
+                session, organization, context=review_context
+            )
+        except Exception:
+            if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
+                log.exception(
+                    "organization_review.threshold.agent_failed",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                )
+                await plain_service.create_organization_review_thread(
+                    session, organization
+                )
+                return
+            raise
 
         report = result.report
         log.info(
@@ -89,12 +104,56 @@ async def run_review_agent(
 
         # Persist agent report to its own table (both contexts)
         review_repository = OrganizationReviewRepository.from_session(session)
-        await review_repository.save_agent_review(
+        typed_report = build_agent_report(result, review_type=review_context.value)
+        agent_review = await review_repository.save_agent_review(
             organization_id=organization_id,
-            report=result.model_dump(mode="json"),
-            model_used=result.model_used,
+            report=typed_report,
             reviewed_at=datetime.now(UTC),
         )
+
+        # For THRESHOLD context with auto-approve eligibility:
+        # delegate decision to the service layer
+        if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
+            # If a human manually set this org under review, skip auto-action
+            current_decision = await review_repository.get_current_decision(
+                organization_id
+            )
+            if (
+                current_decision is not None
+                and current_decision.actor_type == "human"
+                and current_decision.review_context == "manual"
+            ):
+                auto_approve_eligible = False
+                log.info(
+                    "organization_review.threshold.manual_review_override",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    verdict=report.verdict.value,
+                )
+                await plain_service.create_organization_review_thread(
+                    session, organization
+                )
+
+        if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
+            auto_approved = await organization_service.handle_ongoing_review_verdict(
+                session, organization, report.verdict
+            )
+            log.info(
+                "organization_review.threshold.verdict_handled",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+                verdict=report.verdict.value,
+                auto_approved=auto_approved,
+            )
+            if auto_approved:
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review.id,
+                    decision="APPROVE",
+                    review_context="threshold",
+                    verdict=report.verdict.value,
+                    risk_score=report.overall_risk_score,
+                )
 
         # For SUBMISSION context: also create OrganizationReview record and act
         if review_context == ReviewContext.SUBMISSION:
@@ -108,7 +167,7 @@ async def run_review_agent(
                     verdict=mapped_verdict,
                     risk_score=report.overall_risk_score,
                     violated_sections=report.violated_sections,
-                    reason=report.summary,
+                    reason=report.merchant_summary,
                     timed_out=result.timed_out,
                     organization_details_snapshot={
                         "name": organization.name,
@@ -120,14 +179,20 @@ async def run_review_agent(
                 )
                 session.add(org_review)
 
-            # Auto-deny on DENY or NEEDS_HUMAN_REVIEW
-            if report.verdict in (
-                ReviewVerdict.DENY,
-                ReviewVerdict.NEEDS_HUMAN_REVIEW,
-            ):
+            # Auto-deny on DENY — human will review the denial
+            if report.verdict == ReviewVerdict.DENY:
                 organization.status = OrganizationStatus.DENIED
                 organization.status_updated_at = datetime.now(UTC)
                 session.add(organization)
+
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review.id,
+                    decision="DENY",
+                    review_context="submission",
+                    verdict=report.verdict.value,
+                    risk_score=report.overall_risk_score,
+                )
 
                 log.info(
                     "organization_review.submission.denied",

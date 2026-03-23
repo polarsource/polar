@@ -162,7 +162,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id)
+        query = TinybirdEventsQuery([org_id])
         stats = await query.get_event_type_stats()
 
         stats_by_name = {(s.name, s.source): s for s in stats}
@@ -191,7 +191,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id).filter_source(EventSource.user)
+        query = TinybirdEventsQuery([org_id]).filter_source(EventSource.user)
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1
@@ -221,7 +221,7 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id).filter_customer_id([customer_1])
+        query = TinybirdEventsQuery([org_id]).filter_customer(customer_ids=[customer_1])
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1
@@ -278,12 +278,60 @@ class TestTinybirdEventsQuery:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_1)
+        query = TinybirdEventsQuery([org_1])
         stats = await query.get_event_type_stats()
 
         assert len(stats) == 1
         assert stats[0].name == "org1.event"
         assert stats[0].occurrences == 2
+
+    async def test_multiple_organizations(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_1 = uuid.uuid4()
+        org_2 = uuid.uuid4()
+
+        events = [
+            create_test_event(
+                organization_id=org_1, name="shared.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_1, name="shared.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_2, name="shared.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_2, name="org2.only", source=EventSource.user
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        query = TinybirdEventsQuery([org_1, org_2])
+        stats = await query.get_event_type_stats()
+
+        stats_by_key = {(s.organization_id, s.name, s.source): s for s in stats}
+        assert len(stats) == 3
+        assert (
+            stats_by_key[(org_1, "shared.event", EventSource.system)].occurrences == 2
+        )
+        assert (
+            stats_by_key[(org_2, "shared.event", EventSource.system)].occurrences == 1
+        )
+        assert stats_by_key[(org_2, "org2.only", EventSource.user)].occurrences == 1
+
+
+async def _get_source_stats(
+    client: TinybirdClient, org_id: uuid.UUID
+) -> dict[str, int]:
+    rows = await client.query(
+        f"SELECT name, count() as cnt FROM {DATASOURCE_EVENTS} "
+        f"WHERE organization_id = '{org_id}' GROUP BY name",
+        db_statement="delete_test_stats",
+    )
+    return {row["name"]: row["cnt"] for row in rows}
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
@@ -306,11 +354,9 @@ class TestTinybirdDelete:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id)
-        stats_before = await query.get_event_type_stats()
-        stats_by_name = {s.name: s for s in stats_before}
-        assert stats_by_name["delete.test"].occurrences == 2
-        assert stats_by_name["keep.test"].occurrences == 1
+        stats_before = await _get_source_stats(tinybird_client, org_id)
+        assert stats_before["delete.test"] == 2
+        assert stats_before["keep.test"] == 1
 
         event_to_delete = events[0]
         delete_condition = f"id = '{event_to_delete.id}'"
@@ -326,10 +372,9 @@ class TestTinybirdDelete:
 
         assert job["status"] == "done"
 
-        stats_after = await query.get_event_type_stats()
-        stats_by_name_after = {s.name: s for s in stats_after}
-        assert stats_by_name_after["delete.test"].occurrences == 1
-        assert stats_by_name_after["keep.test"].occurrences == 1
+        stats_after = await _get_source_stats(tinybird_client, org_id)
+        assert stats_after["delete.test"] == 1
+        assert stats_after["keep.test"] == 1
 
     async def test_delete_multiple_by_id(self, tinybird_client: TinybirdClient) -> None:
         org_id = uuid.uuid4()
@@ -348,11 +393,9 @@ class TestTinybirdDelete:
         tinybird_events = [_event_to_tinybird(e) for e in events]
         await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
-        query = TinybirdEventsQuery(org_id)
-        stats_before = await query.get_event_type_stats()
-        stats_by_name = {s.name: s for s in stats_before}
-        assert stats_by_name["batch.delete"].occurrences == 2
-        assert stats_by_name["batch.keep"].occurrences == 1
+        stats_before = await _get_source_stats(tinybird_client, org_id)
+        assert stats_before["batch.delete"] == 2
+        assert stats_before["batch.keep"] == 1
 
         ids_to_delete = [str(events[0].id), str(events[1].id)]
         delete_condition = f"id IN ('{ids_to_delete[0]}', '{ids_to_delete[1]}')"
@@ -366,10 +409,9 @@ class TestTinybirdDelete:
 
         assert job["status"] == "done"
 
-        stats_after = await query.get_event_type_stats()
-        stats_by_name_after = {s.name: s for s in stats_after}
-        assert "batch.delete" not in stats_by_name_after
-        assert stats_by_name_after["batch.keep"].occurrences == 1
+        stats_after = await _get_source_stats(tinybird_client, org_id)
+        assert "batch.delete" not in stats_after
+        assert stats_after["batch.keep"] == 1
 
 
 @pytest.mark.asyncio

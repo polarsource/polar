@@ -1,9 +1,6 @@
-import type { CustomField } from '@polar-sh/sdk/models/components/customfield'
-import type { CustomFieldCheckbox } from '@polar-sh/sdk/models/components/customfieldcheckbox'
-import type { CustomFieldDate } from '@polar-sh/sdk/models/components/customfielddate'
-import type { CustomFieldNumber } from '@polar-sh/sdk/models/components/customfieldnumber'
-import type { CustomFieldSelect } from '@polar-sh/sdk/models/components/customfieldselect'
-import type { CustomFieldText } from '@polar-sh/sdk/models/components/customfieldtext'
+/* eslint-disable max-lines */
+import type { schemas } from '@polar-sh/client'
+
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -21,26 +18,26 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import type { MarkdownToJSX } from 'markdown-to-jsx'
 import Markdown from 'markdown-to-jsx'
 import type { ControllerRenderProps } from 'react-hook-form'
+import { unreachable } from '../utils/unreachable'
 
 const markdownOptions: MarkdownToJSX.Options = {
   disableParsingRawHTML: true,
   forceBlock: false,
   overrides: {
-    h1: (props: any) => <span {...props} />,
-    h2: (props: any) => <span {...props} />,
-    h3: (props: any) => <span {...props} />,
-    h4: (props: any) => <span {...props} />,
-    h5: (props: any) => <span {...props} />,
-    h6: (props: any) => <span {...props} />,
-    p: (props: any) => <span {...props} />,
+    h1: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+    h2: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+    h3: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+    h4: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+    h5: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+    h6: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
+    p: (props: React.HTMLAttributes<HTMLSpanElement>) => <span {...props} />,
     embed: () => <></>,
     iframe: () => <></>,
     img: () => <></>,
-    a: (props: any) => (
+    a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a
         {...props}
         rel="noopener noreferrer nofollow"
@@ -51,12 +48,16 @@ const markdownOptions: MarkdownToJSX.Options = {
   },
 }
 
-const FieldLabel = ({ customField }: { customField: CustomField }) => {
+const FieldLabel = ({
+  customField,
+}: {
+  customField: schemas['CustomField']
+}) => {
   return (
     <FormLabel>
-      {customField.properties.formLabel ? (
+      {customField.properties.form_label ? (
         <Markdown options={markdownOptions}>
-          {customField.properties.formLabel}
+          {customField.properties.form_label}
         </Markdown>
       ) : (
         customField.name
@@ -65,37 +66,39 @@ const FieldLabel = ({ customField }: { customField: CustomField }) => {
   )
 }
 
-const FieldHelpText = ({ customField }: { customField: CustomField }) => {
-  return customField.properties.formHelpText ? (
+const FieldHelpText = ({
+  customField,
+}: {
+  customField: schemas['CustomField']
+}) => {
+  return customField.properties.form_help_text ? (
     <FormDescription>
       <Markdown options={markdownOptions}>
-        {customField.properties.formHelpText}
+        {customField.properties.form_help_text}
       </Markdown>
     </FormDescription>
   ) : null
 }
 
 interface CustomFieldTextInputProps {
-  customField: CustomFieldText
+  customField: schemas['CustomFieldText']
   required: boolean
   field: ControllerRenderProps
-  themePreset: ThemingPresetProps
 }
 
 const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
   customField,
   required,
   field,
-  themePreset,
 }) => {
   if (customField.properties.textarea) {
     return (
       <TextArea
         {...field}
-        placeholder={customField.properties.formPlaceholder}
+        placeholder={customField.properties.form_placeholder}
         required={required}
-        minLength={customField.properties.minLength}
-        maxLength={customField.properties.maxLength}
+        minLength={customField.properties.min_length}
+        maxLength={customField.properties.max_length}
       />
     )
   }
@@ -105,33 +108,31 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
       {...field}
       className="bg-white shadow-xs"
       type="text"
-      placeholder={customField.properties.formPlaceholder}
+      placeholder={customField.properties.form_placeholder}
       required={required}
-      minLength={customField.properties.minLength}
-      maxLength={customField.properties.maxLength}
+      minLength={customField.properties.min_length}
+      maxLength={customField.properties.max_length}
     />
   )
 }
 
 interface CustomFieldNumberInputProps {
-  customField: CustomFieldNumber
+  customField: schemas['CustomFieldNumber']
   required: boolean
   field: ControllerRenderProps
-  themePreset: ThemingPresetProps
 }
 
 const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
   customField,
   required,
   field,
-  themePreset,
 }) => {
   return (
     <Input
       {...field}
       type="number"
       className="bg-white shadow-xs"
-      placeholder={customField.properties.formPlaceholder}
+      placeholder={customField.properties.form_placeholder}
       required={required}
       min={customField.properties.ge}
       max={customField.properties.le}
@@ -140,17 +141,15 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
 }
 
 interface CustomFieldDateInputProps {
-  customField: CustomFieldDate
+  customField: schemas['CustomFieldDate']
   required: boolean
   field: ControllerRenderProps
-  themePreset: ThemingPresetProps
 }
 
 const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
   customField,
   required,
   field,
-  themePreset,
 }) => {
   const { ge, le } = customField.properties
   const min = ge ? new Date(ge * 1000).toISOString().slice(0, 10) : undefined
@@ -161,7 +160,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
       {...field}
       type={'date'}
       className="bg-white shadow-xs"
-      placeholder={customField.properties.formPlaceholder}
+      placeholder={customField.properties.form_placeholder}
       required={required}
       min={min}
       max={max}
@@ -170,17 +169,15 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
 }
 
 interface CustomFieldCheckboxInputProps {
-  customField: CustomFieldCheckbox
+  customField: schemas['CustomFieldCheckbox']
   required: boolean
   field: ControllerRenderProps
-  themePreset: ThemingPresetProps
 }
 
 const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
   customField,
   required,
   field,
-  themePreset,
 }) => {
   return (
     <FormItem>
@@ -192,18 +189,16 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
             required={required}
           />
         </FormControl>
-        {/* @ts-ignore */}
         <FieldLabel customField={customField} />
       </div>
       <FormMessage />
-      {/* @ts-ignore */}
       <FieldHelpText customField={customField} />
     </FormItem>
   )
 }
 
 interface CustomFieldSelectInputProps {
-  customField: CustomFieldSelect
+  customField: schemas['CustomFieldSelect']
   required: boolean
   field: ControllerRenderProps
 }
@@ -220,7 +215,7 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
       required={required}
     >
       <SelectTrigger>
-        <SelectValue placeholder={customField.properties.formPlaceholder} />
+        <SelectValue placeholder={customField.properties.form_placeholder} />
       </SelectTrigger>
       <SelectContent>
         {customField.properties.options.map(({ label, value }) => (
@@ -233,43 +228,74 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   )
 }
 
-const getInputComponent = (customField: CustomField) => {
-  switch (customField.type) {
-    case 'text':
-      return CustomFieldTextInput
-    case 'number':
-      return CustomFieldNumberInput
-    case 'date':
-      return CustomFieldDateInput
-    case 'checkbox':
-      return CustomFieldCheckboxInput
-    case 'select':
-      return CustomFieldSelectInput
-  }
-}
-
 interface CustomFieldInputProps {
-  customField: CustomField
+  customField: schemas['CustomField']
   required: boolean
   field: ControllerRenderProps
-  themePreset: ThemingPresetProps
+}
+
+const renderInputComponent = (
+  customField: schemas['CustomField'],
+  required: boolean,
+  field: ControllerRenderProps,
+) => {
+  switch (customField.type) {
+    case 'text':
+      return (
+        <CustomFieldTextInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'number':
+      return (
+        <CustomFieldNumberInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'date':
+      return (
+        <CustomFieldDateInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'select':
+      return (
+        <CustomFieldSelectInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    case 'checkbox':
+      return (
+        <CustomFieldCheckboxInput
+          customField={customField}
+          required={required}
+          field={field}
+        />
+      )
+    default:
+      unreachable(customField)
+  }
 }
 
 const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
   customField,
   required,
   field,
-  themePreset,
 }) => {
-  const InputComponent = getInputComponent(customField)
-
   if (customField.type === 'checkbox') {
     return (
       <CustomFieldCheckboxInput
         customField={customField}
         required={required}
         field={field}
-        themePreset={themePreset}
       />
     )
   }
@@ -278,13 +304,7 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
     <FormItem>
       <FieldLabel customField={customField} />
       <FormControl>
-        <InputComponent
-          // @ts-ignore
-          customField={customField}
-          required={required}
-          field={field}
-          themePreset={themePreset}
-        />
+        {renderInputComponent(customField, required, field)}
       </FormControl>
       <FormMessage />
       <FieldHelpText customField={customField} />

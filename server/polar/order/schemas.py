@@ -83,7 +83,10 @@ class OrderBase(TimestampedSchema, IDSchema):
     def serialize_billing_reason(
         self, value: OrderBillingReasonInternal
     ) -> OrderBillingReason:
-        if value == OrderBillingReasonInternal.subscription_cycle_after_trial:
+        if value in (
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ):
             return OrderBillingReason.subscription_cycle
         return OrderBillingReason(value)
 
@@ -203,7 +206,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         description="Currency of the platform fee.", examples=["usd"]
     )
     customer: OrderCustomer
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",

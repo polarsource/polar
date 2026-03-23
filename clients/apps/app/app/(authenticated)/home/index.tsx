@@ -83,7 +83,6 @@ function HomeContent() {
     data: customers,
     refetch: refetchCustomers,
     isRefetching: isRefetchingCustomers,
-    isLoading: isLoadingCustomers,
   } = useCustomers(organization?.id, {
     limit: 5,
   })
@@ -95,10 +94,6 @@ function HomeContent() {
   const flatSubscriptions = useMemo(() => {
     return subscriptions?.pages.flatMap((page) => page.items) ?? []
   }, [subscriptions])
-
-  const flatCustomers = useMemo(() => {
-    return customers?.pages.flatMap((page) => page.items) ?? []
-  }, [customers])
 
   const isRefetching = useMemo(() => {
     return (

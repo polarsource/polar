@@ -4,12 +4,13 @@ from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlparse
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from polar.enums import TaxProcessor
+from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
@@ -20,11 +21,6 @@ class Environment(StrEnum):
     sandbox = "sandbox"
     production = "production"
     test = "test"  # Used for the test environment in Render
-
-
-class EmailSender(StrEnum):
-    logger = "logger"
-    resend = "resend"
 
 
 def _validate_email_renderer_binary_path(value: Path) -> Path:
@@ -83,7 +79,7 @@ class Settings(BaseSettings):
     WEBHOOK_MAX_RETRIES: int = 10
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
-    WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
+    WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=90)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
     WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
@@ -147,7 +143,7 @@ class Settings(BaseSettings):
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
     # Checkout
-    CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
+    CHECKOUT_TTL_SECONDS: int = 60 * 60 * 24  # 24 hours
     IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent
     IP_GEOLOCATION_DATABASE_NAME: str = "ip-geolocation.mmdb"
 
@@ -222,6 +218,11 @@ class Settings(BaseSettings):
     APPLE_KEY_ID: str = ""
     APPLE_KEY_VALUE: str = ""
 
+    # Risk review — comma-separated codes that trigger visual warning flags
+    # in the backoffice overview.
+    RISK_COUNTRY_CODES: list[str] = []
+    RISK_CURRENCY_CODES: list[str] = []
+
     # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-5.2-2025-12-11"
@@ -258,9 +259,7 @@ class Settings(BaseSettings):
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None
     TINYBIRD_WORKSPACE: str | None = None
-    TINYBIRD_EVENTS_WRITE: bool = False
-    TINYBIRD_EVENTS_READ: bool = False
-
+    TINYBIRD_BRANCH: str | None = None
     # Logo.dev (for company logo avatars)
     LOGO_DEV_PUBLISHABLE_KEY: str | None = None
     PERSONAL_EMAIL_DOMAINS: set[str] = {
@@ -280,12 +279,19 @@ class Settings(BaseSettings):
         "qq.com",
     }
 
+    # Memory Profiling
+    MEMORY_PROFILE_ENABLED: bool = False
+    MEMORY_PROFILE_INTERVAL: int = 300  # seconds between snapshots
+    MEMORY_PROFILE_S3_BUCKET_NAME: str | None = None
+
     # Logfire
     LOGFIRE_TOKEN: str | None = None
     LOGFIRE_IGNORED_ACTORS: set[str] = {
         "organization_access_token.record_usage",
         "personal_access_token.record_usage",
     }
+    # S3 logs storage
+    S3_LOGS_BUCKET_NAME: str | None = None
 
     # Plain
     PLAIN_REQUEST_SIGNING_SECRET: str | None = None
@@ -325,7 +331,9 @@ class Settings(BaseSettings):
         state="US-CA",
         country=CountryAlpha2("US"),
     )
-    INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"
+    INVOICES_ADDITIONAL_INFO: str | None = (
+        "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU0000000"
+    )
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours
@@ -412,6 +420,7 @@ class Settings(BaseSettings):
     ]
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
+    TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",
@@ -488,6 +497,10 @@ class Settings(BaseSettings):
 
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
+
+    @property
+    def frontend_hostname(self) -> str:
+        return urlparse(self.FRONTEND_BASE_URL).hostname or "polar.sh"
 
     def generate_backoffice_url(self, path: str) -> str:
         if self.BACKOFFICE_HOST is None:

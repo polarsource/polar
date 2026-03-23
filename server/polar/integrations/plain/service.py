@@ -42,7 +42,7 @@ from plain_client import (
     UpsertCustomerOnUpdateInput,
     UpsertCustomerUpsertCustomer,
 )
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
@@ -50,6 +50,7 @@ from polar.exceptions import PolarError
 from polar.kit.currency import format_currency
 from polar.models import (
     Customer,
+    OAuthAccount,
     Order,
     Organization,
     Product,
@@ -199,10 +200,8 @@ class PlainService:
                     raise ValueError("Organization is not under review")
 
             should_send_email = organization.status == OrganizationStatus.INITIAL_REVIEW
-            assigned_to = (
-                CreateThreadAssignedToInput(user_id=random.choice(SUPPORT_AGENT_IDS))
-                if should_send_email
-                else None
+            assigned_to = CreateThreadAssignedToInput(
+                user_id=random.choice(SUPPORT_AGENT_IDS)
             )
 
             thread_result = await plain.create_thread(
@@ -492,7 +491,7 @@ class PlainService:
         email = request.customer.email
 
         user_repository = UserRepository.from_session(session)
-        user = await user_repository.get_by_email(email)
+        user = await user_repository.get_by_any_email(email)
 
         if user is None:
             return None
@@ -625,7 +624,13 @@ class PlainService:
                 isouter=True,
             )
             .join(User, User.id == UserOrganization.user_id)
-            .where(func.lower(User.email) == email.lower())
+            .outerjoin(OAuthAccount, OAuthAccount.user_id == User.id)
+            .where(
+                or_(
+                    func.lower(User.email) == email.lower(),
+                    func.lower(OAuthAccount.account_email) == email.lower(),
+                )
+            )
         )
         result = await session.execute(statement)
         organizations = result.unique().scalars().all()

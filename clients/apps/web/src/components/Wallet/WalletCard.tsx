@@ -1,3 +1,4 @@
+import { UploadImage } from '@/components/Image/Image'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 
@@ -14,8 +15,9 @@ const WalletCard = ({ organization, wallet }: WalletCardProps) => {
         {/* Organization logo */}
         <div className="mb-4">
           {organization.avatar_url ? (
-            <img
+            <UploadImage
               src={organization.avatar_url}
+              approximateWidth={48}
               alt={organization.name}
               className="dark:bg-polar-700 h-12 w-12 rounded-lg border border-gray-200 bg-white object-cover p-1 dark:border-transparent"
             />

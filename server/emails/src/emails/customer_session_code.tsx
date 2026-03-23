@@ -12,6 +12,7 @@ export function CustomerSessionCode({
   code,
   code_lifetime_minutes,
   url,
+  domain,
 }: schemas['CustomerSessionCodeProps']) {
   return (
     <WrapperOrganization organization={organization}>
@@ -24,7 +25,7 @@ export function CustomerSessionCode({
         .
       </Intro>
 
-      <OTPCode code={code} />
+      <OTPCode code={code} domain={domain} />
 
       <Text className="mt-2 text-center text-sm text-gray-500">
         This&nbsp;code&nbsp;expires&nbsp;in&nbsp;
@@ -43,6 +44,7 @@ CustomerSessionCode.PreviewProps = {
   code: 'ABC123',
   code_lifetime_minutes: 30,
   url: 'https://polar.sh/acme-inc/portal/authenticate',
+  domain: 'polar.sh',
 }
 
 export default CustomerSessionCode

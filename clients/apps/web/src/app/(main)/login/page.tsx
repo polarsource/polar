@@ -1,5 +1,6 @@
 import Login from '@/components/Auth/Login'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
+import { CONFIG } from '@/utils/config'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 export default async function Page(props: {
   searchParams: Promise<{
     return_to?: string
+    from?: string
   }>
 }) {
   const searchParams = await props.searchParams
@@ -22,10 +24,19 @@ export default async function Page(props: {
           <PolarLogotype logoVariant="icon" size={60} />
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl text-black dark:text-white">
-              Welcome to Polar
+              {CONFIG.IS_SANDBOX
+                ? 'Welcome to the Polar Sandbox'
+                : 'Welcome to Polar'}
             </h2>
             <span className="dark:text-polar-400 text-lg text-balance text-gray-500">
-              Monetize your software
+              {CONFIG.IS_SANDBOX ? (
+                <>
+                  This is a testing environment. Changes here won&rsquo;t affect
+                  your live account and payments are not processed.
+                </>
+              ) : (
+                'Monetize your software'
+              )}
             </span>
           </div>
         </div>

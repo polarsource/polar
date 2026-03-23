@@ -1,14 +1,19 @@
+/* eslint-disable max-lines */
 'use client'
 
-import { useExperiment } from '@/experiments/client'
+import { UploadImage } from '@/components/Image/Image'
+import { Modal } from '@/components/Modal'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import { getServerURL } from '@/utils/api'
+import { getResizedImage } from '@/utils/getResizedImage'
+import { hasMarkdown, markdownOptions } from '@/utils/markdown'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
+  CheckoutHeroPrice,
   CheckoutPricingBreakdown,
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
@@ -20,24 +25,117 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { AcceptedLocale } from '@polar-sh/i18n'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
-import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import { ClientResponseError, type schemas } from '@polar-sh/client'
+import { AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import ShadowBox, {
-  ShadowBoxOnMd,
-} from '@polar-sh/ui/components/atoms/ShadowBox'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@polar-sh/ui/components/ui/dialog'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Slideshow } from '../Products/Slideshow'
 import { CheckoutDiscountInput } from './CheckoutDiscountInput'
-import CheckoutProductInfo from './CheckoutProductInfo'
+import { twMerge } from 'tailwind-merge'
+
+const TruncatedDescription = ({
+  description,
+  productName,
+  readMoreLabel,
+}: {
+  description: string
+  productName: string
+  readMoreLabel: string
+}) => {
+  const textRef = useRef<HTMLDivElement>(null)
+  const [isClamped, setIsClamped] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  useEffect(() => {
+    const el = textRef.current
+    if (!el) return
+    requestAnimationFrame(() => {
+      setIsClamped(el.scrollHeight > el.clientHeight)
+    })
+  }, [description])
+
+  return (
+    <>
+      <div className="flex flex-col gap-y-1">
+        <div
+          ref={textRef}
+          className="prose dark:prose-invert prose-headings:text-xs prose-p:text-xs prose-ul:text-xs prose-ol:text-xs dark:text-polar-400 line-clamp-2 max-w-none text-left text-xs text-gray-600"
+        >
+          <Markdown options={markdownOptions}>{description}</Markdown>
+        </div>
+        {isClamped && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="dark:text-polar-300 dark:hover:text-polar-200 cursor-pointer self-start text-xs text-gray-500 hover:text-gray-700"
+          >
+            {readMoreLabel}
+          </button>
+        )}
+      </div>
+      <Modal
+        title={productName}
+        isShown={isModalOpen}
+        hide={() => setIsModalOpen(false)}
+        modalContent={
+          <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 p-6 leading-normal text-gray-800">
+            <Markdown options={markdownOptions}>{description}</Markdown>
+          </div>
+        }
+      />
+    </>
+  )
+}
+
+const PaymentNotReadyBanner = ({
+  shouldBlockCheckout,
+  organizationStatus,
+  organizationName,
+}: {
+  shouldBlockCheckout: boolean
+  organizationStatus: string | undefined
+  organizationName: string
+}) => {
+  if (!shouldBlockCheckout) return null
+
+  const isDenied = organizationStatus === 'denied'
+
+  return (
+    <Alert color={isDenied ? 'red' : 'gray'}>
+      <div className="flex flex-col gap-y-1 p-2">
+        <div
+          className={twMerge(
+            'text-sm font-medium',
+            isDenied ? '' : 'text-black dark:text-white',
+          )}
+        >
+          {isDenied
+            ? 'Payments are currently unavailable'
+            : `${organizationName} is in test mode`}
+        </div>
+        <div className="text-sm">
+          {isDenied
+            ? `${organizationName} doesn't allow payments.`
+            : `You can test checkout with free products or 100% discount orders.`}
+        </div>
+      </div>
+    </Alert>
+  )
+}
 
 export interface CheckoutProps {
   embed?: boolean
@@ -65,8 +163,7 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
-
-  const { variant: termsExperiment } = useExperiment('checkout_terms')
+  const t = useTranslations(locale)
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -82,7 +179,7 @@ const Checkout = ({
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
     fetch(
-      getServerURL(`/v1/checkouts/client/${checkout.clientSecret}/opened`),
+      getServerURL(`/v1/checkouts/client/${checkout.client_secret}/opened`),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,7 +188,7 @@ const Checkout = ({
     ).catch(() => {
       // Silently ignore - don't affect checkout experience
     })
-  }, [checkout.clientSecret, posthog])
+  }, [checkout.client_secret, posthog])
 
   const themePreset = getThemePreset(theme)
 
@@ -103,7 +200,7 @@ const Checkout = ({
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
-  const isPaymentRequired = checkout.isPaymentRequired
+  const isPaymentRequired = checkout.is_payment_required
   const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
 
   // Track payment not ready state
@@ -112,7 +209,7 @@ const Checkout = ({
       posthog.capture('storefront:subscriptions:payment_not_ready:view', {
         organization_slug: checkout.organization.slug,
         organization_status: paymentStatus?.organization_status,
-        product_id: checkout.productId,
+        product_id: checkout.product_id,
       })
     }
   }, [
@@ -120,28 +217,9 @@ const Checkout = ({
     shouldBlockCheckout,
     checkout.organization.slug,
     paymentStatus?.organization_status,
-    checkout.productId,
+    checkout.product_id,
     posthog,
   ])
-
-  const PaymentNotReadyBanner = () => {
-    if (!shouldBlockCheckout) return null
-
-    const isDenied = paymentStatus?.organization_status === 'denied'
-
-    return (
-      <Alert color="red">
-        <div className="flex flex-col gap-y-2 p-2">
-          <div className="font-medium">Payments are currently unavailable</div>
-          <div className="text-sm">
-            {isDenied
-              ? `${checkout.organization.name} doesn't allow payments.`
-              : `${checkout.organization.name} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
-          </div>
-        </div>
-      </Alert>
-    )
-  }
 
   const [fullLoading, setFullLoading] = useState(false)
   const loading = useMemo(
@@ -163,11 +241,14 @@ const Checkout = ({
   )
 
   const update = useCallback(
-    async (data: CheckoutUpdatePublic) => {
+    async (data: schemas['CheckoutUpdatePublic']) => {
       try {
         return await _update(data)
       } catch (error) {
-        if (error instanceof ExpiredCheckoutError) {
+        if (
+          error instanceof ClientResponseError &&
+          error.response.status === 410
+        ) {
           window.location.reload()
         }
         throw error
@@ -178,16 +259,19 @@ const Checkout = ({
 
   const confirm = useCallback(
     async (
-      data: CheckoutConfirmStripe,
+      data: schemas['CheckoutConfirmStripe'],
       stripe: Stripe | null,
       elements: StripeElements | null,
     ) => {
       setFullLoading(true)
-      let confirmedCheckout: CheckoutPublicConfirmed
+      let confirmedCheckout: schemas['CheckoutPublicConfirmed']
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
-        if (error instanceof ExpiredCheckoutError) {
+        if (
+          error instanceof ClientResponseError &&
+          error.response.status === 410
+        ) {
           window.location.reload()
         }
         setFullLoading(false)
@@ -195,37 +279,42 @@ const Checkout = ({
       }
 
       await checkoutConfirmedRedirect(
-        checkout,
-        confirmedCheckout.customerSessionToken,
+        confirmedCheckout,
+        confirmedCheckout.customer_session_token,
       )
 
       return confirmedCheckout
     },
-    [_confirm, checkout, checkoutConfirmedRedirect],
+    [_confirm, checkoutConfirmedRedirect],
   )
 
   if (embed) {
     return (
       <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
-        <PaymentNotReadyBanner />
+        <PaymentNotReadyBanner
+          shouldBlockCheckout={shouldBlockCheckout}
+          organizationStatus={paymentStatus?.organization_status}
+          organizationName={checkout.organization.name}
+        />
         {hasProductCheckout(checkout) && (
           <>
             <CheckoutProductSwitcher
               checkout={checkout}
               update={
                 update as (
-                  data: CheckoutUpdatePublic,
+                  data: schemas['CheckoutUpdatePublic'],
                 ) => Promise<ProductCheckoutPublic>
               }
               themePreset={themePreset}
               locale={locale}
             />
-            {checkout.productPrice.amountType === 'custom' && (
+            {checkout.product_price.amount_type === 'custom' && (
               <CheckoutPWYWForm
                 checkout={checkout}
                 update={update}
-                productPrice={checkout.productPrice as ProductPriceCustom}
-                themePreset={themePreset}
+                productPrice={
+                  checkout.product_price as schemas['ProductPriceCustom']
+                }
                 locale={locale}
               />
             )}
@@ -243,18 +332,13 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
-          termsExperiment={termsExperiment}
           beforeSubmit={
-            hasProductCheckout(checkout) && !checkout.isFreeProductPrice ? (
+            hasProductCheckout(checkout) && !checkout.is_free_product_price ? (
               <div className="flex flex-col gap-4">
-                {checkout.productPrice.amountType === 'seat_based' && (
+                {checkout.product_price.amount_type === 'seat_based' && (
                   <CheckoutSeatSelector
                     checkout={checkout}
-                    update={
-                      update as (
-                        data: CheckoutUpdatePublic,
-                      ) => Promise<ProductCheckoutPublic>
-                    }
+                    update={update}
                     locale={locale}
                     compact
                   />
@@ -273,66 +357,125 @@ const Checkout = ({
     )
   }
 
-  return (
-    <div className="flex w-full flex-col gap-y-6">
-      <div className="flex flex-row items-center gap-x-4">
-        {checkout.returnUrl && (
-          <Link
-            href={checkout.returnUrl}
-            className="dark:text-polar-500 text-gray-500"
-          >
-            <ArrowBackOutlined fontSize="small" />
-          </Link>
-        )}
-        <div className="flex flex-row items-center gap-x-3">
-          <Avatar
-            avatar_url={checkout.organization.avatarUrl}
-            name={checkout.organization.name}
-            className="h-8 w-8"
-          />
-          <span className="font-medium dark:text-white">
-            {checkout.organization.name}
-          </span>
-        </div>
+  const hasMedia =
+    hasProductCheckout(checkout) && checkout.product.medias.length > 0
+
+  const orgHeader = (
+    <div className="flex flex-row items-center gap-x-4">
+      {checkout.return_url && (
+        <Link
+          href={checkout.return_url}
+          className="dark:text-polar-500 text-gray-600"
+        >
+          <ArrowBackOutlined fontSize="small" />
+        </Link>
+      )}
+      <div className="flex flex-row items-center gap-x-2">
+        <Avatar
+          avatar_url={checkout.organization.avatar_url}
+          name={checkout.organization.name}
+          className="h-6 w-6"
+        />
+        <span className="text-sm dark:text-white">
+          {checkout.organization.name}
+        </span>
       </div>
-      <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-clip md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
-        <div className="md:dark:bg-polar-950 md:bg-gray-50 md:p-12">
+    </div>
+  )
+
+  return (
+    <div className="md:grid md:min-h-screen md:grid-cols-2">
+      <div className="md:flex md:justify-end">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-12 md:pl-4">
+          {orgHeader}
           <div className="flex flex-col gap-y-8 md:sticky md:top-8">
             {hasProductCheckout(checkout) && (
               <>
-                <CheckoutProductInfo
-                  organization={checkout.organization}
-                  product={checkout.product}
-                />
+                <div className="flex flex-col gap-y-2">
+                  <div className="flex flex-row items-start gap-x-3">
+                    {hasMedia && checkout.product.medias[0]?.public_url && (
+                      <Dialog>
+                        <DialogTrigger
+                          asChild
+                          disabled={checkout.product.medias.length <= 1}
+                        >
+                          <button
+                            className={`relative h-10 w-10 shrink-0 ${checkout.product.medias.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+                          >
+                            <UploadImage
+                              src={checkout.product.medias[0].public_url}
+                              approximateWidth={40}
+                              alt={checkout.product.name}
+                              className="h-10 w-10 rounded-lg object-cover"
+                            />
+                            {checkout.product.medias.length > 1 && (
+                              <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                                +{checkout.product.medias.length - 1}
+                              </span>
+                            )}
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="dark:bg-polar-900 max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>{checkout.product.name}</DialogTitle>
+                            <DialogDescription className="sr-only">
+                              Product images
+                            </DialogDescription>
+                          </DialogHeader>
+                          <Slideshow
+                            images={checkout.product.medias.map((m) =>
+                              getResizedImage(m.public_url, 672),
+                            )}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    <div className="flex min-w-0 flex-col gap-y-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {checkout.product.name}
+                      </span>
+                      {checkout.product.description &&
+                        !hasMarkdown(checkout.product.description) && (
+                          <TruncatedDescription
+                            description={checkout.product.description}
+                            productName={checkout.product.name}
+                            readMoreLabel={t(
+                              'checkout.productDescription.readMore',
+                            )}
+                          />
+                        )}
+                    </div>
+                  </div>
+                  <span className="text-3xl font-medium">
+                    <CheckoutHeroPrice checkout={checkout} locale={locale} />
+                  </span>
+                </div>
                 <CheckoutProductSwitcher
                   checkout={checkout}
                   update={
                     update as (
-                      data: CheckoutUpdatePublic,
+                      data: schemas['CheckoutUpdatePublic'],
                     ) => Promise<ProductCheckoutPublic>
                   }
                   themePreset={themePreset}
                   locale={locale}
                 />
-                {checkout.productPrice.amountType === 'custom' && (
+                {checkout.product_price.amount_type === 'custom' && (
                   <CheckoutPWYWForm
                     checkout={checkout}
                     update={update}
-                    productPrice={checkout.productPrice as ProductPriceCustom}
-                    themePreset={themePreset}
+                    productPrice={
+                      checkout.product_price as schemas['ProductPriceCustom']
+                    }
                     locale={locale}
                   />
                 )}
-                {!checkout.isFreeProductPrice && (
-                  <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
-                    {checkout.productPrice.amountType === 'seat_based' && (
+                {!checkout.is_free_product_price && (
+                  <div className="flex flex-col gap-4 text-sm">
+                    {checkout.product_price.amount_type === 'seat_based' && (
                       <CheckoutSeatSelector
                         checkout={checkout}
-                        update={
-                          update as (
-                            data: CheckoutUpdatePublic,
-                          ) => Promise<ProductCheckoutPublic>
-                        }
+                        update={update}
                         locale={locale}
                         compact
                       />
@@ -345,15 +488,33 @@ const Checkout = ({
                       checkout={checkout}
                       update={update}
                       locale={locale}
+                      collapsible
                     />
-                  </ShadowBox>
+                  </div>
                 )}
+                {checkout.product.description &&
+                  hasMarkdown(checkout.product.description) && (
+                    <div
+                      id="description"
+                      className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800"
+                    >
+                      <Markdown options={markdownOptions}>
+                        {checkout.product.description}
+                      </Markdown>
+                    </div>
+                  )}
               </>
             )}
           </div>
         </div>
-        <div className="flex flex-col gap-y-8 md:p-12">
-          <PaymentNotReadyBanner />
+      </div>
+      <div className="dark:md:bg-polar-900 md:bg-white">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
+          <PaymentNotReadyBanner
+            shouldBlockCheckout={shouldBlockCheckout}
+            organizationStatus={paymentStatus?.organization_status}
+            organizationName={checkout.organization.name}
+          />
           <CheckoutForm
             form={form}
             checkout={checkout}
@@ -366,10 +527,9 @@ const Checkout = ({
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
-            termsExperiment={termsExperiment}
           />
         </div>
-      </ShadowBoxOnMd>
+      </div>
     </div>
   )
 }

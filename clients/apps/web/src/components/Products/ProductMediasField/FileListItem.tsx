@@ -1,7 +1,6 @@
 import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { FileObject } from '@/components/FileUpload'
@@ -25,7 +24,7 @@ export const FileListItem = ({
     removeFile()
   })
 
-  const onDelete = useCallback(async () => {
+  const onDelete = async () => {
     deleteFile
       .mutateAsync()
       .then(() => {
@@ -40,7 +39,7 @@ export const FileListItem = ({
           description: `Error deleting file: ${e.message}`,
         })
       })
-  }, [deleteFile])
+  }
 
   const isUploading = useMemo(() => file.isUploading, [file])
 
@@ -66,7 +65,7 @@ export const FileListItem = ({
           : {}
       }
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element */}
       <img
         src={imageURL}
         alt={file.name}

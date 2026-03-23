@@ -38,7 +38,7 @@ export const useAuth = (): {
     } else {
       Sentry.setUser(null)
     }
-  }, [currentUser])
+  }, [currentUser, posthog])
 
   return {
     currentUser,

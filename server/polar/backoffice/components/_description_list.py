@@ -228,6 +228,24 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
         M: Type parameter for the model type.
     """
 
+    def __init__(
+        self,
+        attr: str,
+        label: str | None = None,
+        *,
+        clipboard: bool = False,
+        currency_attr: str = "currency",
+    ) -> None:
+        """
+        Args:
+            attr: The attribute name to extract from data objects (supports dot notation).
+            label: The label text. If None, uses the attribute name.
+            clipboard: If True, adds a clipboard button to copy the value.
+            currency_attr: The attribute name to extract the currency code from. Defaults to "currency".
+        """
+        super().__init__(attr, label, clipboard=clipboard)
+        self.currency_attr = currency_attr
+
     def get_value(self, item: M) -> str | None:
         """Get the formatted currency string for display.
 
@@ -245,7 +263,7 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
     def get_currency(self, item: M) -> str:
         """Get the currency code for formatting.
 
-        By default, tries to extract the attribute 'currency' from the item,
+        By default, tries to extract the attribute from the item,
         falling back to "usd" if not present. This can be overridden in subclasses
         to provide custom currency handling.
 
@@ -255,7 +273,7 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
         Returns:
             The currency code.
         """
-        return getattr(item, "currency", "usd")
+        return getattr(item, self.currency_attr, "usd")
 
 
 class DescriptionListSocialsItem[M](DescriptionListItem[M]):

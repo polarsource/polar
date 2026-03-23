@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import {
   DataTableOnChangeFn,
   DataTablePaginationState,
@@ -107,9 +108,10 @@ interface TransactionsListProps {
   isLoading: boolean | ReactQueryLoading
 }
 
-export const isTransaction = (
+const isTransaction = (
   t: schemas['Transaction'] | schemas['TransactionEmbedded'],
 ): t is schemas['Transaction'] =>
+  // eslint-disable-next-line no-prototype-builtins
   t.hasOwnProperty('account_incurred_transactions')
 
 const TransactionsList = ({

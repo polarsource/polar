@@ -1,4 +1,9 @@
+/* eslint-disable max-lines */
+'use client'
+
 import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
+import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { SegmentedControl } from '@polar-sh/orbit'
 import {
   Accordion,
   AccordionContent,
@@ -16,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 
 import { schemas } from '@polar-sh/client'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
@@ -29,8 +33,18 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React, { useCallback, useMemo } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext } from 'react-hook-form'
+import { CurrencySelector } from '../CurrencySelector'
 import ProductSelect from '../Products/ProductSelect'
+
+export type DiscountFormValues = (
+  | schemas['DiscountCreate']
+  | schemas['DiscountUpdate']
+) & {
+  products: string[]
+  // Internal field array representation – transformed to/from `amounts` map at submit time
+  amountsByCurrency: { currency: string; amount: number }[]
+}
 
 interface DiscountFormProps {
   organization: schemas['Organization']
@@ -43,11 +57,8 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
   update,
   redemptionsCount,
 }) => {
-  const { control, watch, setValue } = useFormContext<
-    (schemas['DiscountCreate'] | schemas['DiscountUpdate']) & {
-      products: { id: string }[]
-    }
-  >()
+  const { control, watch, setValue } = useFormContext<DiscountFormValues>()
+
   const type = watch('type') as schemas['DiscountType']
   const duration = watch('duration') as schemas['DiscountDuration']
 
@@ -60,14 +71,29 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
 
   const generateDiscountCode = useCallback(() => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    const length = 8
     let code = ''
-    const charactersLength = characters.length
-    for (let i = 0; i < length; i++) {
-      code += characters.charAt(Math.floor(Math.random() * charactersLength))
+    for (let i = 0; i < 8; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length))
     }
     setValue('code', code)
   }, [setValue])
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'amountsByCurrency',
+    rules: {
+      minLength: 1,
+    },
+  })
+
+  const activeCurrencies = fields.map((f) => f.currency)
+
+  const handleAddCurrency = useCallback(
+    (currency: string) => {
+      append({ currency, amount: 0 })
+    },
+    [append],
+  )
 
   return (
     <>
@@ -81,75 +107,64 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
           },
           required: 'This field is required',
         }}
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-              <FormDescription>
-                Displayed to the customer when they apply the discount.
-              </FormDescription>
-            </FormItem>
-          )
-        }}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Name</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value || ''} />
+            </FormControl>
+            <FormMessage />
+            <FormDescription>
+              Displayed to the customer when they apply the discount.
+            </FormDescription>
+          </FormItem>
+        )}
       />
+
       <FormField
         control={control}
         name="code"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Code</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input {...field} value={field.value || ''} />
-                  <div className="absolute inset-y-0 right-1 z-10 flex items-center">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={generateDiscountCode}
-                    >
-                      <AutorenewOutlined fontSize="small" />
-                    </Button>
-                  </div>
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Code</FormLabel>
+            <FormControl>
+              <div className="relative">
+                <Input {...field} value={field.value || ''} />
+                <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={generateDiscountCode}
+                  >
+                    <AutorenewOutlined fontSize="small" />
+                  </Button>
                 </div>
-              </FormControl>
-              <FormMessage />
-              <FormDescription>
-                Optional code (case insensitive) that the customer can use to
-                apply the discount. If left empty, the discount can only be
-                applied through a Checkout Link or the API.
-              </FormDescription>
-            </FormItem>
-          )
-        }}
+              </div>
+            </FormControl>
+            <FormMessage />
+            <FormDescription>
+              Optional code (case insensitive) that the customer can use to
+              apply the discount. If left empty, the discount can only be
+              applied through a Checkout Link or the API.
+            </FormDescription>
+          </FormItem>
+        )}
       />
+
       {!update && (
-        <Tabs
+        <SegmentedControl
+          variant="tabs"
+          options={[
+            { value: 'percentage', label: 'Percentage discount' },
+            { value: 'fixed', label: 'Fixed amount discount' },
+          ]}
+          size="lg"
           value={type}
-          onValueChange={(value: string) =>
+          onChange={(value) =>
             setValue('type', value as schemas['DiscountType'])
           }
-        >
-          <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
-            <TabsTrigger
-              className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
-              value="percentage"
-            >
-              Percentage discount
-            </TabsTrigger>
-            <TabsTrigger
-              className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
-              value="fixed"
-            >
-              Fixed amount discount
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        />
       )}
 
       {type === 'percentage' && (
@@ -165,76 +180,106 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
               message: 'This field must be at most 100%',
             },
           }}
-          render={({ field }) => {
-            return (
-              <FormItem>
-                <FormLabel>Percentage</FormLabel>
-                <FormControl>
-                  <PercentageInput
-                    {...field}
-                    value={field.value || undefined}
-                    placeholder={1000}
-                    disabled={!canUpdateAmount}
-                  />
-                </FormControl>
-                {!canUpdateAmount && (
-                  <FormDescription>
-                    The percentage cannot be changed once the discount has been
-                    redeemed by a customer.
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )
-          }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Percentage</FormLabel>
+              <FormControl>
+                <PercentageInput
+                  {...field}
+                  value={field.value || undefined}
+                  placeholder={1000}
+                  disabled={!canUpdateAmount}
+                />
+              </FormControl>
+              {!canUpdateAmount && (
+                <FormDescription>
+                  The percentage cannot be changed once the discount has been
+                  redeemed by a customer.
+                </FormDescription>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
         />
       )}
 
       {type === 'fixed' && (
-        <FormField
-          control={control}
-          name="amount"
-          shouldUnregister={type !== 'fixed'}
-          rules={{
-            required: 'This field is required',
-            min: { value: 1, message: 'This field must be at least 1' },
-          }}
-          render={({ field }) => {
-            return (
-              <FormItem>
-                <FormLabel>Amount</FormLabel>
-                <FormControl>
-                  <MoneyInput
-                    {...field}
-                    value={field.value || undefined}
-                    placeholder={1000}
-                    disabled={!canUpdateAmount}
-                    currency={organization.default_presentment_currency}
-                    onChange={(e) => {
-                      field.onChange(e)
-                      setValue(
-                        'currency',
-                        organization.default_presentment_currency as schemas['PresentmentCurrency'],
-                      )
+        <FormItem>
+          <FormLabel>Amounts</FormLabel>
+          <div className="flex flex-col gap-y-2">
+            {fields.map((field, index) => {
+              const isDefault =
+                field.currency === organization.default_presentment_currency
+
+              return (
+                <div key={field.id} className="flex flex-row items-start gap-2">
+                  {/* Amount input */}
+                  <FormField
+                    control={control}
+                    name={`amountsByCurrency.${index}.amount`}
+                    rules={{
+                      required: 'This field is required',
+                      min: { value: 1, message: 'Must be at least 1' },
                     }}
+                    render={({ field: amountField }) => (
+                      <FormItem className="grow">
+                        <FormControl>
+                          <MoneyInput
+                            name={amountField.name}
+                            value={amountField.value ?? undefined}
+                            placeholder={1000}
+                            disabled={!canUpdateAmount}
+                            currency={field.currency}
+                            onChange={amountField.onChange}
+                            preSlot={
+                              <span className="dark:text-polar-500 px-3 text-sm text-gray-500">
+                                {field.currency.toUpperCase()}
+                              </span>
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-                {!canUpdateAmount && (
-                  <FormDescription>
-                    The amount cannot be changed once the discount has been
-                    redeemed by a customer.
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
+
+                  {/* Remove button */}
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    className="shrink-0 border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent"
+                    disabled={isDefault || !canUpdateAmount}
+                    onClick={() => remove(index)}
+                  >
+                    <ClearOutlined fontSize="inherit" />
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
+
+          {canUpdateAmount && (
+            <CurrencySelector
+              onChange={handleAddCurrency}
+              excludeCurrencies={activeCurrencies}
+              placeholder="Add Currency"
+              className="mt-2 h-8 w-auto self-start text-xs"
+            />
+          )}
+
+          {!canUpdateAmount && (
+            <FormDescription>
+              The amounts cannot be changed once the discount has been redeemed
+              by a customer.
+            </FormDescription>
+          )}
+        </FormItem>
       )}
 
       <Accordion type="single" collapsible className="flex flex-col gap-y-6">
         <AccordionItem
-          value="form-input-options"
+          value="form-input-recurring"
           className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
         >
           <AccordionTrigger className="hover:no-underline">
@@ -244,43 +289,40 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
             <FormField
               control={control}
               name="duration"
-              rules={{
-                required: 'This field is required',
-              }}
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value || undefined}
-                        disabled={update}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="once">Once</SelectItem>
-                          <SelectItem value="forever">Forever</SelectItem>
-                          <SelectItem value="repeating">
-                            For several months
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormDescription>
-                      {duration === 'once' &&
-                        'The discount is applied once on the first invoice.'}
-                      {duration === 'forever' &&
-                        'The discount is applied on every invoice.'}
-                      {duration === 'repeating' &&
-                        'The discount is applied for a set number of months.'}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
+              rules={{ required: 'This field is required' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || undefined}
+                      disabled={update}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="once">Once</SelectItem>
+                        <SelectItem value="forever">Forever</SelectItem>
+                        <SelectItem value="repeating">
+                          For several months
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription>
+                    {duration === 'once' &&
+                      'The discount is applied once on the first invoice.'}
+                    {duration === 'forever' &&
+                      'The discount is applied on every invoice.'}
+                    {duration === 'repeating' &&
+                      'The discount is applied for a set number of months.'}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
+
             {duration === 'repeating' && (
               <FormField
                 control={control}
@@ -288,35 +330,30 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                 shouldUnregister={duration !== 'repeating'}
                 rules={{
                   required: 'This field is required',
-                  min: {
-                    value: 1,
-                    message: 'This field must be at least 1',
-                  },
+                  min: { value: 1, message: 'This field must be at least 1' },
                 }}
                 defaultValue={1}
-                render={({ field }) => {
-                  return (
-                    <FormItem>
-                      <FormLabel>Number of months</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || undefined}
-                          type="number"
-                          min={1}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription>
-                        The discount will be applied the first{' '}
-                        {Number.parseInt(field.value as unknown as string) === 1
-                          ? 'month'
-                          : `${field.value} months`}
-                        .
-                      </FormDescription>
-                    </FormItem>
-                  )
-                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of months</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || undefined}
+                        type="number"
+                        min={1}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      The discount will be applied the first{' '}
+                      {Number.parseInt(field.value as unknown as string) === 1
+                        ? 'month'
+                        : `${field.value} months`}
+                      .
+                    </FormDescription>
+                  </FormItem>
+                )}
               />
             )}
           </AccordionContent>
@@ -325,7 +362,7 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
 
       <Accordion type="single" collapsible className="flex flex-col gap-y-6">
         <AccordionItem
-          value="form-input-options"
+          value="form-input-restrictions"
           className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
         >
           <AccordionTrigger className="hover:no-underline">
@@ -335,100 +372,91 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
             <FormField
               control={control}
               name="products"
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>Products</FormLabel>
-                    <FormControl>
-                      <ProductSelect
-                        organization={organization}
-                        value={field.value || []}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <FormDescription>
-                      Only the selected products will be eligible for the
-                      discount.
-                    </FormDescription>
-                  </FormItem>
-                )
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Products</FormLabel>
+                  <FormControl>
+                    <ProductSelect
+                      organization={organization}
+                      value={field.value || []}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <FormDescription>
+                    Only the selected products will be eligible for the
+                    discount.
+                  </FormDescription>
+                </FormItem>
+              )}
             />
+
             <FormField
               control={control}
               name="starts_at"
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>Starts at</FormLabel>
-                    <DateTimePicker
-                      value={field.value || undefined}
-                      onChange={(value) => {
-                        field.onChange(value || null)
-                      }}
-                      disabled={[
-                        { before: now },
-                        ...(endsAt ? [{ after: new Date(endsAt) }] : []),
-                      ]}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Starts at</FormLabel>
+                  <DateTimePicker
+                    value={field.value || undefined}
+                    onChange={(value) => field.onChange(value || null)}
+                    disabled={[
+                      { before: now },
+                      ...(endsAt ? [{ after: new Date(endsAt) }] : []),
+                    ]}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
+
             <FormField
               control={control}
               name="ends_at"
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>Ends at</FormLabel>
-                    <DateTimePicker
-                      value={field.value || undefined}
-                      onChange={(value) => {
-                        field.onChange(value || null)
-                      }}
-                      disabled={{
-                        before: startsAt ? new Date(startsAt) : now,
-                      }}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ends at</FormLabel>
+                  <DateTimePicker
+                    value={field.value || undefined}
+                    onChange={(value) => field.onChange(value || null)}
+                    disabled={{
+                      before: startsAt ? new Date(startsAt) : now,
+                    }}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
+
             <FormField
               control={control}
               name="max_redemptions"
               rules={{
                 min: { value: 1, message: 'This field must be at least 1' },
               }}
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>Maximum number of redemptions</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          field.onChange(
-                            value === '' ? null : parseInt(value, 10),
-                          )
-                        }}
-                        min={1}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <FormDescription>
-                      Limit applies across all customers, not per customer.
-                    </FormDescription>
-                  </FormItem>
-                )
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Maximum number of redemptions</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        field.onChange(
+                          value === '' ? null : parseInt(value, 10),
+                        )
+                      }}
+                      min={1}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <FormDescription>
+                    Limit applies across all customers, not per customer.
+                  </FormDescription>
+                </FormItem>
+              )}
             />
           </AccordionContent>
         </AccordionItem>

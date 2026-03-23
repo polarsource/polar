@@ -1,6 +1,6 @@
+/* eslint-disable max-lines */
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
-import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
@@ -51,8 +51,6 @@ export const DashboardSidebar = ({
   const router = useRouter()
   const { state } = useSidebar()
 
-  const { currentUser } = useAuth()
-
   const isCollapsed = state === 'collapsed'
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -60,9 +58,9 @@ export const DashboardSidebar = ({
     router.push(`/dashboard/${org.slug}`)
   }
 
-  // Annoying useEffect hack to allow access to client-side cookies from Server-Side component
   const [_isImpersonating, setIsImpersonating] = useState(false)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only cookie read to avoid hydration mismatch
     setIsImpersonating(isImpersonating())
   }, [])
   const isTopBannerVisible = CONFIG.IS_SANDBOX || _isImpersonating

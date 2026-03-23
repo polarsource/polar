@@ -11,6 +11,8 @@ from pydantic import (
     IPvAnyAddress,
     Tag,
     computed_field,
+    field_validator,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -212,8 +214,34 @@ class CheckoutCreateBase(
         default=None,
         ge=1,
         le=1000,
-        description="Number of seats for seat-based pricing. Required for seat-based products.",
+        description="Predefined number of seats (works with seat-based pricing only)",
     )
+    min_seats: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=("Minimum number of seats (works with seat-based pricing only)"),
+    )
+    max_seats: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=("Maximum number of seats (works with seat-based pricing only)"),
+    )
+
+    @model_validator(mode="after")
+    def _validate_seat_constraints(self) -> "CheckoutCreateBase":
+        if self.min_seats is not None and self.max_seats is not None:
+            if self.min_seats > self.max_seats:
+                raise ValueError("min_seats must be less than or equal to max_seats")
+        if self.seats is not None and self.min_seats is not None:
+            if self.seats < self.min_seats:
+                raise ValueError("seats must be greater than or equal to min_seats")
+        if self.seats is not None and self.max_seats is not None:
+            if self.seats > self.max_seats:
+                raise ValueError("seats must be less than or equal to max_seats")
+        return self
+
     allow_trial: bool = Field(default=True, description=_allow_trial_description)
     customer_id: UUID4 | None = Field(
         default=None,
@@ -302,6 +330,14 @@ class CheckoutProductsCreate(CheckoutCreateBase):
         ),
         min_length=1,
     )
+
+    @field_validator("products")
+    @classmethod
+    def products_must_be_unique(cls, v: list[UUID4]) -> list[UUID4]:
+        if len(v) != len(set(v)):
+            raise ValueError("Product IDs must be unique.")
+        return v
+
     prices: dict[UUID4, ProductPriceCreateList] | None = Field(
         default=None,
         description=(
@@ -317,28 +353,6 @@ CheckoutCreate = Annotated[
     | SkipJsonSchema[CheckoutPriceCreate],
     SetSchemaReference("CheckoutCreate"),
 ]
-
-
-class CheckoutCreatePublic(Schema):
-    """Create a new checkout session from a client."""
-
-    product_id: UUID4 = Field(description="ID of the product to checkout.")
-    seats: int | None = Field(
-        default=None,
-        ge=1,
-        le=1000,
-        description="Number of seats for seat-based pricing.",
-    )
-    customer_email: CustomerEmail | None = None
-    subscription_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "ID of a subscription to upgrade. It must be on a free pricing. "
-            "If checkout is successful, metadata set on this checkout "
-            "will be copied to the subscription, and existing keys will be overwritten."
-        ),
-    )
-    locale: Locale | None = None
 
 
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
@@ -489,14 +503,16 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     )
     amount: int = Field(description="Amount in cents, before discounts and taxes.")
     seats: int | None = Field(
-        default=None, description="Number of seats for seat-based pricing."
-    )
-    price_per_seat: int | None = Field(
         default=None,
-        description=(
-            "Price per seat in cents for the current seat count, "
-            "based on the applicable tier. Only relevant for seat-based pricing."
-        ),
+        description="Predefined number of seats (works with seat-based pricing only)",
+    )
+    min_seats: int | None = Field(
+        default=None,
+        description=("Minimum number of seats (works with seat-based pricing only)"),
+    )
+    max_seats: int | None = Field(
+        default=None,
+        description=("Maximum number of seats (works with seat-based pricing only)"),
     )
     discount_amount: int = Field(description="Discount amount in cents.")
     net_amount: int = Field(
@@ -684,7 +700,7 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
         description=_external_customer_id_description,
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
-    customer_external_id: str | None = Field(
+    customer_external_id: SkipJsonSchema[str | None] = Field(
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
         deprecated="Use `external_customer_id` instead.",
     )
@@ -731,4 +747,4 @@ class CheckoutPublicConfirmed(CheckoutPublic):
     """
 
     status: Literal[CheckoutStatus.confirmed]
-    customer_session_token: str
+    customer_session_token: str | None

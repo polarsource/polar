@@ -1,0 +1,18 @@
+
+- name: smoke_empty_org
+  description: Endpoint returns zero-filled row for org with no data (validates SQL,
+    JOINs with intervals, user_events_costs, user_events_by_quarter_hour)
+  parameters: org_ids=99999999-9999-9999-9999-999999999999&bounds_start=2024-01-01
+    00:00:00&bounds_end=2024-01-02 00:00:00&start_dt=2024-01-01 00:00:00&end_dt=2024-01-01
+    00:00:00&tz=UTC
+  expected_result: |
+    {"timestamp":"2024-01-01 00:00:00","costs":0,"cumulative_costs":0,"active_user_by_event":0,"cost_per_user":0}
+
+- name: smoke_with_fixture_data
+  description: Endpoint returns cost metrics for fixture org with a user event that
+    has cost_amount
+  parameters: org_ids=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa&bounds_start=2024-01-01
+    00:00:00&bounds_end=2024-01-02 00:00:00&start_dt=2024-01-01 00:00:00&end_dt=2024-01-01
+    00:00:00&tz=UTC
+  expected_result: |
+    {"timestamp":"2024-01-01 00:00:00","costs":0.05,"cumulative_costs":0.05,"active_user_by_event":1,"cost_per_user":0.05}

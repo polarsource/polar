@@ -29,7 +29,7 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(OrderBase):
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",

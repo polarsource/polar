@@ -142,7 +142,7 @@ const StackedChartTooltip = ({
   label,
   payload,
   tickFormatter,
-}: TooltipContentProps<any, any> & {
+}: TooltipContentProps & {
   tickFormatter: (timestamp: Date) => string
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -157,7 +157,10 @@ const StackedChartTooltip = ({
     return null
   }
 
-  const total = payload.reduce((acc, item) => acc + item.value, 0)
+  const total = payload.reduce(
+    (acc, item) => acc + (Number(item.value) || 0),
+    0,
+  )
 
   return (
     <div
@@ -172,7 +175,11 @@ const StackedChartTooltip = ({
         {payload.map((item) => {
           return (
             <div
-              key={item.dataKey}
+              key={
+                typeof item.dataKey === 'function'
+                  ? String(item.name)
+                  : item.dataKey
+              }
               className="flex items-center justify-between gap-1.5"
             >
               <div className="flex items-center gap-1.5">
@@ -183,7 +190,7 @@ const StackedChartTooltip = ({
                 {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}
               </div>
               <span className="font-medium tabular-nums">
-                {item.value.toLocaleString()}
+                {item.value?.toLocaleString()}
               </span>
             </div>
           )

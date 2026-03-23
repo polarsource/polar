@@ -13,13 +13,14 @@
     "build:production": "eas build --platform all --profile production",
     "build:development": "eas build --platform all --profile development",
     "build:simulator": "eas build --platform all --profile simulator",
-    "format": "prettier --write .",
-    "format:check": "prettier -c .",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "lint": "pnpm format:check && expo lint",
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
     "postinstall": "pnpm --filter @polar-sh/client build && patch-package",
-    "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 npx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean"
+    "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 npx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean",
+    "eas-build-pre-install": "test -f ../../pnpm-workspace.yaml || printf 'packages:\\n  - apps/*\\n  - packages/*\\n  - examples/*\\n' > ../../pnpm-workspace.yaml"
   },
   "jest": {
     "preset": "jest-expo"
@@ -95,7 +96,6 @@
     "@types/jest": "^29.5.14",
     "@types/react": "19.2.3",
     "@types/react-test-renderer": "^18.3.1",
-    "eslint": "^9.39.2",
     "eslint-config-expo": "~10.0.0",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.16",

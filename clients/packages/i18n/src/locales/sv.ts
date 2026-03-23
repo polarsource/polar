@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: 'Lägg till företagsuppgifter',
       removeBusinessDetails: 'Ta bort företagsuppgifter',
       billingDetails: 'Företagsuppgifter',
+      addDiscountCode: 'Lägg till rabattkod',
     },
     pricing: {
       subtotal: 'Delsumma',
@@ -58,6 +59,7 @@ export default {
             _mode: 'plural',
           },
         },
+        until: 'T.o.m. {date}',
       },
       everyInterval: {
         day: {
@@ -109,6 +111,38 @@ export default {
           other: '# års testperiod',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '# dag gratis',
+            other: '# dagar gratis',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# månad gratis',
+            other: '# månader gratis',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# år gratis',
+            other: '# år gratis',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dag',
+          week: '/vecka',
+          month: '/månad',
+          year: '/år',
+        },
+        then: 'Därefter',
+        startingDate: 'från {date}',
+      },
+      summary: {
+        totalWhenTrialEnds: 'Totalt efter provperioden',
+        totalWhenDiscountExpires: 'Totalt när rabatten löper ut',
+        totalDueToday: 'Att betala idag',
       },
     },
     pwywForm: {
@@ -199,6 +233,10 @@ export default {
       getFree: 'Skaffa gratis',
       paymentsUnavailable: 'Betalningar är för närvarande otillgängliga',
     },
+    productDescription: {
+      readMore: 'Läs mer',
+      readLess: 'Läs mindre',
+    },
   },
   intervals: {
     short: {
@@ -209,12 +247,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: 'Anpassad',
     license_keys: 'Licensnycklar',
     github_repository: 'Åtkomst till GitHub-repository',
     discord: 'Discord-inbjudan',
     downloadables: 'Filnedladdningar',
-    custom: 'Anpassad',
     meter_credit: 'Mätarkrediter',
+    feature_flag: 'Feature flag',
   },
   ordinal: {
     zero: ':e',

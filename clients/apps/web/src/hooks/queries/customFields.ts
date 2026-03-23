@@ -53,7 +53,7 @@ export const useCreateCustomField = (organizationId: string) =>
     mutationFn: (body: schemas['CustomFieldCreate']) => {
       return api.POST('/v1/custom-fields/', { body })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -70,7 +70,7 @@ export const useUpdateCustomField = (id: string) =>
         body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result) => {
       const { data, error } = result
       if (error) {
         return
@@ -89,7 +89,7 @@ export const useDeleteCustomField = () =>
         params: { path: { id: customField.id } },
       })
     },
-    onSuccess: (result, variables, _ctx) => {
+    onSuccess: (result, variables) => {
       if (result.error) {
         return
       }

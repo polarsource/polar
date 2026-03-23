@@ -1,16 +1,21 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import httpx
 import structlog
 from email_validator import validate_email
 
-from polar.config import EmailSender as EmailSenderType
 from polar.config import settings
+from polar.enums import EmailSender as EmailSenderType
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.worker import enqueue_job
+
+from .react import serialize_email_props
+
+if TYPE_CHECKING:
+    from .schemas import Email
 
 log: Logger = structlog.get_logger()
 
@@ -55,7 +60,7 @@ class EmailSender(ABC):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         pass
 
 
@@ -72,7 +77,7 @@ class LoggingEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         log.info(
             "Sending an email",
             to_email_addr=to_ascii_email(to_email_addr),
@@ -80,6 +85,7 @@ class LoggingEmailSender(EmailSender):
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
         )
+        return None
 
 
 class ResendEmailSender(EmailSender):
@@ -101,7 +107,7 @@ class ResendEmailSender(EmailSender):
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         attachments: Iterable[Attachment] | None = None,
-    ) -> None:
+    ) -> str | None:
         to_email_addr_ascii = to_ascii_email(to_email_addr)
         payload: dict[str, Any] = {
             "from": f"{from_name} <{to_ascii_email(from_email_addr)}>",
@@ -144,6 +150,8 @@ class ResendEmailSender(EmailSender):
             email_id=email["id"],
         )
 
+        return email["id"]
+
 
 class EmailFromReply(TypedDict):
     from_name: str
@@ -168,6 +176,34 @@ def enqueue_email(
         to_email_addr=to_email_addr,
         subject=subject,
         html_content=html_content,
+        from_name=from_name,
+        from_email_addr=from_email_addr,
+        email_headers=email_headers,
+        reply_to_name=reply_to_name,
+        reply_to_email_addr=reply_to_email_addr,
+        attachments=attachments,
+    )
+
+
+def enqueue_email_template(
+    email: "Email",
+    *,
+    to_email_addr: str,
+    subject: str,
+    from_name: str = DEFAULT_FROM_NAME,
+    from_email_addr: str = DEFAULT_FROM_EMAIL_ADDRESS,
+    email_headers: dict[str, str] | None = None,
+    reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
+    reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+    attachments: Iterable[Attachment] | None = None,
+) -> None:
+    enqueue_job(
+        "email.send",
+        to_email_addr=to_email_addr,
+        subject=subject,
+        html_content=None,
+        template=email.template,
+        props_json=serialize_email_props(email),
         from_name=from_name,
         from_email_addr=from_email_addr,
         email_headers=email_headers,

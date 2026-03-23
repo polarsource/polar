@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     working-directory: ./clients
@@ -21,7 +25,7 @@ jobs:
       clients: ${{ steps.filter.outputs.clients }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -59,7 +63,10 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install
 
-      - name: 💅Lint
+      - name: 💅 Format check
+        run: pnpm run format:check
+
+      - name: 💅 Lint
         run: pnpm run lint
 
       - name: 👀 Typecheck
@@ -70,6 +77,9 @@ jobs:
 
       - name: "🧪 Test: @polar-sh/currency"
         run: pnpm --filter @polar-sh/currency test
+
+      - name: "🧪 Test: @polar-sh/checkout"
+        run: pnpm --filter @polar-sh/checkout test
 
       - name: 🛠️ Build
         run: pnpm build

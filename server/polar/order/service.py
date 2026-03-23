@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
+from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
 
@@ -21,10 +22,9 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderUpdate,
 )
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
-from polar.email.sender import Attachment, enqueue_email
-from polar.enums import PaymentProcessor, TaxProcessor
+from polar.email.sender import Attachment, enqueue_email_template
+from polar.enums import PaymentMode, PaymentProcessor, TaxProcessor
 from polar.event.service import event as event_service
 from polar.event.system import (
     BalanceCreditOrderMetadata,
@@ -59,9 +59,9 @@ from polar.models import (
     User,
     WalletTransaction,
 )
-from polar.models.customer import CustomerType
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -77,7 +77,11 @@ from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
-from polar.product.guard import is_custom_price, is_seat_price, is_static_price
+from polar.product.guard import (
+    is_custom_price,
+    is_seat_price,
+    is_static_price,
+)
 from polar.product.price_set import PriceSet
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
@@ -85,6 +89,7 @@ from polar.tax.calculation import (
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationLogicalError,
+    TaxCode,
     TaxRate,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
@@ -204,17 +209,17 @@ class PaymentAlreadyInProgress(OrderError):
         super().__init__(message, 409)
 
 
-class CardPaymentFailed(OrderError):
-    """Exception for card-related payment failures that should not be retried."""
+class PaymentFailedReason(StrEnum):
+    missing_payment_method = "missing_payment_method"
+    card_error = "card_error"
 
-    def __init__(
-        self,
-        order: Order,
-        stripe_error: stripe_lib.CardError | stripe_lib.InvalidRequestError,
-    ) -> None:
-        self.order = order
-        self.stripe_error = stripe_error
-        message = f"Card payment failed for order {order.id}: {stripe_error.user_message or stripe_error.code}"
+
+class PaymentFailed(OrderError):
+    """Exception for payment failures."""
+
+    def __init__(self, reason: PaymentFailedReason) -> None:
+        self.reason = reason
+        message = f"Payment failed with reason: {reason}."
         super().__init__(message, 402)
 
 
@@ -549,6 +554,7 @@ class OrderService:
                 subtotal_amount=checkout.amount,
                 discount_amount=discount_amount,
                 tax_amount=checkout.tax_amount or 0,
+                net_amount=checkout.net_amount,
                 currency=checkout.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
@@ -584,13 +590,27 @@ class OrderService:
         # Record tax transaction
         if checkout.tax_processor_id is not None:
             assert checkout.tax_processor is not None
-            transaction_id = await tax_calculation_service.record(
-                checkout.tax_processor, checkout.tax_processor_id, str(order.id)
+            assert order.billing_address is not None
+            assert order.product is not None
+            transaction_id, tax_processor = await tax_calculation_service.record(
+                checkout.tax_processor,
+                calculation={
+                    "processor_id": checkout.tax_processor_id,
+                    "amount": checkout.tax_amount or 0,
+                    "currency": checkout.currency,
+                    "tax_rate": checkout.tax_rate,
+                    "taxability_reason": checkout.taxability_reason,
+                },
+                amount=checkout.net_amount,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
             )
             await repository.update(
                 order,
                 update_dict={
-                    "tax_processor": checkout.tax_processor,
+                    "tax_processor": tax_processor,
                     "tax_transaction_processor_id": transaction_id,
                 },
             )
@@ -604,7 +624,26 @@ class OrderService:
         session: AsyncSession,
         subscription: Subscription,
         billing_reason: OrderBillingReasonInternal,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
     ) -> Order:
+        """
+        Create an order for a subscription based on its pending billing entries.
+
+        Args:
+            session: Database session to use for the operation.
+            subscription: The subscription for which to create the order.
+            billing_reason: The reason for billing the subscription.
+            payment_mode: The mode of payment, either "sync" or "background".
+                In "background" mode, the order will be created with pending status
+                and payment will be triggered asynchronously.
+                In "sync" mode, the order will be created and payment
+                will be attempted immediately.
+                If payment fails, an exception will be raised and the order will not be created.
+
+        Returns:
+            The created Order object.
+        """
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
         ) as items:
@@ -625,7 +664,9 @@ class OrderService:
                 discountable_amount = sum(
                     item.amount for item in items if item.discountable
                 )
-                discount_amount = discount.get_discount_amount(discountable_amount)
+                discount_amount = discount.get_discount_amount(
+                    discountable_amount, subscription.currency
+                )
 
             billing_address = customer.billing_address
             tax_id = customer.tax_id
@@ -678,6 +719,7 @@ class OrderService:
                     subtotal_amount=subtotal_amount,
                     discount_amount=discount_amount,
                     tax_amount=tax_amount,
+                    net_amount=subtotal_amount - discount_amount,
                     applied_balance_amount=applied_balance_amount,
                     currency=subscription.currency,
                     billing_reason=billing_reason,
@@ -718,6 +760,7 @@ class OrderService:
             if billing_reason in {
                 OrderBillingReasonInternal.subscription_cycle,
                 OrderBillingReasonInternal.subscription_cycle_after_trial,
+                OrderBillingReasonInternal.subscription_cancel,
             }:
                 await subscription_service.reset_meters(session, subscription)
 
@@ -729,14 +772,36 @@ class OrderService:
                 await self._emit_balance_credit_order_event(
                     session, order, subscription.organization
                 )
-            elif subscription.payment_method_id is None:
-                order = await self.handle_payment_failure(session, order)
-            else:
-                enqueue_job(
-                    "order.trigger_payment",
-                    order_id=order.id,
-                    payment_method_id=subscription.payment_method_id,
+            # Sync mode, attempt payment immediately and raise if it fails
+            elif payment_mode == PaymentMode.sync:
+                payment_method_id = (
+                    subscription.payment_method_id or customer.default_payment_method_id
                 )
+                if payment_method_id is None:
+                    raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+                payment_method_repository = PaymentMethodRepository.from_session(
+                    session
+                )
+                payment_method = await payment_method_repository.get_by_id(
+                    payment_method_id
+                )
+                assert payment_method is not None
+                await self.trigger_payment(
+                    session, order, payment_method, payment_mode=payment_mode
+                )
+            # Async mode, allow payment to fail and be retried later
+            else:
+                payment_method_id = (
+                    subscription.payment_method_id or customer.default_payment_method_id
+                )
+                if payment_method_id is None:
+                    order = await self.handle_payment_failure(session, order)
+                else:
+                    enqueue_job(
+                        "order.trigger_payment",
+                        order_id=order.id,
+                        payment_method_id=payment_method_id,
+                    )
 
             await self._on_order_created(session, order)
 
@@ -778,6 +843,7 @@ class OrderService:
                 subtotal_amount=sum(item.amount for item in items),
                 discount_amount=0,
                 tax_amount=0,
+                net_amount=0,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
@@ -829,6 +895,7 @@ class OrderService:
                 subtotal_amount=subtotal_amount,
                 discount_amount=0,
                 tax_amount=wallet_transaction.tax_amount or 0,
+                net_amount=subtotal_amount,
                 applied_balance_amount=0,
                 currency=wallet.currency,
                 billing_reason=OrderBillingReasonInternal.purchase,
@@ -868,15 +935,26 @@ class OrderService:
         # Record tax transaction
         if wallet_transaction.tax_calculation_processor_id is not None:
             assert wallet_transaction.tax_processor is not None
-            transaction_id = await tax_calculation_service.record(
+            assert order.billing_address is not None
+            transaction_id, tax_processor = await tax_calculation_service.record(
                 wallet_transaction.tax_processor,
-                wallet_transaction.tax_calculation_processor_id,
-                str(order.id),
+                calculation={
+                    "processor_id": wallet_transaction.tax_calculation_processor_id,
+                    "amount": wallet_transaction.tax_amount or 0,
+                    "currency": wallet_transaction.currency,
+                    "tax_rate": wallet_transaction.tax_rate,
+                    "taxability_reason": wallet_transaction.taxability_reason,
+                },
+                amount=order.net_amount,
+                address=order.billing_address,
+                tax_code=TaxCode.general_electronically_supplied_services,
+                reference=str(order.id),
+                transaction_date=order.created_at,
             )
             await repository.update(
                 order,
                 update_dict={
-                    "tax_processor": wallet_transaction.tax_processor,
+                    "tax_processor": tax_processor,
                     "tax_transaction_processor_id": transaction_id,
                 },
             )
@@ -886,10 +964,28 @@ class OrderService:
         return order
 
     async def trigger_payment(
-        self, session: AsyncSession, order: Order, payment_method: PaymentMethod
+        self,
+        session: AsyncSession,
+        order: Order,
+        payment_method: PaymentMethod,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
     ) -> None:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
+
+        organization = order.organization
+        if (
+            organization.is_blocked()
+            or organization.status == OrganizationStatus.DENIED
+        ):
+            log.info(
+                "Organization is blocked or denied, skipping payment",
+                order_id=order.id,
+                organization_id=organization.id,
+                organization_status=organization.status,
+            )
+            return
 
         if order.payment_lock_acquired_at is not None:
             log.warn("Payment already in progress", order_id=order.id)
@@ -923,7 +1019,11 @@ class OrderService:
 
         async with self.acquire_payment_lock(session, order, release_on_success=False):
             if payment_method.processor == PaymentProcessor.stripe:
-                metadata: dict[str, Any] = {"order_id": str(order.id)}
+                metadata: dict[str, Any] = {
+                    "organization_id": str(order.organization.id),
+                    "order_id": str(order.id),
+                    "payment_mode": payment_mode,
+                }
 
                 if order.tax_rate is not None:
                     metadata["tax_amount"] = order.tax_amount
@@ -954,7 +1054,7 @@ class OrderService:
                         error_code=e.code,
                         error_message=e.user_message,
                     )
-                    raise CardPaymentFailed(order, e) from e
+                    raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:
                     error = e.error
                     if error is not None and error.message:
@@ -979,7 +1079,7 @@ class OrderService:
                             # Mark the payment as failed to trigger dunning
                             await self.handle_payment_failure(session, order)
 
-                            raise CardPaymentFailed(order, e) from e
+                            raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
 
@@ -1058,6 +1158,7 @@ class OrderService:
                 )
 
         metadata: dict[str, Any] = {
+            "organization_id": str(order.organization.id),
             "order_id": str(order.id),
             "manual_retry": "true",  # Flag to skip dunning progression on failure
         }
@@ -1224,14 +1325,32 @@ class OrderService:
             order.tax_calculation_processor_id is not None
             and order.tax_transaction_processor_id is None
         ):
+            tax_processor: TaxProcessor | None = None
             assert order.tax_processor is not None
+            assert order.billing_address is not None
+            assert order.product is not None
             try:
-                transaction_id = await tax_calculation_service.record(
+                transaction_id, tax_processor = await tax_calculation_service.record(
                     order.tax_processor,
-                    order.tax_calculation_processor_id,
-                    str(order.id),
+                    calculation={
+                        "processor_id": order.tax_calculation_processor_id,
+                        "amount": order.tax_amount or 0,
+                        "currency": order.currency,
+                        "tax_rate": order.tax_rate,
+                        "taxability_reason": order.taxability_reason,
+                    },
+                    amount=order.net_amount,
+                    address=order.billing_address,
+                    tax_code=order.product.tax_code,
+                    reference=str(order.id),
+                    transaction_date=order.created_at,
                 )
-                update_dict["tax_transaction_processor_id"] = transaction_id
+                update_dict = {
+                    **update_dict,
+                    "tax_processor": tax_processor,
+                    "tax_transaction_processor_id": transaction_id,
+                }
+
             except CalculationExpiredError as e:
                 # Recover by recalculating tax
                 # Happens if the order was created a long time ago and the tax calculation result expired before payment was completed
@@ -1257,7 +1376,6 @@ class OrderService:
                 )
                 update_dict = {
                     **update_dict,
-                    "tax_processor": tax_processor,
                     "tax_calculation_processor_id": tax_calculation_processor_id,
                     "tax_amount": tax_amount,
                     "taxability_reason": taxability_reason,
@@ -1270,10 +1388,29 @@ class OrderService:
                     )
 
                 if tax_processor and tax_calculation_processor_id:
-                    transaction_id = await tax_calculation_service.record(
-                        tax_processor, tax_calculation_processor_id, str(order.id)
+                    (
+                        transaction_id,
+                        tax_processor,
+                    ) = await tax_calculation_service.record(
+                        tax_processor,
+                        calculation={
+                            "processor_id": tax_calculation_processor_id,
+                            "amount": tax_amount,
+                            "currency": order.currency,
+                            "tax_rate": tax_rate,
+                            "taxability_reason": taxability_reason,
+                        },
+                        amount=order.net_amount,
+                        address=order.billing_address,
+                        tax_code=order.product.tax_code,
+                        reference=str(order.id),
+                        transaction_date=order.created_at,
                     )
-                    update_dict["tax_transaction_processor_id"] = transaction_id
+                    update_dict = {
+                        **update_dict,
+                        "tax_processor": tax_processor,
+                        "tax_transaction_processor_id": transaction_id,
+                    }
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
@@ -1340,6 +1477,7 @@ class OrderService:
                         organization_name=organization.name,
                         organization_slug=organization.slug,
                         billing_reason=order.billing_reason,
+                        currency=order.currency,
                     ),
                 ),
             )
@@ -1355,6 +1493,7 @@ class OrderService:
             "subscription_confirmation",
             "subscription_cycled",
             "subscription_cycled_after_trial",
+            "subscription_final_invoice",
             "subscription_updated",
         ]
         subject_template: str
@@ -1397,6 +1536,15 @@ class OrderService:
                     "id": "{subscription}",
                     "email": "{email}",
                 }
+            case OrderBillingReasonInternal.subscription_cancel:
+                template_name = "subscription_final_invoice"
+                subject_template = "Your {description} final invoice"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
             case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {description}"
@@ -1407,8 +1555,29 @@ class OrderService:
                     "email": "{email}",
                 }
 
-        if not organization.customer_email_settings[template_name]:
+        # Final invoice uses the same email setting as subscription_cycled
+        email_setting_name = (
+            "subscription_cycled"
+            if template_name == "subscription_final_invoice"
+            else template_name
+        )
+        if not organization.customer_email_settings[email_setting_name]:
             return
+
+        # Skip subscription cycle emails for completely free subscriptions
+        if order.billing_reason in (
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ):
+            subscription = order.subscription
+            if subscription is not None:
+                is_free_product_price = all(
+                    spp.product_price.is_free
+                    for spp in subscription.subscription_product_prices
+                )
+                if is_free_product_price:
+                    return
 
         product = order.product
         customer = order.customer
@@ -1463,12 +1632,11 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        body = render_email_template(email)
-        enqueue_email(
+        enqueue_email_template(
+            email,
             **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=subject,
-            html_content=body,
             attachments=attachments,
         )
 
@@ -1681,6 +1849,33 @@ class OrderService:
         organization = order.organization
         await webhook_service.send(session, organization, event_type, order)
 
+    async def void(self, session: AsyncSession, order: Order) -> Order:
+        """Mark an order as void, indicating payment cannot be recovered."""
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        previous_status = order.status
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(order, update_dict={"status": OrderStatus.void})
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_voided,
+                customer=order.customer,
+                organization=order.organization,
+                metadata={
+                    "order_id": str(order.id),
+                    "amount": order.total_amount,
+                    "currency": order.currency,
+                },
+            ),
+        )
+        await self._on_order_updated(session, order, previous_status=previous_status)
+
+        return order
+
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)
         enqueue_job("order.confirmation_email", order.id)
@@ -1758,25 +1953,6 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
-
-        # Auto-upgrade customer to 'team' type when purchasing a seat-based product
-        if order.product and order.product.has_seat_based_price:
-            customer = order.customer
-            # NULL type is treated as 'individual' (legacy customers)
-            customer_type = customer.type or CustomerType.individual
-            if customer_type == CustomerType.individual:
-                customer_repository = CustomerRepository.from_session(session)
-                await customer_repository.update(
-                    customer,
-                    update_dict={"type": CustomerType.team},
-                    flush=True,
-                )
-                log.info(
-                    "Customer auto-upgraded to team type on seat-based product purchase",
-                    customer_id=customer.id,
-                    order_id=order.id,
-                    product_id=order.product_id,
-                )
 
     async def _emit_balance_credit_order_event(
         self,
@@ -1863,21 +2039,40 @@ class OrderService:
         """Handle the first dunning attempt for an order, setting the next payment
         attempt date and marking the subscription as past due.
         """
+        assert order.subscription is not None
+        subscription = order.subscription
 
-        first_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
+        # Mark subscription as past_due first so past_due_deadline is available
+        await subscription_service.mark_past_due(session, subscription)
+
+        payment_repository = PaymentRepository.from_session(session)
+        latest_payment = await payment_repository.get_latest_for_order(order.id)
+
+        if latest_payment is not None and latest_payment.is_non_recoverable:
+            log.info(
+                "Non-recoverable decline code detected, "
+                "scheduling retry at past_due_deadline",
+                order_id=order.id,
+                decline_reason=latest_payment.decline_reason,
+            )
+            # Immediately schedule retry at past_due_deadline for non-recoverable decline codes.
+            # The next dunning attempt will then move this subscription from
+            # past_due to revoked in the same vein as if all payment attempts failed.
+            # This ensures the same behavior as dunning retries, we just don't retry
+            # for payment methods that will just fail again.
+            next_retry_date = subscription.past_due_deadline
+        else:
+            next_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(
-            order, update_dict={"next_payment_attempt_at": first_retry_date}
+            order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
-
-        assert order.subscription is not None
-        await subscription_service.mark_past_due(session, order.subscription)
 
         # Re-enqueue benefit revocation to check if grace period has expired
         # We might end up here in the event that a user goes via the subscription product
         # update flow, so we need to ensure that they don't get benefits they shouldn't have.
-        await subscription_service.enqueue_benefits_grants(session, order.subscription)
+        await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
 
@@ -1895,10 +2090,14 @@ class OrderService:
         now = utc_now()
         subscription = order.subscription
 
-        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS) or (
-            subscription is not None
-            and subscription.past_due_deadline
-            and subscription.past_due_deadline < now
+        if (
+            failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS)
+            or (
+                subscription is not None
+                and subscription.past_due_deadline
+                and subscription.past_due_deadline < now
+            )
+            or order.is_void
         ):
             # No more retries, mark subscription as unpaid and clear retry date
             order = await repository.update(
@@ -2001,6 +2200,41 @@ class OrderService:
             taxability_reason,
             tax_rate,
         )
+
+    async def schedule_retry_for_past_due_orders(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Schedule immediate dunning retry for past_due subscriptions when a
+        customer saves a new default payment method.
+
+        This handles the case where automatic retries were stopped (e.g., due to
+        a non-recoverable decline code) but the customer later adds a new card.
+        """
+        repository = OrderRepository.from_session(session)
+        orders = await repository.get_pending_orders_for_past_due_subscriptions(
+            customer.id
+        )
+
+        for order in orders:
+            assert order.subscription is not None
+
+            log.info(
+                "Scheduling dunning retry after payment method update",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+                payment_method_id=payment_method.id,
+            )
+
+            await repository.update(
+                order,
+                update_dict={"next_payment_attempt_at": utc_now()},
+                flush=True,
+            )
+
+            order.subscription.payment_method_id = payment_method.id
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

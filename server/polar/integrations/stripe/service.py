@@ -20,7 +20,9 @@ if TYPE_CHECKING:
     )
     from stripe.params._customer_modify_params import CustomerModifyParams
     from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+    from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
     from stripe.params._setup_intent_create_params import SetupIntentCreateParams
+    from stripe.params._setup_intent_modify_params import SetupIntentModifyParams
     from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
     from stripe.params._transfer_create_params import TransferCreateParams
     from stripe.params._transfer_create_reversal_params import (
@@ -303,6 +305,16 @@ class StripeService:
             id, expand=expand or []
         )
 
+    async def get_payout(
+        self,
+        *,
+        payout_id: str,
+        stripe_account: str,
+    ) -> stripe_lib.Payout:
+        return await stripe_lib.Payout.retrieve_async(
+            payout_id, stripe_account=stripe_account
+        )
+
     async def create_payout(
         self,
         *,
@@ -321,6 +333,7 @@ class StripeService:
             stripe_account=stripe_account,
             amount=amount,
             currency=currency,
+            statement_descriptor=settings.STRIPE_STATEMENT_DESCRIPTOR,
             metadata=metadata or {},
         )
 
@@ -347,6 +360,18 @@ class StripeService:
             usage=params.get("usage"),
         )
         return await stripe_lib.SetupIntent.create_async(**params)
+
+    async def modify_setup_intent(
+        self, id: str, **params: Unpack[SetupIntentModifyParams]
+    ) -> stripe_lib.SetupIntent:
+        log.info("stripe.setup_intent.modify", setup_intent_id=id)
+        return await stripe_lib.SetupIntent.modify_async(id, **params)
+
+    async def modify_payment_intent(
+        self, id: str, **params: Unpack[PaymentIntentModifyParams]
+    ) -> stripe_lib.PaymentIntent:
+        log.info("stripe.payment_intent.modify", payment_intent_id=id)
+        return await stripe_lib.PaymentIntent.modify_async(id, **params)
 
     async def get_setup_intent(
         self, id: str, **params: Unpack[SetupIntentRetrieveParams]
@@ -503,8 +528,12 @@ class StripeService:
         )
 
     async def get_verification_session(
-        self, id: str
+        self, id: str, *, expand: list[str] | None = None
     ) -> stripe_lib.identity.VerificationSession:
+        if expand is not None:
+            return await stripe_lib.identity.VerificationSession.retrieve_async(
+                id, expand=expand
+            )
         return await stripe_lib.identity.VerificationSession.retrieve_async(id)
 
     async def create_verification_session(

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 'use client'
 
 import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'
@@ -13,6 +14,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import ListGroup from '@polar-sh/ui/components/atoms/ListGroup'
 import {
   Select,
   SelectContent,
@@ -20,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -222,7 +223,7 @@ const CreateAccessTokenModal = ({
     <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Create organization access token</h2>
+          <h2 className="text-xl">Create Organization Token</h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
@@ -232,7 +233,7 @@ const CreateAccessTokenModal = ({
             className="max-w-[700px] space-y-8"
           >
             <AccessTokenForm />
-            <Button type="submit">Create organization access token</Button>
+            <Button type="submit">Create Token</Button>
           </form>
         </Form>
       </div>
@@ -360,13 +361,23 @@ const AccessTokenItem = ({
             {!minimal && (
               <p className="dark:text-polar-400 text-sm text-gray-500">
                 {token.expires_at ? (
-                  <>
-                    Expires on{' '}
-                    <FormattedDateTime
-                      datetime={token.expires_at}
-                      dateStyle="long"
-                    />
-                  </>
+                  new Date(token.expires_at) < new Date() ? (
+                    <span className="text-red-500 dark:text-red-400">
+                      Expired on{' '}
+                      <FormattedDateTime
+                        datetime={token.expires_at}
+                        dateStyle="long"
+                      />
+                    </span>
+                  ) : (
+                    <>
+                      Expires on{' '}
+                      <FormattedDateTime
+                        datetime={token.expires_at}
+                        dateStyle="long"
+                      />
+                    </>
+                  )
                 ) : (
                   <span className="text-red-500 dark:text-red-400">
                     Never expires
@@ -521,36 +532,36 @@ const OrganizationAccessTokensSettings = ({
 
   return (
     <div className="flex w-full flex-col">
-      <ShadowListGroup>
+      <ListGroup>
         {hasExistingTokens ? (
           tokens.data?.items.map((token) => {
             const isNewToken =
               token.id === createdToken?.organization_access_token.id
 
             return (
-              <ShadowListGroup.Item key={token.id}>
+              <ListGroup.Item key={token.id}>
                 <AccessTokenItem
                   token={token}
                   rawToken={isNewToken ? createdToken?.token : undefined}
                 />
-              </ShadowListGroup.Item>
+              </ListGroup.Item>
             )
           })
         ) : (
-          <ShadowListGroup.Item>
+          <ListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               You don&rsquo;t have any active organization access tokens.
             </p>
-          </ShadowListGroup.Item>
+          </ListGroup.Item>
         )}
         {showNewTokenButton && (
-          <ShadowListGroup.Item>
+          <ListGroup.Item>
             <div className="flex flex-row items-center gap-x-4">
               <Button asChild onClick={showCreateModal} size="sm">
                 Create token
               </Button>
             </div>
-          </ShadowListGroup.Item>
+          </ListGroup.Item>
         )}
         <InlineModal
           isShown={createModalShown}
@@ -563,7 +574,7 @@ const OrganizationAccessTokensSettings = ({
             />
           }
         />
-      </ShadowListGroup>
+      </ListGroup>
     </div>
   )
 }

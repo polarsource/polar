@@ -1,22 +1,23 @@
 'use client'
 
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { schemas } from '@polar-sh/client'
 import { useEffect } from 'react'
 
 interface CheckoutEmbedLoadedProps {
-  checkout: CheckoutPublic
+  checkout: schemas['CheckoutPublic']
 }
 
 const CheckoutEmbedLoaded: React.FC<
   React.PropsWithChildren<CheckoutEmbedLoadedProps>
 > = ({ checkout }) => {
+  const embedOrigin = checkout.embed_origin
   useEffect(() => {
-    if (!checkout.embedOrigin) {
+    if (!embedOrigin) {
       return
     }
-    PolarEmbedCheckout.postMessage({ event: 'loaded' }, checkout.embedOrigin)
-  }, [])
+    PolarEmbedCheckout.postMessage({ event: 'loaded' }, embedOrigin)
+  }, [embedOrigin])
 
   return null
 }

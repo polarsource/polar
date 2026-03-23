@@ -8,9 +8,8 @@ from polar.account.service import account as account_service
 from polar.auth.models import is_anonymous, is_user
 from polar.auth.scope import Scope
 from polar.config import settings
-from polar.email.react import render_email_template
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
-from polar.email.sender import enqueue_email
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import (
     NotPermitted,
     PolarRequestValidationError,
@@ -42,6 +41,7 @@ from .schemas import (
     OrganizationCreate,
     OrganizationDeletionResponse,
     OrganizationID,
+    OrganizationKYC,
     OrganizationPaymentStatus,
     OrganizationPaymentStep,
     OrganizationReviewStatus,
@@ -99,6 +99,27 @@ async def get(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Organization:
     """Get an organization by ID."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return organization
+
+
+@router.get(
+    "/{id}/kyc",
+    summary="Get Organization KYC Details",
+    response_model=OrganizationKYC,
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def get_kyc(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Organization:
+    """Get an organization's KYC/compliance details."""
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:
@@ -377,7 +398,7 @@ async def invite_member(
 
     # Send invitation email
     email = invite_body.email
-    body = render_email_template(
+    enqueue_email_template(
         OrganizationInviteEmail(
             props=OrganizationInviteProps(
                 email=email,
@@ -387,13 +408,9 @@ async def invite_member(
                     f"/dashboard/{organization.slug}"
                 ),
             )
-        )
-    )
-
-    enqueue_email(
+        ),
         to_email_addr=email,
         subject=f"You've been invited to {organization.name} on Polar",
-        html_content=body,
     )
 
     # Get the user organization relationship to return

@@ -68,6 +68,7 @@ class WebhookEndpoint(RecordModel):
     __tablename__ = "webhook_endpoints"
 
     url: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
     secret: Mapped[str] = mapped_column(String, nullable=False)
     events: Mapped[list[WebhookEventType]] = mapped_column(

@@ -4,9 +4,10 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from tagflow import classes, tag, text
 
 from polar.models import Organization, User
+from polar.models.user import IdentityVerificationStatus
 
 from ....components import action_bar, button, card
 
@@ -14,9 +15,15 @@ from ....components import action_bar, button, card
 class TeamSection:
     """Render the team section with member management."""
 
-    def __init__(self, organization: Organization, admin_user: User | None = None):
+    def __init__(
+        self,
+        organization: Organization,
+        admin_user: User | None = None,
+        identity_country: str | None = None,
+    ):
         self.org = organization
         self.admin_user = admin_user
+        self.identity_country = identity_country
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
@@ -50,8 +57,39 @@ class TeamSection:
                                             )
 
                                     with tag.div():
-                                        with tag.div(classes="font-semibold"):
-                                            text(member.user.email or "Unknown")
+                                        with tag.div(classes="flex items-center gap-2"):
+                                            with tag.span(classes="font-semibold"):
+                                                with tag.a(
+                                                    href=str(
+                                                        request.url_for(
+                                                            "users:get",
+                                                            id=member.user_id,
+                                                        )
+                                                    ),
+                                                    classes="hover:text-primary hover:underline",
+                                                ):
+                                                    text(member.user.email or "Unknown")
+                                            status = (
+                                                member.user.identity_verification_status
+                                            )
+                                            if (
+                                                status
+                                                != IdentityVerificationStatus.unverified
+                                            ):
+                                                with tag.div(classes="badge badge-sm"):
+                                                    if (
+                                                        status
+                                                        == IdentityVerificationStatus.failed
+                                                    ):
+                                                        classes("badge-warning")
+                                                    else:
+                                                        classes("badge-neutral")
+                                                    text(status.get_display_name())
+                                            if self.identity_country:
+                                                with tag.span(
+                                                    classes="text-sm text-base-content/60"
+                                                ):
+                                                    text(self.identity_country)
                                         with tag.div(
                                             classes="text-sm text-base-content/60"
                                         ):
@@ -104,7 +142,7 @@ class TeamSection:
                                                     with tag.a(
                                                         hx_post=str(
                                                             request.url_for(
-                                                                "organizations-v2:make_admin",
+                                                                "organizations:make_admin",
                                                                 organization_id=self.org.id,
                                                                 user_id=member.user_id,
                                                             )
@@ -116,7 +154,7 @@ class TeamSection:
                                                 with tag.a(
                                                     hx_delete=str(
                                                         request.url_for(
-                                                            "organizations-v2:remove_member",
+                                                            "organizations:remove_member",
                                                             organization_id=self.org.id,
                                                             user_id=member.user_id,
                                                         )

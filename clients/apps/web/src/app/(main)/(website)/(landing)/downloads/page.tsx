@@ -1,6 +1,7 @@
+import { StaticImage } from '@/components/Image/StaticImage'
 import { Apple, Framer, Google, Raycast } from '@/components/Landing/Logos'
+import { Box } from '@polar-sh/orbit/Box'
 import { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
@@ -68,10 +69,33 @@ const plugins = [
 
 export default function Downloads() {
   return (
-    <div className="mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-24">
-      <div className="flex w-full flex-col items-center gap-y-8">
-        <div className="flex flex-col items-center gap-y-8 py-12 text-center lg:max-w-2xl">
-          <Image
+    <Box
+      display="flex"
+      flexDirection="column"
+      marginHorizontal="auto"
+      height="100%"
+      minHeight="100vh"
+      width="100%"
+      maxWidth="72rem"
+      rowGap={{ base: '2xl', md: '5xl' }}
+    >
+      <Box
+        display="flex"
+        width="100%"
+        flexDirection="column"
+        alignItems="center"
+        rowGap="2xl"
+      >
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          rowGap="2xl"
+          paddingVertical="3xl"
+          textAlign="center"
+          maxWidth={{ lg: '42rem' }}
+        >
+          <StaticImage
             className="rounded-3xl"
             src="/assets/brand/app-icon.png"
             width={160}
@@ -82,16 +106,23 @@ export default function Downloads() {
           <p className="dark:text-polar-500 text-2xl text-balance text-gray-500">
             Take Polar with you. Now available on a variety of platforms.
           </p>
-        </div>
-      </div>
-      <div className="flex flex-col gap-y-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div className="flex flex-col gap-y-2">
+        </Box>
+      </Box>
+      <Box display="flex" flexDirection="column" rowGap="2xl">
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            base: 'repeat(1, minmax(0, 1fr))',
+            md: 'repeat(3, minmax(0, 1fr))',
+          }}
+          gap="2xl"
+        >
+          <Box display="flex" flexDirection="column" rowGap="s">
             <h3 className="text-2xl">Mobile Apps</h3>
             <p className="dark:text-polar-500 text-lg text-gray-500">
               Your business in the palm of your hand
             </p>
-          </div>
+          </Box>
           {downloads.map((link) => (
             <Link
               key={link.title + link.description}
@@ -101,32 +132,44 @@ export default function Downloads() {
               href={link.href ?? '#'}
               target={link.target}
             >
-              <div className="flex flex-row items-center gap-x-4">
+              <Box
+                display="flex"
+                flexDirection="row"
+                alignItems="center"
+                columnGap="l"
+              >
                 <span>{link.icon}</span>
                 {!link.href ? (
                   <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
                     Coming Soon
                   </span>
                 ) : null}
-              </div>
-              <div className="flex flex-col gap-2">
+              </Box>
+              <Box display="flex" flexDirection="column" gap="s">
                 <h3 className="text-xl">{link.title}</h3>
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
                 </p>
-              </div>
+              </Box>
             </Link>
           ))}
-        </div>
-      </div>
-      <div className="flex flex-col gap-y-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div className="flex flex-col gap-y-2">
+        </Box>
+      </Box>
+      <Box display="flex" flexDirection="column" rowGap="2xl">
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            base: 'repeat(1, minmax(0, 1fr))',
+            md: 'repeat(3, minmax(0, 1fr))',
+          }}
+          gap="2xl"
+        >
+          <Box display="flex" flexDirection="column" rowGap="s">
             <h3 className="text-2xl">Plugins</h3>
             <p className="dark:text-polar-500 text-lg text-gray-500">
               Polar integrated in your favourite apps
             </p>
-          </div>
+          </Box>
           {plugins.map((link) => (
             <Link
               key={link.title + link.description}
@@ -134,24 +177,29 @@ export default function Downloads() {
               href={link.href}
               target="_blank"
             >
-              <div className="flex flex-row items-center gap-x-4">
+              <Box
+                display="flex"
+                flexDirection="row"
+                alignItems="center"
+                columnGap="l"
+              >
                 <span>{link.icon}</span>
                 {!link.href ? (
                   <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
                     Coming Soon
                   </span>
                 ) : null}
-              </div>
-              <div className="flex flex-col gap-2">
+              </Box>
+              <Box display="flex" flexDirection="column" gap="s">
                 <h3 className="text-xl">{link.title}</h3>
                 <p className="dark:text-polar-500 font-sm text-gray-500">
                   {link.description}
                 </p>
-              </div>
+              </Box>
             </Link>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   )
 }

@@ -3,6 +3,21 @@ import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 
+const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
+
+// Vercel preview: compute basePath and API URL from PR number + Tailscale hostname
+let previewBasePath = ''
+if (
+  process.env.VERCEL_GIT_PULL_REQUEST_ID &&
+  process.env.POLAR_PREVIEW_BACKEND_HOST
+) {
+  const prNum = parseInt(process.env.VERCEL_GIT_PULL_REQUEST_ID)
+  previewBasePath = `/pr-${prNum}`
+  const baseUrl = `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}${previewBasePath}`
+  process.env.NEXT_PUBLIC_API_URL = baseUrl
+  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = baseUrl
+}
+
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 const ENVIRONMENT =
@@ -23,7 +38,7 @@ const baseCSP = `
     frame-src 'self' https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com https://customer-wl21dabnj6qtvcai.cloudflarestream.com videodelivery.net *.cloudflarestream.com;
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com https://chat.cdn-plain.com https://embed.cloudflarestream.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://www.gravatar.com https://img.logo.dev https://lh3.googleusercontent.com https://avatars.githubusercontent.com ${S3_PUBLIC_IMAGES_BUCKET_ORIGIN} https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com https://prod-uk-services-attachm-attachmentsbucket28b3ccf-uwfssb4vt2us.s3.eu-west-2.amazonaws.com https://i0.wp.com;
+    img-src 'self' blob: data: https://www.gravatar.com https://img.logo.dev https://lh3.googleusercontent.com https://avatars.githubusercontent.com ${S3_PUBLIC_IMAGES_BUCKET_ORIGIN} https://uploads.polar.sh https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com https://prod-uk-services-attachm-attachmentsbucket28b3ccf-uwfssb4vt2us.s3.eu-west-2.amazonaws.com https://i0.wp.com;
     font-src 'self';
     object-src 'none';
     base-uri 'self';
@@ -31,12 +46,12 @@ const baseCSP = `
 `
 const nonEmbeddedCSP = `
   ${baseCSP}
-  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
   frame-ancestors 'none';
 `
 const embeddedCSP = `
   ${baseCSP}
-  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL} polar:;
   frame-ancestors *;
 `
 // Don't add form-action to the OAuth2 authorize page, as it blocks the OAuth2 redirection
@@ -63,9 +78,22 @@ const docsCSP = `
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['127.0.0.1'],
   reactStrictMode: true,
-  transpilePackages: ['shiki', '@polar-sh/checkout'],
+  transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+
+  ...(previewBasePath && {
+    basePath: previewBasePath,
+    env: {
+      POLAR_API_URL: `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}:8443${previewBasePath}`,
+    },
+  }),
+
+  ...(PREVIEW_BUILD && {
+    typescript: { ignoreBuildErrors: true },
+    eslint: { ignoreDuringBuilds: true },
+  }),
 
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
@@ -129,7 +157,24 @@ const nextConfig = {
   },
 
   async rewrites() {
+    const apiUrl = process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL
     return [
+      ...(PREVIEW_BUILD && apiUrl
+        ? [
+            {
+              source: '/v1/:path*',
+              destination: `${apiUrl}/v1/:path*`,
+            },
+            {
+              source: '/backoffice/:path*',
+              destination: `${apiUrl}/backoffice/:path*`,
+            },
+            {
+              source: '/healthz',
+              destination: `${apiUrl}/healthz`,
+            },
+          ]
+        : []),
       {
         source: '/ingest/static/:path*',
         destination: 'https://us-assets.i.posthog.com/static/:path*',
@@ -215,23 +260,28 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Redirect /maintainer to polar.sh if on a different domain name
-      {
-        source: '/dashboard/:path*',
-        destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
-        missing: [
-          {
-            type: 'host',
-            value: defaultFrontendHostname,
-          },
-          {
-            type: 'header',
-            key: 'x-forwarded-host',
-            value: defaultFrontendHostname,
-          },
-        ],
-        permanent: false,
-      },
+      // Redirect /dashboard to correct domain if on a different domain name
+      // Skip in preview builds — preview env uses a single domain via Caddy proxy
+      ...(!previewBasePath
+        ? [
+            {
+              source: '/dashboard/:path*',
+              destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
+              missing: [
+                {
+                  type: 'host',
+                  value: defaultFrontendHostname,
+                },
+                {
+                  type: 'header',
+                  key: 'x-forwarded-host',
+                  value: defaultFrontendHostname,
+                },
+              ],
+              permanent: false,
+            },
+          ]
+        : []),
 
       {
         source: '/maintainer',

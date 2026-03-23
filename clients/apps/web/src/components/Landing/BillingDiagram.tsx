@@ -289,7 +289,9 @@ const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
         rightClassName={`transition-colors duration-300 ${active ? AR : R}`}
       />
       {layer.label === 'CHECKOUT' ? (
+        <>
         <CheckoutElements z={z} active={active} />
+        </>
       ) : (
         rows.map((w, i) => (
           <IsometricBox
@@ -422,7 +424,7 @@ export const BillingDiagram = () => {
 
       {/* Right — isometric illustration with floating labels */}
       <div
-        className="pointer-events-none relative flex-1 overflow-visible"
+        className="pointer-events-none relative flex-1 overflow-hidden"
         style={{ minHeight: 510 }}
       >
         {/* Illustration, centered and shifted down to prevent top overflow */}

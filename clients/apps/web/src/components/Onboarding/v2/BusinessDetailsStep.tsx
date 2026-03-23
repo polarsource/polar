@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 'use client'
 
-import { useOnboardingTracking } from '@/hooks'
+import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -237,10 +237,12 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function BusinessDetailsStep() {
   const router = useRouter()
-  const { trackStepCompleted } = useOnboardingTracking()
+  const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const [submitting, setSubmitting] = useState(false)
+
+  trackStepViewed('business')
   const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(false)
   const [editedBusinessName, setEditedBusinessName] = useState(false)

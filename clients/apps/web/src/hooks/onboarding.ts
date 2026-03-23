@@ -1,6 +1,7 @@
 'use client'
 
 import { useExperiment } from '@/experiments/client'
+import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { usePostHog } from 'posthog-js/react'
 import { useCallback, useMemo } from 'react'
@@ -92,14 +93,16 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
     trackExposure: false,
   })
 
+  const mode = CONFIG.IS_SANDBOX ? 'sandbox' : 'production'
+
   const captureEvent = useCallback(
     (
       event: string,
       properties: Record<string, string | number | null | undefined>,
     ) => {
-      posthog?.capture(event, properties)
+      posthog?.capture(event, { ...properties, mode })
     },
-    [posthog],
+    [posthog, mode],
   )
 
   const startOnboarding = useCallback(

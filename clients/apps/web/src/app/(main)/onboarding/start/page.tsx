@@ -6,9 +6,11 @@ import { CONFIG } from '@/utils/config'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { redirect, useRouter } from 'next/navigation'
+import { usePostHog } from 'posthog-js/react'
 
 export default function Page() {
   const router = useRouter()
+  const posthog = usePostHog()
   const { updateData } = useOnboardingData()
 
   if (CONFIG.IS_SANDBOX) {
@@ -16,10 +18,14 @@ export default function Page() {
   }
 
   const handleSandbox = () => {
+    posthog?.capture('dashboard:onboarding:mode_selected', { mode: 'sandbox' })
     window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/dashboard/create&from=onboarding`
   }
 
   const handleGetStarted = () => {
+    posthog?.capture('dashboard:onboarding:mode_selected', {
+      mode: 'production',
+    })
     updateData({
       buildingIntent: ['setting_up_business'],
     })

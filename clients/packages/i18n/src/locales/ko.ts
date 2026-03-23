@@ -1,7 +1,7 @@
 export default {
   checkout: {
     footer: {
-      poweredBy: '제공:',
+      poweredBy: 'Powered by',
       merchantOfRecord:
         '이 주문은 온라인 리셀러이자 Merchant of Record인 Polar가 처리하며, 주문 관련 문의 및 반품도 Polar에서 담당합니다.',
       mandateSubscriptionTrial:
@@ -27,7 +27,7 @@ export default {
         province: '도',
         stateProvince: '주 / 도',
       },
-      taxId: '납세자 번호',
+      taxId: '사업자등록번호',
       discountCode: '할인 코드',
       optional: '선택 사항',
       apply: '적용',

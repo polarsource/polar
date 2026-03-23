@@ -289,9 +289,7 @@ const Plate = ({ layer, hovered }: { layer: LayerDef; hovered: boolean }) => {
         rightClassName={`transition-colors duration-300 ${active ? AR : R}`}
       />
       {layer.label === 'CHECKOUT' ? (
-        <>
         <CheckoutElements z={z} active={active} />
-        </>
       ) : (
         rows.map((w, i) => (
           <IsometricBox

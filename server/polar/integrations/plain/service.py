@@ -503,9 +503,7 @@ class PlainService:
                         component_row=ComponentRowInput(
                             row_main_content=[
                                 ComponentRowContentInput(
-                                    component_text=ComponentTextInput(
-                                        text=user.email
-                                    )
+                                    component_text=ComponentTextInput(text=user.email)
                                 ),
                             ],
                             row_aside_content=[
@@ -536,9 +534,7 @@ class PlainService:
                                     )
                                 ),
                                 ComponentRowContentInput(
-                                    component_text=ComponentTextInput(
-                                        text=str(user.id)
-                                    )
+                                    component_text=ComponentTextInput(text=str(user.id))
                                 ),
                             ],
                             row_aside_content=[

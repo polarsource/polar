@@ -26409,6 +26409,8 @@ export interface components {
       account_currency: string
       /** Account Amount */
       account_amount: number
+      /** Tax Amount */
+      tax_amount: number
       platform_fee_type: components['schemas']['PlatformFeeType'] | null
       /** Pledge Id */
       pledge_id: string | null

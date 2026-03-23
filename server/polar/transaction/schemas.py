@@ -47,6 +47,7 @@ class TransactionEmbedded(IDSchema, TimestampedSchema):
     amount: int
     account_currency: str
     account_amount: int
+    tax_amount: int
 
     platform_fee_type: PlatformFeeType | None
 

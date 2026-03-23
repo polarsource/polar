@@ -169,7 +169,7 @@ const TransactionsList = ({
       header: ({ column }) => (
         <DataTableColumnHeader
           column={column}
-          title="Gross"
+          title="Gross (incl. tax)"
           className="flex justify-end"
         />
       ),
@@ -177,7 +177,7 @@ const TransactionsList = ({
         const { row } = props
         const { original: transaction } = row
         const amount = isTransaction(transaction)
-          ? transaction.gross_amount
+          ? transaction.gross_amount + (transaction.tax_amount ?? 0)
           : (props.getValue() as number)
 
         return (

@@ -16,7 +16,7 @@ export default function Page() {
   }
 
   const handleSandbox = () => {
-    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/personal&from=onboarding`
+    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/dashboard/create&from=onboarding`
   }
 
   const handleGetStarted = () => {

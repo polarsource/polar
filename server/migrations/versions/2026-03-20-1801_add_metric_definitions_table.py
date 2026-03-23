@@ -1,7 +1,7 @@
 """add_metric_definitions_table
 
 Revision ID: af3b4fe6a854
-Revises: 9b73bce01fd4
+Revises: 1a2e0acc75e3
 Create Date: 2026-03-15 18:01:58.231080
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "af3b4fe6a854"
-down_revision = "9b73bce01fd4"
+down_revision = "1a2e0acc75e3"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

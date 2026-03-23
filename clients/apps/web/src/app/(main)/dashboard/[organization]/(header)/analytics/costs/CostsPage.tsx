@@ -1,7 +1,5 @@
 'use client'
 
-import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'
-import { getMetricsForType } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/metrics-config'
 import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
@@ -40,6 +38,8 @@ import { useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import { getDefaultEndDate, getDefaultStartDate } from './utils'
+import { getMetricsForType } from '@/components/metrics/dashboards/metrics-config'
+import { MetricGroup } from '@/components/metrics/dashboards/MetricGroup'
 
 interface ClientPageProps {
   organization: schemas['Organization']

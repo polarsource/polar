@@ -353,7 +353,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {cursorLine}
           {series
             .slice()
             .reverse()
@@ -382,7 +381,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {cursorLine}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -446,7 +444,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
         {yAxis}
         {tooltip}
         {legend}
-        {cursorLine}
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
@@ -477,7 +474,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
     handleMouseMove,
     handleMouseLeave,
     id,
-    activeCursorIndex,
   ])
 
   // Cursor line is cheap and only depends on the active index.

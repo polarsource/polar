@@ -1,11 +1,9 @@
 'use client'
 
 import { OrganizationStep } from '@/components/Onboarding/OrganizationStep'
-import { useExperiment } from '@/experiments/client'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { redirect } from 'next/navigation'
 
 export interface ClientPageProps {
   slug?: string
@@ -20,19 +18,8 @@ export default function ClientPage({
   error,
   hasExistingOrg,
 }: ClientPageProps) {
-  const { isTreatment } = useExperiment('onboarding_v2')
-  const router = useRouter()
-
-  const useNewOnboarding = isTreatment && !CONFIG.IS_SANDBOX
-
-  useEffect(() => {
-    if (useNewOnboarding) {
-      router.replace('/onboarding/start')
-    }
-  }, [useNewOnboarding, router])
-
-  if (useNewOnboarding) {
-    return null
+  if (!CONFIG.IS_SANDBOX) {
+    redirect('/onboarding/start')
   }
 
   return (

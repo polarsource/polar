@@ -125,7 +125,7 @@ class OrderRepository(
         return await self.get_all(statement)
 
     async def get_pending_orders_for_subscription(
-        self, subscription_id: UUID
+        self, subscription_id: UUID, *, options: Options = ()
     ) -> Sequence[Order]:
         """Get pending orders for a specific subscription."""
         statement = (
@@ -134,7 +134,7 @@ class OrderRepository(
                 Order.subscription_id == subscription_id,
                 Order.status == OrderStatus.pending,
             )
-            .options(joinedload(Order.subscription))
+            .options(joinedload(Order.subscription), *options)
         )
         return await self.get_all(statement)
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { usePostHog } from 'posthog-js/react'
+import { usePostHog } from '@/hooks/posthog'
 import { useCallback, useRef } from 'react'
 
 export type OnboardingV2Step = 'personal' | 'business' | 'product'
@@ -23,7 +23,7 @@ export const useOnboardingV2Tracking = (): UseOnboardingV2TrackingReturn => {
       if (viewedSteps.current.has(step)) return
       viewedSteps.current.add(step)
 
-      posthog?.capture('dashboard:onboarding_v2:step:viewed', {
+      posthog.capture('dashboard:onboarding:step:view', {
         step,
         mode: 'production',
       })
@@ -36,7 +36,7 @@ export const useOnboardingV2Tracking = (): UseOnboardingV2TrackingReturn => {
       step: OnboardingV2Step,
       properties?: Record<string, string | number | boolean | null | undefined>,
     ) => {
-      posthog?.capture('dashboard:onboarding_v2:step:completed', {
+      posthog.capture('dashboard:onboarding:step:complete', {
         step,
         mode: 'production',
         ...properties,
@@ -47,7 +47,7 @@ export const useOnboardingV2Tracking = (): UseOnboardingV2TrackingReturn => {
 
   const trackCompleted = useCallback(
     (organizationId: string) => {
-      posthog?.capture('dashboard:onboarding_v2:completed', {
+      posthog.capture('dashboard:onboarding:flow:complete', {
         organization_id: organizationId,
         mode: 'production',
       })

@@ -2,6 +2,7 @@
 
 import type { schemas } from '@polar-sh/client'
 import type { JsonType } from '@posthog/core'
+import type { CaptureOptions } from 'posthog-js'
 import { usePostHog as useOuterPostHog } from 'posthog-js/react'
 import { useCallback, useMemo } from 'react'
 
@@ -26,6 +27,7 @@ type Category =
   | 'subscriptions'
   | 'user'
   | 'organizations'
+  | 'onboarding'
   | 'issues'
 
 type Noun = string
@@ -59,7 +61,11 @@ export interface PolarHog {
   setPersistence: (
     persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory',
   ) => void
-  capture: (event: EventName, properties?: { [key: string]: JsonType }) => void
+  capture: (
+    event: EventName,
+    properties?: { [key: string]: JsonType },
+    options?: CaptureOptions,
+  ) => void
   identify: (user: schemas['UserRead']) => void
   logout: () => void
 }
@@ -75,8 +81,8 @@ export const usePostHog = (): PolarHog => {
   )
 
   const capture: PolarHog['capture'] = useCallback(
-    (event, properties) => {
-      posthog.capture(event, properties)
+    (event, properties, options) => {
+      posthog.capture(event, properties, options)
     },
     [posthog],
   )

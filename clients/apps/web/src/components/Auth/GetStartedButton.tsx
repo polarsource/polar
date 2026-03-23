@@ -43,10 +43,19 @@ const GetStartedButton = ({
   )
 
   const handleSandbox = () => {
+    posthog.capture(
+      'dashboard:onboarding:mode:click',
+      { mode: 'sandbox', source: 'landing_modal' },
+      { send_instantly: true },
+    )
     window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/dashboard/create&from=onboarding`
   }
 
   const handleGetStarted = () => {
+    posthog.capture('dashboard:onboarding:mode:click', {
+      mode: 'production',
+      source: 'landing_modal',
+    })
     setView('login')
   }
 

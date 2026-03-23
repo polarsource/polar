@@ -5,11 +5,11 @@ export default {
       merchantOfRecord:
         '이 주문은 온라인 리셀러이자 Merchant of Record인 Polar가 처리하며, 주문 관련 문의 및 반품도 Polar에서 담당합니다.',
       mandateSubscriptionTrial:
-        '"{buttonLabel}" 버튼을 클릭하면 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 체험 기간 종료 시점 및 이후 매 결제일에 선택하신 결제 수단으로 위 금액을 청구하는 것을 승인하게 됩니다. 체험 기간이 종료되기 전에 언제든지 취소하여 청구를 방지할 수 있습니다.',
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 체험 기간 종료 시점 및 이후 취소할 때까지 매 결제일마다 선택한 결제 수단으로 위에 표시된 금액을 청구하는 데 동의하게 됩니다. 요금이 청구되지 않도록 체험 기간 종료 전에 언제든지 취소할 수 있습니다.',
       mandateSubscription:
-        '"{buttonLabel}" 버튼을 클릭하면 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 즉시 선택하신 결제 수단으로 위 금액을 청구하고, 이후 매 결제일에 동일한 금액을 청구하는 것을 승인하게 됩니다. 언제든지 취소할 수 있습니다.',
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 즉시 청구하고, 이후 취소할 때까지 매 결제일마다 동일한 금액을 청구하는 데 동의하게 됩니다.',
       mandateOneTime:
-        '"{buttonLabel}" 버튼을 클릭하면 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택하신 결제 수단으로 위 금액을 청구하는 것을 승인하게 됩니다. 이는 일회성 결제입니다.',
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 청구하는 데 동의하게 됩니다. 이는 일회성 결제입니다.',
     },
     form: {
       email: '이메일',
@@ -35,6 +35,7 @@ export default {
       addBusinessDetails: '사업자 정보 추가',
       removeBusinessDetails: '사업자 정보 삭제',
       billingDetails: '사업자 정보',
+      addDiscountCode: '할인 코드 추가',
     },
     pricing: {
       subtotal: '소계',
@@ -58,29 +59,30 @@ export default {
             _mode: 'plural',
           },
         },
+        until: '{date}까지',
       },
       everyInterval: {
         day: {
           '=1': '매일',
-          '=2': '2일마다',
+          '=2': '이틀마다',
           other: '#일마다',
           _mode: 'plural',
         },
         week: {
           '=1': '매주',
-          '=2': '2주마다',
+          '=2': '격주',
           other: '#주마다',
           _mode: 'plural',
         },
         month: {
           '=1': '매월',
-          '=2': '2개월마다',
+          '=2': '격월',
           other: '#개월마다',
           _mode: 'plural',
         },
         year: {
           '=1': '매년',
-          '=2': '2년마다',
+          '=2': '격년',
           other: '#년마다',
           _mode: 'plural',
         },
@@ -109,6 +111,38 @@ export default {
           other: '#년 무료 체험',
           _mode: 'plural',
         },
+      },
+      hero: {
+        free: {
+          day: {
+            '=1': '#일 무료',
+            other: '#일 무료',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '#개월 무료',
+            other: '#개월 무료',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '#년 무료',
+            other: '#년 무료',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/일',
+          week: '/주',
+          month: '/월',
+          year: '/년',
+        },
+        then: '이후',
+        startingDate: '{date}부터',
+      },
+      summary: {
+        totalWhenTrialEnds: '체험 종료 시 결제 금액',
+        totalWhenDiscountExpires: '할인 종료 시 결제 금액',
+        totalDueToday: '오늘 결제할 금액',
       },
     },
     pwywForm: {
@@ -199,6 +233,10 @@ export default {
       getFree: '무료로 받기',
       paymentsUnavailable: '현재 결제를 이용할 수 없습니다',
     },
+    productDescription: {
+      readMore: '더 보기',
+      readLess: '접기',
+    },
   },
   intervals: {
     short: {
@@ -209,12 +247,13 @@ export default {
     },
   },
   benefitTypes: {
+    custom: '사용자 지정',
     license_keys: '라이선스 키',
     github_repository: 'GitHub 저장소 액세스',
     discord: 'Discord 초대',
     downloadables: '파일 다운로드',
-    custom: '사용자 지정',
-    meter_credit: '미터 크레딧',
+    meter_credit: '사용량 크레딧',
+    feature_flag: '기능 플래그',
   },
   ordinal: {
     zero: '번째',

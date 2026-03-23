@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -69,10 +70,12 @@ export function ProductDetailsStep() {
   const { setUserOrganizations } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
+  const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
   const createOrganization = useCreateOrganization()
   const [loading, setLoading] = useState<
     'validating' | 'submitting' | 'submitting-anyway' | null
   >(null)
+  trackStepViewed('product')
   const [aupVerdict, setAupVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
   const [aupMessage, setAupMessage] = useState<string | null>(null)
   const [validationError, setValidationError] = useState(false)
@@ -170,6 +173,7 @@ export function ProductDetailsStep() {
     setUserOrganizations((prev) => [...prev, org])
     updateData({ organizationId: org.id, orgSlug: org.slug })
 
+    trackStepCompleted('product', { organization_id: org.id })
     await showApiResponse(200, 'OK')
     router.push('/onboarding/complete')
     return true

@@ -1,14 +1,14 @@
 'use client'
 
 import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
-import { useOnboardingTracking } from '@/hooks'
+import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 
 export default function Page() {
   const router = useRouter()
   const { data, clearData } = useOnboardingData()
-  const { trackCompleted } = useOnboardingTracking()
+  const { trackCompleted } = useOnboardingV2Tracking()
   const hasTracked = useRef(false)
 
   useEffect(() => {

@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -79,9 +80,12 @@ export function PersonalDetailsStep() {
   const { currentUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
+  const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(false)
+
+  trackStepViewed('personal')
 
   const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
   const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
@@ -143,6 +147,7 @@ export function PersonalDetailsStep() {
       return
     }
 
+    trackStepCompleted('personal')
     await showApiResponse(201, 'Created')
     router.push('/onboarding/business')
   }

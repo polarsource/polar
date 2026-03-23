@@ -518,7 +518,7 @@ class CustomerService:
         customer: Customer,
     ) -> dict[str, Any]:
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_all_by_customer(
+        subscriptions = await subscription_repository.get_all_by_customer(
             customer.id,
             options=(joinedload(Subscription.product),),
         )
@@ -530,7 +530,7 @@ class CustomerService:
         )
 
         benefit_grant_repository = BenefitGrantRepository.from_session(session)
-        benefit_grants = await benefit_grant_repository.list_all_by_customer(
+        benefit_grants = await benefit_grant_repository.get_all_by_customer(
             customer.id,
             options=(joinedload(BenefitGrant.benefit),),
         )
@@ -556,9 +556,7 @@ class CustomerService:
                     "id": str(sub.id),
                     "status": sub.status,
                     "product_id": str(sub.product_id),
-                    "product_name": sub.product.name
-                    if sub.product and not sub.product.is_deleted
-                    else None,
+                    "product_name": sub.product.name,
                     "amount": sub.amount,
                     "currency": sub.currency,
                     "recurring_interval": sub.recurring_interval,
@@ -583,10 +581,9 @@ class CustomerService:
                 {
                     "id": str(order.id),
                     "status": order.status,
+                    "invoice_number": order.invoice_number,
                     "product_id": str(order.product_id),
-                    "product_name": order.product.name
-                    if order.product and not order.product.is_deleted
-                    else None,
+                    "product_name": order.product.name if order.product else None,
                     "subtotal_amount": order.subtotal_amount,
                     "discount_amount": order.discount_amount,
                     "net_amount": order.net_amount,

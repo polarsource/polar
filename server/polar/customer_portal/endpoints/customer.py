@@ -64,13 +64,13 @@ async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
 @router.get(
     "/me/export",
     summary="Export Customer Data",
+    tags=[APITag.private],
     responses={
         200: {
             "content": {"application/json": {"schema": {"type": "object"}}},
             "description": "Customer data exported as a JSON file.",
         }
     },
-    include_in_schema=True,
 )
 async def export(
     auth_subject: auth.CustomerPortalUnionRead,

@@ -94,7 +94,7 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
-    async def list_all_by_customer(
+    async def get_all_by_customer(
         self,
         customer_id: UUID,
         *,

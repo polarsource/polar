@@ -28,6 +28,7 @@ from polar.models.customer import CustomerType
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.organization.resolver import get_payload_organization
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
@@ -517,6 +518,9 @@ class CustomerService:
         session: AsyncReadSession,
         customer: Customer,
     ) -> dict[str, Any]:
+        payment_method_repository = PaymentMethodRepository.from_session(session)
+        payment_methods = await payment_method_repository.list_by_customer(customer.id)
+
         subscription_repository = SubscriptionRepository.from_session(session)
         subscriptions = await subscription_repository.get_all_by_customer(
             customer.id,
@@ -597,6 +601,18 @@ class CustomerService:
                     else None,
                 }
                 for order in orders
+            ],
+            "payment_methods": [
+                {
+                    "id": str(pm.id),
+                    "type": pm.type,
+                    "method_metadata": pm.method_metadata,
+                    "created_at": pm.created_at.isoformat(),
+                    "modified_at": pm.modified_at.isoformat()
+                    if pm.modified_at
+                    else None,
+                }
+                for pm in payment_methods
             ],
             "benefit_grants": [
                 {

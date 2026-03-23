@@ -66,19 +66,11 @@ const GitHubAuthenticationMethod = ({
     <AuthenticationMethod
       icon={<GitHub />}
       title={
-        oauthAccount ? (
-          <>
-            {oauthAccount.account_username ? (
-              <>
-                {oauthAccount.account_username} ({oauthAccount.account_email})
-              </>
-            ) : (
-              oauthAccount.account_email
-            )}
-          </>
-        ) : (
-          'Connect GitHub'
-        )
+        oauthAccount
+          ? oauthAccount.account_username
+            ? `${oauthAccount.account_username} (${oauthAccount.account_email})`
+            : oauthAccount.account_email
+          : 'Connect GitHub'
       }
       subtitle={
         oauthAccount
@@ -86,21 +78,19 @@ const GitHubAuthenticationMethod = ({
           : 'Sync your profile and get a better experience.'
       }
       action={
-        <>
-          {oauthAccount ? (
-            <Button
-              variant="secondary"
-              onClick={onDisconnect}
-              loading={isDisconnecting}
-            >
-              Disconnect
-            </Button>
-          ) : (
-            <Button asChild>
-              <a href={authorizeURL}>Connect</a>
-            </Button>
-          )}
-        </>
+        oauthAccount ? (
+          <Button
+            variant="secondary"
+            onClick={onDisconnect}
+            loading={isDisconnecting}
+          >
+            Disconnect
+          </Button>
+        ) : (
+          <Button asChild>
+            <a href={authorizeURL}>Connect</a>
+          </Button>
+        )
       }
     />
   )
@@ -129,21 +119,19 @@ const GoogleAuthenticationMethod = ({
           : 'Link your Google account for faster login.'
       }
       action={
-        <>
-          {oauthAccount ? (
-            <Button
-              variant="secondary"
-              onClick={onDisconnect}
-              loading={isDisconnecting}
-            >
-              Disconnect
-            </Button>
-          ) : (
-            <Button asChild>
-              <a href={authorizeURL}>Connect</a>
-            </Button>
-          )}
-        </>
+        oauthAccount ? (
+          <Button
+            variant="secondary"
+            onClick={onDisconnect}
+            loading={isDisconnecting}
+          >
+            Disconnect
+          </Button>
+        ) : (
+          <Button asChild>
+            <a href={authorizeURL}>Connect</a>
+          </Button>
+        )
       }
     />
   )

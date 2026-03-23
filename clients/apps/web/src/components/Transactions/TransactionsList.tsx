@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import {
   DataTableOnChangeFn,
   DataTablePaginationState,
@@ -63,11 +62,9 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
           <>
             {'product' in transactionMeta.meta &&
               transactionMeta.meta.product && (
-                <>
-                  <span className="dark:text-polar-500 truncate text-sm text-gray-500">
-                    {transactionMeta.meta.product.name}
-                  </span>
-                </>
+                <span className="dark:text-polar-500 truncate text-sm text-gray-500">
+                  {transactionMeta.meta.product.name}
+                </span>
               )}
             {'issue_reference' in transactionMeta.meta && (
               <div>{transactionMeta.meta.issue_reference}</div>

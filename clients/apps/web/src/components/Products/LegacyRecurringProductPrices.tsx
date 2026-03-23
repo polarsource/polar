@@ -44,7 +44,7 @@ const LegacyRecurringProductPrices = ({
     )
   }
 
-  return <></>
+  return null
 }
 
 export default LegacyRecurringProductPrices

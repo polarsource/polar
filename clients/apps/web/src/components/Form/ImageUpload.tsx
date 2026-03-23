@@ -71,96 +71,94 @@ const ImageUpload = ({
   }, [height, width, validate, imageRef])
 
   return (
-    <>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault()
-          await handleUpload()
-        }}
-      >
-        <input
-          style={{ display: 'none', height: 0 }}
-          name="file"
-          ref={inputFileRef}
-          type="file"
-          required
-          accept="image/*"
-          onChange={async (e) => {
-            if (e.target.files && e.target.files[0]) {
-              const reader = new FileReader()
-              reader.onload = (readerLoad) => {
-                if (
-                  readerLoad.target &&
-                  typeof readerLoad.target.result === 'string'
-                ) {
-                  setImagePreviewSrc(readerLoad.target.result)
-                }
+    <form
+      onSubmit={async (event) => {
+        event.preventDefault()
+        await handleUpload()
+      }}
+    >
+      <input
+        style={{ display: 'none', height: 0 }}
+        name="file"
+        ref={inputFileRef}
+        type="file"
+        required
+        accept="image/*"
+        onChange={async (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader()
+            reader.onload = (readerLoad) => {
+              if (
+                readerLoad.target &&
+                typeof readerLoad.target.result === 'string'
+              ) {
+                setImagePreviewSrc(readerLoad.target.result)
               }
-              reader.readAsDataURL(e.target.files[0])
-              await handleUpload()
-            } else {
-              setImagePreviewSrc(undefined)
             }
-          }}
-        />
+            reader.readAsDataURL(e.target.files[0])
+            await handleUpload()
+          } else {
+            setImagePreviewSrc(undefined)
+          }
+        }}
+      />
 
-        <div className="flex flex-col items-start gap-4">
-          {imagePreviewSrc ? (
-            <div className="relative">
-              {/* eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element */}
-              <img
-                ref={imageRef}
-                src={imagePreviewSrc}
-                className={twMerge(
-                  'flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-gray-50 object-cover hover:opacity-80',
-                  isLoading ? 'opacity-50' : '',
-                  errorMessage ? 'border-red-500' : '',
-                  !height && !width ? 'h-32 w-32' : '',
-                )}
-                onClick={() => {
-                  inputFileRef.current?.click()
-                }}
-                onLoad={onLoad}
-                height={height}
-                width={width}
-              />
-              {isLoading ? (
-                <div className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
-                  <SpinnerNoMargin />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div
+      <div className="flex flex-col items-start gap-4">
+        {imagePreviewSrc ? (
+          <div className="relative">
+            {/* eslint-disable-next-line no-restricted-syntax, @next/next/no-img-element */}
+            <img
+              ref={imageRef}
+              src={imagePreviewSrc}
+              className={twMerge(
+                'flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-gray-50 object-cover hover:opacity-80',
+                isLoading ? 'opacity-50' : '',
+                errorMessage ? 'border-red-500' : '',
+                !height && !width ? 'h-32 w-32' : '',
+              )}
               onClick={() => {
                 inputFileRef.current?.click()
               }}
-              className={twMerge(
-                'dark:bg-polar-700 dark:border-polar-600 flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100',
-                !height && !width ? 'h-32 w-32' : '',
-              )}
-              style={{
-                maxWidth: width,
-                maxHeight: height,
-                width: width && height ? '100%' : undefined,
-                aspectRatio: `${width} / ${height}`,
-              }}
-            >
-              <ImageIcon className="h-6 w-6 text-gray-600" />
-              {height && width ? (
-                <div className="text-xs text-gray-600">
-                  {height} x {width}px
-                </div>
-              ) : null}
-            </div>
-          )}
+              onLoad={onLoad}
+              height={height}
+              width={width}
+            />
+            {isLoading ? (
+              <div className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
+                <SpinnerNoMargin />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div
+            onClick={() => {
+              inputFileRef.current?.click()
+            }}
+            className={twMerge(
+              'dark:bg-polar-700 dark:border-polar-600 flex cursor-pointer flex-col items-center justify-center gap-y-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100',
+              !height && !width ? 'h-32 w-32' : '',
+            )}
+            style={{
+              maxWidth: width,
+              maxHeight: height,
+              width: width && height ? '100%' : undefined,
+              aspectRatio: `${width} / ${height}`,
+            }}
+          >
+            <ImageIcon className="h-6 w-6 text-gray-600" />
+            {height && width ? (
+              <div className="text-xs text-gray-600">
+                {height} x {width}px
+              </div>
+            ) : null}
+          </div>
+        )}
 
-          {errorMessage ? (
-            <div className="text-sm text-red-500">{errorMessage}</div>
-          ) : null}
-        </div>
-      </form>
-    </>
+        {errorMessage ? (
+          <div className="text-sm text-red-500">{errorMessage}</div>
+        ) : null}
+      </div>
+    </form>
   )
 }
 

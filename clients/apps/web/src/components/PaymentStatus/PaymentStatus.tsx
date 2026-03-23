@@ -16,7 +16,7 @@ const PaymentStatus = ({
 }: {
   payment: schemas['Payment']
 }) => {
-  if (status == 'failed') {
+  if (status === 'failed') {
     return (
       <Tooltip>
         <TooltipTrigger className="cursor-help">

@@ -231,7 +231,7 @@ export const LicenseKeysPage = ({
             selectedLicenseKey={selectedLicenseKeys}
           />
           <InlineModal
-            modalContent={LicenseKeyContextView ?? <></>}
+            modalContent={LicenseKeyContextView ?? null}
             isShown={isLicenseKeyModalShown}
             hide={() => {
               hideLicenseKeyModal()

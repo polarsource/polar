@@ -132,7 +132,8 @@ export const SyntaxHighlighterClient = ({
   }, [highlighter, loadLanguage, customThemeConfig, lang, code])
 
   return highlightedCode ? (
-    <div dangerouslySetInnerHTML={{ __html: highlightedCode }}></div>
+    // eslint-disable-next-line react/no-danger
+    <div dangerouslySetInnerHTML={{ __html: highlightedCode }} />
   ) : (
     <pre>{code}</pre>
   )

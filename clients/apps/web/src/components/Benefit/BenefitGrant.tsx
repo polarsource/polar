@@ -215,60 +215,57 @@ const BenefitGrantOAuth = ({
             </Button>
           </>
         )}
-        {showAccountSelector && (
-          <>
-            {accounts.length === 0 ? (
+        {showAccountSelector &&
+          (accounts.length === 0 ? (
+            <Button
+              type="button"
+              onClick={authorize}
+              fullWidth
+              variant="secondary"
+              disabled={retryCountdown > 0}
+            >
+              {retryCountdown > 0
+                ? t('checkout.benefits.retryIn', { count: retryCountdown })
+                : connectButtonText}
+            </Button>
+          ) : (
+            <>
+              <Select
+                onValueChange={(value) => {
+                  if (value === 'add') {
+                    authorize()
+                  } else {
+                    setSelectedAccountKey(value)
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem
+                      key={account.account_id}
+                      value={account.account_id}
+                    >
+                      {account.account_username}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="add">
+                    {t('checkout.benefits.connectNewAccount')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 type="button"
-                onClick={authorize}
+                onClick={onAccountSubmit}
                 fullWidth
                 variant="secondary"
-                disabled={retryCountdown > 0}
               >
-                {retryCountdown > 0
-                  ? t('checkout.benefits.retryIn', { count: retryCountdown })
-                  : connectButtonText}
+                {t('checkout.benefits.requestMyInvite')}
               </Button>
-            ) : (
-              <>
-                <Select
-                  onValueChange={(value) => {
-                    if (value === 'add') {
-                      authorize()
-                    } else {
-                      setSelectedAccountKey(value)
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={selectPlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem
-                        key={account.account_id}
-                        value={account.account_id}
-                      >
-                        {account.account_username}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="add">
-                      {t('checkout.benefits.connectNewAccount')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  onClick={onAccountSubmit}
-                  fullWidth
-                  variant="secondary"
-                >
-                  {t('checkout.benefits.requestMyInvite')}
-                </Button>
-              </>
-            )}
-          </>
-        )}
+            </>
+          ))}
       </div>
       {(error || grantError) && (
         <p className="text-sm text-red-500 dark:text-red-400">

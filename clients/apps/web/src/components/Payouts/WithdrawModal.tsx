@@ -97,101 +97,96 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       isShown={isShown}
       hide={hide}
       modalContent={
-        <>
-          <div className="overflow-scroll p-6">
-            {!canWithdraw && (
-              <div className="flex flex-col gap-6">
-                <p>
-                  Your organization is currently under review, as part of our
-                  compliance process. Withdrawals are disabled until the review
-                  is complete.
-                </p>
-                <p>
-                  <Link
-                    href="https://polar.sh/docs/merchant-of-record/account-reviews"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button
-                      variant="default"
-                      className="flex flex-row items-center"
-                    >
-                      <span>Learn more</span>
-                      <ArrowOutwardOutlined
-                        className="ml-2"
-                        fontSize="inherit"
-                      />
-                    </Button>
-                  </Link>
-                </p>
-              </div>
-            )}
-
-            {errorMessage && (
-              <div className="flex flex-col gap-8">
-                <p className="text-black dark:text-white">{errorMessage}</p>
-                <div className="flex flex-row gap-x-4">
-                  <Button variant="default" onClick={hide}>
-                    Close
-                  </Button>
-                </div>
-              </div>
-            )}
-            {payoutEstimate && (
-              <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-8">
-                  <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl">Withdraw your balance</h1>
-                    <p className="dark:text-polar-500 text-gray-500">
-                      You&apos;re about to withdraw your balance to your bank
-                      account.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col">
-                    <DetailRow
-                      label="Gross Amount"
-                      valueClassName="justify-end"
-                      value={formatCurrency('accounting')(
-                        payoutEstimate.gross_amount,
-                        'usd',
-                      )}
-                    />
-                    <DetailRow
-                      label="Fees Amount"
-                      valueClassName="justify-end"
-                      value={formatCurrency('accounting')(
-                        payoutEstimate.fees_amount,
-                        'usd',
-                      )}
-                    />
-                    <DetailRow
-                      label="Net Amount"
-                      valueClassName="justify-end"
-                      value={formatCurrency('accounting')(
-                        payoutEstimate.net_amount,
-                        'usd',
-                      )}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-row gap-x-4">
+        <div className="overflow-scroll p-6">
+          {!canWithdraw && (
+            <div className="flex flex-col gap-6">
+              <p>
+                Your organization is currently under review, as part of our
+                compliance process. Withdrawals are disabled until the review is
+                complete.
+              </p>
+              <p>
+                <Link
+                  href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Button
                     variant="default"
-                    onClick={onConfirm}
-                    loading={loading}
-                    disabled={loading}
+                    className="flex flex-row items-center"
                   >
-                    Confirm
+                    <span>Learn more</span>
+                    <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
                   </Button>
-                  <Button variant="ghost" onClick={hide}>
-                    Cancel
-                  </Button>
+                </Link>
+              </p>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="flex flex-col gap-8">
+              <p className="text-black dark:text-white">{errorMessage}</p>
+              <div className="flex flex-row gap-x-4">
+                <Button variant="default" onClick={hide}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+          {payoutEstimate && (
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-2">
+                  <h1 className="text-2xl">Withdraw your balance</h1>
+                  <p className="dark:text-polar-500 text-gray-500">
+                    You&apos;re about to withdraw your balance to your bank
+                    account.
+                  </p>
+                </div>
+
+                <div className="flex flex-col">
+                  <DetailRow
+                    label="Gross Amount"
+                    valueClassName="justify-end"
+                    value={formatCurrency('accounting')(
+                      payoutEstimate.gross_amount,
+                      'usd',
+                    )}
+                  />
+                  <DetailRow
+                    label="Fees Amount"
+                    valueClassName="justify-end"
+                    value={formatCurrency('accounting')(
+                      payoutEstimate.fees_amount,
+                      'usd',
+                    )}
+                  />
+                  <DetailRow
+                    label="Net Amount"
+                    valueClassName="justify-end"
+                    value={formatCurrency('accounting')(
+                      payoutEstimate.net_amount,
+                      'usd',
+                    )}
+                  />
                 </div>
               </div>
-            )}
-          </div>
-        </>
+              <div className="flex flex-row gap-x-4">
+                <Button
+                  variant="default"
+                  onClick={onConfirm}
+                  loading={loading}
+                  disabled={loading}
+                >
+                  Confirm
+                </Button>
+                <Button variant="ghost" onClick={hide}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       }
     />
   )

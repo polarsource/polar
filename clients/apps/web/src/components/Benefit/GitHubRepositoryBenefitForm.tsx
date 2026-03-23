@@ -117,7 +117,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   const onRepositoryChange = useCallback(
     (key: string, onChange: (value: string) => void) => {
-      const repo = repos.find((r) => r.key == key)
+      const repo = repos.find((r) => r.key === key)
       if (!repo) {
         return
       }
@@ -161,7 +161,7 @@ export const GitHubRepositoryBenefitForm = ({
       defaultProperties.repository_name
     ) {
       const key = `${defaultProperties.repository_owner}/${defaultProperties.repository_name}`
-      const repo = repos.find((r) => r.key == key)
+      const repo = repos.find((r) => r.key === key)
       if (repo) {
         didSetOnLoad.current = true
         onRepositoryChange(key, (v: string) =>
@@ -211,23 +211,21 @@ export const GitHubRepositoryBenefitForm = ({
 
   return (
     <>
-      <>
-        <FormDescription>
-          Connected as @{userGitHubBenefitOauth?.account_username}.{' '}
-          <Button
-            variant="link"
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              window.location.href = authorizeURL
-            }}
-            className="h-fit p-0"
-          >
-            Reconnect
-          </Button>
-        </FormDescription>
-      </>
+      <FormDescription>
+        Connected as @{userGitHubBenefitOauth?.account_username}.{' '}
+        <Button
+          variant="link"
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            window.location.href = authorizeURL
+          }}
+          className="h-fit p-0"
+        >
+          Reconnect
+        </Button>
+      </FormDescription>
 
       <FormField
         control={control}
@@ -249,7 +247,7 @@ export const GitHubRepositoryBenefitForm = ({
                       <SelectTrigger>
                         <SelectValue placeholder="Loading repositories" />
                       </SelectTrigger>
-                      <SelectContent></SelectContent>
+                      <SelectContent />
                     </Select>
                   </FormControl>
                 ) : (
@@ -329,31 +327,29 @@ export const GitHubRepositoryBenefitForm = ({
       />
 
       {selectedRepository ? (
-        <>
-          {selectedRepository?.org?.plan_name &&
-          !selectedRepository?.org?.is_free ? (
-            <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-              This organization is currently on the GitHub{' '}
-              <span className="capitalize">
-                {selectedRepository?.org?.plan_name}
-              </span>{' '}
-              plan.{' '}
-              <strong className="font-medium">
-                Each subscriber will take a seat and GitHub will bill you for
-                them. Make sure your pricing is covering those fees!
-              </strong>
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-              We can&apos;t check the GitHub billing plan for this organization.
-              If you&apos;re on a paid plan,{' '}
-              <strong className="font-medium">
-                each subscriber will take a seat and GitHub will bill you for
-                them.
-              </strong>
-            </div>
-          )}
-        </>
+        selectedRepository?.org?.plan_name &&
+        !selectedRepository?.org?.is_free ? (
+          <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+            This organization is currently on the GitHub{' '}
+            <span className="capitalize">
+              {selectedRepository?.org?.plan_name}
+            </span>{' '}
+            plan.{' '}
+            <strong className="font-medium">
+              Each subscriber will take a seat and GitHub will bill you for
+              them. Make sure your pricing is covering those fees!
+            </strong>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+            We can&apos;t check the GitHub billing plan for this organization.
+            If you&apos;re on a paid plan,{' '}
+            <strong className="font-medium">
+              each subscriber will take a seat and GitHub will bill you for
+              them.
+            </strong>
+          </div>
+        )
       ) : null}
 
       <FormField

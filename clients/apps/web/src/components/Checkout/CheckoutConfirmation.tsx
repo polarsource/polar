@@ -195,14 +195,11 @@ export const CheckoutConfirmation = ({
           <p className="dark:text-polar-500 text-gray-500">
             {status === 'confirmed' &&
               t('checkout.confirmation.processingDescription')}
-            {status === 'succeeded' && (
-              <>
-                {hasProductCheckout(checkout) &&
-                  t('checkout.confirmation.successDescription', {
-                    product: checkout.product.name,
-                  })}
-              </>
-            )}
+            {status === 'succeeded' &&
+              hasProductCheckout(checkout) &&
+              t('checkout.confirmation.successDescription', {
+                product: checkout.product.name,
+              })}
             {status === 'failed' &&
               t('checkout.confirmation.failedDescription')}
           </p>

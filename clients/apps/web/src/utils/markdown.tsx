@@ -13,8 +13,8 @@ export const markdownOptions: MarkdownToJSX.Options = {
   forceBlock: false,
   wrapper: React.Fragment,
   overrides: {
-    embed: () => <></>,
-    iframe: () => <></>,
+    embed: () => null,
+    iframe: () => null,
     a: (props) => (
       <a
         {...props}

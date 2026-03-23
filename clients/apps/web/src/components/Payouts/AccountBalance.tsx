@@ -63,13 +63,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                 &nbps;
               </div>
             ) : (
-              <>
-                {summary &&
-                  formatCurrency('accounting')(
-                    summary.balance.amount,
-                    summary.balance.currency,
-                  )}
-              </>
+              summary &&
+              formatCurrency('accounting')(
+                summary.balance.amount,
+                summary.balance.currency,
+              )
             )}
           </div>
         </WellContent>
@@ -97,10 +95,8 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                 &nbps;
               </div>
             ) : (
-              <>
-                {summary &&
-                  formatCurrency('accounting')(account.credit_balance, 'usd')}
-              </>
+              summary &&
+              formatCurrency('accounting')(account.credit_balance, 'usd')
             )}
           </div>
         </WellContent>

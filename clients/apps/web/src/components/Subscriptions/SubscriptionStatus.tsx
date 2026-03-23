@@ -20,7 +20,7 @@ const StatusLabel = ({
   if (dt) {
     const event = new Date(dt)
     const now = new Date()
-    if (event.getFullYear() != now.getFullYear()) {
+    if (event.getFullYear() !== now.getFullYear()) {
       prettyEventDate = event.toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',

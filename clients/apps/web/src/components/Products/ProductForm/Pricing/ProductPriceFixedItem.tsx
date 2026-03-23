@@ -23,38 +23,36 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
   const { control, setValue } = useFormContext<ProductFormType>()
 
   return (
-    <>
-      <FormField
-        control={control}
-        name={`prices.${index}.price_amount`}
-        rules={{
-          required: 'This field is required',
-          min: { value: 1, message: 'Price must be greater than 0' },
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem className="grow">
-              <div className="flex items-center gap-2">
-                <FormControl>
-                  <div ref={field.ref} className="flex-1" tabIndex={-1}>
-                    <MoneyInput
-                      name={field.name}
-                      currency={currency}
-                      value={field.value}
-                      onChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                      placeholder={0}
-                    />
-                  </div>
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-    </>
+    <FormField
+      control={control}
+      name={`prices.${index}.price_amount`}
+      rules={{
+        required: 'This field is required',
+        min: { value: 1, message: 'Price must be greater than 0' },
+      }}
+      render={({ field }) => {
+        return (
+          <FormItem className="grow">
+            <div className="flex items-center gap-2">
+              <FormControl>
+                <div ref={field.ref} className="flex-1" tabIndex={-1}>
+                  <MoneyInput
+                    name={field.name}
+                    currency={currency}
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    placeholder={0}
+                  />
+                </div>
+              </FormControl>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }

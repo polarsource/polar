@@ -146,7 +146,7 @@ export default function ClientPage({
           )
         }
         if (original.platform_fee_type) {
-          return <>{platformFeesDisplayNames[original.platform_fee_type]}</>
+          return platformFeesDisplayNames[original.platform_fee_type]
         }
       },
     },

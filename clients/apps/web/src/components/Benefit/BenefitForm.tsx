@@ -146,32 +146,30 @@ const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
 
   return (
-    <>
-      <FormField
-        control={control}
-        name="properties.note"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Private note</FormLabel>
-                <span className="dark:text-polar-500 text-sm text-gray-500">
-                  Markdown Format
-                </span>
-              </div>
-              <FormControl>
-                <TextArea
-                  {...field}
-                  value={field.value || ''}
-                  placeholder="Write a secret note here. Like your private email address for premium support or link to premium content."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-    </>
+    <FormField
+      control={control}
+      name="properties.note"
+      render={({ field }) => {
+        return (
+          <FormItem>
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Private note</FormLabel>
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Markdown Format
+              </span>
+            </div>
+            <FormControl>
+              <TextArea
+                {...field}
+                value={field.value || ''}
+                placeholder="Write a secret note here. Like your private email address for premium support or link to premium content."
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }
 
@@ -346,7 +344,7 @@ const DiscordBenefitForm = () => {
                                     <div
                                       className="h-2 w-2 rounded-full"
                                       style={{ backgroundColor: role.color }}
-                                    ></div>
+                                    />
                                     <div>{role.name}</div>
                                   </div>
                                 </SelectItem>

@@ -223,7 +223,7 @@ export const DashboardSidebar = ({
                   <DropdownMenuItem
                     onClick={() =>
                       CONFIG.IS_SANDBOX
-                        ? router.push('/dashboard/create?existing_org=true')
+                        ? router.push('/onboarding/sandbox')
                         : router.push('/onboarding/business')
                     }
                   >

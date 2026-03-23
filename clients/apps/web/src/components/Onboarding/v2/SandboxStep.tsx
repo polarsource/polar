@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { OnboardingShell } from './OnboardingShell'
-import { SandboxAPIPreview } from './SandboxAPIPreview'
 import { OrgNameSlugSync, SandboxFormFields } from './SandboxFormFields'
 
 interface FormSchema {
@@ -93,7 +92,7 @@ export function SandboxStep() {
     <OnboardingShell
       title="Create a sandbox organization"
       subtitle="Set up a test organization to explore Polar with mock payments."
-      rightPanel={<SandboxAPIPreview control={form.control} />}
+      apiStep="sandbox"
     >
       <Form {...form}>
         <form

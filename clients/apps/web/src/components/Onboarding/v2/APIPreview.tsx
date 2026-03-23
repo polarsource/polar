@@ -16,6 +16,7 @@ const STEP_CONFIG = {
   personal: { method: 'PATCH', path: '/v1/users/me' },
   business: { method: 'POST', path: '/v1/organizations' },
   product: { method: 'POST', path: '/v1/organizations' },
+  sandbox: { method: 'POST', path: '/v1/organizations' },
 } as const
 
 interface Line {
@@ -25,10 +26,12 @@ interface Line {
   content: React.ReactNode
 }
 
+export type APIPreviewStep = 'personal' | 'business' | 'product' | 'sandbox'
+
 export function APIPreview({
   step,
 }: {
-  step: 'personal' | 'business' | 'product'
+  step: APIPreviewStep
 }) {
   const data = useOnboardingDataLive()
   const { apiLoading, apiResponse, clearApiResponse } = useOnboardingData()
@@ -47,6 +50,15 @@ export function APIPreview({
           obj.country = data.country as schemas['UserUpdate']['country']
         if (data.dateOfBirth) obj.date_of_birth = data.dateOfBirth
         return obj
+      }
+      case 'sandbox': {
+        const sandboxObj: Partial<schemas['OrganizationCreate']> = {
+          default_presentment_currency:
+            (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
+        }
+        if (data.orgName) sandboxObj.name = data.orgName
+        if (data.orgSlug) sandboxObj.slug = data.orgSlug
+        return sandboxObj
       }
       case 'business': {
         const obj: Partial<schemas['OrganizationCreate']> = {

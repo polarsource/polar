@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import LogoIcon from '../../Brand/logos/LogoIcon'
-import { APIPreview } from './APIPreview'
+import { type APIPreviewStep, APIPreview } from './APIPreview'
 
 const STEPS = ['personal', 'business', 'product'] as const
 const STEP_ROUTES = [
@@ -19,7 +19,7 @@ interface OnboardingShellProps {
   title: string
   subtitle?: string
   step?: 'personal' | 'business' | 'product'
-  rightPanel?: ReactNode
+  apiStep?: APIPreviewStep
   children: ReactNode
 }
 
@@ -27,7 +27,7 @@ export function OnboardingShell({
   title,
   subtitle,
   step,
-  rightPanel,
+  apiStep,
   children,
 }: OnboardingShellProps) {
   const router = useRouter()
@@ -129,7 +129,9 @@ export function OnboardingShell({
             backgroundColor="background-secondary"
           />
           <Box position="sticky" top={150} zIndex={1}>
-            {rightPanel ?? (step && <APIPreview step={step} />)}
+            {(apiStep ?? step) && (
+              <APIPreview step={(apiStep ?? step)!} />
+            )}
           </Box>
         </Box>
       </Box>

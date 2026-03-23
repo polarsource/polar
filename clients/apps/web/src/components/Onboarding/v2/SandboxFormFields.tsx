@@ -19,6 +19,7 @@ import {
 } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
+import { useOnboardingData } from './OnboardingContext'
 
 interface FormSchema {
   orgName: string
@@ -29,13 +30,22 @@ interface FormSchema {
 
 export function OrgNameSlugSync({ editedSlug }: { editedSlug: boolean }) {
   const { setValue } = useFormContext<FormSchema>()
+  const { updateData } = useOnboardingData()
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
+  const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
+  const defaultCurrency = useWatch<FormSchema, 'defaultCurrency'>({
+    name: 'defaultCurrency',
+  })
 
   useEffect(() => {
     if (!editedSlug && orgName) {
       setValue('orgSlug', slugify(orgName, { lower: true, strict: true }))
     }
   }, [orgName, editedSlug, setValue])
+
+  useEffect(() => {
+    updateData({ orgName, orgSlug, defaultCurrency })
+  }, [orgName, orgSlug, defaultCurrency, updateData])
 
   return null
 }

@@ -1885,7 +1885,7 @@ class OrderService:
         """Void all pending orders for a specific subscription."""
         repository = OrderRepository.from_session(session)
         pending_orders = await repository.get_pending_orders_for_subscription(
-            subscription.id
+            subscription.id, options=repository.get_eager_options()
         )
 
         voided_orders: list[Order] = []

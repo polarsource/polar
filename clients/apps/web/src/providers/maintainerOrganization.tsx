@@ -1,7 +1,7 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import React from 'react'
+import React, { useMemo } from 'react'
 
 const stub = (): never => {
   throw new Error(
@@ -27,13 +27,16 @@ export const OrganizationContextProvider = ({
   organizations: schemas['Organization'][]
   children: React.ReactNode
 }) => {
+  const value = useMemo(
+    () => ({
+      organization,
+      organizations,
+    }),
+    [organization, organizations],
+  )
+
   return (
-    <OrganizationContext.Provider
-      value={{
-        organization,
-        organizations,
-      }}
-    >
+    <OrganizationContext.Provider value={value}>
       {children}
     </OrganizationContext.Provider>
   )

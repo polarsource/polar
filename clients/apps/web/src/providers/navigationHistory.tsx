@@ -58,10 +58,13 @@ export const NavigationHistoryProvider = ({ children }: PropsWithChildren) => {
     [previousURL],
   )
 
+  const value = useMemo(
+    () => ({ currentURL, previousURL, withPotentialPreviousParams }),
+    [currentURL, previousURL, withPotentialPreviousParams],
+  )
+
   return (
-    <NavigationHistoryContext.Provider
-      value={{ currentURL, previousURL, withPotentialPreviousParams }}
-    >
+    <NavigationHistoryContext.Provider value={value}>
       {children}
     </NavigationHistoryContext.Provider>
   )

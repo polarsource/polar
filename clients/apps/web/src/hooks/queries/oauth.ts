@@ -7,7 +7,7 @@ export const useOAuth2Clients = (
   options?: operations['oauth2:clients:list']['parameters']['query'],
 ) =>
   useQuery({
-    queryKey: ['oauth2Clients'],
+    queryKey: ['oauth2Clients', options],
     queryFn: async () =>
       unwrap(api.GET('/v1/oauth2/', { params: { query: options } })),
   })

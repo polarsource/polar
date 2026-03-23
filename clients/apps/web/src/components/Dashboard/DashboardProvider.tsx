@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { PropsWithChildren, createContext } from 'react'
+import { PropsWithChildren, createContext, useMemo } from 'react'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface DashboardContextValue {}
@@ -15,7 +15,11 @@ export const DashboardProvider = ({
 }: PropsWithChildren<{
   organization: schemas['Organization'] | undefined
 }>) => {
+  const value = useMemo(() => ({}), [])
+
   return (
-    <DashboardContext.Provider value={{}}>{children}</DashboardContext.Provider>
+    <DashboardContext.Provider value={value}>
+      {children}
+    </DashboardContext.Provider>
   )
 }

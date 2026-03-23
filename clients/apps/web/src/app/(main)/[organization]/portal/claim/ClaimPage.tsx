@@ -57,33 +57,34 @@ export default function ClientPage({
       maxWaitingTimeMs: 15000,
     })
 
-  const claimMutation = useMutation({
-    mutationFn: async () => {
-      if (!invitationToken) {
-        throw new Error('No invitation token')
-      }
+  const { mutateAsync: claimMutateAsync, error: claimMutationError } =
+    useMutation({
+      mutationFn: async () => {
+        if (!invitationToken) {
+          throw new Error('No invitation token')
+        }
 
-      const response = await fetch(
-        `${CONFIG.BASE_URL}/v1/customer-seats/claim`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const response = await fetch(
+          `${CONFIG.BASE_URL}/v1/customer-seats/claim`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              invitation_token: invitationToken,
+            }),
           },
-          body: JSON.stringify({
-            invitation_token: invitationToken,
-          }),
-        },
-      )
+        )
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Failed to claim seat')
-      }
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.detail || 'Failed to claim seat')
+        }
 
-      return await response.json()
-    },
-  })
+        return await response.json()
+      },
+    })
 
   // Establish SSE connection early to prevent race conditions
   const sseReadyRef = useRef(false)
@@ -123,7 +124,7 @@ export default function ClientPage({
         sseReadyRef.current = true
       }
 
-      const result = await claimMutation.mutateAsync()
+      const result = await claimMutateAsync()
 
       await fulfillmentPromiseRef.current
 
@@ -138,7 +139,7 @@ export default function ClientPage({
         error instanceof Error ? error.message : 'Failed to claim seat'
       setClaimError(errorMessage)
     }
-  }, [claimInfo?.product_id, claimMutation, organization.slug, router])
+  }, [claimInfo?.product_id, claimMutateAsync, organization.slug, router])
 
   if (!invitationToken) {
     return (
@@ -242,9 +243,9 @@ export default function ClientPage({
             {claimingState !== 'idle' ? 'Claiming...' : 'Claim seat'}
           </Button>
 
-          {(claimError || claimMutation.error) && (
+          {(claimError || claimMutationError) && (
             <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-              {claimError || claimMutation.error?.message}
+              {claimError || claimMutationError?.message}
             </div>
           )}
         </div>

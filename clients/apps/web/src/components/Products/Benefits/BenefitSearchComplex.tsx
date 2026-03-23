@@ -46,6 +46,7 @@ export const BenefitSearchComplex = ({
   }, [searchQuery])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/no-deriving-state-in-effects
     setIsDropdownOpen(debouncedQuery.trim().length > 0)
   }, [debouncedQuery])
 

@@ -89,33 +89,31 @@ const AccountCreateModal = ({
   )
 
   return (
-    <>
-      <div className="flex flex-col gap-y-6 overflow-auto p-8">
-        <h2>Setup payout account</h2>
+    <div className="flex flex-col gap-y-6 overflow-auto p-8">
+      <h2>Setup payout account</h2>
 
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-y-4"
-            onSubmit={handleSubmit(onSubmit)}
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-y-4"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <AccountCountry />
+          {errors.root && (
+            <p className="text-destructive-foreground text-sm">
+              {errors.root.message}
+            </p>
+          )}
+          <Button
+            className="self-start"
+            type="submit"
+            loading={loading}
+            disabled={loading}
           >
-            <AccountCountry />
-            {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
-            )}
-            <Button
-              className="self-start"
-              type="submit"
-              loading={loading}
-              disabled={loading}
-            >
-              Set up account
-            </Button>
-          </form>
-        </Form>
-      </div>
-    </>
+            Set up account
+          </Button>
+        </form>
+      </Form>
+    </div>
   )
 }
 
@@ -123,32 +121,30 @@ const AccountCountry = () => {
   const { control } = useFormContext<schemas['AccountCreateForOrganization']>()
 
   return (
-    <>
-      <FormField
-        control={control}
-        name="country"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Country</FormLabel>
-              <FormControl>
-                <CountryPicker
-                  value={field.value || undefined}
-                  onChange={field.onChange}
-                  allowedCountries={enums.stripeAccountCountryValues}
-                />
-              </FormControl>
-              <FormMessage />
-              <FormDescription>
-                If this is a personal account, please select your country of
-                residence. If this is an organization or business, select the
-                country of tax residency.
-              </FormDescription>
-            </FormItem>
-          )
-        }}
-      />
-    </>
+    <FormField
+      control={control}
+      name="country"
+      render={({ field }) => {
+        return (
+          <FormItem>
+            <FormLabel>Country</FormLabel>
+            <FormControl>
+              <CountryPicker
+                value={field.value || undefined}
+                onChange={field.onChange}
+                allowedCountries={enums.stripeAccountCountryValues}
+              />
+            </FormControl>
+            <FormMessage />
+            <FormDescription>
+              If this is a personal account, please select your country of
+              residence. If this is an organization or business, select the
+              country of tax residency.
+            </FormDescription>
+          </FormItem>
+        )
+      }}
+    />
   )
 }
 

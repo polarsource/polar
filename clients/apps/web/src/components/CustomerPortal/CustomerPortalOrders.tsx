@@ -117,9 +117,7 @@ export const CustomerPortalOrders = ({
                 themingPreset={themingPreset}
               />
             </div>
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
     </div>

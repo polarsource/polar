@@ -11,9 +11,15 @@ export const config = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+    },
     rules: {
       '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+      'no-var': 'error',
+      'prefer-const': 'warn',
       'max-lines': [
         'warn',
         { max: 250, skipBlankLines: true, skipComments: true },

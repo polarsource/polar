@@ -219,12 +219,10 @@ export const ToolCallGroup = ({
     >
       <LogoIcon size={24} className="-ml-1.5" />
       {isComplete ? (
-        <>
-          <span>
-            Took {parts.length} action{parts.length === 1 ? '' : 's'} to
-            configure your account
-          </span>
-        </>
+        <span>
+          Took {parts.length} action{parts.length === 1 ? '' : 's'} to configure
+          your account
+        </span>
       ) : (
         <span>{getToolLabel(lastPart)}</span>
       )}

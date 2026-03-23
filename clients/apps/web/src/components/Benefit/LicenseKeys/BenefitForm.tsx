@@ -215,23 +215,21 @@ export const LicenseKeysBenefitForm = () => {
         />
       </div>
       {showLimitUsage && (
-        <>
-          <FormField
-            control={control}
-            name="properties.limit_usage"
-            render={({ field }) => {
-              const value = field.value || ''
-              return (
-                <FormItem>
-                  <FormControl>
-                    <Input type="number" {...{ ...field, value }} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-        </>
+        <FormField
+          control={control}
+          name="properties.limit_usage"
+          render={({ field }) => {
+            const value = field.value || ''
+            return (
+              <FormItem>
+                <FormControl>
+                  <Input type="number" {...{ ...field, value }} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
       )}
     </>
   )

@@ -14,7 +14,7 @@ import { twMerge } from 'tailwind-merge'
 export interface InlineModalProps {
   isShown: boolean
   hide: () => void
-  modalContent: JSX.Element
+  modalContent: JSX.Element | null
   className?: string
 }
 
@@ -49,44 +49,42 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
   }
 
   const modal = (
-    <React.Fragment>
-      <FocusLock>
-        <div
-          ref={ref}
-          className="fixed inset-0 z-50 overflow-hidden focus-within:outline-none"
-          aria-modal
-          tabIndex={-1}
-          role="dialog"
-          onKeyDown={onKeyDown}
+    <FocusLock>
+      <div
+        ref={ref}
+        className="fixed inset-0 z-50 overflow-hidden focus-within:outline-none"
+        aria-modal
+        tabIndex={-1}
+        role="dialog"
+        onKeyDown={onKeyDown}
+      >
+        <motion.div
+          initial={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
+          animate={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          exit={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
+          className="relative flex h-screen flex-col items-center md:w-full md:flex-row"
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            hide()
+          }}
         >
           <motion.div
-            initial={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
-            animate={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-            exit={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
-            className="relative flex h-screen flex-col items-center md:w-full md:flex-row"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              hide()
-            }}
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className={twMerge(
+              'dark:bg-polar-900 relative z-10 flex h-full max-h-full w-full flex-col overflow-y-auto bg-white shadow-sm md:fixed md:top-0 md:right-0 md:bottom-0 md:h-auto md:w-[540px] dark:text-white',
+              className,
+            )}
+            onMouseDown={onInnerClick}
           >
-            <motion.div
-              initial={{ x: '100%', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '100%', opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className={twMerge(
-                'dark:bg-polar-900 relative z-10 flex h-full max-h-full w-full flex-col overflow-y-auto bg-white shadow-sm md:fixed md:top-0 md:right-0 md:bottom-0 md:h-auto md:w-[540px] dark:text-white',
-                className,
-              )}
-              onMouseDown={onInnerClick}
-            >
-              {modalContent}
-            </motion.div>
+            {modalContent}
           </motion.div>
-        </div>
-      </FocusLock>
-    </React.Fragment>
+        </motion.div>
+      </div>
+    </FocusLock>
   )
 
   if (typeof document === 'undefined') {

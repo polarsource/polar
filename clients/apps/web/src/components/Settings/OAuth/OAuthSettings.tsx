@@ -83,22 +83,20 @@ const OAuthSettings = () => {
           />
         }
       />
-      <InlineModal
-        isShown={isEditOAuthClientModalShown}
-        hide={hideEditOAuthClientModal}
-        modalContent={
-          client ? (
+      {client && (
+        <InlineModal
+          isShown={isEditOAuthClientModalShown}
+          hide={hideEditOAuthClientModal}
+          modalContent={
             <EditOAuthClientModal
               client={client}
               onSuccess={onUpdate}
               onDelete={onDelete}
               onHide={hideEditOAuthClientModal}
             />
-          ) : (
-            <></>
-          )
-        }
-      />
+          }
+        />
+      )}
     </ListGroup>
   )
 }

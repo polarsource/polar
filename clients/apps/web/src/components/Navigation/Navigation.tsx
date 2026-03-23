@@ -19,18 +19,16 @@ export const ListItem = (props: {
 
 export const Profile = (props: { name: string; avatar_url: string | null }) => {
   return (
-    <>
-      <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">
-        <div className="flex w-full min-w-0 shrink grow-0 items-center">
-          <Avatar
-            name={props.name}
-            avatar_url={props.avatar_url}
-            className="h-8 w-8 rounded-full"
-          />
-          <p className="ml-4 truncate">{props.name}</p>
-        </div>
+    <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">
+      <div className="flex w-full min-w-0 shrink grow-0 items-center">
+        <Avatar
+          name={props.name}
+          avatar_url={props.avatar_url}
+          className="h-8 w-8 rounded-full"
+        />
+        <p className="ml-4 truncate">{props.name}</p>
       </div>
-    </>
+    </div>
   )
 }
 

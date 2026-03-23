@@ -100,15 +100,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       }
       header={
-        <>
-          {order.paid && (
-            <DownloadInvoiceDashboard
-              order={order}
-              organization={organization}
-              onInvoiceGenerated={refetchOrder}
-            />
-          )}
-        </>
+        order.paid ? (
+          <DownloadInvoiceDashboard
+            order={order}
+            organization={organization}
+            onInvoiceGenerated={refetchOrder}
+          />
+        ) : undefined
       }
       className="gap-y-12"
       contextView={
@@ -284,9 +282,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DetailRow label="City" value={order.billing_address?.city} />
                 <DetailRow label="State" value={order.billing_address?.state} />
               </>
-            ) : (
-              <></>
-            )}
+            ) : null}
           </div>
         </div>
 

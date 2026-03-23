@@ -22,7 +22,7 @@ const LicenseKey = ({
   const t = useTranslations(locale)
 
   if (!licenseKey) {
-    return <></>
+    return null
   }
 
   return (
@@ -70,7 +70,7 @@ export const LicenseKeyBenefitGrant = ({
   }
 
   if (!licenseKey) {
-    return <></>
+    return null
   }
 
   return (

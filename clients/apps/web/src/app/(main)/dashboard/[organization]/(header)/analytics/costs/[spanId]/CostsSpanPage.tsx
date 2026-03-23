@@ -411,9 +411,7 @@ export default function SpanDetailPage({
               }
               hide={hideEditEventTypeModal}
             />
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
     </div>

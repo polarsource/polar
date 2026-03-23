@@ -13,7 +13,7 @@ const isSupportedKey = (key: unknown): key is keyof typeof ACTIONS => {
     return false
   }
 
-  return typeof ACTIONS[key as keyof typeof ACTIONS] != 'undefined'
+  return typeof ACTIONS[key as keyof typeof ACTIONS] !== 'undefined'
 }
 
 const emitter = new EventEmitter()

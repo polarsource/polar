@@ -64,23 +64,21 @@ export const FilePreview = ({ mimeType }: { mimeType: string }) => {
 const FileUploadProgress = ({ file }: { file: FileObject }) => {
   const pct = Math.round((file.uploadedBytes / file.size) * 100)
   return (
-    <>
-      <div className="flex w-full items-center space-x-4">
-        <div className="grow">
-          <div className="dark:bg-polar-700 h-2 w-full rounded-sm bg-gray-200">
-            <div
-              className="h-2 rounded-sm bg-blue-400"
-              style={{ width: `${pct}%` }}
-            >
-              &nbsp;
-            </div>
+    <div className="flex w-full items-center space-x-4">
+      <div className="grow">
+        <div className="dark:bg-polar-700 h-2 w-full rounded-sm bg-gray-200">
+          <div
+            className="h-2 rounded-sm bg-blue-400"
+            style={{ width: `${pct}%` }}
+          >
+            &nbsp;
           </div>
         </div>
-        <div className="flex w-8">
-          <p className="text-sm">{pct}%</p>
-        </div>
       </div>
-    </>
+      <div className="flex w-8">
+        <p className="text-sm">{pct}%</p>
+      </div>
+    </div>
   )
 }
 
@@ -145,28 +143,26 @@ const FilenameEditor = ({
   }
 
   return (
-    <>
-      <div className={twMerge('flex flex-row', className)}>
-        <p
-          ref={paragraphRef}
-          suppressContentEditableWarning
-          contentEditable={enabled}
-          onFocus={(e) => {
-            selectNameBeforeExtension(e)
-          }}
-          onBlur={onBlur}
-          onKeyDown={(e) => {
-            onEditableChanged(e)
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              e.currentTarget.blur()
-            }
-          }}
-        >
-          {name}
-        </p>
-      </div>
-    </>
+    <div className={twMerge('flex flex-row', className)}>
+      <p
+        ref={paragraphRef}
+        suppressContentEditableWarning
+        contentEditable={enabled}
+        onFocus={(e) => {
+          selectNameBeforeExtension(e)
+        }}
+        onBlur={onBlur}
+        onKeyDown={(e) => {
+          onEditableChanged(e)
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            e.currentTarget.blur()
+          }
+        }}
+      >
+        {name}
+      </p>
+    </div>
   )
 }
 
@@ -322,11 +318,9 @@ export const FileListItem = ({
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
               {file.checksum_sha256_hex && (
-                <>
-                  <DropdownMenuItem onClick={onCopySHA}>
-                    Copy SHA256 Checksum
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={onCopySHA}>
+                  Copy SHA256 Checksum
+                </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={showDeleteModal}>
                 Delete

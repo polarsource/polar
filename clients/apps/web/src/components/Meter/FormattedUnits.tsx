@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 
 interface FormattedUnitsProps {
   value: string | number
 }
 
-const FormattedUnits: React.FC<FormattedUnitsProps> = ({ value }) => {
+const FormattedUnits = ({ value }: FormattedUnitsProps) => {
   const formatter = useMemo(() => {
     return new Intl.NumberFormat('en-US', {
       notation: 'standard',
@@ -24,7 +24,7 @@ const FormattedUnits: React.FC<FormattedUnitsProps> = ({ value }) => {
     return value
   }, [value, formatter])
 
-  return <>{formattedValue}</>
+  return formattedValue
 }
 
 export default FormattedUnits

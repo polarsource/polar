@@ -26,7 +26,7 @@ const ImpersonationBanner = () => {
 
   return (
     <div className="sticky top-0 z-50 flex flex-row items-center justify-between bg-red-100 px-8 py-2 text-sm text-red-600 dark:bg-red-950">
-      <div className="flex-[1_0_0]"></div>
+      <div className="flex-[1_0_0]" />
       <div className="hidden flex-[1_0_0] font-medium md:block">
         You are currently impersonating another user
       </div>

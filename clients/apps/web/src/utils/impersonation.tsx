@@ -5,7 +5,7 @@ export const isImpersonating = () => {
   const impersonationCookie = cookies.filter((cookie) =>
     cookie.trim().startsWith('polar_is_impersonating='),
   )
-  if (impersonationCookie.length == 0) {
+  if (impersonationCookie.length === 0) {
     return false
   }
   const [, value] = impersonationCookie[0].split('=')

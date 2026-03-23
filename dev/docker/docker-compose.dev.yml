@@ -1,11 +1,15 @@
 # Docker Compose for full-stack Polar development environment
 # Usage: dev docker up
 #
-# This file defines all services needed to run Polar in development mode
-# with hot-reloading support. Source code is mounted from the host.
+# Infrastructure services (db, redis, minio, tinybird, etc.) are defined in
+# server/docker-compose.yml and included here. This file only adds the
+# application services (api, worker, web) with development configuration.
 #
 # For multiple isolated instances, use: dev docker up -i <instance_number>
 # Each instance uses different ports (offset by 100 * instance_number)
+
+include:
+  - path: ../../server/docker-compose.yml
 
 # Load environment variables from server/.env
 x-common-env-file: &common-env-file
@@ -46,6 +50,11 @@ x-common-backend-env: &common-backend-env
   POLAR_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
   POLAR_CHECKOUT_BASE_URL: http://localhost:${API_PORT:-8000}/v1/checkout-links/{client_secret}/redirect
   POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
+  # Tinybird - uses service name for container networking
+  # Note: env_prefix="polar_" in Settings, so these need the POLAR_ prefix
+  # Tokens are auto-discovered from the Tinybird container at startup (see startup.sh)
+  POLAR_TINYBIRD_API_URL: http://tinybird:7181
+  POLAR_TINYBIRD_CLICKHOUSE_URL: http://tinybird:7182
   # OAuth insecure transport for development
   AUTHLIB_INSECURE_TRANSPORT: "true"
   # Note: Secrets like POLAR_GITHUB_CLIENT_ID, POLAR_STRIPE_* are loaded from
@@ -69,84 +78,6 @@ x-worker-volumes: &worker-volumes
   - pnpm_store:/root/.local/share/pnpm/store
 
 services:
-  # ============================================
-  # Infrastructure Services
-  # ============================================
-
-  db:
-    image: postgres:15.1-bullseye
-    environment:
-      POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}
-      POSTGRES_PASSWORD: ${POLAR_POSTGRES_PWD:-polar}
-      POSTGRES_DB: ${POLAR_POSTGRES_DATABASE:-polar}
-      POLAR_READ_USER: ${POLAR_POSTGRES_READ_USER:-polar_read}
-      POLAR_READ_PASSWORD: ${POLAR_POSTGRES_READ_PWD:-polar}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ../../server/init-readonly-user.sql:/docker-entrypoint-initdb.d/init-readonly-user.sql:ro
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready",
-          "-q",
-          "-d",
-          "${POLAR_POSTGRES_DATABASE:-polar}",
-          "-U",
-          "${POLAR_POSTGRES_USER:-polar}",
-        ]
-      interval: 2s
-      timeout: 40s
-      retries: 20
-
-  redis:
-    image: redis:alpine
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 2s
-      timeout: 10s
-      retries: 10
-
-  minio:
-    image: bitnamilegacy/minio:2024.5.28
-    ports:
-      - "${MINIO_API_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
-    volumes:
-      - minio_data:/minio
-    environment:
-      MINIO_ROOT_USER: ${POLAR_MINIO_USER:-polar}
-      MINIO_ROOT_PASSWORD: ${POLAR_MINIO_PWD:-polarpolar}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
-
-  minio-setup:
-    image: bitnamilegacy/minio-client:2024.5.24
-    depends_on:
-      minio:
-        condition: service_healthy
-    volumes:
-      - ../../server/.minio:/tmp/config:ro
-    environment:
-      MINIO_HOST: minio
-      MINIO_ROOT_USER: ${POLAR_MINIO_USER:-polar}
-      MINIO_ROOT_PASSWORD: ${POLAR_MINIO_PWD:-polarpolar}
-      BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
-      PUBLIC_BUCKET_NAME: ${POLAR_S3_FILES_PUBLIC_BUCKET_NAME:-polar-s3-public}
-      BUCKET_TESTING_NAME: testing-${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
-      ACCESS_KEY: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
-      SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
-      POLICY_FILE: /tmp/config/policy.json
-    entrypoint:
-      ["bash", "-c", "bash /tmp/config/local.sh /tmp/config/configure.sh"]
-
   # ============================================
   # Application Services
   # ============================================
@@ -224,51 +155,10 @@ services:
         limits:
           memory: 6G
 
-  # ============================================
-  # Optional Services (use --profile flag)
-  # ============================================
-
-  prometheus:
-    image: prom/prometheus:v3.7.3
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
-    volumes:
-      - ../../server/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=1d"
-      - "--web.enable-lifecycle"
-      - "--web.enable-remote-write-receiver"
-    profiles:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:12.3.0
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
-    volumes:
-      - ../../server/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ../../server/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - grafana_data:/var/lib/grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: polar
-      GF_SECURITY_ADMIN_PASSWORD: polar
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    depends_on:
-      - prometheus
-    profiles:
-      - monitoring
-
 volumes:
-  postgres_data:
-  minio_data:
   server_uv_cache:
   api_venv:
   worker_venv:
   pnpm_store:
   web_node_modules:
   web_next_cache:
-  prometheus_data:
-  grafana_data:

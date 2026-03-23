@@ -22,7 +22,7 @@ ENV_FILE = DOCKER_DIR / ".env.docker"
 SERVER_ENV_FILE = SERVER_DIR / ".env"
 SERVER_ENV_TEMPLATE = SERVER_DIR / ".env.template"
 
-VALID_SERVICES = ["api", "worker", "web", "db", "redis", "minio", "minio-setup", "prometheus", "grafana"]
+VALID_SERVICES = ["api", "worker", "web", "db", "redis", "minio", "minio-setup", "tinybird", "prometheus", "grafana"]
 
 
 def _read_stored_instance() -> int | None:
@@ -168,6 +168,11 @@ def _build_compose_env(instance: int) -> dict[str, str]:
         "MINIO_CONSOLE_PORT": str(9001 + offset),
         "PROMETHEUS_PORT": str(9090 + offset),
         "GRAFANA_PORT": str(3001 + offset),
+        "TINYBIRD_PORT": str(7181 + offset),
+        "TINYBIRD_ADMIN_PORT": str(7182 + offset),
+        # Base compose file (server/docker-compose.yml) uses these names
+        "POLAR_POSTGRES_PORT": str(5432 + offset),
+        "POLAR_REDIS_PORT": str(6379 + offset),
     }
 
 
@@ -208,6 +213,7 @@ def _print_access_info(ctx: typer.Context, instance: int, monitoring: bool = Fal
     console.print(f"  MinIO Console: http://localhost:{9001 + offset}")
     console.print(f"  PostgreSQL:    localhost:{5432 + offset}")
     console.print(f"  Redis:         localhost:{6379 + offset}")
+    console.print(f"  Tinybird:      http://localhost:{7181 + offset}")
     if monitoring:
         console.print(f"  Prometheus:    http://localhost:{9090 + offset}")
         console.print(f"  Grafana:       http://localhost:{3001 + offset} (admin/polar)")

@@ -1,8 +1,13 @@
 services:
   redis:
-    image: redis
+    image: redis:alpine
     ports:
-      - "${POLAR_REDIS_PORT}:6379"
+      - "${POLAR_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 10s
+      retries: 10
 
   db:
     image: postgres:15.1-bullseye
@@ -10,16 +15,14 @@ services:
       - POSTGRES_USER=${POLAR_POSTGRES_USER}
       - POSTGRES_PASSWORD=${POLAR_POSTGRES_PWD}
       - POSTGRES_DB=${POLAR_POSTGRES_DATABASE}
-      - POSTGRES_PORT=${POLAR_POSTGRES_PORT}
+      - POSTGRES_PORT=${POLAR_POSTGRES_PORT:-5432}
       - POLAR_READ_USER=${POLAR_POSTGRES_READ_USER:-polar_read}
       - POLAR_READ_PASSWORD=${POLAR_POSTGRES_READ_PWD}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
       - ./init-readonly-user.sql:/docker-entrypoint-initdb.d/init-readonly-user.sql
     ports:
-      - "${POLAR_POSTGRES_PORT}:5432"
-    expose:
-      - ${POLAR_POSTGRES_PORT}
+      - "${POLAR_POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test:
         [
@@ -38,20 +41,26 @@ services:
   minio:
     image: bitnamilegacy/minio:2024.5.28
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - "minio_data:/minio"
     environment:
       - MINIO_ROOT_USER=${POLAR_MINIO_USER}
       - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
   minio-setup:
     image: bitnamilegacy/minio-client:2024.5.24
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     volumes:
-      - ./.minio:/tmp/config
+      - ./.minio:/tmp/config:ro
     environment:
       - MINIO_HOST=minio
       - MINIO_ROOT_USER=${POLAR_MINIO_USER}
@@ -63,16 +72,12 @@ services:
       - ACCESS_KEY=${POLAR_AWS_ACCESS_KEY_ID}
       - SECRET_ACCESS_KEY=${POLAR_AWS_SECRET_ACCESS_KEY}
     entrypoint:
-      [
-        "bash",
-        "-c",
-        "chmod +x /tmp/config/local.sh && chmod +x /tmp/config/configure.sh && /tmp/config/local.sh /tmp/config/configure.sh",
-      ]
+      ["bash", "-c", "bash /tmp/config/local.sh /tmp/config/configure.sh"]
 
   prometheus:
     image: prom/prometheus:v3.7.3
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -88,7 +93,7 @@ services:
   grafana:
     image: grafana/grafana:12.3.0
     ports:
-      - "3001:3000"
+      - "${GRAFANA_PORT:-3001}:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -106,8 +111,17 @@ services:
     image: tinybirdco/tinybird-local:latest
     platform: linux/amd64
     ports:
-      - "7181:7181"
-      - "7182:7182"
+      - "${TINYBIRD_PORT:-7181}:7181"
+      - "${TINYBIRD_ADMIN_PORT:-7182}:7182"
+    volumes:
+      - ./tinybird:/tinybird:ro
+      - ../dev/docker/scripts/tinybird-setup.sh:/scripts/tinybird-setup.sh:ro
+    command: ["bash", "/scripts/tinybird-setup.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7181/"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
 
 volumes:
   postgres_data:

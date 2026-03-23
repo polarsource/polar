@@ -1965,6 +1965,9 @@ class SubscriptionService:
         if not past_due:
             await self.send_revoked_email(session, subscription)
 
+        # Void all pending orders for this subscription
+        enqueue_job("order.void_pending_orders_for_subscription", subscription.id)
+
     async def _send_new_subscription_notification(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:

@@ -1532,6 +1532,7 @@ class TestRevoke:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_benefits_grants_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -1550,6 +1551,11 @@ class TestRevoke:
 
         enqueue_benefits_grants_mock.assert_called_once_with(
             session, updated_subscription
+        )
+
+        # Verify that the void pending orders task is enqueued
+        enqueue_job_mock.assert_any_call(
+            "order.void_pending_orders_for_subscription", subscription.id
         )
 
     async def test_revoke_scheduled_cancellation_sends_canceled_hook(

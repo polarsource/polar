@@ -1857,7 +1857,10 @@ class OrderService:
         previous_status = order.status
 
         repository = OrderRepository.from_session(session)
-        order = await repository.update(order, update_dict={"status": OrderStatus.void})
+        order = await repository.update(
+            order,
+            update_dict={"status": OrderStatus.void, "next_payment_attempt_at": None},
+        )
 
         await event_service.create_event(
             session,
@@ -1875,6 +1878,22 @@ class OrderService:
         await self._on_order_updated(session, order, previous_status=previous_status)
 
         return order
+
+    async def void_pending_orders_for_subscription(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Sequence[Order]:
+        """Void all pending orders for a specific subscription."""
+        repository = OrderRepository.from_session(session)
+        pending_orders = await repository.get_pending_orders_for_subscription(
+            subscription.id
+        )
+
+        voided_orders: list[Order] = []
+        for order in pending_orders:
+            voided_order = await self.void(session, order)
+            voided_orders.append(voided_order)
+
+        return voided_orders
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)

@@ -124,6 +124,20 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
+    async def get_pending_orders_for_subscription(
+        self, subscription_id: UUID
+    ) -> Sequence[Order]:
+        """Get pending orders for a specific subscription."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.status == OrderStatus.pending,
+            )
+            .options(joinedload(Order.subscription))
+        )
+        return await self.get_all(statement)
+
     async def acquire_payment_lock_by_id(self, order_id: UUID) -> bool:
         """
         Internal method to acquire a payment lock by order ID.

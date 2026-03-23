@@ -4382,3 +4382,81 @@ class TestVoidOrder:
             await order_service.void(session, order)
 
         assert exc_info.value.order.id == order.id
+
+    @pytest.mark.asyncio
+    async def test_void_clears_next_payment_attempt(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that voiding an order clears next_payment_attempt_at."""
+        # Given
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_attempt_at,
+        )
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
+
+
+@pytest.mark.asyncio
+class TestVoidPendingOrdersForSubscription:
+    @pytest.mark.asyncio
+    async def test_void_pending_orders_for_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test voiding all pending orders for a subscription."""
+        # Given
+        # Create a subscription
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+
+        # Create two pending orders for the subscription
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order1 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=next_attempt_at,
+        )
+
+        order2 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=next_attempt_at,
+        )
+
+        # When
+        voided_orders = await order_service.void_pending_orders_for_subscription(
+            session, subscription
+        )
+
+        # Then
+        assert len(voided_orders) == 2
+
+        # Verify both orders are voided and next_payment_attempt_at is cleared
+        for order in voided_orders:
+            assert order.status == OrderStatus.void
+            assert order.next_payment_attempt_at is None
+            assert order.subscription_id == subscription.id

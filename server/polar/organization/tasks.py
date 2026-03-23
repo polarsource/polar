@@ -786,3 +786,359 @@ async def _cleanup_orphaned_seat_customers(
         customers_deleted=count,
     )
     return count
+
+
+# ---------------------------------------------------------------------------
+# Phase 0B: Non-destructive prepare (run before member_model_enabled flip)
+# ---------------------------------------------------------------------------
+
+_PREPARE_BATCH_SIZE = 100
+
+
+@actor(
+    actor_name="organization.prepare_members",
+    priority=TaskPriority.LOW,
+    time_limit=600_000,  # 10 min timeout
+    max_retries=0,
+)
+async def prepare_members(organization_id: uuid.UUID) -> None:
+    """
+    Non-destructive version of backfill_members.
+
+    Populates member_id/email on seats and grants without changing customer_id,
+    deleting customers, or flipping any flags. Safe to run on seat-based orgs
+    that haven't enabled member_model_enabled yet.
+
+    Three steps:
+    A. Create owner members for all customers without one
+    B. Populate member_id and email on active seats (no customer_id change)
+    C. Populate member_id on benefit grants (no customer_id change, no transfers)
+    """
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
+            log.warning(
+                "organization.prepare_members.skipped",
+                reason="seat_based_pricing_not_enabled",
+                organization_id=str(organization_id),
+            )
+            return
+
+    log.info(
+        "organization.prepare_members.start",
+        organization_id=str(organization_id),
+    )
+
+    # Step A: Create owner members for all customers without one
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
+        owner_members_created = await _backfill_owner_members(session, organization)
+
+    # Step B: Populate member_id and email on seats (no customer_id change)
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
+        seats_prepared = await _prepare_seats(session, organization)
+
+    # Step C: Populate member_id on grants (no customer_id change, no transfers)
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
+        grants_linked = await _prepare_benefit_grants(session, organization)
+
+    # NO Step D — no customer deletion
+
+    log.info(
+        "organization.prepare_members.complete",
+        organization_id=str(organization_id),
+        owner_members_created=owner_members_created,
+        seats_prepared=seats_prepared,
+        grants_linked=grants_linked,
+    )
+
+
+async def _prepare_seats(
+    session: AsyncSession,
+    organization: Organization,
+) -> int:
+    """Populate member_id and email on active seats.
+
+    Unlike _backfill_seats(), this does NOT change seat.customer_id
+    or set customer.type = team. It only adds member references
+    so merchants can start reading them during Phase 1.
+    """
+    from polar.models import Order, Product, Subscription
+
+    member_repository = MemberRepository.from_session(session)
+    customer_repo = CustomerRepository.from_session(session)
+
+    # Lazy cache of customer_id → owner member
+    owner_members_map: dict[uuid.UUID, Member] = {}
+
+    async def _get_owner_member(customer_id: uuid.UUID) -> Member | None:
+        if customer_id not in owner_members_map:
+            owner = await member_repository.get_owner_by_customer_id(
+                session, customer_id
+            )
+            if owner is not None:
+                owner_members_map[customer_id] = owner
+        return owner_members_map.get(customer_id)
+
+    sub_seats_stmt = (
+        select(CustomerSeat)
+        .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .join(Product, Subscription.product_id == Product.id)
+        .options(
+            joinedload(CustomerSeat.subscription),
+        )
+        .where(
+            Product.organization_id == organization.id,
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.subscription_id.is_not(None),
+            CustomerSeat.member_id.is_(None),
+        )
+        .order_by(CustomerSeat.id)
+    )
+    order_seats_stmt = (
+        select(CustomerSeat)
+        .join(Order, CustomerSeat.order_id == Order.id)
+        .join(Product, Order.product_id == Product.id)
+        .options(
+            joinedload(CustomerSeat.order),
+        )
+        .where(
+            Product.organization_id == organization.id,
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.order_id.is_not(None),
+            CustomerSeat.member_id.is_(None),
+        )
+        .order_by(CustomerSeat.id)
+    )
+
+    seats_found = 0
+    count = 0
+
+    for base_stmt in [sub_seats_stmt, order_seats_stmt]:
+        offset = 0
+        while True:
+            batch_stmt = base_stmt.limit(_PREPARE_BATCH_SIZE).offset(offset)
+            result = await session.execute(batch_stmt)
+            seats = list(result.scalars().unique().all())
+            if not seats:
+                break
+            seats_found += len(seats)
+            offset += _PREPARE_BATCH_SIZE
+
+            for seat in seats:
+                if seat.subscription_id is not None and seat.subscription is not None:
+                    billing_customer_id = seat.subscription.customer_id
+                elif seat.order_id is not None and seat.order is not None:
+                    billing_customer_id = seat.order.customer_id
+                else:
+                    continue
+                old_seat_customer_id = seat.customer_id
+
+                if old_seat_customer_id == billing_customer_id:
+                    # Billing manager's own seat → use their owner member
+                    owner_member = await _get_owner_member(billing_customer_id)
+                    if owner_member is None:
+                        continue
+                    seat.member_id = owner_member.id
+                    seat.email = owner_member.email
+                elif old_seat_customer_id is not None:
+                    # Someone else holds this seat → create member under billing customer
+                    seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
+                    email = seat_holder.email if seat_holder else seat.email
+                    if not email:
+                        continue
+                    member = await _get_or_create_member_for_backfill(
+                        session,
+                        member_repository,
+                        billing_customer_id,
+                        organization.id,
+                        email,
+                    )
+                    seat.member_id = member.id
+                    seat.email = email
+                    if seat_holder and seat_holder._oauth_accounts:
+                        member._oauth_accounts = {**seat_holder._oauth_accounts}
+                elif seat.email:
+                    # No customer assigned yet (pending invite) → create member
+                    member = await _get_or_create_member_for_backfill(
+                        session,
+                        member_repository,
+                        billing_customer_id,
+                        organization.id,
+                        seat.email,
+                    )
+                    seat.member_id = member.id
+                # NOTE: Unlike _backfill_seats(), we do NOT change seat.customer_id
+
+                count += 1
+
+            await session.flush()
+
+    log.info(
+        "organization.prepare_members.step_b_complete",
+        organization_id=str(organization.id),
+        seats_found=seats_found,
+        seats_prepared=count,
+    )
+    return count
+
+
+async def _prepare_benefit_grants(
+    session: AsyncSession,
+    organization: Organization,
+) -> int:
+    """Populate member_id on benefit grants.
+
+    Unlike _backfill_benefit_grants(), this does NOT change grant.customer_id
+    or transfer license keys/downloadables. It only links grants to members
+    so merchants can read grant.member in API responses and webhooks.
+
+    Since seat.customer_id is unchanged (prepare didn't rewrite it), we can
+    match seats by customer_id + subscription/order to find the right member.
+    """
+    from polar.models import Order, Subscription
+
+    member_repository = MemberRepository.from_session(session)
+
+    # Find grants without member_id for this organization's customers
+    statement = (
+        select(BenefitGrant)
+        .join(Customer, BenefitGrant.customer_id == Customer.id)
+        .where(
+            Customer.organization_id == organization.id,
+            BenefitGrant.member_id.is_(None),
+            BenefitGrant.is_deleted.is_(False),
+        )
+    )
+    results = await session.stream_scalars(
+        statement,
+        execution_options={"yield_per": _PREPARE_BATCH_SIZE},
+    )
+
+    # Lazy caches
+    owner_members_map: dict[uuid.UUID, Member] = {}
+    billing_customer_cache: dict[uuid.UUID, uuid.UUID] = {}
+
+    async def _get_billing_customer_id(grant: BenefitGrant) -> uuid.UUID | None:
+        scope_id = grant.subscription_id or grant.order_id
+        if scope_id is None:
+            return None
+        if scope_id in billing_customer_cache:
+            return billing_customer_cache[scope_id]
+        if grant.subscription_id is not None:
+            cid = await session.scalar(
+                select(Subscription.customer_id).where(
+                    Subscription.id == grant.subscription_id
+                )
+            )
+        else:
+            cid = await session.scalar(
+                select(Order.customer_id).where(Order.id == grant.order_id)
+            )
+        if cid is not None:
+            billing_customer_cache[scope_id] = cid
+        return cid
+
+    grants_found = 0
+    count = 0
+    skipped_conflicts = 0
+    try:
+        async for grant in results:
+            grants_found += 1
+
+            billing_customer_id = await _get_billing_customer_id(grant)
+
+            # Find the correct member for this grant.
+            # Since seat.customer_id is still the original holder's ID,
+            # we can match by customer_id + subscription/order.
+            target_member_id: uuid.UUID | None = None
+
+            if grant.subscription_id is not None:
+                seat_member_id = await session.scalar(
+                    select(CustomerSeat.member_id).where(
+                        CustomerSeat.subscription_id == grant.subscription_id,
+                        CustomerSeat.customer_id == grant.customer_id,
+                        CustomerSeat.member_id.is_not(None),
+                        CustomerSeat.status != SeatStatus.revoked,
+                    )
+                )
+                if seat_member_id is not None:
+                    target_member_id = seat_member_id
+            elif grant.order_id is not None:
+                seat_member_id = await session.scalar(
+                    select(CustomerSeat.member_id).where(
+                        CustomerSeat.order_id == grant.order_id,
+                        CustomerSeat.customer_id == grant.customer_id,
+                        CustomerSeat.member_id.is_not(None),
+                        CustomerSeat.status != SeatStatus.revoked,
+                    )
+                )
+                if seat_member_id is not None:
+                    target_member_id = seat_member_id
+
+            # Fallback to owner member
+            if target_member_id is None:
+                if grant.customer_id not in owner_members_map:
+                    owner = await member_repository.get_owner_by_customer_id(
+                        session, grant.customer_id
+                    )
+                    if owner is not None:
+                        owner_members_map[grant.customer_id] = owner
+                owner = owner_members_map.get(grant.customer_id)
+                if owner is not None:
+                    target_member_id = owner.id
+
+            if target_member_id is not None:
+                # Check for conflict with benefit_grants_smb_key constraint
+                existing_id = await session.scalar(
+                    select(BenefitGrant.id).where(
+                        BenefitGrant.subscription_id == grant.subscription_id,
+                        BenefitGrant.member_id == target_member_id,
+                        BenefitGrant.benefit_id == grant.benefit_id,
+                        BenefitGrant.id != grant.id,
+                        BenefitGrant.is_deleted.is_(False),
+                    )
+                )
+                if existing_id is not None:
+                    if grant.order_id is not None:
+                        # One-off order — each purchase is distinct, keep both
+                        grant.member_id = target_member_id
+                        count += 1
+                    else:
+                        skipped_conflicts += 1
+                else:
+                    grant.member_id = target_member_id
+                    count += 1
+
+            if (count + skipped_conflicts) > 0 and (
+                count + skipped_conflicts
+            ) % _PREPARE_BATCH_SIZE == 0:
+                await session.flush()
+    finally:
+        await results.close()
+
+    await session.flush()
+
+    log.info(
+        "organization.prepare_members.step_c_complete",
+        organization_id=str(organization.id),
+        grants_found=grants_found,
+        grants_linked=count,
+        skipped_conflicts=skipped_conflicts,
+    )
+    return count

@@ -2,6 +2,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import * as Sentry from '@sentry/nextjs'
 import { useUpdateUser } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -129,12 +130,14 @@ export function PersonalDetailsStep() {
       })
 
       if (error) {
+        Sentry.captureException(error)
         setSubmitting(false)
         setSubmitError(true)
         await showApiResponse(400, 'Failed to save personal details')
         return
       }
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error)
       setSubmitting(false)
       setSubmitError(true)
       return

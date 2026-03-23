@@ -2,6 +2,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
+import * as Sentry from '@sentry/nextjs'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -189,13 +190,17 @@ export function ProductDetailsStep() {
           history: aupHistory,
         }),
       })
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error)
       setValidationError(true)
       setLoading(null)
       return
     }
 
     if (!res.ok) {
+      Sentry.captureException(
+        new Error(`Validation failed with status ${res.status}`),
+      )
       setValidationError(true)
       setLoading(null)
       return

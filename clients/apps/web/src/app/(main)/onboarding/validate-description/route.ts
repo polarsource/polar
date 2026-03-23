@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { AUP_FALLBACK } from './aup-fallback'
+import * as Sentry from '@sentry/nextjs'
 
 const MAX_DESCRIPTION_LENGTH = 3000
 const MAX_HISTORY_LENGTH = 5
@@ -169,7 +170,7 @@ Product description: <user_input>${product_description}</user_input>`,
 
     return NextResponse.json(object)
   } catch (error) {
-    console.error('[validate-description] AI validation failed:', error)
+    Sentry.captureException(error)
     return NextResponse.json(
       { error: 'Validation service unavailable' },
       { status: 502 },

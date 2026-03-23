@@ -51,7 +51,8 @@ export default function ClientPage({
 
   const isApproved =
     reviewStatus?.verdict === 'PASS' ||
-    reviewStatus?.appeal_decision === 'approved'
+    reviewStatus?.appeal_decision === 'approved' ||
+    ['active', 'initial_review', 'ongoing_review'].includes(organization.status)
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
   const createIdentityVerification = useCreateIdentityVerification()

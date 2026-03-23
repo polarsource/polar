@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 const SandboxBanner = () => {
   const pathname = usePathname()
 
-  if (['/', '/login'].includes(pathname)) {
+  if (['/', '/login', '/onboarding/sandbox'].includes(pathname)) {
     return null
   }
 

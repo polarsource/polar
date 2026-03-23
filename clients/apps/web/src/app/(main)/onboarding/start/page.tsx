@@ -14,7 +14,7 @@ export default function Page() {
   const { updateData } = useOnboardingData()
 
   if (CONFIG.IS_SANDBOX) {
-    redirect('/dashboard/create')
+    redirect('/onboarding/sandbox')
   }
 
   const handleSandbox = () => {

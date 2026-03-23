@@ -8,6 +8,7 @@ import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 import { OrgNameSlugSync, SandboxFormFields } from './SandboxFormFields'
 
@@ -49,6 +50,7 @@ function SubmitButton({
 export function SandboxStep() {
   const router = useRouter()
   const { setUserOrganizations } = useAuth()
+  const { clearData } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [submitting, setSubmitting] = useState(false)
   const [editingSlug, setEditingSlug] = useState(false)
@@ -85,7 +87,8 @@ export function SandboxStep() {
     }
 
     setUserOrganizations((prev) => [...prev, org])
-    router.push(`/dashboard/${org.slug}`)
+    router.push(`/dashboard/${org.slug}/onboarding/product`)
+    clearData()
   }
 
   return (

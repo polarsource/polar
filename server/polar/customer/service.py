@@ -23,10 +23,12 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.models import BenefitGrant, Customer, Organization, User
+from polar.models import BenefitGrant, Customer, Order, Organization, Subscription, User
 from polar.models.customer import CustomerType
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
+from polar.order.repository import OrderRepository
 from polar.organization.resolver import get_payload_organization
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
@@ -510,6 +512,131 @@ class CustomerService:
         customer = await repository.update(customer, update_dict=update_dict)
 
         return customer
+
+    async def get_export(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+    ) -> dict[str, Any]:
+        payment_method_repository = PaymentMethodRepository.from_session(session)
+        payment_methods = await payment_method_repository.list_by_customer(customer.id)
+
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscriptions = await subscription_repository.get_all_by_customer(
+            customer.id,
+            options=(joinedload(Subscription.product),),
+        )
+
+        order_repository = OrderRepository.from_session(session)
+        orders = await order_repository.get_all_by_customer(
+            customer.id,
+            options=(joinedload(Order.product),),
+        )
+
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        benefit_grants = await benefit_grant_repository.get_all_by_customer(
+            customer.id,
+            options=(joinedload(BenefitGrant.benefit),),
+        )
+
+        return {
+            "customer": {
+                "id": str(customer.id),
+                "email": customer.email,
+                "name": customer.name,
+                "billing_name": customer.billing_name,
+                "billing_address": customer.billing_address.model_dump()
+                if customer.billing_address
+                else None,
+                "tax_id": list(customer.tax_id) if customer.tax_id else None,
+                "external_id": customer.external_id,
+                "created_at": customer.created_at.isoformat(),
+                "modified_at": customer.modified_at.isoformat()
+                if customer.modified_at
+                else None,
+            },
+            "subscriptions": [
+                {
+                    "id": str(sub.id),
+                    "status": sub.status,
+                    "product_id": str(sub.product_id),
+                    "product_name": sub.product.name,
+                    "amount": sub.amount,
+                    "currency": sub.currency,
+                    "recurring_interval": sub.recurring_interval,
+                    "started_at": sub.started_at.isoformat()
+                    if sub.started_at
+                    else None,
+                    "ended_at": sub.ended_at.isoformat() if sub.ended_at else None,
+                    "current_period_start": sub.current_period_start.isoformat(),
+                    "current_period_end": sub.current_period_end.isoformat(),
+                    "cancel_at_period_end": sub.cancel_at_period_end,
+                    "canceled_at": sub.canceled_at.isoformat()
+                    if sub.canceled_at
+                    else None,
+                    "created_at": sub.created_at.isoformat(),
+                    "modified_at": sub.modified_at.isoformat()
+                    if sub.modified_at
+                    else None,
+                }
+                for sub in subscriptions
+            ],
+            "orders": [
+                {
+                    "id": str(order.id),
+                    "status": order.status,
+                    "invoice_number": order.invoice_number,
+                    "product_id": str(order.product_id),
+                    "product_name": order.product.name if order.product else None,
+                    "subtotal_amount": order.subtotal_amount,
+                    "discount_amount": order.discount_amount,
+                    "net_amount": order.net_amount,
+                    "tax_amount": order.tax_amount,
+                    "total_amount": order.total_amount,
+                    "currency": order.currency,
+                    "billing_reason": order.billing_reason,
+                    "created_at": order.created_at.isoformat(),
+                    "modified_at": order.modified_at.isoformat()
+                    if order.modified_at
+                    else None,
+                }
+                for order in orders
+            ],
+            "payment_methods": [
+                {
+                    "id": str(pm.id),
+                    "type": pm.type,
+                    "method_metadata": pm.method_metadata,
+                    "created_at": pm.created_at.isoformat(),
+                    "modified_at": pm.modified_at.isoformat()
+                    if pm.modified_at
+                    else None,
+                }
+                for pm in payment_methods
+            ],
+            "benefit_grants": [
+                {
+                    "id": str(grant.id),
+                    "benefit_id": str(grant.benefit_id),
+                    "benefit_type": grant.benefit.type,
+                    "benefit_description": grant.benefit.description,
+                    "is_granted": grant.is_granted,
+                    "is_revoked": grant.is_revoked,
+                    "granted_at": grant.granted_at.isoformat()
+                    if grant.granted_at
+                    else None,
+                    "revoked_at": grant.revoked_at.isoformat()
+                    if grant.revoked_at
+                    else None,
+                    "subscription_id": str(grant.subscription_id)
+                    if grant.subscription_id
+                    else None,
+                    "order_id": str(grant.order_id) if grant.order_id else None,
+                    "created_at": grant.created_at.isoformat(),
+                }
+                for grant in benefit_grants
+            ],
+        }
 
     async def get_state(
         self,

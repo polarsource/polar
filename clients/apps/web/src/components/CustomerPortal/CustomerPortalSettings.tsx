@@ -10,6 +10,7 @@ import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
+import { useCallback, useState } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
@@ -45,6 +46,36 @@ export const CustomerPortalSettings = ({
   } = useModal(setupIntentParams !== undefined)
   const { data: customer } = useCustomerPortalCustomer()
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
+
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExportData = useCallback(async () => {
+    setIsExporting(true)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/customer-portal/customers/me/export`,
+        {
+          headers: customerSessionToken
+            ? { Authorization: `Bearer ${customerSessionToken}` }
+            : {},
+          credentials: 'include',
+        },
+      )
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `polar-customer-export-${customer?.id ?? 'data'}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }, [customer, customerSessionToken])
 
   if (!customer) {
     return null
@@ -115,6 +146,24 @@ export const CustomerPortalSettings = ({
             </WellContent>
           </Well>
         )}
+
+      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
+        <WellHeader className="flex-row items-start justify-between">
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-xl">Privacy</h3>
+            <p className="dark:text-polar-500 text-gray-500">
+              Download a copy of all your personal data
+            </p>
+          </div>
+          <Button
+            onClick={handleExportData}
+            loading={isExporting}
+            variant="secondary"
+          >
+            Export Data
+          </Button>
+        </WellHeader>
+      </Well>
 
       <Modal
         title="Add Payment Method"

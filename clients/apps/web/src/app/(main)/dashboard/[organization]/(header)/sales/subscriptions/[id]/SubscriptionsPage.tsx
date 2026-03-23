@@ -20,8 +20,8 @@ import {
   useSubscription,
   useUncancelSubscription,
 } from '@/hooks/queries'
+import { useCustomerTimeline } from '@/hooks/queries/customers'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
-import { useSubscriptionTimeline } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List } from '@polar-sh/ui/components/atoms/List'
@@ -68,7 +68,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hasNextPage: timelineHasNextPage,
     isFetchingNextPage: timelineIsFetchingNextPage,
     fetchNextPage: timelineFetchNextPage,
-  } = useSubscriptionTimeline(_subscription.id)
+  } = useCustomerTimeline(organization.id, _subscription.customer.id)
 
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0

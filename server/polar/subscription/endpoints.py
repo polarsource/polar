@@ -5,7 +5,6 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.customer.schemas.timeline import CustomerTimelineEntry
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -166,36 +165,6 @@ async def export(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
-
-
-@router.get(
-    "/{id}/timeline",
-    summary="Get Subscription Timeline",
-    response_model=ListResource[CustomerTimelineEntry],
-    responses={404: SubscriptionNotFound},
-    tags=[APITag.private],
-)
-async def get_timeline(
-    id: SubscriptionID,
-    auth_subject: auth.SubscriptionsRead,
-    pagination: PaginationParamsQuery,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[CustomerTimelineEntry]:
-    """
-    Get a subscription's activity timeline.
-
-    Returns a paginated, reverse-chronological list of system events for the
-    subscription, including charges, refunds, and lifecycle changes.
-    """
-    sub = await subscription_service.get(session, auth_subject, id)
-
-    if sub is None:
-        raise ResourceNotFound()
-
-    entries, count = await subscription_service.get_timeline(
-        session, sub, pagination=pagination
-    )
-    return ListResource.from_paginated_results(entries, count, pagination)
 
 
 @router.get(

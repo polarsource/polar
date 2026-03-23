@@ -984,31 +984,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/subscriptions/{id}/timeline': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Subscription Timeline
-     * @description Get a subscription's activity timeline.
-     *
-     *     Returns a paginated, reverse-chronological list of system events for the
-     *     subscription, including charges, refunds, and lifecycle changes.
-     *
-     *     **Scopes**: `subscriptions:read` `subscriptions:write`
-     */
-    get: operations['subscriptions:get_timeline']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/subscriptions/{id}': {
     parameters: {
       query?: never
@@ -2507,31 +2482,6 @@ export interface paths {
      *     **Scopes**: `customers:read` `customers:write`
      */
     get: operations['customers:export']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/customers/{id}/timeline': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Customer Timeline
-     * @description Get a customer's activity timeline.
-     *
-     *     Returns a paginated, reverse-chronological list of system events for the
-     *     customer, including orders, refunds, and subscription lifecycle changes.
-     *
-     *     **Scopes**: `customers:read` `customers:write`
-     */
-    get: operations['customers:get_timeline']
     put?: never
     post?: never
     delete?: never
@@ -18866,17 +18816,6 @@ export interface components {
       items: components['schemas']['CustomerSubscription'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[CustomerTimelineEntry] */
-    ListResource_CustomerTimelineEntry_: {
-      /** Items */
-      items: (
-        | components['schemas']['OrderTimelineEntry']
-        | components['schemas']['RefundTimelineEntry']
-        | components['schemas']['SubscriptionStartedTimelineEntry']
-        | components['schemas']['SubscriptionCanceledTimelineEntry']
-      )[]
-      pagination: components['schemas']['Pagination']
-    }
     /** ListResource[CustomerWallet] */
     ListResource_CustomerWallet_: {
       /** Items */
@@ -21082,37 +21021,6 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
-    }
-    /**
-     * OrderTimelineEntry
-     * @description An order (charge) event.
-     */
-    OrderTimelineEntry: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'order'
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Timestamp
-       * Format: date-time
-       */
-      timestamp: string
-      /**
-       * Amount
-       * @description Total charged amount in cents.
-       */
-      amount: number
-      /** Currency */
-      currency: string
-      billing_reason: components['schemas']['OrderBillingReason']
-      /** Product Name */
-      product_name: string | null
     }
     /**
      * OrderUpdate
@@ -24670,39 +24578,6 @@ export interface components {
      * @enum {string}
      */
     RefundStatus: 'pending' | 'succeeded' | 'failed' | 'canceled'
-    /**
-     * RefundTimelineEntry
-     * @description A refund event.
-     */
-    RefundTimelineEntry: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'refund'
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Timestamp
-       * Format: date-time
-       */
-      timestamp: string
-      /**
-       * Amount
-       * @description Refunded amount in cents.
-       */
-      amount: number
-      /** Currency */
-      currency: string
-      /**
-       * Order Id
-       * @description ID of the related order.
-       */
-      order_id?: string | null
-    }
     /** RefundedAlready */
     RefundedAlready: {
       /**
@@ -25647,34 +25522,6 @@ export interface components {
       cancel_at_period_end?: boolean
     }
     /**
-     * SubscriptionCanceledTimelineEntry
-     * @description A subscription cancellation event.
-     */
-    SubscriptionCanceledTimelineEntry: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'subscription_canceled'
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Timestamp
-       * Format: date-time
-       */
-      timestamp: string
-      /**
-       * Subscription Id
-       * Format: uuid4
-       */
-      subscription_id: string
-      /** Product Name */
-      product_name: string | null
-    }
-    /**
      * SubscriptionChargePreview
      * @description Preview of the next charge for a subscription.
      */
@@ -26435,34 +26282,6 @@ export interface components {
       | '-product'
       | 'discount'
       | '-discount'
-    /**
-     * SubscriptionStartedTimelineEntry
-     * @description A subscription activation event.
-     */
-    SubscriptionStartedTimelineEntry: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'subscription_started'
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Timestamp
-       * Format: date-time
-       */
-      timestamp: string
-      /**
-       * Subscription Id
-       * Format: uuid4
-       */
-      subscription_id: string
-      /** Product Name */
-      product_name: string | null
-    }
     /**
      * SubscriptionStatus
      * @enum {string}
@@ -30900,52 +30719,6 @@ export interface operations {
       }
     }
   }
-  'subscriptions:get_timeline': {
-    parameters: {
-      query?: {
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path: {
-        /** @description The subscription ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_CustomerTimelineEntry_']
-        }
-      }
-      /** @description Subscription not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'subscriptions:get': {
     parameters: {
       query?: never
@@ -35367,52 +35140,6 @@ export interface operations {
         content: {
           'application/json': unknown
           'text/csv': string
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customers:get_timeline': {
-    parameters: {
-      query?: {
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path: {
-        /** @description The customer ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_CustomerTimelineEntry_']
-        }
-      }
-      /** @description Customer not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -46858,9 +46585,6 @@ export const orderSortPropertyValues: ReadonlyArray<
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
 > = ['pending', 'paid', 'refunded', 'partially_refunded', 'void']
-export const orderTimelineEntryTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['OrderTimelineEntry']['type']
-> = ['order']
 export const organizationCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Organization']['country']
 > = [
@@ -48120,9 +47844,6 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
-export const refundTimelineEntryTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['RefundTimelineEntry']['type']
-> = ['refund']
 export const scopeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Scope']
 > = [
@@ -48342,9 +48063,6 @@ export const subscriptionBillingPeriodUpdatedEventNameValues: ReadonlyArray<
 export const subscriptionCanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionCanceledEvent']['name']
 > = ['subscription.canceled']
-export const subscriptionCanceledTimelineEntryTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SubscriptionCanceledTimelineEntry']['type']
-> = ['subscription_canceled']
 export const subscriptionCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionCreatedEvent']['name']
 > = ['subscription.created']
@@ -48388,9 +48106,6 @@ export const subscriptionSortPropertyValues: ReadonlyArray<
   'discount',
   '-discount',
 ]
-export const subscriptionStartedTimelineEntryTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['SubscriptionStartedTimelineEntry']['type']
-> = ['subscription_started']
 export const subscriptionStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionStatus']
 > = [

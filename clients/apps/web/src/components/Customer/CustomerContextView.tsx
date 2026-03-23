@@ -75,7 +75,10 @@ export const CustomerContextView = ({
     setCustomerSession(session)
   }, [customer])
 
-  const { data: timelineData } = useCustomerTimeline(customer.id)
+  const { data: timelineData } = useCustomerTimeline(
+    organization.id,
+    customer.id,
+  )
 
   const metrics = useMetrics({
     startDate: new Date(customer.created_at),

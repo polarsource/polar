@@ -1,7 +1,6 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -15,61 +14,46 @@ import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-type TimelineEntry =
-  | schemas['OrderTimelineEntry']
-  | schemas['RefundTimelineEntry']
-  | schemas['SubscriptionStartedTimelineEntry']
-  | schemas['SubscriptionCanceledTimelineEntry']
+export type TimelineEntry =
+  | schemas['OrderPaidEvent']
+  | schemas['OrderRefundedEvent']
+  | schemas['SubscriptionCreatedEvent']
+  | schemas['SubscriptionCanceledEvent']
 
 const getEntryMeta = (entry: TimelineEntry, organizationSlug: string) => {
-  switch (entry.type) {
-    case 'order': {
-      const reasonLabels: Record<string, string> = {
-        purchase: 'One-time purchase',
-        subscription_create: 'Subscription started',
-        subscription_cycle: 'Subscription renewed',
-        subscription_update: 'Subscription updated',
-      }
-      const label = reasonLabels[entry.billing_reason] ?? 'Charged'
-
+  switch (entry.name) {
+    case 'order.paid': {
       return {
         icon: <ArrowUpRight className="h-4 w-4" />,
         iconBg:
           'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400',
-        description: label,
-        detail: entry.product_name,
-        href: `/dashboard/${organizationSlug}/sales/${entry.id}`,
+        description: entry.label,
+        href: `/dashboard/${organizationSlug}/sales/${entry.metadata.order_id}`,
       }
     }
-    case 'refund': {
-      const amount = formatCurrency('compact')(entry.amount, entry.currency)
+    case 'order.refunded': {
       return {
         icon: <ArrowDownLeft className="h-4 w-4" />,
         iconBg:
           'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
-        description: `Refunded ${amount}`,
-        detail: amount,
-        href: entry.order_id
-          ? `/dashboard/${organizationSlug}/sales/${entry.order_id}`
-          : undefined,
+        description: entry.label,
+        href: `/dashboard/${organizationSlug}/sales/${entry.metadata.order_id}`,
       }
     }
-    case 'subscription_started': {
+    case 'subscription.created': {
       return {
         icon: <ShoppingCart className="h-4 w-4" />,
         iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
-        description: 'Subscription started',
-        detail: entry.product_name,
-        href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.subscription_id}`,
+        description: entry.label,
+        href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.metadata.subscription_id}`,
       }
     }
-    case 'subscription_canceled': {
+    case 'subscription.canceled': {
       return {
         icon: <XCircle className="h-4 w-4" />,
         iconBg: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
-        description: 'Subscription canceled',
-        detail: entry.product_name,
-        href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.subscription_id}`,
+        description: entry.label,
+        href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.metadata.subscription_id}`,
       }
     }
   }
@@ -89,6 +73,8 @@ const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
   compact,
 }) => {
   const meta = getEntryMeta(entry, organizationSlug)
+
+  if (!meta) return null
 
   return (
     <div
@@ -118,11 +104,6 @@ const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
             ) : (
               <span>{meta.description}</span>
             )}
-            {meta.detail && (
-              <span className="dark:text-polar-500 text-gray-500">
-                {meta.detail}
-              </span>
-            )}
           </div>
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
             <FormattedDateTime
@@ -142,9 +123,6 @@ const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
             ) : (
               <span>{meta.description}</span>
             )}
-            <span className="dark:text-polar-500 text-gray-500">
-              {meta.detail}
-            </span>
           </div>
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
             <FormattedDateTime
@@ -160,7 +138,7 @@ const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
 }
 
 interface TimelineViewProps {
-  entries: TimelineEntry[]
+  entries: schemas['Event'][]
   organizationSlug: string
   hasNextPage: boolean
   isFetchingNextPage: boolean
@@ -186,15 +164,18 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   return (
     <div className="flex flex-col gap-y-2">
-      {entries.map((entry, i) => (
-        <TimelineEntryRow
-          key={`${entry.type}-${entry.id}-${entry.timestamp}`}
-          entry={entry}
-          organizationSlug={organizationSlug}
-          isLast={i === entries.length - 1 && !hasNextPage}
-          compact={compact}
-        />
-      ))}
+      {entries.map((event, i) => {
+        const entry = event as TimelineEntry
+        return (
+          <TimelineEntryRow
+            key={`${entry.name}-${entry.id}-${entry.timestamp}`}
+            entry={entry}
+            organizationSlug={organizationSlug}
+            isLast={i === entries.length - 1 && !hasNextPage}
+            compact={compact}
+          />
+        )
+      })}
       {hasNextPage && (
         <div className="flex justify-center pt-2">
           <Button

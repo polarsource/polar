@@ -95,7 +95,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     hasNextPage: timelineHasNextPage,
     isFetchingNextPage: timelineIsFetchingNextPage,
     fetchNextPage: timelineFetchNextPage,
-  } = useCustomerTimeline(customer.id)
+  } = useCustomerTimeline(organization.id, customer.id)
 
   const [selectedMetric, setSelectedMetric] = React.useState<
     keyof schemas['Metrics']

@@ -142,7 +142,7 @@ export default {
       summary: {
         totalWhenTrialEnds: 'Totale al termine della prova',
         totalWhenDiscountExpires: 'Totale alla scadenza dello sconto',
-        totalDueToday: 'Totale dovuto oggi',
+        totalDueToday: 'Totale da pagare oggi',
       },
     },
     pwywForm: {
@@ -238,7 +238,7 @@ export default {
     },
     productDescription: {
       readMore: 'Leggi di più',
-      readLess: 'Mostra meno',
+      readLess: 'Leggi meno',
     },
   },
   intervals: {

@@ -25,8 +25,9 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -100,7 +101,16 @@ export function PersonalDetailsStep() {
     },
   })
 
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, watch } = form
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const country = watch('country')
+  const isUnsupportedCountry =
+    country !== '' && !SUPPORTED_PAYOUT_COUNTRIES.includes(country)
+  const countryDisplayName = useMemo(() => {
+    if (!country) return ''
+    return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country
+  }, [country])
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 100 }, (_, i) =>
@@ -198,25 +208,59 @@ export function PersonalDetailsStep() {
             />
           </Box>
 
-          <FormField
-            control={control}
-            name="country"
-            rules={{ required: 'Country is required' }}
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <CountryPicker
-                    allowedCountries={enums.addressInputCountryValues}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select country"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="flex flex-col gap-y-2">
+            <FormField
+              control={control}
+              name="country"
+              rules={{ required: 'Country is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <CountryPicker
+                      allowedCountries={enums.addressInputCountryValues}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select country"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isUnsupportedCountry && (
+              <Box
+                display="flex"
+                flexDirection="column"
+                rowGap="m"
+                borderRadius="md"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-warning"
+                backgroundColor="background-warning"
+                padding="l"
+              >
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Polar is not available in {countryDisplayName}
+                </p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  We currently can&rsquo;t pay out directly to{' '}
+                  {countryDisplayName}. You can still use Polar, but you will
+                  need to set up payouts through a business entity in a{' '}
+                  <a
+                    href="https://polar.sh/docs/merchant-of-record/supported-countries#payouts"
+                    className="underline underline-offset-2 hover:no-underline"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    supported country
+                  </a>
+                  .
+                </p>
+              </Box>
             )}
-          />
+          </div>
 
           <Box display="flex" flexDirection="column" rowGap="s">
             <FormLabel>Date of Birth</FormLabel>

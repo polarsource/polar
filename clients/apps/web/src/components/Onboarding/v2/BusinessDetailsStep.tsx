@@ -19,10 +19,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -162,71 +163,153 @@ function CompanyFields({
 }
 
 function CurrencyAndCountryFields() {
+  const { data } = useOnboardingData()
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
   })
+  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
+    name: 'businessCountry',
+  })
+
+  const personalCountry = data.country ?? ''
+  const isPersonalCountryUnsupported =
+    personalCountry !== '' &&
+    !SUPPORTED_PAYOUT_COUNTRIES.includes(personalCountry)
+
+  const isBusinessCountryUnsupported =
+    organizationType === 'company' &&
+    businessCountry !== '' &&
+    !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
+
+  const warningCountryCode =
+    organizationType === 'individual'
+      ? isPersonalCountryUnsupported
+        ? personalCountry
+        : ''
+      : isBusinessCountryUnsupported
+        ? businessCountry
+        : ''
+
+  const countryDisplayName = useMemo(() => {
+    if (!warningCountryCode) return ''
+    return (
+      new Intl.DisplayNames([], { type: 'region' }).of(warningCountryCode) ??
+      warningCountryCode
+    )
+  }, [warningCountryCode])
 
   return (
-    <Box
-      display="grid"
-      gap="m"
-      gridTemplateColumns={
-        organizationType === 'company'
-          ? 'repeat(2, minmax(0, 1fr))'
-          : 'repeat(1, minmax(0, 1fr))'
-      }
-    >
-      <FormField
-        name="defaultCurrency"
-        rules={{ required: 'Currency is required' }}
-        render={({ field }) => (
-          <FormItem className="w-full">
-            <FormLabel>Default Payment Currency</FormLabel>
-            <FormControl>
-              <CurrencySelector
-                value={field.value as schemas['PresentmentCurrency']}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {organizationType === 'company' && (
+    <div className="flex flex-col gap-y-2">
+      <Box
+        display="grid"
+        gap="m"
+        gridTemplateColumns={
+          organizationType === 'company'
+            ? 'repeat(2, minmax(0, 1fr))'
+            : 'repeat(1, minmax(0, 1fr))'
+        }
+      >
         <FormField
-          name="businessCountry"
-          rules={{ required: 'Business country is required' }}
+          name="defaultCurrency"
+          rules={{ required: 'Currency is required' }}
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Business Country</FormLabel>
+              <FormLabel>Default Payment Currency</FormLabel>
               <FormControl>
-                <CountryPicker
-                  allowedCountries={enums.addressInputCountryValues}
-                  value={field.value}
+                <CurrencySelector
+                  value={field.value as schemas['PresentmentCurrency']}
                   onChange={field.onChange}
-                  placeholder="Select country"
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {organizationType === 'company' && (
+          <FormField
+            name="businessCountry"
+            rules={{ required: 'Business country is required' }}
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Business Country</FormLabel>
+                <FormControl>
+                  <CountryPicker
+                    allowedCountries={enums.addressInputCountryValues}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select country"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </Box>
+
+      {warningCountryCode !== '' && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          rowGap="m"
+          borderRadius="md"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-warning"
+          backgroundColor="background-warning"
+          padding="l"
+        >
+          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+            Polar is not available in {countryDisplayName}
+          </p>
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            {organizationType === 'individual' ? (
+              <>
+                We currently can&rsquo;t pay out directly to{' '}
+                {countryDisplayName}. To continue, switch to a business account
+                and register your business in a supported country.
+              </>
+            ) : (
+              <>We currently can&rsquo;t pay out to {countryDisplayName}.</>
+            )}
+          </p>
+        </Box>
       )}
-    </Box>
+    </div>
   )
 }
 
 function SubmitButton({ loading }: { loading: boolean }) {
+  const { data } = useOnboardingData()
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
   const terms = useWatch<FormSchema, 'terms'>({ name: 'terms' })
+  const organizationType = useWatch<FormSchema, 'organizationType'>({
+    name: 'organizationType',
+  })
+  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
+    name: 'businessCountry',
+  })
+
+  const personalCountry = data.country ?? ''
+  const isUnsupportedCountry =
+    organizationType === 'individual'
+      ? personalCountry !== '' &&
+        !SUPPORTED_PAYOUT_COUNTRIES.includes(personalCountry)
+      : businessCountry !== '' &&
+        !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
 
   return (
     <Button
       type="submit"
       loading={loading}
-      disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
+      disabled={
+        orgName.length === 0 ||
+        orgSlug.length === 0 ||
+        !terms ||
+        isUnsupportedCountry
+      }
       fullWidth
     >
       Continue
@@ -356,6 +439,7 @@ export function BusinessDetailsStep() {
           <CompanyFields
             onEditBusinessName={() => setEditedBusinessName(true)}
           />
+
           <CurrencyAndCountryFields />
 
           <FormField

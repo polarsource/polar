@@ -94,6 +94,19 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
+    async def list_all_by_customer(
+        self,
+        customer_id: UUID,
+        *,
+        options: Options = (),
+    ) -> Sequence[BenefitGrant]:
+        statement = (
+            self.get_base_statement(include_deleted=True)
+            .where(BenefitGrant.customer_id == customer_id)
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def list_granted_by_member(
         self,
         member_id: UUID,

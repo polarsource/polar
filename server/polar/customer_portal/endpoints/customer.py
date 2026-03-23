@@ -1,8 +1,12 @@
+import json
+
 import structlog
 from fastapi import Depends, Request
+from fastapi.responses import Response
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
 
+from polar.customer.service import customer as main_customer_service
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
@@ -10,7 +14,12 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
 from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -50,6 +59,32 @@ async def stream(
 async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
     """Get authenticated customer."""
     return get_customer(auth_subject)
+
+
+@router.get(
+    "/me/export",
+    summary="Export Customer Data",
+    responses={
+        200: {
+            "content": {"application/json": {"schema": {"type": "object"}}},
+            "description": "Customer data exported as a JSON file.",
+        }
+    },
+    include_in_schema=True,
+)
+async def export(
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Response:
+    """Export all data for the authenticated customer as a JSON file."""
+    customer = get_customer(auth_subject)
+    data = await main_customer_service.get_export(session, customer)
+    filename = f"polar-customer-export-{customer.id}.json"
+    return Response(
+        content=json.dumps(data, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.patch(

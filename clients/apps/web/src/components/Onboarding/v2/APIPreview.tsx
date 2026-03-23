@@ -32,7 +32,11 @@ export function APIPreview({
   step: 'personal' | 'business' | 'product'
 }) {
   const data = useOnboardingDataLive()
-  const { apiLoading, apiResponse } = useOnboardingData()
+  const { apiLoading, apiResponse, clearApiResponse } = useOnboardingData()
+
+  useEffect(() => {
+    clearApiResponse()
+  }, [step, clearApiResponse])
 
   const body = useMemo(() => {
     switch (step) {
@@ -144,7 +148,6 @@ export function APIPreview({
 
     return () => {
       clearTimeout(debounceTimer.current)
-      clearTimeout(fadeTimer.current)
     }
   }, [lines])
 

@@ -149,6 +149,8 @@ const getToolLabel = (part: DynamicToolUIPart): string => {
         TOOL_LABELS[part.toolName as keyof typeof TOOL_LABELS]?.error?.() ??
         'Something went wrong.'
       )
+    default:
+      return ''
   }
 }
 

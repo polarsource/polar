@@ -1,6 +1,6 @@
 import { CONFIG } from '@/utils/config'
 import { openai } from '@ai-sdk/openai'
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -70,17 +70,20 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: openai('gpt-5.4-mini'),
-      schema: z.object({
-        verdict: z.enum(['APPROVE', 'DENY', 'CLARIFY']),
-        confidence: z.number().min(0).max(1),
-        message: z
-          .string()
-          .optional()
-          .describe(
-            'A concise explanation for DENY, or a single clarifying question for CLARIFY. Empty for APPROVE.',
-          ),
+      maxOutputTokens: 256,
+      output: Output.object({
+        schema: z.object({
+          verdict: z.enum(['APPROVE', 'DENY', 'CLARIFY']),
+          confidence: z.number().min(0).max(1),
+          message: z
+            .string()
+            .nullable()
+            .describe(
+              'A concise explanation for DENY, or a single clarifying question for CLARIFY. Null for APPROVE.',
+            ),
+        }),
       }),
       system: `You are a compliance reviewer for Polar, a Merchant of Record (MoR) platform for digital products only.
 
@@ -168,8 +171,9 @@ Pricing models: ${pricing_models.join(', ') || 'Not specified'}
 Product description: <user_input>${product_description}</user_input>`,
     })
 
-    return NextResponse.json(object)
+    return NextResponse.json(output)
   } catch (error) {
+    console.error('[validate-description] Failed:', error)
     Sentry.captureException(error)
     return NextResponse.json(
       { error: 'Validation service unavailable' },

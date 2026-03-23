@@ -71,6 +71,7 @@ interface OnboardingStore {
   subscribe: (listener: () => void) => () => void
   setApiLoading: (loading: boolean) => void
   showApiResponse: (status: number, message: string) => Promise<void>
+  clearApiResponse: () => void
 }
 
 interface OnboardingContextValue extends OnboardingStore {
@@ -128,6 +129,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const clearApiResponse = useCallback(() => {
+    setApiResponse(null)
+  }, [])
+
   const showApiResponse = useCallback((status: number, message: string) => {
     setApiLoadingState(false)
     setApiResponse({ status, message })
@@ -137,7 +142,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        setApiResponse(null)
         resolve()
       }, 2500)
     })
@@ -151,6 +155,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       subscribe,
       setApiLoading,
       showApiResponse,
+      clearApiResponse,
       apiLoading,
       apiResponse,
     }),
@@ -161,6 +166,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       subscribe,
       setApiLoading,
       showApiResponse,
+      clearApiResponse,
       apiLoading,
       apiResponse,
     ],
@@ -184,6 +190,7 @@ export function useOnboardingData() {
     clearData: ctx.clearData,
     setApiLoading: ctx.setApiLoading,
     showApiResponse: ctx.showApiResponse,
+    clearApiResponse: ctx.clearApiResponse,
     apiLoading: ctx.apiLoading,
     apiResponse: ctx.apiResponse,
   }

@@ -38,14 +38,14 @@ class UserRepository(
             statement = statement.where(User.blocked_at.is_(None))
         return await self.get_one_or_none(statement)
 
-    async def get_by_any_email(
+    async def get_all_by_any_email(
         self,
         email: str,
         *,
         include_deleted: bool = False,
         included_blocked: bool = False,
-    ) -> User | None:
-        """Look up a user by their primary email or any linked OAuth account email."""
+    ) -> Sequence[User]:
+        """Look up all users matching a given email as primary email or OAuth account email."""
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
             .outerjoin(User.oauth_accounts)
@@ -59,7 +59,7 @@ class UserRepository(
         )
         if not included_blocked:
             statement = statement.where(User.blocked_at.is_(None))
-        return await self.get_one_or_none(statement)
+        return await self.get_all(statement)
 
     async def get_by_stripe_customer_id(
         self,

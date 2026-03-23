@@ -269,6 +269,13 @@ class NumeralTaxService(TaxServiceProtocol):
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            if e.response.is_server_error:
+                log.warning(
+                    "Numeral tax record server error",
+                    status_code=e.response.status_code,
+                    text=e.response.text,
+                )
+                raise TaxRecordError() from e
             error_json = e.response.json()
             error_code = error_json.get("error", {}).get("error_code")
             if error_code == "calculation_expired":

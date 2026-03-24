@@ -154,6 +154,7 @@ export default {
     productSwitcher: {
       billedRecurring: '{frequency} számlázva',
       oneTimePurchase: 'Egyszeri vásárlás',
+      fromPrefix: 'Kezdőár',
     },
     card: {
       included: 'Tartalmazza',

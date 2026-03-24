@@ -154,6 +154,7 @@ export default {
     productSwitcher: {
       billedRecurring: 'Facturado {frequency}',
       oneTimePurchase: 'Compra única',
+      fromPrefix: 'Desde',
     },
     card: {
       included: 'Incluido',

@@ -18,14 +18,19 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    op.drop_index(
-        "ix_customers_organization_id_email_case_insensitive",
-        table_name="customers",
-    )
-    op.drop_index(
-        "ix_customers_email_case_insensitive",
-        table_name="customers",
-    )
+    with op.get_context().autocommit_block():
+        op.drop_index(
+            "ix_customers_organization_id_email_case_insensitive",
+            table_name="customers",
+            postgresql_concurrently=True,
+            if_exists=True,
+        )
+        op.drop_index(
+            "ix_customers_email_case_insensitive",
+            table_name="customers",
+            postgresql_concurrently=True,
+            if_exists=True,
+        )
 
 
 def downgrade() -> None:

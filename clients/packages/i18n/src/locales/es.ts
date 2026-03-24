@@ -8,9 +8,9 @@ export default {
         'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a realizar un cargo en tu método de pago seleccionado por el importe mostrado arriba al final de tu período de prueba y en cada fecha de facturación posterior hasta que canceles, y aceptas los {buyerTermsLink}. Puedes cancelar en cualquier momento antes de que finalice tu prueba para evitar cargos.',
       mandateSubscription:
         'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a realizar un cargo inmediato en tu método de pago seleccionado por el importe mostrado arriba y a cobrar el mismo importe en cada fecha de facturación posterior hasta que canceles, y aceptas los {buyerTermsLink}.',
-      mandateOneTime:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a realizar un cargo en tu método de pago seleccionado por el importe mostrado arriba, y aceptas los {buyerTermsLink}.',
       buyerTermsLink: 'Términos del comprador',
+      mandateOneTime:
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y vendedor oficial, a cobrar el importe mostrado arriba en tu método de pago seleccionado, y aceptas los {buyerTermsLink}. Este es un cargo único.',
     },
     form: {
       email: 'Email',

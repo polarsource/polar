@@ -8,9 +8,9 @@ export default {
         "En cliquant sur \"{buttonLabel}\", vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter votre moyen de paiement sélectionné du montant indiqué ci-dessus à la fin de votre période d'essai et à chaque date de facturation ultérieure jusqu'à votre résiliation, et vous acceptez les {buyerTermsLink}. Vous pouvez annuler à tout moment avant la fin de votre essai pour éviter d'être facturé.",
       mandateSubscription:
         'En cliquant sur "{buttonLabel}", vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter immédiatement votre moyen de paiement sélectionné du montant indiqué ci-dessus et à débiter ce même montant à chaque date de facturation ultérieure jusqu\'à votre résiliation, et vous acceptez les {buyerTermsLink}.',
-      mandateOneTime:
-        'En cliquant sur "{buttonLabel}", vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à débiter votre moyen de paiement sélectionné du montant indiqué ci-dessus, et vous acceptez les {buyerTermsLink}.',
       buyerTermsLink: "Conditions d'achat",
+      mandateOneTime:
+        'En cliquant sur "{buttonLabel}", vous autorisez Polar Software, Inc., notre revendeur en ligne et marchand officiel, à prélever le montant indiqué ci-dessus sur le moyen de paiement sélectionné, et vous acceptez les {buyerTermsLink}. Il s\'agit d\'un paiement unique.',
     },
     form: {
       email: 'E-mail',

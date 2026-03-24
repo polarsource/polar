@@ -8,9 +8,9 @@ export default {
         "Facendo clic su \"{buttonLabel}\", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare sul metodo di pagamento selezionato l'importo indicato sopra al termine del periodo di prova e in ogni successiva data di fatturazione fino all'annullamento, e accetti i {buyerTermsLink}. Puoi annullare in qualsiasi momento prima della fine del periodo di prova per evitare l'addebito.",
       mandateSubscription:
         'Facendo clic su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare immediatamente sul metodo di pagamento selezionato l\'importo indicato sopra e ad addebitare lo stesso importo in ogni successiva data di fatturazione fino all\'annullamento, e accetti i {buyerTermsLink}.',
-      mandateOneTime:
-        'Facendo clic su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare sul metodo di pagamento selezionato l\'importo indicato sopra, e accetti i {buyerTermsLink}.',
       buyerTermsLink: 'Termini di acquisto',
+      mandateOneTime:
+        'Cliccando su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare l\'importo sopra indicato sul metodo di pagamento selezionato e accetti i {buyerTermsLink}. Questo è un addebito unico.',
     },
     form: {
       email: 'Email',

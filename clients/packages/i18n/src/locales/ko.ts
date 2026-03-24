@@ -8,9 +8,9 @@ export default {
         '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 체험 기간 종료 시 및 취소할 때까지 이후 매 결제일마다 선택한 결제 수단으로 위에 표시된 금액을 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다. 결제가 진행되지 않도록 체험 기간 종료 전에 언제든지 취소할 수 있습니다.',
       mandateSubscription:
         '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 즉시 청구하고 취소할 때까지 이후 매 결제일마다 동일한 금액을 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다.',
-      mandateOneTime:
-        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택한 결제 수단으로 위에 표시된 금액을 청구하는 것에 동의하며, {buyerTermsLink}에 동의하게 됩니다.',
       buyerTermsLink: '구매자 약관',
+      mandateOneTime:
+        '"{buttonLabel}"을(를) 클릭하면 당사의 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택하신 결제 수단으로 위에 표시된 금액을 청구하는 것을 승인하며, {buyerTermsLink}에 동의하게 됩니다. 이는 일회성 결제입니다.',
     },
     form: {
       email: '이메일',

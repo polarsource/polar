@@ -8,9 +8,9 @@ export default {
         'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår online-återförsäljare och registrerade säljare, debiterar din valda betalningsmetod med beloppet som visas ovan i slutet av din provperiod och vid varje efterföljande faktureringsdatum tills du avslutar prenumerationen, samt godkänner våra {buyerTermsLink}. Du kan när som helst avsluta prenumerationen innan provperioden löper ut för att undvika att bli debiterad.',
       mandateSubscription:
         'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår online-återförsäljare och registrerade säljare, omedelbart debiterar din valda betalningsmetod med beloppet som visas ovan och debiterar samma belopp vid varje efterföljande faktureringsdatum tills du avslutar prenumerationen, samt godkänner våra {buyerTermsLink}.',
-      mandateOneTime:
-        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår online-återförsäljare och registrerade säljare, debiterar din valda betalningsmetod med beloppet som visas ovan, samt godkänner våra {buyerTermsLink}.',
       buyerTermsLink: 'Köpvillkor',
+      mandateOneTime:
+        'Genom att klicka på "{buttonLabel}" godkänner du att Polar Software, Inc., vår onlineåterförsäljare och registrerade handlare, debiterar din valda betalningsmetod med beloppet som visas ovan, samt accepterar {buyerTermsLink}. Detta är en engångsavgift.',
     },
     form: {
       email: 'Email',

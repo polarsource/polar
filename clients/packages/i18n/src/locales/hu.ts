@@ -8,9 +8,9 @@ export default {
         'A(z) „{buttonLabel}” gombra kattintva felhatalmazza a Polar Software, Inc.-t, online viszonteladónkat és bejegyzett kereskedőnket, hogy a kiválasztott fizetési módot a próbaidőszak végén, majd minden további számlázási napon megterhelje a fent látható összeggel, amíg le nem mondja az előfizetést, valamint elfogadja a(z) {buyerTermsLink} rendelkezéseit. A terhelés elkerülése érdekében a próbaidőszak vége előtt bármikor lemondhatja az előfizetést.',
       mandateSubscription:
         'A(z) „{buttonLabel}” gombra kattintva felhatalmazza a Polar Software, Inc.-t, online viszonteladónkat és bejegyzett kereskedőnket, hogy a kiválasztott fizetési módot azonnal megterhelje a fent látható összeggel, majd ugyanezt az összeget minden további számlázási napon felszámítsa, amíg le nem mondja az előfizetést, valamint elfogadja a(z) {buyerTermsLink} rendelkezéseit.',
-      mandateOneTime:
-        'A(z) „{buttonLabel}” gombra kattintva felhatalmazza a Polar Software, Inc.-t, online viszonteladónkat és bejegyzett kereskedőnket, hogy a kiválasztott fizetési módot megterhelje a fent látható összeggel, valamint elfogadja a(z) {buyerTermsLink} rendelkezéseit.',
       buyerTermsLink: 'Vásárlási feltételek',
+      mandateOneTime:
+        'A(z) „{buttonLabel}” gombra kattintva felhatalmazza a Polar Software, Inc.-t, online viszonteladónkat és hivatalos kereskedőnket, hogy a kiválasztott fizetési módot megterhelje a fent látható összeggel, valamint elfogadja a(z) {buyerTermsLink} rendelkezéseit. Ez egy egyszeri terhelés.',
     },
     form: {
       email: 'E-mail cím',

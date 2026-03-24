@@ -4361,6 +4361,30 @@ class TestVoidOrder:
         assert events[0].user_metadata["order_id"] == str(order.id)
 
     @pytest.mark.asyncio
+    async def test_void_order_payment_in_progress(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that voiding an order with an active payment lock raises OrderPaymentInProgress."""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        order.payment_lock_acquired_at = utc_now()
+
+        # When/Then
+        with pytest.raises(PaymentAlreadyInProgress) as exc_info:
+            await order_service.void(session, order)
+
+        assert exc_info.value.order == order
+
+    @pytest.mark.asyncio
     async def test_void_non_pending_order(
         self,
         session: AsyncSession,

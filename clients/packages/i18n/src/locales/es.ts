@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'Este pedido es procesado por nuestro revendedor en línea y Comerciante registrado, Polar, quien también gestiona las consultas y devoluciones relacionadas con el pedido.',
       mandateSubscriptionTrial:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar en tu método de pago seleccionado el importe mostrado arriba al finalizar tu periodo de prueba y en cada fecha de facturación posterior hasta que canceles. Puedes cancelar en cualquier momento antes de que finalice la prueba para evitar el cargo.',
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a realizar un cargo en tu método de pago seleccionado por el importe mostrado arriba al final de tu período de prueba y en cada fecha de facturación posterior hasta que canceles, y aceptas los {buyerTermsLink}. Puedes cancelar en cualquier momento antes de que finalice tu prueba para evitar cargos.',
       mandateSubscription:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar inmediatamente en tu método de pago seleccionado el importe mostrado arriba y a cobrar el mismo importe en cada fecha de facturación posterior hasta que canceles.',
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a realizar un cargo inmediato en tu método de pago seleccionado por el importe mostrado arriba y a cobrar el mismo importe en cada fecha de facturación posterior hasta que canceles, y aceptas los {buyerTermsLink}.',
       mandateOneTime:
-        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a cobrar en tu método de pago seleccionado el importe mostrado arriba. Este es un cargo único.',
+        'Al hacer clic en "{buttonLabel}", autorizas a Polar Software, Inc., nuestro revendedor en línea y comerciante registrado, a realizar un cargo en tu método de pago seleccionado por el importe mostrado arriba, y aceptas los {buyerTermsLink}.',
+      buyerTermsLink: 'Términos del comprador',
     },
     form: {
       email: 'Email',

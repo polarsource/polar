@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'Este pedido é processado pela Polar, nossa parceira de vendas online, responsável pela cobrança, suporte ao pedido e devoluções.',
       mandateSubscriptionTrial:
-        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., nossa parceira de vendas online, a cobrar o método de pagamento selecionado pelo valor indicado acima no final do seu período experimental e em cada data de faturação subsequente até cancelar. Pode cancelar a qualquer momento antes do fim do período experimental para evitar a cobrança.',
+        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., o nosso revendedor online e comerciante de registo, a cobrar o montante indicado acima no seu método de pagamento selecionado no final do seu período de teste e em cada data de faturação subsequente até que cancele, e concorda com os {buyerTermsLink}. Pode cancelar a qualquer momento antes do final do seu período de teste para evitar a cobrança.',
       mandateSubscription:
-        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., nossa parceira de vendas online, a cobrar imediatamente o método de pagamento selecionado pelo valor indicado acima e a cobrar o mesmo valor em cada data de faturação subsequente até cancelar.',
+        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., o nosso revendedor online e comerciante de registo, a cobrar imediatamente o montante indicado acima no seu método de pagamento selecionado e a cobrar o mesmo montante em cada data de faturação subsequente até que cancele, e concorda com os {buyerTermsLink}.',
       mandateOneTime:
-        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., nossa parceira de vendas online, a cobrar o método de pagamento selecionado pelo valor indicado acima. Esta é uma cobrança única.',
+        'Ao clicar em "{buttonLabel}", autoriza a Polar Software, Inc., o nosso revendedor online e comerciante de registo, a cobrar o montante indicado acima no seu método de pagamento selecionado, e concorda com os {buyerTermsLink}.',
+      buyerTermsLink: 'Termos de Compra',
     },
     form: {
       email: 'E-mail',

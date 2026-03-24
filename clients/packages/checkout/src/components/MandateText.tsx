@@ -43,7 +43,7 @@ export const MandateText = ({
       {suffix !== undefined && (
         <>
           <a
-            href="https://polar.sh/legal/terms"
+            href="https://polar.sh/legal/checkout-buyer-terms"
             target="_blank"
             rel="noreferrer"
             className="underline"

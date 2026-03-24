@@ -161,8 +161,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "fr": {
@@ -327,8 +326,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "sv": {
@@ -493,8 +491,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "es": {
@@ -659,8 +656,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "de": {
@@ -825,8 +821,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "hu": {
@@ -983,8 +978,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "it": {
@@ -1141,8 +1135,7 @@
     "checkout.productDescription.readMore": "Read more",
     "checkout.productDescription.readLess": "Read less",
     "benefitTypes.feature_flag": "Feature flag",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "ko": {
@@ -1299,8 +1292,7 @@
     "checkout.pricing.everyInterval.year.=1": "Yearly",
     "checkout.pricing.everyInterval.year.=2": "Every other year",
     "checkout.pricing.everyInterval.year.other": "Every # years",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "pt": {
@@ -1457,8 +1449,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   },
   "pt-PT": {
@@ -1615,8 +1606,7 @@
     "checkout.trial.summary.totalWhenDiscountExpires": "Total when discount expires",
     "checkout.trial.summary.totalDueToday": "Total due today",
     "checkout.pricing.discount.until": "Until {date}",
-    "checkout.productSwitcher.fromPrefix": "From"
-,
+    "checkout.productSwitcher.fromPrefix": "From",
     "checkout.footer.buyerTermsLink": "Buyer Terms"
   }
 }

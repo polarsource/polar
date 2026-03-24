@@ -18,7 +18,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { InfoIcon } from 'lucide-react'
 import TransactionMeta from './TransactionMeta'
 
 interface TransactionsListProps {
@@ -85,7 +84,7 @@ const TransactionsList = ({
       },
     },
     {
-      accessorKey: 'amount',
+      id: 'gross_amount',
       enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader
@@ -97,13 +96,45 @@ const TransactionsList = ({
       cell: (props) => {
         const { row } = props
         const { original: transaction } = row
-        const amount = isTransaction(transaction)
-          ? transaction.gross_amount
-          : (props.getValue() as number)
+        const paymentTransaction = isTransaction(transaction)
+          ? transaction.payment_transaction
+          : null
+
+        if (!paymentTransaction) {
+          return <div className="flex flex-row justify-end">—</div>
+        }
+
+        const amount = paymentTransaction.amount + paymentTransaction.tax_amount
 
         return (
           <div className="flex flex-row justify-end">
-            {formatCurrency('accounting')(amount, transaction.currency)}
+            {paymentTransaction.presentment_currency !==
+            transaction.currency ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="underline decoration-dotted">
+                    {formatCurrency('accounting')(amount, transaction.currency)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="flex justify-between gap-6">
+                    <span className="dark:text-polar-400 text-gray-500">
+                      Presentment amount
+                    </span>
+                    <span>
+                      {formatCurrency('accounting')(
+                        (paymentTransaction.presentment_amount ?? 0) +
+                          (paymentTransaction.presentment_tax_amount ?? 0),
+                        paymentTransaction.presentment_currency ??
+                          paymentTransaction.currency,
+                      )}
+                    </span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              formatCurrency('accounting')(amount, transaction.currency)
+            )}
           </div>
         )
       },
@@ -123,10 +154,7 @@ const TransactionsList = ({
         const { original: transaction } = row
         const incurredAmount = isTransaction(transaction)
           ? transaction.incurred_amount
-          : undefined
-        const paymentTransaction = isTransaction(transaction)
-          ? transaction.payment_transaction
-          : undefined
+          : transaction.amount
 
         return (
           <div className="flex justify-end">
@@ -136,43 +164,68 @@ const TransactionsList = ({
                   incurredAmount,
                   transaction.currency,
                 )}
-                {paymentTransaction && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="dark:text-polar-400 ml-1 h-3.5 w-3.5 cursor-pointer self-center text-gray-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="flex flex-col gap-1.5">
-                      <div className="flex justify-between gap-6">
-                        <span className="dark:text-polar-400 text-gray-500">
-                          Customer paid
-                        </span>
-                        <span>
-                          {formatCurrency('accounting')(
-                            (paymentTransaction.presentment_amount ?? 0) +
-                              (paymentTransaction.presentment_tax_amount ?? 0),
-                            paymentTransaction.presentment_currency ??
-                              paymentTransaction.currency,
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-6">
-                        <span className="dark:text-polar-400 text-gray-500">
-                          Fee basis
-                        </span>
-                        <span>
-                          {formatCurrency('accounting')(
-                            paymentTransaction.amount +
-                              paymentTransaction.tax_amount,
-                            paymentTransaction.currency,
-                          )}
-                        </span>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
               </>
             ) : (
               '—'
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      id: 'tax',
+      enableSorting: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Tax"
+          className="flex justify-end"
+        />
+      ),
+      cell: (props) => {
+        const { row } = props
+        const { original: transaction } = row
+        const paymentTransaction = isTransaction(transaction)
+          ? transaction.payment_transaction
+          : null
+
+        if (!paymentTransaction) {
+          return <div className="flex justify-end">—</div>
+        }
+
+        return (
+          <div className="flex justify-end">
+            {paymentTransaction.presentment_currency !==
+            transaction.currency ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="underline decoration-dotted">
+                    {formatCurrency('accounting')(
+                      paymentTransaction.tax_amount,
+                      transaction.currency,
+                    )}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="flex justify-between gap-6">
+                    <span className="dark:text-polar-400 text-gray-500">
+                      Presentment amount
+                    </span>
+                    <span>
+                      {formatCurrency('accounting')(
+                        paymentTransaction.presentment_tax_amount ?? 0,
+                        paymentTransaction.presentment_currency ??
+                          paymentTransaction.currency,
+                      )}
+                    </span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              formatCurrency('accounting')(
+                paymentTransaction.tax_amount,
+                paymentTransaction.currency,
+              )
             )}
           </div>
         )

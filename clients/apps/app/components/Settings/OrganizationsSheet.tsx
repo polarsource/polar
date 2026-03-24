@@ -28,11 +28,7 @@ export const OrganizationsSheet = ({
   const theme = useTheme()
 
   return (
-    <BottomSheet
-      onDismiss={onDismiss}
-      snapPoints={['40%']}
-      enableDynamicSizing={false}
-    >
+    <BottomSheet onDismiss={onDismiss} snapPoints={['40%', '80%']} scrollable>
       <Box gap="spacing-16">
         <Box flexDirection="row" justifyContent="space-between">
           <Text variant="title">Organizations</Text>

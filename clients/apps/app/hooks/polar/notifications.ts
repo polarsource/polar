@@ -164,7 +164,7 @@ export const useListNotifications = (): UseQueryResult<
     queryKey: ['notifications'],
     queryFn: async () => {
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/notifications`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/notifications`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ export const useNotificationsMarkRead = () => {
   return useMutation({
     mutationFn: async (variables: { notificationId: string }) => {
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/notifications/read`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/notifications/read`,
         {
           method: 'POST',
           headers: {

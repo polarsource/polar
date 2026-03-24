@@ -3,6 +3,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
+import { isTransaction, platformFeesDisplayNames } from '@/utils/transaction'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
@@ -18,84 +19,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import { InfoIcon } from 'lucide-react'
-import { useMemo } from 'react'
-
-const getTransactionMeta = (transaction: schemas['Transaction']) => {
-  if (transaction.order) {
-    return {
-      type: transaction.order.subscription_id ? 'Subscription' : 'Purchase',
-      meta: {
-        product: transaction.order.product,
-      },
-    }
-  } else if (transaction.issue_reward) {
-    return {
-      type: 'Reward',
-      meta: transaction.pledge,
-    }
-  } else if (transaction.pledge) {
-    return {
-      type: 'Pledge',
-      meta: transaction.pledge,
-    }
-  } else if (transaction.type === 'payout') {
-    return {
-      type: 'Payout',
-      meta: undefined,
-    }
-  }
-  return {
-    type: transaction.type,
-    meta: undefined,
-  }
-}
-
-interface TransactionMetaProps {
-  transaction: schemas['Transaction']
-}
-
-const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
-  const transactionMeta = useMemo(
-    () => getTransactionMeta(transaction),
-    [transaction],
-  )
-
-  return (
-    <div className="flex items-start gap-2">
-      <div className="flex flex-row gap-4">
-        <div className="text-sm">{transactionMeta.type}</div>
-        {transactionMeta.meta && (
-          <>
-            {'product' in transactionMeta.meta &&
-              transactionMeta.meta.product && (
-                <span className="dark:text-polar-500 truncate text-sm text-gray-500">
-                  {transactionMeta.meta.product.name}
-                </span>
-              )}
-            {'issue_reference' in transactionMeta.meta && (
-              <div>{transactionMeta.meta.issue_reference}</div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-export const platformFeesDisplayNames: {
-  [key in schemas['PlatformFeeType']]: string
-} = {
-  payment: 'Payment Fee',
-  international_payment: 'International Payment Fee',
-  subscription: 'Subscription Fee',
-  invoice: 'Invoice Fee',
-  cross_border_transfer: 'Cross-border Transfer Payout Fee',
-  payout: 'Payout Fee',
-  account: 'Active Payout Account Fee',
-  dispute: 'Dispute Fee',
-  platform: 'Polar Fee',
-  fee_credit: 'Fee Credit',
-}
+import TransactionMeta from './TransactionMeta'
 
 interface TransactionsListProps {
   transactions: schemas['Transaction'][]
@@ -110,12 +34,6 @@ interface TransactionsListProps {
   >[]
   isLoading: boolean | ReactQueryLoading
 }
-
-const isTransaction = (
-  t: schemas['Transaction'] | schemas['TransactionEmbedded'],
-): t is schemas['Transaction'] =>
-  // eslint-disable-next-line no-prototype-builtins
-  t.hasOwnProperty('account_incurred_transactions')
 
 const TransactionsList = ({
   transactions,

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import { enums, schemas } from '@polar-sh/client'

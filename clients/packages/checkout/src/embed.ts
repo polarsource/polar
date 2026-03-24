@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
 
 /**

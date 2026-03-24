@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'

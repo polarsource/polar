@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 export const Midday = ({ size = 28 }: { size?: number }) => {
   return (
     <svg

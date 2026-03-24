@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useAuth } from '@/hooks'
 import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/hooks/queries'
 import { useUserSSE } from '@/hooks/sse'

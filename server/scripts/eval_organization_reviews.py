@@ -43,8 +43,6 @@ from polar.organization_review.eval.dataset import (
     extract_dataset,
 )
 from polar.organization_review.eval.evaluators import (
-    NotFalseNegative,
-    NotFalsePositive,
     VerdictMatch,
 )
 from polar.organization_review.eval.optimize import run_optimization
@@ -153,7 +151,7 @@ async def run(
     dataset: EvalDataset = EvalDataset.from_file(dataset_path)
     typer.echo(f"Loaded {len(dataset.cases)} cases from {dataset_path}")
 
-    dataset.evaluators = [VerdictMatch(), NotFalseNegative(), NotFalsePositive()]
+    dataset.evaluators = [VerdictMatch()]
     task = create_review_task(model=model)
 
     report = await dataset.evaluate(task, max_concurrency=concurrency)

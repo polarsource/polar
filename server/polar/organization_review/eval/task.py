@@ -64,6 +64,7 @@ def create_review_task(
             analyzer.model,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
+            model_settings={"temperature": 0},
         )
 
     costs: list[float] = []

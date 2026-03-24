@@ -45,7 +45,7 @@ export default async function Page(props: {
 
       const currentUser = await getAuthenticatedUser()
       await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
-      return redirect(`/dashboard/${organization.slug}/onboarding/product`)
+      return redirect(`/dashboard/${organization.slug}`)
     }
   }
 

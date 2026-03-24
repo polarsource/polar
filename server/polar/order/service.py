@@ -1851,6 +1851,8 @@ class OrderService:
 
     async def void(self, session: AsyncSession, order: Order) -> Order:
         """Mark an order as void, indicating payment cannot be recovered."""
+        if order.payment_lock_acquired_at is not None:
+            raise PaymentAlreadyInProgress(order)
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 

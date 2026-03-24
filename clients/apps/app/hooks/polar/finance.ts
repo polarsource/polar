@@ -269,16 +269,19 @@ export const useCreatePayout = (
 
   return useMutation({
     mutationFn: () =>
-      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session}`,
+      fetch(
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session}`,
+          },
+          method: 'POST',
+          body: JSON.stringify({
+            account_id: accountId,
+          }),
         },
-        method: 'POST',
-        body: JSON.stringify({
-          account_id: accountId,
-        }),
-      })
+      )
         .then((res) => res.json())
         .then((data) => {
           if ('error' in data && 'error_description' in data) {
@@ -318,12 +321,15 @@ export const usePayouts = (): UseQueryResult<{
   return useQuery({
     queryKey: ['finance', 'payouts'],
     queryFn: () =>
-      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session}`,
+      fetch(
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session}`,
+          },
         },
-      })
+      )
         .then((res) => res.json())
         .then((data) => {
           if ('error' in data && 'error_description' in data) {

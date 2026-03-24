@@ -213,10 +213,12 @@ export default function Onboarding() {
             </Box>
           ) : null}
           {from === 'signup' ? (
-            <Box>
-              <Button onPress={signOut} variant="secondary">
-                Logout
-              </Button>
+            <Box alignItems="center" marginTop="spacing-12">
+              <Touchable onPress={signOut}>
+                <Text color="subtext" variant="bodyMedium">
+                  Logout
+                </Text>
+              </Touchable>
             </Box>
           ) : null}
         </Box>

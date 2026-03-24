@@ -2,6 +2,7 @@ import { useTheme } from '@/design-system/useTheme'
 import GorhomBottomSheet, {
   BottomSheetBackdrop as GorhomBottomSheetBackdrop,
   BottomSheetProps as GorhomBottomSheetProps,
+  BottomSheetScrollView as GorhomBottomSheetScrollView,
   BottomSheetView as GorhomBottomSheetView,
 } from '@gorhom/bottom-sheet'
 import React, { useRef } from 'react'
@@ -11,11 +12,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 export interface BottomSheetProps
   extends React.PropsWithChildren, Omit<GorhomBottomSheetProps, 'children'> {
   onDismiss?: () => void
+  scrollable?: boolean
 }
 
 export const BottomSheet = ({
   children,
   onDismiss,
+  scrollable = false,
   ...props
 }: BottomSheetProps) => {
   const bottomSheetRef = useRef<GorhomBottomSheet>(null)
@@ -49,16 +52,28 @@ export const BottomSheet = ({
         />
       )}
     >
-      <GorhomBottomSheetView
-        style={{
-          flex: 1,
-          padding: theme.spacing['spacing-24'],
-          gap: theme.spacing['spacing-12'],
-          paddingBottom: safeViewInsets.bottom + 12,
-        }}
-      >
-        {children}
-      </GorhomBottomSheetView>
+      {scrollable ? (
+        <GorhomBottomSheetScrollView
+          contentContainerStyle={{
+            padding: theme.spacing['spacing-24'],
+            gap: theme.spacing['spacing-12'],
+            paddingBottom: safeViewInsets.bottom + 12,
+          }}
+        >
+          {children}
+        </GorhomBottomSheetScrollView>
+      ) : (
+        <GorhomBottomSheetView
+          style={{
+            flex: 1,
+            padding: theme.spacing['spacing-24'],
+            gap: theme.spacing['spacing-12'],
+            paddingBottom: safeViewInsets.bottom + 12,
+          }}
+        >
+          {children}
+        </GorhomBottomSheetView>
+      )}
     </GorhomBottomSheet>
   )
 }

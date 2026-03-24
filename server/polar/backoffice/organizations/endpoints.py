@@ -1901,8 +1901,16 @@ async def get(
                                 )
                         if organization.details.get("switching"):
                             with accordion.item(a, "Switching from"):
+                                prev_rev = organization.details.get(
+                                    "previous_annual_revenue"
+                                )
+                                prev_rev_str = (
+                                    format_currency(prev_rev, "usd")
+                                    if prev_rev is not None
+                                    else "N/A"
+                                )
                                 text(
-                                    f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
+                                    f"{organization.details['switching_from']} ({prev_rev_str})"
                                 )
 
             # Internal Notes Section

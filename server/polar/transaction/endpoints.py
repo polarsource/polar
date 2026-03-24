@@ -15,7 +15,7 @@ from polar.transaction import (
     auth as transactions_auth,
 )
 
-from .schemas import Transaction, TransactionDetails, TransactionsSummary
+from .schemas import Transaction, TransactionsSummary
 from .service.transaction import TransactionSortProperty
 from .service.transaction import transaction as transaction_service
 
@@ -58,17 +58,6 @@ async def search_transactions(
         [Transaction.model_validate(result) for result in results],
         count,
         pagination,
-    )
-
-
-@router.get("/lookup", response_model=TransactionDetails)
-async def lookup_transaction(
-    transaction_id: UUID4,
-    auth_subject: transactions_auth.TransactionsRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> TransactionDetails:
-    return TransactionDetails.model_validate(
-        await transaction_service.lookup(session, transaction_id, auth_subject.subject)
     )
 
 

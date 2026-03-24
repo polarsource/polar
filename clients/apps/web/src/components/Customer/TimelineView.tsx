@@ -6,8 +6,11 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Circle,
   RefreshCw,
+  Settings,
   ShoppingCart,
+  UserPlus,
   XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -15,10 +18,13 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export type TimelineEntry =
+  | schemas['CustomerCreatedEvent']
   | schemas['OrderPaidEvent']
   | schemas['OrderRefundedEvent']
   | schemas['SubscriptionCreatedEvent']
+  | schemas['SubscriptionUpdatedEvent']
   | schemas['SubscriptionCanceledEvent']
+  | schemas['SubscriptionRevokedEvent']
 
 const getEntryMeta = (entry: TimelineEntry, organizationSlug: string) => {
   switch (entry.name) {
@@ -48,6 +54,14 @@ const getEntryMeta = (entry: TimelineEntry, organizationSlug: string) => {
         href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.metadata.subscription_id}`,
       }
     }
+    case 'subscription.updated': {
+      return {
+        icon: <Settings className="h-4 w-4" />,
+        iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+        description: entry.label,
+        href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.metadata.subscription_id}`,
+      }
+    }
     case 'subscription.canceled': {
       return {
         icon: <XCircle className="h-4 w-4" />,
@@ -56,20 +70,43 @@ const getEntryMeta = (entry: TimelineEntry, organizationSlug: string) => {
         href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.metadata.subscription_id}`,
       }
     }
+    case 'subscription.revoked': {
+      return {
+        icon: <XCircle className="h-4 w-4" />,
+        iconBg: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
+        description: entry.label,
+        href: `/dashboard/${organizationSlug}/sales/subscriptions/${entry.metadata.subscription_id}`,
+      }
+    }
+    case 'customer.created': {
+      return {
+        icon: <UserPlus className="h-4 w-4" />,
+        iconBg:
+          'bg-gray-200 text-gray-600 dark:bg-polar-700 dark:text-gray-400',
+        description: entry.label,
+        href: undefined,
+      }
+    }
+    default:
+      return {
+        icon: <Circle className="h-4 w-4" />,
+        iconBg:
+          'bg-gray-200 text-gray-600 dark:bg-polar-700 dark:text-gray-400',
+        description: entry.label as string,
+        href: undefined,
+      }
   }
 }
 
 interface TimelineEntryRowProps {
   entry: TimelineEntry
   organizationSlug: string
-  isLast: boolean
   compact?: boolean
 }
 
 const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
   entry,
   organizationSlug,
-  isLast,
   compact,
 }) => {
   const meta = getEntryMeta(entry, organizationSlug)
@@ -83,16 +120,13 @@ const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
         compact ? 'items-start' : 'items-center',
       )}
     >
-      <div className="flex flex-col items-center">
-        <div
-          className={twMerge(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-            meta.iconBg,
-          )}
-        >
-          {meta.icon}
-        </div>
-        {!isLast && <div className="dark:bg-polar-700 w-px grow bg-gray-200" />}
+      <div
+        className={twMerge(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+          meta.iconBg,
+        )}
+      >
+        {meta.icon}
       </div>
       {compact ? (
         <div className="flex flex-1 flex-col text-sm">
@@ -137,24 +171,29 @@ const TimelineEntryRow: React.FC<TimelineEntryRowProps> = ({
   )
 }
 
-interface TimelineViewProps {
+interface BaseTimelineViewProps {
   entries: schemas['Event'][]
   organizationSlug: string
+}
+
+interface InfiniteTimelineViewProps extends BaseTimelineViewProps {
   hasNextPage: boolean
   isFetchingNextPage: boolean
   onLoadMore: () => void
-  compact?: boolean
 }
 
-export const TimelineView: React.FC<TimelineViewProps> = ({
-  entries,
-  organizationSlug,
-  hasNextPage,
-  isFetchingNextPage,
-  onLoadMore,
-  compact,
-}) => {
-  if (entries.length === 0) {
+interface CompactTimelineViewProps extends BaseTimelineViewProps {
+  compact: true
+}
+
+const propsIsCompact = (
+  props: CompactTimelineViewProps | InfiniteTimelineViewProps,
+): props is CompactTimelineViewProps => 'compact' in props
+
+export const TimelineView: React.FC<
+  InfiniteTimelineViewProps | CompactTimelineViewProps
+> = (props) => {
+  if (props.entries.length === 0) {
     return (
       <p className="dark:text-polar-500 text-sm text-gray-500">
         No activity yet.
@@ -162,27 +201,44 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
     )
   }
 
+  if (propsIsCompact(props)) {
+    return (
+      <div className="flex flex-col gap-y-2">
+        {props.entries.map((event) => {
+          const entry = event as TimelineEntry
+          return (
+            <TimelineEntryRow
+              key={`${entry.name}-${entry.id}-${entry.timestamp}`}
+              entry={entry}
+              organizationSlug={props.organizationSlug}
+              compact={true}
+            />
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-y-2">
-      {entries.map((event, i) => {
+      {props.entries.map((event) => {
         const entry = event as TimelineEntry
         return (
           <TimelineEntryRow
             key={`${entry.name}-${entry.id}-${entry.timestamp}`}
             entry={entry}
-            organizationSlug={organizationSlug}
-            isLast={i === entries.length - 1 && !hasNextPage}
-            compact={compact}
+            organizationSlug={props.organizationSlug}
+            compact={false}
           />
         )
       })}
-      {hasNextPage && (
+      {props.hasNextPage && (
         <div className="flex justify-center pt-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={onLoadMore}
-            loading={isFetchingNextPage}
+            onClick={props.onLoadMore}
+            loading={props.isFetchingNextPage}
           >
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Load more

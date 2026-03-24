@@ -4,28 +4,24 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-const TIMELINE_EVENT_NAMES = [
-  'order.paid',
-  'order.refunded',
-  'subscription.created',
-  'subscription.canceled',
-] as const
+const customerTimelineQuery = (organizationId: string, customerId: string) => ({
+  organization_id: organizationId,
+  customer_id: [customerId],
+  source: 'system' as const,
+})
 
-export const useCustomerTimeline = (
+export const useInfiniteCustomerTimeline = (
   organizationId: string,
   customerId: string,
 ) =>
   useInfiniteQuery({
-    queryKey: ['customers', customerId, 'timeline'],
-    queryFn: async ({ pageParam }) =>
+    queryKey: ['customers', customerId, 'timeline', 'infinite'],
+    queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/events/', {
           params: {
             query: {
-              organization_id: organizationId,
-              customer_id: [customerId],
-              source: 'system',
-              name: TIMELINE_EVENT_NAMES as unknown as string[],
+              ...customerTimelineQuery(organizationId, customerId),
               page: pageParam,
             },
           },
@@ -42,6 +38,30 @@ export const useCustomerTimeline = (
         return null
       return lastPageParam + 1
     },
+    enabled: !!customerId && !!organizationId,
+  })
+
+export const useCustomerTimeline = (
+  organizationId: string,
+  customerId: string,
+  limit: number = 10,
+  page: number = 1,
+) =>
+  useQuery({
+    queryKey: ['customers', customerId, 'timeline', { limit, page }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: {
+              ...customerTimelineQuery(organizationId, customerId),
+              limit,
+              page,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
     enabled: !!customerId && !!organizationId,
   })
 

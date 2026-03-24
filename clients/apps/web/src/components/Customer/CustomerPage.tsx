@@ -6,8 +6,10 @@ import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
 import { TimelineView } from '@/components/Customer/TimelineView'
+import Pagination from '@/components/Pagination/Pagination'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
+import { Well } from '@/components/Shared/Well'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
@@ -35,7 +37,8 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
-import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useSearchParams } from 'next/navigation'
+import { parseAsInteger, parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { benefitsDisplayNames } from '../Benefit/utils'
@@ -90,12 +93,19 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     type: 'billing',
   })
 
-  const {
-    data: timelineData,
-    hasNextPage: timelineHasNextPage,
-    isFetchingNextPage: timelineIsFetchingNextPage,
-    fetchNextPage: timelineFetchNextPage,
-  } = useCustomerTimeline(organization.id, customer.id)
+  const [timelinePage, setTimelinePage] = useQueryState(
+    'timeline_page',
+    parseAsInteger.withDefault(1),
+  )
+
+  const searchParams = useSearchParams()
+
+  const { data: timelineData } = useCustomerTimeline(
+    organization.id,
+    customer.id,
+    20,
+    timelinePage,
+  )
 
   const [selectedMetric, setSelectedMetric] = React.useState<
     keyof schemas['Metrics']
@@ -609,14 +619,29 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </div>
         </ShadowBox>
       </TabsContent>
-      <TabsContent value="timeline" className="flex flex-col gap-y-4">
-        <TimelineView
-          entries={timelineData?.pages.flatMap((page) => page.items) ?? []}
-          organizationSlug={organization.slug}
-          hasNextPage={timelineHasNextPage}
-          isFetchingNextPage={timelineIsFetchingNextPage}
-          onLoadMore={() => timelineFetchNextPage()}
-        />
+      <TabsContent value="timeline" className="flex flex-col gap-y-8">
+        <Pagination
+          currentPage={timelinePage}
+          pageSize={20}
+          totalCount={
+            timelineData?.pagination &&
+            'total_count' in timelineData.pagination
+              ? timelineData.pagination.total_count
+              : 0
+          }
+          currentURL={searchParams}
+          onPageChange={setTimelinePage}
+        >
+          <Well>
+            <TimelineView
+              entries={timelineData?.items ?? []}
+              organizationSlug={organization.slug}
+              hasNextPage={false}
+              isFetchingNextPage={false}
+              onLoadMore={() => {}}
+            />
+          </Well>
+        </Pagination>
       </TabsContent>
       <CustomerUsageView
         customer={customer}

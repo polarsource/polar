@@ -270,27 +270,34 @@ export const CustomerContextView = ({
           ))}
         </ShadowBox>
       )}
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
-        <div className="flex flex-row items-center justify-between">
-          <h4 className="text-lg">Timeline</h4>
-          <Link
-            href={`/dashboard/${organization.slug}/customers/${customer.id}?tab=timeline`}
-            className="dark:text-polar-500 text-xs text-gray-500 hover:underline"
-          >
-            View All
-          </Link>
-        </div>
-        <TimelineView
-          entries={(
-            timelineData?.pages.flatMap((page) => page.items) ?? []
-          ).slice(0, 10)}
-          organizationSlug={organization.slug}
-          hasNextPage={false}
-          isFetchingNextPage={false}
-          onLoadMore={() => {}}
-          compact
-        />
-      </ShadowBox>
+      {(timelineData?.items?.length ?? 0) > 0 ? (
+        <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
+          <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row items-baseline gap-x-4">
+              <h4 className="text-lg">Timeline</h4>
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Displaying 10 last events
+              </span>
+            </div>
+            <Link
+              href={`/dashboard/${organization.slug}/customers/${customer.id}?tab=timeline`}
+              className="dark:text-polar-500 text-xs text-gray-500 hover:underline"
+            >
+              <Button variant="secondary" size="sm">
+                View All
+              </Button>
+            </Link>
+          </div>
+          <TimelineView
+            entries={timelineData?.items ?? []}
+            organizationSlug={organization.slug}
+            hasNextPage={false}
+            isFetchingNextPage={false}
+            onLoadMore={() => {}}
+            compact
+          />
+        </ShadowBox>
+      ) : null}
       <InlineModal
         isShown={isModalShown}
         hide={hideModal}

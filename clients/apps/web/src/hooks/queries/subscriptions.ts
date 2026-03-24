@@ -1,8 +1,80 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
+
+const SUBSCRIPTION_TIMELINE_EVENT_NAMES = [
+  'subscription.created',
+  'subscription.updated',
+  'subscription.canceled',
+  'subscription.revoked',
+  'order.paid',
+  'order.refunded',
+] as const
+
+const subscriptionTimelineQuery = (
+  organizationId: string,
+  customerId: string,
+) => ({
+  organization_id: organizationId,
+  customer_id: [customerId],
+  source: 'system' as const,
+  name: SUBSCRIPTION_TIMELINE_EVENT_NAMES as unknown as string[],
+})
+
+export const useInfiniteSubscriptionTimeline = (
+  organizationId: string,
+  customerId: string,
+) =>
+  useInfiniteQuery({
+    queryKey: ['subscriptions', customerId, 'timeline', 'infinite'],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: {
+              ...subscriptionTimelineQuery(organizationId, customerId),
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      const pagination = lastPage.pagination
+      if (lastPage.items.length === 0) return null
+      if ('max_page' in pagination && lastPageParam === pagination.max_page)
+        return null
+      if ('has_next_page' in pagination && !pagination.has_next_page)
+        return null
+      return lastPageParam + 1
+    },
+    enabled: !!customerId && !!organizationId,
+  })
+
+export const useSubscriptionTimeline = (
+  organizationId: string,
+  customerId: string,
+  limit: number = 10,
+) =>
+  useQuery({
+    queryKey: ['subscriptions', customerId, 'timeline', { limit }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: {
+              ...subscriptionTimelineQuery(organizationId, customerId),
+              limit,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!customerId && !!organizationId,
+  })
 
 export const useSubscriptions = (
   organizationId?: string,

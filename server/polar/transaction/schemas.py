@@ -52,6 +52,7 @@ class TransactionEmbedded(IDSchema, TimestampedSchema):
     presentment_amount: int | None
     presentment_tax_amount: int | None
     presentment_currency: str | None
+    exchange_rate: float | None
 
     platform_fee_type: PlatformFeeType | None
 

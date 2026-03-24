@@ -27,15 +27,14 @@ export function UserProvider({ children }: PropsWithChildren) {
   const { data: user, isLoading } = useQuery({
     queryKey: ['userinfo'],
     queryFn: async (): Promise<User> => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/oauth2/userinfo`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${session}`,
-          },
+      const baseUrl =
+        process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'
+      const response = await fetch(`${baseUrl}/v1/oauth2/userinfo`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session}`,
         },
-      )
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch user info')

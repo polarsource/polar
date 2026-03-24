@@ -63,7 +63,7 @@ export const useOrganizationAccount = (
     queryKey: ['finance', 'account', organizationId],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/organizations/${organizationId}/account`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/organizations/${organizationId}/account`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export const useTransactionsSummary = (
     queryKey: ['finance', accountId, 'transactions', 'summary'],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/transactions/summary?account_id=${accountId}`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/transactions/summary?account_id=${accountId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -242,7 +242,7 @@ export const usePayoutEstimate = (
     queryKey: ['finance', accountId, 'payouts', 'estimate'],
     queryFn: () =>
       fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/payouts/estimate?account_id=${accountId}`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/estimate?account_id=${accountId}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ export const useCreatePayout = (
 
   return useMutation({
     mutationFn: () =>
-      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/payouts/`, {
+      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session}`,
@@ -318,7 +318,7 @@ export const usePayouts = (): UseQueryResult<{
   return useQuery({
     queryKey: ['finance', 'payouts'],
     queryFn: () =>
-      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/payouts/`, {
+      fetch(`${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/payouts/`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session}`,

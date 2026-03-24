@@ -5,11 +5,12 @@ import { Checkbox } from '@/components/Shared/Checkbox'
 import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
+import { useLogout } from '@/hooks/auth'
 import { useCreateOrganization } from '@/hooks/polar/organizations'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { queryClient } from '@/utils/query'
 import { ClientResponseError, schemas } from '@polar-sh/client'
-import { Stack, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Linking, SafeAreaView, ScrollView } from 'react-native'
@@ -19,6 +20,8 @@ export default function Onboarding() {
   const theme = useTheme()
   const router = useRouter()
   const { organizations, setOrganization } = useContext(OrganizationContext)
+  const { from } = useLocalSearchParams<{ from?: string }>()
+  const signOut = useLogout()
 
   const form = useForm<schemas['OrganizationCreate'] & { terms: boolean }>({
     defaultValues: {
@@ -206,6 +209,13 @@ export default function Onboarding() {
             <Box>
               <Button onPress={() => router.replace('/')} variant="secondary">
                 Back to Dashboard
+              </Button>
+            </Box>
+          ) : null}
+          {from === 'signup' ? (
+            <Box>
+              <Button onPress={signOut} variant="secondary">
+                Logout
               </Button>
             </Box>
           ) : null}

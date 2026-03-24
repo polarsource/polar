@@ -119,7 +119,7 @@ export const useDeleteOrganization = (): UseMutationResult<
   return useMutation({
     mutationFn: async (organizationId: string) => {
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/organizations/${organizationId}`,
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh'}/v1/organizations/${organizationId}`,
         {
           method: 'DELETE',
           headers: {

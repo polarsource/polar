@@ -3320,4 +3320,101 @@ async def set_refunds_blocked(
     )
 
 
+@router.api_route(
+    "/{organization_id}/edit-avatar",
+    name="organizations:edit_avatar",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_avatar(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit or clear organization avatar/logo URL."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        data = await request.form()
+        avatar_url_raw = str(data.get("avatar_url", "")).strip()
+        # Empty string means clear (set to None)
+        avatar_url: str | None = avatar_url_raw if avatar_url_raw else None
+
+        await repository.update(
+            organization, update_dict={"avatar_url": avatar_url}
+        )
+
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for(
+                    "organizations:detail", organization_id=organization_id
+                )
+            )
+            + "?section=settings",
+            303,
+        )
+
+    # GET — render modal
+    with modal("Edit Organization Avatar", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text(
+                "Set or clear the organization's avatar URL. "
+                "Leave empty to remove the custom logo."
+            )
+
+        if organization._avatar_url:
+            with tag.div(classes="mb-4 flex items-center gap-3"):
+                with tag.img(
+                    src=organization._avatar_url,
+                    alt="Current avatar",
+                    classes="w-12 h-12 rounded object-cover",
+                ):
+                    pass
+                with tag.div(classes="text-sm text-base-content/60"):
+                    text("Current avatar")
+
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_avatar",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            with tag.div(classes="form-control"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Avatar URL")
+                with tag.input(
+                    type="url",
+                    name="avatar_url",
+                    value=organization._avatar_url or "",
+                    placeholder="https://example.com/logo.png",
+                    classes="input input-bordered w-full",
+                ):
+                    pass
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text-alt text-base-content/60"):
+                        text(
+                            "Leave empty to remove the custom avatar. "
+                            "When cleared, logo.dev may be used as fallback based on website."
+                        )
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Save")
+
+    return None
+
+
 __all__ = ["router"]

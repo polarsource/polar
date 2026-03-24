@@ -185,6 +185,7 @@ export default {
     productSwitcher: {
       billedRecurring: 'Billed {frequency}',
       oneTimePurchase: 'One-time purchase',
+      fromPrefix: 'From',
     },
     productDescription: {
       readMore: 'Read more',

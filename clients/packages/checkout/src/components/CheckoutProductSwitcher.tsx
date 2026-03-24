@@ -35,14 +35,30 @@ export const CheckoutProductSwitcherItemPrice = ({
   checkout,
   locale,
 }: CheckoutProductSwitcherItemPriceProps) => {
-  if (isSelected && price.amount_type === 'seat_based') {
+  if (price.amount_type === 'seat_based') {
+    if (isSelected) {
+      return (
+        <AmountLabel
+          amount={checkout.net_amount || 0}
+          currency={price.price_currency}
+          interval={product.recurring_interval}
+          intervalCount={product.recurring_interval_count}
+          mode="standard"
+          locale={locale}
+        />
+      )
+    }
+
+    const minimumAmount =
+      (price.seat_tiers?.tiers?.[0]?.price_per_seat ?? 0) *
+      (price.seat_tiers?.minimum_seats ?? 1)
+
     return (
-      <AmountLabel
-        amount={checkout.net_amount || 0}
+      <FromPrice
+        amount={minimumAmount}
         currency={price.price_currency}
         interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}
-        mode="standard"
         locale={locale}
       />
     )
@@ -55,6 +71,37 @@ export const CheckoutProductSwitcherItemPrice = ({
       locale={locale}
       mode="standard"
     />
+  )
+}
+
+const FromPrice = ({
+  amount,
+  currency,
+  interval,
+  intervalCount,
+  locale,
+}: {
+  amount: number
+  currency: string
+  interval?: schemas['SubscriptionRecurringInterval'] | null
+  intervalCount?: number | null
+  locale?: AcceptedLocale
+}) => {
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  return (
+    <span className="flex items-baseline">
+      <span className="text-[max(12px,0.5em)]">
+        {t('checkout.productSwitcher.fromPrefix')}{' '}
+      </span>
+      <AmountLabel
+        amount={amount}
+        currency={currency}
+        interval={interval}
+        intervalCount={intervalCount}
+        mode="standard"
+        locale={locale}
+      />
+    </span>
   )
 }
 

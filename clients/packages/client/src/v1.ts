@@ -26752,6 +26752,8 @@ export interface components {
       presentment_tax_amount: number | null
       /** Presentment Currency */
       presentment_currency: string | null
+      /** Exchange Rate */
+      exchange_rate: number | null
       platform_fee_type: components['schemas']['PlatformFeeType'] | null
       /** Pledge Id */
       pledge_id: string | null
@@ -26813,6 +26815,8 @@ export interface components {
       presentment_tax_amount: number | null
       /** Presentment Currency */
       presentment_currency: string | null
+      /** Exchange Rate */
+      exchange_rate: number | null
       platform_fee_type: components['schemas']['PlatformFeeType'] | null
       /** Pledge Id */
       pledge_id: string | null

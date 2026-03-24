@@ -1,7 +1,7 @@
 import { useTransactionsSummary } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'

@@ -1,6 +1,6 @@
 'use client'
 
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import React, { useEffect, useState } from 'react'
 
 interface ConfirmationButtonProps {

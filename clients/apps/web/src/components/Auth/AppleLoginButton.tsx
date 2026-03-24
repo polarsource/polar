@@ -2,7 +2,7 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getAppleAuthorizeURL } from '@/utils/auth'
 import Apple from '@mui/icons-material/Apple'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
 
 interface AppleLoginButtonProps {

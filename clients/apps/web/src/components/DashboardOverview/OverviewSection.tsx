@@ -13,7 +13,7 @@ import {
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl } from '@polar-sh/orbit'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Settings2 } from 'lucide-react'
 import React from 'react'
 import {

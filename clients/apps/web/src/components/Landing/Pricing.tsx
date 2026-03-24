@@ -1,5 +1,5 @@
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
 
 // ── Component ─────────────────────────────────────────────────────────────────

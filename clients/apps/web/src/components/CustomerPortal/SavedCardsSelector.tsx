@@ -1,7 +1,7 @@
 'use client'
 
 import type { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { useState } from 'react'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
 

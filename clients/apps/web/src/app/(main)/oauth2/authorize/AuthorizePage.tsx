@@ -1,7 +1,7 @@
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import SharedLayout from './components/SharedLayout'
 

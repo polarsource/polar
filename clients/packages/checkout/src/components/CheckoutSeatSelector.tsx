@@ -3,7 +3,7 @@
 import { type schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useEffect, useRef, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'

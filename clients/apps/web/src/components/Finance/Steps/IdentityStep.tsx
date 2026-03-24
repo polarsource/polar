@@ -1,6 +1,6 @@
 'use client'
 
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ArrowRight, CheckIcon } from 'lucide-react'
 
 interface IdentityStepProps {

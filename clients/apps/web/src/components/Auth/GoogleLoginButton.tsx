@@ -2,7 +2,7 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGoogleAuthorizeLoginURL } from '@/utils/auth'
 import Google from '@mui/icons-material/Google'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
 
 interface GoogleLoginButtonProps {

@@ -11,7 +11,7 @@ import {
 } from '@/utils/api/errors'
 import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

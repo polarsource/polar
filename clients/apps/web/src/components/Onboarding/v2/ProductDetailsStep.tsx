@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {

@@ -7,7 +7,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { useMeters } from '@/hooks/queries/meters'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   FormControl,

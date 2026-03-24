@@ -10,7 +10,7 @@ import {
 import { toast } from '@/components/Toast/use-toast'
 import { useEditWebhookEndpoint } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'

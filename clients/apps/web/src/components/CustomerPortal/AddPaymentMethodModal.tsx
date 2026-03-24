@@ -3,7 +3,7 @@ import {
   useConfirmCustomerPaymentMethod,
 } from '@/hooks/queries'
 import { type Client } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import {
   Elements,

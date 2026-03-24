@@ -20,7 +20,7 @@ import {
 import { platformFeesDisplayNames } from '@/utils/transaction'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,

@@ -82,6 +82,7 @@
     "@polar-sh/currency": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/i18n": "workspace:*",
+    "@polar-sh/orbit": "workspace:*",
     "@polar-sh/ui": "workspace:^",
     "date-fns": "^4.1.0",
     "event-source-plus": "^0.1.15",

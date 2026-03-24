@@ -1,5 +1,5 @@
 import Alert from '@polar-sh/ui/components/atoms/Alert'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import SharedLayout from './components/SharedLayout'
 
 const AuthorizeErrorPage = ({

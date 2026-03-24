@@ -4,7 +4,7 @@ import CustomFieldTypeIcon from '@/components/CustomFields/CustomFieldTypeIcon'
 import { useCustomFields } from '@/hooks/queries'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
   Select,

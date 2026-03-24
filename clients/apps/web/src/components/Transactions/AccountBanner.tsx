@@ -1,7 +1,7 @@
 import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ClientResponseError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { CircleAlertIcon } from 'lucide-react'
 import Link from 'next/link'

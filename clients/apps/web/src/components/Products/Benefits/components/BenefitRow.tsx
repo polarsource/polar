@@ -6,7 +6,7 @@ import {
 } from '@/components/Benefit/utils'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   DropdownMenu,

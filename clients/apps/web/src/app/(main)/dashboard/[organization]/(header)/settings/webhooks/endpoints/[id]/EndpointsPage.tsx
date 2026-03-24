@@ -20,7 +20,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { operations, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { useParams, useRouter } from 'next/navigation'

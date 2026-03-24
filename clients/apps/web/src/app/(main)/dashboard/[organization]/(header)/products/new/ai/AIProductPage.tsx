@@ -4,7 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { schemas } from '@polar-sh/client'
 import { AIProductChat } from './AIProductChat'
 import Link from 'next/link'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ArrowLeftIcon } from 'lucide-react'
 
 export default function AIProductPage({

@@ -14,7 +14,7 @@ import { CSS } from '@dnd-kit/utilities'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import DragHandleOutlined from '@mui/icons-material/DragHandleOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

@@ -4,7 +4,7 @@ import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
 import { CONFIG } from '@/utils/config'
 import { Box } from '@polar-sh/orbit/Box'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { usePostHog } from '@/hooks/posthog'
 import { redirect, useRouter } from 'next/navigation'
 

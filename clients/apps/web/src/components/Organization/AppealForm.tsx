@@ -6,7 +6,7 @@ import {
 } from '@/hooks/queries/org'
 import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
 import React, { useState } from 'react'

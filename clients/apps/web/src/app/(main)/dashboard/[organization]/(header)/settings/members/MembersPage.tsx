@@ -15,7 +15,7 @@ import {
 import Add from '@mui/icons-material/Add'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,

@@ -2,7 +2,7 @@
 
 import { type schemas } from '@polar-sh/client'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {

@@ -6,12 +6,12 @@ import { twMerge } from 'tailwind-merge'
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'span'
 
 const defaultSizes: Record<HeadingTag, string> = {
-  h1: 'text-5xl md:text-7xl font-light tracking-tight leading-tighter!',
-  h2: 'text-4xl md:text-5xl tracking-tight leading-tight!',
-  h3: 'text-3xl md:text-5xl tracking-tight leading-tight!',
-  h4: 'text-2xl md:text-3xl tracking-tight leading-tight!',
-  h5: 'text-xl md:text-2xl tracking-tight leading-tight!',
-  h6: 'text-lg md:text-xl tracking-tight leading-tight!',
+  h1: 'text-5xl md:text-7xl font-light tracking-snug leading-tighter!',
+  h2: 'text-4xl md:text-5xl tracking-snug leading-tight!',
+  h3: 'text-3xl md:text-5xl tracking-snug leading-tight!',
+  h4: 'text-2xl md:text-3xl tracking-snug leading-tight!',
+  h5: 'text-xl md:text-2xl tracking-snug leading-tight!',
+  h6: 'text-lg md:text-xl tracking-snug leading-tight!',
   span: 'font-medium leading-tight!',
 }
 

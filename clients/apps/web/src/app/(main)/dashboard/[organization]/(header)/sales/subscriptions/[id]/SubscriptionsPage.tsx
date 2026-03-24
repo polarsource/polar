@@ -21,7 +21,7 @@ import {
 } from '@/hooks/queries'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { List } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import React from 'react'

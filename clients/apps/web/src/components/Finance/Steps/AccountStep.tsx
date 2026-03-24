@@ -2,7 +2,7 @@
 
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ArrowRight, CheckIcon, ExternalLink, UserCheck } from 'lucide-react'
 import { useCallback, useState } from 'react'
 

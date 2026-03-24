@@ -16,7 +16,7 @@ import { useDeleteBenefit } from '@/hooks/queries'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -3,7 +3,7 @@
 import { useChat } from '@ai-sdk/react'
 import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport } from 'ai'
 import { nanoid } from 'nanoid'

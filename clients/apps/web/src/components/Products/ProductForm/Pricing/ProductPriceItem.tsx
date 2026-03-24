@@ -3,7 +3,7 @@
 import { isStaticPrice } from '@/utils/product'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

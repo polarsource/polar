@@ -1,4 +1,4 @@
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { Well } from '../Shared/Well'
 import {
   SyntaxHighlighterClient,

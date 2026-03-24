@@ -6,7 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@polar-sh/ui/components/atoms/Accordion'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,

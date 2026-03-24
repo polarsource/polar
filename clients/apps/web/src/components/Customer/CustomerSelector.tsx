@@ -6,7 +6,7 @@ import { useInViewport } from '@/hooks/utils'
 import Close from '@mui/icons-material/Close'
 import Search from '@mui/icons-material/Search'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {

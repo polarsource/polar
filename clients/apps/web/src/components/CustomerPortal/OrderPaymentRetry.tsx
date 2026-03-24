@@ -5,7 +5,7 @@ import {
   useCustomerOrderPaymentStatus,
 } from '@/hooks/queries'
 import { type Client, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { PaymentElement } from '@stripe/react-stripe-js'
 import {
   ConfirmationToken,

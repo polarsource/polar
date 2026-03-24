@@ -24,7 +24,7 @@ import { FileObject } from '@/components/FileUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,

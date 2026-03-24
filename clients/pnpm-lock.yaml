@@ -597,6 +597,9 @@ importers:
       '@polar-sh/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@polar-sh/orbit':
+        specifier: workspace:*
+        version: link:../orbit
       '@polar-sh/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

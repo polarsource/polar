@@ -3,7 +3,7 @@
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { ToolCallGroup } from '@/components/Onboarding/ToolCallGroup'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { DynamicToolUIPart } from 'ai'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

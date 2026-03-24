@@ -5,7 +5,7 @@ import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import { enums, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,

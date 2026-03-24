@@ -9,7 +9,7 @@ import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useOrganizationPaymentStatus } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import { ConstructionIcon } from 'lucide-react'
 import Link from 'next/link'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Button } from '@polar-sh/orbit'
 import {
   InputOTP,
   InputOTPGroup,

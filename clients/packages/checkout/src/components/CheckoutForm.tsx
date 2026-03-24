@@ -3,6 +3,7 @@
 import type { schemas } from '@polar-sh/client'
 import { enums } from '@polar-sh/client'
 import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
+import { MandateText } from './MandateText'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker, {
@@ -703,21 +704,13 @@ const BaseCheckoutForm = ({
           </form>
         </Form>
         <div>
-          <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-            {checkout.is_payment_form_required
-              ? checkout.active_trial_interval
-                ? t('checkout.footer.mandateSubscriptionTrial', {
-                    buttonLabel: checkoutLabel,
-                  })
-                : interval
-                  ? t('checkout.footer.mandateSubscription', {
-                      buttonLabel: checkoutLabel,
-                    })
-                  : t('checkout.footer.mandateOneTime', {
-                      buttonLabel: checkoutLabel,
-                    })
-              : t('checkout.footer.merchantOfRecord')}
-          </p>
+          <MandateText
+            isPaymentRequired={checkout.is_payment_form_required}
+            isTrial={!!checkout.active_trial_interval}
+            isRecurring={!!interval}
+            buttonLabel={checkoutLabel}
+            locale={locale}
+          />
         </div>
       </div>
       <a

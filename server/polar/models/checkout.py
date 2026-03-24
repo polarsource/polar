@@ -286,7 +286,7 @@ class Checkout(
             )
         try:
             return self._success_url.format(CHECKOUT_ID=self.id)
-        except KeyError:
+        except (KeyError, ValueError):
             return self._success_url
 
     @success_url.setter

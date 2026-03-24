@@ -163,7 +163,6 @@ function CompanyFields({
 }
 
 function CurrencyAndCountryFields() {
-  const { data } = useOnboardingData()
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
   })
@@ -171,32 +170,17 @@ function CurrencyAndCountryFields() {
     name: 'businessCountry',
   })
 
-  const personalCountry = data.country ?? ''
-  const isPersonalCountryUnsupported =
-    personalCountry !== '' &&
-    !SUPPORTED_PAYOUT_COUNTRIES.includes(personalCountry)
-
-  const isBusinessCountryUnsupported =
-    organizationType === 'company' &&
+  const isUnsupportedCountry =
     businessCountry !== '' &&
     !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
 
-  const warningCountryCode =
-    organizationType === 'individual'
-      ? isPersonalCountryUnsupported
-        ? personalCountry
-        : ''
-      : isBusinessCountryUnsupported
-        ? businessCountry
-        : ''
-
   const countryDisplayName = useMemo(() => {
-    if (!warningCountryCode) return ''
+    if (!businessCountry) return ''
     return (
-      new Intl.DisplayNames([], { type: 'region' }).of(warningCountryCode) ??
-      warningCountryCode
+      new Intl.DisplayNames([], { type: 'region' }).of(businessCountry) ??
+      businessCountry
     )
-  }, [warningCountryCode])
+  }, [businessCountry])
 
   return (
     <div className="flex flex-col gap-y-2">
@@ -248,7 +232,7 @@ function CurrencyAndCountryFields() {
         )}
       </Box>
 
-      {warningCountryCode !== '' && (
+      {organizationType === 'company' && isUnsupportedCountry && (
         <Box
           display="flex"
           flexDirection="column"
@@ -260,19 +244,9 @@ function CurrencyAndCountryFields() {
           backgroundColor="background-warning"
           padding="l"
         >
-          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-            Polar is not available in {countryDisplayName}
-          </p>
           <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            {organizationType === 'individual' ? (
-              <>
-                We currently can&rsquo;t pay out directly to{' '}
-                {countryDisplayName}. To continue, switch to a business account
-                and register your business in a supported country.
-              </>
-            ) : (
-              <>We currently can&rsquo;t pay out to {countryDisplayName}.</>
-            )}
+            Payouts are not available in {countryDisplayName}&nbsp;yet. You can
+            still continue and we&rsquo;ll notify you when support is added.
           </p>
         </Box>
       )}
@@ -281,35 +255,15 @@ function CurrencyAndCountryFields() {
 }
 
 function SubmitButton({ loading }: { loading: boolean }) {
-  const { data } = useOnboardingData()
   const orgName = useWatch<FormSchema, 'orgName'>({ name: 'orgName' })
   const orgSlug = useWatch<FormSchema, 'orgSlug'>({ name: 'orgSlug' })
   const terms = useWatch<FormSchema, 'terms'>({ name: 'terms' })
-  const organizationType = useWatch<FormSchema, 'organizationType'>({
-    name: 'organizationType',
-  })
-  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
-    name: 'businessCountry',
-  })
-
-  const personalCountry = data.country ?? ''
-  const isUnsupportedCountry =
-    organizationType === 'individual'
-      ? personalCountry !== '' &&
-        !SUPPORTED_PAYOUT_COUNTRIES.includes(personalCountry)
-      : businessCountry !== '' &&
-        !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
 
   return (
     <Button
       type="submit"
       loading={loading}
-      disabled={
-        orgName.length === 0 ||
-        orgSlug.length === 0 ||
-        !terms ||
-        isUnsupportedCountry
-      }
+      disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
       fullWidth
     >
       Continue

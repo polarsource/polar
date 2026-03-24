@@ -241,22 +241,10 @@ export function PersonalDetailsStep() {
                 backgroundColor="background-warning"
                 padding="l"
               >
-                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                  Polar is not available in {countryDisplayName}
-                </p>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  We currently can&rsquo;t pay out directly to{' '}
-                  {countryDisplayName}. You can still use Polar, but you will
-                  need to set up payouts through a business entity in a{' '}
-                  <a
-                    href="https://polar.sh/docs/merchant-of-record/supported-countries#payouts"
-                    className="underline underline-offset-2 hover:no-underline"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    supported country
-                  </a>
-                  .
+                  Payouts are not available in {countryDisplayName}&nbsp;yet.
+                  You can still continue and we&rsquo;ll notify you when support
+                  is added.
                 </p>
               </Box>
             )}

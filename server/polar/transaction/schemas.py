@@ -76,10 +76,6 @@ class Transaction(TransactionEmbedded):
     net_amount: int
 
 
-class TransactionDetails(Transaction):
-    paid_transactions: list[Transaction]
-
-
 class TransactionsBalance(Schema):
     currency: str
     amount: int

@@ -45,8 +45,13 @@ class TransactionEmbedded(IDSchema, TimestampedSchema):
 
     currency: str
     amount: int
+    tax_amount: int
     account_currency: str
     account_amount: int
+
+    presentment_amount: int | None
+    presentment_tax_amount: int | None
+    presentment_currency: str | None
 
     platform_fee_type: PlatformFeeType | None
 
@@ -64,6 +69,7 @@ class Transaction(TransactionEmbedded):
     order: TransactionOrder | None
 
     account_incurred_transactions: list[TransactionEmbedded]
+    payment_transaction: TransactionEmbedded | None
 
     incurred_amount: int
     gross_amount: int

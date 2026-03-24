@@ -110,6 +110,7 @@ class OrganizationReviewRepository(
             select(Product)
             .where(
                 Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
                 Product.is_deleted.is_(False),
             )
             .options(selectinload(Product.prices))

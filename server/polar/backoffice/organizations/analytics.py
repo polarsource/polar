@@ -245,6 +245,7 @@ class OrganizationSetupAnalyticsService:
         result = await self.session.execute(
             select(func.count(Product.id)).where(
                 Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
                 Product.is_deleted.is_(False),
             )
         )

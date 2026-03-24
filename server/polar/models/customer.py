@@ -103,22 +103,6 @@ class CustomerType(StrEnum):
 class Customer(MetadataMixin, RecordModel):
     __tablename__ = "customers"
     __table_args__ = (
-        # Old indexes (kept until PR 2 contract migration drops them)
-        Index(
-            "ix_customers_email_case_insensitive",
-            func.lower(Column("email")),
-            "deleted_at",
-            postgresql_nulls_not_distinct=True,
-        ),
-        Index(
-            "ix_customers_organization_id_email_case_insensitive",
-            "organization_id",
-            func.lower(Column("email")),
-            "deleted_at",
-            unique=True,
-            postgresql_nulls_not_distinct=True,
-        ),
-        # New partial indexes (only rows where email IS NOT NULL)
         Index(
             "ix_customers_email_not_null",
             func.lower(Column("email")),

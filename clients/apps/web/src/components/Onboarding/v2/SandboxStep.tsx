@@ -87,7 +87,7 @@ export function SandboxStep() {
     }
 
     setUserOrganizations((prev) => [...prev, org])
-    router.push(`/dashboard/${org.slug}/onboarding/product`)
+    router.push(`/dashboard/${org.slug}`)
     clearData()
   }
 

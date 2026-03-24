@@ -16,7 +16,7 @@ export default async function Page({
   const qs = query ? `?${query}` : ''
 
   if (userOrganizations.length === 0) {
-    redirect(`/dashboard/create${qs}`)
+    redirect(`/onboarding/start${qs}`)
   }
 
   const lastVisitedOrg = getLastVisitedOrg(await cookies(), userOrganizations)

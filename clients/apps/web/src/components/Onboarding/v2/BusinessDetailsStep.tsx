@@ -19,10 +19,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -165,55 +166,91 @@ function CurrencyAndCountryFields() {
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
   })
+  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
+    name: 'businessCountry',
+  })
+
+  const isUnsupportedCountry =
+    businessCountry !== '' &&
+    !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
+
+  const countryDisplayName = useMemo(() => {
+    if (!businessCountry) return ''
+    return (
+      new Intl.DisplayNames([], { type: 'region' }).of(businessCountry) ??
+      businessCountry
+    )
+  }, [businessCountry])
 
   return (
-    <Box
-      display="grid"
-      gap="m"
-      gridTemplateColumns={
-        organizationType === 'company'
-          ? 'repeat(2, minmax(0, 1fr))'
-          : 'repeat(1, minmax(0, 1fr))'
-      }
-    >
-      <FormField
-        name="defaultCurrency"
-        rules={{ required: 'Currency is required' }}
-        render={({ field }) => (
-          <FormItem className="w-full">
-            <FormLabel>Default Payment Currency</FormLabel>
-            <FormControl>
-              <CurrencySelector
-                value={field.value as schemas['PresentmentCurrency']}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {organizationType === 'company' && (
+    <div className="flex flex-col gap-y-2">
+      <Box
+        display="grid"
+        gap="m"
+        gridTemplateColumns={
+          organizationType === 'company'
+            ? 'repeat(2, minmax(0, 1fr))'
+            : 'repeat(1, minmax(0, 1fr))'
+        }
+      >
         <FormField
-          name="businessCountry"
-          rules={{ required: 'Business country is required' }}
+          name="defaultCurrency"
+          rules={{ required: 'Currency is required' }}
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Business Country</FormLabel>
+              <FormLabel>Default Payment Currency</FormLabel>
               <FormControl>
-                <CountryPicker
-                  allowedCountries={enums.addressInputCountryValues}
-                  value={field.value}
+                <CurrencySelector
+                  value={field.value as schemas['PresentmentCurrency']}
                   onChange={field.onChange}
-                  placeholder="Select country"
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {organizationType === 'company' && (
+          <FormField
+            name="businessCountry"
+            rules={{ required: 'Business country is required' }}
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Business Country</FormLabel>
+                <FormControl>
+                  <CountryPicker
+                    allowedCountries={enums.addressInputCountryValues}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select country"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </Box>
+
+      {organizationType === 'company' && isUnsupportedCountry && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          rowGap="m"
+          borderRadius="md"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-warning"
+          backgroundColor="background-warning"
+          padding="l"
+        >
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            Payouts are not available in {countryDisplayName}&nbsp;yet. You can
+            still continue and we&rsquo;ll notify you when support is added.
+          </p>
+        </Box>
       )}
-    </Box>
+    </div>
   )
 }
 
@@ -356,6 +393,7 @@ export function BusinessDetailsStep() {
           <CompanyFields
             onEditBusinessName={() => setEditedBusinessName(true)}
           />
+
           <CurrencyAndCountryFields />
 
           <FormField

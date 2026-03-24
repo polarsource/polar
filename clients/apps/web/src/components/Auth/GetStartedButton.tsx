@@ -48,7 +48,7 @@ const GetStartedButton = ({
       { mode: 'sandbox', source: 'landing_modal' },
       { send_instantly: true },
     )
-    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/dashboard/create&from=onboarding`
+    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/start&from=onboarding`
   }
 
   const handleGetStarted = () => {

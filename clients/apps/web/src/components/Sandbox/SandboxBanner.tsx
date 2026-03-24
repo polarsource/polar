@@ -2,10 +2,17 @@
 
 import { usePathname } from 'next/navigation'
 
+const PUBLIC_PAGES = [
+  '/',
+  '/login',
+  '/onboarding/sandbox',
+  '/login/code/verify',
+]
+
 const SandboxBanner = () => {
   const pathname = usePathname()
 
-  if (['/', '/login'].includes(pathname)) {
+  if (PUBLIC_PAGES.includes(pathname)) {
     return null
   }
 

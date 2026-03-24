@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import LogoIcon from '../../Brand/logos/LogoIcon'
-import { APIPreview } from './APIPreview'
+import { type APIPreviewStep, APIPreview } from './APIPreview'
 
 const STEPS = ['personal', 'business', 'product'] as const
 const STEP_ROUTES = [
@@ -18,7 +18,8 @@ const STEP_ROUTES = [
 interface OnboardingShellProps {
   title: string
   subtitle?: string
-  step: 'personal' | 'business' | 'product'
+  step?: 'personal' | 'business' | 'product'
+  apiStep?: APIPreviewStep
   children: ReactNode
 }
 
@@ -26,10 +27,11 @@ export function OnboardingShell({
   title,
   subtitle,
   step,
+  apiStep,
   children,
 }: OnboardingShellProps) {
   const router = useRouter()
-  const currentIndex = STEPS.indexOf(step)
+  const currentIndex = step ? STEPS.indexOf(step) : -1
 
   return (
     <Box
@@ -51,7 +53,7 @@ export function OnboardingShell({
           paddingHorizontal={{ base: 'l', lg: 'none' }}
         >
           <motion.div
-            key={step}
+            key={step ?? 'default'}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -76,19 +78,21 @@ export function OnboardingShell({
                 )}
                 <LogoIcon size={36} />
               </Box>
-              <Box display="flex" width="100%" alignItems="center" gap="s">
-                {STEPS.map((s, i) => (
-                  <Box key={s} display="flex" flex={1}>
-                    <div
-                      className={`h-0.5 w-full rounded-full transition-colors ${
-                        i <= currentIndex
-                          ? 'dark:bg-polar-50 bg-gray-900'
-                          : 'dark:bg-polar-700 bg-gray-200'
-                      }`}
-                    />
-                  </Box>
-                ))}
-              </Box>
+              {step && (
+                <Box display="flex" width="100%" alignItems="center" gap="s">
+                  {STEPS.map((s, i) => (
+                    <Box key={s} display="flex" flex={1}>
+                      <div
+                        className={`h-0.5 w-full rounded-full transition-colors ${
+                          i <= currentIndex
+                            ? 'dark:bg-polar-50 bg-gray-900'
+                            : 'dark:bg-polar-700 bg-gray-200'
+                        }`}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
 
             <Box display="flex" flexDirection="column" rowGap="m">
@@ -125,7 +129,7 @@ export function OnboardingShell({
             backgroundColor="background-secondary"
           />
           <Box position="sticky" top={150} zIndex={1}>
-            <APIPreview step={step} />
+            {(apiStep ?? step) && <APIPreview step={(apiStep ?? step)!} />}
           </Box>
         </Box>
       </Box>

@@ -222,7 +222,9 @@ export const DashboardSidebar = ({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() =>
-                      router.push('/dashboard/create?existing_org=true')
+                      CONFIG.IS_SANDBOX
+                        ? router.push('/onboarding/sandbox')
+                        : router.push('/onboarding/business')
                     }
                   >
                     New Organization

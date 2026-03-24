@@ -14,7 +14,7 @@ export default function Page() {
   const { updateData } = useOnboardingData()
 
   if (CONFIG.IS_SANDBOX) {
-    redirect('/dashboard/create')
+    redirect('/onboarding/sandbox')
   }
 
   const handleSandbox = () => {
@@ -23,7 +23,7 @@ export default function Page() {
       { mode: 'sandbox', source: 'onboarding_start' },
       { send_instantly: true },
     )
-    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/dashboard/create&from=onboarding`
+    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/sandbox&from=onboarding`
   }
 
   const handleGetStarted = () => {

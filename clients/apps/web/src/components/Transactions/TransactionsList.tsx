@@ -12,6 +12,12 @@ import {
   ReactQueryLoading,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import { InfoIcon } from 'lucide-react'
 import { useMemo } from 'react'
 
 const getTransactionMeta = (transaction: schemas['Transaction']) => {
@@ -200,15 +206,56 @@ const TransactionsList = ({
         const incurredAmount = isTransaction(transaction)
           ? transaction.incurred_amount
           : undefined
+        const paymentTransaction = isTransaction(transaction)
+          ? transaction.payment_transaction
+          : undefined
 
         return (
           <div className="flex justify-end">
-            {incurredAmount !== undefined
-              ? formatCurrency('accounting')(
+            {incurredAmount !== undefined ? (
+              <>
+                {formatCurrency('accounting')(
                   incurredAmount,
                   transaction.currency,
-                )
-              : '—'}
+                )}
+                {paymentTransaction && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="dark:text-polar-400 ml-1 h-3.5 w-3.5 cursor-pointer self-center text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="flex flex-col gap-1.5">
+                      <div className="flex justify-between gap-6">
+                        <span className="dark:text-polar-400 text-gray-500">
+                          Customer paid
+                        </span>
+                        <span>
+                          {formatCurrency('accounting')(
+                            (paymentTransaction.presentment_amount ?? 0) +
+                              (paymentTransaction.presentment_tax_amount ?? 0),
+                            paymentTransaction.presentment_currency ??
+                              paymentTransaction.currency,
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-6">
+                        <span className="dark:text-polar-400 text-gray-500">
+                          Fee basis
+                        </span>
+                        <span>
+                          {formatCurrency('accounting')(
+                            paymentTransaction.amount +
+                              paymentTransaction.tax_amount,
+                            paymentTransaction.currency,
+                          )}
+                        </span>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
+              '—'
+            )}
           </div>
         )
       },

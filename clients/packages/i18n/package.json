@@ -39,17 +39,17 @@
     "dist"
   ],
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.62",
+    "@ai-sdk/google": "^2.0.63",
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
-    "ai": "^5.0.156",
+    "ai": "^5.0.158",
     "dotenv": "^16.6.1",
     "react": "^19.2.4",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "latest",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.1"
   },
   "peerDependencies": {
     "react": "^19.2.4"

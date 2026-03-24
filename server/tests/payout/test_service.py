@@ -17,6 +17,7 @@ from polar.models.payout import PayoutStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
+    DailyPayoutLimitExceeded,
     InsufficientBalance,
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
@@ -221,6 +222,65 @@ class TestCreate:
         await session.flush()
 
         assert payout.invoice_number == f"{settings.PAYOUT_INVOICES_PREFIX}0003"
+
+    async def test_daily_limit_second_payout_same_day_raises(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+
+        # Create a payout that was made today
+        await create_payout(
+            save_fixture,
+            account=account,
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        payment_transaction = await create_payment_transaction(save_fixture)
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction
+        )
+
+        with pytest.raises(DailyPayoutLimitExceeded):
+            await payout_service.create(session, locker, account=account)
+
+    async def test_daily_limit_payout_succeeds_next_day(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+
+        # Create a payout from yesterday
+        await create_payout(
+            save_fixture,
+            account=account,
+            created_at=datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(days=1),
+            status=PayoutStatus.pending,
+            attempts=[],
+        )
+
+        payment_transaction = await create_payment_transaction(save_fixture)
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, account=account)
+        assert payout.account == account
 
 
 @pytest.mark.asyncio

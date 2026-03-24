@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Select, exists, false, select
+from sqlalchemy import Select, exists, false, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -63,6 +63,21 @@ class PayoutRepository(
             Payout.invoice_number == invoice_number,
         )
         return await self.get_one_or_none(statement)
+
+    async def has_payout_today(self, account_id: UUID) -> bool:
+        from datetime import date, timezone
+
+        today = date.today()
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payout.account_id == account_id,
+                func.date(Payout.created_at) == today,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None
 
     def get_eager_options(self) -> Options:
         return (

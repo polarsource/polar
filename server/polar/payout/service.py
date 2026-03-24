@@ -122,6 +122,13 @@ class PendingPayoutCreation(PayoutError):
         super().__init__(message, 409)
 
 
+class DailyPayoutLimitExceeded(PayoutError):
+    def __init__(self, account: Account) -> None:
+        self.account = account
+        message = "You can only trigger one payout per day per organization."
+        super().__init__(message, 429)
+
+
 class PayoutAttemptDoesNotExist(PayoutError):
     def __init__(self, payout_id: str) -> None:
         self.payout_id = payout_id
@@ -275,6 +282,10 @@ class PayoutService:
             if not account.is_payout_ready():
                 raise NotReadyAccount(account)
 
+            repository = PayoutRepository.from_session(session)
+            if await repository.has_payout_today(account.id):
+                raise DailyPayoutLimitExceeded(account)
+
             balance_amount = await transaction_service.get_transactions_sum(
                 session, account.id
             )
@@ -293,7 +304,6 @@ class PayoutService:
             except PayoutAmountTooLow as e:
                 raise InsufficientBalance(account, balance_amount) from e
 
-            repository = PayoutRepository.from_session(session)
             payout = await repository.create(
                 Payout(
                     processor=account.account_type,

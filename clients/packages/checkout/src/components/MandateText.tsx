@@ -1,4 +1,8 @@
-import { useTranslations, type AcceptedLocale } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 
 const BUYER_TERMS_PLACEHOLDER = '{buyerTermsLink}'
 
@@ -15,14 +19,19 @@ export const MandateText = ({
   buttonLabel: string
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale)
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+
+  const interpolations = {
+    buttonLabel,
+    buyerTermsLink: BUYER_TERMS_PLACEHOLDER,
+  }
 
   const mandate = isPaymentRequired
     ? isTrial
-      ? t('checkout.footer.mandateSubscriptionTrial', { buttonLabel })
+      ? t('checkout.footer.mandateSubscriptionTrial', interpolations)
       : isRecurring
-        ? t('checkout.footer.mandateSubscription', { buttonLabel })
-        : t('checkout.footer.mandateOneTime', { buttonLabel })
+        ? t('checkout.footer.mandateSubscription', interpolations)
+        : t('checkout.footer.mandateOneTime', interpolations)
     : t('checkout.footer.merchantOfRecord')
 
   const buyerTermsLabel = t('checkout.footer.buyerTermsLink')

@@ -90,9 +90,7 @@ const FromPrice = ({
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
   return (
     <span className="flex items-baseline">
-      <span className="text-[max(12px,0.5em)]">
-        {t('checkout.productSwitcher.fromPrefix')}{' '}
-      </span>
+      {t('checkout.productSwitcher.fromPrefix')}&nbsp;
       <AmountLabel
         amount={amount}
         currency={currency}

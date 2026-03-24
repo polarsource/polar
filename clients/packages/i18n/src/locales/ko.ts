@@ -154,6 +154,7 @@ export default {
     productSwitcher: {
       billedRecurring: '{frequency} 결제',
       oneTimePurchase: '1회 결제',
+      fromPrefix: '최저',
     },
     card: {
       included: '포함됨',

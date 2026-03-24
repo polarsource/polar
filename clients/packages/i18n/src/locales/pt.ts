@@ -154,6 +154,7 @@ export default {
     productSwitcher: {
       billedRecurring: 'Cobrado {frequency}',
       oneTimePurchase: 'Pagamento único',
+      fromPrefix: 'A partir de',
     },
     card: {
       included: 'Incluso',

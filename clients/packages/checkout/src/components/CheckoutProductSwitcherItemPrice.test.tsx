@@ -105,7 +105,7 @@ describe('CheckoutProductSwitcherItemPrice', () => {
         />,
       )
 
-      expect(getRenderedText(container)).toBe('From $10')
+      expect(getRenderedText(container)).toBe('From\u00a0$10')
     })
 
     it('shows "From" minimum seat total for multi-seat minimum when not selected', () => {
@@ -135,7 +135,7 @@ describe('CheckoutProductSwitcherItemPrice', () => {
         />,
       )
 
-      expect(getRenderedText(container)).toBe('From $50')
+      expect(getRenderedText(container)).toBe('From\u00a0$50')
     })
   })
 

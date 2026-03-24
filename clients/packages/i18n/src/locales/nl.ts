@@ -154,6 +154,7 @@ export default {
     productSwitcher: {
       billedRecurring: '{frequency} gefactureerd',
       oneTimePurchase: 'Eenmalige aankoop',
+      fromPrefix: 'Vanaf',
     },
     card: {
       included: 'Inbegrepen',

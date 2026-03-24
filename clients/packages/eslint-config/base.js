@@ -20,10 +20,6 @@ export const config = [
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-var': 'error',
       'prefer-const': 'warn',
-      'max-lines': [
-        'warn',
-        { max: 250, skipBlankLines: true, skipComments: true },
-      ],
     },
   },
   {

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useAuth } from '@/hooks'
 import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useUpdateOrganization } from '@/hooks/queries'

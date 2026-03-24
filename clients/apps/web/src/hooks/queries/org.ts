@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import revalidate from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'

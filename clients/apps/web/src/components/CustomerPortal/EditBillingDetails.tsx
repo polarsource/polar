@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'

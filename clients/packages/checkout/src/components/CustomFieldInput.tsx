@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import type { schemas } from '@polar-sh/client'
 
 import Input from '@polar-sh/ui/components/atoms/Input'

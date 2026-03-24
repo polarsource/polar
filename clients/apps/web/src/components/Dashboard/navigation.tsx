@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'

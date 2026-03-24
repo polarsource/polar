@@ -77,6 +77,18 @@ export type LocaleShape<T> = {
           : T[K]
 }
 
+export type PartialLocaleShape<T> = {
+  [K in keyof T]?: T[K] extends { _mode: string }
+    ? PluralShape<T[K]>
+    : T[K] extends { value: string; _llmContext: string }
+      ? AnnotatedEntryShape<T[K]>
+      : T[K] extends string
+        ? StringShape<T[K]>
+        : T[K] extends object
+          ? PartialLocaleShape<T[K]>
+          : T[K]
+}
+
 // Get all required interpolation keys for a translation key
 // Plurals always require 'count' + any {placeholders} in the templates
 type InterpolationKeys<K extends TranslationKey> =

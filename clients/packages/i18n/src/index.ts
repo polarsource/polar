@@ -6,7 +6,7 @@ export type { TranslateFn, TranslationKey, Translations } from './types'
 
 import type { AcceptedLocale, SupportedLocale } from './config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
-import type { TranslateFn, Translations } from './types'
+import type { PartialLocaleShape, TranslateFn, Translations } from './types'
 
 export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
   if (SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
@@ -40,7 +40,10 @@ import ptPT from './locales/pt-PT'
 import sv from './locales/sv'
 import ko from './locales/ko'
 
-const translations: Record<SupportedLocale, object> = {
+const translations: Record<
+  SupportedLocale,
+  PartialLocaleShape<Translations>
+> = {
   en,
   nl,
   sv,

@@ -11,7 +11,7 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.34",
   "greenlet>=3.1.1",
   "structlog>=24.4.0",
-  "githubkit==0.15.1",
+  "githubkit==0.15.0",
   "redis>=5.0.4",
   "sse-starlette>=2.0.0",
   "stripe>=14,<15",
@@ -88,7 +88,10 @@ dev = [
   "debugpy>=1.8.19",
   "pydantic-evals>=0.7.1",
   "gepa>=0.1.0",
-  "litellm>=1.82.2",
+  # Quarantined due to supply chain attack:
+  # * https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/
+  # * https://pypi.org/project/litellm/
+  # "litellm==1.82.3",
 ]
 
 [tool.taskipy.tasks]
@@ -162,6 +165,9 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = false
 warn_untyped_fields = true
+
+[tool.uv]
+exclude-newer = "1 week"
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

@@ -216,16 +216,14 @@ export const CreateProductPage = ({
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
       header={
-        <>
-          {!sourceProduct && (
-            <Link href={`/dashboard/${organization.slug}/products/new/ai`}>
-              <Button variant="secondary">
-                <Wand2Icon className="mr-2" />
-                Create with AI
-              </Button>
-            </Link>
-          )}
-        </>
+        !sourceProduct ? (
+          <Link href={`/dashboard/${organization.slug}/products/new/ai`}>
+            <Button variant="secondary">
+              <Wand2Icon className="mr-2" />
+              Create with AI
+            </Button>
+          </Link>
+        ) : undefined
       }
     >
       <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">

@@ -161,9 +161,9 @@ export const OrganizationStep = ({
 
     router.push(
       getStatusRedirect(
-        `/dashboard/${organization.slug}/onboarding/product${queryParams}`,
-        'Organization created',
-        'You can now create your first product',
+        `/dashboard/${organization.slug}${queryParams}`,
+        'Welcome to Polar!',
+        'Create your first product to get started.',
       ),
     )
   }

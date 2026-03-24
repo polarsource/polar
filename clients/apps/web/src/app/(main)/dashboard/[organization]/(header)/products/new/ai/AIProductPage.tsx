@@ -18,14 +18,12 @@ export default function AIProductPage({
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-8"
       header={
-        <>
-          <Link href={`/dashboard/${organization.slug}/products/new`}>
-            <Button variant="secondary">
-              <ArrowLeftIcon className="mr-2" />
-              Configure manually
-            </Button>
-          </Link>
-        </>
+        <Link href={`/dashboard/${organization.slug}/products/new`}>
+          <Button variant="secondary">
+            <ArrowLeftIcon className="mr-2" />
+            Configure manually
+          </Button>
+        </Link>
       }
     >
       <AIProductChat organization={organization} />

@@ -93,7 +93,7 @@ export function ProductDetailsStep() {
     },
   })
 
-  const { control, handleSubmit, watch, setValue } = form
+  const { control, handleSubmit, watch, setValue, setError } = form
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const sellingCategories = watch('sellingCategories')
@@ -165,6 +165,20 @@ export function ProductDetailsStep() {
     })
 
     if (error) {
+      if (Array.isArray(error.detail)) {
+        const emailError = error.detail.find(
+          (e: schemas['ValidationError']) =>
+            Array.isArray(e.loc) && e.loc.includes('email'),
+        )
+        if (emailError) {
+          setError('supportEmail', {
+            type: emailError.type,
+            message: emailError.msg,
+          })
+          setApiLoading(false)
+          return false
+        }
+      }
       showApiResponse(400, 'Failed to create organization')
       return false
     }

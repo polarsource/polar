@@ -386,6 +386,29 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return [row[0] for row in result.all()]
 
+    async def get_checkout_success_urls(
+        self, organization_id: UUID, *, months: int = 3
+    ) -> list[str]:
+        """Get distinct non-null success URLs from recent checkouts.
+
+        Mirrors get_checkout_return_urls but for the success_url column.
+        Captures success URLs set on API-created checkouts, which are not
+        covered by CheckoutLink success URLs.
+        """
+        cutoff = utc_now() - timedelta(days=months * 30)
+        statement = (
+            select(Checkout._success_url)
+            .where(
+                Checkout.organization_id == organization_id,
+                Checkout._success_url.is_not(None),
+                Checkout.is_deleted.is_(False),
+                Checkout.created_at >= cutoff,
+            )
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
+
     async def get_checkout_links_with_benefits(
         self, organization_id: UUID
     ) -> list[CheckoutLink]:

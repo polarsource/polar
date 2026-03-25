@@ -16,14 +16,16 @@ processes:
     working_dir: ./server
     auto_start: true
     auto_restart: false
-    restart_when_changed: []
+    restart_when_changed:
+      - server/.env
     env: {}
   Worker:
     command: uv run task worker
     working_dir: ./server
     auto_start: true
     auto_restart: false
-    restart_when_changed: []
+    restart_when_changed:
+      - server/.env
     env: {}
   Web:
     command: pnpm dev

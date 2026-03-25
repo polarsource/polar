@@ -7,7 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
@@ -1019,6 +1019,83 @@ class TestCreate:
         product = await product_service.create(session, create_schema, auth_subject)
         assert product.organization_id == organization.id
         assert len(product.prices) == 1
+
+    @pytest.mark.auth
+    async def test_invalid_inconsistent_tax_behavior_same_currency(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        """Test that prices for the same currency must have the same tax_behavior"""
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=1000,
+                            price_currency=PresentmentCurrency.usd,
+                            tax_behavior=TaxBehaviorOption.inclusive,
+                        ),
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency=PresentmentCurrency.usd,
+                            unit_amount=Decimal(100),
+                            meter_id=meter.id,
+                            tax_behavior=TaxBehaviorOption.exclusive,
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_valid_consistent_tax_behavior_same_currency(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        """Test that prices for the same currency with the same tax_behavior are valid"""
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Product",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency=PresentmentCurrency.usd,
+                        tax_behavior=TaxBehaviorOption.inclusive,
+                    ),
+                    ProductPriceMeteredUnitCreate(
+                        amount_type=ProductPriceAmountType.metered_unit,
+                        price_currency=PresentmentCurrency.usd,
+                        unit_amount=Decimal(100),
+                        meter_id=meter.id,
+                        tax_behavior=TaxBehaviorOption.inclusive,
+                    ),
+                ],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert product.organization_id == organization.id
+        assert len(product.prices) == 2
+        assert all(
+            p.tax_behavior == TaxBehaviorOption.inclusive for p in product.prices
+        )
 
 
 @pytest.mark.asyncio

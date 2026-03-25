@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import uuid
-from datetime import date, datetime
+from datetime import date
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -31,8 +31,6 @@ class OAuthAccountRead(TimestampedSchema):
 class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
     accepted_terms_of_service: bool
-    accepted_terms_of_service_at: datetime | None
-    accepted_terms_of_service_ip: str | None
     is_admin: bool
     identity_verified: bool
     identity_verification_status: IdentityVerificationStatus

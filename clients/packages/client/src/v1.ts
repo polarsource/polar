@@ -27223,13 +27223,6 @@ export interface components {
       id: string
       /** Accepted Terms Of Service */
       accepted_terms_of_service: boolean
-      /**
-       * Accepted Terms Of Service At
-       * Format: date-time
-       */
-      accepted_terms_of_service_at: string | null
-      /** Accepted Terms Of Service Ip */
-      accepted_terms_of_service_ip: string | null
       /** Is Admin */
       is_admin: boolean
       /** Identity Verified */

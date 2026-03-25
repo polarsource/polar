@@ -100,7 +100,7 @@ export function PersonalDetailsStep() {
       dobYear: parsedDob[0] || '',
       dobMonth: parsedDob[1] || '',
       dobDay: parsedDob[2] ? String(Number(parsedDob[2])) : '',
-      terms: currentUser?.accepted_terms_of_service_at != null,
+      terms: currentUser?.accepted_terms_of_service ?? false,
     },
   })
 

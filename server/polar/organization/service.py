@@ -1,7 +1,6 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
@@ -62,14 +61,6 @@ if TYPE_CHECKING:
 log = structlog.get_logger()
 
 _MIN_REVIEW_THRESHOLD = 10_000
-
-
-class PaymentStepID(StrEnum):
-    """Enum for payment onboarding step identifiers."""
-
-    CREATE_PRODUCT = "create_product"
-    INTEGRATE_CHECKOUT = "integrate_checkout"
-    SETUP_ACCOUNT = "setup_account"
 
 
 class PaymentStatusResponse(BaseModel):

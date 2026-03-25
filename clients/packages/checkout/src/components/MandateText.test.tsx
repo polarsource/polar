@@ -15,7 +15,10 @@ describe('MandateText', () => {
 
     expect(screen.getByText(/Pay now/)).toBeInTheDocument()
     const link = screen.getByRole('link', { name: 'Buyer Terms' })
-    expect(link).toHaveAttribute('href', 'https://polar.sh/legal/terms')
+    expect(link).toHaveAttribute(
+      'href',
+      'https://polar.sh/legal/checkout-buyer-terms',
+    )
     expect(link).toHaveAttribute('target', '_blank')
   })
 

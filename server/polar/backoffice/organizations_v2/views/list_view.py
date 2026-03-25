@@ -153,7 +153,7 @@ class OrganizationListView:
 
         with tag.tr(classes=row_class):
             # Organization name and status
-            with tag.td(classes="py-4"):
+            with tag.td(classes="py-4 max-w-xs"):
                 with tag.div(classes="flex flex-col gap-1"):
                     with tag.a(
                         href=str(
@@ -163,10 +163,11 @@ class OrganizationListView:
                         ),
                         classes="font-semibold hover:underline flex items-center gap-2",
                     ):
-                        text(org.name)
+                        with tag.span(classes="truncate max-w-[200px] inline-block", title=org.name):
+                            text(org.name)
                         with status_badge(org.status):
                             pass
-                    with tag.div(classes="text-xs text-base-content/60 font-mono"):
+                    with tag.div(classes="text-xs text-base-content/60 font-mono truncate max-w-[200px]", title=org.slug):
                         text(org.slug)
                     # Appeal indicator
                     if (
@@ -176,15 +177,6 @@ class OrganizationListView:
                     ):
                         with tag.span(classes="badge badge-info badge-xs mt-1"):
                             text("Appeal Pending")
-
-            # Email
-            with tag.td(classes="text-sm"):
-                if org.email:
-                    with tag.span(classes="font-mono text-xs"):
-                        text(org.email)
-                else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
 
             # Country
             with tag.td(classes="text-sm"):
@@ -330,7 +322,7 @@ class OrganizationListView:
                     with tag.div(classes="flex-1"):
                         with tag.input(
                             type="search",
-                            placeholder="Search organizations by name, slug, or email...",
+                            placeholder="Search organizations by name or slug...",
                             classes="input input-bordered w-full",
                             name="q",
                             **{"hx-trigger": "keyup changed delay:300ms"},
@@ -516,8 +508,6 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th():
-                                        text("Email")
 
                                     with self.sortable_header(
                                         request,
@@ -599,8 +589,6 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th():
-                                    text("Email")
 
                                 with self.sortable_header(
                                     request,
@@ -734,8 +722,6 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th():
-                                        text("Email")
 
                                     with self.sortable_header(
                                         request,
@@ -817,8 +803,6 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th():
-                                    text("Email")
 
                                 with self.sortable_header(
                                     request,

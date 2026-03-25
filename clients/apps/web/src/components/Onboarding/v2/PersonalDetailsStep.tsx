@@ -77,6 +77,20 @@ function FormSync() {
   return null
 }
 
+function SubmitButton({ loading }: { loading: boolean }) {
+  const { firstName, lastName, country, dobYear, dobMonth, dobDay, terms } =
+    useWatch<FormSchema>()
+
+  const disabled =
+    !firstName || !lastName || !country || !dobYear || !dobMonth || !dobDay || !terms
+
+  return (
+    <Button type="submit" loading={loading} disabled={disabled} fullWidth>
+      Continue
+    </Button>
+  )
+}
+
 export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
@@ -262,7 +276,7 @@ export function PersonalDetailsStep() {
                 name="dobMonth"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -280,7 +294,7 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
@@ -289,7 +303,7 @@ export function PersonalDetailsStep() {
                 name="dobDay"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -307,7 +321,7 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
@@ -316,7 +330,7 @@ export function PersonalDetailsStep() {
                 name="dobYear"
                 rules={{ required: 'Required' }}
                 render={({ field }) => (
-                  <FormItem className="flex-1">
+                  <FormItem className="flex-1 space-y-0">
                     <FormControl>
                       <Select
                         value={field.value}
@@ -334,19 +348,19 @@ export function PersonalDetailsStep() {
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="mt-2" />
                   </FormItem>
                 )}
               />
             </Box>
           </Box>
 
-          <TermsCheckbox control={control} name="terms" setValue={setValue} />
+          {!currentUser?.accepted_terms_of_service && (
+            <TermsCheckbox control={control} name="terms" setValue={setValue} />
+          )}
 
           <div className="flex flex-col gap-y-2">
-            <Button type="submit" loading={submitting} fullWidth>
-              Continue
-            </Button>
+            <SubmitButton loading={submitting} />
             {submitError && (
               <p className="text-sm text-red-500 dark:text-red-500">
                 Something went wrong, please try again.

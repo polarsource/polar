@@ -4,6 +4,7 @@ import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { MembersSection } from '@/components/Customer/MembersSection'
+import CostsPage from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
@@ -218,6 +219,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
+        {organization.feature_settings?.revops_enabled && (
+          <TabsTrigger value="costs">Costs</TabsTrigger>
+        )}
         {showMembersTab && <TabsTrigger value="members">Members</TabsTrigger>}
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
@@ -592,6 +596,19 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         organization={organization}
         dateRange={dateRange}
       />
+      {organization.feature_settings?.revops_enabled && (
+        <TabsContent value="costs">
+          <div className="flex flex-col gap-y-8">
+            <h2 className="text-3xl">Cost Insights</h2>
+            <CostsPage
+              organization={organization}
+              customerId={customer.id}
+              dateRange={dateRange}
+              embedded
+            />
+          </div>
+        </TabsContent>
+      )}
       {showMembersTab && (
         <TabsContent value="members" className="flex flex-col gap-y-8">
           <MembersSection

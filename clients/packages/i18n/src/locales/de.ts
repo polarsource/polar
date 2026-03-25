@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'Diese Bestellung wird von unserem Online-Reseller & Merchant of Record, Polar, bearbeitet, der auch Anfragen und Rücksendungen im Zusammenhang mit der Bestellung abwickelt.',
       mandateSubscriptionTrial:
-        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode am Ende Ihres Testzeitraums und an jedem folgenden Abrechnungsdatum mit dem oben angezeigten Betrag zu belasten, bis Sie kündigen. Sie können jederzeit vor Ablauf des Testzeitraums kündigen, um eine Belastung zu vermeiden.',
+        'Mit Klick auf „{buttonLabel}“ autorisieren Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Vertragspartner (Merchant of Record), Ihre gewählte Zahlungsmethode am Ende Ihres Testzeitraums und an jedem darauffolgenden Abrechnungsdatum bis zu Ihrer Kündigung mit dem oben angegebenen Betrag zu belasten, und stimmen den {buyerTermsLink} zu. Sie können jederzeit vor Ablauf des Testzeitraums kündigen, um eine Belastung zu vermeiden.',
       mandateSubscription:
-        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode sofort mit dem oben angezeigten Betrag zu belasten und denselben Betrag an jedem folgenden Abrechnungsdatum abzubuchen, bis Sie kündigen.',
+        'Mit Klick auf „{buttonLabel}“ autorisieren Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Vertragspartner (Merchant of Record), Ihre gewählte Zahlungsmethode sofort mit dem oben angegebenen Betrag zu belasten und denselben Betrag an jedem darauffolgenden Abrechnungsdatum bis zu Ihrer Kündigung abzubuchen, und stimmen den {buyerTermsLink} zu.',
+      buyerTermsLink: 'Käuferbedingungen',
       mandateOneTime:
-        'Indem Sie auf "{buttonLabel}" klicken, ermächtigen Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Händler, Ihre gewählte Zahlungsmethode mit dem oben angezeigten Betrag zu belasten. Dies ist eine einmalige Belastung.',
+        'Mit Klick auf "{buttonLabel}" autorisieren Sie Polar Software, Inc., unseren Online-Wiederverkäufer und Vertragspartner, Ihre ausgewählte Zahlungsmethode mit dem oben angegebenen Betrag zu belasten, und stimmen den {buyerTermsLink} zu. Dies ist eine einmalige Zahlung.',
     },
     form: {
       email: 'E-Mail',
@@ -155,6 +156,7 @@ export default {
     productSwitcher: {
       billedRecurring: '{frequency} abgerechnet',
       oneTimePurchase: 'Einmaliger Kauf',
+      fromPrefix: 'Ab',
     },
     card: {
       included: 'Inbegriffen',

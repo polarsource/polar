@@ -94,11 +94,7 @@ const userTestimonials = [
     company: '1042 Studio',
     verified: true,
     avatar: '/assets/landing/testamonials/lee.jpg',
-    text: (
-      <>
-        <p>I switched to Polar a few weeks back. Best decision ever.</p>
-      </>
-    ),
+    text: <p>I switched to Polar a few weeks back. Best decision ever.</p>,
   },
   {
     link: 'https://x.com/pontusab/status/1886140577634463870',

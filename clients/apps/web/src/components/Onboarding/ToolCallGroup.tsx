@@ -149,6 +149,8 @@ const getToolLabel = (part: DynamicToolUIPart): string => {
         TOOL_LABELS[part.toolName as keyof typeof TOOL_LABELS]?.error?.() ??
         'Something went wrong.'
       )
+    default:
+      return ''
   }
 }
 
@@ -217,12 +219,10 @@ export const ToolCallGroup = ({
     >
       <LogoIcon size={24} className="-ml-1.5" />
       {isComplete ? (
-        <>
-          <span>
-            Took {parts.length} action{parts.length === 1 ? '' : 's'} to
-            configure your account
-          </span>
-        </>
+        <span>
+          Took {parts.length} action{parts.length === 1 ? '' : 's'} to configure
+          your account
+        </span>
       ) : (
         <span>{getToolLabel(lastPart)}</span>
       )}

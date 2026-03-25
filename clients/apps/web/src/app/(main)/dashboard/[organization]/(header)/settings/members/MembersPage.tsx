@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -271,7 +270,7 @@ function InviteMemberModal({
 
     try {
       const result = await inviteMember.mutateAsync(email)
-      if (result.response.status == 200) {
+      if (result.response.status === 200) {
         toast({
           title: 'Member already added',
           description: 'User is already a member of this organization',

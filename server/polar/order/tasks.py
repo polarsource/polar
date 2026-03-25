@@ -24,7 +24,11 @@ from polar.worker import (
 )
 
 from .repository import OrderRepository
-from .service import NoPendingBillingEntries, PaymentFailed
+from .service import (
+    NoPendingBillingEntries,
+    PaymentAlreadyInProgress,
+    PaymentFailed,
+)
 from .service import order as order_service
 
 log: Logger = structlog.get_logger()
@@ -239,3 +243,27 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.process_dunning_order(session, order)
+
+
+@actor(
+    actor_name="order.void_pending_orders_for_subscription", priority=TaskPriority.LOW
+)
+async def void_pending_orders_for_subscription(subscription_id: uuid.UUID) -> None:
+    """Void all pending orders for a subscription when it's revoked."""
+    async with AsyncSessionMaker() as session:
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscription = await subscription_repository.get_by_id(
+            subscription_id, options=subscription_repository.get_eager_options()
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        try:
+            await order_service.void_pending_orders_for_subscription(
+                session, subscription
+            )
+        except PaymentAlreadyInProgress:
+            # Retry because we might be currently processing the last order of the subscription
+            if can_retry():
+                raise Retry()
+            raise

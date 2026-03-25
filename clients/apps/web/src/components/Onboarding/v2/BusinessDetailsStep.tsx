@@ -1,8 +1,6 @@
-/* eslint-disable max-lines */
 'use client'
 
-import { useAuth, useOnboardingTracking } from '@/hooks'
-import { useCreateOrganization, useUpdateOrganization } from '@/hooks/queries'
+import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -21,10 +19,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import slugify from 'slugify'
 import { CurrencySelector } from '../../CurrencySelector'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -167,55 +166,91 @@ function CurrencyAndCountryFields() {
   const organizationType = useWatch<FormSchema, 'organizationType'>({
     name: 'organizationType',
   })
+  const businessCountry = useWatch<FormSchema, 'businessCountry'>({
+    name: 'businessCountry',
+  })
+
+  const isUnsupportedCountry =
+    businessCountry !== '' &&
+    !SUPPORTED_PAYOUT_COUNTRIES.includes(businessCountry)
+
+  const countryDisplayName = useMemo(() => {
+    if (!businessCountry) return ''
+    return (
+      new Intl.DisplayNames([], { type: 'region' }).of(businessCountry) ??
+      businessCountry
+    )
+  }, [businessCountry])
 
   return (
-    <Box
-      display="grid"
-      gap="m"
-      gridTemplateColumns={
-        organizationType === 'company'
-          ? 'repeat(2, minmax(0, 1fr))'
-          : 'repeat(1, minmax(0, 1fr))'
-      }
-    >
-      <FormField
-        name="defaultCurrency"
-        rules={{ required: 'Currency is required' }}
-        render={({ field }) => (
-          <FormItem className="w-full">
-            <FormLabel>Default Payment Currency</FormLabel>
-            <FormControl>
-              <CurrencySelector
-                value={field.value as schemas['PresentmentCurrency']}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {organizationType === 'company' && (
+    <div className="flex flex-col gap-y-2">
+      <Box
+        display="grid"
+        gap="m"
+        gridTemplateColumns={
+          organizationType === 'company'
+            ? 'repeat(2, minmax(0, 1fr))'
+            : 'repeat(1, minmax(0, 1fr))'
+        }
+      >
         <FormField
-          name="businessCountry"
-          rules={{ required: 'Business country is required' }}
+          name="defaultCurrency"
+          rules={{ required: 'Currency is required' }}
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel>Business Country</FormLabel>
+              <FormLabel>Default Payment Currency</FormLabel>
               <FormControl>
-                <CountryPicker
-                  allowedCountries={enums.addressInputCountryValues}
-                  value={field.value}
+                <CurrencySelector
+                  value={field.value as schemas['PresentmentCurrency']}
                   onChange={field.onChange}
-                  placeholder="Select country"
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {organizationType === 'company' && (
+          <FormField
+            name="businessCountry"
+            rules={{ required: 'Business country is required' }}
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Business Country</FormLabel>
+                <FormControl>
+                  <CountryPicker
+                    allowedCountries={enums.addressInputCountryValues}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select country"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </Box>
+
+      {organizationType === 'company' && isUnsupportedCountry && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          rowGap="m"
+          borderRadius="md"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-warning"
+          backgroundColor="background-warning"
+          padding="l"
+        >
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            Payouts are not available in {countryDisplayName}&nbsp;yet. You can
+            still continue and we&rsquo;ll notify you when support is added.
+          </p>
+        </Box>
       )}
-    </Box>
+    </div>
   )
 }
 
@@ -238,12 +273,12 @@ function SubmitButton({ loading }: { loading: boolean }) {
 
 export function BusinessDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
-  const { trackStepCompleted } = useOnboardingTracking()
-  const { data, updateData, showApiResponse } = useOnboardingData()
-  const createOrganization = useCreateOrganization()
-  const updateOrganization = useUpdateOrganization()
+  const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
+  const { data, updateData, setApiLoading, showApiResponse } =
+    useOnboardingData()
   const [submitting, setSubmitting] = useState(false)
+
+  trackStepViewed('business')
   const [editingSlug, setEditingSlug] = useState(false)
   const [editedSlug, setEditedSlug] = useState(false)
   const [editedBusinessName, setEditedBusinessName] = useState(false)
@@ -260,16 +295,12 @@ export function BusinessDetailsStep() {
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors },
-  } = form
+  const { handleSubmit, setValue } = form
 
   const onSubmit = async (formData: FormSchema) => {
     if (!formData.terms) return
     setSubmitting(true)
+    setApiLoading(true)
 
     updateData({
       organizationType: formData.organizationType,
@@ -279,55 +310,6 @@ export function BusinessDetailsStep() {
       businessCountry: formData.businessCountry,
       registeredBusinessName: formData.registeredBusinessName,
     })
-
-    const orgBody = {
-      name: formData.orgName,
-      slug: formData.orgSlug,
-      default_presentment_currency:
-        formData.defaultCurrency as schemas['PresentmentCurrency'],
-      country: (formData.businessCountry || undefined) as
-        | schemas['CountryAlpha2Input']
-        | undefined,
-      legal_entity:
-        formData.organizationType === 'company'
-          ? {
-              type: 'company' as const,
-              registered_name: formData.registeredBusinessName,
-            }
-          : { type: 'individual' as const },
-    }
-
-    if (data.organizationId) {
-      const { error } = await updateOrganization.mutateAsync({
-        id: data.organizationId,
-        body: orgBody,
-      })
-
-      if (error) {
-        setSubmitting(false)
-        setError('root', { message: 'Failed to update organization' })
-        return
-      }
-    } else {
-      const { data: org, error } = await createOrganization.mutateAsync(orgBody)
-
-      if (error) {
-        setSubmitting(false)
-        if (Array.isArray(error.detail)) {
-          setError('root', {
-            message: error.detail[0]?.msg || 'Failed to create organization',
-          })
-        } else if (typeof error.detail === 'string') {
-          setError('root', { message: error.detail })
-        } else {
-          setError('root', { message: 'Failed to create organization' })
-        }
-        return
-      }
-
-      setUserOrganizations((prev) => [...prev, org])
-      updateData({ organizationId: org.id })
-    }
 
     trackStepCompleted('business')
     await showApiResponse(200, 'OK')
@@ -411,6 +393,7 @@ export function BusinessDetailsStep() {
           <CompanyFields
             onEditBusinessName={() => setEditedBusinessName(true)}
           />
+
           <CurrencyAndCountryFields />
 
           <FormField
@@ -458,7 +441,7 @@ export function BusinessDetailsStep() {
                       </a>{' '}
                       &amp;{' '}
                       <a
-                        href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                        href="https://polar.sh/legal/acceptable-use-policy"
                         className="text-gray-900 underline dark:text-white"
                         target="_blank"
                         rel="noreferrer"
@@ -472,12 +455,6 @@ export function BusinessDetailsStep() {
               </FormItem>
             )}
           />
-
-          {errors.root && (
-            <p className="text-destructive-foreground text-sm">
-              {errors.root.message}
-            </p>
-          )}
 
           <SubmitButton loading={submitting} />
         </form>

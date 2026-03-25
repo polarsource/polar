@@ -343,7 +343,6 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
-        previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -356,7 +355,11 @@ class OrganizationService:
         )
 
         # Only store details once to avoid API overrides later w/o review
-        if not previous_details and update_schema.details:
+        # We do allow initial details being set upon creation that will still require review,
+        # so upon creation we set details but not details_submitted_at
+        # so details_submitted_at effectively doubles as a "submit for review"
+        # timestamp, for now. We'll revisit this soon enough. @pieterbeulque
+        if not organization.details_submitted_at and update_schema.details:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )
@@ -759,10 +762,14 @@ class OrganizationService:
         await self._sync_account_status(session, organization)
         session.add(organization)
 
-        # If there's a pending appeal, mark it as approved
+        # If there's an appeal, mark it as approved (handles both pending and previously rejected appeals)
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
-        if review and review.appeal_submitted_at and review.appeal_decision is None:
+        if (
+            review
+            and review.appeal_submitted_at
+            and review.appeal_decision != OrganizationReview.AppealDecision.APPROVED
+        ):
             review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
@@ -866,7 +873,6 @@ class OrganizationService:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
-            became_active = False
             if all(
                 (
                     not organization.is_under_review,
@@ -878,18 +884,6 @@ class OrganizationService:
                 )
             ):
                 organization.status = OrganizationStatus.ACTIVE
-                organization.status_updated_at = datetime.now(UTC)
-                became_active = True
-
-            # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
-            if any(
-                (
-                    not account.is_details_submitted,
-                    not account.is_charges_enabled,
-                    not account.is_payouts_enabled,
-                )
-            ):
-                organization.status = OrganizationStatus.ONBOARDING_STARTED
                 organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)

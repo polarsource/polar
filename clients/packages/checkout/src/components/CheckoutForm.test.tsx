@@ -178,7 +178,7 @@ describe('CheckoutForm', () => {
 
       render(<FormWrapper checkout={checkout} {...defaultProps} locale="en" />)
 
-      expect(screen.getByText(/This is a one-time charge/)).toBeInTheDocument()
+      expect(screen.getByText(/one-time charge/)).toBeInTheDocument()
     })
 
     it('shows merchant of record text for free product', () => {

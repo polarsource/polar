@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountModalContent'
@@ -234,12 +233,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: discount } }) => {
         return (
-          <>
-            <FormattedDateTime
-              datetime={discount.created_at}
-              resolution="day"
-            />
-          </>
+          <FormattedDateTime datetime={discount.created_at} resolution="day" />
         )
       },
     },
@@ -367,9 +361,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               onDiscountUpdated={() => setShowUpdateModal(false)}
               hideModal={() => setShowUpdateModal(false)}
             />
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
       <ConfirmModal

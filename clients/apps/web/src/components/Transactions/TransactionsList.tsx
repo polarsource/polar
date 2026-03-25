@@ -1,9 +1,9 @@
-/* eslint-disable max-lines */
 import {
   DataTableOnChangeFn,
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
+import { isTransaction, platformFeesDisplayNames } from '@/utils/transaction'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
@@ -13,86 +13,12 @@ import {
   ReactQueryLoading,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { useMemo } from 'react'
-
-const getTransactionMeta = (transaction: schemas['Transaction']) => {
-  if (transaction.order) {
-    return {
-      type: transaction.order.subscription_id ? 'Subscription' : 'Purchase',
-      meta: {
-        product: transaction.order.product,
-      },
-    }
-  } else if (transaction.issue_reward) {
-    return {
-      type: 'Reward',
-      meta: transaction.pledge,
-    }
-  } else if (transaction.pledge) {
-    return {
-      type: 'Pledge',
-      meta: transaction.pledge,
-    }
-  } else if (transaction.type === 'payout') {
-    return {
-      type: 'Payout',
-      meta: undefined,
-    }
-  }
-  return {
-    type: transaction.type,
-    meta: undefined,
-  }
-}
-
-interface TransactionMetaProps {
-  transaction: schemas['Transaction']
-}
-
-const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
-  const transactionMeta = useMemo(
-    () => getTransactionMeta(transaction),
-    [transaction],
-  )
-
-  return (
-    <div className="flex items-start gap-2">
-      <div className="flex flex-row gap-4">
-        <div className="text-sm">{transactionMeta.type}</div>
-        {transactionMeta.meta && (
-          <>
-            {'product' in transactionMeta.meta &&
-              transactionMeta.meta.product && (
-                <>
-                  <span className="dark:text-polar-500 truncate text-sm text-gray-500">
-                    {transactionMeta.meta.product.name}
-                  </span>
-                </>
-              )}
-            {'issue_reference' in transactionMeta.meta && (
-              <div>{transactionMeta.meta.issue_reference}</div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-export const platformFeesDisplayNames: {
-  [key in schemas['PlatformFeeType']]: string
-} = {
-  payment: 'Payment Fee',
-  international_payment: 'International Payment Fee',
-  subscription: 'Subscription Fee',
-  invoice: 'Invoice Fee',
-  cross_border_transfer: 'Cross-border Transfer Payout Fee',
-  payout: 'Payout Fee',
-  account: 'Active Payout Account Fee',
-  dispute: 'Dispute Fee',
-  platform: 'Polar Fee',
-  fee_credit: 'Fee Credit',
-}
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import TransactionMeta from './TransactionMeta'
 
 interface TransactionsListProps {
   transactions: schemas['Transaction'][]
@@ -107,12 +33,6 @@ interface TransactionsListProps {
   >[]
   isLoading: boolean | ReactQueryLoading
 }
-
-const isTransaction = (
-  t: schemas['Transaction'] | schemas['TransactionEmbedded'],
-): t is schemas['Transaction'] =>
-  // eslint-disable-next-line no-prototype-builtins
-  t.hasOwnProperty('account_incurred_transactions')
 
 const TransactionsList = ({
   transactions,
@@ -164,7 +84,7 @@ const TransactionsList = ({
       },
     },
     {
-      accessorKey: 'amount',
+      id: 'gross_amount',
       enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader
@@ -176,13 +96,54 @@ const TransactionsList = ({
       cell: (props) => {
         const { row } = props
         const { original: transaction } = row
-        const amount = isTransaction(transaction)
-          ? transaction.gross_amount
-          : (props.getValue() as number)
+        const paymentTransaction = isTransaction(transaction)
+          ? transaction.payment_transaction
+          : null
+
+        if (!paymentTransaction) {
+          return <div className="flex flex-row justify-end">—</div>
+        }
+
+        const amount = paymentTransaction.amount + paymentTransaction.tax_amount
 
         return (
           <div className="flex flex-row justify-end">
-            {formatCurrency('accounting')(amount, transaction.currency)}
+            {paymentTransaction.presentment_currency !==
+            transaction.currency ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="underline decoration-dotted">
+                    {formatCurrency('accounting')(amount, transaction.currency)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="flex flex-col gap-1.5">
+                  <div className="flex justify-between gap-6">
+                    <span className="dark:text-polar-400 text-gray-500">
+                      Presentment amount
+                    </span>
+                    <span>
+                      {formatCurrency('accounting')(
+                        (paymentTransaction.presentment_amount ?? 0) +
+                          (paymentTransaction.presentment_tax_amount ?? 0),
+                        paymentTransaction.presentment_currency ??
+                          paymentTransaction.currency,
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-6">
+                    <span className="dark:text-polar-400 text-gray-500 uppercase">
+                      FX (
+                      {paymentTransaction.presentment_currency ??
+                        paymentTransaction.currency}{' '}
+                      → {transaction.currency})
+                    </span>
+                    <span>{paymentTransaction.exchange_rate}</span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              formatCurrency('accounting')(amount, transaction.currency)
+            )}
           </div>
         )
       },
@@ -202,16 +163,88 @@ const TransactionsList = ({
         const { original: transaction } = row
         const incurredAmount = isTransaction(transaction)
           ? transaction.incurred_amount
-          : undefined
+          : transaction.amount
 
         return (
           <div className="flex justify-end">
-            {incurredAmount !== undefined
-              ? formatCurrency('accounting')(
+            {incurredAmount !== undefined ? (
+              <>
+                {formatCurrency('accounting')(
                   incurredAmount,
                   transaction.currency,
-                )
-              : '—'}
+                )}
+              </>
+            ) : (
+              '—'
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      id: 'tax',
+      enableSorting: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Tax"
+          className="flex justify-end"
+        />
+      ),
+      cell: (props) => {
+        const { row } = props
+        const { original: transaction } = row
+        const paymentTransaction = isTransaction(transaction)
+          ? transaction.payment_transaction
+          : null
+
+        if (!paymentTransaction) {
+          return <div className="flex justify-end">—</div>
+        }
+
+        return (
+          <div className="flex justify-end">
+            {paymentTransaction.presentment_currency !==
+            transaction.currency ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="underline decoration-dotted">
+                    {formatCurrency('accounting')(
+                      -paymentTransaction.tax_amount,
+                      transaction.currency,
+                    )}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="flex flex-col gap-1.5">
+                  <div className="flex justify-between gap-6">
+                    <span className="dark:text-polar-400 text-gray-500">
+                      Presentment amount
+                    </span>
+                    <span>
+                      {formatCurrency('accounting')(
+                        paymentTransaction.presentment_tax_amount ?? 0,
+                        paymentTransaction.presentment_currency ??
+                          paymentTransaction.currency,
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-6">
+                    <span className="dark:text-polar-400 text-gray-500 uppercase">
+                      FX (
+                      {paymentTransaction.presentment_currency ??
+                        paymentTransaction.currency}{' '}
+                      → {transaction.currency})
+                    </span>
+                    <span>{paymentTransaction.exchange_rate}</span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              formatCurrency('accounting')(
+                -paymentTransaction.tax_amount,
+                paymentTransaction.currency,
+              )
+            )}
           </div>
         )
       },

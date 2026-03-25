@@ -71,77 +71,71 @@ export const ConfirmModal = ({
       className="md:min-w-[300px] lg:max-w-[600px]"
       {...props}
       modalContent={
-        <>
-          <div className="flex flex-col gap-y-4 p-8">
-            <>
-              <h3 className="text-xl font-medium">{title}</h3>
-              {description && (
-                <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
-                  {description}
-                </p>
+        <div className="flex flex-col gap-y-4 p-8">
+          <h3 className="text-xl font-medium">{title}</h3>
+          {description && (
+            <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
+              {description}
+            </p>
+          )}
+          {body}
+          <Form {...form}>
+            <form
+              className="flex w-full flex-col gap-y-2"
+              onSubmit={(e) => {
+                e.stopPropagation()
+                handleSubmit(onSubmit)(e)
+              }}
+            >
+              {confirmPrompt && (
+                <>
+                  <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
+                    Please enter &quot;{confirmPrompt}&quot; to confirm:
+                  </p>
+                  <FormField
+                    control={control}
+                    name="prompt"
+                    rules={{
+                      validate: (value) =>
+                        value === confirmPrompt ||
+                        'Please enter the exact text to confirm',
+                    }}
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormControl className="w-full">
+                            <div className="flex w-full flex-row gap-2">
+                              <Input
+                                type="input"
+                                required
+                                placeholder={confirmPrompt}
+                                autoComplete="off"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )
+                    }}
+                  />
+                </>
               )}
-              {body}
-              <Form {...form}>
-                <form
-                  className="flex w-full flex-col gap-y-2"
-                  onSubmit={(e) => {
-                    e.stopPropagation()
-                    handleSubmit(onSubmit)(e)
-                  }}
+              <div className="flex flex-row-reverse gap-x-4 pt-2">
+                <Button
+                  type="submit"
+                  variant={destructive ? 'destructive' : 'default'}
+                  disabled={confirmPrompt ? prompt !== confirmPrompt : false}
                 >
-                  {confirmPrompt && (
-                    <>
-                      <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
-                        Please enter &quot;{confirmPrompt}&quot; to confirm:
-                      </p>
-                      <FormField
-                        control={control}
-                        name="prompt"
-                        rules={{
-                          validate: (value) =>
-                            value === confirmPrompt ||
-                            'Please enter the exact text to confirm',
-                        }}
-                        render={({ field }) => {
-                          return (
-                            <FormItem>
-                              <FormControl className="w-full">
-                                <div className="flex w-full flex-row gap-2">
-                                  <Input
-                                    type="input"
-                                    required
-                                    placeholder={confirmPrompt}
-                                    autoComplete="off"
-                                    {...field}
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    </>
-                  )}
-                  <div className="flex flex-row-reverse gap-x-4 pt-2">
-                    <Button
-                      type="submit"
-                      variant={destructive ? 'destructive' : 'default'}
-                      disabled={
-                        confirmPrompt ? prompt !== confirmPrompt : false
-                      }
-                    >
-                      {destructive ? destructiveText : 'Confirm'}
-                    </Button>
-                    <Button variant="ghost" onClick={handleCancel}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </>
-          </div>
-        </>
+                  {destructive ? destructiveText : 'Confirm'}
+                </Button>
+                <Button variant="ghost" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       }
     />
   )

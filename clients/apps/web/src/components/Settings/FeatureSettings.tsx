@@ -90,12 +90,10 @@ export default function FeatureSettings({
               name="revops_enabled"
               render={({ field }) => {
                 return (
-                  <>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={(enabled) => field.onChange(enabled)}
-                    />
-                  </>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={(enabled) => field.onChange(enabled)}
+                  />
                 )
               }}
             />
@@ -122,12 +120,10 @@ export default function FeatureSettings({
               name="checkout_localization_enabled"
               render={({ field }) => {
                 return (
-                  <>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={(enabled) => field.onChange(enabled)}
-                    />
-                  </>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={(enabled) => field.onChange(enabled)}
+                  />
                 )
               }}
             />
@@ -147,15 +143,13 @@ export default function FeatureSettings({
               render={({ field }) => {
                 seatBasedFieldRef.current = field
                 return (
-                  <>
-                    <Switch
-                      checked={field.value}
-                      disabled={!memberModelEnabled || seatBasedAlreadyEnabled}
-                      onCheckedChange={() => {
-                        setShowSeatBasedModal(true)
-                      }}
-                    />
-                  </>
+                  <Switch
+                    checked={field.value}
+                    disabled={!memberModelEnabled || seatBasedAlreadyEnabled}
+                    onCheckedChange={() => {
+                      setShowSeatBasedModal(true)
+                    }}
+                  />
                 )
               }}
             />

@@ -13,6 +13,7 @@ import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import type { FieldErrors } from 'react-hook-form'
@@ -21,6 +22,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import ProductForm from './ProductForm/ProductForm'
+import { Wand2Icon } from 'lucide-react'
 
 const reuploadMedia = async (
   media: schemas['ProductMediaFileRead'],
@@ -213,6 +215,16 @@ export const CreateProductPage = ({
       title={sourceProduct ? 'Duplicate Product' : 'Create Product'}
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
+      header={
+        !sourceProduct ? (
+          <Link href={`/dashboard/${organization.slug}/products/new/ai`}>
+            <Button variant="secondary">
+              <Wand2Icon className="mr-2" />
+              Create with AI
+            </Button>
+          </Link>
+        ) : undefined
+      }
     >
       <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">
         <Form {...form}>

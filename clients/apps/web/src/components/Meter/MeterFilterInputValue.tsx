@@ -65,7 +65,7 @@ const EventNameInput = ({ field, organizationId }: EventNameInputProps) => {
       )}
       className="font-mono text-xs"
       placeholder="Select event name"
-    ></Combobox>
+    />
   )
 }
 

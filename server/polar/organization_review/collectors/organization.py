@@ -12,6 +12,8 @@ def collect_organization_data(organization: Organization) -> OrganizationData:
         email=organization.email,
         about=details.get("about"),
         product_description=details.get("product_description"),
+        selling_categories=details.get("selling_categories", []),
+        pricing_models=details.get("pricing_models", []),
         switching_from=details.get("switching_from"),
         previous_annual_revenue=details.get("previous_annual_revenue"),
         socials=[

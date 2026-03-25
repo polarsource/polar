@@ -44,6 +44,7 @@ from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSource,
     ProductPriceType,
+    SeatTierType,
 )
 from polar.models.product_price import (
     ProductPriceCustom as ProductPriceCustomModel,
@@ -293,6 +294,10 @@ class ProductPriceSeatTiers(Schema):
     - maximum_seats = last tier's max_seats (None for unlimited)
     """
 
+    seat_tier_type: SeatTierType = Field(
+        default=SeatTierType.volume,
+        description="How tiers are applied. 'volume' prices all seats at the matching tier's rate. 'graduated' prices each tier's range independently.",
+    )
     tiers: list[ProductPriceSeatTier] = Field(
         min_length=1, description="List of pricing tiers"
     )

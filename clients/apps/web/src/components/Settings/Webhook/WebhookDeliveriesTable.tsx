@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { DateRange } from '@/components/Metrics/DateRangePicker'
@@ -242,40 +241,36 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     },
   ]
 
-  return (
-    <>
-      {deliveries && pageCount !== undefined ? (
-        <DataTable
-          columns={columns}
-          data={deliveries}
-          rowCount={rowCount}
-          pageCount={pageCount}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          getRowId={(row) => row.id}
-          getCellColSpan={(cell) => {
-            if (cell.row.original.isSubRow) {
-              if (cell.column.id === 'id') {
-                return 5
-              }
-              // hide cell
-              return 0
-            }
-            return 1
-          }}
-          getSubRows={(row) => {
-            if (row.isSubRow) {
-              return undefined
-            }
-            return [{ ...row, isSubRow: true, id: `${row.id}_subrow` }]
-          }}
-          isLoading={deliveriesHook}
-        />
-      ) : null}
-    </>
-  )
+  return deliveries && pageCount !== undefined ? (
+    <DataTable
+      columns={columns}
+      data={deliveries}
+      rowCount={rowCount}
+      pageCount={pageCount}
+      pagination={pagination}
+      onPaginationChange={setPagination}
+      sorting={sorting}
+      onSortingChange={setSorting}
+      getRowId={(row) => row.id}
+      getCellColSpan={(cell) => {
+        if (cell.row.original.isSubRow) {
+          if (cell.column.id === 'id') {
+            return 5
+          }
+          // hide cell
+          return 0
+        }
+        return 1
+      }}
+      getSubRows={(row) => {
+        if (row.isSubRow) {
+          return undefined
+        }
+        return [{ ...row, isSubRow: true, id: `${row.id}_subrow` }]
+      }}
+      isLoading={deliveriesHook}
+    />
+  ) : null
 }
 
 export default DeliveriesTable

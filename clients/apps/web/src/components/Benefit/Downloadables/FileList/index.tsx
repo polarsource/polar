@@ -54,7 +54,7 @@ export const FileList = ({
   )
 
   if (files.length === 0) {
-    return <></>
+    return null
   }
 
   // Client-side pagination

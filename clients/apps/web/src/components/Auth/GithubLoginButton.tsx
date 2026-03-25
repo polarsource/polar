@@ -48,7 +48,7 @@ const GithubLoginButton = ({
           size === 'large' ? largeStyle : smallStyle,
           className,
         )}
-        className={twMerge(size == 'large' && 'text-md p-5')}
+        className={twMerge(size === 'large' && 'text-md p-5')}
         fullWidth={fullWidth}
       >
         <svg

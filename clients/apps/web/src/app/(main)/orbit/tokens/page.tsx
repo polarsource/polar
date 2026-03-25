@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { Headline, Stack, Text } from '@polar-sh/orbit'
 import type { ReactNode } from 'react'
 import { OrbitPageHeader } from '../OrbitPageHeader'

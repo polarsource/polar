@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { type schemas } from '@polar-sh/client'
@@ -69,8 +68,6 @@ const CheckoutSeatSelector = ({
 
   const netAmount = checkout.net_amount || 0
   const currency = checkout.currency ?? 'usd'
-  const pricePerSeat = checkout.price_per_seat || 0
-
   // Auto-correct seat count if it's below the minimum (only attempt once)
   useEffect(() => {
     if (
@@ -175,10 +172,6 @@ const CheckoutSeatSelector = ({
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-medium dark:text-white">Seats</span>
-            <span className="dark:text-polar-500 text-xs text-gray-500">
-              {formatCurrency('compact', locale)(pricePerSeat, currency)} per
-              seat
-            </span>
           </div>
           {isFixedSeats ? (
             <span className="text-sm font-medium dark:text-white">
@@ -278,9 +271,6 @@ const CheckoutSeatSelector = ({
         >
           {formatCurrency('compact', locale)(netAmount, currency)}
         </h1>
-        <p className="dark:text-polar-400 text-sm text-gray-500">
-          {formatCurrency('compact', locale)(pricePerSeat, currency)} per seat
-        </p>
       </div>
 
       {/* Seat Selector */}

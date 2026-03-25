@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import {
   useCreateCheckoutLink,
   useDiscount,
@@ -238,286 +237,278 @@ export const CheckoutLinkForm = ({
   )
 
   return (
-    <>
-      <Form {...form}>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
-        >
-          <FormField
-            control={control}
-            name="label"
-            render={({ field }) => (
+    <Form {...form}>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
+        <FormField
+          control={control}
+          name="label"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Label</FormLabel>
+              <FormControl>
+                <Input placeholder="" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormDescription className="text-xs">
+                Helpful if you have multiple links - internal &amp; optional.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="products"
+          rules={{
+            validate: (value) =>
+              value.length < 1 ? 'At least one product is required' : true,
+          }}
+          render={({ field }) => {
+            return (
               <FormItem>
-                <FormLabel>Label</FormLabel>
+                <FormLabel>Products</FormLabel>
                 <FormControl>
-                  <Input placeholder="" {...field} value={field.value || ''} />
+                  <ProductSelect
+                    organization={organization}
+                    value={field.value || []}
+                    onChange={field.onChange}
+                    emptyLabel="Select one or more products"
+                  />
                 </FormControl>
-                <FormDescription className="text-xs">
-                  Helpful if you have multiple links - internal &amp; optional.
+                <FormMessage />
+                <FormDescription>
+                  The customer will be able to switch between these products at
+                  checkout.
                 </FormDescription>
+              </FormItem>
+            )
+          }}
+        />
+        <FormField
+          control={control}
+          name="success_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Success URL</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
+                  {...field}
+                  value={field.value || ''}
+                />
+              </FormControl>
+              <FormDescription className="text-xs">
+                Include{' '}
+                <code>
+                  {'{'}CHECKOUT_ID{'}'}
+                </code>{' '}
+                to receive the Checkout ID on success.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="return_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Return URL</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="https://example.com/return"
+                  {...field}
+                  value={field.value || ''}
+                />
+              </FormControl>
+              <FormDescription className="text-xs">
+                When set, a back button will be shown in the checkout to return
+                to this URL.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="discount_id"
+          render={({ field }) => {
+            const selectedItem =
+              selectedDiscount?.id === field.value
+                ? selectedDiscount
+                : discounts?.items.find((d) => d.id === field.value)
+
+            return (
+              <FormItem>
+                <FormLabel>Preset discount</FormLabel>
+                <div className="flex flex-row items-center gap-2">
+                  <Combobox
+                    items={discounts?.items || []}
+                    value={field.value || null}
+                    selectedItem={selectedItem || null}
+                    onChange={(value) => field.onChange(value || '')}
+                    onQueryChange={setDiscountQuery}
+                    getItemValue={(discount) => discount.id}
+                    getItemLabel={(discount) => discount.name}
+                    renderItem={(discount) => (
+                      <>
+                        {discount.name} ({getDiscountDisplay(discount)})
+                      </>
+                    )}
+                    isLoading={isLoadingDiscounts}
+                    placeholder="Select a discount"
+                    searchPlaceholder="Search discounts…"
+                    emptyLabel="No discounts found"
+                    className="flex-1"
+                  />
+                  {field.value && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      type="button"
+                      onClick={() => field.onChange(null)}
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name="products"
-            rules={{
-              validate: (value) =>
-                value.length < 1 ? 'At least one product is required' : true,
-            }}
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Products</FormLabel>
+            )
+          }}
+        />
+
+        <FormField
+          control={control}
+          name="allow_discount_codes"
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
+                  <FormLabel>Allow discount codes</FormLabel>
                   <FormControl>
-                    <ProductSelect
-                      organization={organization}
-                      value={field.value || []}
-                      onChange={field.onChange}
-                      emptyLabel="Select one or more products"
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
-                  <FormMessage />
-                  <FormDescription>
-                    The customer will be able to switch between these products
-                    at checkout.
-                  </FormDescription>
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name="success_url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Success URL</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
-                    {...field}
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormDescription className="text-xs">
-                  Include{' '}
-                  <code>
-                    {'{'}CHECKOUT_ID{'}'}
-                  </code>{' '}
-                  to receive the Checkout ID on success.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name="return_url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Return URL</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://example.com/return"
-                    {...field}
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormDescription className="text-xs">
-                  When set, a back button will be shown in the checkout to
-                  return to this URL.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={control}
-            name="discount_id"
-            render={({ field }) => {
-              const selectedItem =
-                selectedDiscount?.id === field.value
-                  ? selectedDiscount
-                  : discounts?.items.find((d) => d.id === field.value)
-
-              return (
-                <FormItem>
-                  <FormLabel>Preset discount</FormLabel>
-                  <div className="flex flex-row items-center gap-2">
-                    <Combobox
-                      items={discounts?.items || []}
-                      value={field.value || null}
-                      selectedItem={selectedItem || null}
-                      onChange={(value) => field.onChange(value || '')}
-                      onQueryChange={setDiscountQuery}
-                      getItemValue={(discount) => discount.id}
-                      getItemLabel={(discount) => discount.name}
-                      renderItem={(discount) => (
-                        <>
-                          {discount.name} ({getDiscountDisplay(discount)})
-                        </>
-                      )}
-                      isLoading={isLoadingDiscounts}
-                      placeholder="Select a discount"
-                      searchPlaceholder="Search discounts…"
-                      emptyLabel="No discounts found"
-                      className="flex-1"
-                    />
-                    {field.value && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        type="button"
-                        onClick={() => field.onChange(null)}
-                      >
-                        <XIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-
-          <FormField
-            control={control}
-            name="allow_discount_codes"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
-                    <FormLabel>Allow discount codes</FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                  <FormDescription>
-                    {field.value
-                      ? 'Customers will be able to apply discount codes at checkout.'
-                      : "Customers won't be able to apply discount codes at checkout."}
-                  </FormDescription>
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name="require_billing_address"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
-                    <FormLabel>Require billing address</FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                  <FormDescription>
-                    {field.value
-                      ? 'Customers will need to provide their full billing address at checkout.'
-                      : 'Customers will just need to provide their country at checkout.'}
-                  </FormDescription>
-                </FormItem>
-              )
-            }}
-          />
-
-          {hasRecurringProducts && (
-            <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
-          )}
-
-          <FormItem>
-            <div className="flex flex-row items-center justify-between gap-2 py-2">
-              <FormLabel>Metadata</FormLabel>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="self-start"
-                type="button"
-                onClick={() => {
-                  append({ key: '', value: '' })
-                }}
-              >
-                Add Metadata
-              </Button>
-            </div>
-            <div className="flex flex-col gap-2">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex flex-row items-center gap-2"
-                >
-                  <FormField
-                    control={control}
-                    name={`metadata.${index}.key`}
-                    render={({ field }) => (
-                      <div className="flex flex-1 flex-col gap-y-1">
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ''}
-                            placeholder="Key"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </div>
-                    )}
-                  />
-                  <FormField
-                    control={control}
-                    name={`metadata.${index}.value`}
-                    render={({ field }) => (
-                      <div className="flex flex-1 flex-col gap-y-1">
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value.toString() || ''}
-                            placeholder="Value"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </div>
-                    )}
-                  />
-                  <Button
-                    className={
-                      'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                    }
-                    size="icon"
-                    variant="secondary"
-                    type="button"
-                    onClick={() => remove(index)}
-                  >
-                    <ClearOutlined fontSize="inherit" />
-                  </Button>
                 </div>
-              ))}
-            </div>
-          </FormItem>
+                <FormMessage />
+                <FormDescription>
+                  {field.value
+                    ? 'Customers will be able to apply discount codes at checkout.'
+                    : "Customers won't be able to apply discount codes at checkout."}
+                </FormDescription>
+              </FormItem>
+            )
+          }}
+        />
+        <FormField
+          control={control}
+          name="require_billing_address"
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
+                  <FormLabel>Require billing address</FormLabel>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+                <FormDescription>
+                  {field.value
+                    ? 'Customers will need to provide their full billing address at checkout.'
+                    : 'Customers will just need to provide their country at checkout.'}
+                </FormDescription>
+              </FormItem>
+            )
+          }}
+        />
 
-          <div className="flex flex-row gap-x-4">
+        {hasRecurringProducts && (
+          <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
+        )}
+
+        <FormItem>
+          <div className="flex flex-row items-center justify-between gap-2 py-2">
+            <FormLabel>Metadata</FormLabel>
             <Button
+              size="sm"
+              variant="secondary"
               className="self-start"
-              type="submit"
-              loading={isCreatePending || isUpdatePending}
+              type="button"
+              onClick={() => {
+                append({ key: '', value: '' })
+              }}
             >
-              {checkoutLink ? 'Save Link' : 'Create Link'}
+              Add Metadata
             </Button>
           </div>
-        </form>
-      </Form>
-    </>
+          <div className="flex flex-col gap-2">
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex flex-row items-center gap-2">
+                <FormField
+                  control={control}
+                  name={`metadata.${index}.key`}
+                  render={({ field }) => (
+                    <div className="flex flex-1 flex-col gap-y-1">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ''}
+                          placeholder="Key"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </div>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name={`metadata.${index}.value`}
+                  render={({ field }) => (
+                    <div className="flex flex-1 flex-col gap-y-1">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value.toString() || ''}
+                          placeholder="Value"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </div>
+                  )}
+                />
+                <Button
+                  className={
+                    'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                  }
+                  size="icon"
+                  variant="secondary"
+                  type="button"
+                  onClick={() => remove(index)}
+                >
+                  <ClearOutlined fontSize="inherit" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </FormItem>
+
+        <div className="flex flex-row gap-x-4">
+          <Button
+            className="self-start"
+            type="submit"
+            loading={isCreatePending || isUpdatePending}
+          >
+            {checkoutLink ? 'Save Link' : 'Create Link'}
+          </Button>
+        </div>
+      </form>
+    </Form>
   )
 }

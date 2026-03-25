@@ -75,11 +75,9 @@ const DownloadableItem = ({
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
               {downloadable.file.checksum_sha256_hex && (
-                <>
-                  <DropdownMenuItem onClick={onCopySHA}>
-                    Copy SHA256 Checksum
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={onCopySHA}>
+                  Copy SHA256 Checksum
+                </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>

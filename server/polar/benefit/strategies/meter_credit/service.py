@@ -65,13 +65,12 @@ class BenefitMeterCreditService(
             or latest_meter_reset.ingested_at < last_credited_at
         ):
             rollover_units = 0
-            if properties["rollover"]:
-                meter_repository = MeterRepository.from_session(self.session)
-                meter = await meter_repository.get_by_id(meter_id)
-                assert meter is not None
-                rollover_units = await customer_meter_service.get_rollover_units(
-                    self.session, customer, meter
-                )
+            meter_repository = MeterRepository.from_session(self.session)
+            meter = await meter_repository.get_by_id(meter_id)
+            assert meter is not None
+            rollover_units = await customer_meter_service.get_rollover_units(
+                self.session, customer, meter
+            )
 
             await event_service.create_event(
                 self.session,

@@ -2,7 +2,7 @@ name: "E2E Flakiness Analysis"
 
 on:
   workflow_run:
-    workflows: ["E2E Tests"]
+    workflows: ["E2E Tests", "Preview Environments"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -115,6 +115,13 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
+          tags: ${{ vars.POLAR_PREVIEW_TAILSCALE_TAGS || 'tag:ci' }}
+
       - name: Install Chrome
         uses: browser-actions/setup-chrome@latest
         with:
@@ -204,7 +211,8 @@ jobs:
 
           if [ -f analysis-result.json ]; then
             CLASSIFICATION=$(jq -r '.classification' analysis-result.json)
-            SUMMARY=$(jq -r '.summary' analysis-result.json)
+            # JSON-escape the summary so it's safe to embed in the Slack payload
+            SUMMARY=$(jq -r '.summary' analysis-result.json | jq -Rs '.' | sed 's/^"//;s/"$//')
             echo "classification=$CLASSIFICATION" >> $GITHUB_OUTPUT
             {
               echo "summary<<GHEOF"

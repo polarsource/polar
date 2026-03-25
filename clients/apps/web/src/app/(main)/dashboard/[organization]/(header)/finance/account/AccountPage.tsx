@@ -50,8 +50,13 @@ export default function ClientPage({
     (accountError as ClientResponseError)?.response?.status === 403
 
   const isApproved =
-    reviewStatus?.verdict === 'PASS' ||
-    reviewStatus?.appeal_decision === 'approved'
+    organization.status === 'denied'
+      ? false // Explicit denial always takes precedence, if not, fall back to checking for approval conditions
+      : reviewStatus?.verdict === 'PASS' ||
+        reviewStatus?.appeal_decision === 'approved' ||
+        ['active', 'initial_review', 'ongoing_review'].includes(
+          organization.status,
+        )
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
   const createIdentityVerification = useCreateIdentityVerification()

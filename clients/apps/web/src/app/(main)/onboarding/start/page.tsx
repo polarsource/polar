@@ -5,21 +5,32 @@ import { useOnboardingData } from '@/components/Onboarding/v2/OnboardingContext'
 import { CONFIG } from '@/utils/config'
 import { Box } from '@polar-sh/orbit/Box'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { usePostHog } from '@/hooks/posthog'
 import { redirect, useRouter } from 'next/navigation'
 
 export default function Page() {
   const router = useRouter()
+  const posthog = usePostHog()
   const { updateData } = useOnboardingData()
 
   if (CONFIG.IS_SANDBOX) {
-    redirect('/onboarding/personal')
+    redirect('/onboarding/sandbox')
   }
 
   const handleSandbox = () => {
-    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/personal&from=onboarding`
+    posthog.capture(
+      'dashboard:onboarding:mode:click',
+      { mode: 'sandbox', source: 'onboarding_start' },
+      { send_instantly: true },
+    )
+    window.location.href = `${CONFIG.SANDBOX_FRONTEND_BASE_URL}/login?return_to=/onboarding/sandbox&from=onboarding`
   }
 
   const handleGetStarted = () => {
+    posthog.capture('dashboard:onboarding:mode:click', {
+      mode: 'production',
+      source: 'onboarding_start',
+    })
     updateData({
       buildingIntent: ['setting_up_business'],
     })

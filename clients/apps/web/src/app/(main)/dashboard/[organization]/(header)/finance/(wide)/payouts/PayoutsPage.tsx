@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import AccessRestricted from '@/components/Finance/AccessRestricted'
@@ -9,7 +8,6 @@ import DownloadInvoice, {
 import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import AccountBanner from '@/components/Transactions/AccountBanner'
-import { platformFeesDisplayNames } from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { getServerURL } from '@/utils/api'
@@ -19,6 +17,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
+import { platformFeesDisplayNames } from '@/utils/transaction'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -146,7 +145,7 @@ export default function ClientPage({
           )
         }
         if (original.platform_fee_type) {
-          return <>{platformFeesDisplayNames[original.platform_fee_type]}</>
+          return platformFeesDisplayNames[original.platform_fee_type]
         }
       },
     },

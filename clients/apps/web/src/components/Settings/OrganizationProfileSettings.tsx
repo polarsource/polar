@@ -1,5 +1,5 @@
-/* eslint-disable max-lines */
 import { useAuth } from '@/hooks'
+import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useURLValidation } from '@/hooks/useURLValidation'
@@ -479,8 +479,8 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                 rules={{
                   required: 'Please describe what you sell',
                   minLength: {
-                    value: 50,
-                    message: 'Please provide at least 50 characters',
+                    value: 30,
+                    message: 'Please provide at least 30 characters',
                   },
                   maxLength: {
                     value: 3000,
@@ -496,7 +496,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/3000 characters (min 50)
+                        {field.value?.length || 0}/3000 characters (min 30)
                       </span>
                     </div>
                   </div>
@@ -563,12 +563,31 @@ const OrganizationProfileSettings: React.FC<
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
   }
+  const inKYCMode = kyc === true
   const router = useRouter()
+
+  const { data: kycData, isLoading: isKYCLoading } = useOrganizationKYC(
+    organization.id,
+    inKYCMode,
+  )
+
   const form = useForm<schemas['OrganizationUpdate']>({
-    defaultValues: organization,
+    defaultValues: {
+      ...organization,
+      ...(kycData?.details ? { details: kycData.details } : {}),
+    },
   })
   const { handleSubmit, setError, formState, reset } = form
-  const inKYCMode = kyc === true
+
+  // Reset form when KYC data loads to merge details into defaults
+  React.useEffect(() => {
+    if (kycData?.details) {
+      reset({
+        ...organization,
+        details: kycData.details,
+      })
+    }
+  }, [kycData, organization, reset])
 
   const { currentUser } = useAuth()
 
@@ -640,6 +659,14 @@ const OrganizationProfileSettings: React.FC<
     delay: 1000,
     enabled: !inKYCMode,
   })
+
+  if (inKYCMode && isKYCLoading) {
+    return (
+      <div className="mx-auto flex max-w-2xl items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    )
+  }
 
   return (
     <Form {...form}>

@@ -16,9 +16,9 @@ const seatDefaults: Partial<ProductCheckoutPublic> = {
   seats: 3,
   min_seats: null,
   max_seats: null,
-  price_per_seat: 1049,
   product_price: createSeatBasedPrice({
     seat_tiers: {
+      seat_tier_type: 'volume',
       tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1049 }],
       minimum_seats: 1,
       maximum_seats: null,
@@ -70,22 +70,6 @@ describe('CheckoutSeatSelector', () => {
       )
 
       expect(screen.getByTestId('headline-price')).toHaveTextContent('$31.47')
-    })
-
-    it('shows per-seat price', () => {
-      const checkout = createSeatCheckout()
-
-      const { container } = render(
-        <CheckoutSeatSelector
-          checkout={checkout}
-          update={noopUpdate}
-          locale="en"
-        />,
-      )
-
-      const perSeatText = container.querySelector('p')
-      expect(perSeatText?.textContent).toContain('$10.49')
-      expect(perSeatText?.textContent).toContain('per seat')
     })
   })
 
@@ -166,7 +150,7 @@ describe('CheckoutSeatSelector', () => {
   })
 
   describe('compact layout', () => {
-    it('shows "Seats" label and per-seat price', () => {
+    it('shows "Seats" label', () => {
       const checkout = createSeatCheckout()
 
       render(
@@ -179,7 +163,6 @@ describe('CheckoutSeatSelector', () => {
       )
 
       expect(screen.getByText('Seats')).toBeInTheDocument()
-      expect(screen.getByText(/\$10\.49.*per seat/)).toBeInTheDocument()
     })
 
     it('shows stepper buttons', () => {
@@ -248,6 +231,7 @@ describe('CheckoutSeatSelector', () => {
         max_seats: null,
         product_price: createSeatBasedPrice({
           seat_tiers: {
+            seat_tier_type: 'volume',
             tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
             minimum_seats: 1,
             maximum_seats: null,
@@ -273,6 +257,7 @@ describe('CheckoutSeatSelector', () => {
         max_seats: 10,
         product_price: createSeatBasedPrice({
           seat_tiers: {
+            seat_tier_type: 'volume',
             tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
             minimum_seats: 1,
             maximum_seats: null,
@@ -298,6 +283,7 @@ describe('CheckoutSeatSelector', () => {
         max_seats: 10,
         product_price: createSeatBasedPrice({
           seat_tiers: {
+            seat_tier_type: 'volume',
             tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
             minimum_seats: 1,
             maximum_seats: null,
@@ -314,6 +300,64 @@ describe('CheckoutSeatSelector', () => {
       )
 
       expect(screen.getByText('3 - 10 seats')).toBeInTheDocument()
+    })
+  })
+
+  describe('graduated pricing', () => {
+    const graduatedDefaults: Partial<ProductCheckoutPublic> = {
+      amount: 14000,
+      net_amount: 14000,
+      tax_amount: null,
+      total_amount: 14000,
+      seats: 15,
+      min_seats: null,
+      max_seats: null,
+      product_price: createSeatBasedPrice({
+        seat_tiers: {
+          seat_tier_type: 'graduated',
+          tiers: [
+            { min_seats: 1, max_seats: 10, price_per_seat: 1000 },
+            { min_seats: 11, max_seats: null, price_per_seat: 800 },
+          ],
+          minimum_seats: 1,
+          maximum_seats: null,
+        },
+      }),
+    }
+
+    function createGraduatedCheckout(
+      overrides: Partial<ProductCheckoutPublic> = {},
+    ): ProductCheckoutPublic {
+      return createCheckout({ ...graduatedDefaults, ...overrides })
+    }
+
+    it('shows total amount for graduated pricing', () => {
+      const checkout = createGraduatedCheckout()
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={noopUpdate}
+          locale="en"
+        />,
+      )
+
+      expect(screen.getByTestId('headline-price')).toHaveTextContent('$140')
+    })
+
+    it('renders stepper buttons for graduated pricing', () => {
+      const checkout = createGraduatedCheckout()
+
+      render(
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={noopUpdate}
+          locale="en"
+        />,
+      )
+
+      expect(screen.getByLabelText('Decrease seats')).toBeInTheDocument()
+      expect(screen.getByLabelText('Increase seats')).toBeInTheDocument()
     })
   })
 
@@ -344,6 +388,7 @@ describe('CheckoutSeatSelector', () => {
         max_seats: 5,
         product_price: createSeatBasedPrice({
           seat_tiers: {
+            seat_tier_type: 'volume',
             tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 1000 }],
             minimum_seats: 1,
             maximum_seats: null,

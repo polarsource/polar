@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
@@ -176,7 +175,7 @@ const MaintainerNewPaidSubscription = ({
             {payload.subscriber_name} is now subscribing to{' '}
             {href ? (
               <InternalLink href={href}>
-                <>{payload.tier_name}</>
+                <span>{payload.tier_name}</span>
               </InternalLink>
             ) : (
               <span className="font-bold">{payload.tier_name}</span>
@@ -219,7 +218,7 @@ const MaintainerNewProductSale = ({
             {payload.customer_name} just purchased{' '}
             {href ? (
               <InternalLink href={href}>
-                <>{payload.product_name}</>
+                <span>{payload.product_name}</span>
               </InternalLink>
             ) : (
               <span className="font-bold">{payload.product_name}</span>
@@ -251,7 +250,7 @@ const MaintainerCreateAccount = ({
           <>
             Create a{' '}
             <InternalLink href={payload.url}>
-              <>payout account</>
+              <span>payout account</span>
             </InternalLink>{' '}
             now for {payload.organization_name} to receive funds.
           </>

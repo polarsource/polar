@@ -1,7 +1,7 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { useAuth } from '@/hooks'
+import * as Sentry from '@sentry/nextjs'
 import { useUpdateUser } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -23,9 +23,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { SUPPORTED_PAYOUT_COUNTRIES } from './config/supported-payout-countries'
 import { useOnboardingData } from './OnboardingContext'
 import { OnboardingShell } from './OnboardingShell'
 
@@ -76,9 +78,14 @@ function FormSync() {
 export function PersonalDetailsStep() {
   const router = useRouter()
   const { currentUser } = useAuth()
-  const { data, updateData, showApiResponse } = useOnboardingData()
+  const { data, updateData, setApiLoading, showApiResponse } =
+    useOnboardingData()
+  const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(false)
+
+  trackStepViewed('personal')
 
   const dateOfBirthSource = data.dateOfBirth || currentUser?.date_of_birth || ''
   const parsedDob = dateOfBirthSource ? dateOfBirthSource.split('-') : []
@@ -94,7 +101,16 @@ export function PersonalDetailsStep() {
     },
   })
 
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, watch } = form
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const country = watch('country')
+  const isUnsupportedCountry =
+    country !== '' && !SUPPORTED_PAYOUT_COUNTRIES.includes(country)
+  const countryDisplayName = useMemo(() => {
+    if (!country) return ''
+    return new Intl.DisplayNames([], { type: 'region' }).of(country) ?? country
+  }, [country])
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 100 }, (_, i) =>
@@ -108,6 +124,8 @@ export function PersonalDetailsStep() {
 
   const onSubmit = async (formData: FormSchema) => {
     setSubmitting(true)
+    setSubmitError(false)
+    setApiLoading(true)
     const dateOfBirth = `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay.padStart(2, '0')}`
     updateData({
       firstName: formData.firstName,
@@ -116,19 +134,29 @@ export function PersonalDetailsStep() {
       dateOfBirth,
     })
 
-    const { error } = await updateUser.mutateAsync({
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      country: formData.country as schemas['CountryAlpha2Input'],
-      date_of_birth: dateOfBirth,
-    })
+    try {
+      const { error } = await updateUser.mutateAsync({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        country: formData.country as schemas['CountryAlpha2Input'],
+        date_of_birth: dateOfBirth,
+      })
 
-    if (error) {
+      if (error) {
+        Sentry.captureException(error)
+        setSubmitting(false)
+        setSubmitError(true)
+        await showApiResponse(400, 'Failed to save personal details')
+        return
+      }
+    } catch (error) {
+      Sentry.captureException(error)
       setSubmitting(false)
-      await showApiResponse(400, 'Failed to save personal details')
+      setSubmitError(true)
       return
     }
 
+    trackStepCompleted('personal')
     await showApiResponse(201, 'Created')
     router.push('/onboarding/business')
   }
@@ -180,25 +208,47 @@ export function PersonalDetailsStep() {
             />
           </Box>
 
-          <FormField
-            control={control}
-            name="country"
-            rules={{ required: 'Country is required' }}
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <CountryPicker
-                    allowedCountries={enums.addressInputCountryValues}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select country"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="flex flex-col gap-y-2">
+            <FormField
+              control={control}
+              name="country"
+              rules={{ required: 'Country is required' }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <CountryPicker
+                      allowedCountries={enums.addressInputCountryValues}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select country"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isUnsupportedCountry && (
+              <Box
+                display="flex"
+                flexDirection="column"
+                rowGap="m"
+                borderRadius="md"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-warning"
+                backgroundColor="background-warning"
+                padding="l"
+              >
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  Payouts are not available in {countryDisplayName}&nbsp;yet.
+                  You can still continue and we&rsquo;ll notify you when support
+                  is added.
+                </p>
+              </Box>
             )}
-          />
+          </div>
 
           <Box display="flex" flexDirection="column" rowGap="s">
             <FormLabel>Date of Birth</FormLabel>
@@ -287,9 +337,16 @@ export function PersonalDetailsStep() {
             </Box>
           </Box>
 
-          <Button type="submit" loading={submitting} fullWidth>
-            Continue
-          </Button>
+          <div className="flex flex-col gap-y-2">
+            <Button type="submit" loading={submitting} fullWidth>
+              Continue
+            </Button>
+            {submitError && (
+              <p className="text-sm text-red-500 dark:text-red-500">
+                Something went wrong, please try again.
+              </p>
+            )}
+          </div>
         </form>
       </Form>
     </OnboardingShell>

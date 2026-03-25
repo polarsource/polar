@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Check authorization
         id: auth
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -33,7 +33,7 @@ jobs:
             core.info(`User ${context.payload.comment.user.login} authorized (${level})`);
 
       - name: React to comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.reactions.createForIssueComment({
@@ -44,7 +44,7 @@ jobs:
             });
 
       - name: Merge PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.EMERGENCY_MERGE_TOKEN }}
           script: |
@@ -82,7 +82,7 @@ jobs:
 
       - name: Comment result
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const prNumber = context.payload.issue.number;

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { MetricGroup } from '@/app/(main)/dashboard/[organization]/(header)/analytics/metrics/components/MetricGroup'

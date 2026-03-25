@@ -27,6 +27,8 @@ read -rp "Tailscale auth key (tskey-auth-...): " TAILSCALE_AUTH_KEY
 read -rp "Tailscale tags (e.g. tag:preview) [tag:preview]: " TAILSCALE_TAGS
 TAILSCALE_TAGS="${TAILSCALE_TAGS:-tag:preview}"
 read -rp "Vercel bypass secret (from Vercel project settings): " VERCEL_BYPASS_SECRET
+read -rp "Stripe test-mode secret key (sk_test_...): " STRIPE_SECRET_KEY
+read -rp "Stripe test-mode webhook secret (whsec_...): " STRIPE_WEBHOOK_SECRET
 
 echo ""
 echo "=== Setting up preview VM ==="
@@ -78,7 +80,7 @@ if ! command -v caddy &>/dev/null; then
     caddy version
 fi
 
-mkdir -p /etc/caddy/previews
+mkdir -p /etc/caddy/previews /etc/preview-secrets
 
 # Generate a preview access token for gating funnel (public internet) access.
 # Tailnet users get full access via tailscale serve on :443.
@@ -89,6 +91,11 @@ if [[ ! -f /etc/caddy/env ]]; then
 POLAR_PREVIEW_ACCESS_TOKEN=${PREVIEW_ACCESS_TOKEN}
 VERCEL_BYPASS_SECRET=${VERCEL_BYPASS_SECRET}
 ENVFILE
+    cat > /etc/preview-secrets/stripe.env <<ENVFILE
+POLAR_STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+POLAR_STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+ENVFILE
+    chmod 600 /etc/preview-secrets/stripe.env
     chmod 600 /etc/caddy/env
     echo ""
     echo "Generated preview access token: ${PREVIEW_ACCESS_TOKEN}"
@@ -99,6 +106,14 @@ else
     if ! grep -q VERCEL_BYPASS_SECRET /etc/caddy/env; then
         echo "VERCEL_BYPASS_SECRET=${VERCEL_BYPASS_SECRET}" >> /etc/caddy/env
     fi
+fi
+
+if [[ ! -f /etc/preview-secrets/stripe.env ]]; then
+    cat > /etc/preview-secrets/stripe.env <<ENVFILE
+POLAR_STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+POLAR_STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+ENVFILE
+    chmod 600 /etc/preview-secrets/stripe.env
 fi
 
 cat > /etc/caddy/Caddyfile <<'CADDYFILE'

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { type schemas } from '@polar-sh/client'
@@ -16,7 +15,8 @@ function toSnakeCase(str: string): string {
 const STEP_CONFIG = {
   personal: { method: 'PATCH', path: '/v1/users/me' },
   business: { method: 'POST', path: '/v1/organizations' },
-  product: { method: 'PATCH', path: '/v1/organizations/:id' },
+  product: { method: 'POST', path: '/v1/organizations' },
+  sandbox: { method: 'POST', path: '/v1/organizations' },
 } as const
 
 interface Line {
@@ -26,13 +26,15 @@ interface Line {
   content: React.ReactNode
 }
 
-export function APIPreview({
-  step,
-}: {
-  step: 'personal' | 'business' | 'product'
-}) {
+export type APIPreviewStep = 'personal' | 'business' | 'product' | 'sandbox'
+
+export function APIPreview({ step }: { step: APIPreviewStep }) {
   const data = useOnboardingDataLive()
-  const { apiResponse } = useOnboardingData()
+  const { apiLoading, apiResponse, clearApiResponse } = useOnboardingData()
+
+  useEffect(() => {
+    clearApiResponse()
+  }, [step, clearApiResponse])
 
   const body = useMemo(() => {
     switch (step) {
@@ -44,6 +46,15 @@ export function APIPreview({
           obj.country = data.country as schemas['UserUpdate']['country']
         if (data.dateOfBirth) obj.date_of_birth = data.dateOfBirth
         return obj
+      }
+      case 'sandbox': {
+        const sandboxObj: Partial<schemas['OrganizationCreate']> = {
+          default_presentment_currency:
+            (data.defaultCurrency as schemas['PresentmentCurrency']) || 'usd',
+        }
+        if (data.orgName) sandboxObj.name = data.orgName
+        if (data.orgSlug) sandboxObj.slug = data.orgSlug
+        return sandboxObj
       }
       case 'business': {
         const obj: Partial<schemas['OrganizationCreate']> = {
@@ -66,7 +77,20 @@ export function APIPreview({
         return obj
       }
       case 'product': {
-        const obj: Record<string, unknown> = {}
+        const obj: Record<string, unknown> = {
+          default_presentment_currency: data.defaultCurrency || 'usd',
+        }
+        if (data.orgName) obj.name = data.orgName
+        if (data.orgSlug) obj.slug = data.orgSlug
+        if (data.businessCountry) obj.country = data.businessCountry
+        const legalEntity =
+          data.organizationType === 'company' && data.registeredBusinessName
+            ? {
+                type: 'company' as const,
+                registered_name: data.registeredBusinessName,
+              }
+            : { type: 'individual' as const }
+        obj.legal_entity = legalEntity
         if (data.supportEmail) obj.email = data.supportEmail
         if (data.productUrl) obj.website = data.productUrl
 
@@ -131,7 +155,6 @@ export function APIPreview({
 
     return () => {
       clearTimeout(debounceTimer.current)
-      clearTimeout(fadeTimer.current)
     }
   }, [lines])
 
@@ -189,6 +212,15 @@ export function APIPreview({
         })}
       </div>
 
+      {apiLoading && (
+        <div className="mt-3 flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-gray-800">
+          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />
+          <span className="text-[10px] text-gray-400 dark:text-gray-500">
+            Sending request...
+          </span>
+        </div>
+      )}
+
       {apiResponse && (
         <div className="mt-3 flex flex-col gap-3 border-t border-gray-200 pt-3 dark:border-gray-800">
           <div className="flex items-center gap-2">
@@ -206,26 +238,32 @@ export function APIPreview({
             </span>
           </div>
 
-          <div className="pb-2 text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
-            Response Body
-          </div>
-          <pre className="leading-relaxed text-gray-500 dark:text-gray-500">
-            {'{\n'}
-            {'  '}
-            <span className="text-blue-600 dark:text-blue-400">{'"id"'}</span>
-            <span className="text-gray-400">: </span>
-            <span className="text-green-600 dark:text-green-400">
-              {'"org_•••"'}
-            </span>
-            {',\n'}
-            {'  '}
-            <span className="text-blue-600 dark:text-blue-400">
-              {'"created_at"'}
-            </span>
-            <span className="text-gray-400">: </span>
-            <span className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</span>
-            {'\n}'}
-          </pre>
+          {apiResponse.status < 400 && (
+            <>
+              <div className="pb-2 text-[10px] font-medium tracking-wider text-gray-400 uppercase dark:text-gray-600">
+                Response Body
+              </div>
+              <pre className="leading-relaxed text-gray-500 dark:text-gray-500">
+                {'{\n'}
+                {'  '}
+                <span className="text-blue-600 dark:text-blue-400">
+                  {'"id"'}
+                </span>
+                <span className="text-gray-400">: </span>
+                <span className="text-green-600 dark:text-green-400">
+                  {'"org_•••"'}
+                </span>
+                {',\n'}
+                {'  '}
+                <span className="text-blue-600 dark:text-blue-400">
+                  {'"created_at"'}
+                </span>
+                <span className="text-gray-400">: </span>
+                <span className="text-green-600 dark:text-green-400">{`"${new Date().toISOString().split('.')[0]}Z"`}</span>
+                {'\n}'}
+              </pre>
+            </>
+          )}
         </div>
       )}
     </div>

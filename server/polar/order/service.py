@@ -774,13 +774,16 @@ class OrderService:
                 )
             # Sync mode, attempt payment immediately and raise if it fails
             elif payment_mode == PaymentMode.sync:
-                if subscription.payment_method_id is None:
+                payment_method_id = (
+                    subscription.payment_method_id or customer.default_payment_method_id
+                )
+                if payment_method_id is None:
                     raise PaymentFailed(PaymentFailedReason.missing_payment_method)
                 payment_method_repository = PaymentMethodRepository.from_session(
                     session
                 )
                 payment_method = await payment_method_repository.get_by_id(
-                    subscription.payment_method_id
+                    payment_method_id
                 )
                 assert payment_method is not None
                 await self.trigger_payment(
@@ -788,13 +791,16 @@ class OrderService:
                 )
             # Async mode, allow payment to fail and be retried later
             else:
-                if subscription.payment_method_id is None:
+                payment_method_id = (
+                    subscription.payment_method_id or customer.default_payment_method_id
+                )
+                if payment_method_id is None:
                     order = await self.handle_payment_failure(session, order)
                 else:
                     enqueue_job(
                         "order.trigger_payment",
                         order_id=order.id,
-                        payment_method_id=subscription.payment_method_id,
+                        payment_method_id=payment_method_id,
                     )
 
             await self._on_order_created(session, order)
@@ -1845,13 +1851,18 @@ class OrderService:
 
     async def void(self, session: AsyncSession, order: Order) -> Order:
         """Mark an order as void, indicating payment cannot be recovered."""
+        if order.payment_lock_acquired_at is not None:
+            raise PaymentAlreadyInProgress(order)
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
         previous_status = order.status
 
         repository = OrderRepository.from_session(session)
-        order = await repository.update(order, update_dict={"status": OrderStatus.void})
+        order = await repository.update(
+            order,
+            update_dict={"status": OrderStatus.void, "next_payment_attempt_at": None},
+        )
 
         await event_service.create_event(
             session,
@@ -1869,6 +1880,22 @@ class OrderService:
         await self._on_order_updated(session, order, previous_status=previous_status)
 
         return order
+
+    async def void_pending_orders_for_subscription(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Sequence[Order]:
+        """Void all pending orders for a specific subscription."""
+        repository = OrderRepository.from_session(session)
+        pending_orders = await repository.get_pending_orders_for_subscription(
+            subscription.id, options=repository.get_eager_options()
+        )
+
+        voided_orders: list[Order] = []
+        for order in pending_orders:
+            voided_order = await self.void(session, order)
+            voided_orders.append(voided_order)
+
+        return voided_orders
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)

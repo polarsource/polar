@@ -16,6 +16,7 @@ from polar.checkout.eventstream import CheckoutEvent
 from polar.email.schemas import OrderConfirmationEmail
 from polar.enums import (
     InvoiceNumbering,
+    PaymentMode,
     PaymentProcessor,
     SubscriptionRecurringInterval,
     TaxProcessor,
@@ -1895,6 +1896,60 @@ class TestCreateSubscriptionOrder:
             session, customer, subscription.currency
         )
         assert new_balance == 49_50
+
+    async def test_sync_mode_null_payment_method_fallback_to_customer_default(
+        self,
+        mocker: MockerFixture,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """When subscription.payment_method_id is None but customer has a default PM,
+        sync mode should use the customer's default PM and succeed."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        default_pm = await create_payment_method(save_fixture, customer=customer)
+        customer.default_payment_method = default_pm
+        await save_fixture(customer)
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        assert subscription.payment_method is None
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
+        )
+
+        order = await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_cycle,
+            payment_mode=PaymentMode.sync,
+        )
+
+        trigger_payment_mock.assert_called_once()
+        call_args = trigger_payment_mock.call_args
+        assert call_args.args[2].id == default_pm.id
 
 
 @pytest.mark.asyncio
@@ -4306,6 +4361,30 @@ class TestVoidOrder:
         assert events[0].user_metadata["order_id"] == str(order.id)
 
     @pytest.mark.asyncio
+    async def test_void_order_payment_in_progress(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that voiding an order with an active payment lock raises OrderPaymentInProgress."""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        order.payment_lock_acquired_at = utc_now()
+
+        # When/Then
+        with pytest.raises(PaymentAlreadyInProgress) as exc_info:
+            await order_service.void(session, order)
+
+        assert exc_info.value.order == order
+
+    @pytest.mark.asyncio
     async def test_void_non_pending_order(
         self,
         session: AsyncSession,
@@ -4327,3 +4406,81 @@ class TestVoidOrder:
             await order_service.void(session, order)
 
         assert exc_info.value.order.id == order.id
+
+    @pytest.mark.asyncio
+    async def test_void_clears_next_payment_attempt(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that voiding an order clears next_payment_attempt_at."""
+        # Given
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_attempt_at,
+        )
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
+
+
+@pytest.mark.asyncio
+class TestVoidPendingOrdersForSubscription:
+    @pytest.mark.asyncio
+    async def test_void_pending_orders_for_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test voiding all pending orders for a subscription."""
+        # Given
+        # Create a subscription
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+
+        # Create two pending orders for the subscription
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order1 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=next_attempt_at,
+        )
+
+        order2 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=next_attempt_at,
+        )
+
+        # When
+        voided_orders = await order_service.void_pending_orders_for_subscription(
+            session, subscription
+        )
+
+        # Then
+        assert len(voided_orders) == 2
+
+        # Verify both orders are voided and next_payment_attempt_at is cleared
+        for order in voided_orders:
+            assert order.status == OrderStatus.void
+            assert order.next_payment_attempt_at is None
+            assert order.subscription_id == subscription.id

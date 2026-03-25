@@ -210,9 +210,7 @@ export const InactiveSubscriptionsOverview = ({
                 subscription={selectedSubscription}
               />
             </div>
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
 

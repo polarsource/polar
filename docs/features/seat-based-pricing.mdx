@@ -11,7 +11,7 @@ Seat-based pricing allows you to sell products where a billing manager purchases
 - Team subscriptions where one billing manager pays for multiple users
 - Perpetual team licenses with one-time payment
 - Organizational licenses with per-seat pricing
-- Products with volume-based tiering (e.g., \$10/seat for 1-4 seats, \$9/seat for 5+)
+- Products with flat, graduated, or volume-discounted seat pricing
 </Info>
 
 ## Feature Flag
@@ -59,20 +59,22 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
     - **Billing cycle** (subscriptions only): Monthly or Yearly
     - **Pricing type**: Seat-based
   </Step>
-  <Step title="Configure seat tiers">
-    Define your pricing tiers based on seat quantity:
+  <Step title="Choose a tiering model">
+    Under **Tiering model**, select how seats are priced:
 
-    - **Min seats**: Minimum number of seats required to purchase
-    - **Tiers**: For each tier, set:
-      - **Max seats**: Upper limit for this tier (leave empty for unlimited)
-      - **Price per seat**: Amount charged per seat in this tier (in cents)
+    | Model | Description |
+    |-------|-------------|
+    | **Fixed price per seat** | Every seat costs the same flat rate. Simple and predictable. |
+    | **Graduated** | Seats are priced per tier range independently — seats in tier 1 cost one rate, seats in tier 2 cost another. Total price is the sum across all tiers. |
+    | **Volume discounts** | The per-seat price is determined by the total seats purchased, and that rate applies to all seats. Crossing a tier threshold lowers the price for everyone. |
 
-    Seat-based pricing uses **volume pricing** — the per-seat price is determined by the total number of seats purchased, and that rate applies to all seats. For example, if your tiers are:
-    - 1-4 seats: $10/seat per month
-    - 5-9 seats: $9/seat per month
-    - 10+ seats: $8/seat per month
+    **Fixed price per seat** is the default and the simplest option — just enter a single price per seat.
 
-    A purchase of 6 seats would cost 6 × $9 = $54/month (all seats at the 5-9 tier rate).
+    For **Graduated** and **Volume discounts**, define tiers using a threshold (the seat count at which a new rate begins) and a price per seat for that range.
+
+    **Example** with tiers at 1–10 seats: $10/seat and 11+ seats: $8/seat:
+    - Graduated: 14 seats = 10 × $10 + 4 × $8 = $132 — each range is billed at its own rate
+    - Volume discounts: 14 seats = 14 × $8 = $112 — all seats use the lowest matching rate
   </Step>
   <Step title="Add benefits">
     Configure the benefits that seat holders will receive. These are only granted when a seat is claimed, not when purchased.

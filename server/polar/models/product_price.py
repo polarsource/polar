@@ -61,6 +61,11 @@ class ProductPriceSource(StrEnum):
     ad_hoc = "ad_hoc"
 
 
+class SeatTierType(StrEnum):
+    volume = "volume"
+    graduated = "graduated"
+
+
 class SeatTier(TypedDict):
     """A single pricing tier for seat-based pricing."""
 
@@ -72,6 +77,7 @@ class SeatTier(TypedDict):
 class SeatTiersData(TypedDict):
     """The structure of the seat_tiers JSONB column."""
 
+    seat_tier_type: SeatTierType
     tiers: list[SeatTier]
 
 
@@ -379,12 +385,35 @@ class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
                 return tier
         raise ValueError(f"No tier found for {seats} seats")
 
-    def get_price_per_seat(self, seats: int) -> int:
-        tier = self.get_tier_for_seats(seats)
-        return tier["price_per_seat"]
-
     def calculate_amount(self, seats: int) -> int:
-        return self.get_price_per_seat(seats) * seats
+        seat_tier_type = self.seat_tiers.get("seat_tier_type", SeatTierType.volume)
+        match seat_tier_type:
+            case SeatTierType.volume:
+                return self._calculate_volume(seats)
+            case SeatTierType.graduated:
+                return self._calculate_graduated(seats)
+
+    def _calculate_volume(self, seats: int) -> int:
+        tier = self.get_tier_for_seats(seats)
+        return tier["price_per_seat"] * seats
+
+    def _calculate_graduated(self, seats: int) -> int:
+        total = 0
+        remaining = seats
+        for tier in sorted(
+            self.seat_tiers.get("tiers", []), key=lambda t: t["min_seats"]
+        ):
+            if remaining <= 0:
+                break
+            min_seats = tier["min_seats"]
+            max_seats = tier.get("max_seats")
+            tier_capacity = (
+                (max_seats - min_seats + 1) if max_seats is not None else remaining
+            )
+            seats_in_tier = min(remaining, tier_capacity)
+            total += seats_in_tier * tier["price_per_seat"]
+            remaining -= seats_in_tier
+        return total
 
     def get_minimum_seats(self) -> int:
         """Get the minimum number of seats allowed, derived from first tier's min_seats."""

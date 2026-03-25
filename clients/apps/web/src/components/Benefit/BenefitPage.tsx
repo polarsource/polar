@@ -146,7 +146,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
           const hasSubscription = grant.subscription_id
 
           if (!hasOrder && !hasSubscription) {
-            return <></>
+            return null
           }
 
           return (

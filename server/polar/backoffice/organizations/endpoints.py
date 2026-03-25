@@ -1861,6 +1861,22 @@ async def get(
                                     organization.details.get("product_description")
                                     or "—"
                                 )
+                        if organization.details.get("selling_categories"):
+                            with accordion.item(a, "Selling Categories"):
+                                with tag.ul(classes="list-disc list-inside"):
+                                    for category in organization.details.get(
+                                        "selling_categories", []
+                                    ):
+                                        with tag.li():
+                                            text(category)
+                        if organization.details.get("pricing_models"):
+                            with accordion.item(a, "Pricing Models"):
+                                with tag.ul(classes="list-disc list-inside"):
+                                    for model in organization.details.get(
+                                        "pricing_models", []
+                                    ):
+                                        with tag.li():
+                                            text(model)
                         if organization.details.get("intended_use"):
                             with accordion.item(a, "Intended Use"):
                                 with tag.p(classes="whitespace-pre-line"):
@@ -1885,8 +1901,16 @@ async def get(
                                 )
                         if organization.details.get("switching"):
                             with accordion.item(a, "Switching from"):
+                                prev_rev = organization.details.get(
+                                    "previous_annual_revenue"
+                                )
+                                prev_rev_str = (
+                                    format_currency(prev_rev, "usd")
+                                    if prev_rev is not None
+                                    else "N/A"
+                                )
                                 text(
-                                    f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
+                                    f"{organization.details['switching_from']} ({prev_rev_str})"
                                 )
 
             # Internal Notes Section

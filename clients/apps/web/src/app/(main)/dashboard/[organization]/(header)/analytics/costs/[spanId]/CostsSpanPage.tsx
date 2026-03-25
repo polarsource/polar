@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { Chart } from '@/components/Costs/Chart'
@@ -411,9 +410,7 @@ export default function SpanDetailPage({
               }
               hide={hideEditEventTypeModal}
             />
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
     </div>

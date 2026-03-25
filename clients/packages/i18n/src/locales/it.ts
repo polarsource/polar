@@ -5,11 +5,12 @@ export default {
       merchantOfRecord:
         'Questo ordine è elaborato dal nostro rivenditore online e Merchant of Record, Polar, che gestisce anche le richieste relative agli ordini e i resi.',
       mandateSubscriptionTrial:
-        'Cliccando su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare sul metodo di pagamento selezionato l\'importo sopra indicato al termine del periodo di prova e a ogni successiva data di fatturazione fino alla disdetta. Puoi annullare in qualsiasi momento prima della fine della prova per evitare l\'addebito.',
+        "Facendo clic su \"{buttonLabel}\", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare sul metodo di pagamento selezionato l'importo indicato sopra al termine del periodo di prova e in ogni successiva data di fatturazione fino all'annullamento, e accetti i {buyerTermsLink}. Puoi annullare in qualsiasi momento prima della fine del periodo di prova per evitare l'addebito.",
       mandateSubscription:
-        'Cliccando su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare immediatamente sul metodo di pagamento selezionato l\'importo sopra indicato e ad addebitare lo stesso importo a ogni successiva data di fatturazione fino alla disdetta.',
+        'Facendo clic su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare immediatamente sul metodo di pagamento selezionato l\'importo indicato sopra e ad addebitare lo stesso importo in ogni successiva data di fatturazione fino all\'annullamento, e accetti i {buyerTermsLink}.',
+      buyerTermsLink: 'Termini di acquisto',
       mandateOneTime:
-        'Cliccando su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare sul metodo di pagamento selezionato l\'importo sopra indicato. Si tratta di un addebito una tantum.',
+        'Cliccando su "{buttonLabel}", autorizzi Polar Software, Inc., il nostro rivenditore online e merchant of record, ad addebitare l\'importo sopra indicato sul metodo di pagamento selezionato e accetti i {buyerTermsLink}. Questo è un addebito unico.',
     },
     form: {
       email: 'Email',
@@ -142,7 +143,7 @@ export default {
       summary: {
         totalWhenTrialEnds: 'Totale al termine della prova',
         totalWhenDiscountExpires: 'Totale alla scadenza dello sconto',
-        totalDueToday: 'Totale dovuto oggi',
+        totalDueToday: 'Totale da pagare oggi',
       },
     },
     pwywForm: {
@@ -154,6 +155,7 @@ export default {
     productSwitcher: {
       billedRecurring: 'Fatturazione {frequency}',
       oneTimePurchase: 'Acquisto una tantum',
+      fromPrefix: 'Da',
     },
     card: {
       included: 'Incluso',
@@ -238,7 +240,7 @@ export default {
     },
     productDescription: {
       readMore: 'Leggi di più',
-      readLess: 'Mostra meno',
+      readLess: 'Leggi meno',
     },
   },
   intervals: {

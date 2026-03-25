@@ -42,7 +42,7 @@ from plain_client import (
     UpsertCustomerOnUpdateInput,
     UpsertCustomerUpsertCustomer,
 )
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
@@ -50,6 +50,7 @@ from polar.exceptions import PolarError
 from polar.kit.currency import format_currency
 from polar.models import (
     Customer,
+    OAuthAccount,
     Order,
     Organization,
     Product,
@@ -490,116 +491,123 @@ class PlainService:
         email = request.customer.email
 
         user_repository = UserRepository.from_session(session)
-        user = await user_repository.get_by_email(email)
+        users = await user_repository.get_all_by_any_email(email)
 
-        if user is None:
+        if not users:
             return None
 
-        components: list[ComponentInput] = [
-            ComponentInput(
-                component_container=ComponentContainerInput(
-                    container_content=[
-                        ComponentContainerContentInput(
-                            component_row=ComponentRowInput(
-                                row_main_content=[
-                                    ComponentRowContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=user.email
-                                        )
-                                    ),
-                                ],
-                                row_aside_content=[
-                                    ComponentRowContentInput(
-                                        component_link_button=ComponentLinkButtonInput(
-                                            link_button_label="Backoffice ↗",
-                                            link_button_url=settings.generate_backoffice_url(
-                                                f"/users/{user.id}"
-                                            ),
-                                        )
+        def _get_user_container(user: User) -> ComponentContainerInput:
+            return ComponentContainerInput(
+                container_content=[
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(text=user.email)
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_link_button=ComponentLinkButtonInput(
+                                        link_button_label="Backoffice ↗",
+                                        link_button_url=settings.generate_backoffice_url(
+                                            f"/users/{user.id}"
+                                        ),
                                     )
-                                ],
-                            )
-                        ),
-                        ComponentContainerContentInput(
-                            component_divider=ComponentDividerInput(
-                                divider_spacing_size=ComponentDividerSpacingSize.M
-                            )
-                        ),
-                        ComponentContainerContentInput(
-                            component_row=ComponentRowInput(
-                                row_main_content=[
-                                    ComponentRowContentInput(
-                                        component_text=ComponentTextInput(
-                                            text="ID",
-                                            text_size=ComponentTextSize.S,
-                                            text_color=ComponentTextColor.MUTED,
-                                        )
-                                    ),
-                                    ComponentRowContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=str(user.id)
-                                        )
-                                    ),
-                                ],
-                                row_aside_content=[
-                                    ComponentRowContentInput(
-                                        component_copy_button=ComponentCopyButtonInput(
-                                            copy_button_value=str(user.id),
-                                            copy_button_tooltip_label="Copy User ID",
-                                        )
+                                )
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="ID",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
                                     )
-                                ],
-                            )
-                        ),
-                        ComponentContainerContentInput(
-                            component_spacer=ComponentSpacerInput(
-                                spacer_size=ComponentSpacerSize.M
-                            )
-                        ),
-                        ComponentContainerContentInput(
-                            component_text=ComponentTextInput(
-                                text="Created At",
-                                text_size=ComponentTextSize.S,
-                                text_color=ComponentTextColor.MUTED,
-                            )
-                        ),
-                        ComponentContainerContentInput(
-                            component_text=ComponentTextInput(
-                                text=user.created_at.date().isoformat()
-                            )
-                        ),
-                        ComponentContainerContentInput(
-                            component_row=ComponentRowInput(
-                                row_main_content=[
-                                    ComponentRowContentInput(
-                                        component_text=ComponentTextInput(
-                                            text="Identity Verification",
-                                            text_size=ComponentTextSize.S,
-                                            text_color=ComponentTextColor.MUTED,
-                                        )
-                                    ),
-                                    ComponentRowContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=user.identity_verification_status
-                                        )
-                                    ),
-                                ],
-                                row_aside_content=[
-                                    ComponentRowContentInput(
-                                        component_link_button=ComponentLinkButtonInput(
-                                            link_button_label="Stripe ↗",
-                                            link_button_url=f"https://dashboard.stripe.com/identity/verification-sessions/{user.identity_verification_id}",
-                                        )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(text=str(user.id))
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_copy_button=ComponentCopyButtonInput(
+                                        copy_button_value=str(user.id),
+                                        copy_button_tooltip_label="Copy User ID",
                                     )
-                                ]
-                                if user.identity_verification_id
-                                else [],
-                            )
-                        ),
-                    ]
-                )
+                                )
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text="Created At",
+                            text_size=ComponentTextSize.S,
+                            text_color=ComponentTextColor.MUTED,
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text=user.created_at.date().isoformat()
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="Identity Verification",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=user.identity_verification_status
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_link_button=ComponentLinkButtonInput(
+                                        link_button_label="Stripe ↗",
+                                        link_button_url=f"https://dashboard.stripe.com/identity/verification-sessions/{user.identity_verification_id}",
+                                    )
+                                )
+                            ]
+                            if user.identity_verification_id
+                            else [],
+                        )
+                    ),
+                ]
             )
-        ]
+
+        components: list[ComponentInput] = []
+        for i, user in enumerate(users):
+            components.append(
+                ComponentInput(component_container=_get_user_container(user))
+            )
+            if i < len(users) - 1:
+                components.append(
+                    ComponentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    )
+                )
 
         return CustomerCard(
             key=CustomerCardKey.user,
@@ -623,7 +631,13 @@ class PlainService:
                 isouter=True,
             )
             .join(User, User.id == UserOrganization.user_id)
-            .where(func.lower(User.email) == email.lower())
+            .outerjoin(OAuthAccount, OAuthAccount.user_id == User.id)
+            .where(
+                or_(
+                    func.lower(User.email) == email.lower(),
+                    func.lower(OAuthAccount.account_email) == email.lower(),
+                )
+            )
         )
         result = await session.execute(statement)
         organizations = result.unique().scalars().all()

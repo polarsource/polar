@@ -103,13 +103,11 @@ const AppealForm: React.FC<AppealFormProps> = ({
         </div>
 
         {appealReason && (
-          <>
-            <div className="dark:bg-polar-800 rounded-lg bg-white p-3">
-              <p className="dark:text-polar-300 text-sm text-gray-700">
-                {appealReason}
-              </p>
-            </div>
-          </>
+          <div className="dark:bg-polar-800 rounded-lg bg-white p-3">
+            <p className="dark:text-polar-300 text-sm text-gray-700">
+              {appealReason}
+            </p>
+          </div>
         )}
       </div>
     )

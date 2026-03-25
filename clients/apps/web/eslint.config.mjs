@@ -29,6 +29,9 @@ export default [
   {
     files: ['**/*.tsx'],
     rules: {
+      'react/no-danger': 'error',
+      'react/self-closing-comp': 'warn',
+      'react/jsx-no-useless-fragment': 'warn',
       'no-restricted-syntax': [
         'error',
         {

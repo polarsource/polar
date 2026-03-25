@@ -64,6 +64,8 @@ class TransactionService(BaseTransactionService):
             subqueryload(Transaction.order).options(
                 joinedload(Order.product).options(joinedload(Product.organization)),
             ),
+            # Payment Transaction
+            subqueryload(Transaction.payment_transaction),
         )
 
         if type is not None:

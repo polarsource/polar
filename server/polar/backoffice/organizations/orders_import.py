@@ -229,6 +229,26 @@ async def orders_import(
             "order_number",
             default="".join(random.choices(string.ascii_uppercase, k=6)),
         )
+        invoice_number = (
+            f"{invoice_number_prefix}{organization.slug.upper()}-{order_number}"
+        )
+
+        existing_invoice_statement = order_repository.get_base_statement().where(
+            Order.invoice_number == invoice_number,
+        )
+        existing_invoice_order = await order_repository.get_one_or_none(
+            existing_invoice_statement
+        )
+        if existing_invoice_order is not None:
+            errors.append(
+                RowError(
+                    i + 1,
+                    f"Order with invoice number {invoice_number} already exists — skipping row {i + 1}",
+                )
+            )
+            yield i, total_rows
+            continue
+
         order = await order_repository.create(
             Order(
                 created_at=created_at,
@@ -246,7 +266,7 @@ async def orders_import(
                 tax_id=None,
                 tax_rate=None,
                 tax_calculation_processor_id=None,
-                invoice_number=f"{invoice_number_prefix}{organization.slug.upper()}-{order_number}",
+                invoice_number=invoice_number,
                 customer=customer,
                 product=product,
                 discount=None,

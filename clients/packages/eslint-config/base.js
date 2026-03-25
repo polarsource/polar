@@ -1,5 +1,4 @@
 import js from '@eslint/js'
-import eslintConfigPrettier from 'eslint-config-prettier'
 import turboPlugin from 'eslint-plugin-turbo'
 import tseslint from 'typescript-eslint'
 
@@ -10,16 +9,17 @@ import tseslint from 'typescript-eslint'
  * */
 export const config = [
   js.configs.recommended,
-  eslintConfigPrettier,
   ...tseslint.configs.recommended,
   {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+    },
     rules: {
       '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      'max-lines': [
-        'warn',
-        { max: 250, skipBlankLines: true, skipComments: true },
-      ],
+      '@typescript-eslint/no-explicit-any': 'error',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+      'no-var': 'error',
+      'prefer-const': 'warn',
     },
   },
   {

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import CreateCustomFieldModalContent from '@/components/CustomFields/CreateCustomFieldModalContent'
@@ -162,7 +161,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Name" />
       ),
       cell: ({ getValue }) => {
-        return <>{getValue() as string}</>
+        return getValue() as string
       },
     },
     {
@@ -265,9 +264,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               onCustomFieldUpdated={() => setShowUpdateModal(false)}
               hideModal={() => setShowUpdateModal(false)}
             />
-          ) : (
-            <></>
-          )
+          ) : null
         }
       />
     </DashboardBody>

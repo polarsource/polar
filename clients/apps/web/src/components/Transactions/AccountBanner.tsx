@@ -13,22 +13,20 @@ const GenericAccountBanner: React.FC<{
 }> = ({ account, setupLink }) => {
   if (!account) {
     return (
-      <>
-        <Banner
-          color="default"
-          right={
-            <Link href={setupLink}>
-              <Button size="sm">Setup</Button>
-            </Link>
-          }
-        >
-          <CircleAlertIcon className="h-6 w-6 text-red-500" />
-          <span className="text-sm">
-            You need to set up a <strong>payout account</strong> to receive
-            payouts
-          </span>
-        </Banner>
-      </>
+      <Banner
+        color="default"
+        right={
+          <Link href={setupLink}>
+            <Button size="sm">Setup</Button>
+          </Link>
+        }
+      >
+        <CircleAlertIcon className="h-6 w-6 text-red-500" />
+        <span className="text-sm">
+          You need to set up a <strong>payout account</strong> to receive
+          payouts
+        </span>
+      </Banner>
     )
   }
 

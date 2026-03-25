@@ -514,13 +514,6 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         default=None,
         description=("Maximum number of seats (works with seat-based pricing only)"),
     )
-    price_per_seat: int | None = Field(
-        default=None,
-        description=(
-            "Price per seat in cents for the current seat count, "
-            "based on the applicable tier. Only relevant for seat-based pricing."
-        ),
-    )
     discount_amount: int = Field(description="Discount amount in cents.")
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."

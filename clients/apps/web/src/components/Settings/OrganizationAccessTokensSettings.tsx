@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use client'
 
 import { InlineModal, InlineModalHeader } from '@/components/Modal/InlineModal'

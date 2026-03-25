@@ -51,32 +51,30 @@ const CheckoutBenefits = ({
   }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
 
   return (
-    <>
-      <div className="flex w-full flex-col gap-4 text-left">
-        <List className="rounded-3xl">
-          {benefitGrants?.items.map((benefitGrant) => (
-            <ListItem
-              key={benefitGrant.id}
-              className="dark:bg-polar-800 dark:hover:bg-polar-800 bg-white p-4 hover:bg-white"
-            >
-              <BenefitGrant
-                api={api}
-                benefitGrant={benefitGrant}
-                locale={locale}
-              />
-            </ListItem>
-          ))}
-          {benefitGrants && benefitGrants.items.length < expectedBenefits && (
-            <ListItem className="flex flex-row items-center justify-center gap-2">
-              <SpinnerNoMargin className="h-4 w-4" />
-              <p className="dark:text-polar-500 text-gray-500">
-                {t('checkout.benefits.granting')}
-              </p>
-            </ListItem>
-          )}
-        </List>
-      </div>
-    </>
+    <div className="flex w-full flex-col gap-4 text-left">
+      <List className="rounded-3xl">
+        {benefitGrants?.items.map((benefitGrant) => (
+          <ListItem
+            key={benefitGrant.id}
+            className="dark:bg-polar-800 dark:hover:bg-polar-800 bg-white p-4 hover:bg-white"
+          >
+            <BenefitGrant
+              api={api}
+              benefitGrant={benefitGrant}
+              locale={locale}
+            />
+          </ListItem>
+        ))}
+        {benefitGrants && benefitGrants.items.length < expectedBenefits && (
+          <ListItem className="flex flex-row items-center justify-center gap-2">
+            <SpinnerNoMargin className="h-4 w-4" />
+            <p className="dark:text-polar-500 text-gray-500">
+              {t('checkout.benefits.granting')}
+            </p>
+          </ListItem>
+        )}
+      </List>
+    </div>
   )
 }
 

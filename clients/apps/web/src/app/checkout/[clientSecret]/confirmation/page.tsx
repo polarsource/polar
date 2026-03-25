@@ -1,6 +1,7 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
+import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
 import {
   ClientResponseError,
@@ -27,7 +28,7 @@ export default async function Page(props: {
 
   const { clientSecret } = params
 
-  const client = createClient(getServerURL())
+  const client = createClient(getServerURL(), undefined, getSSRHeaders())
 
   let checkout
   try {

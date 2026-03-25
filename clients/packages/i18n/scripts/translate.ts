@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { google } from '@ai-sdk/google'
 import { generateText } from 'ai'
 import dotenv from 'dotenv'
@@ -101,14 +100,14 @@ function writeLocaleFile(locale: string, obj: NestedObject): void {
   const content = `export default ${JSON.stringify(obj, null, 2)} as const\n`
   fs.writeFileSync(filePath, content)
 
-  // Run prettier on the generated file
+  // Run oxfmt on the generated file
   try {
-    execSync(`npx prettier --write "${filePath}"`, {
+    execSync(`npx oxfmt --write "${filePath}"`, {
       stdio: 'pipe',
       cwd: path.join(import.meta.dirname, '..'),
     })
   } catch {
-    log.warning(`Prettier formatting failed for ${locale}.ts`)
+    log.warning(`Oxfmt formatting failed for ${locale}.ts`)
   }
 }
 

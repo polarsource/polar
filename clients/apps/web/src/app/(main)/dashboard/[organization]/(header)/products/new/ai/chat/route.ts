@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 'use server'
 
 import { getServerSideAPI } from '@/utils/client/serverside'
@@ -29,10 +28,9 @@ const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
   : null
 
 const sharedSystemPrompt = `
-You are a helpful assistant that helps a new user configure their Polar account.
-You're part of their initial onboarding flow, where you'll guide them through collecting the necessary information
-of what they're going to be selling on Polar. Once all required information is collected,
-you'll be able to configure their account using some tools provided to you.
+You are a helpful assistant that helps users create products on Polar.
+You'll guide them through collecting the necessary information about what they're going to sell,
+and once all required information is collected, you'll configure their products using some tools provided to you.
 
 # About Polar
 Polar acts a Merchant of Record, handling international sales taxes and other cumbersome compliance administration,
@@ -60,6 +58,9 @@ In general, Polar has the concept of "Products" and "Benefits". Customers buy pr
 they are granted benefits. Most often, people will conflate the two, and you should not require them to be explicit
 in their distinction. Instead, you will do translate their requirements into products with benefits.
 
+It can be helpful to use your List tools to search what benefits and products the user has already mentioned in the conversation,
+and use that information to fill in the blanks when they are not explicit about what they want.
+
 ## Usage-based billing
 If desired,  Polar has a powerful approach to usage-based billing that allows you to charge your customers based on the usage of your application.
 
@@ -77,12 +78,6 @@ For example, to bill based on the usage of the OpenAI API, you would create a me
 ### Meter Credits
 
 Meter credits are a special type of benefit that allows you to credit a customer's Usage Meter balance. See below.
-
-## Seat-based pricing
-
-This is not supported yet. When prompted about it, decline the request and mention that it is coming soon.
-
-Do not suggest seat-based pricing when talking software subscriptions.
 
 ## Benefits
 
@@ -147,7 +142,7 @@ will require MCP tool access to act on the users request.
 At the very least, we need both a specific price and a name for the product to be able to create it.
 As long as these two data points are not mentioned, follow-up questions will be needed.
 
-If you notice any frustration with the onboarding assistant from the user, immediately opt for manual setup.
+If you notice any frustration with the assistant from the user, immediately opt for manual setup.
 
 You will now be handed the last three user messages from the conversation, separated by "---", oldest message first.
 
@@ -191,13 +186,12 @@ So, in general, you should follow this order:
 - If a user mentions a price per month for a yearly plan, or vice versa, do the math for them.
 - If a recurring price is mentioned without product specifics, assume it's a software subscription.
 - If a price is mentioned without a recurring interval, it's a one-time purchase and you should try to determine whether it's a specific benefit or a generic access through a custom benefit
-- If the request is not relevant to the configuration of a product, gently decline the request and mention that you're only able to configure the user's Polar account.
+- If the request is not relevant to the configuration of a product, gently decline the request and mention that you're only able to help create products.
 - Do not ask for extra benefits, you're just converting a user's description into a configuration.
 - Do not ask explicitly if they also want to include a trial. You support trials when asked, but do not propose it yourself.
 - Be eager to resolve the request as quickly as possible.
 - If you use the "renderProductsPreview" tool, do not repeat the preview in the text response after that.
 - If a benefit type is unsupported, immediately use the "redirectToManualSetup" tool to redirect the user to the manual setup page. There is no use in collecting more information in that case since they'll have to manually re-enter everything anyway.
-- Remember that you are helping the user with their initial setup, you're the first thing they see after signing up, so don't ask for pre-existing information (ID's, meters, …). Assume you'll have to create from scratch.
 - Be friendly and helpful if people ask questions like "What is Polar?" or "What can I sell?".
 
 The user will now describe their product and you will start the configuration assistant.
@@ -261,32 +255,27 @@ async function generateOAT(
 }
 
 async function getMCPClient(userId: string, organizationId: string) {
-  try {
-    const oat = await generateOAT(userId, organizationId)
+  const oat = await generateOAT(userId, organizationId)
 
-    const httpTransport = new StreamableHTTPClientTransport(
-      new URL('https://app.getgram.ai/mcp/polar-onboarding-assistant'),
-      {
-        requestInit: {
-          headers: {
-            Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
-            'MCP-POLAR-SERVER-URL':
-              process.env.GRAM_API_URL ?? process.env.NEXT_PUBLIC_API_URL!,
-            'MCP-POLAR-ACCESS-TOKEN': oat,
-          },
+  const httpTransport = new StreamableHTTPClientTransport(
+    new URL('https://app.getgram.ai/mcp/polar-onboarding-assistant'),
+    {
+      requestInit: {
+        headers: {
+          Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
+          'MCP-POLAR-SERVER-URL':
+            process.env.GRAM_API_URL ?? process.env.NEXT_PUBLIC_API_URL!,
+          'MCP-POLAR-ACCESS-TOKEN': oat,
         },
       },
-    )
+    },
+  )
 
-    const mcpClient = await experimental_createMCPClient({
-      transport: httpTransport,
-    })
+  const mcpClient = await experimental_createMCPClient({
+    transport: httpTransport,
+  })
 
-    return mcpClient
-  } catch (error) {
-    console.error('Failed to create MCP client:', error)
-    throw error
-  }
+  return mcpClient
 }
 
 export async function POST(req: Request) {
@@ -305,14 +294,13 @@ export async function POST(req: Request) {
   const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
   let requiresToolAccess = false
   let requiresManualSetup = false
-  let isRelevant = true // assume good faith
+  let isRelevant = true
   let requiresClarification = true
 
   if (!organizationId) {
     return new Response('Organization ID is required', { status: 400 })
   }
 
-  // Fetch organization to get default presentment currency
   const api = await getServerSideAPI()
   const { data: organization, error: orgError } = await api.GET(
     '/v1/organizations/{id}',
@@ -377,7 +365,7 @@ export async function POST(req: Request) {
       isRelevant: z
         .boolean()
         .describe(
-          'Whether the user request is relevant to configuring their Polar account',
+          'Whether the user request is relevant to creating a product on Polar',
         ),
       requiresManualSetup: z
         .boolean()
@@ -409,13 +397,10 @@ export async function POST(req: Request) {
 
   let shouldSetupTools = false
 
-  // If we'll be handling the request agentically
   if (isRelevant && !requiresManualSetup && requiresToolAccess) {
     if (!requiresClarification) {
-      // We have enough info to act right away, set up tools
       shouldSetupTools = true
     } else if (lastUserMessages.length >= 5 && hasToolAccess) {
-      // Conversation has been going on for a while and we had tool access before
       shouldSetupTools = true
     }
   }
@@ -437,9 +422,9 @@ export async function POST(req: Request) {
   })
 
   const markAsDone = tool({
-    description: `Mark the onboarding as done call, this tool once products (and their related benefits) have been fully created.
+    description: `Mark the product creation as done. Call this tool once products (and their related benefits) have been fully created.
 
-You can call this tool only once as it will end the onboarding flow, so make sure your work is done.
+You can call this tool only once as it will end the flow, so make sure your work is done.
 However, don't specifically ask if the user wants anything else before calling this tool. Use your own judgement
 based on the conversation history whether you're done.
 
@@ -450,10 +435,6 @@ based on the conversation history whether you're done.
         .describe('The UUIDs of the created products'),
     }),
     execute: async ({ productIds }) => {
-      const api = await getServerSideAPI()
-      await api.POST('/v1/organizations/{id}/ai-onboarding-complete', {
-        params: { path: { id: organizationId } },
-      })
       return { success: true, productIds }
     },
   })
@@ -464,11 +445,10 @@ based on the conversation history whether you're done.
     getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
-    // Gemini 2.5 Flash for quick & cheap responses, Sonnet 4.5 for better tool usage
     model: shouldSetupTools ? sonnet : gemini,
     tools: {
       redirectToManualSetup,
-      ...(!requiresManualSetup ? { markAsDone } : {}), // only allow done if we can actually create products
+      ...(!requiresManualSetup ? { markAsDone } : {}),
       ...tools,
     },
     toolChoice: requiresManualSetup
@@ -486,7 +466,7 @@ based on the conversation history whether you're done.
             }
           : {},
       },
-      ...convertToModelMessages(messages),
+      ...(await convertToModelMessages(messages)),
     ],
     stopWhen: stepCountIs(15),
     experimental_transform: smoothStream(),

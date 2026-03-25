@@ -1438,6 +1438,8 @@ async def create_checkout(
     require_billing_address: bool = False,
     customer_billing_address: Address | None = None,
     created_at: datetime | None = None,
+    success_url: str | None = None,
+    return_url: str | None = None,
 ) -> Checkout:
     product = product or products[0]
     currency = currency or product.organization.default_presentment_currency
@@ -1502,6 +1504,10 @@ async def create_checkout(
         checkout.analytics_metadata = analytics_metadata
     if created_at is not None:
         checkout.created_at = created_at
+    if success_url is not None:
+        checkout.success_url = success_url
+    if return_url is not None:
+        checkout.return_url = return_url
     await save_fixture(checkout)
     return checkout
 

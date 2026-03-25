@@ -8,49 +8,16 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import { cn } from '@polar-sh/ui/lib/utils'
 import { addMonths, addYears } from 'date-fns'
-import { PropsWithChildren, useMemo } from 'react'
+import { useMemo } from 'react'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
+import { getSeatRows } from '../utils/seats'
 import { getDiscountDisplay } from '../utils/discount'
 import { getMeteredPrices } from '../utils/product'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
+import DetailRow from './DetailRow'
 import MeteredPriceLabel from './MeteredPriceLabel'
-
-const DetailRow = ({
-  title,
-  subtitle,
-  emphasis,
-  className,
-  children,
-}: PropsWithChildren<{
-  title: string
-  subtitle?: string
-  emphasis?: boolean
-  className?: string
-}>) => {
-  return (
-    <div
-      data-testid={`detail-row-${title}`}
-      className={cn(
-        'flex flex-row items-start justify-between gap-x-8',
-        emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500',
-        className,
-      )}
-    >
-      <span className="min-w-0 truncate">
-        {title}
-        {subtitle && (
-          <span className="dark:text-polar-600 ml-1 text-gray-400">
-            {subtitle}
-          </span>
-        )}
-      </span>
-      <span className="shrink-0">{children}</span>
-    </div>
-  )
-}
 
 function formatShortDate(date: Date, locale: AcceptedLocale): string {
   const isCurrentYear = date.getFullYear() === new Date().getFullYear()
@@ -155,6 +122,8 @@ const CheckoutPricingBreakdown = ({
     }
   }, [interval, intervalCount, t])
 
+  const seatRows = useMemo(() => getSeatRows(checkout), [checkout])
+
   if (checkout.is_free_product_price) {
     return null
   }
@@ -163,6 +132,28 @@ const CheckoutPricingBreakdown = ({
     <div className="flex flex-col gap-y-2">
       {checkout.currency ? (
         <>
+          {seatRows?.map((row, i) => (
+            <DetailRow
+              key={i}
+              title={`${row.seats} ${row.seats === 1 ? 'seat' : 'seats'}`}
+              subtitle={
+                formatCurrency('compact', locale)(
+                  row.pricePerSeat,
+                  checkout.currency!,
+                ) + ' per seat'
+              }
+              className="text-gray-600"
+            >
+              <AmountLabel
+                amount={row.seats * row.pricePerSeat}
+                currency={checkout.currency!}
+                interval={interval}
+                intervalCount={intervalCount}
+                mode="standard"
+                locale={locale}
+              />
+            </DetailRow>
+          ))}
           <DetailRow
             title={t('checkout.pricing.subtotal')}
             className="text-gray-600"

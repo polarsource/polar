@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import revalidate from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
@@ -132,6 +131,19 @@ export const useOrganization = (id: string, enabled: boolean = true) =>
       unwrap(api.GET('/v1/organizations/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
     enabled,
+  })
+
+export const useOrganizationKYC = (id: string, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['organizations', id, 'kyc'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/kyc', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
   })
 
 export const useOrganizationAccount = (id?: string) =>

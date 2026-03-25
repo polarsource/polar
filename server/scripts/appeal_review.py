@@ -806,11 +806,18 @@ def _create_agent(model_name: str) -> Agent[AppealAgentDeps, AppealReviewResult]
             checkout_return_urls = await repo.get_checkout_return_urls(
                 deps._organization_id
             )
+            checkout_success_urls = await repo.get_checkout_success_urls(
+                deps._organization_id
+            )
             api_key_count = await repo.get_api_key_count(deps._organization_id)
             webhook_endpoints = await repo.get_webhook_endpoints(deps._organization_id)
 
             setup = collect_setup_data(
-                checkout_links, checkout_return_urls, api_key_count, webhook_endpoints
+                checkout_links,
+                checkout_return_urls,
+                checkout_success_urls,
+                api_key_count,
+                webhook_endpoints,
             )
 
             parts = []

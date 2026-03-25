@@ -87,6 +87,13 @@ domains should match the organization's website domain. If they don't match (and
 not known service domains), this is a MEDIUM risk concern — it suggests the integration \
 may point to an unrelated or suspicious destination.
 
+**Redirect detection (CRITICAL):** We follow redirects on checkout success and return \
+URLs. If any URL redirects to a DIFFERENT domain than the original, this is a HIGH risk \
+signal. Scammers use their own API endpoints as success URLs that then redirect users \
+to prohibited content (adult sites, gambling, etc.). Any cross-domain redirect from a \
+checkout URL is a strong red flag and should be treated as HIGH risk unless the final \
+destination is a known service domain.
+
 ## Verdict Guidelines
 
 - **APPROVE**: All dimensions are LOW risk, no policy violations, \
@@ -243,6 +250,9 @@ Important information to check (assess under SETUP_READINESS):
 the organization's website domain. If they don't match (and are not known service domains), \
 this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
 integration platforms and should NOT be flagged.
+- **Redirect detection (CRITICAL)**: If any checkout success or return URL redirects to a \
+different domain, this is a HIGH risk signal. Scammers use their own API endpoints that \
+302-redirect users to prohibited content. Any cross-domain redirect is a strong red flag.
 
 Known integration platform domains:
 {known_domains_for_prompt()}
@@ -296,6 +306,9 @@ organizations. Re-creating an organization after denial is grounds for automatic
 the organization's website domain. If they don't match (and are not known service domains), \
 this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
 integration platforms and should NOT be flagged.
+  - **Redirect detection (CRITICAL)**: If any checkout success or return URL redirects to a \
+different domain, this is a HIGH risk signal. Scammers use their own API endpoints that \
+302-redirect users to prohibited content. Any cross-domain redirect is a strong red flag.
 
 Known integration platform domains:
 {known_domains_for_prompt()}
@@ -323,6 +336,7 @@ class ReviewAnalyzer:
             self.model,
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
+            model_settings={"temperature": 0},
         )
 
     async def analyze(
@@ -428,6 +442,22 @@ class ReviewAnalyzer:
                 parts.append(
                     f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
                 )
+                if setup.checkout_success_urls.redirect_results:
+                    redirected = [
+                        r
+                        for r in setup.checkout_success_urls.redirect_results
+                        if r.redirected
+                    ]
+                    if redirected:
+                        parts.append(
+                            "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
+                            "to a DIFFERENT domain:"
+                        )
+                        for r in redirected:
+                            parts.append(
+                                f"  - {r.original_url} → REDIRECTS TO: "
+                                f"{r.final_url} (domain: {r.final_domain})"
+                            )
             else:
                 parts.append("No custom checkout success URLs configured.")
 
@@ -440,6 +470,22 @@ class ReviewAnalyzer:
                 parts.append(
                     f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
                 )
+                if setup.checkout_return_urls.redirect_results:
+                    redirected = [
+                        r
+                        for r in setup.checkout_return_urls.redirect_results
+                        if r.redirected
+                    ]
+                    if redirected:
+                        parts.append(
+                            "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
+                            "to a DIFFERENT domain:"
+                        )
+                        for r in redirected:
+                            parts.append(
+                                f"  - {r.original_url} → REDIRECTS TO: "
+                                f"{r.final_url} (domain: {r.final_domain})"
+                            )
             else:
                 parts.append("No custom checkout return URLs configured.")
 

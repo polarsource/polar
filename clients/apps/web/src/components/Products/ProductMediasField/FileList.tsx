@@ -38,7 +38,7 @@ export const FileList = ({
   )
 
   if (files.length === 0) {
-    return <></>
+    return null
   }
 
   let activeFile = undefined
@@ -66,12 +66,10 @@ export const FileList = ({
         ))}
         <DragOverlay adjustScale={true}>
           {activeFile ? (
-            <>
-              <FileListItem
-                file={activeFile}
-                removeFile={getRemoveScopedFile(activeFile.id)}
-              />
-            </>
+            <FileListItem
+              file={activeFile}
+              removeFile={getRemoveScopedFile(activeFile.id)}
+            />
           ) : null}
         </DragOverlay>
       </SortableContext>

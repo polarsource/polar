@@ -140,32 +140,49 @@ def _is_stripe_cli_logged_in() -> bool:
 
 def _setup_stripe() -> None:
     """Interactive Stripe setup using Stripe CLI."""
-    console.print("\n[bold]Stripe Setup[/bold]\n")
+    import webbrowser
 
+    console.print("\n[bold]Stripe Setup[/bold]\n")
+    console.print("  Polar uses Stripe for payment processing. You'll need a Stripe")
+    console.print("  account and the Stripe CLI to develop locally.\n")
+    console.print("  [dim]All keys are test mode only — no real charges will be made.[/dim]\n")
+
+    # Step 1: Install Stripe CLI
     if not _is_stripe_cli_installed():
         step_status(False, "Stripe CLI", "not installed")
-        console.print("\n  Install with: [bold]brew install stripe/stripe-cli/stripe[/bold]")
-        console.print("  Or visit: [link=https://stripe.com/docs/stripe-cli]https://stripe.com/docs/stripe-cli[/link]\n")
-        typer.prompt("Press Enter when installed", default="")
-        if not _is_stripe_cli_installed():
-            console.print("[red]Stripe CLI not found. Please install it and try again.[/red]")
+        if typer.confirm("\n  Install Stripe CLI via Homebrew now?", default=True):
+            console.print()
+            result = run_command(["brew", "install", "stripe/stripe-cli/stripe"], capture=False)
+            if not result or result.returncode != 0 or not _is_stripe_cli_installed():
+                console.print("[red]Installation failed. Install manually: brew install stripe/stripe-cli/stripe[/red]")
+                return
+        else:
+            console.print("[yellow]Stripe CLI is required. Install it and re-run dev up.[/yellow]")
             return
     step_status(True, "Stripe CLI", "installed")
 
+    # Step 2: Log in to Stripe
     if not _is_stripe_cli_logged_in():
         step_status(False, "Stripe CLI", "not logged in")
-        console.print("\n  This will open your browser to authenticate.\n")
-        if typer.confirm("  Run 'stripe login' now?", default=True):
-            run_command(["stripe", "login"], capture=False)
-            if not _is_stripe_cli_logged_in():
-                console.print("[red]Stripe login failed. Please try again.[/red]")
-                return
-        else:
-            console.print("[yellow]Stripe login required to continue.[/yellow]")
+
+        console.print("\n  [dim]Don't have a Stripe account? Ask your team which account to use,[/dim]")
+        console.print("  [dim]or create one at https://dashboard.stripe.com/register[/dim]\n")
+
+        has_account = typer.confirm("  Do you have a Stripe account?", default=True)
+        if not has_account:
+            console.print("\n  Opening Stripe signup in your browser...")
+            webbrowser.open("https://dashboard.stripe.com/register")
+            typer.prompt("  Press Enter once you've created your account", default="")
+
+        console.print("\n  Logging in to Stripe — this will open your browser to authenticate.\n")
+        run_command(["stripe", "login"], capture=False)
+        if not _is_stripe_cli_logged_in():
+            console.print("[red]Stripe login failed. Please try again.[/red]")
             return
     step_status(True, "Stripe CLI", "logged in")
 
-    console.print("\n[bold]Fetching API keys from Stripe CLI...[/bold]")
+    # Step 3: Fetch API keys
+    console.print("\n[bold]Fetching test API keys from Stripe CLI...[/bold]")
     secret_key, publishable_key = _get_stripe_keys_from_cli()
 
     if secret_key and publishable_key:
@@ -177,7 +194,9 @@ def _setup_stripe() -> None:
         secret_key = typer.prompt("Stripe Secret Key (sk_test_...)")
         publishable_key = typer.prompt("Stripe Publishable Key (pk_test_...)")
 
-    console.print("\n[bold]Getting webhook secret from Stripe CLI...[/bold]")
+    # Step 4: Get webhook secret
+    console.print("\n[bold]Getting webhook secret...[/bold]")
+    console.print("[dim]Webhooks let Stripe notify your local server about payment events (e.g. checkout completed).[/dim]")
     result = run_command(["stripe", "listen", "--print-secret"], capture=True)
     webhook_secret = ""
     if result and result.returncode == 0:

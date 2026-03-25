@@ -23,6 +23,7 @@ from .collectors import (
     collect_setup_data,
     collect_website_data,
 )
+from .collectors.setup import resolve_url_redirects
 from .repository import OrganizationReviewRepository
 from .schemas import (
     AccountData,
@@ -124,13 +125,34 @@ async def _collect_setup(organization_id: UUID, context: ReviewContext) -> Setup
         checkout_success_urls = await repo.get_checkout_success_urls(organization_id)
         api_key_count = await repo.get_api_key_count(organization_id)
         webhook_endpoints = await repo.get_webhook_endpoints(organization_id)
-        return collect_setup_data(
-            checkout_links,
-            checkout_return_urls,
-            checkout_success_urls,
-            api_key_count,
-            webhook_endpoints,
-        )
+
+    # Collect all unique success URLs (from links + checkouts) for redirect checks
+    all_success_urls: list[str] = []
+    seen: set[str] = set()
+    for link in checkout_links:
+        if link.success_url and link.success_url not in seen:
+            seen.add(link.success_url)
+            all_success_urls.append(link.success_url)
+    for url in checkout_success_urls:
+        if url not in seen:
+            seen.add(url)
+            all_success_urls.append(url)
+
+    # Resolve redirects on success and return URLs in parallel
+    success_redirects, return_redirects = await asyncio.gather(
+        resolve_url_redirects(all_success_urls),
+        resolve_url_redirects(checkout_return_urls),
+    )
+
+    return collect_setup_data(
+        checkout_links,
+        checkout_return_urls,
+        checkout_success_urls,
+        api_key_count,
+        webhook_endpoints,
+        success_url_redirects=success_redirects,
+        return_url_redirects=return_redirects,
+    )
 
 
 async def _collect_metrics(

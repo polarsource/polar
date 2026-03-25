@@ -1,6 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import { Payout } from '@/hooks/polar/finance'
+import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Link } from 'expo-router'
 import React from 'react'
@@ -10,15 +10,20 @@ import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
 export interface PayoutRowProps {
-  payout: Payout
+  payout: schemas['Payout']
   showTimestamp?: boolean
   style?: StyleProp<TextStyle>
 }
 
-const statusColors = {
+const statusColors: Record<
+  schemas['PayoutStatus'],
+  'green' | 'yellow' | 'red' | 'blue'
+> = {
   pending: 'blue',
   in_transit: 'yellow',
   succeeded: 'green',
+  failed: 'red',
+  canceled: 'red',
 } as const
 
 export const PayoutRow = ({ payout, style }: PayoutRowProps) => {

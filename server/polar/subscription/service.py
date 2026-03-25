@@ -2315,7 +2315,7 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         *,
-        recipients: list[str],
+        recipients: Sequence[str],
         customer: Customer,
         template_name: str,
         subject: str,

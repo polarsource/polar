@@ -222,11 +222,13 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
+    @property
     def display_email(self) -> str:
         return self.email or self.name or "Team Customer"
 
-    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
+    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])  # type: ignore[prop-decorator]
+    @property
     def avatar_url(self) -> str:
         if self.email is not None:
             return _avatar_url_for_email(self.email)

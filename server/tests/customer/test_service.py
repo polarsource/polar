@@ -918,6 +918,7 @@ class TestDelete:
         assert len(deleted.name) == 64  # SHA-256 hex
         await session.flush()
 
+        assert customer.email is not None
         try:
             recycled = await create_customer(
                 save_fixture,
@@ -934,6 +935,7 @@ class TestDelete:
         assert recycled.deleted_at is None
         assert recycled.external_id == "will-be-recycled"
 
+        assert recycled.email is not None
         with pytest.raises(IntegrityError):
             await create_customer(
                 save_fixture,

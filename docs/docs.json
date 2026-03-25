@@ -91,6 +91,7 @@
               "features/seat-based-pricing",
               "features/custom-fields",
               "features/discounts",
+              "features/tax-inclusive-pricing",
               "features/orders",
               "features/refunds",
               "features/analytics",

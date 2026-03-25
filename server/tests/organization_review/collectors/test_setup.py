@@ -354,6 +354,15 @@ class TestResolveUrlRedirects:
             "polar.organization_review.collectors.setup._validate_url_host",
             return_value=None,
         )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://example.com/thanks",
+                final_url="https://example.com/thanks",
+                final_domain="example.com",
+                redirected=False,
+            ),
+        )
 
         with respx.mock:
             respx.head("https://example.com/thanks").respond(200)
@@ -394,6 +403,15 @@ class TestResolveUrlRedirects:
             "polar.organization_review.collectors.setup._validate_url_host",
             return_value=None,
         )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://example.com/old",
+                final_url="https://example.com/new",
+                final_domain="example.com",
+                redirected=False,
+            ),
+        )
 
         with respx.mock:
             respx.head("https://example.com/old").respond(
@@ -423,4 +441,63 @@ class TestResolveUrlRedirects:
 
         assert len(results) == 1
         assert results[0].error is not None
+        assert results[0].redirected is False
+
+    @pytest.mark.asyncio
+    async def test_client_side_redirect_detected_by_browser(
+        self, mocker: MockerFixture
+    ) -> None:
+        """URL returning 200 with a JS/meta-refresh redirect is caught by browser pass."""
+        import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        # HEAD returns 200 (no HTTP redirect) — browser pass will be triggered
+        # Browser detects the client-side redirect to a different domain
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://legit-api.com/success",
+                final_url="https://scam-site.com/landing",
+                final_domain="scam-site.com",
+                redirected=True,
+            ),
+        )
+
+        with respx.mock:
+            respx.head("https://legit-api.com/success").respond(200)
+            results = await resolve_url_redirects(["https://legit-api.com/success"])
+
+        assert len(results) == 1
+        assert results[0].redirected is True
+        assert results[0].final_domain == "scam-site.com"
+        assert results[0].final_url == "https://scam-site.com/landing"
+
+    @pytest.mark.asyncio
+    async def test_browser_error_does_not_crash(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Browser errors are reported gracefully, not propagated."""
+        import respx
+
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://flaky-site.com/page",
+                error="browser_error",
+            ),
+        )
+
+        with respx.mock:
+            respx.head("https://flaky-site.com/page").respond(200)
+            results = await resolve_url_redirects(["https://flaky-site.com/page"])
+
+        assert len(results) == 1
+        assert results[0].error == "browser_error"
         assert results[0].redirected is False

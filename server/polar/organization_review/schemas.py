@@ -151,14 +151,26 @@ class HistoryData(Schema):
     has_blocked_orgs: bool = False
 
 
+class UrlRedirectInfo(Schema):
+    """Tracks where a URL ultimately redirects to."""
+
+    original_url: str
+    final_url: str | None = None
+    final_domain: str | None = None
+    redirected: bool = False
+    error: str | None = None
+
+
 class CheckoutSuccessUrlData(Schema):
     unique_urls: list[str] = Field(default_factory=list)
     domains: list[str] = Field(default_factory=list)
+    redirect_results: list[UrlRedirectInfo] = Field(default_factory=list)
 
 
 class CheckoutReturnUrlData(Schema):
     unique_urls: list[str] = Field(default_factory=list)
     domains: list[str] = Field(default_factory=list)
+    redirect_results: list[UrlRedirectInfo] = Field(default_factory=list)
 
 
 class CheckoutLinkBenefitData(Schema):

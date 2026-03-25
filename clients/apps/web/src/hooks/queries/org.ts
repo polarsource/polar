@@ -261,26 +261,19 @@ export const useDeleteOrganizationAccessToken = () =>
     },
   })
 
-export const useOrganizationPaymentStatus = (
-  id: string,
-  enabled: boolean = true,
-  accountVerificationOnly: boolean = false,
-) =>
+export const useOrganizationPaymentStatus = (id: string) =>
   useQuery({
-    queryKey: ['organizations', 'payment-status', id, accountVerificationOnly],
+    queryKey: ['organizations', 'payment-status', id],
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/payment-status', {
           params: {
             path: { id },
-            query: accountVerificationOnly
-              ? { account_verification_only: true }
-              : {},
           },
         }),
       ),
     retry: defaultRetry,
-    enabled: enabled && !!id,
+    enabled: !!id,
   })
 
 export const useOrganizationAppeal = (id: string) =>

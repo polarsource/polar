@@ -22469,36 +22469,8 @@ export interface components {
        * @description Whether the organization is ready to accept payments
        */
       payment_ready: boolean
-      /**
-       * Steps
-       * @description List of onboarding steps
-       */
-      steps: components['schemas']['OrganizationPaymentStep'][]
       /** @description Current organization status */
       organization_status: components['schemas']['OrganizationStatus']
-    }
-    /** OrganizationPaymentStep */
-    OrganizationPaymentStep: {
-      /**
-       * Id
-       * @description Step identifier
-       */
-      id: string
-      /**
-       * Title
-       * @description Step title
-       */
-      title: string
-      /**
-       * Description
-       * @description Step description
-       */
-      description: string
-      /**
-       * Completed
-       * @description Whether the step is completed
-       */
-      completed: boolean
     }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
@@ -30242,10 +30214,7 @@ export interface operations {
   }
   'organizations:get_payment_status': {
     parameters: {
-      query?: {
-        /** @description Only perform account verification checks, skip product and integration checks */
-        account_verification_only?: boolean
-      }
+      query?: never
       header?: never
       path: {
         id: string

@@ -444,18 +444,10 @@ class OrganizationUpdate(Schema):
     )
 
 
-class OrganizationPaymentStep(Schema):
-    id: str = Field(description="Step identifier")
-    title: str = Field(description="Step title")
-    description: str = Field(description="Step description")
-    completed: bool = Field(description="Whether the step is completed")
-
-
 class OrganizationPaymentStatus(Schema):
     payment_ready: bool = Field(
         description="Whether the organization is ready to accept payments"
     )
-    steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )

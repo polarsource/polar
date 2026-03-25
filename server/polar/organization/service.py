@@ -1,7 +1,6 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from enum import StrEnum
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
@@ -14,7 +13,6 @@ from sqlalchemy.orm import joinedload
 from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
-from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering
@@ -38,7 +36,6 @@ from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.organization_access_token.repository import OrganizationAccessTokenRepository
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
@@ -66,30 +63,12 @@ log = structlog.get_logger()
 _MIN_REVIEW_THRESHOLD = 10_000
 
 
-class PaymentStepID(StrEnum):
-    """Enum for payment onboarding step identifiers."""
-
-    CREATE_PRODUCT = "create_product"
-    INTEGRATE_CHECKOUT = "integrate_checkout"
-    SETUP_ACCOUNT = "setup_account"
-
-
-class PaymentStep(BaseModel):
-    """Service-level model for payment onboarding steps."""
-
-    id: str = Field(description="Step identifier")
-    title: str = Field(description="Step title")
-    description: str = Field(description="Step description")
-    completed: bool = Field(description="Whether the step is completed")
-
-
 class PaymentStatusResponse(BaseModel):
     """Service-level response for payment status."""
 
     payment_ready: bool = Field(
         description="Whether the organization is ready to accept payments"
     )
-    steps: list[PaymentStep] = Field(description="List of onboarding steps")
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
@@ -917,64 +896,12 @@ class OrganizationService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        account_verification_only: bool = False,
     ) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
-        steps = []
-
-        if not account_verification_only:
-            # Step 1: Create a product
-            product_repository = ProductRepository.from_session(session)
-            product_count = await product_repository.count_by_organization_id(
-                organization.id, is_archived=False
-            )
-            steps.append(
-                PaymentStep(
-                    id=PaymentStepID.CREATE_PRODUCT,
-                    title="Create a product",
-                    description="Create your first product to start accepting payments",
-                    completed=product_count > 0,
-                )
-            )
-
-            # Step 2: Integrate Checkout (API key OR checkout link)
-            token_repository = OrganizationAccessTokenRepository.from_session(session)
-            api_key_count = await token_repository.count_by_organization_id(
-                organization.id
-            )
-
-            checkout_link_repository = CheckoutLinkRepository.from_session(session)
-            checkout_link_count = (
-                await checkout_link_repository.count_by_organization_id(organization.id)
-            )
-
-            # Step is completed if user has either an API key OR a checkout link
-            integration_completed = api_key_count > 0 or checkout_link_count > 0
-            steps.append(
-                PaymentStep(
-                    id=PaymentStepID.INTEGRATE_CHECKOUT,
-                    title="Integrate Checkout",
-                    description="Set up your integration to start accepting payments",
-                    completed=integration_completed,
-                )
-            )
-
-        # Step 3: Finish account setup
-        account_setup_complete = self._is_account_setup_complete(organization)
-        steps.append(
-            PaymentStep(
-                id=PaymentStepID.SETUP_ACCOUNT,
-                title="Finish account setup",
-                description="Complete your account details and verify your identity",
-                completed=account_setup_complete,
-            )
-        )
-
         return PaymentStatusResponse(
             payment_ready=await self.is_organization_ready_for_payment(
                 session, organization
             ),
-            steps=steps,
             organization_status=organization.status,
         )
 

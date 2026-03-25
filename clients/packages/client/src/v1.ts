@@ -38885,6 +38885,8 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */

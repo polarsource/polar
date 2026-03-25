@@ -122,12 +122,24 @@ async def _resolve_redirect(
             return UrlRedirectInfo(original_url=url, error="connection_error")
 
 
+def _pick_one_per_hostname(urls: list[str]) -> list[str]:
+    """Pick one URL per unique hostname — no need to check every URL on the same host."""
+    seen: set[str | None] = set()
+    result: list[str] = []
+    for url in urls:
+        hostname = urlparse(url).hostname
+        if hostname not in seen:
+            seen.add(hostname)
+            result.append(url)
+    return result
+
+
 async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
-    """Follow redirects for a list of URLs and report final destinations."""
+    """Follow redirects for a sample of URLs (one per hostname)."""
     if not urls:
         return []
 
-    urls_to_check = urls[:_MAX_URLS_TO_RESOLVE]
+    urls_to_check = _pick_one_per_hostname(urls)[:_MAX_URLS_TO_RESOLVE]
     semaphore = asyncio.Semaphore(_MAX_CONCURRENT)
 
     async with httpx.AsyncClient(

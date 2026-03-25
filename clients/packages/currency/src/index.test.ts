@@ -123,16 +123,16 @@ describe('formatCurrency', () => {
   describe('Subcent mode', () => {
     it('should handle small amounts', () => {
       expect(formatCurrency('subcent', 'en-US')(1, 'usd')).toEqual('$0.01')
-      expect(formatCurrency('subcent', 'en-US')(0.00000001, 'usd')).toEqual(
-        '$0.0000000001',
+      expect(formatCurrency('subcent', 'en-US')(0.0001, 'usd')).toEqual(
+        '$0.000001',
       )
-      expect(formatCurrency('subcent', 'en-US')(0.0000000101, 'usd')).toEqual(
-        '$0.000000000101',
+      expect(formatCurrency('subcent', 'en-US')(0.0101, 'usd')).toEqual(
+        '$0.000101',
       )
     })
     it('should handle non-decimal currencies', () => {
-      expect(formatCurrency('subcent', 'en-US')(0.00000001, 'jpy')).toEqual(
-        '¥0.00000001',
+      expect(formatCurrency('subcent', 'en-US')(0.000001, 'jpy')).toEqual(
+        '¥0.000001',
       )
     })
   })

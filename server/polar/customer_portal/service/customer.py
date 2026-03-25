@@ -236,6 +236,18 @@ class CustomerService:
                 ]
             )
 
+        if setup_intent.status not in ("succeeded", "requires_action"):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "invalid",
+                        "loc": ("body", "setup_intent_id"),
+                        "msg": "Invalid setup_intent_id.",
+                        "input": payment_method_confirm.setup_intent_id,
+                    }
+                ]
+            )
+
         return await self._save_payment_method(
             session,
             customer,
@@ -260,7 +272,17 @@ class CustomerService:
             )
 
         if set_default:
-            assert setup_intent.payment_method is not None
+            if setup_intent.payment_method is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid",
+                            "loc": ("body", "setup_intent_id"),
+                            "msg": "Invalid setup_intent_id.",
+                            "input": str(setup_intent.id),
+                        }
+                    ]
+                )
             await stripe_service.update_customer(
                 customer.stripe_customer_id,
                 invoice_settings={

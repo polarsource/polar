@@ -476,9 +476,7 @@ class TestResolveUrlRedirects:
         assert results[0].final_url == "https://scam-site.com/landing"
 
     @pytest.mark.asyncio
-    async def test_browser_error_does_not_crash(
-        self, mocker: MockerFixture
-    ) -> None:
+    async def test_browser_error_does_not_crash(self, mocker: MockerFixture) -> None:
         """Browser errors are reported gracefully, not propagated."""
         import respx
 

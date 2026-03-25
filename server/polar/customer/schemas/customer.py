@@ -1,10 +1,10 @@
 import hashlib
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
-from pydantic import UUID4, Field, computed_field
+from pydantic import UUID4, Discriminator, Field, Tag, computed_field, model_validator
 from pydantic.aliases import AliasChoices
 
 from polar.config import settings
@@ -21,6 +21,7 @@ from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.member import OwnerCreate
@@ -52,28 +53,19 @@ CustomerNameInput = Annotated[
 ]
 
 
-class CustomerCreate(MetadataInputMixin, Schema):
+# --- Create schemas ---
+
+
+class _CustomerCreateBase(MetadataInputMixin, Schema):
     external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
         default=None,
         description=_external_id_description,
         examples=[_external_id_example],
     )
-    email: EmailStrDNS = Field(
-        description=_email_description, examples=[_email_example]
-    )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
-    type: CustomerType | None = Field(
-        default=None,
-        description=(
-            "The type of customer. "
-            "Defaults to 'individual'. "
-            "Set to 'team' for customers that can have multiple members."
-        ),
-        examples=["individual"],
-    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -89,6 +81,52 @@ class CustomerCreate(MetadataInputMixin, Schema):
             "using the customer's email and name."
         ),
     )
+
+
+class CustomerIndividualCreate(_CustomerCreateBase):
+    type: Literal["individual"] = "individual"
+    email: EmailStrDNS = Field(
+        description=_email_description, examples=[_email_example]
+    )
+
+
+class CustomerTeamCreate(_CustomerCreateBase):
+    type: Literal["team"]
+    email: EmailStrDNS | None = Field(
+        default=None,
+        description=(
+            "The email address of the team customer. "
+            "Optional for team customers — if omitted, an owner with an email must be provided."
+        ),
+        examples=[_email_example],
+    )
+
+    @model_validator(mode="after")
+    def _require_owner_email_when_no_email(self) -> "CustomerTeamCreate":
+        if self.email is None:
+            if self.owner is None or self.owner.email is None:
+                raise ValueError(
+                    "An owner with an email address is required when creating "
+                    "a team customer without an email."
+                )
+        return self
+
+
+def _customer_create_discriminator(v: dict[str, object] | object) -> str:
+    if isinstance(v, dict):
+        return v.get("type", "individual")  # type: ignore[return-value]
+    return getattr(v, "type", "individual")
+
+
+CustomerCreate = Annotated[
+    Annotated[CustomerIndividualCreate, Tag("individual")]
+    | Annotated[CustomerTeamCreate, Tag("team")],
+    Discriminator(_customer_create_discriminator),
+    SetSchemaReference("CustomerCreate"),
+]
+
+
+# --- Update schemas ---
 
 
 class CustomerUpdateBase(MetadataInputMixin, Schema):
@@ -120,6 +158,22 @@ class CustomerUpdate(CustomerUpdateBase):
 class CustomerUpdateExternalID(CustomerUpdateBase): ...
 
 
+# --- Read schemas ---
+
+
+def _avatar_url_for_email(email: str) -> str:
+    domain = email.split("@")[-1].lower()
+
+    if (
+        not settings.LOGO_DEV_PUBLISHABLE_KEY
+        or domain in settings.PERSONAL_EMAIL_DOMAINS
+    ):
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+    return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_PUBLISHABLE_KEY}&fallback=404"
+
+
 class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     id: UUID4 = Field(
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
@@ -135,7 +189,9 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
             "external_id",
         ),
     )
-    email: str = Field(description=_email_description, examples=[_email_example])
+    email: str | None = Field(
+        default=None, description=_email_description, examples=[_email_example]
+    )
     email_verified: bool = Field(
         description=(
             "Whether the customer email address is verified. "
@@ -167,18 +223,45 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     )
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
-    def avatar_url(self) -> str:
-        domain = self.email.split("@")[-1].lower()
-
-        if (
-            not settings.LOGO_DEV_PUBLISHABLE_KEY
-            or domain in settings.PERSONAL_EMAIL_DOMAINS
-        ):
-            email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
-            return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
-
-        return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_PUBLISHABLE_KEY}&fallback=404"
+    def avatar_url(self) -> str | None:
+        if self.email is None:
+            return None
+        return _avatar_url_for_email(self.email)
 
 
-class Customer(CustomerBase):
-    """A customer in an organization."""
+def _customer_type_discriminator(v: dict[str, object] | object) -> str:
+    if isinstance(v, dict):
+        t = v.get("type")
+    else:
+        t = getattr(v, "type", None)
+    return "team" if t == "team" or t == CustomerType.team else "individual"
+
+
+class CustomerIndividual(CustomerBase):
+    """An individual customer in an organization."""
+
+    type: CustomerType | None = Field(
+        default=None,
+        description=(
+            "The type of customer. "
+            "Individual customers (or legacy NULL type) are single users."
+        ),
+        examples=["individual"],
+    )
+
+
+class CustomerTeam(CustomerBase):
+    """A team customer in an organization."""
+
+    type: Literal[CustomerType.team] = Field(
+        description="The type of customer. Team customers can have multiple members.",
+        examples=["team"],
+    )
+
+
+Customer = Annotated[
+    Annotated[CustomerIndividual, Tag("individual")]
+    | Annotated[CustomerTeam, Tag("team")],
+    Discriminator(_customer_type_discriminator),
+    SetSchemaReference("Customer"),
+]

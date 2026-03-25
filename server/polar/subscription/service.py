@@ -1988,7 +1988,7 @@ class SubscriptionService:
                 notif=PartialNotification(
                     type=NotificationType.maintainer_new_paid_subscription,
                     payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                        subscriber_name=subscription.customer.email,
+                        subscriber_name=subscription.customer.email or subscription.customer.name or "Team customer",
                         tier_name=product.name,
                         tier_price_amount=subscription.amount,
                         tier_price_recurring_interval=subscription.recurring_interval,
@@ -2292,44 +2292,52 @@ class SubscriptionService:
             return
 
         customer = subscription.customer
+
+        # Resolve email recipients — owner/billing_manager members for team customers
+        from polar.customer.service import customer as customer_service
+
+        recipients = await customer_service.get_email_recipients(session, customer)
+        if not recipients:
+            return
+
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
 
-        # Build query parameters with proper URL encoding
-        query_string = urlencode(
-            {
-                "customer_session_token": token,
-                "id": str(subscription.id),
-                "email": customer.email,
-            }
-        )
-        portal_url = settings.generate_frontend_url(
-            f"/{organization.slug}/portal?{query_string}"
-        )
-
-        email = EmailAdapter.validate_python(
-            {
-                "template": template_name,
-                "props": {
-                    "email": subscription.customer.email,
-                    "organization": organization,
-                    "product": product,
-                    "subscription": subscription,
-                    "url": portal_url,
-                    **(extra_context or {}),
-                },
-            }
-        )
-
         subject = subject_template.format(product=product)
 
-        enqueue_email_template(
-            email,
-            **organization.email_from_reply,
-            to_email_addr=subscription.customer.email,
-            subject=subject,
-        )
+        for recipient_email in recipients:
+            query_string = urlencode(
+                {
+                    "customer_session_token": token,
+                    "id": str(subscription.id),
+                    "email": recipient_email,
+                }
+            )
+            portal_url = settings.generate_frontend_url(
+                f"/{organization.slug}/portal?{query_string}"
+            )
+
+            email = EmailAdapter.validate_python(
+                {
+                    "template": template_name,
+                    "props": {
+                        "email": recipient_email,
+                        "organization": organization,
+                        "product": product,
+                        "subscription": subscription,
+                        "url": portal_url,
+                        **(extra_context or {}),
+                    },
+                }
+            )
+
+            enqueue_email_template(
+                email,
+                **organization.email_from_reply,
+                to_email_addr=recipient_email,
+                subject=subject,
+            )
 
     async def _get_outdated_grants(
         self,

@@ -18,7 +18,7 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
-from polar.customer.schemas.customer import CustomerCreate
+from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
 from polar.discount.schemas import DiscountPercentageOnceForeverDurationCreate
 from polar.discount.service import discount as discount_service
@@ -867,7 +867,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             customer_email = f"customer_{org_data['slug']}_{i + 1}@polar.sh"
             customer = await customer_service.create(
                 session=session,
-                customer_create=CustomerCreate(
+                customer_create=CustomerIndividualCreate(
                     email=customer_email,
                     name=f"Customer {i + 1}",
                     organization_id=organization.id,
@@ -927,7 +927,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 # Create the customer
                 seat_customer = await customer_service.create(
                     session=session,
-                    customer_create=CustomerCreate(
+                    customer_create=CustomerIndividualCreate(
                         email=customer_data["email"],
                         name=customer_data["name"],
                         organization_id=organization.id,
@@ -1017,7 +1017,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                             )
                             seat_holder_customer = await customer_service.create(
                                 session=session,
-                                customer_create=CustomerCreate(
+                                customer_create=CustomerIndividualCreate(
                                     email=seat_holder_email,
                                     name=f"Seat Holder {i + 1}",
                                     organization_id=organization.id,

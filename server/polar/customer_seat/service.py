@@ -384,12 +384,22 @@ class SeatService:
                 invitation_token=invitation_token or "none",
             )
             if organization:
+                billing_manager_display = billing_manager_customer.email
+                if billing_manager_display is None:
+                    owner = await MemberRepository.from_session(
+                        session
+                    ).get_owner_by_customer_id(
+                        session, billing_manager_customer.id
+                    )
+                    billing_manager_display = (
+                        owner.email if owner else None
+                    ) or billing_manager_customer.name or ""
                 send_seat_invitation_email(
                     customer_email=target.seat_member_email,
                     seat=seat,
                     organization=organization,
                     product_name=product.name,
-                    billing_manager_email=billing_manager_customer.email,
+                    billing_manager_email=billing_manager_display,
                 )
                 await webhook_service.send(
                     session,
@@ -508,7 +518,7 @@ class SeatService:
                 if seat.order_id and seat.order
                 else None
             )
-            if billing_cid and not seat.member_id:
+            if billing_cid and not seat.member_id and session_customer.email:
                 member = await self._get_or_create_member_for_seat(
                     session, billing_cid, organization_id, session_customer.email
                 )
@@ -671,12 +681,12 @@ class SeatService:
             organization_id = seat.subscription.product.organization_id
             organization = seat.subscription.product.organization
             product_name = seat.subscription.product.name
-            billing_manager_email = seat.subscription.customer.email
+            billing_customer = seat.subscription.customer
         elif seat.order_id and seat.order and seat.order.product:
             organization_id = seat.order.product.organization_id
             organization = seat.order.organization
             product_name = seat.order.product.name
-            billing_manager_email = seat.order.customer.email
+            billing_customer = seat.order.customer
         else:
             raise ValueError("Seat must have either subscription or order")
 
@@ -707,6 +717,15 @@ class SeatService:
             subscription_id=seat.subscription_id,
             order_id=seat.order_id,
         )
+
+        billing_manager_email = billing_customer.email
+        if billing_manager_email is None:
+            owner = await MemberRepository.from_session(
+                session
+            ).get_owner_by_customer_id(session, billing_customer.id)
+            billing_manager_email = (
+                owner.email if owner else None
+            ) or billing_customer.name or ""
 
         send_seat_invitation_email(
             customer_email=seat_member_email,
@@ -1025,15 +1044,17 @@ class SeatService:
             raise SeatAlreadyAssigned(identifier)
 
         # Create member under the billing customer (not the seat-holder customer)
-        member = await self._get_or_create_member_for_seat(
-            session, billing_customer_id, organization_id, customer.email
-        )
+        member: Member | None = None
+        if customer.email is not None:
+            member = await self._get_or_create_member_for_seat(
+                session, billing_customer_id, organization_id, customer.email
+            )
 
         return SeatAssignmentTarget(
             customer_id=customer.id,
-            member_id=member.id,
+            member_id=member.id if member else None,
             email=customer.email,
-            seat_member_email=customer.email,
+            seat_member_email=customer.email or "",
         )
 
     async def update_product_benefits_grants(

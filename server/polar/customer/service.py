@@ -1,8 +1,10 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any
 
 import structlog
+from pydantic import TypeAdapter
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -26,6 +28,7 @@ from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import BenefitGrant, Customer, Order, Organization, Subscription, User
 from polar.models.customer import CustomerType
+from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.organization.resolver import get_payload_organization
@@ -47,6 +50,8 @@ from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
 
 log = structlog.get_logger()
+
+_CustomerStateAdapter: TypeAdapter[CustomerState] = TypeAdapter(CustomerState)
 
 
 class CustomerService:
@@ -137,8 +142,11 @@ class CustomerService:
 
         errors: list[ValidationError] = []
 
-        if await repository.get_by_email_and_organization(
-            customer_create.email, organization.id
+        if (
+            customer_create.email is not None
+            and await repository.get_by_email_and_organization(
+                customer_create.email, organization.id
+            )
         ):
             errors.append(
                 {
@@ -332,7 +340,10 @@ class CustomerService:
         errors: list[ValidationError] = []
         if (
             customer_update.email is not None
-            and customer.email.lower() != customer_update.email.lower()
+            and (
+                customer.email is None
+                or customer.email.lower() != customer_update.email.lower()
+            )
         ):
             already_exists = await repository.get_by_email_and_organization(
                 customer_update.email, customer.organization_id
@@ -536,14 +547,17 @@ class CustomerService:
         will return success without making changes.
         """
         # Skip if already anonymized (idempotent)
-        if customer.email.endswith(f"@{ANONYMIZED_EMAIL_DOMAIN}"):
+        if customer.email is not None and customer.email.endswith(
+            f"@{ANONYMIZED_EMAIL_DOMAIN}"
+        ):
             return customer
 
         repository = CustomerRepository.from_session(session)
         update_dict: dict[str, Any] = {}
 
-        # Anonymize email (always)
-        update_dict["email"] = anonymize_email_for_deletion(customer.email)
+        # Anonymize email (if present)
+        if customer.email is not None:
+            update_dict["email"] = anonymize_email_for_deletion(customer.email)
         update_dict["email_verified"] = False
 
         # Anonymize name only for individuals (no tax_id = individual)
@@ -577,6 +591,28 @@ class CustomerService:
         customer = await repository.update(customer, update_dict=update_dict)
 
         return customer
+
+    async def get_email_recipients(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+    ) -> "builtins.list[str]":
+        """Return email addresses to use for notifications.
+
+        If the customer has an email, return it directly.
+        Otherwise, query owner and billing manager member emails.
+        """
+        if customer.email is not None:
+            return [customer.email]
+
+        member_repository = MemberRepository.from_session(session)
+        members = await member_repository.list_by_customer(session, customer.id)
+        return [
+            m.email
+            for m in members
+            if m.email is not None
+            and m.role in (MemberRole.owner, MemberRole.billing_manager)
+        ]
 
     async def get_export(
         self,
@@ -717,7 +753,7 @@ class CustomerService:
         if cache:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
-                return CustomerState.model_validate_json(raw_state)
+                return _CustomerStateAdapter.validate_json(raw_state)
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
@@ -736,7 +772,7 @@ class CustomerService:
             customer.id
         )
 
-        state = CustomerState.model_validate(customer)
+        state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
         await redis.set(
             cache_key,

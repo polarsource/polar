@@ -1141,6 +1141,7 @@ class CheckoutService:
                             )
                             if (intent and intent.payment_method)
                             else None,
+                            checkout_email=checkout.customer_email,
                         )
                     )
                     if trial_already_redeemed:
@@ -1232,6 +1233,7 @@ class CheckoutService:
                 payment_method_fingerprint=payment_method.fingerprint
                 if payment_method
                 else None,
+                checkout_email=checkout.customer_email,
             )
 
         repository = CheckoutRepository.from_session(session)
@@ -2521,7 +2523,9 @@ class CheckoutService:
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
-            create_params: CustomerCreateParams = {"email": customer.email}
+            create_params: CustomerCreateParams = {}
+            if customer.email is not None:
+                create_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 create_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:
@@ -2535,7 +2539,9 @@ class CheckoutService:
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
-            update_params: CustomerModifyParams = {"email": customer.email}
+            update_params: CustomerModifyParams = {}
+            if customer.email is not None:
+                update_params["email"] = customer.email
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:

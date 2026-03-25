@@ -132,7 +132,7 @@ async def get_authenticated_user(
         return PortalAuthenticatedUser(
             type="customer",
             name=customer.name,
-            email=customer.email,
+            email=customer.email or "",
             customer_id=customer.id,
             role=None,
         )

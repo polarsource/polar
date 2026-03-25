@@ -351,7 +351,7 @@ async def get_claim_info(
     elif seat.member:
         customer_email = seat.member.email
     elif seat.customer:
-        customer_email = seat.customer.email
+        customer_email = seat.customer.email or ""
 
     return SeatClaimInfo(
         product_name=product.name,

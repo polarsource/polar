@@ -156,9 +156,9 @@ class CustomerService:
         payment_method_create: CustomerPaymentMethodCreate,
     ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
-            params: CustomerCreateParams = {
-                "email": customer.email,
-            }
+            params: CustomerCreateParams = {}
+            if customer.email is not None:
+                params["email"] = customer.email
             if customer.name is not None:
                 params["name"] = customer.name
             if customer.billing_address is not None:

@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
+from pydantic import TypeAdapter
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -33,6 +34,8 @@ from .schemas.customer import (
 )
 from .schemas.state import CustomerState
 from .service import customer as customer_service
+
+_CustomerAdapter: TypeAdapter[CustomerSchema] = TypeAdapter(CustomerSchema)
 
 router = APIRouter(
     prefix="/customers",
@@ -79,7 +82,12 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [CustomerSchema.model_validate(result) for result in results], count, pagination
+        [
+            _CustomerAdapter.validate_python(result, from_attributes=True)
+            for result in results
+        ],
+        count,
+        pagination,
     )
 
 

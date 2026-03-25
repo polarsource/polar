@@ -6,7 +6,11 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_user
 from polar.customer.repository import CustomerRepository
-from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
+from polar.customer.schemas.customer import (
+    CustomerCreate,
+    CustomerIndividualCreate,
+    CustomerUpdate,
+)
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
@@ -92,7 +96,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
                 session,
-                CustomerCreate(
+                CustomerIndividualCreate(
                     email="customer@example.com", organization_id=organization.id
                 ),
                 auth_subject,
@@ -118,7 +122,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session, CustomerCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), auth_subject
             )
             await session.flush()
 
@@ -133,6 +137,7 @@ class TestCreate:
         user_organization: UserOrganization,
         customer: Customer,
     ) -> None:
+        assert customer.email is not None
         payload: dict[str, Any] = {
             "email": customer.email.upper()  # Check case-insensitive index
         }
@@ -141,7 +146,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await customer_service.create(
-                session, CustomerCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), auth_subject
             )
             await session.flush()
 
@@ -163,7 +168,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -193,7 +198,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -228,7 +233,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -267,7 +272,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -315,7 +320,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "email")
 
@@ -356,7 +361,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
 
@@ -380,7 +385,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "billing_address")
 
@@ -405,7 +410,7 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await customer_service.create(
-                session, CustomerCreate.model_validate(payload), auth_subject
+                session, CustomerIndividualCreate.model_validate(payload), auth_subject
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
 
@@ -429,7 +434,7 @@ class TestCreate:
             payload["organization_id"] = str(organization.id)
 
         customer = await customer_service.create(
-            session, CustomerCreate.model_validate(payload), auth_subject
+            session, CustomerIndividualCreate.model_validate(payload), auth_subject
         )
         await session.flush()
 
@@ -907,6 +912,7 @@ class TestDelete:
         )
         deleted = await customer_service.delete(session, customer, anonymize=True)
         assert deleted.deleted_at is not None
+        assert deleted.email is not None
         assert deleted.email.endswith("@anonymized.polar.sh")
         assert deleted.name is not None
         assert deleted.name != "Delete Anon User"
@@ -1096,6 +1102,7 @@ class TestAnonymize:
         anonymized = await customer_service.anonymize(session, customer)
 
         # Email should be hashed
+        assert anonymized.email is not None
         assert anonymized.email.endswith("@anonymized.polar.sh")
         assert anonymized.email != "individual@example.com"
         assert anonymized.email_verified is False
@@ -1131,6 +1138,7 @@ class TestAnonymize:
         anonymized = await customer_service.anonymize(session, customer)
 
         # Email should be hashed
+        assert anonymized.email is not None
         assert anonymized.email.endswith("@anonymized.polar.sh")
         assert anonymized.email_verified is False
 
@@ -1278,6 +1286,7 @@ class TestAnonymize:
         # Should still be able to anonymize
         anonymized = await customer_service.anonymize(session, customer)
 
+        assert anonymized.email is not None
         assert anonymized.email.endswith("@anonymized.polar.sh")
         assert anonymized.deleted_at is not None
 

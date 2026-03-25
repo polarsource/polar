@@ -204,6 +204,9 @@ class CustomerSessionService:
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         domain = settings.frontend_hostname
+        if customer.email is None:
+            raise CustomerSessionCodeInvalidOrExpired()
+
         enqueue_email_template(
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
@@ -246,7 +249,7 @@ class CustomerSessionService:
             raise CustomerSessionCodeInvalidOrExpired()
 
         customer = customer_session_code.customer
-        if customer_session_code.email.lower() == customer.email.lower():
+        if customer.email is not None and customer_session_code.email.lower() == customer.email.lower():
             customer_repository = CustomerRepository.from_session(session)
             await customer_repository.update(
                 customer, update_dict={"email_verified": True}

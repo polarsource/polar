@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasChoices, Field
+from pydantic import UUID4, AliasChoices, Discriminator, Field, Tag
 from pydantic.aliases import AliasPath
 from pydantic.json_schema import SkipJsonSchema
 
@@ -20,13 +20,18 @@ from polar.kit.schemas import (
     PRODUCT_ID_EXAMPLE,
     SUBSCRIPTION_ID_EXAMPLE,
     IDSchema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.subscription.schemas import SubscriptionMeterBase
 
-from .customer import CustomerBase
+from .customer import (
+    CustomerIndividual,
+    CustomerTeam,
+    _customer_type_discriminator,
+)
 
 
 class CustomerStateSubscriptionMeter(SubscriptionMeterBase):
@@ -170,14 +175,8 @@ class CustomerStateMeter(TimestampedSchema, IDSchema):
     )
 
 
-class CustomerState(CustomerBase):
-    """
-    A customer along with additional state information:
-
-    * Active subscriptions
-    * Granted benefits
-    * Active meters
-    """
+class _CustomerStateFields:
+    """Mixin providing shared state fields for CustomerState variants."""
 
     active_subscriptions: list[CustomerStateSubscription] = Field(
         description="The customer's active subscriptions."
@@ -188,3 +187,31 @@ class CustomerState(CustomerBase):
     active_meters: list[CustomerStateMeter] = Field(
         description="The customer's active meters.",
     )
+
+
+class CustomerStateIndividual(_CustomerStateFields, CustomerIndividual):
+    """
+    An individual customer along with additional state information:
+
+    * Active subscriptions
+    * Granted benefits
+    * Active meters
+    """
+
+
+class CustomerStateTeam(_CustomerStateFields, CustomerTeam):
+    """
+    A team customer along with additional state information:
+
+    * Active subscriptions
+    * Granted benefits
+    * Active meters
+    """
+
+
+CustomerState = Annotated[
+    Annotated[CustomerStateIndividual, Tag("individual")]
+    | Annotated[CustomerStateTeam, Tag("team")],
+    Discriminator(_customer_type_discriminator),
+    SetSchemaReference("CustomerState"),
+]

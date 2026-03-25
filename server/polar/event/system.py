@@ -132,7 +132,7 @@ class BenefitRevokedEvent(Event):
 
 class CustomerCreatedMetadata(TypedDict):
     customer_id: str
-    customer_email: str
+    customer_email: str | None
     customer_name: str | None
     customer_external_id: str | None
 
@@ -154,7 +154,7 @@ class CustomerUpdatedFields(TypedDict):
 
 class CustomerUpdatedMetadata(TypedDict):
     customer_id: str
-    customer_email: str
+    customer_email: str | None
     customer_name: str | None
     customer_external_id: str | None
     updated_fields: CustomerUpdatedFields
@@ -169,7 +169,7 @@ class CustomerUpdatedEvent(Event):
 
 class CustomerDeletedMetadata(TypedDict):
     customer_id: str
-    customer_email: str
+    customer_email: str | None
     customer_name: str | None
     customer_external_id: str | None
 

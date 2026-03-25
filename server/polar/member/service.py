@@ -232,7 +232,16 @@ class MemberService:
 
         repository = MemberRepository.from_session(session)
 
-        email = (owner_email or customer.email).strip().lower()
+        raw_email = owner_email or customer.email
+        if raw_email is None:
+            log.info(
+                "member.create_owner_member.skipped",
+                reason="no_email_available",
+                customer_id=customer.id,
+                organization_id=organization.id,
+            )
+            return None
+        email = raw_email.strip().lower()
         name = owner_name or customer.name
         external_id = owner_external_id or customer.external_id
 
@@ -319,6 +328,9 @@ class MemberService:
             "seat_based_pricing_enabled", False
         )
         if not member_model and not seat_based:
+            return None
+
+        if customer.email is None:
             return None
 
         return await self.get_or_create_by_email(

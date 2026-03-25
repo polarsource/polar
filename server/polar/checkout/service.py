@@ -1139,13 +1139,13 @@ class CheckoutService:
                             "intent_status": intent.status,
                         }
 
-                # Check for trial abuse (skip for customers without email)
+                # Check for trial abuse
+                # Skip for team customers without email — no email to check against
                 if (
                     checkout.trial_end is not None
                     and checkout.organization.prevent_trial_abuse
-                    and (
-                        checkout.customer_email is not None
-                        or customer.email is not None
+                    and not (
+                        customer.type == CustomerType.team and customer.email is None
                     )
                 ):
                     trial_already_redeemed = (
@@ -1160,7 +1160,6 @@ class CheckoutService:
                             )
                             if (intent and intent.payment_method)
                             else None,
-                            checkout_email=checkout.customer_email,
                         )
                     )
                     if trial_already_redeemed:
@@ -1252,7 +1251,6 @@ class CheckoutService:
                 payment_method_fingerprint=payment_method.fingerprint
                 if payment_method
                 else None,
-                checkout_email=checkout.customer_email,
             )
 
         repository = CheckoutRepository.from_session(session)

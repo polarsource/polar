@@ -14,16 +14,11 @@ class TrialRedemptionService:
         customer: Customer,
         product: Product | None = None,
         payment_method_fingerprint: str | None = None,
-        checkout_email: str | None = None,
     ) -> bool:
-        # Use checkout_email (entered at checkout time) as primary,
-        # fall back to customer.email
-        email = checkout_email or customer.email
-
         repository = TrialRedemptionRepository.from_session(session)
         trial_redemptions = await repository.get_all_by_organization_and_hints(
             organization.id,
-            customer_email=self._get_unaliased_email(email) if email else None,
+            customer_email=self._get_unaliased_email(customer.email),
             product=product.id if product else None,
             payment_method_fingerprint=payment_method_fingerprint,
         )
@@ -36,19 +31,11 @@ class TrialRedemptionService:
         customer: Customer,
         product: Product | None = None,
         payment_method_fingerprint: str | None = None,
-        checkout_email: str | None = None,
-    ) -> TrialRedemption | None:
-        # Use checkout_email as primary, fall back to customer.email
-        email = checkout_email or customer.email
-
-        # Cannot record without an email (customer_email is NOT NULL in the model)
-        if email is None:
-            return None
-
+    ) -> TrialRedemption:
         repository = TrialRedemptionRepository.from_session(session)
         return await repository.create(
             TrialRedemption(
-                customer_email=self._get_unaliased_email(email),
+                customer_email=self._get_unaliased_email(customer.email),
                 customer=customer,
                 product=product,
                 payment_method_fingerprint=payment_method_fingerprint,

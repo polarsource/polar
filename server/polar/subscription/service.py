@@ -18,6 +18,7 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_seat.service import seat_service
 from polar.discount.repository import DiscountRedemptionRepository
@@ -2292,14 +2293,37 @@ class SubscriptionService:
 
         customer = subscription.customer
 
-        from polar.customer.service import customer as customer_service
-
         recipients = await customer_service.get_email_recipients(session, customer)
         if not recipients:
             return
 
         subject = subject_template.format(product=product)
 
+        await self._send_email_to_recipients(
+            session,
+            recipients=recipients,
+            customer=customer,
+            template_name=template_name,
+            subject=subject,
+            organization=organization,
+            product=product,
+            subscription=subscription,
+            extra_context=extra_context,
+        )
+
+    async def _send_email_to_recipients(
+        self,
+        session: AsyncSession,
+        *,
+        recipients: list[str],
+        customer: Customer,
+        template_name: str,
+        subject: str,
+        organization: Organization,
+        product: Product,
+        subscription: Subscription,
+        extra_context: dict[str, Any] | None = None,
+    ) -> None:
         for recipient_email in recipients:
             token = await customer_service.create_session_token_for_recipient(
                 session, customer, recipient_email

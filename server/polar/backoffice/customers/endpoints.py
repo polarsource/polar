@@ -514,7 +514,7 @@ async def revoke_benefits(
 
         await add_toast(
             request,
-            f"Benefit revocation task enqueued for {customer.name or customer.email or 'customer'}.",
+            f"Benefit revocation task enqueued for {customer.display_name}.",
             "success",
         )
 
@@ -527,7 +527,7 @@ async def revoke_benefits(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
                 text(
-                    f"Are you sure you want to revoke all benefits for {customer.name or customer.email or 'this customer'}? "
+                    f"Are you sure you want to revoke all benefits for {customer.display_name}? "
                     "This will revoke all currently granted benefits for this customer."
                 )
 

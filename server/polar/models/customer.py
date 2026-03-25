@@ -303,6 +303,11 @@ class Customer(MetadataMixin, RecordModel):
         return self.name or self.email or "Team Customer"
 
     @property
+    def display_email(self) -> str:
+        """Email for display purposes: email, name, or 'Team Customer'."""
+        return self.email or self.name or "Team Customer"
+
+    @property
     def legacy_user_public_name(self) -> str:
         if self.name:
             return self.name[0]

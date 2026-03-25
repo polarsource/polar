@@ -883,6 +883,10 @@
       "destination": "/merchant-of-record/acceptable-use"
     },
     {
+      "source": "/merchant-of-record/acceptable-use",
+      "destination": "https://polar.sh/legal/acceptable-use-policy"
+    },
+    {
       "source": "/documentation/polar-as-merchant-of-record/account-reviews",
       "destination": "/merchant-of-record/account-reviews"
     },

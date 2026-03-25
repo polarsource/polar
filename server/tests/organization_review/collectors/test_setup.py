@@ -70,13 +70,14 @@ class TestCollectSetupDataEmpty:
         result = collect_setup_data(
             checkout_links=[],
             checkout_return_urls=[],
+            checkout_success_urls=[],
             api_key_count=0,
             webhook_endpoints=[],
         )
         assert result == SetupData()
 
     def test_default_values(self) -> None:
-        result = collect_setup_data([], [], 0, [])
+        result = collect_setup_data([], [], [], 0, [])
         assert result.checkout_success_urls == CheckoutSuccessUrlData()
         assert result.checkout_return_urls == CheckoutReturnUrlData()
         assert result.checkout_links == CheckoutLinksData()
@@ -89,7 +90,7 @@ class TestCollectSetupDataSuccessUrls:
         link2 = _build_checkout_link(success_url="https://other.com/done")
         link3 = _build_checkout_link(success_url="https://example.com/thanks")  # dup
 
-        result = collect_setup_data([link1, link2, link3], [], 0, [])
+        result = collect_setup_data([link1, link2, link3], [], [], 0, [])
 
         assert result.checkout_success_urls.unique_urls == [
             "https://example.com/thanks",
@@ -102,14 +103,14 @@ class TestCollectSetupDataSuccessUrls:
 
     def test_none_success_url_skipped(self) -> None:
         link = _build_checkout_link(success_url=None)
-        result = collect_setup_data([link], [], 0, [])
+        result = collect_setup_data([link], [], [], 0, [])
         assert result.checkout_success_urls.unique_urls == []
 
     def test_domains_deduplicated(self) -> None:
         link1 = _build_checkout_link(success_url="https://example.com/a")
         link2 = _build_checkout_link(success_url="https://example.com/b")
 
-        result = collect_setup_data([link1, link2], [], 0, [])
+        result = collect_setup_data([link1, link2], [], [], 0, [])
 
         assert result.checkout_success_urls.unique_urls == [
             "https://example.com/a",
@@ -117,11 +118,41 @@ class TestCollectSetupDataSuccessUrls:
         ]
         assert result.checkout_success_urls.domains == ["example.com"]
 
+    def test_checkout_success_urls_merged(self) -> None:
+        """Success URLs from both CheckoutLink and Checkout are merged."""
+        link = _build_checkout_link(success_url="https://example.com/thanks")
+        checkout_urls = [
+            "https://other.com/done",
+            "https://example.com/thanks",  # dup with link
+        ]
+
+        result = collect_setup_data([link], [], checkout_urls, 0, [])
+
+        assert result.checkout_success_urls.unique_urls == [
+            "https://example.com/thanks",
+            "https://other.com/done",
+        ]
+        assert set(result.checkout_success_urls.domains) == {
+            "example.com",
+            "other.com",
+        }
+
+    def test_checkout_success_urls_only_from_checkouts(self) -> None:
+        """Success URLs from API-created checkouts appear even without links."""
+        result = collect_setup_data(
+            [], [], ["https://api-app.com/success"], 0, []
+        )
+
+        assert result.checkout_success_urls.unique_urls == [
+            "https://api-app.com/success",
+        ]
+        assert result.checkout_success_urls.domains == ["api-app.com"]
+
 
 class TestCollectSetupDataReturnUrls:
     def test_return_urls_and_domains(self) -> None:
         urls = ["https://app.example.com/return", "https://other.io/callback"]
-        result = collect_setup_data([], urls, 0, [])
+        result = collect_setup_data([], urls, [], 0, [])
 
         assert result.checkout_return_urls.unique_urls == urls
         assert set(result.checkout_return_urls.domains) == {
@@ -130,7 +161,7 @@ class TestCollectSetupDataReturnUrls:
         }
 
     def test_empty_return_urls(self) -> None:
-        result = collect_setup_data([], [], 0, [])
+        result = collect_setup_data([], [], [], 0, [])
         assert result.checkout_return_urls.unique_urls == []
         assert result.checkout_return_urls.domains == []
 
@@ -141,7 +172,7 @@ class TestCollectSetupDataCheckoutLinks:
             label="my-link",
             products=[("Pro Plan", True), ("Starter", False)],
         )
-        result = collect_setup_data([link], [], 0, [])
+        result = collect_setup_data([link], [], [], 0, [])
 
         assert result.checkout_links.total_links == 1
         assert result.checkout_links.links_without_benefits == 0
@@ -151,14 +182,14 @@ class TestCollectSetupDataCheckoutLinks:
 
     def test_links_without_benefits(self) -> None:
         link = _build_checkout_link(products=[("Empty Product", False)])
-        result = collect_setup_data([link], [], 0, [])
+        result = collect_setup_data([link], [], [], 0, [])
 
         assert result.checkout_links.links_without_benefits == 1
         assert result.checkout_links.links[0].has_benefits is False
 
     def test_link_no_products(self) -> None:
         link = _build_checkout_link(products=[])
-        result = collect_setup_data([link], [], 0, [])
+        result = collect_setup_data([link], [], [], 0, [])
 
         assert result.checkout_links.total_links == 1
         assert result.checkout_links.links_without_benefits == 1
@@ -166,7 +197,7 @@ class TestCollectSetupDataCheckoutLinks:
 
     def test_label_none(self) -> None:
         link = _build_checkout_link(label=None, products=[])
-        result = collect_setup_data([link], [], 0, [])
+        result = collect_setup_data([link], [], [], 0, [])
         assert result.checkout_links.links[0].label is None
 
     def test_multiple_links_counts(self) -> None:
@@ -175,7 +206,7 @@ class TestCollectSetupDataCheckoutLinks:
         link_without2 = _build_checkout_link(products=[("C", False)])
 
         result = collect_setup_data(
-            [link_with, link_without1, link_without2], [], 0, []
+            [link_with, link_without1, link_without2], [], [], 0, []
         )
 
         assert result.checkout_links.total_links == 3
@@ -184,7 +215,7 @@ class TestCollectSetupDataCheckoutLinks:
 
 class TestCollectSetupDataIntegration:
     def test_api_key_count(self) -> None:
-        result = collect_setup_data([], [], 5, [])
+        result = collect_setup_data([], [], [], 5, [])
         assert result.integration.api_key_count == 5
 
     def test_webhook_endpoints(self) -> None:
@@ -192,7 +223,7 @@ class TestCollectSetupDataIntegration:
         ep2 = _build_webhook_endpoint(url="https://myapp.com/webhook2")
         ep3 = _build_webhook_endpoint(url="https://other.com/hook")
 
-        result = collect_setup_data([], [], 0, [ep1, ep2, ep3])
+        result = collect_setup_data([], [], [], 0, [ep1, ep2, ep3])
 
         assert [ep.url for ep in result.integration.webhook_endpoints] == [
             "https://myapp.com/webhook",
@@ -203,7 +234,7 @@ class TestCollectSetupDataIntegration:
         assert set(result.integration.webhook_domains) == {"myapp.com", "other.com"}
 
     def test_no_webhooks(self) -> None:
-        result = collect_setup_data([], [], 0, [])
+        result = collect_setup_data([], [], [], 0, [])
         assert result.integration.webhook_endpoints == []
         assert result.integration.webhook_domains == []
 
@@ -214,7 +245,7 @@ class TestCollectSetupDataKnownDomains:
         ep2 = _build_webhook_endpoint(url="https://discord.com/api/webhooks/123")
         ep3 = _build_webhook_endpoint(url="https://hooks.zapier.com/hook/abc")
 
-        result = collect_setup_data([], [], 0, [ep1, ep2, ep3])
+        result = collect_setup_data([], [], [], 0, [ep1, ep2, ep3])
 
         assert set(result.integration.webhook_known_service_domains) == {
             "discord.com",
@@ -226,7 +257,7 @@ class TestCollectSetupDataKnownDomains:
             url="https://myproject.supabase.co/functions/v1/hook"
         )
 
-        result = collect_setup_data([], [], 0, [ep])
+        result = collect_setup_data([], [], [], 0, [ep])
 
         assert result.integration.webhook_known_service_domains == [
             "myproject.supabase.co"
@@ -235,7 +266,7 @@ class TestCollectSetupDataKnownDomains:
     def test_empty_when_all_custom(self) -> None:
         ep = _build_webhook_endpoint(url="https://mystore.com/webhook")
 
-        result = collect_setup_data([], [], 0, [ep])
+        result = collect_setup_data([], [], [], 0, [ep])
 
         assert result.integration.webhook_known_service_domains == []
 
@@ -251,7 +282,7 @@ class TestCollectSetupDataCombined:
         return_urls = ["https://shop.example.com/return"]
         ep = _build_webhook_endpoint(url="https://shop.example.com/events")
 
-        result = collect_setup_data([link], return_urls, 2, [ep])
+        result = collect_setup_data([link], return_urls, [], 2, [ep])
 
         assert result.checkout_success_urls.domains == ["shop.example.com"]
         assert result.checkout_return_urls.domains == ["shop.example.com"]

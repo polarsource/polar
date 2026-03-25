@@ -38,16 +38,21 @@ def _unique_domains(urls: list[str]) -> list[str]:
 def collect_setup_data(
     checkout_links: list[CheckoutLink],
     checkout_return_urls: list[str],
+    checkout_success_urls: list[str],
     api_key_count: int,
     webhook_endpoints: list[WebhookEndpoint],
 ) -> SetupData:
-    # Checkout success URLs
+    # Checkout success URLs — merge from both CheckoutLink and Checkout sources
     unique_urls: list[str] = []
     seen_urls: set[str] = set()
     for link in checkout_links:
         if link.success_url and link.success_url not in seen_urls:
             seen_urls.add(link.success_url)
             unique_urls.append(link.success_url)
+    for url in checkout_success_urls:
+        if url not in seen_urls:
+            seen_urls.add(url)
+            unique_urls.append(url)
 
     success_url_data = CheckoutSuccessUrlData(
         unique_urls=unique_urls,
